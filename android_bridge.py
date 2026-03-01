@@ -158,7 +158,26 @@ class AndroidBridge:
             "true",
         )
         if not ok:
-            return {"success": False, "mode": "adb", "error": out}
+            # Fallback path for custom app receiver integration.
+            ok_b, out_b = await self._adb(
+                "shell",
+                "am",
+                "broadcast",
+                "-a",
+                "com.jarvis.SEND_MESSAGE",
+                "--es",
+                "contact",
+                contact,
+                "--es",
+                "text",
+                text,
+                "--es",
+                "platform",
+                "sms",
+            )
+            if not ok_b:
+                return {"success": False, "mode": "adb", "error": out}
+            return {"success": True, "mode": "adb", "output": out_b, "strategy": "broadcast_fallback"}
 
         if self.auto_tap_send:
             await asyncio.sleep(1.0)
