@@ -110,3 +110,13 @@ Companion endpoints:
 - Some actions call external JARVIS endpoints (`/api/reminders`, `/api/tts`, etc). If those endpoints are unavailable, fallback behavior is used.
 - Local Ollama endpoints are used by solver/reflector when reachable (`http://localhost:11434`).
 - Android call answering behavior depends on device permissions and OS restrictions; set `COMPANION_CALL_ANSWER_COMMAND` for device-specific handling.
+
+## 7) Android native receiver contract
+
+Added receiver/service spec files in:
+- `android_receiver/README.md`
+- `android_receiver/JarvisBridgeReceiver.kt`
+- `android_receiver/JarvisActionService.kt`
+- `android_receiver/AndroidManifest.snippet.xml`
+
+These match bridge broadcast actions used by `adb` mode.

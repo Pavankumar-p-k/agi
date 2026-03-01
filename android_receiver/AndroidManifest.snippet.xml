@@ -1,0 +1,29 @@
+<!-- Merge this into android/app/src/main/AndroidManifest.xml -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.SEND_SMS" />
+    <uses-permission android:name="android.permission.ANSWER_PHONE_CALLS" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <uses-permission android:name="android.permission.CALL_PHONE" />
+
+    <application>
+        <receiver
+            android:name=".bridge.JarvisBridgeReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.jarvis.TTS" />
+                <action android:name="com.jarvis.ANSWER_CALL_TTS" />
+                <action android:name="com.jarvis.SEND_MESSAGE" />
+            </intent-filter>
+        </receiver>
+
+        <service
+            android:name=".bridge.JarvisActionService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="phoneCall|dataSync" />
+    </application>
+</manifest>
