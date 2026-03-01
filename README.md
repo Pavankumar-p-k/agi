@@ -57,6 +57,27 @@ flutter run --dart-define=AGI_BASE_URL=http://192.168.1.100:8000
 - `GET /agi/style/profile`
 - `GET /agi/work/summary`
 
+## 5) Device bridge modes
+
+The backend action endpoints now exist:
+- `POST /api/messages/send`
+- `POST /api/calls/answer_tts`
+- `POST /api/tts`
+- `GET /api/messages/unread_count`
+- `POST /api/messages/incoming`
+
+Configure how actions are executed:
+
+- `JARVIS_BRIDGE_MODE=mock` (default): simulate success for development.
+- `JARVIS_BRIDGE_MODE=adb`: run `adb` commands from PC.
+- `JARVIS_BRIDGE_MODE=device_api`: forward to phone companion API.
+
+Optional env vars:
+
+- `ANDROID_SERIAL=<adb_serial>`
+- `ANDROID_DEVICE_API=http://<phone_ip>:<port>`
+- `JARVIS_ADB_AUTO_TAP_SEND=1` (attempt auto key tap to send SMS)
+
 ## Notes
 
 - AGI loop interval: 30 seconds.
