@@ -77,9 +77,36 @@ Optional env vars:
 - `ANDROID_SERIAL=<adb_serial>`
 - `ANDROID_DEVICE_API=http://<phone_ip>:<port>`
 - `JARVIS_ADB_AUTO_TAP_SEND=1` (attempt auto key tap to send SMS)
+- `JARVIS_BRIDGE_TOKEN=<shared_secret>`
+
+## 6) Phone companion API (for `device_api` mode)
+
+Run this on the phone (Termux/Pydroid):
+
+```bash
+export COMPANION_MODE=termux
+export JARVIS_BRIDGE_TOKEN=change_this_token
+uvicorn device_companion:app --host 0.0.0.0 --port 8090
+```
+
+Then on Windows backend:
+
+```powershell
+$env:JARVIS_BRIDGE_MODE="device_api"
+$env:ANDROID_DEVICE_API="http://<PHONE_IP>:8090"
+$env:JARVIS_BRIDGE_TOKEN="change_this_token"
+uvicorn main:app --host 0.0.0.0 --port 8000
+```
+
+Companion endpoints:
+- `POST /bridge/messages/send`
+- `POST /bridge/calls/answer_tts`
+- `POST /bridge/tts`
+- `GET /bridge/messages/unread_count`
 
 ## Notes
 
 - AGI loop interval: 30 seconds.
 - Some actions call external JARVIS endpoints (`/api/reminders`, `/api/tts`, etc). If those endpoints are unavailable, fallback behavior is used.
 - Local Ollama endpoints are used by solver/reflector when reachable (`http://localhost:11434`).
+- Android call answering behavior depends on device permissions and OS restrictions; set `COMPANION_CALL_ANSWER_COMMAND` for device-specific handling.

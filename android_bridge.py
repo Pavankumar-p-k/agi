@@ -22,6 +22,7 @@ class AndroidBridge:
         self.serial = os.getenv("ANDROID_SERIAL", "").strip()
         self.device_api = os.getenv("ANDROID_DEVICE_API", "").strip().rstrip("/")
         self.auto_tap_send = os.getenv("JARVIS_ADB_AUTO_TAP_SEND", "0").strip() == "1"
+        self.bridge_token = os.getenv("JARVIS_BRIDGE_TOKEN", "").strip()
 
     def config(self) -> dict[str, Any]:
         return {
@@ -29,6 +30,7 @@ class AndroidBridge:
             "serial": self.serial,
             "device_api": self.device_api,
             "auto_tap_send": self.auto_tap_send,
+            "token_configured": bool(self.bridge_token),
         }
 
     async def send_message(self, contact: str, text: str, platform: str = "auto") -> dict[str, Any]:
@@ -48,6 +50,35 @@ class AndroidBridge:
 
         if self.mode == "adb":
             return await self._send_message_via_adb(contact=contact, text=text)
+
+        return {"success": False, "error": f"unsupported_mode:{self.mode}"}
+
+    async def speak(self, text: str) -> dict[str, Any]:
+        text = (text or "").strip()
+        if not text:
+            return {"success": False, "error": "missing_text"}
+
+        if self.mode == "mock":
+            return {"success": True, "mode": "mock"}
+
+        if self.mode == "device_api" and self.device_api:
+            return await self._post_device_api("/bridge/tts", {"text": text})
+
+        if self.mode == "adb":
+            # Broadcast for optional Android receiver/service support.
+            ok, out = await self._adb(
+                "shell",
+                "am",
+                "broadcast",
+                "-a",
+                "com.jarvis.TTS",
+                "--es",
+                "text",
+                text,
+            )
+            if ok:
+                return {"success": True, "mode": "adb", "output": out}
+            return {"success": False, "mode": "adb", "error": out}
 
         return {"success": False, "error": f"unsupported_mode:{self.mode}"}
 
@@ -73,9 +104,12 @@ class AndroidBridge:
 
     async def _post_device_api(self, path: str, payload: dict[str, Any]) -> dict[str, Any]:
         url = f"{self.device_api}{path}"
+        headers = {}
+        if self.bridge_token:
+            headers["X-Bridge-Token"] = self.bridge_token
         try:
             async with httpx.AsyncClient(timeout=20.0) as client:
-                res = await client.post(url, json=payload)
+                res = await client.post(url, json=payload, headers=headers)
                 if res.status_code >= 400:
                     return {"success": False, "error": res.text, "status": res.status_code}
                 data = res.json() if res.text.strip() else {}

@@ -178,8 +178,10 @@ async def tts(req: TTSRequest) -> dict:
     text = req.text.strip()
     if not text:
         return {"success": False, "error": "missing_text"}
-    print(f"[TTS] {text}")
-    return {"success": True}
+    payload = await _bridge.speak(text)
+    if not payload.get("success"):
+        print(f"[TTS fallback] {text}")
+    return payload
 
 
 @app.post("/api/messages/send")
