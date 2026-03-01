@@ -126,6 +126,31 @@ class JarvisTools:
         ok, _ = await self._post("/api/automation/browser/open", {"url": url})
         return ok
 
+    async def send_message(self, contact: str, text: str, platform: str = "auto") -> bool:
+        payload = {
+            "contact": (contact or "").strip(),
+            "text": (text or "").strip(),
+            "platform": (platform or "auto").strip(),
+        }
+        if not payload["contact"] or not payload["text"]:
+            return False
+        ok, _ = await self._post("/api/messages/send", payload)
+        if not ok:
+            print(f"[JarvisTools] send_message fallback -> {payload}")
+        return ok
+
+    async def answer_call_with_tts(self, caller: str, script: str) -> bool:
+        payload = {
+            "caller": (caller or "").strip(),
+            "script": (script or "").strip(),
+        }
+        if not payload["script"]:
+            return False
+        ok, _ = await self._post("/api/calls/answer_tts", payload)
+        if not ok:
+            print(f"[JarvisTools] answer_call_with_tts fallback -> {payload}")
+        return ok
+
     async def get_daily_briefing(self) -> str:
         reminders = await self.list_reminders()
         notes = await self.list_recent_notes()
@@ -156,4 +181,3 @@ class JarvisTools:
     async def call(self, tool_name: str, params: dict[str, Any]) -> dict[str, Any]:
         ok, data = await self._post(f"/api/tools/{tool_name}", params)
         return data if ok and isinstance(data, dict) else {"success": False}
-

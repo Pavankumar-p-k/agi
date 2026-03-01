@@ -51,6 +51,11 @@ flutter run --dart-define=AGI_BASE_URL=http://192.168.1.100:8000
 - `GET /agi/reflections`
 - `POST /agi/config`
 - `POST /agi/trigger`
+- `POST /agi/call/config`
+- `POST /agi/call/incoming`
+- `POST /agi/style/reply`
+- `GET /agi/style/profile`
+- `GET /agi/work/summary`
 
 ## Notes
 

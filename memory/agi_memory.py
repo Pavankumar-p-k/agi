@@ -211,6 +211,28 @@ class AGIMemory:
             ).fetchall()
         return [dict(row) for row in rows]
 
+    async def get_user_messages(self, user_id: str = "pavan", limit: int = 300) -> list[str]:
+        with self._conn() as conn:
+            rows = conn.execute(
+                """
+                SELECT content
+                FROM agi_events
+                WHERE type='user_input' AND user_id=? AND content != ''
+                ORDER BY timestamp DESC
+                LIMIT ?
+                """,
+                (user_id, max(1, int(limit))),
+            ).fetchall()
+        return [str(r["content"]) for r in rows if r["content"]]
+
+    async def count_events(self, event_type: str) -> int:
+        with self._conn() as conn:
+            row = conn.execute(
+                "SELECT COUNT(*) FROM agi_events WHERE type=?",
+                (event_type,),
+            ).fetchone()
+        return int(row[0]) if row else 0
+
     async def get_latest_mood(self) -> str:
         with self._conn() as conn:
             row = conn.execute(
@@ -239,4 +261,3 @@ class AGIMemory:
             "reflections": int(reflections),
             "solve_runs": int(solves),
         }
-

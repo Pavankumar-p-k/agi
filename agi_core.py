@@ -45,6 +45,7 @@ from dataclasses import dataclass, field, asdict
 
 from learning.pattern_engine  import PatternEngine
 from learning.habit_tracker   import HabitTracker
+from learning.style_engine    import MessageStyleEngine
 from prediction.predictor     import PredictionEngine
 from decision.goal_planner    import GoalPlanner
 from decision.action_executor import ActionExecutor
@@ -115,6 +116,7 @@ class JarvisAGI:
         self.memory        = AGIMemory()
         self.patterns      = PatternEngine(self.memory)
         self.habits        = HabitTracker(self.memory)
+        self.style         = MessageStyleEngine(self.memory)
         self.predictor     = PredictionEngine(self.patterns, self.habits)
         self.goal_planner  = GoalPlanner(self.memory)
         self.executor      = ActionExecutor()
@@ -130,6 +132,17 @@ class JarvisAGI:
         self._loop_count               = 0
         self._autonomous_enabled       = True
         self._confidence_threshold     = 0.65   # only act if confidence > this
+        self._auto_message_count       = 0
+        self._call_config = {
+            "auto_lift_enabled": False,
+            "auto_lift_start_hour": 9,
+            "auto_lift_end_hour": 18,
+            "auto_lift_all": False,
+            "auto_busy_reply": True,
+            "busy_reply_template": "Sir is busy right now. You can leave a note or reminder.",
+            "lift_script_template": "Hello. This is JARVIS assistant for Sir. Please share your message.",
+            "create_callback_reminder": True,
+        }
 
         print("  [OK] All AGI modules loaded")
         print("=" * 58 + "\n")
@@ -356,6 +369,7 @@ class JarvisAGI:
         await self.memory.save_event(event)
         await self.patterns.observe(event)
         await self.habits.observe(event)
+        await self.style.observe(event)
 
         # If emotion is negative → proactively offer help
         if emotion in ("sad", "angry", "frustrated", "anxious"):
@@ -375,6 +389,182 @@ class JarvisAGI:
             await self.tools.speak(msg)
             print(f"[AGI] Proactive support offered for emotion: {emotion}")
 
+    def set_call_config(self, config: dict[str, Any]) -> dict[str, Any]:
+        for k, v in (config or {}).items():
+            if k in self._call_config:
+                self._call_config[k] = v
+        self._call_config["auto_lift_start_hour"] = int(self._call_config["auto_lift_start_hour"]) % 24
+        self._call_config["auto_lift_end_hour"] = int(self._call_config["auto_lift_end_hour"]) % 24
+        return dict(self._call_config)
+
+    def _in_auto_lift_window(self, hour: int) -> bool:
+        start = int(self._call_config["auto_lift_start_hour"])
+        end = int(self._call_config["auto_lift_end_hour"])
+        if start == end:
+            return True
+        if start < end:
+            return start <= hour <= end
+        return hour >= start or hour < end
+
+    async def handle_incoming_call(
+        self,
+        caller_name: str,
+        relation: str = "",
+        phone: str = "",
+        allow_auto_actions: bool = False,
+    ) -> dict[str, Any]:
+        caller = (caller_name or "Unknown caller").strip()
+        rel = (relation or "").strip().lower()
+        now = datetime.now()
+        hour = now.hour
+
+        family_relations = {"mother", "mom", "father", "dad", "wife", "husband", "sister", "brother"}
+        high_priority = rel in family_relations
+
+        if rel in {"mother", "mom"}:
+            announce = (
+                "Sir, your mother is calling. Tell me what to do: lift for you, "
+                "or respond that you are busy and can call back?"
+            )
+        else:
+            relation_label = relation.strip() if relation else "contact"
+            announce = (
+                f"Sir, {caller} is calling ({relation_label}). Tell me: lift now, "
+                "or send busy response with note request."
+            )
+
+        await self.tools.speak(announce)
+
+        auto_lift_allowed = (
+            allow_auto_actions
+            and bool(self._call_config["auto_lift_enabled"])
+            and self._in_auto_lift_window(hour)
+            and (high_priority or bool(self._call_config["auto_lift_all"]))
+        )
+
+        action_taken = "awaiting_user_instruction"
+        action_success = False
+        sent_text = ""
+
+        if auto_lift_allowed:
+            script = str(self._call_config["lift_script_template"]).replace("{caller}", caller)
+            action_success = await self.tools.answer_call_with_tts(caller=caller, script=script)
+            action_taken = "auto_lifted" if action_success else "auto_lift_failed"
+            sent_text = script
+            if not action_success and bool(self._call_config["auto_busy_reply"]):
+                sent_text = str(self._call_config["busy_reply_template"]).replace("{caller}", caller)
+                target = phone.strip() or caller
+                action_success = await self.tools.send_message(contact=target, text=sent_text, platform="call_sms")
+                action_taken = "busy_reply_sent" if action_success else "busy_reply_failed"
+        elif allow_auto_actions and bool(self._call_config["auto_busy_reply"]):
+            sent_text = str(self._call_config["busy_reply_template"]).replace("{caller}", caller)
+            target = phone.strip() or caller
+            action_success = await self.tools.send_message(contact=target, text=sent_text, platform="call_sms")
+            action_taken = "busy_reply_sent" if action_success else "busy_reply_failed"
+            if action_success and bool(self._call_config["create_callback_reminder"]):
+                await self.tools.create_reminder(title=f"Call back {caller}")
+
+        if action_success:
+            self._auto_message_count += 1
+            await self.memory.save_event(
+                {
+                    "type": "auto_reply_sent",
+                    "content": sent_text,
+                    "intent": "call_assist",
+                    "emotion": "neutral",
+                    "user_id": "pavan",
+                    "timestamp": time.time(),
+                    "hour": hour,
+                    "day": now.weekday(),
+                }
+            )
+
+        await self.memory.save_event(
+            {
+                "type": "incoming_call",
+                "content": json.dumps(
+                    {
+                        "caller": caller,
+                        "relation": rel,
+                        "phone": phone,
+                        "action_taken": action_taken,
+                    }
+                ),
+                "intent": "call_assist",
+                "emotion": "neutral",
+                "user_id": "pavan",
+                "timestamp": time.time(),
+                "hour": hour,
+                "day": now.weekday(),
+            }
+        )
+
+        return {
+            "caller": caller,
+            "relation": rel,
+            "announcement": announce,
+            "options": [
+                "lift_for_me",
+                "send_busy_note",
+                "set_callback_reminder",
+            ],
+            "auto_action_allowed": allow_auto_actions,
+            "action_taken": action_taken,
+            "success": action_success,
+            "configured_window": {
+                "start_hour": self._call_config["auto_lift_start_hour"],
+                "end_hour": self._call_config["auto_lift_end_hour"],
+            },
+        }
+
+    async def build_styled_reply(
+        self,
+        incoming_text: str,
+        intent: str = "small_talk",
+        user_id: str = "pavan",
+        contact: str = "",
+        platform: str = "auto",
+        auto_send: bool = False,
+    ) -> dict[str, Any]:
+        styled = await self.style.generate_reply(incoming_text=incoming_text, intent=intent, user_id=user_id)
+        sent = False
+        if auto_send and contact.strip():
+            sent = await self.tools.send_message(contact=contact, text=styled["reply"], platform=platform)
+            if sent:
+                self._auto_message_count += 1
+                now = datetime.now()
+                await self.memory.save_event(
+                    {
+                        "type": "auto_reply_sent",
+                        "content": styled["reply"],
+                        "intent": intent,
+                        "emotion": "neutral",
+                        "user_id": user_id,
+                        "timestamp": time.time(),
+                        "hour": now.hour,
+                        "day": now.weekday(),
+                    }
+                )
+        return {
+            **styled,
+            "sent": sent,
+            "contact": contact,
+            "platform": platform,
+        }
+
+    async def get_work_summary(self) -> dict[str, Any]:
+        auto_replies = await self.memory.count_events("auto_reply_sent")
+        call_events = await self.memory.count_events("incoming_call")
+        user_inputs = await self.memory.count_events("user_input")
+        stats = await self.memory.get_stats()
+        return {
+            "auto_responses_sent": auto_replies,
+            "incoming_calls_handled": call_events,
+            "user_messages_observed": user_inputs,
+            "decisions_made": stats.get("decisions", 0),
+            "active_goals": stats.get("active_goals", 0),
+        }
+
     # ═══════════════════════════════════════════════════════
     #  STATUS & CONTROL
     # ═══════════════════════════════════════════════════════
@@ -392,7 +582,13 @@ class JarvisAGI:
                 "hour":     self._world_state.hour,
                 "mood":     self._world_state.pavan_mood,
                 "weekend":  self._world_state.is_weekend,
-            }
+            },
+            "auto_messages_sent": self._auto_message_count,
+            "call_assistant": {
+                "auto_lift_enabled": self._call_config["auto_lift_enabled"],
+                "auto_lift_start_hour": self._call_config["auto_lift_start_hour"],
+                "auto_lift_end_hour": self._call_config["auto_lift_end_hour"],
+            },
         }
 
     def set_confidence_threshold(self, threshold: float):

@@ -57,4 +57,52 @@ class AGIService {
       headers: {'Content-Type':'application/json'},
       body: jsonEncode(body));
   }
+
+  Future<Map<String,dynamic>> configureCallAssistant(Map<String,dynamic> body) async {
+    final r = await http.post(Uri.parse('$_agiBase/call/config'),
+      headers: {'Content-Type':'application/json'},
+      body: jsonEncode(body));
+    return jsonDecode(r.body) as Map<String,dynamic>;
+  }
+
+  Future<Map<String,dynamic>> incomingCall({
+    required String callerName,
+    String relation = '',
+    String phone = '',
+    bool allowAutoActions = false,
+  }) async {
+    final r = await http.post(Uri.parse('$_agiBase/call/incoming'),
+      headers: {'Content-Type':'application/json'},
+      body: jsonEncode({
+        'caller_name': callerName,
+        'relation': relation,
+        'phone': phone,
+        'allow_auto_actions': allowAutoActions,
+      }));
+    return jsonDecode(r.body) as Map<String,dynamic>;
+  }
+
+  Future<Map<String,dynamic>> styledReply({
+    required String incomingText,
+    String intent = 'small_talk',
+    String contact = '',
+    String platform = 'auto',
+    bool autoSend = false,
+  }) async {
+    final r = await http.post(Uri.parse('$_agiBase/style/reply'),
+      headers: {'Content-Type':'application/json'},
+      body: jsonEncode({
+        'incoming_text': incomingText,
+        'intent': intent,
+        'contact': contact,
+        'platform': platform,
+        'auto_send': autoSend,
+      }));
+    return jsonDecode(r.body) as Map<String,dynamic>;
+  }
+
+  Future<Map<String,dynamic>> getWorkSummary() async {
+    final r = await http.get(Uri.parse('$_agiBase/work/summary'));
+    return jsonDecode(r.body) as Map<String,dynamic>;
+  }
 }

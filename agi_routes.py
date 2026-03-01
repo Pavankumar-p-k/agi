@@ -41,6 +41,30 @@ class ConfigRequest(BaseModel):
     dnd_mode:             Optional[bool]  = None
     dnd_hours:            Optional[list]  = None
 
+class IncomingCallRequest(BaseModel):
+    caller_name: str
+    relation: str = ""
+    phone: str = ""
+    allow_auto_actions: bool = False
+
+class CallConfigRequest(BaseModel):
+    auto_lift_enabled: Optional[bool] = None
+    auto_lift_start_hour: Optional[int] = None
+    auto_lift_end_hour: Optional[int] = None
+    auto_lift_all: Optional[bool] = None
+    auto_busy_reply: Optional[bool] = None
+    busy_reply_template: Optional[str] = None
+    lift_script_template: Optional[str] = None
+    create_callback_reminder: Optional[bool] = None
+
+class StyledReplyRequest(BaseModel):
+    incoming_text: str
+    intent: str = "small_talk"
+    user_id: str = "pavan"
+    contact: str = ""
+    platform: str = "auto"
+    auto_send: bool = False
+
 
 # ── Routes ─────────────────────────────────────────────────
 
@@ -177,6 +201,49 @@ async def configure_agi(req: ConfigRequest):
         changes["dnd_mode"] = req.dnd_mode
 
     return {"updated": changes}
+
+
+@router.post("/call/config")
+async def configure_call_assistant(req: CallConfigRequest):
+    agi = get_agi()
+    payload = req.model_dump(exclude_none=True)
+    return {"call_config": agi.set_call_config(payload)}
+
+
+@router.post("/call/incoming")
+async def incoming_call(req: IncomingCallRequest):
+    agi = get_agi()
+    return await agi.handle_incoming_call(
+        caller_name=req.caller_name,
+        relation=req.relation,
+        phone=req.phone,
+        allow_auto_actions=req.allow_auto_actions,
+    )
+
+
+@router.post("/style/reply")
+async def styled_reply(req: StyledReplyRequest):
+    agi = get_agi()
+    return await agi.build_styled_reply(
+        incoming_text=req.incoming_text,
+        intent=req.intent,
+        user_id=req.user_id,
+        contact=req.contact,
+        platform=req.platform,
+        auto_send=req.auto_send,
+    )
+
+
+@router.get("/style/profile")
+async def style_profile(user_id: str = "pavan"):
+    agi = get_agi()
+    return await agi.style.get_profile(user_id=user_id)
+
+
+@router.get("/work/summary")
+async def work_summary():
+    agi = get_agi()
+    return await agi.get_work_summary()
 
 
 @router.post("/trigger")
