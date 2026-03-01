@@ -1,61 +1,18 @@
-*.i
-*.ii
-*.gpu
-*.ptx
-*.cubin
-*.fatbin
-
-# Python
 __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
+.pytest_cache/
+.mypy_cache/
+
+data/*.db
+data/*.sqlite
+data/*.sqlite3
+
 .venv/
 venv/
+env/
 
-# Env and secrets
-.env
-*.env
-firebase-credentials.json
-
-# Databases and runtime data
-*.db
-*.sqlite
-*.sqlite3
-run_logs/
-tmp/
-backend/data/
-backend/faces/
-
-# Node
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Flutter / Dart
-.dart_tool/
-.flutter-plugins
-.flutter-plugins-dependencies
-build/
-coverage/
-
-# Android / iOS generated
-**/.gradle/
-**/android/.cxx/
-**/android/local.properties
-**/ios/Pods/
-**/ios/.symlinks/
-**/windows/flutter/ephemeral/
-jarvis_app/android/app/google-services.json
-jarvis_app/lib/firebase_options.local.dart
-
-# Large vendored SDK artifacts
-third_party/
-
-# IDE / OS
 .idea/
 .vscode/
-*.iml
-.DS_Store
-Thumbs.db
+*.log
