@@ -2,6 +2,10 @@
 core/main.py — JARVIS FastAPI server: all routes + WebSocket + startup
 """
 import asyncio
+import base64
+import httpx
+import json
+import re
 from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import Optional, List
@@ -11,16 +15,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
-import base64
 
 from .config import HOST, PORT, ALLOWED_ORIGINS
 from .database import get_db, init_db, User
 from .auth import verify_token, init_firebase
+from .action_executor import execute_action
 
 startup_status = {
     "autonomy": False,
     "hybrid": False,
     "warnings": [],
+    "jarvis_os": None
 }
 
 
@@ -73,6 +78,14 @@ async def lifespan(app: FastAPI):
 
     # Init DB
     await init_db()
+
+    # Init JARVIS OS
+    try:
+        from jarvis_os.bootstrap import build_jarvis_os
+        startup_status["jarvis_os"] = build_jarvis_os()
+        print("  [JARVIS OS] Core runtime initialized ✓")
+    except Exception as e:
+        print(f"  [WARNING] JARVIS OS init failed: {e}")
 
     # Init Firebase
     init_firebase()
@@ -315,34 +328,125 @@ async def health():
 # ══════════════════════════════════════════════
 #  ROUTES — ASSISTANT
 # ══════════════════════════════════════════════
+INTENT_PROMPT = """You are the intent engine for JARVIS AI assistant.
+Your goal is to map user requests to specific tool calls.
+Analyze the user message and return ONLY valid JSON. Nothing else.
+No explanation. No markdown. No code blocks. Just raw JSON.
+
+Available Tools:
+- open_url(url: string): Opens a specific website URL.
+- open_application(application: string): Launches a local application (e.g., notepad, code, calc).
+- search_google(query: string): Searches the web for information.
+- play_media(query: string): Searches and plays media (e.g. YouTube).
+- create_reminder(text: string, time: string): Sets a reminder for a future time.
+- chat(message: string): General conversation or explanation.
+
+JSON structure:
+{
+  "tool": "tool_name",
+  "parameters": { "arg_name": "value" }
+}
+
+Examples:
+"opn yt" → {"tool":"open_url","parameters":{"url":"https://youtube.com"}}
+"play beat it michael jackson" → {"tool":"play_media","parameters":{"query":"beat it michael jackson"}}
+"remind me call mom tomorrow 9am" → {"tool":"create_reminder","parameters":{"text":"call mom","time":"tomorrow 9am"}}
+"search latest python frameworks" → {"tool":"search_google","parameters":{"query":"latest python frameworks 2026"}}
+"open notepad" → {"tool":"open_application","parameters":{"application":"notepad"}}
+"what is recursion" → {"tool":"chat","parameters":{"message":"recursion explanation"}}
+"open vs code" → {"tool":"open_application","parameters":{"application":"code"}}
+"""
+
+async def extract_intent(message: str) -> dict:
+    try:
+        r = httpx.post(
+            "http://localhost:11434/api/chat",
+            json={
+                "model": "qwen3:4b",
+                "messages": [
+                    {"role": "system", "content": INTENT_PROMPT},
+                    {"role": "user", "content": message}
+                ],
+                "stream": False,
+                "options": {"temperature": 0}
+            },
+            timeout=30
+        )
+        raw = r.json()["message"]["content"]
+        # Strip <think> tags if model adds them
+        raw = re.sub(r'<think>.*?</think>', '', raw, flags=re.DOTALL).strip()
+        # Strip markdown code blocks if model adds them
+        raw = re.sub(r'```json|```', '', raw).strip()
+        return json.loads(raw)
+    except Exception as e:
+        print(f"[WARN] Intent extraction failed: {e}")
+        return {"tool": "chat", "parameters": {"message": message}}
+
 @app.post("/api/chat")
 async def chat(
     req: ChatRequest,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(verify_token)
 ):
-    from assistant.engine import jarvis
-    from core.database import ChatHistory
-    from core.model_router import route_request
-    
-    # Route based on privacy tier
-    model, tier, processed_query = route_request(req.message)
-    
-    result = await jarvis.process_text(processed_query, user.id)
-    result['privacy_tier'] = tier.value
-    result['model'] = model
-    result['reason'] = f"Routed to {tier.value} based on content classification."
+    message = req.message
+
+    # STEP A: Extract intent via LLM
+    intent_data = await extract_intent(message)
+    print(f"[INTENT] {message} → {intent_data}")
+
+    # STEP B: Execute real action via JARVIS OS Runtime
+    action_result = {"executed": False}
+    tool_name = intent_data.get("tool", "chat")
+    if tool_name != "chat":
+        action_result = execute_action(intent_data, startup_status["jarvis_os"])
+        print(f"[ACTION] {action_result}")
+
+    # STEP C: Build context for Ollama
+    system_context = "You are JARVIS, a personal AI assistant. Be concise and direct."
+    if action_result.get("executed"):
+        system_context += f"\n\nACTION COMPLETED: {json.dumps(action_result)}"
+        system_context += "\nConfirm this action naturally. Do not say you cannot do it."
+    elif tool_name != "chat" and not action_result.get("executed"):
+        system_context += f"\nACTION FAILED: {action_result.get('error', 'unknown error')}"
+        system_context += "\nTell user honestly what failed."
+
+    # STEP D: Get real Ollama response
+    try:
+        r = httpx.post(
+            "http://localhost:11434/api/chat",
+            json={
+                "model": "qwen3:4b",
+                "messages": [
+                    {"role": "system", "content": system_context},
+                    {"role": "user", "content": message}
+                ],
+                "stream": False
+            },
+            timeout=60
+        )
+        reply = r.json()["message"]["content"]
+        # Strip <think> tags
+        import re
+        reply = re.sub(r'<think>.*?</think>', '', reply, flags=re.DOTALL).strip()
+    except Exception as e:
+        reply = f"Ollama error: {str(e)}"
 
     # Save to history
-    db.add(ChatHistory(user_id=user.id, role="user", message=req.message))
-    db.add(ChatHistory(user_id=user.id, role="assistant", message=result["response"]))
+    from core.database import ChatHistory
+    db.add(ChatHistory(user_id=user.id, role="user", message=message))
+    db.add(ChatHistory(user_id=user.id, role="assistant", message=reply))
     await db.commit()
 
     # Log activity
     from notes.activity_tracker import activity_tracker
-    await activity_tracker.log(db, user.id, "voice_command", f"Chat: {req.message[:100]}")
+    await activity_tracker.log(db, user.id, "voice_command", f"Chat: {message[:100]}")
 
-    return result
+    return {
+        "response": reply,
+        "intent": intent_data,
+        "action": action_result,
+        "model": "qwen3:4b"
+    }
 
 
 @app.get("/api/chat/history")

@@ -1,47 +1,24 @@
 {
-  "generated": "2026-05-04T07:57:55.519587+00:00",
+  "generated": "2026-05-10T17:32:34.265664+00:00",
   "critical_findings": [],
   "weak_governance": [],
-  "missing_critical": [
-    "autonomy/l3_executor/executor_engine.py",
-    "autonomy/l3_executor/executor_layer.py",
-    "brain/ContinuousCognitionLoop.py",
-    "brain/CounterfactualSimulator.py",
-    "brain/adapters.py",
-    "jarvis_os/ProviderSimulationEngine.py"
-  ],
+  "missing_critical": [],
   "duplicates": {
-    "planner": [
-      "ai_os/planner.py",
-      "decision/goal_planner.py",
-      "jarvis_os/agents/planner_agent.py",
-      "orchestration/StrategicPlanner.py"
-    ],
-    "governance": [
-      "brain/GovernanceValidator.py",
-      "brain/SelfGovernanceMonitor.py",
-      "governance/GovernanceValidator.py",
-      "test_governance.py"
-    ],
-    "runtime": [
-      "runtime/ModelRuntimeManager.py"
-    ],
-    "memory": [
-      "ai_os/memory.py",
-      "jarvis_os/ProviderStrategicMemory.py",
-      "jarvis_os/compat/legacy_memory.py"
-    ]
+    "planner": [],
+    "governance": [],
+    "runtime": [],
+    "memory": []
   },
   "compileall": {
-    "command": "C:\\Users\\peter\\AppData\\Local\\Programs\\Python\\Python311\\python.exe -m compileall brain jarvis_os governance runtime autonomy",
+    "command": "/home/jules/.pyenv/versions/3.12.13/bin/python3 -m compileall brain jarvis_os governance runtime autonomy",
     "returncode": 0,
-    "stdout": "Listing 'brain'...\nListing 'jarvis_os'...\nListing 'jarvis_os\\\\agent'...\nListing 'jarvis_os\\\\agents'...\nListing 'jarvis_os\\\\browser'...\nListing 'jarvis_os\\\\cli'...\nListing 'jarvis_os\\\\compat'...\nListing 'jarvis_os\\\\control_plane'...\nListing 'jarvis_os\\\\core'...\nListing 'jarvis_os\\\\daemon'...\nListing 'jarvis_os\\\\interface'...\nListing 'jarvis_os\\\\memory'...\nListing 'jarvis_os\\\\models'...\nListing 'jarvis_os\\\\plugins'...\nListing 'jarvis_os\\\\runtime'...\nListing 'jarvis_os\\\\self_improve'...\nListing 'jarvis_os\\\\skills'...\nListing 'jarvis_os\\\\tool_router'...\nListing 'jarvis_os\\\\tools'...\nListing 'jarvis_os\\\\utils'...\nListing 'governance'...\nListing 'runtime'...\nListing 'autonomy'...\nListing 'autonomy\\\\api'...\nListing 'autonomy\\\\cli'...\nListing 'autonomy\\\\config'...\nListing 'autonomy\\\\core'...\nListing 'autonomy\\\\l1_brain'...\nListing 'autonomy\\\\l1_brain\\\\agents'...\nListing 'autonomy\\\\l1_brain\\\\context'...\nListing 'autonomy\\\\l1_brain\\\\memory'...\nListing 'autonomy\\\\l1_brain\\\\routing'...\nListing 'autonomy\\\\l2_assistant'...\nListing 'autonomy\\\\l2_assistant\\\\indexer'...\nListing 'autonomy\\\\l2_assistant\\\\reasoner'...\nListing 'autonomy\\\\l2_assistant\\\\suggestions'...\nListing 'autonomy\\\\l3_executor'...\nListing 'autonomy\\\\l3_executor\\\\logging'...\nListing 'autonomy\\\\l3_executor\\\\loop'...\nListing 'autonomy\\\\l3_executor\\\\planner'...\nListing 'autonomy\\\\l3_executor\\\\sandbox'...\nListing 'autonomy\\\\l4_controller'...\nListing 'autonomy\\\\l4_controller\\\\apps'...\nListing 'autonomy\\\\l4_controller\\\\commands'...\nListing 'autonomy\\\\l4_controller\\\\filesystem'...\nListing 'autonomy\\\\l4_controller\\\\safety'...\nListing 'autonomy\\\\memory'...\nListing 'autonomy\\\\patches'...\n",
+    "stdout": "Listing 'brain'...\nListing 'jarvis_os'...\nListing 'jarvis_os/agent'...\nListing 'jarvis_os/agents'...\nCompiling 'jarvis_os/agents/planner_agent.py'...\nListing 'jarvis_os/cli'...\nListing 'jarvis_os/compat'...\nCompiling 'jarvis_os/compat/legacy_memory.py'...\nListing 'jarvis_os/control_plane'...\nListing 'jarvis_os/core'...\nListing 'jarvis_os/daemon'...\nListing 'jarvis_os/economics'...\nListing 'jarvis_os/extensions'...\nListing 'jarvis_os/interface'...\nListing 'jarvis_os/links'...\nListing 'jarvis_os/memory'...\nListing 'jarvis_os/models'...\nListing 'jarvis_os/plugins'...\nListing 'jarvis_os/runtime'...\nListing 'jarvis_os/self_improve'...\nListing 'jarvis_os/skills'...\nListing 'jarvis_os/tool_router'...\nListing 'jarvis_os/tools'...\nListing 'jarvis_os/trust'...\nListing 'jarvis_os/utils'...\nListing 'jarvis_os/verification'...\nListing 'governance'...\nListing 'runtime'...\nListing 'autonomy'...\nListing 'autonomy/api'...\nListing 'autonomy/cli'...\nListing 'autonomy/config'...\nListing 'autonomy/core'...\nListing 'autonomy/l1_brain'...\nListing 'autonomy/l2_assistant'...\nListing 'autonomy/l3_executor'...\nListing 'autonomy/l4_controller'...\nListing 'autonomy/patches'...\n",
     "stderr": ""
   },
   "benchmarks": {
-    "command": "C:\\Users\\peter\\AppData\\Local\\Programs\\Python\\Python311\\python.exe -m pytest benchmarks/phase61 -q",
+    "command": "/home/jules/.pyenv/versions/3.12.13/bin/python3 -m pytest benchmarks/phase61 -q",
     "returncode": 0,
-    "stdout": "......                                                                   [100%]\n6 passed in 0.30s\n",
+    "stdout": "......                                                                   [100%]\n6 passed in 2.32s\n",
     "stderr": ""
   }
 }

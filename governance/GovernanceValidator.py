@@ -1,11 +1,6 @@
 from __future__ import annotations
-
 from typing import Any, Dict, Optional
-
-from brain.execution_context import BrainExecutionContext
 from jarvis_os.runtime.exceptions import GovernanceViolation
-from .strict_verification import StrictVerificationEngine, VerificationReport, VerificationVerdict
-
 
 class GovernanceValidator:
     """
@@ -27,7 +22,7 @@ class GovernanceValidator:
     def validate_execution(
         self,
         result: Dict[str, Any],
-        context: Optional[BrainExecutionContext] = None,
+        context: Optional[Any] = None,
     ) -> bool:
         task = str(result.get("task", "")).lower()
         if any(token in task for token in self._INJECTION_TOKENS):
@@ -39,14 +34,6 @@ class GovernanceValidator:
         self.last_decision = {
             "allowed": True,
             "task": result.get("task", ""),
-            "context": context.to_dict() if context else {},
+            "context": context if context else {},
         }
         return True
-
-
-__all__ = [
-    "GovernanceValidator",
-    "StrictVerificationEngine",
-    "VerificationReport",
-    "VerificationVerdict",
-]
