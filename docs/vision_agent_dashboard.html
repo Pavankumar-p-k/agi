@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>JARVIS — Vision Agent</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#00080F;
+  --bg1:#020E1A;
+  --bg2:#051525;
+  --bg3:#081E30;
+  --c:#00E5FF;
+  --g:#00FFAA;
+  --o:#FF6B00;
+  --r:#FF1744;
+  --p:#B040FF;
+  --b:#0066FF;
+  --y:#FFD600;
+  --t1:#C0EEFF;
+  --t2:#4A7A8A;
+  --t3:#1A3A4A;
+  --border:#0A2535;
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--t1);font-family:'Share Tech Mono',monospace;min-height:100vh;overflow-x:hidden}
+
+/* grid bg */
+body::before{content:'';position:fixed;inset:0;
+  background-image:linear-gradient(rgba(0,102,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,102,255,.04) 1px,transparent 1px);
+  background-size:48px 48px;pointer-events:none;z-index:0}
+/* scanlines */
+body::after{content:'';position:fixed;inset:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,229,255,.008) 3px,rgba(0,229,255,.008) 4px);
+  pointer-events:none;z-index:999}
+
+.wrap{position:relative;z-index:1;max-width:1140px;margin:0 auto;padding:0 20px 80px}
+
+/* ── HERO ── */
+header{text-align:center;padding:56px 20px 40px;position:relative}
+.hud{width:160px;height:160px;margin:0 auto 28px;position:relative}
+.hud svg{width:100%;height:100%}
+.r1{animation:spin 12s linear infinite;transform-origin:center}
+.r2{animation:spin 7s linear infinite reverse;transform-origin:center}
+.r3{animation:spin 4s linear infinite;transform-origin:center}
+.rcore{animation:glow 2s ease-in-out infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes glow{0%,100%{opacity:.3}50%{opacity:1}}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(0,229,255,.3)}50%{box-shadow:0 0 0 12px rgba(0,229,255,0)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+h1{font-family:'Orbitron',sans-serif;font-size:clamp(22px,4.5vw,42px);font-weight:900;
+   color:var(--c);letter-spacing:8px;text-shadow:0 0 30px rgba(0,229,255,.5);margin-bottom:8px}
+.sub{font-size:11px;letter-spacing:3px;color:var(--t2);margin-bottom:6px}
+.tag{font-family:'Orbitron',sans-serif;font-size:9px;letter-spacing:2px;color:var(--t3)}
+
+/* ── STATUS ROW ── */
+.status-row{display:flex;justify-content:center;gap:28px;margin-top:28px;flex-wrap:wrap}
+.stat{text-align:center}
+.stat-n{font-family:'Orbitron',sans-serif;font-size:26px;font-weight:900;color:var(--c);
+        text-shadow:0 0 20px rgba(0,229,255,.4)}
+.stat-l{font-size:9px;letter-spacing:2px;color:var(--t2);margin-top:2px}
+
+/* ── SECTION LABELS ── */
+.sec{font-family:'Orbitron',sans-serif;font-size:9px;letter-spacing:3px;color:var(--t2);
+     margin:48px 0 14px;display:flex;align-items:center;gap:10px}
+.sec::before,.sec::after{content:'';flex:1;height:1px}
+.sec::before{background:linear-gradient(90deg,transparent,var(--border))}
+.sec::after{background:linear-gradient(90deg,var(--border),transparent)}
+
+/* ── HOW IT WORKS PIPELINE ── */
+.pipeline{display:flex;align-items:stretch;gap:0;overflow-x:auto;padding:4px 0 10px}
+.pipe-step{flex:1;min-width:110px;background:var(--bg2);border:1px solid var(--border);
+           position:relative;padding:14px 12px 12px;cursor:pointer;
+           transition:border-color .25s,transform .2s}
+.pipe-step:hover{border-color:var(--acc,var(--c));transform:translateY(-2px)}
+.pipe-step.active{border-color:var(--acc,var(--c))}
+.pipe-step::after{content:'▸';position:absolute;right:-11px;top:50%;transform:translateY(-50%);
+                  color:var(--t3);font-size:14px;z-index:2}
+.pipe-step:last-child::after{display:none}
+.pipe-icon{font-size:22px;margin-bottom:8px}
+.pipe-title{font-family:'Orbitron',sans-serif;font-size:9px;letter-spacing:1px;color:var(--t1);margin-bottom:4px}
+.pipe-desc{font-size:10px;color:var(--t2);line-height:1.5}
+.pipe-detail{display:none;position:absolute;top:100%;left:0;right:0;z-index:10;
+             background:var(--bg3);border:1px solid var(--acc,var(--c));padding:12px;
+             font-size:11px;color:var(--t1);line-height:1.7;min-width:220px}
+.pipe-step.active .pipe-detail{display:block}
+
+/* ── LIVE DEMO ── */
+.demo-box{background:var(--bg1);border:1px solid var(--border);padding:0}
+.demo-top{display:grid;grid-template-columns:1fr 1fr;gap:0}
+.demo-left{padding:24px;border-right:1px solid var(--border)}
+.demo-right{padding:24px}
+.demo-label{font-family:'Orbitron',sans-serif;font-size:9px;letter-spacing:2px;color:var(--t2);margin-bottom:10px}
+.demo-input-row{display:flex;gap:8px;margin-bottom:12px}
+.demo-input{flex:1;background:var(--bg2);border:1px solid var(--border);color:var(--t1);
+            font-family:'Share Tech Mono',monospace;font-size:12px;padding:10px 12px;
+            outline:none;transition:border-color .2s}
+.demo-input:focus{border-color:var(--c)}
+.demo-btn{background:transparent;border:1px solid var(--c);color:var(--c);
+          font-family:'Orbitron',sans-serif;font-size:9px;letter-spacing:1px;
+          padding:10px 16px;cursor:pointer;transition:background .2s;white-space:nowrap}
+.demo-btn:hover{background:rgba(0,229,255,.1)}
+.demo-btn.running{border-color:var(--o);color:var(--o);animation:blink 1s infinite}
+.example-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.chip{background:var(--bg2);border:1px solid var(--border);color:var(--t2);
+      font-size:10px;padding:4px 9px;cursor:pointer;transition:border-color .2s,color .2s}
+.chip:hover{border-color:var(--c);color:var(--c)}
+.step-log{max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:4px}
+.log-row{display:flex;align-items:flex-start;gap:8px;padding:5px 8px;font-size:11px}
+.log-row.done{background:rgba(0,255,170,.04);border-left:2px solid var(--g)}
+.log-row.running{background:rgba(0,229,255,.04);border-left:2px solid var(--c);animation:blink .8s infinite}
+.log-row.failed{background:rgba(255,23,68,.04);border-left:2px solid var(--r)}
+.log-row.pending{border-left:2px solid var(--t3);opacity:.5}
+.log-n{font-family:'Orbitron',sans-serif;font-size:9px;color:var(--t3);min-width:22px}
+.log-icon{font-size:12px;min-width:18px}
+.log-text{flex:1;color:var(--t1);line-height:1.4}
+.log-action{font-size:10px;color:var(--t3);margin-top:2px}
+.result-box{margin-top:10px;padding:10px 12px;background:rgba(0,255,170,.05);
+            border:1px solid rgba(0,255,170,.25);font-size:12px;color:var(--g);display:none}
+.result-box.visible{display:block}
+
+/* ── TASK EXAMPLES GRID ── */
+.examples-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.ex-card{background:var(--bg2);border:1px solid var(--border);padding:14px;
+         cursor:pointer;transition:border-color .25s,transform .2s;position:relative;overflow:hidden}
+.ex-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;
+                 background:linear-gradient(90deg,transparent,var(--ecolor,var(--c)),transparent);opacity:.6}
+.ex-card:hover{border-color:var(--ecolor,var(--c));transform:translateY(-2px)}
+.ex-icon{font-size:26px;margin-bottom:8px}
+.ex-title{font-family:'Orbitron',sans-serif;font-size:11px;letter-spacing:1px;color:var(--t1);margin-bottom:4px}
+.ex-cmd{font-size:11px;color:var(--ecolor,var(--c));margin-bottom:6px;line-height:1.4}
+.ex-steps{font-size:10px;color:var(--t2);line-height:1.5}
+
+/* ── ARCHITECTURE ── */
+.arch-grid{display:grid;grid-template-columns:1fr 80px 1fr;gap:16px;align-items:center}
+.arch-col{background:var(--bg2);border:1px solid var(--border);padding:16px}
+.arch-title{font-family:'Orbitron',sans-serif;font-size:9px;letter-spacing:2px;color:var(--c);
+            margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.arch-row{font-size:11px;color:var(--t1);padding:5px 0;border-bottom:1px solid rgba(10,37,53,.6);
+          display:flex;align-items:center;gap:8px}
+.arch-row:last-child{border:none}
+.dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.arch-mid{display:flex;flex-direction:column;align-items:center;gap:6px}
+.arch-badge{font-family:'Orbitron',sans-serif;font-size:7px;letter-spacing:1px;
+            padding:5px 8px;border:1px solid var(--c);color:var(--c);background:rgba(0,229,255,.04);
+            text-align:center;white-space:nowrap}
+.vline{width:2px;height:24px;background:linear-gradient(to bottom,transparent,var(--c),transparent)}
+
+/* ── PLAYBOOKS TABLE ── */
+.pb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
+.pb-card{background:var(--bg2);border:1px solid var(--border);padding:11px 13px}
+.pb-name{font-family:'Orbitron',sans-serif;font-size:9px;letter-spacing:1.5px;color:var(--c);margin-bottom:5px}
+.pb-pat{font-size:10px;color:var(--t2);line-height:1.5;word-break:break-all}
+.pb-count{font-family:'Orbitron',sans-serif;font-size:10px;color:var(--t3);margin-top:5px}
+
+/* ── TECH ── */
+.tech-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px}
+.tech-pill{background:var(--bg2);border:1px solid var(--border);padding:10px 13px;
+           display:flex;align-items:center;gap:10px}
+.tech-icon{font-size:20px;flex-shrink:0}
+.tech-name{font-family:'Orbitron',sans-serif;font-size:10px;letter-spacing:1px;color:var(--t1)}
+.tech-role{font-size:10px;color:var(--t2);margin-top:2px}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:var(--bg1)}
+::-webkit-scrollbar-thumb{background:var(--border)}
+
+@media(max-width:700px){
+  .demo-top{grid-template-columns:1fr}
+  .demo-left{border-right:none;border-bottom:1px solid var(--border)}
+  .arch-grid{grid-template-columns:1fr}
+  .arch-mid{flex-direction:row}
+  .vline{width:24px;height:2px;background:linear-gradient(to right,transparent,var(--c),transparent)}
+  .pipeline{gap:0}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ══ HEADER ══ -->
+<header>
+  <div class="hud">
+    <svg viewBox="0 0 160 160">
+      <g class="r1">
+        <circle cx="80" cy="80" r="74" fill="none" stroke="rgba(0,229,255,.15)" stroke-width="1"/>
+        <path d="M80 6 A74 74 0 0 1 154 80" fill="none" stroke="#00E5FF" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M80 154 A74 74 0 0 1 6 80" fill="none" stroke="#00E5FF" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="80" cy="6" r="3" fill="#00E5FF"/>
+      </g>
+      <g class="r2">
+        <circle cx="80" cy="80" r="54" fill="none" stroke="rgba(0,102,255,.2)" stroke-width="1"/>
+        <path d="M80 26 A54 54 0 0 1 134 80" fill="none" stroke="#0066FF" stroke-width="1.2" stroke-linecap="round"/>
+        <path d="M26 80 A54 54 0 0 1 80 134" fill="none" stroke="#0066FF" stroke-width="1.2" stroke-linecap="round"/>
+      </g>
+      <g class="r3">
+        <circle cx="80" cy="80" r="34" fill="none" stroke="rgba(0,229,255,.1)" stroke-width="1"/>
+        <path d="M80 46 A34 34 0 0 1 114 80" fill="none" stroke="#00E5FF" stroke-width="1" stroke-linecap="round"/>
+      </g>
+      <circle class="rcore" cx="80" cy="80" r="20" fill="rgba(0,229,255,.06)" stroke="rgba(0,229,255,.4)" stroke-width="1"/>
+      <text x="80" y="86" text-anchor="middle" font-family="Orbitron" font-size="16" font-weight="900" fill="#00E5FF">V</text>
+    </svg>
+  </div>
+  <h1>VISION AGENT</h1>
+  <p class="sub">J.A.R.V.I.S — SCREEN INTELLIGENCE MODULE</p>
+  <p class="tag">SEE → UNDERSTAND → PLAN → EXECUTE → VERIFY</p>
+  <div class="status-row">
+    <div class="stat"><span class="stat-n">5</span><div class="stat-l">PIPELINE STAGES</div></div>
+    <div class="stat"><span class="stat-n" id="cnt-pb">9</span><div class="stat-l">PLAYBOOKS</div></div>
+    <div class="stat"><span class="stat-n">100%</span><div class="stat-l">OFFLINE</div></div>
+    <div class="stat"><span class="stat-n">LLava</span><div class="stat-l">VISION MODEL</div></div>
+  </div>
+</header>
+
+<!-- ══ PIPELINE ══ -->
+<div class="sec">HOW IT WORKS</div>
+<div class="pipeline" id="pipeline">
+  <div class="pipe-step" style="--acc:var(--c)" onclick="togglePipe(this)">
+    <div class="pipe-icon">📸</div>
+    <div class="pipe-title">1. SEE</div>
+    <div class="pipe-desc">Screenshot → JPEG → LLava</div>
+    <div class="pipe-detail">Takes a screenshot every step using MSS (fastest Python screencap library). Resizes to 50% for LLava speed. LLava describes: "Chrome browser open, Amazon homepage visible, search bar at top."</div>
+  </div>
+  <div class="pipe-step" style="--acc:var(--b)" onclick="togglePipe(this)">
+    <div class="pipe-icon">🧠</div>
+    <div class="pipe-title">2. UNDERSTAND</div>
+    <div class="pipe-desc">LLava reads screen context</div>
+    <div class="pipe-detail">LLava (vision LLM) reads the screenshot and returns a description of what's visible. This gives JARVIS real-time awareness of the screen state before every action — not guessing.</div>
+  </div>
+  <div class="pipe-step" style="--acc:var(--p)" onclick="togglePipe(this)">
+    <div class="pipe-icon">📋</div>
+    <div class="pipe-title">3. PLAN</div>
+    <div class="pipe-desc">Llama3 breaks into steps</div>
+    <div class="pipe-detail">Llama3:8b receives: screen description + your instruction → creates a JSON array of 5-25 steps. OR if instruction matches a known Playbook, the pre-built steps are used instantly (faster + more reliable).</div>
+  </div>
+  <div class="pipe-step" style="--acc:var(--o)" onclick="togglePipe(this)">
+    <div class="pipe-icon">🖱️</div>
+    <div class="pipe-title">4. EXECUTE</div>
+    <div class="pipe-desc">pyautogui controls PC</div>
+    <div class="pipe-detail">Each step runs via pyautogui: open_app, navigate (Ctrl+L), click (LLava finds exact pixel coords), type, press keys, scroll, hotkeys. LLava is called again for every click to find where exactly to click on screen.</div>
+  </div>
+  <div class="pipe-step" style="--acc:var(--g)" onclick="togglePipe(this)">
+    <div class="pipe-icon">✅</div>
+    <div class="pipe-title">5. VERIFY</div>
+    <div class="pipe-desc">LLava confirms it worked</div>
+    <div class="pipe-detail">After every click/navigate/press: takes new screenshot, LLava checks "did this step succeed?". If NO → self-correction: phi3:mini suggests an alternative approach, JARVIS retries. Emergency stop: move mouse to top-left corner.</div>
+  </div>
+</div>
+
+<!-- ══ LIVE DEMO ══ -->
+<div class="sec">LIVE DEMO — TYPE A COMMAND</div>
+<div class="demo-box">
+  <div class="demo-top">
+    <div class="demo-left">
+      <div class="demo-label">// COMMAND INPUT</div>
+      <div class="example-chips" id="chips"></div>
+      <div class="demo-input-row">
+        <input class="demo-input" id="cmd-input" placeholder='e.g. "open chrome buy white tshirt on amazon under 500"' autocomplete="off"/>
+        <button class="demo-btn" id="run-btn" onclick="runDemo()">▶ RUN</button>
+      </div>
+      <div class="result-box" id="result-box"></div>
+    </div>
+    <div class="demo-right">
+      <div class="demo-label">// EXECUTION LOG</div>
+      <div class="step-log" id="step-log">
+        <div style="font-size:11px;color:var(--t3);padding:8px">Waiting for task...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TASK EXAMPLES ══ -->
+<div class="sec">BUILT-IN TASK PLAYBOOKS</div>
+<div class="examples-grid" id="examples-grid"></div>
+
+<!-- ══ ARCHITECTURE ══ -->
+<div class="sec">SYSTEM ARCHITECTURE</div>
+<div class="arch-grid">
+  <div class="arch-col">
+    <div class="arch-title">🗣️ YOUR VOICE / TEXT</div>
+    <div class="arch-row"><div class="dot" style="background:var(--c)"></div>"open chrome buy white tshirt under 500"</div>
+    <div class="arch-row"><div class="dot" style="background:var(--c)"></div>"open insta find rahul send happy birthday"</div>
+    <div class="arch-row"><div class="dot" style="background:var(--c)"></div>"share latest photo with mom on whatsapp"</div>
+    <div class="arch-row"><div class="dot" style="background:var(--c)"></div>"open youtube play lofi music"</div>
+    <div class="arch-row"><div class="dot" style="background:var(--c)"></div>"delete all screenshots from photos"</div>
+    <div class="arch-row"><div class="dot" style="background:var(--c)"></div>Any natural language instruction</div>
+  </div>
+  <div class="arch-mid">
+    <div class="arch-badge">FastAPI<br>/vision/run</div>
+    <div class="vline"></div>
+    <div class="arch-badge">Playbook<br>Matcher</div>
+    <div class="vline"></div>
+    <div class="arch-badge">LLava +<br>Llama3</div>
+  </div>
+  <div class="arch-col">
+    <div class="arch-title">💻 PC ACTIONS (pyautogui)</div>
+    <div class="arch-row"><div class="dot" style="background:var(--g)"></div>subprocess.Popen → open Chrome/apps</div>
+    <div class="arch-row"><div class="dot" style="background:var(--g)"></div>Ctrl+L → type URL → Enter</div>
+    <div class="arch-row"><div class="dot" style="background:var(--g)"></div>LLava finds pixel coords → click(x,y)</div>
+    <div class="arch-row"><div class="dot" style="background:var(--g)"></div>typewrite() → keyboard input</div>
+    <div class="arch-row"><div class="dot" style="background:var(--g)"></div>scroll() → page scroll</div>
+    <div class="arch-row"><div class="dot" style="background:var(--g)"></div>Screenshot after each step → verify</div>
+  </div>
+</div>
+
+<!-- ══ PLAYBOOKS ══ -->
+<div class="sec">ALL PLAYBOOKS (PRE-BUILT STEP SEQUENCES)</div>
+<div class="pb-grid" id="pb-grid"></div>
+
+<!-- ══ TECH STACK ══ -->
+<div class="sec">TECHNOLOGY STACK</div>
+<div class="tech-grid" id="tech-grid"></div>
+
+</div><!-- /wrap -->
+
+<script>
+// ── Data ────────────────────────────────────────────────────
+
+const EXAMPLES = [
+  {icon:"🛒",title:"Amazon Shopping",color:"var(--o)",
+   cmd:"open chrome and buy white t-shirt under 500 on amazon",
+   steps:["Open Chrome","Navigate to amazon.in","Click search bar","Type 'white t-shirt'","Filter by price under ₹500","Click first result","Click Add to Cart"]},
+  {icon:"📸",title:"Instagram DM",color:"var(--p)",
+   cmd:"open instagram find rahul and send happy birthday cake",
+   steps:["Open Chrome","Go to instagram.com","Click Search icon","Type 'rahul'","Click Rahul's profile","Click Message","Type message","Press Enter to send"]},
+  {icon:"💬",title:"WhatsApp Message",color:"var(--g)",
+   cmd:"open whatsapp message mom — I'll be home by 8pm",
+   steps:["Open Chrome","Go to web.whatsapp.com","Wait for QR/load","Click search","Type 'mom'","Click chat","Type message","Press Enter"]},
+  {icon:"▶️",title:"YouTube Play",color:"var(--r)",
+   cmd:"open youtube and play lofi hip hop study music",
+   steps:["Open Chrome","Go to youtube.com","Click search bar","Type query","Press Enter","Click first video","Video plays"]},
+  {icon:"📷",title:"Share Photo",color:"var(--b)",
+   cmd:"open photos share latest photo to rahul on whatsapp",
+   steps:["Open Photos app","Click latest photo","Click Share","Click WhatsApp","Search Rahul","Click contact","Click Send"]},
+  {icon:"🗑️",title:"Delete Screenshots",color:"var(--y)",
+   cmd:"open photos delete all screenshots",
+   steps:["Open Photos","Click Screenshots album","Click Select All","Click Delete","Confirm delete","Done ✓"]},
+  {icon:"🔍",title:"Google Search",color:"var(--c)",
+   cmd:"google search latest iPhone 16 price in India",
+   steps:["Open Chrome","Navigate to Google","Search query","Results page opens"]},
+  {icon:"📧",title:"Send Gmail",color:"var(--g)",
+   cmd:"send email to rahul@gmail.com about meeting tomorrow at 3pm",
+   steps:["Open Chrome","Go to Gmail","Click Compose","Fill To/Subject/Body","Click Send"]},
+];
+
+const PLAYBOOKS = [
+  {name:"amazon_buy",  pat:"buy/search/order X on amazon",    steps:12},
+  {name:"flipkart_buy",pat:"buy X on flipkart",               steps:12},
+  {name:"instagram_dm",pat:"instagram find X send message",   steps:16},
+  {name:"whatsapp_send",pat:"whatsapp message X — text",      steps:12},
+  {name:"youtube_play",pat:"youtube play/search X",           steps:10},
+  {name:"google_search",pat:"google search for X",            steps:4},
+  {name:"photos_share",pat:"photos share latest to contact",  steps:14},
+  {name:"photos_delete",pat:"photos delete album X",          steps:10},
+  {name:"gmail_send",  pat:"send email to X about Y",         steps:15},
+];
+
+const TECH = [
+  {icon:"🐍",name:"Python 3.11",      role:"Backend language"},
+  {icon:"⚡",name:"FastAPI",           role:"REST API server"},
+  {icon:"🖥️",name:"MSS",              role:"Ultra-fast screencap"},
+  {icon:"🖱️",name:"pyautogui",        role:"Mouse & keyboard control"},
+  {icon:"👁️",name:"LLava:latest",     role:"Screen understanding"},
+  {icon:"🧠",name:"Llama3:8b",        role:"Step planning"},
+  {icon:"⚡",name:"phi3:mini",         role:"Self-correction"},
+  {icon:"📦",name:"Pillow",            role:"Image resizing"},
+  {icon:"🔗",name:"httpx",             role:"Async HTTP client"},
+  {icon:"📱",name:"ADB (optional)",   role:"Android control"},
+];
+
+const CHIPS = [
+  "buy white tshirt on amazon under 500",
+  "instagram dm rahul happy birthday",
+  "whatsapp mom I'm home",
+  "play lofi music on youtube",
+  "share latest photo to rahul",
+];
+
+// ── Build UI ─────────────────────────────────────────────────
+
+// Chips
+const chipsEl = document.getElementById("chips");
+CHIPS.forEach(c => {
+  const el = document.createElement("div");
+  el.className = "chip";
+  el.textContent = c;
+  el.onclick = () => { document.getElementById("cmd-input").value = c; };
+  chipsEl.appendChild(el);
+});
+
+// Examples grid
+const eg = document.getElementById("examples-grid");
+EXAMPLES.forEach(e => {
+  const d = document.createElement("div");
+  d.className = "ex-card";
+  d.style.setProperty("--ecolor", e.color);
+  d.innerHTML = `
+    <div class="ex-icon">${e.icon}</div>
+    <div class="ex-title">${e.title.toUpperCase()}</div>
+    <div class="ex-cmd">"${e.cmd}"</div>
+    <div class="ex-steps">Steps: ${e.steps.join(" → ")}</div>`;
+  d.onclick = () => {
+    document.getElementById("cmd-input").value = e.cmd;
+    document.getElementById("cmd-input").scrollIntoView({behavior:"smooth"});
+    runDemo(e.steps, e.title);
+  };
+  eg.appendChild(d);
+});
+
+// Playbooks grid
+const pg = document.getElementById("pb-grid");
+PLAYBOOKS.forEach(p => {
+  const d = document.createElement("div");
+  d.className = "pb-card";
+  d.innerHTML = `
+    <div class="pb-name">${p.name.toUpperCase().replace(/_/g," ")}</div>
+    <div class="pb-pat">${p.pat}</div>
+    <div class="pb-count">${p.steps} steps pre-built</div>`;
+  pg.appendChild(d);
+});
+
+// Tech grid
+const tg = document.getElementById("tech-grid");
+TECH.forEach(t => {
+  const d = document.createElement("div");
+  d.className = "tech-pill";
+  d.innerHTML = `<div class="tech-icon">${t.icon}</div><div><div class="tech-name">${t.name}</div><div class="tech-role">${t.role}</div></div>`;
+  tg.appendChild(d);
+});
+
+// ── Pipeline toggle ───────────────────────────────────────────
+function togglePipe(el) {
+  const all = document.querySelectorAll(".pipe-step");
+  const wasActive = el.classList.contains("active");
+  all.forEach(s => s.classList.remove("active"));
+  if (!wasActive) el.classList.add("active");
+}
+
+// ── Demo runner ───────────────────────────────────────────────
+let _demoRunning = false;
+
+function runDemo(preSteps, title) {
+  if (_demoRunning) return;
+  const input = document.getElementById("cmd-input");
+  const btn   = document.getElementById("run-btn");
+  const log   = document.getElementById("step-log");
+  const res   = document.getElementById("result-box");
+
+  const cmd = input.value.trim();
+  if (!cmd) return;
+
+  // Find matching example steps
+  const ex = EXAMPLES.find(e => cmd.toLowerCase().includes(e.title.toLowerCase().split(" ")[0].toLowerCase()) ||
+                                  e.cmd.toLowerCase().includes(cmd.toLowerCase().split(" ").slice(0,3).join(" ")));
+  const steps = preSteps || (ex ? ex.steps : [
+    "Screenshot current screen","Plan execution steps","Open target app","Navigate to destination",
+    "Find UI element","Click element","Type input","Verify result","Task complete",
+  ]);
+  const taskTitle = title || ex?.title || cmd.split(" ").slice(0,4).join(" ");
+
+  _demoRunning = true;
+  btn.className = "demo-btn running";
+  btn.textContent = "⟳ RUNNING";
+  log.innerHTML = "";
+  res.className = "result-box";
+
+  let i = 0;
+  function nextStep() {
+    if (i >= steps.length) {
+      btn.className = "demo-btn";
+      btn.textContent = "▶ RUN";
+      _demoRunning = false;
+      res.className = "result-box visible";
+      res.innerHTML = `✓ Task complete: ${taskTitle} — ${steps.length} steps done`;
+      return;
+    }
+    const s = steps[i];
+    const row = document.createElement("div");
+    row.className = "log-row running";
+    const icons = ["📸","🧠","🖥️","🌐","👁️","🖱️","⌨️","✅","🎯","⏳"];
+    row.innerHTML = `<span class="log-n">${String(i+1).padStart(2,"0")}</span><span class="log-icon">${icons[i%icons.length]}</span><div><div class="log-text">${s}</div><div class="log-action">${getAction(s)}</div></div>`;
+    log.appendChild(row);
+    log.scrollTop = log.scrollHeight;
+
+    setTimeout(() => {
+      row.className = "log-row done";
+      i++;
+      setTimeout(nextStep, 300 + Math.random()*400);
+    }, 600 + Math.random()*800);
+  }
+  nextStep();
+}
+
+function getAction(desc) {
+  const d = desc.toLowerCase();
+  if (d.includes("open")) return "action: open_app";
+  if (d.includes("navigate") || d.includes("go to") || d.includes("amazon") || d.includes("instagram") || d.includes("youtube")) return "action: navigate";
+  if (d.includes("click") || d.includes("tap")) return "action: click";
+  if (d.includes("type") || d.includes("search")) return "action: type";
+  if (d.includes("screenshot") || d.includes("see") || d.includes("verify")) return "action: screenshot";
+  if (d.includes("wait")) return "action: wait";
+  if (d.includes("press") || d.includes("enter")) return "action: press";
+  return "action: execute";
+}
+
+// Enter key
+document.getElementById("cmd-input").addEventListener("keydown", e => {
+  if (e.key === "Enter") runDemo();
+});
+
+// Auto-animate pipeline on page load
+setTimeout(() => {
+  document.querySelectorAll(".pipe-step")[0]?.classList.add("active");
+}, 800);
+</script>
+</body>
+</html>

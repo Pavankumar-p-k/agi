@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "jarvis-launcher"
+version = "0.1.0"
+description = "Unified JARVIS launcher for CLI, server, GUI, models, and IDE integrations."
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [
+  { name = "JARVIS" }
+]
+dependencies = []
+
+[project.scripts]
+jarvis = "jarvis:main"
+
+[tool.setuptools]
+py-modules = ["jarvis"]
+
+[tool.setuptools.packages.find]
+include = ["jarvis_os*"]

@@ -1,0 +1,126 @@
+# Unused Modules Report
+
+- This report is conservative: only low-confidence orphan candidates are listed.
+- No source module was automatically removed based only on this static analysis.
+
+## Low-Confidence Orphan Candidates
+- `apps\jarvis_app\ios\Flutter\ephemeral\flutter_lldb_helper.py`
+- `archive\duplicates\files (6)\routes.py`
+- `archive\duplicates\files (7)\routes.py`
+- `archive\duplicates\files (9)\main.py`
+- `backend\agents\__init__.py`
+- `backend\agents\all_agents.py`
+- `backend\agents\classifier.py`
+- `backend\agents\emotion.py`
+- `backend\agents\generator.py`
+- `backend\agents\quality.py`
+- `backend\api\__init__.py`
+- `backend\api\agi_routes.py`
+- `backend\api\main_integration.py`
+- `backend\api\server.py`
+- `backend\api\vision_routes.py`
+- `backend\assistant\__init__.py`
+- `backend\assistant\engine.py`
+- `backend\automation\__init__.py`
+- `backend\automation\call_sync_server.py`
+- `backend\automation\messaging.py`
+- `backend\automation\routes.py`
+- `backend\autonomy\__init__.py`
+- `backend\autonomy\api\__init__.py`
+- `backend\autonomy\cli\__init__.py`
+- `backend\autonomy\cli\jarvis_cli.py`
+- `backend\autonomy\core\__init__.py`
+- `backend\autonomy\core\autonomous_system.py`
+- `backend\autonomy\l1_brain\__init__.py`
+- `backend\autonomy\l1_brain\brain_ext.py`
+- `backend\autonomy\l2_assistant\__init__.py`
+- `backend\autonomy\l2_assistant\assistant_engine.py`
+- `backend\autonomy\l3_executor\__init__.py`
+- `backend\autonomy\l3_executor\executor_engine.py`
+- `backend\autonomy\l4_controller\__init__.py`
+- `backend\autonomy\l4_controller\system_controller.py`
+- `backend\autonomy\patches\__init__.py`
+- `backend\autonomy\setup.py`
+- `backend\core\__init__.py`
+- `backend\core\agi_core.py`
+- `backend\core\auth.py`
+- `backend\core\config.py`
+- `backend\core\database.py`
+- `backend\core\main.py`
+- `backend\core\model_router.py`
+- `backend\core\vision_agent.py`
+- `backend\decision\__init__.py`
+- `backend\decision\action_executor.py`
+- `backend\decision\goal_planner.py`
+- `backend\gpu\__init__.py`
+- `backend\gpu\optimizer.py`
+- `backend\gpu\pool.py`
+- `backend\jarvis_os\__init__.py`
+- `backend\jarvis_os\agents\__init__.py`
+- `backend\jarvis_os\api\routes.py`
+- `backend\jarvis_os\browser\__init__.py`
+- `backend\jarvis_os\control_plane\__init__.py`
+- `backend\jarvis_os\daemon\__init__.py`
+- `backend\jarvis_os\executor\__init__.py`
+- `backend\jarvis_os\executor\executor.py`
+- `backend\jarvis_os\interface\__init__.py`
+- `backend\jarvis_os\learning\__init__.py`
+- `backend\jarvis_os\learning\learning_engine.py`
+- `backend\jarvis_os\memory\__init__.py`
+- `backend\jarvis_os\models\__init__.py`
+- `backend\jarvis_os\runtime\config.py`
+- `backend\jarvis_os\runtime\logger.py`
+- `backend\jarvis_os\safety\__init__.py`
+- `backend\jarvis_os\safety\safety_layer.py`
+- `backend\jarvis_os\skills\__init__.py`
+- `backend\jarvis_os\tool_router\__init__.py`
+- `backend\learning\__init__.py`
+- `backend\learning\habit_tracker.py`
+- `backend\learning\pattern_engine.py`
+- `backend\learning\student_agi\api\__init__.py`
+- `backend\learning\student_agi\api\student_routes.py`
+- `backend\learning\student_agi\brain\__init__.py`
+- `backend\learning\student_agi\brain\student_brain.py`
+- `backend\learning\student_agi\cognition\__init__.py`
+- `backend\learning\student_agi\learning\__init__.py`
+- `backend\learning\student_agi\student_agi_main.py`
+- `backend\learning\student_agi\teacher\__init__.py`
+- `backend\learning\student_agi\teacher\jarvis_teacher.py`
+- `backend\media\__init__.py`
+- `backend\media\player.py`
+- `backend\memory\__init__.py`
+- `backend\memory\agi_memory.py`
+- `backend\memory\context.py`
+- `backend\memory\store.py`
+- `backend\network\__init__.py`
+- `backend\network\websocket_server.py`
+- `backend\notes\__init__.py`
+- `backend\notes\activity_tracker.py`
+- `backend\orchestrator\__init__.py`
+- `backend\orchestrator\brain.py`
+- `backend\pc_agent\__init__.py`
+- `backend\pc_agent\playbooks.py`
+- `backend\prediction\__init__.py`
+- `backend\prediction\predictor.py`
+- `backend\problem_solver\__init__.py`
+- `backend\problem_solver\solver.py`
+- `backend\reminders\__init__.py`
+- `backend\reminders\manager.py`
+- `backend\self_improve\__init__.py`
+- `backend\self_improve\reflector.py`
+- `backend\tools\__init__.py`
+- `backend\tools\tool_loader.py`
+- `backend\vision\__init__.py`
+- `backend\vision\face_recognition.py`
+- `jarvis_autonomous (1)\jarvis_autonomous\api\__init__.py`
+- `jarvis_autonomous (1)\jarvis_autonomous\cli\__init__.py`
+- `jarvis_autonomous (1)\jarvis_autonomous\cli\jarvis_cli.py`
+- `jarvis_autonomous (1)\jarvis_autonomous\core\__init__.py`
+- `jarvis_autonomous (1)\jarvis_autonomous\core\autonomous_system.py`
+- `jarvis_autonomous (1)\jarvis_autonomous\jarvis_main_autonomous.py`
+- `jarvis_autonomous (1)\jarvis_autonomous\l1_brain\__init__.py`
+- `jarvis_autonomous (1)\jarvis_autonomous\l1_brain\brain_ext.py`
+- `jarvis_autonomous (1)\jarvis_autonomous\l2_assistant\__init__.py`
+- `jarvis_autonomous (1)\jarvis_autonomous\l2_assistant\assistant_engine.py`
+- `jarvis_autonomous (1)\jarvis_autonomous\l3_executor\__init__.py`
+- `jarvis_autonomous (1)\jarvis_autonomous\l3_executor\executor_engine.py`

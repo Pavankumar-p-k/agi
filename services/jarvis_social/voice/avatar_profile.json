@@ -1,0 +1,17 @@
+{
+  "name": "JARVIS",
+  "style": "minimal_intelligent",
+  "theme": "dark_blue",
+  "primary_color": "#00B4D8",
+  "accent_color": "#0077B6",
+  "background": "#03045E",
+  "font": "monospace",
+  "animation_style": "subtle",
+  "avatar_type": "abstract_ai",
+  "icon": "circuit_sphere",
+  "evolution": {
+    "drift_rate_per_month": 0.01,
+    "last_evolved": 0,
+    "total_drift": 0.0
+  }
+}

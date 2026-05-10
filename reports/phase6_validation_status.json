@@ -1,0 +1,63 @@
+{
+  "audit": {
+    "scoped_roots": [
+      "jarvis_os",
+      "brain",
+      "runtime",
+      "governance",
+      "autonomy"
+    ],
+    "files_scanned": 153,
+    "theater": [
+      "autonomy/l2_assistant/assistant_engine.py: contains theater token",
+      "governance/MetaGovernor.py: contains theater token",
+      "jarvis_os/control_plane/scheduler.py: contains theater token",
+      "jarvis_os/daemon/supervisor.py: contains theater token",
+      "jarvis_os/memory/vector_store.py: contains theater token",
+      "jarvis_os/self_improvement.py: contains theater token"
+    ],
+    "weak_governance": [],
+    "parse_errors": [
+      "runtime/ModelRuntimeManager.py:90:expected 'except' or 'finally' block"
+    ],
+    "duplicate_groups": {
+      "governance_layers": [
+        "jarvis_os/RuntimeGovernanceLayer.py",
+        "governance/RuntimeGovernanceLayer.py"
+      ],
+      "planners": [
+        "jarvis_os/agents/planner_agent.py",
+        "jarvis_os/core/planner.py"
+      ],
+      "runtime_managers": [
+        "jarvis_os/model_runtime_manager.py"
+      ],
+      "memory_cores": [
+        "jarvis_os/ProviderStrategicMemory.py",
+        "jarvis_os/compat/legacy_memory.py",
+        "jarvis_os/memory/context_manager.py",
+        "jarvis_os/memory/memory_manager.py",
+        "jarvis_os/memory/vector_store.py",
+        "jarvis_os/memory/__init__.py"
+      ],
+      "orchestrators": [
+        "autonomy/core/autonomous_orchestrator.py"
+      ],
+      "self_repair": [
+        "brain/AdaptiveSelfRepair.py"
+      ]
+    }
+  },
+  "compileall": {
+    "command": "C:\\Users\\peter\\AppData\\Local\\Programs\\Python\\Python311\\python.exe -m compileall brain jarvis_os governance runtime autonomy",
+    "returncode": 1,
+    "stdout": "Listing 'brain'...\nCompiling 'brain\\\\AdaptiveSelfRepair.py'...\nCompiling 'brain\\\\IdentityKernel.py'...\nCompiling 'brain\\\\UnifiedBrain.py'...\nCompiling 'brain\\\\WorldStateEngine.py'...\nListing 'jarvis_os'...\nCompiling 'jarvis_os\\\\RuntimeGovernanceLayer.py'...\nListing 'jarvis_os\\\\agent'...\nListing 'jarvis_os\\\\agents'...\nListing 'jarvis_os\\\\browser'...\nCompiling 'jarvis_os\\\\browser\\\\controller.py'...\nListing 'jarvis_os\\\\cli'...\nListing 'jarvis_os\\\\compat'...\nCompiling 'jarvis_os\\\\compat\\\\legacy_contacts.py'...\nListing 'jarvis_os\\\\control_plane'...\nCompiling 'jarvis_os\\\\control_plane\\\\access_manager.py'...\nCompiling 'jarvis_os\\\\control_plane\\\\mobile_sync.py'...\nCompiling 'jarvis_os\\\\control_plane\\\\scheduler.py'...\nListing 'jarvis_os\\\\core'...\nListing 'jarvis_os\\\\daemon'...\nCompiling 'jarvis_os\\\\daemon\\\\supervisor.py'...\nListing 'jarvis_os\\\\interface'...\nListing 'jarvis_os\\\\memory'...\nCompiling 'jarvis_os\\\\memory\\\\vector_store.py'...\nListing 'jarvis_os\\\\models'...\nListing 'jarvis_os\\\\plugins'...\nListing 'jarvis_os\\\\runtime'...\nListing 'jarvis_os\\\\self_improve'...\nCompiling 'jarvis_os\\\\self_improvement.py'...\nListing 'jarvis_os\\\\skills'...\nListing 'jarvis_os\\\\tool_router'...\nCompiling 'jarvis_os\\\\tool_router\\\\router.py'...\nListing 'jarvis_os\\\\tools'...\nCompiling 'jarvis_os\\\\tools\\\\coding_tools.py'...\nListing 'jarvis_os\\\\utils'...\nListing 'governance'...\nCompiling 'governance\\\\GovernanceValidator.py'...\nCompiling 'governance\\\\MetaGovernor.py'...\nListing 'runtime'...\nCompiling 'runtime\\\\ModelRuntimeManager.py'...\n***   File \"runtime\\ModelRuntimeManager.py\", line 90\n    raise RuntimeError(\"Placeholder/swallowed exception removed\")\n    ^^^^^\nSyntaxError: expected 'except' or 'finally' block\n\nListing 'autonomy'...\nListing 'autonomy\\\\api'...\nListing 'autonomy\\\\cli'...\nListing 'autonomy\\\\config'...\nListing 'autonomy\\\\core'...\nCompiling 'autonomy\\\\core\\\\autonomous_orchestrator.py'...\nCompiling 'autonomy\\\\core\\\\proactive_worker.py'...\nListing 'autonomy\\\\l1_brain'...\nListing 'autonomy\\\\l1_brain\\\\agents'...\nCompiling 'autonomy\\\\l1_brain\\\\brain_layer.py'...\nListing 'autonomy\\\\l1_brain\\\\context'...\nListing 'autonomy\\\\l1_brain\\\\memory'...\nListing 'autonomy\\\\l1_brain\\\\routing'...\nListing 'autonomy\\\\l2_assistant'...\nCompiling 'autonomy\\\\l2_assistant\\\\assistant_engine.py'...\nCompiling 'autonomy\\\\l2_assistant\\\\assistant_layer.py'...\nListing 'autonomy\\\\l2_assistant\\\\indexer'...\nListing 'autonomy\\\\l2_assistant\\\\reasoner'...\nListing 'autonomy\\\\l2_assistant\\\\suggestions'...\nListing 'autonomy\\\\l3_executor'...\nListing 'autonomy\\\\l3_executor\\\\logging'...\nListing 'autonomy\\\\l3_executor\\\\loop'...\nListing 'autonomy\\\\l3_executor\\\\planner'...\nListing 'autonomy\\\\l3_executor\\\\sandbox'...\nListing 'autonomy\\\\l4_controller'...\nListing 'autonomy\\\\l4_controller\\\\apps'...\nListing 'autonomy\\\\l4_controller\\\\commands'...\nListing 'autonomy\\\\l4_controller\\\\filesystem'...\nListing 'autonomy\\\\l4_controller\\\\safety'...\nListing 'autonomy\\\\memory'...\nListing 'autonomy\\\\patches'...\nCompiling 'autonomy\\\\patches\\\\__init__.py'...\nCompiling 'autonomy\\\\patches\\\\world_state_patch.py'...\n",
+    "stderr": ""
+  },
+  "benchmarks": {
+    "command": "C:\\Users\\peter\\AppData\\Local\\Programs\\Python\\Python311\\python.exe -m pytest benchmarks/phase6 -q",
+    "returncode": 0,
+    "stdout": "........                                                                 [100%]\n8 passed in 1.22s\n",
+    "stderr": ""
+  }
+}

@@ -1,0 +1,4453 @@
+{
+  "jarvis": {
+    "file": "jarvis.py",
+    "imports": [
+      "__future__",
+      "argparse",
+      "json",
+      "os",
+      "pathlib",
+      "shutil",
+      "socket",
+      "subprocess",
+      "sys",
+      "time",
+      "urllib.error",
+      "urllib.parse",
+      "urllib.request"
+    ],
+    "classes": [],
+    "functions": [
+      "python_exe",
+      "common_env",
+      "run_command",
+      "spawn_background",
+      "prepare_command",
+      "run_autonomy_cli",
+      "cmd_cli",
+      "handle_cli_slash_command",
+      "cmd_autonomy_passthrough",
+      "cmd_status",
+      "cmd_goal",
+      "cmd_plan_preview",
+      "cmd_develop",
+      "backend_server_cmd",
+      "parse_server_location",
+      "is_port_open",
+      "is_server_reachable",
+      "wait_for_server",
+      "ensure_server_running",
+      "ollama_base_url",
+      "is_ollama_reachable",
+      "ensure_ollama_running",
+      "ensure_local_stack_running",
+      "request_json",
+      "poll_job",
+      "build_cli_context",
+      "is_agentic_prompt",
+      "print_plan_preview",
+      "workspace_snapshot",
+      "cmd_server",
+      "cmd_restart",
+      "stop_local_services",
+      "cmd_gui",
+      "cmd_up",
+      "cmd_student",
+      "cmd_models",
+      "cmd_extension",
+      "extract_reply",
+      "is_limited_mode_reply",
+      "build_parser",
+      "main"
+    ],
+    "lines": 963
+  },
+  "jarvis_conversation": {
+    "file": "jarvis_conversation.py",
+    "imports": [
+      "asyncio",
+      "core.model_router",
+      "gpu.pool",
+      "pathlib",
+      "sys"
+    ],
+    "classes": [],
+    "functions": [
+      "run_chat",
+      "main"
+    ],
+    "lines": 41
+  },
+  "jarvis_main": {
+    "file": "jarvis_main.py",
+    "imports": [
+      "pathlib",
+      "sys"
+    ],
+    "classes": [],
+    "functions": [
+      "main"
+    ],
+    "lines": 20
+  },
+  "tmp_orch_test": {
+    "file": "tmp_orch_test.py",
+    "imports": [
+      "asyncio",
+      "autonomy",
+      "sys",
+      "traceback"
+    ],
+    "classes": [],
+    "functions": [
+      "main"
+    ],
+    "lines": 16
+  },
+  "jarvis_flutter_dropin.flutter_lldb_helper": {
+    "file": "jarvis_flutter_dropin\\flutter_lldb_helper.py",
+    "imports": [
+      "lldb"
+    ],
+    "classes": [],
+    "functions": [
+      "handle_new_rx_page",
+      "__lldb_init_module"
+    ],
+    "lines": 32
+  },
+  "jarvis_model_upgrade.jarvis_model_config": {
+    "file": "jarvis_model_upgrade\\jarvis_model_config.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "lines": 95
+  },
+  "jarvis_model_upgrade_fromzip1.jarvis_model_config": {
+    "file": "jarvis_model_upgrade_fromzip1\\jarvis_model_config.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "lines": 95
+  },
+  "jarvis_student_agi.student_agi_main": {
+    "file": "jarvis_student_agi\\student_agi_main.py",
+    "imports": [
+      "__future__",
+      "asyncio",
+      "brain.student_brain",
+      "cognition.world_model",
+      "fastapi",
+      "fastapi.middleware.cors",
+      "json",
+      "logging",
+      "pathlib",
+      "pydantic",
+      "sys",
+      "teacher.jarvis_teacher",
+      "time",
+      "uvicorn"
+    ],
+    "classes": [
+      "TeachReq",
+      "AskReq",
+      "LearnReq",
+      "FeedbackReq",
+      "WorldReq",
+      "CausalReq"
+    ],
+    "functions": [
+      "status",
+      "teach",
+      "ask_student",
+      "give_feedback",
+      "learn_fact",
+      "daily_lesson",
+      "get_mistakes",
+      "get_progress",
+      "get_curriculum",
+      "get_curiosity",
+      "add_world_concept",
+      "add_causal",
+      "why",
+      "explain_analogy",
+      "check_consistency",
+      "health",
+      "autonomous_daily_loop",
+      "cli_main"
+    ],
+    "lines": 469
+  },
+  "scripts.extract_zips": {
+    "file": "scripts\\extract_zips.py",
+    "imports": [
+      "pathlib",
+      "zipfile"
+    ],
+    "classes": [],
+    "functions": [],
+    "lines": 14
+  },
+  "scripts.generate_project_summary": {
+    "file": "scripts\\generate_project_summary.py",
+    "imports": [
+      "os"
+    ],
+    "classes": [],
+    "functions": [],
+    "lines": 49
+  },
+  "scripts.integrate_extracted": {
+    "file": "scripts\\integrate_extracted.py",
+    "imports": [
+      "pathlib",
+      "shutil"
+    ],
+    "classes": [],
+    "functions": [],
+    "lines": 37
+  },
+  "scripts.integrate_into_backend": {
+    "file": "scripts\\integrate_into_backend.py",
+    "imports": [
+      "pathlib",
+      "shutil"
+    ],
+    "classes": [],
+    "functions": [
+      "integrate_autonomous",
+      "integrate_student_agi",
+      "integrate_flutter",
+      "main"
+    ],
+    "lines": 129
+  },
+  "services.jarvis_social.main": {
+    "file": "services\\jarvis_social\\main.py",
+    "imports": [
+      "__future__",
+      "argparse",
+      "asyncio",
+      "logging",
+      "os",
+      "sys",
+      "time"
+    ],
+    "classes": [],
+    "functions": [
+      "boot",
+      "setup_wizard",
+      "run_tests"
+    ],
+    "lines": 152
+  },
+  "services.jarvis_social.__init__": {
+    "file": "services\\jarvis_social\\__init__.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "lines": 1
+  },
+  "services.jarvis_social.brain.learning": {
+    "file": "services\\jarvis_social\\brain\\learning.py",
+    "imports": [
+      "__future__",
+      "db.schema",
+      "friends.registry",
+      "logging",
+      "re",
+      "time"
+    ],
+    "classes": [
+      "ShadowLearner"
+    ],
+    "functions": [],
+    "lines": 115
+  },
+  "services.jarvis_social.brain.router": {
+    "file": "services\\jarvis_social\\brain\\router.py",
+    "imports": [
+      "__future__",
+      "asyncio",
+      "dataclasses",
+      "logging",
+      "random",
+      "re",
+      "time",
+      "typing"
+    ],
+    "classes": [
+      "BrainResponse",
+      "LocalBrain",
+      "BrainRouter"
+    ],
+    "functions": [
+      "_call_server",
+      "_server_available",
+      "build_prompt"
+    ],
+    "lines": 217
+  },
+  "services.jarvis_social.brain.__init__": {
+    "file": "services\\jarvis_social\\brain\\__init__.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "lines": 0
+  },
+  "services.jarvis_social.config.__init__": {
+    "file": "services\\jarvis_social\\config\\__init__.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "lines": 0
+  },
+  "services.jarvis_social.dashboard.admin": {
+    "file": "services\\jarvis_social\\dashboard\\admin.py",
+    "imports": [
+      "__future__",
+      "db.schema",
+      "experiments.engine",
+      "friends.registry",
+      "hashlib",
+      "json",
+      "logging",
+      "os",
+      "pathlib",
+      "sqlite3",
+      "time",
+      "typing"
+    ],
+    "classes": [],
+    "functions": [
+      "_hash",
+      "run_dashboard"
+    ],
+    "lines": 455
+  },
+  "services.jarvis_social.dashboard.__init__": {
+    "file": "services\\jarvis_social\\dashboard\\__init__.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "lines": 0
+  },
+  "services.jarvis_social.db.schema": {
+    "file": "services\\jarvis_social\\db\\schema.py",
+    "imports": [
+      "__future__",
+      "json",
+      "os",
+      "pathlib",
+      "sqlite3",
+      "time",
+      "typing"
+    ],
+    "classes": [],
+    "functions": [
+      "connect",
+      "init_db",
+      "clamp",
+      "get_setting",
+      "set_setting"
+    ],
+    "lines": 242
+  },
+  "services.jarvis_social.db.__init__": {
+    "file": "services\\jarvis_social\\db\\__init__.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "lines": 0
+  },
+  "services.jarvis_social.experiments.engine": {
+    "file": "services\\jarvis_social\\experiments\\engine.py",
+    "imports": [
+      "__future__",
+      "dataclasses",
+      "db.schema",
+      "friends.registry",
+      "logging",
+      "random",
+      "sqlite3",
+      "time",
+      "typing"
+    ],
+    "classes": [
+      "Experiment",
+      "ExperimentEngine",
+      "Intervention",
+      "InterventionEngine"
+    ],
+    "functions": [],
+    "lines": 361
+  },
+  "services.jarvis_social.experiments.__init__": {
+    "file": "services\\jarvis_social\\experiments\\__init__.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "lines": 0
+  },
+  "services.jarvis_social.friends.registry": {
+    "file": "services\\jarvis_social\\friends\\registry.py",
+    "imports": [
+      "__future__",
+      "dataclasses",
+      "db.schema",
+      "difflib",
+      "json",
+      "sqlite3",
+      "time",
+      "typing"
+    ],
+    "classes": [
+      "FriendProfile",
+      "FriendRegistry"
+    ],
+    "functions": [],
+    "lines": 354
+  },
+  "services.jarvis_social.friends.__init__": {
+    "file": "services\\jarvis_social\\friends\\__init__.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "lines": 0
+  },
+  "services.jarvis_social.memory.cleanup": {
+    "file": "services\\jarvis_social\\memory\\cleanup.py",
+    "imports": [
+      "__future__",
+      "db.schema",
+      "logging",
+      "re",
+      "sqlite3",
+      "time"
+    ],
+    "classes": [
+      "MemoryCleanup"
+    ],
+    "functions": [],
+    "lines": 126
+  },
+  "services.jarvis_social.memory.__init__": {
+    "file": "services\\jarvis_social\\memory\\__init__.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "lines": 0
+  },
+  "services.jarvis_social.reply.auto_reply": {
+    "file": "services\\jarvis_social\\reply\\auto_reply.py",
+    "imports": [
+      "__future__",
+      "asyncio",
+      "brain.router",
+      "dataclasses",
+      "db.schema",
+      "friends.registry",
+      "logging",
+      "sqlite3",
+      "time",
+      "typing"
+    ],
+    "classes": [
+      "ReplyResult",
+      "AutoReplyEngine"
+    ],
+    "functions": [],
+    "lines": 248
+  },
+  "services.jarvis_social.reply.presence": {
+    "file": "services\\jarvis_social\\reply\\presence.py",
+    "imports": [
+      "__future__",
+      "asyncio",
+      "brain.router",
+      "db.schema",
+      "friends.registry",
+      "logging",
+      "random",
+      "time"
+    ],
+    "classes": [
+      "SocialPresenceEngine"
+    ],
+    "functions": [],
+    "lines": 83
+  },
+  "services.jarvis_social.reply.__init__": {
+    "file": "services\\jarvis_social\\reply\\__init__.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "lines": 0
+  },
+  "services.jarvis_social.tests.test_all": {
+    "file": "services\\jarvis_social\\tests\\test_all.py",
+    "imports": [
+      "asyncio",
+      "brain.learning",
+      "db.schema",
+      "experiments.engine",
+      "friends.registry",
+      "memory.cleanup",
+      "os",
+      "pytest",
+      "reply.auto_reply",
+      "sys",
+      "tempfile",
+      "time"
+    ],
+    "classes": [
+      "TestSchema",
+      "TestFriendRegistry",
+      "TestAutoReply",
+      "TestShadowLearner",
+      "TestExperimentEngine",
+      "TestInterventionEngine",
+      "TestMemoryCleanup"
+    ],
+    "functions": [
+      "tmp_db",
+      "registry",
+      "engine",
+      "intervention_engine"
+    ],
+    "lines": 528
+  },
+  "services.jarvis_social.tests.__init__": {
+    "file": "services\\jarvis_social\\tests\\__init__.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "lines": 0
+  },
+  "services.jarvis_social.voice.__init__": {
+    "file": "services\\jarvis_social\\voice\\__init__.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "lines": 0
+  },
+  "jarvis_student_agi.api.__init__": {
+    "file": "jarvis_student_agi\\api\\__init__.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "lines": 0
+  },
+  "jarvis_student_agi.brain.student_brain": {
+    "file": "jarvis_student_agi\\brain\\student_brain.py",
+    "imports": [
+      "__future__",
+      "asyncio",
+      "dataclasses",
+      "enum",
+      "httpx",
+      "json",
+      "logging",
+      "math",
+      "pathlib",
+      "re",
+      "sqlite3",
+      "time",
+      "typing",
+      "uuid"
+    ],
+    "classes": [
+      "Emotion",
+      "EmotionalState",
+      "Thought",
+      "ReasoningTrace",
+      "MistakeAnalysis",
+      "StudentBrain"
+    ],
+    "functions": [],
+    "lines": 900
+  },
+  "jarvis_student_agi.brain.__init__": {
+    "file": "jarvis_student_agi\\brain\\__init__.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "lines": 0
+  },
+  "jarvis_student_agi.cognition.world_model": {
+    "file": "jarvis_student_agi\\cognition\\world_model.py",
+    "imports": [
+      "__future__",
+      "dataclasses",
+      "json",
+      "logging",
+      "math",
+      "pathlib",
+      "re",
+      "sqlite3",
+      "time",
+      "typing"
+    ],
+    "classes": [
+      "WorldNode",
+      "WorldEdge",
+      "WorldModel",
+      "CausalEngine",
+      "AnalogyEngine",
+      "ConsistencyChecker",
+      "MetaCognition"
+    ],
+    "functions": [],
+    "lines": 460
+  },
+  "jarvis_student_agi.cognition.__init__": {
+    "file": "jarvis_student_agi\\cognition\\__init__.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "lines": 0
+  },
+  "jarvis_student_agi.learning.__init__": {
+    "file": "jarvis_student_agi\\learning\\__init__.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "lines": 0
+  },
+  "jarvis_student_agi.teacher.jarvis_teacher": {
+    "file": "jarvis_student_agi\\teacher\\jarvis_teacher.py",
+    "imports": [
+      "__future__",
+      "asyncio",
+      "brain.student_brain",
+      "dataclasses",
+      "enum",
+      "httpx",
+      "json",
+      "logging",
+      "re",
+      "time",
+      "typing",
+      "uuid"
+    ],
+    "classes": [
+      "TeachingStyle",
+      "Lesson",
+      "Question",
+      "GradingResult",
+      "TeachingSession",
+      "JarvisTeacher"
+    ],
+    "functions": [],
+    "lines": 688
+  },
+  "jarvis_student_agi.teacher.__init__": {
+    "file": "jarvis_student_agi\\teacher\\__init__.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "lines": 0
+  },
+  "jarvis_student_agi.tests.__init__": {
+    "file": "jarvis_student_agi\\tests\\__init__.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "lines": 0
+  },
+  "jarvis_model_upgrade_fromzip1.jarvis_updated.conversation.model_update_note": {
+    "file": "jarvis_model_upgrade_fromzip1\\jarvis_updated\\conversation\\model_update_note.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "lines": 38
+  },
+  "jarvis_model_upgrade_fromzip1.jarvis_updated.gpu.optimizer": {
+    "file": "jarvis_model_upgrade_fromzip1\\jarvis_updated\\gpu\\optimizer.py",
+    "imports": [
+      "argparse",
+      "json",
+      "os",
+      "subprocess",
+      "sys",
+      "time"
+    ],
+    "classes": [],
+    "functions": [
+      "set_env",
+      "pull_models",
+      "remove_old_models",
+      "benchmark",
+      "monitor"
+    ],
+    "lines": 183
+  },
+  "jarvis_model_upgrade_fromzip1.jarvis_updated.gpu.pool": {
+    "file": "jarvis_model_upgrade_fromzip1\\jarvis_updated\\gpu\\pool.py",
+    "imports": [
+      "asyncio",
+      "collections",
+      "httpx",
+      "time"
+    ],
+    "classes": [
+      "ModelPool"
+    ],
+    "functions": [],
+    "lines": 215
+  },
+  "jarvis_model_upgrade_fromzip1.jarvis_updated.orchestrator.brain": {
+    "file": "jarvis_model_upgrade_fromzip1\\jarvis_updated\\orchestrator\\brain.py",
+    "imports": [
+      "asyncio",
+      "dataclasses",
+      "gpu.pool",
+      "memory.context",
+      "memory.store",
+      "time",
+      "typing"
+    ],
+    "classes": [
+      "Message",
+      "BrainResult",
+      "JarvisBrain"
+    ],
+    "functions": [],
+    "lines": 260
+  },
+  "jarvis_model_upgrade.jarvis_updated.conversation.model_update_note": {
+    "file": "jarvis_model_upgrade\\jarvis_updated\\conversation\\model_update_note.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "lines": 38
+  },
+  "jarvis_model_upgrade.jarvis_updated.gpu.optimizer": {
+    "file": "jarvis_model_upgrade\\jarvis_updated\\gpu\\optimizer.py",
+    "imports": [
+      "argparse",
+      "json",
+      "os",
+      "subprocess",
+      "sys",
+      "time"
+    ],
+    "classes": [],
+    "functions": [
+      "set_env",
+      "pull_models",
+      "remove_old_models",
+      "benchmark",
+      "monitor"
+    ],
+    "lines": 183
+  },
+  "jarvis_model_upgrade.jarvis_updated.gpu.pool": {
+    "file": "jarvis_model_upgrade\\jarvis_updated\\gpu\\pool.py",
+    "imports": [
+      "asyncio",
+      "collections",
+      "httpx",
+      "time"
+    ],
+    "classes": [
+      "ModelPool"
+    ],
+    "functions": [],
+    "lines": 215
+  },
+  "jarvis_model_upgrade.jarvis_updated.orchestrator.brain": {
+    "file": "jarvis_model_upgrade\\jarvis_updated\\orchestrator\\brain.py",
+    "imports": [
+      "asyncio",
+      "dataclasses",
+      "gpu.pool",
+      "memory.context",
+      "memory.store",
+      "time",
+      "typing"
+    ],
+    "classes": [
+      "Message",
+      "BrainResult",
+      "JarvisBrain"
+    ],
+    "functions": [],
+    "lines": 260
+  },
+  "jarvis_codex_complete.jarvis_codex.setup": {
+    "file": "jarvis_codex_complete\\jarvis_codex\\setup.py",
+    "imports": [
+      "setuptools"
+    ],
+    "classes": [],
+    "functions": [],
+    "lines": 9
+  },
+  "jarvis_codex_complete.jarvis_codex.backend.coding_brain": {
+    "file": "jarvis_codex_complete\\jarvis_codex\\backend\\coding_brain.py",
+    "imports": [
+      "__future__",
+      "asyncio",
+      "dataclasses",
+      "httpx",
+      "json",
+      "re",
+      "time",
+      "typing"
+    ],
+    "classes": [
+      "CodeRequest",
+      "CodeResult",
+      "CodingBrain"
+    ],
+    "functions": [],
+    "lines": 591
+  },
+  "jarvis_codex_complete.jarvis_codex.backend.server": {
+    "file": "jarvis_codex_complete\\jarvis_codex\\backend\\server.py",
+    "imports": [
+      "__future__",
+      "asyncio",
+      "coding_brain",
+      "fastapi",
+      "fastapi.middleware.cors",
+      "fastapi.responses",
+      "httpx",
+      "json",
+      "pydantic",
+      "time",
+      "typing"
+    ],
+    "classes": [
+      "CodePayload",
+      "FIMPayload"
+    ],
+    "functions": [
+      "code_endpoint",
+      "complete_endpoint",
+      "stream_endpoint",
+      "ws_endpoint",
+      "health",
+      "list_models"
+    ],
+    "lines": 181
+  },
+  "jarvis_codex_complete.jarvis_codex.python.codex_server": {
+    "file": "jarvis_codex_complete\\jarvis_codex\\python\\codex_server.py",
+    "imports": [
+      "__future__",
+      "asyncio",
+      "dataclasses",
+      "fastapi",
+      "fastapi.middleware.cors",
+      "httpx",
+      "json",
+      "pydantic",
+      "re",
+      "textwrap",
+      "time",
+      "typing"
+    ],
+    "classes": [
+      "CompletionRequest",
+      "ExplainRequest",
+      "ReviewRequest",
+      "FixRequest",
+      "RefactorRequest",
+      "TestRequest",
+      "DocsRequest",
+      "ChatRequest"
+    ],
+    "functions": [
+      "ollama_generate",
+      "ollama_chat",
+      "extract_code_block",
+      "health",
+      "complete",
+      "explain",
+      "review",
+      "fix_bug",
+      "refactor",
+      "generate_tests",
+      "generate_docs",
+      "coding_chat",
+      "translate_code",
+      "analyze_complexity"
+    ],
+    "lines": 603
+  },
+  "jarvis_autonomous (1).jarvis_autonomous.jarvis_main_autonomous": {
+    "file": "jarvis_autonomous (1)\\jarvis_autonomous\\jarvis_main_autonomous.py",
+    "imports": [
+      "__future__",
+      "asyncio",
+      "logging",
+      "os",
+      "sys",
+      "time"
+    ],
+    "classes": [],
+    "functions": [
+      "main"
+    ],
+    "lines": 329
+  },
+  "jarvis_autonomous (1).jarvis_autonomous.setup": {
+    "file": "jarvis_autonomous (1)\\jarvis_autonomous\\setup.py",
+    "imports": [
+      "setuptools"
+    ],
+    "classes": [],
+    "functions": [],
+    "lines": 34
+  },
+  "jarvis_autonomous (1).jarvis_autonomous.test_autonomous": {
+    "file": "jarvis_autonomous (1)\\jarvis_autonomous\\test_autonomous.py",
+    "imports": [
+      "asyncio",
+      "json",
+      "os",
+      "pathlib",
+      "sys",
+      "tempfile",
+      "time"
+    ],
+    "classes": [
+      "MockPool",
+      "MockBrain",
+      "MockWorldState",
+      "MockStore",
+      "MockFusion",
+      "MockPersonality",
+      "MockHub",
+      "MockSimulation"
+    ],
+    "functions": [
+      "test",
+      "run_all_tests",
+      "run_proactive_tests"
+    ],
+    "lines": 720
+  },
+  "jarvis_autonomous (1).jarvis_autonomous.api.autonomous_routes": {
+    "file": "jarvis_autonomous (1)\\jarvis_autonomous\\api\\autonomous_routes.py",
+    "imports": [
+      "__future__",
+      "fastapi",
+      "logging",
+      "pydantic",
+      "time"
+    ],
+    "classes": [
+      "ThinkReq",
+      "PlanReq",
+      "ExecReq",
+      "AssistReq",
+      "SysActionReq"
+    ],
+    "functions": [
+      "inject_autonomous",
+      "mount_autonomous_routes",
+      "think",
+      "plan",
+      "execute",
+      "assist",
+      "memory_search",
+      "system_action",
+      "layers_status",
+      "proactive_status",
+      "proactive_trigger",
+      "recent_executions",
+      "safety_blocks"
+    ],
+    "lines": 269
+  },
+  "jarvis_autonomous (1).jarvis_autonomous.api.__init__": {
+    "file": "jarvis_autonomous (1)\\jarvis_autonomous\\api\\__init__.py",
+    "imports": [
+      "autonomous_routes"
+    ],
+    "classes": [],
+    "functions": [],
+    "lines": 1
+  },
+  "jarvis_autonomous (1).jarvis_autonomous.cli.jarvis_cli": {
+    "file": "jarvis_autonomous (1)\\jarvis_autonomous\\cli\\jarvis_cli.py",
+    "imports": [
+      "json",
+      "os",
+      "re",
+      "sys",
+      "textwrap",
+      "urllib.error",
+      "urllib.parse",
+      "urllib.request"
+    ],
+    "classes": [],
+    "functions": [
+      "c",
+      "hdr",
+      "div",
+      "ok",
+      "err",
+      "api",
+      "cmd_think",
+      "cmd_plan",
+      "cmd_run",
+      "cmd_status",
+      "cmd_memory",
+      "cmd_exec",
+      "cmd_logs",
+      "cmd_chat",
+      "_fmt",
+      "main"
+    ],
+    "lines": 338
+  },
+  "jarvis_autonomous (1).jarvis_autonomous.cli.__init__": {
+    "file": "jarvis_autonomous (1)\\jarvis_autonomous\\cli\\__init__.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "lines": 0
+  },
+  "jarvis_autonomous (1).jarvis_autonomous.core.autonomous_orchestrator": {
+    "file": "jarvis_autonomous (1)\\jarvis_autonomous\\core\\autonomous_orchestrator.py",
+    "imports": [
+      "__future__",
+      "asyncio",
+      "dataclasses",
+      "logging",
+      "re",
+      "time",
+      "typing"
+    ],
+    "classes": [
+      "OrchestratorResult",
+      "AutonomousOrchestrator"
+    ],
+    "functions": [],
+    "lines": 259
+  },
+  "jarvis_autonomous (1).jarvis_autonomous.core.autonomous_system": {
+    "file": "jarvis_autonomous (1)\\jarvis_autonomous\\core\\autonomous_system.py",
+    "imports": [
+      "__future__",
+      "asyncio",
+      "dataclasses",
+      "logging",
+      "os",
+      "pathlib",
+      "time",
+      "typing"
+    ],
+    "classes": [
+      "AutonomousRequest",
+      "AutonomousResult",
+      "AutonomousSystem"
+    ],
+    "functions": [
+      "get_system",
+      "create_system"
+    ],
+    "lines": 321
+  },
+  "jarvis_autonomous (1).jarvis_autonomous.core.proactive_worker": {
+    "file": "jarvis_autonomous (1)\\jarvis_autonomous\\core\\proactive_worker.py",
+    "imports": [
+      "__future__",
+      "asyncio",
+      "dataclasses",
+      "datetime",
+      "json",
+      "logging",
+      "time",
+      "typing"
+    ],
+    "classes": [
+      "ProactiveAction",
+      "CooldownManager",
+      "DeadlineWatcher",
+      "IdleRecovery",
+      "MorningPrepWorker",
+      "CodeHealthWatcher",
+      "MemoryInsightWorker",
+      "GoalStagnationWatcher",
+      "InboxSummaryWorker",
+      "ProactiveWorker"
+    ],
+    "functions": [],
+    "lines": 497
+  },
+  "jarvis_autonomous (1).jarvis_autonomous.core.__init__": {
+    "file": "jarvis_autonomous (1)\\jarvis_autonomous\\core\\__init__.py",
+    "imports": [
+      "autonomous_orchestrator",
+      "proactive_worker"
+    ],
+    "classes": [],
+    "functions": [],
+    "lines": 2
+  },
+  "jarvis_autonomous (1).jarvis_autonomous.l1_brain.brain_ext": {
+    "file": "jarvis_autonomous (1)\\jarvis_autonomous\\l1_brain\\brain_ext.py",
+    "imports": [
+      "__future__",
+      "asyncio",
+      "dataclasses",
+      "logging",
+      "time",
+      "typing"
+    ],
+    "classes": [
+      "AutonomousBrainResult",
+      "BrainExtension",
+      "PromptOrchestrator"
+    ],
+    "functions": [],
+    "lines": 251
+  },
+  "jarvis_autonomous (1).jarvis_autonomous.l1_brain.brain_layer": {
+    "file": "jarvis_autonomous (1)\\jarvis_autonomous\\l1_brain\\brain_layer.py",
+    "imports": [
+      "__future__",
+      "asyncio",
+      "dataclasses",
+      "enum",
+      "json",
+      "logging",
+      "re",
+      "time"
+    ],
+    "classes": [
+      "LayerRoute",
+      "L1Result",
+      "BrainLayer",
+      "ReasoningPlanner"
+    ],
+    "functions": [
+      "_extract_goals"
+    ],
+    "lines": 190
+  },
+  "jarvis_autonomous (1).jarvis_autonomous.l1_brain.__init__": {
+    "file": "jarvis_autonomous (1)\\jarvis_autonomous\\l1_brain\\__init__.py",
+    "imports": [
+      "brain_layer"
+    ],
+    "classes": [],
+    "functions": [],
+    "lines": 1
+  },
+  "jarvis_autonomous (1).jarvis_autonomous.l2_assistant.assistant_engine": {
+    "file": "jarvis_autonomous (1)\\jarvis_autonomous\\l2_assistant\\assistant_engine.py",
+    "imports": [
+      "__future__",
+      "ast",
+      "dataclasses",
+      "hashlib",
+      "json",
+      "logging",
+      "os",
+      "pathlib",
+      "re",
+      "time",
+      "typing"
+    ],
+    "classes": [
+      "FileSymbol",
+      "FileNode",
+      "AssistantContext",
+      "CodebaseIndex",
+      "MultiFileReasoner",
+      "InlineReasoningEngine",
+      "AssistantEngine"
+    ],
+    "functions": [],
+    "lines": 452
+  },
+  "jarvis_autonomous (1).jarvis_autonomous.l2_assistant.assistant_layer": {
+    "file": "jarvis_autonomous (1)\\jarvis_autonomous\\l2_assistant\\assistant_layer.py",
+    "imports": [
+      "__future__",
+      "ast",
+      "dataclasses",
+      "hashlib",
+      "json",
+      "logging",
+      "os",
+      "pathlib",
+      "re",
+      "time"
+    ],
+    "classes": [
+      "FileNode",
+      "AssistantResult",
+      "CodebaseIndexer",
+      "AssistantLayer"
+    ],
+    "functions": [],
+    "lines": 267
+  },
+  "jarvis_autonomous (1).jarvis_autonomous.l2_assistant.__init__": {
+    "file": "jarvis_autonomous (1)\\jarvis_autonomous\\l2_assistant\\__init__.py",
+    "imports": [
+      "assistant_layer"
+    ],
+    "classes": [],
+    "functions": [],
+    "lines": 1
+  },
+  "jarvis_autonomous (1).jarvis_autonomous.l3_executor.executor_engine": {
+    "file": "jarvis_autonomous (1)\\jarvis_autonomous\\l3_executor\\executor_engine.py",
+    "imports": [
+      "__future__",
+      "asyncio",
+      "dataclasses",
+      "enum",
+      "json",
+      "logging",
+      "os",
+      "pathlib",
+      "sqlite3",
+      "subprocess",
+      "time",
+      "traceback",
+      "typing"
+    ],
+    "classes": [
+      "StepStatus",
+      "ExecutionStep",
+      "ExecutionPlan",
+      "ExecutionResult",
+      "ExecutionSandbox",
+      "ExecutionLogger",
+      "ExecutorEngine"
+    ],
+    "functions": [],
+    "lines": 525
+  },
+  "jarvis_autonomous (1).jarvis_autonomous.l3_executor.executor_layer": {
+    "file": "jarvis_autonomous (1)\\jarvis_autonomous\\l3_executor\\executor_layer.py",
+    "imports": [
+      "__future__",
+      "asyncio",
+      "contextlib",
+      "dataclasses",
+      "enum",
+      "io",
+      "json",
+      "logging",
+      "re",
+      "sqlite3",
+      "textwrap",
+      "time",
+      "traceback",
+      "typing"
+    ],
+    "classes": [
+      "ExecStatus",
+      "TaskStep",
+      "ExecutionPlan",
+      "ExecutionResult",
+      "ExecutionSandbox",
+      "AuditLog",
+      "TaskPlanner",
+      "ExecutionLoop",
+      "ExecutorLayer"
+    ],
+    "functions": [],
+    "lines": 433
+  },
+  "jarvis_autonomous (1).jarvis_autonomous.l3_executor.__init__": {
+    "file": "jarvis_autonomous (1)\\jarvis_autonomous\\l3_executor\\__init__.py",
+    "imports": [
+      "executor_layer"
+    ],
+    "classes": [],
+    "functions": [],
+    "lines": 1
+  },
+  "jarvis_autonomous (1).jarvis_autonomous.l4_controller.controller_layer": {
+    "file": "jarvis_autonomous (1)\\jarvis_autonomous\\l4_controller\\controller_layer.py",
+    "imports": [
+      "__future__",
+      "asyncio",
+      "dataclasses",
+      "enum",
+      "json",
+      "logging",
+      "os",
+      "pathlib",
+      "re",
+      "subprocess",
+      "time",
+      "typing"
+    ],
+    "classes": [
+      "ControlAction",
+      "ControlResult",
+      "SafetyGuard",
+      "TerminalController",
+      "FSController",
+      "AppController",
+      "ControllerLayer"
+    ],
+    "functions": [],
+    "lines": 378
+  },
+  "jarvis_autonomous (1).jarvis_autonomous.l4_controller.system_controller": {
+    "file": "jarvis_autonomous (1)\\jarvis_autonomous\\l4_controller\\system_controller.py",
+    "imports": [
+      "__future__",
+      "asyncio",
+      "dataclasses",
+      "logging",
+      "os",
+      "pathlib",
+      "platform",
+      "re",
+      "subprocess",
+      "time",
+      "typing"
+    ],
+    "classes": [
+      "SafetyGuard",
+      "CommandLayer",
+      "FileSystemController",
+      "AppController",
+      "ADBBridge",
+      "SystemController"
+    ],
+    "functions": [],
+    "lines": 479
+  },
+  "jarvis_autonomous (1).jarvis_autonomous.l4_controller.vision_integration": {
+    "file": "jarvis_autonomous (1)\\jarvis_autonomous\\l4_controller\\vision_integration.py",
+    "imports": [
+      "__future__",
+      "dataclasses",
+      "logging",
+      "time",
+      "typing"
+    ],
+    "classes": [
+      "VisionTaskResult",
+      "VisionIntegration"
+    ],
+    "functions": [
+      "extend_controller"
+    ],
+    "lines": 148
+  },
+  "jarvis_autonomous (1).jarvis_autonomous.l4_controller.__init__": {
+    "file": "jarvis_autonomous (1)\\jarvis_autonomous\\l4_controller\\__init__.py",
+    "imports": [
+      "controller_layer",
+      "vision_integration"
+    ],
+    "classes": [],
+    "functions": [],
+    "lines": 2
+  },
+  "jarvis_autonomous (1).jarvis_autonomous.patches.world_state_patch": {
+    "file": "jarvis_autonomous (1)\\jarvis_autonomous\\patches\\world_state_patch.py",
+    "imports": [
+      "__future__",
+      "logging"
+    ],
+    "classes": [],
+    "functions": [
+      "apply_patches",
+      "_patch_world_state",
+      "_patch_semantic_store",
+      "_patch_notification_hub"
+    ],
+    "lines": 155
+  },
+  "jarvis_autonomous (1).jarvis_autonomous.patches.__init__": {
+    "file": "jarvis_autonomous (1)\\jarvis_autonomous\\patches\\__init__.py",
+    "imports": [
+      "world_state_patch"
+    ],
+    "classes": [],
+    "functions": [],
+    "lines": 1
+  },
+  "jarvis_autonomous.jarvis_autonomous.jarvis_main_autonomous": {
+    "file": "jarvis_autonomous\\jarvis_autonomous\\jarvis_main_autonomous.py",
+    "imports": [
+      "__future__",
+      "asyncio",
+      "logging",
+      "os",
+      "sys",
+      "time"
+    ],
+    "classes": [],
+    "functions": [
+      "main"
+    ],
+    "lines": 329
+  },
+  "jarvis_autonomous.jarvis_autonomous.setup": {
+    "file": "jarvis_autonomous\\jarvis_autonomous\\setup.py",
+    "imports": [
+      "setuptools"
+    ],
+    "classes": [],
+    "functions": [],
+    "lines": 34
+  },
+  "jarvis_autonomous.jarvis_autonomous.test_autonomous": {
+    "file": "jarvis_autonomous\\jarvis_autonomous\\test_autonomous.py",
+    "imports": [
+      "asyncio",
+      "json",
+      "os",
+      "pathlib",
+      "sys",
+      "tempfile",
+      "time"
+    ],
+    "classes": [
+      "MockPool",
+      "MockBrain",
+      "MockWorldState",
+      "MockStore",
+      "MockFusion",
+      "MockPersonality",
+      "MockHub",
+      "MockSimulation"
+    ],
+    "functions": [
+      "test",
+      "run_all_tests",
+      "run_proactive_tests"
+    ],
+    "lines": 720
+  },
+  "jarvis_autonomous.jarvis_autonomous.api.autonomous_routes": {
+    "file": "jarvis_autonomous\\jarvis_autonomous\\api\\autonomous_routes.py",
+    "imports": [
+      "__future__",
+      "fastapi",
+      "logging",
+      "pydantic",
+      "time"
+    ],
+    "classes": [
+      "ThinkReq",
+      "PlanReq",
+      "ExecReq",
+      "AssistReq",
+      "SysActionReq"
+    ],
+    "functions": [
+      "inject_autonomous",
+      "mount_autonomous_routes",
+      "think",
+      "plan",
+      "execute",
+      "assist",
+      "memory_search",
+      "system_action",
+      "layers_status",
+      "proactive_status",
+      "proactive_trigger",
+      "recent_executions",
+      "safety_blocks"
+    ],
+    "lines": 269
+  },
+  "jarvis_autonomous.jarvis_autonomous.api.__init__": {
+    "file": "jarvis_autonomous\\jarvis_autonomous\\api\\__init__.py",
+    "imports": [
+      "autonomous_routes"
+    ],
+    "classes": [],
+    "functions": [],
+    "lines": 1
+  },
+  "jarvis_autonomous.jarvis_autonomous.cli.jarvis_cli": {
+    "file": "jarvis_autonomous\\jarvis_autonomous\\cli\\jarvis_cli.py",
+    "imports": [
+      "json",
+      "os",
+      "re",
+      "sys",
+      "textwrap",
+      "urllib.error",
+      "urllib.parse",
+      "urllib.request"
+    ],
+    "classes": [],
+    "functions": [
+      "c",
+      "hdr",
+      "div",
+      "ok",
+      "err",
+      "api",
+      "cmd_think",
+      "cmd_plan",
+      "cmd_run",
+      "cmd_status",
+      "cmd_memory",
+      "cmd_exec",
+      "cmd_logs",
+      "cmd_chat",
+      "_fmt",
+      "main"
+    ],
+    "lines": 338
+  },
+  "jarvis_autonomous.jarvis_autonomous.cli.__init__": {
+    "file": "jarvis_autonomous\\jarvis_autonomous\\cli\\__init__.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "lines": 0
+  },
+  "jarvis_autonomous.jarvis_autonomous.core.autonomous_orchestrator": {
+    "file": "jarvis_autonomous\\jarvis_autonomous\\core\\autonomous_orchestrator.py",
+    "imports": [
+      "__future__",
+      "asyncio",
+      "dataclasses",
+      "logging",
+      "re",
+      "time",
+      "typing"
+    ],
+    "classes": [
+      "OrchestratorResult",
+      "AutonomousOrchestrator"
+    ],
+    "functions": [],
+    "lines": 259
+  },
+  "jarvis_autonomous.jarvis_autonomous.core.autonomous_system": {
+    "file": "jarvis_autonomous\\jarvis_autonomous\\core\\autonomous_system.py",
+    "imports": [
+      "__future__",
+      "asyncio",
+      "dataclasses",
+      "logging",
+      "os",
+      "pathlib",
+      "time",
+      "typing"
+    ],
+    "classes": [
+      "AutonomousRequest",
+      "AutonomousResult",
+      "AutonomousSystem"
+    ],
+    "functions": [
+      "get_system",
+      "create_system"
+    ],
+    "lines": 321
+  },
+  "jarvis_autonomous.jarvis_autonomous.core.proactive_worker": {
+    "file": "jarvis_autonomous\\jarvis_autonomous\\core\\proactive_worker.py",
+    "imports": [
+      "__future__",
+      "asyncio",
+      "dataclasses",
+      "datetime",
+      "json",
+      "logging",
+      "time",
+      "typing"
+    ],
+    "classes": [
+      "ProactiveAction",
+      "CooldownManager",
+      "DeadlineWatcher",
+      "IdleRecovery",
+      "MorningPrepWorker",
+      "CodeHealthWatcher",
+      "MemoryInsightWorker",
+      "GoalStagnationWatcher",
+      "InboxSummaryWorker",
+      "ProactiveWorker"
+    ],
+    "functions": [],
+    "lines": 497
+  },
+  "jarvis_autonomous.jarvis_autonomous.core.__init__": {
+    "file": "jarvis_autonomous\\jarvis_autonomous\\core\\__init__.py",
+    "imports": [
+      "autonomous_orchestrator",
+      "proactive_worker"
+    ],
+    "classes": [],
+    "functions": [],
+    "lines": 2
+  },
+  "jarvis_autonomous.jarvis_autonomous.l1_brain.brain_ext": {
+    "file": "jarvis_autonomous\\jarvis_autonomous\\l1_brain\\brain_ext.py",
+    "imports": [
+      "__future__",
+      "asyncio",
+      "dataclasses",
+      "logging",
+      "time",
+      "typing"
+    ],
+    "classes": [
+      "AutonomousBrainResult",
+      "BrainExtension",
+      "PromptOrchestrator"
+    ],
+    "functions": [],
+    "lines": 251
+  },
+  "jarvis_autonomous.jarvis_autonomous.l1_brain.brain_layer": {
+    "file": "jarvis_autonomous\\jarvis_autonomous\\l1_brain\\brain_layer.py",
+    "imports": [
+      "__future__",
+      "asyncio",
+      "dataclasses",
+      "enum",
+      "json",
+      "logging",
+      "re",
+      "time"
+    ],
+    "classes": [
+      "LayerRoute",
+      "L1Result",
+      "BrainLayer",
+      "ReasoningPlanner"
+    ],
+    "functions": [
+      "_extract_goals"
+    ],
+    "lines": 190
+  },
+  "jarvis_autonomous.jarvis_autonomous.l1_brain.__init__": {
+    "file": "jarvis_autonomous\\jarvis_autonomous\\l1_brain\\__init__.py",
+    "imports": [
+      "brain_layer"
+    ],
+    "classes": [],
+    "functions": [],
+    "lines": 1
+  },
+  "jarvis_autonomous.jarvis_autonomous.l2_assistant.assistant_engine": {
+    "file": "jarvis_autonomous\\jarvis_autonomous\\l2_assistant\\assistant_engine.py",
+    "imports": [
+      "__future__",
+      "ast",
+      "dataclasses",
+      "hashlib",
+      "json",
+      "logging",
+      "os",
+      "pathlib",
+      "re",
+      "time",
+      "typing"
+    ],
+    "classes": [
+      "FileSymbol",
+      "FileNode",
+      "AssistantContext",
+      "CodebaseIndex",
+      "MultiFileReasoner",
+      "InlineReasoningEngine",
+      "AssistantEngine"
+    ],
+    "functions": [],
+    "lines": 452
+  },
+  "jarvis_autonomous.jarvis_autonomous.l2_assistant.assistant_layer": {
+    "file": "jarvis_autonomous\\jarvis_autonomous\\l2_assistant\\assistant_layer.py",
+    "imports": [
+      "__future__",
+      "ast",
+      "dataclasses",
+      "hashlib",
+      "json",
+      "logging",
+      "os",
+      "pathlib",
+      "re",
+      "time"
+    ],
+    "classes": [
+      "FileNode",
+      "AssistantResult",
+      "CodebaseIndexer",
+      "AssistantLayer"
+    ],
+    "functions": [],
+    "lines": 267
+  },
+  "jarvis_autonomous.jarvis_autonomous.l2_assistant.__init__": {
+    "file": "jarvis_autonomous\\jarvis_autonomous\\l2_assistant\\__init__.py",
+    "imports": [
+      "assistant_layer"
+    ],
+    "classes": [],
+    "functions": [],
+    "lines": 1
+  },
+  "jarvis_autonomous.jarvis_autonomous.l3_executor.executor_engine": {
+    "file": "jarvis_autonomous\\jarvis_autonomous\\l3_executor\\executor_engine.py",
+    "imports": [
+      "__future__",
+      "asyncio",
+      "dataclasses",
+      "enum",
+      "json",
+      "logging",
+      "os",
+      "pathlib",
+      "sqlite3",
+      "subprocess",
+      "time",
+      "traceback",
+      "typing"
+    ],
+    "classes": [
+      "StepStatus",
+      "ExecutionStep",
+      "ExecutionPlan",
+      "ExecutionResult",
+      "ExecutionSandbox",
+      "ExecutionLogger",
+      "ExecutorEngine"
+    ],
+    "functions": [],
+    "lines": 525
+  },
+  "jarvis_autonomous.jarvis_autonomous.l3_executor.executor_layer": {
+    "file": "jarvis_autonomous\\jarvis_autonomous\\l3_executor\\executor_layer.py",
+    "imports": [
+      "__future__",
+      "asyncio",
+      "contextlib",
+      "dataclasses",
+      "enum",
+      "io",
+      "json",
+      "logging",
+      "re",
+      "sqlite3",
+      "textwrap",
+      "time",
+      "traceback",
+      "typing"
+    ],
+    "classes": [
+      "ExecStatus",
+      "TaskStep",
+      "ExecutionPlan",
+      "ExecutionResult",
+      "ExecutionSandbox",
+      "AuditLog",
+      "TaskPlanner",
+      "ExecutionLoop",
+      "ExecutorLayer"
+    ],
+    "functions": [],
+    "lines": 433
+  },
+  "jarvis_autonomous.jarvis_autonomous.l3_executor.__init__": {
+    "file": "jarvis_autonomous\\jarvis_autonomous\\l3_executor\\__init__.py",
+    "imports": [
+      "executor_layer"
+    ],
+    "classes": [],
+    "functions": [],
+    "lines": 1
+  },
+  "jarvis_autonomous.jarvis_autonomous.l4_controller.controller_layer": {
+    "file": "jarvis_autonomous\\jarvis_autonomous\\l4_controller\\controller_layer.py",
+    "imports": [
+      "__future__",
+      "asyncio",
+      "dataclasses",
+      "enum",
+      "json",
+      "logging",
+      "os",
+      "pathlib",
+      "re",
+      "subprocess",
+      "time",
+      "typing"
+    ],
+    "classes": [
+      "ControlAction",
+      "ControlResult",
+      "SafetyGuard",
+      "TerminalController",
+      "FSController",
+      "AppController",
+      "ControllerLayer"
+    ],
+    "functions": [],
+    "lines": 378
+  },
+  "jarvis_autonomous.jarvis_autonomous.l4_controller.system_controller": {
+    "file": "jarvis_autonomous\\jarvis_autonomous\\l4_controller\\system_controller.py",
+    "imports": [
+      "__future__",
+      "asyncio",
+      "dataclasses",
+      "logging",
+      "os",
+      "pathlib",
+      "platform",
+      "re",
+      "subprocess",
+      "time",
+      "typing"
+    ],
+    "classes": [
+      "SafetyGuard",
+      "CommandLayer",
+      "FileSystemController",
+      "AppController",
+      "ADBBridge",
+      "SystemController"
+    ],
+    "functions": [],
+    "lines": 479
+  },
+  "jarvis_autonomous.jarvis_autonomous.l4_controller.vision_integration": {
+    "file": "jarvis_autonomous\\jarvis_autonomous\\l4_controller\\vision_integration.py",
+    "imports": [
+      "__future__",
+      "dataclasses",
+      "logging",
+      "time",
+      "typing"
+    ],
+    "classes": [
+      "VisionTaskResult",
+      "VisionIntegration"
+    ],
+    "functions": [
+      "extend_controller"
+    ],
+    "lines": 148
+  },
+  "jarvis_autonomous.jarvis_autonomous.l4_controller.__init__": {
+    "file": "jarvis_autonomous\\jarvis_autonomous\\l4_controller\\__init__.py",
+    "imports": [
+      "controller_layer",
+      "vision_integration"
+    ],
+    "classes": [],
+    "functions": [],
+    "lines": 2
+  },
+  "jarvis_autonomous.jarvis_autonomous.patches.world_state_patch": {
+    "file": "jarvis_autonomous\\jarvis_autonomous\\patches\\world_state_patch.py",
+    "imports": [
+      "__future__",
+      "logging"
+    ],
+    "classes": [],
+    "functions": [
+      "apply_patches",
+      "_patch_world_state",
+      "_patch_semantic_store",
+      "_patch_notification_hub"
+    ],
+    "lines": 155
+  },
+  "jarvis_autonomous.jarvis_autonomous.patches.__init__": {
+    "file": "jarvis_autonomous\\jarvis_autonomous\\patches\\__init__.py",
+    "imports": [
+      "world_state_patch"
+    ],
+    "classes": [],
+    "functions": [],
+    "lines": 1
+  },
+  "backend.agents.all_agents": {
+    "file": "backend\\agents\\all_agents.py",
+    "imports": [
+      "core.model_router",
+      "gpu.pool",
+      "json",
+      "re"
+    ],
+    "classes": [
+      "ClassifierAgent",
+      "EmotionAgent",
+      "GeneratorAgent",
+      "QualityAgent"
+    ],
+    "functions": [],
+    "lines": 264
+  },
+  "backend.agents.classifier": {
+    "file": "backend\\agents\\classifier.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "parse_error": true
+  },
+  "backend.agents.emotion": {
+    "file": "backend\\agents\\emotion.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "parse_error": true
+  },
+  "backend.agents.generator": {
+    "file": "backend\\agents\\generator.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "parse_error": true
+  },
+  "backend.agents.quality": {
+    "file": "backend\\agents\\quality.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "parse_error": true
+  },
+  "backend.agents.__init__": {
+    "file": "backend\\agents\\__init__.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "lines": 1
+  },
+  "backend.api.agi_routes": {
+    "file": "backend\\api\\agi_routes.py",
+    "imports": [
+      "asyncio",
+      "core.agi_core",
+      "fastapi",
+      "pydantic",
+      "typing"
+    ],
+    "classes": [
+      "GoalRequest",
+      "SolveRequest",
+      "HabitRequest",
+      "ConfigRequest"
+    ],
+    "functions": [
+      "agi_status",
+      "create_goal",
+      "list_goals",
+      "solve_problem",
+      "get_patterns",
+      "get_predictions",
+      "add_habit",
+      "get_decisions",
+      "get_reflections",
+      "configure_agi",
+      "manual_trigger"
+    ],
+    "lines": 220
+  },
+  "backend.api.main_integration": {
+    "file": "backend\\api\\main_integration.py",
+    "imports": [
+      "api.vision_routes"
+    ],
+    "classes": [],
+    "functions": [
+      "on_startup",
+      "chat"
+    ],
+    "lines": 55
+  },
+  "backend.api.server": {
+    "file": "backend\\api\\server.py",
+    "imports": [
+      "base64",
+      "fastapi",
+      "fastapi.responses",
+      "orchestrator.brain",
+      "pydantic",
+      "time",
+      "typing"
+    ],
+    "classes": [
+      "ChatRequest",
+      "ImageChatRequest",
+      "ChatResponse"
+    ],
+    "functions": [
+      "chat",
+      "chat_with_image",
+      "get_memory",
+      "get_history",
+      "clear_memory",
+      "status",
+      "full_stats",
+      "reload_model"
+    ],
+    "lines": 200
+  },
+  "backend.api.vision_routes": {
+    "file": "backend\\api\\vision_routes.py",
+    "imports": [
+      "asyncio",
+      "core.vision_agent",
+      "fastapi",
+      "fastapi.responses",
+      "pc_agent.playbooks",
+      "pydantic",
+      "time",
+      "typing"
+    ],
+    "classes": [
+      "RunReq",
+      "ScreenReq"
+    ],
+    "functions": [
+      "init_agents",
+      "_get",
+      "run_task",
+      "get_task",
+      "get_history",
+      "screenshot",
+      "describe_screen",
+      "list_playbooks",
+      "status",
+      "_run_bg",
+      "_execute",
+      "_task_dict"
+    ],
+    "lines": 209
+  },
+  "backend.api.__init__": {
+    "file": "backend\\api\\__init__.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "lines": 1
+  },
+  "backend.assistant.engine": {
+    "file": "backend\\assistant\\engine.py",
+    "imports": [
+      "asyncio",
+      "core.config",
+      "core.model_router",
+      "json",
+      "pathlib",
+      "pyttsx3",
+      "queue",
+      "requests",
+      "threading",
+      "typing"
+    ],
+    "classes": [
+      "TTSEngine",
+      "STTEngine",
+      "LLMEngine",
+      "JarvisAssistant"
+    ],
+    "functions": [
+      "detect_intent"
+    ],
+    "lines": 335
+  },
+  "backend.assistant.__init__": {
+    "file": "backend\\assistant\\__init__.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "lines": 1
+  },
+  "backend.automation.call_sync_server": {
+    "file": "backend\\automation\\call_sync_server.py",
+    "imports": [
+      "datetime",
+      "json",
+      "os",
+      "pathlib",
+      "socket",
+      "sqlite3",
+      "threading",
+      "time"
+    ],
+    "classes": [],
+    "functions": [
+      "init_db",
+      "save_record",
+      "get_unread_important",
+      "notify_desktop",
+      "handle_client",
+      "run_server",
+      "get_fastapi_router"
+    ],
+    "lines": 180
+  },
+  "backend.automation.messaging": {
+    "file": "backend\\automation\\messaging.py",
+    "imports": [
+      "os",
+      "pyautogui",
+      "selenium",
+      "selenium.webdriver.chrome.options",
+      "selenium.webdriver.chrome.service",
+      "selenium.webdriver.common.by",
+      "selenium.webdriver.common.keys",
+      "selenium.webdriver.support",
+      "selenium.webdriver.support.ui",
+      "time",
+      "typing",
+      "webdriver_manager.chrome"
+    ],
+    "classes": [
+      "BrowserAutomation",
+      "WhatsAppAutomation",
+      "InstagramAutomation",
+      "MessagingController"
+    ],
+    "functions": [],
+    "lines": 265
+  },
+  "backend.automation.pc_automation": {
+    "file": "backend\\automation\\pc_automation.py",
+    "imports": [
+      "datetime",
+      "json",
+      "os",
+      "pathlib",
+      "platform",
+      "pyautogui",
+      "re",
+      "selenium",
+      "selenium.webdriver.chrome.options",
+      "selenium.webdriver.chrome.service",
+      "selenium.webdriver.common.by",
+      "selenium.webdriver.common.keys",
+      "selenium.webdriver.support",
+      "selenium.webdriver.support.ui",
+      "subprocess",
+      "time",
+      "typing",
+      "urllib.parse",
+      "webbrowser",
+      "webdriver_manager.chrome"
+    ],
+    "classes": [
+      "ContactsDB",
+      "BrowserManager",
+      "WhatsAppSender",
+      "InstagramSender",
+      "SystemCtrl",
+      "Parser"
+    ],
+    "functions": [
+      "launch_app",
+      "execute_command"
+    ],
+    "lines": 617
+  },
+  "backend.automation.routes": {
+    "file": "backend\\automation\\routes.py",
+    "imports": [
+      "fastapi",
+      "pc_automation",
+      "re",
+      "typing"
+    ],
+    "classes": [],
+    "functions": [
+      "run_command",
+      "list_contacts",
+      "search_contacts",
+      "add_contact",
+      "delete_contact",
+      "send_whatsapp",
+      "send_instagram",
+      "open_url",
+      "google_search",
+      "youtube",
+      "maps_search",
+      "list_sites",
+      "open_app",
+      "list_apps",
+      "screenshot",
+      "volume",
+      "lock_screen",
+      "sleep_pc",
+      "shutdown_pc",
+      "cancel_shutdown"
+    ],
+    "lines": 191
+  },
+  "backend.automation.__init__": {
+    "file": "backend\\automation\\__init__.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "lines": 1
+  },
+  "backend.autonomy.setup": {
+    "file": "backend\\autonomy\\setup.py",
+    "imports": [
+      "setuptools"
+    ],
+    "classes": [],
+    "functions": [],
+    "lines": 34
+  },
+  "backend.autonomy.__init__": {
+    "file": "backend\\autonomy\\__init__.py",
+    "imports": [
+      "asyncio",
+      "logging",
+      "pathlib",
+      "typing"
+    ],
+    "classes": [],
+    "functions": [
+      "is_initialized",
+      "get_brain_layer",
+      "get_assistant_layer",
+      "get_executor_layer",
+      "get_controller_layer",
+      "get_orchestrator",
+      "get_proactive_worker",
+      "initialize_autonomous_stack",
+      "get_router"
+    ],
+    "lines": 280
+  },
+  "backend.core.agi_core": {
+    "file": "backend\\core\\agi_core.py",
+    "imports": [
+      "asyncio",
+      "dataclasses",
+      "datetime",
+      "decision.action_executor",
+      "decision.goal_planner",
+      "json",
+      "learning.habit_tracker",
+      "learning.pattern_engine",
+      "memory.agi_memory",
+      "pathlib",
+      "prediction.predictor",
+      "problem_solver.solver",
+      "random",
+      "self_improve.reflector",
+      "time",
+      "tools.jarvis_tools",
+      "typing"
+    ],
+    "classes": [
+      "WorldState",
+      "AGIDecision",
+      "Goal",
+      "JarvisAGI"
+    ],
+    "functions": [
+      "get_agi"
+    ],
+    "lines": 412
+  },
+  "backend.core.auth": {
+    "file": "backend\\core\\auth.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "parse_error": true
+  },
+  "backend.core.config": {
+    "file": "backend\\core\\config.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "parse_error": true
+  },
+  "backend.core.database": {
+    "file": "backend\\core\\database.py",
+    "imports": [
+      "core.config",
+      "datetime",
+      "sqlalchemy",
+      "sqlalchemy.ext.asyncio",
+      "sqlalchemy.orm",
+      "typing"
+    ],
+    "classes": [
+      "Base",
+      "User",
+      "Note",
+      "Reminder",
+      "Activity",
+      "DailySummary",
+      "KnownFace",
+      "ChatHistory",
+      "ConnectedDevice"
+    ],
+    "functions": [
+      "get_db",
+      "init_db"
+    ],
+    "lines": 145
+  },
+  "backend.core.main": {
+    "file": "backend\\core\\main.py",
+    "imports": [
+      "asyncio",
+      "base64",
+      "contextlib",
+      "core.auth",
+      "core.config",
+      "core.database",
+      "cv2",
+      "datetime",
+      "fastapi",
+      "fastapi.middleware.cors",
+      "fastapi.responses",
+      "numpy",
+      "pathlib",
+      "pydantic",
+      "sqlalchemy.ext.asyncio",
+      "typing"
+    ],
+    "classes": [
+      "ChatRequest",
+      "ReminderCreate",
+      "NoteCreate",
+      "NoteUpdate",
+      "MessageRequest",
+      "FaceRegisterRequest"
+    ],
+    "functions": [
+      "lifespan",
+      "root",
+      "health",
+      "chat",
+      "get_chat_history",
+      "list_reminders",
+      "create_reminder_route",
+      "delete_reminder_route",
+      "list_notes",
+      "create_note",
+      "update_note",
+      "delete_note",
+      "today_activity",
+      "daily_summary",
+      "send_message",
+      "register_face",
+      "identify_face",
+      "list_faces",
+      "media_status",
+      "media_play",
+      "media_pause",
+      "media_next",
+      "set_volume",
+      "get_playlist",
+      "suggest_music",
+      "list_files",
+      "upload_file",
+      "websocket_endpoint"
+    ],
+    "lines": 543
+  },
+  "backend.core.model_router": {
+    "file": "backend\\core\\model_router.py",
+    "imports": [
+      "__future__",
+      "core.config",
+      "os",
+      "re",
+      "typing"
+    ],
+    "classes": [],
+    "functions": [
+      "resolve_model",
+      "_parse_model_endpoints",
+      "_load_endpoints",
+      "model_endpoints",
+      "is_multi_instance",
+      "get_ollama_url",
+      "model_for_role",
+      "get_fallbacks",
+      "route_role_for_text"
+    ],
+    "lines": 147
+  },
+  "backend.core.vision_agent": {
+    "file": "backend\\core\\vision_agent.py",
+    "imports": [
+      "PIL",
+      "asyncio",
+      "base64",
+      "core.model_router",
+      "dataclasses",
+      "httpx",
+      "io",
+      "json",
+      "mss",
+      "pyautogui",
+      "re",
+      "time",
+      "typing"
+    ],
+    "classes": [
+      "ScreenState",
+      "StepResult",
+      "Task",
+      "VisionAgent"
+    ],
+    "functions": [],
+    "lines": 387
+  },
+  "backend.core.__init__": {
+    "file": "backend\\core\\__init__.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "lines": 1
+  },
+  "backend.decision.action_executor": {
+    "file": "backend\\decision\\action_executor.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "parse_error": true
+  },
+  "backend.decision.goal_planner": {
+    "file": "backend\\decision\\goal_planner.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "parse_error": true
+  },
+  "backend.decision.__init__": {
+    "file": "backend\\decision\\__init__.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "lines": 1
+  },
+  "backend.gpu.optimizer": {
+    "file": "backend\\gpu\\optimizer.py",
+    "imports": [
+      "argparse",
+      "core.model_router",
+      "json",
+      "os",
+      "subprocess",
+      "sys",
+      "time"
+    ],
+    "classes": [],
+    "functions": [
+      "set_env",
+      "pull_models",
+      "remove_old_models",
+      "benchmark",
+      "monitor"
+    ],
+    "lines": 182
+  },
+  "backend.gpu.pool": {
+    "file": "backend\\gpu\\pool.py",
+    "imports": [
+      "asyncio",
+      "collections",
+      "core.model_router",
+      "httpx",
+      "time"
+    ],
+    "classes": [
+      "ModelPool"
+    ],
+    "functions": [],
+    "lines": 242
+  },
+  "backend.gpu.__init__": {
+    "file": "backend\\gpu\\__init__.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "lines": 1
+  },
+  "backend.jarvis_os.agent_runtime": {
+    "file": "backend\\jarvis_os\\agent_runtime.py",
+    "imports": [
+      "__future__",
+      "asyncio",
+      "logging",
+      "time",
+      "typing"
+    ],
+    "classes": [
+      "AgentRuntime",
+      "_ResultProxy",
+      "_StepProxy"
+    ],
+    "functions": [],
+    "lines": 167
+  },
+  "backend.jarvis_os.cache": {
+    "file": "backend\\jarvis_os\\cache.py",
+    "imports": [
+      "__future__",
+      "asyncio",
+      "hashlib",
+      "json",
+      "time",
+      "typing"
+    ],
+    "classes": [
+      "TTLCache"
+    ],
+    "functions": [
+      "fingerprint"
+    ],
+    "lines": 53
+  },
+  "backend.jarvis_os.contracts": {
+    "file": "backend\\jarvis_os\\contracts.py",
+    "imports": [
+      "__future__",
+      "dataclasses",
+      "time",
+      "typing",
+      "uuid"
+    ],
+    "classes": [
+      "Goal",
+      "ToolSpec",
+      "ToolSelection",
+      "PlanStep",
+      "Plan",
+      "RiskAssessment",
+      "StepResult",
+      "ExecutionReport"
+    ],
+    "functions": [
+      "_new_id"
+    ],
+    "lines": 160
+  },
+  "backend.jarvis_os.core": {
+    "file": "backend\\jarvis_os\\core.py",
+    "imports": [
+      "__future__",
+      "agent_runtime",
+      "agents",
+      "asyncio",
+      "browser",
+      "control_plane",
+      "daemon",
+      "executor.executor",
+      "learning.learning_engine",
+      "logging",
+      "memory",
+      "model_gateway",
+      "models",
+      "observability",
+      "os",
+      "pathlib",
+      "planning",
+      "reasoning",
+      "runtime.config",
+      "runtime.logger",
+      "safety.safety_layer",
+      "self_improvement",
+      "skills",
+      "tool_router",
+      "typing",
+      "world_model"
+    ],
+    "classes": [
+      "AgentOS"
+    ],
+    "functions": [
+      "get_os_instance"
+    ],
+    "lines": 258
+  },
+  "backend.jarvis_os.model_gateway": {
+    "file": "backend\\jarvis_os\\model_gateway.py",
+    "imports": [
+      "__future__",
+      "json",
+      "logging",
+      "os",
+      "typing",
+      "urllib"
+    ],
+    "classes": [
+      "LocalModelGateway"
+    ],
+    "functions": [],
+    "lines": 108
+  },
+  "backend.jarvis_os.observability": {
+    "file": "backend\\jarvis_os\\observability.py",
+    "imports": [
+      "__future__",
+      "collections",
+      "logging",
+      "threading",
+      "time",
+      "typing",
+      "uuid"
+    ],
+    "classes": [
+      "Observability"
+    ],
+    "functions": [],
+    "lines": 109
+  },
+  "backend.jarvis_os.planning": {
+    "file": "backend\\jarvis_os\\planning.py",
+    "imports": [
+      "__future__",
+      "contracts",
+      "re",
+      "typing"
+    ],
+    "classes": [
+      "PlanningEngine"
+    ],
+    "functions": [],
+    "lines": 431
+  },
+  "backend.jarvis_os.reasoning": {
+    "file": "backend\\jarvis_os\\reasoning.py",
+    "imports": [
+      "__future__",
+      "asyncio",
+      "contracts",
+      "logging",
+      "re",
+      "typing"
+    ],
+    "classes": [
+      "ReasoningEngine"
+    ],
+    "functions": [],
+    "lines": 142
+  },
+  "backend.jarvis_os.self_improvement": {
+    "file": "backend\\jarvis_os\\self_improvement.py",
+    "imports": [
+      "__future__",
+      "asyncio",
+      "collections",
+      "logging",
+      "time",
+      "typing"
+    ],
+    "classes": [
+      "SelfImprovementLoop"
+    ],
+    "functions": [],
+    "lines": 99
+  },
+  "backend.jarvis_os.tool_router": {
+    "file": "backend\\jarvis_os\\tool_router.py",
+    "imports": [
+      "logging",
+      "typing"
+    ],
+    "classes": [
+      "ToolInvocationError",
+      "ToolRouter"
+    ],
+    "functions": [],
+    "lines": 104
+  },
+  "backend.jarvis_os.world_model": {
+    "file": "backend\\jarvis_os\\world_model.py",
+    "imports": [
+      "__future__",
+      "json",
+      "logging",
+      "math",
+      "pathlib",
+      "re",
+      "sqlite3",
+      "threading",
+      "time",
+      "typing",
+      "uuid"
+    ],
+    "classes": [
+      "WorldModel"
+    ],
+    "functions": [],
+    "lines": 390
+  },
+  "backend.jarvis_os.__init__": {
+    "file": "backend\\jarvis_os\\__init__.py",
+    "imports": [
+      "api.routes",
+      "core"
+    ],
+    "classes": [],
+    "functions": [],
+    "lines": 25
+  },
+  "backend.learning.habit_tracker": {
+    "file": "backend\\learning\\habit_tracker.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "parse_error": true
+  },
+  "backend.learning.pattern_engine": {
+    "file": "backend\\learning\\pattern_engine.py",
+    "imports": [
+      "collections",
+      "datetime",
+      "json",
+      "math",
+      "time",
+      "typing"
+    ],
+    "classes": [
+      "PatternEngine"
+    ],
+    "functions": [],
+    "lines": 153
+  },
+  "backend.learning.__init__": {
+    "file": "backend\\learning\\__init__.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "lines": 12
+  },
+  "backend.media.player": {
+    "file": "backend\\media\\player.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "parse_error": true
+  },
+  "backend.media.__init__": {
+    "file": "backend\\media\\__init__.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "lines": 1
+  },
+  "backend.memory.agi_memory": {
+    "file": "backend\\memory\\agi_memory.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "parse_error": true
+  },
+  "backend.memory.context": {
+    "file": "backend\\memory\\context.py",
+    "imports": [
+      "core.model_router",
+      "gpu.pool",
+      "json",
+      "memory.store",
+      "re",
+      "time",
+      "typing"
+    ],
+    "classes": [
+      "ContextBuilder",
+      "FactExtractor"
+    ],
+    "functions": [],
+    "lines": 200
+  },
+  "backend.memory.store": {
+    "file": "backend\\memory\\store.py",
+    "imports": [
+      "asyncio",
+      "dataclasses",
+      "json",
+      "pathlib",
+      "sqlite3",
+      "time",
+      "typing"
+    ],
+    "classes": [
+      "MemoryEntry",
+      "MemoryStore"
+    ],
+    "functions": [],
+    "lines": 226
+  },
+  "backend.memory.__init__": {
+    "file": "backend\\memory\\__init__.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "lines": 1
+  },
+  "backend.network.websocket_server": {
+    "file": "backend\\network\\websocket_server.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "parse_error": true
+  },
+  "backend.network.__init__": {
+    "file": "backend\\network\\__init__.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "lines": 1
+  },
+  "backend.notes.activity_tracker": {
+    "file": "backend\\notes\\activity_tracker.py",
+    "imports": [
+      "__future__",
+      "core.database",
+      "dataclasses",
+      "datetime",
+      "sqlalchemy",
+      "sqlalchemy.ext.asyncio",
+      "typing"
+    ],
+    "classes": [
+      "NotesManager",
+      "ActivityTracker",
+      "SummaryResult",
+      "SummaryGenerator"
+    ],
+    "functions": [],
+    "lines": 121
+  },
+  "backend.notes.__init__": {
+    "file": "backend\\notes\\__init__.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "lines": 1
+  },
+  "backend.orchestrator.brain": {
+    "file": "backend\\orchestrator\\brain.py",
+    "imports": [
+      "asyncio",
+      "core.model_router",
+      "dataclasses",
+      "gpu.pool",
+      "memory.context",
+      "memory.store",
+      "time",
+      "typing"
+    ],
+    "classes": [
+      "Message",
+      "BrainResult",
+      "JarvisBrain"
+    ],
+    "functions": [
+      "get_brain"
+    ],
+    "lines": 296
+  },
+  "backend.orchestrator.__init__": {
+    "file": "backend\\orchestrator\\__init__.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "lines": 1
+  },
+  "backend.pc_agent.playbooks": {
+    "file": "backend\\pc_agent\\playbooks.py",
+    "imports": [
+      "re",
+      "typing"
+    ],
+    "classes": [],
+    "functions": [
+      "match",
+      "build_steps",
+      "_s",
+      "_amazon",
+      "_flipkart",
+      "_insta_dm",
+      "_whatsapp",
+      "_youtube",
+      "_google",
+      "_photos_share",
+      "_photos_delete",
+      "_gmail",
+      "_open_only",
+      "_extract_budget",
+      "_extract_query"
+    ],
+    "lines": 360
+  },
+  "backend.pc_agent.__init__": {
+    "file": "backend\\pc_agent\\__init__.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "lines": 1
+  },
+  "backend.prediction.predictor": {
+    "file": "backend\\prediction\\predictor.py",
+    "imports": [
+      "datetime",
+      "time",
+      "typing"
+    ],
+    "classes": [
+      "PredictionEngine"
+    ],
+    "functions": [],
+    "lines": 143
+  },
+  "backend.prediction.__init__": {
+    "file": "backend\\prediction\\__init__.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "lines": 1
+  },
+  "backend.problem_solver.solver": {
+    "file": "backend\\problem_solver\\solver.py",
+    "imports": [
+      "asyncio",
+      "core.model_router",
+      "dataclasses",
+      "httpx",
+      "json",
+      "re",
+      "time",
+      "typing"
+    ],
+    "classes": [
+      "SolverResult",
+      "ProblemSolver"
+    ],
+    "functions": [],
+    "lines": 296
+  },
+  "backend.problem_solver.__init__": {
+    "file": "backend\\problem_solver\\__init__.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "lines": 1
+  },
+  "backend.reminders.manager": {
+    "file": "backend\\reminders\\manager.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "parse_error": true
+  },
+  "backend.reminders.__init__": {
+    "file": "backend\\reminders\\__init__.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "lines": 1
+  },
+  "backend.self_improve.reflector": {
+    "file": "backend\\self_improve\\reflector.py",
+    "imports": [
+      "collections",
+      "core.model_router",
+      "httpx",
+      "json",
+      "pathlib",
+      "sqlite3",
+      "time"
+    ],
+    "classes": [
+      "SelfReflector",
+      "AGIMemory",
+      "JarvisTools"
+    ],
+    "functions": [],
+    "lines": 396
+  },
+  "backend.self_improve.__init__": {
+    "file": "backend\\self_improve\\__init__.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "lines": 1
+  },
+  "backend.tools.base_tool": {
+    "file": "backend\\tools\\base_tool.py",
+    "imports": [
+      "__future__",
+      "dataclasses",
+      "jarvis_os.contracts",
+      "typing"
+    ],
+    "classes": [
+      "ToolDefinition"
+    ],
+    "functions": [],
+    "lines": 35
+  },
+  "backend.tools.jarvis_tools": {
+    "file": "backend\\tools\\jarvis_tools.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "parse_error": true
+  },
+  "backend.tools.registry": {
+    "file": "backend\\tools\\registry.py",
+    "imports": [
+      "__future__",
+      "base_tool",
+      "collections",
+      "typing"
+    ],
+    "classes": [
+      "ToolRegistry"
+    ],
+    "functions": [
+      "new_registry"
+    ],
+    "lines": 54
+  },
+  "backend.tools.tool_loader": {
+    "file": "backend\\tools\\tool_loader.py",
+    "imports": [
+      "__future__",
+      "base_tool",
+      "registry",
+      "typing"
+    ],
+    "classes": [],
+    "functions": [
+      "_delegate",
+      "_prompt_builder",
+      "_definitions",
+      "load_router_tools"
+    ],
+    "lines": 445
+  },
+  "backend.tools.__init__": {
+    "file": "backend\\tools\\__init__.py",
+    "imports": [
+      "jarvis_tools"
+    ],
+    "classes": [],
+    "functions": [],
+    "lines": 3
+  },
+  "backend.vision.face_recognition": {
+    "file": "backend\\vision\\face_recognition.py",
+    "imports": [
+      "core.config",
+      "core.database",
+      "cv2",
+      "datetime",
+      "deepface",
+      "json",
+      "numpy",
+      "os",
+      "pathlib",
+      "pickle",
+      "sqlalchemy",
+      "sqlalchemy.ext.asyncio",
+      "typing"
+    ],
+    "classes": [
+      "FaceRecognizer",
+      "LiveCameraRecognizer"
+    ],
+    "functions": [],
+    "lines": 258
+  },
+  "backend.vision.__init__": {
+    "file": "backend\\vision\\__init__.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "lines": 1
+  },
+  "backend.learning.student_agi.student_agi_main": {
+    "file": "backend\\learning\\student_agi\\student_agi_main.py",
+    "imports": [
+      "__future__",
+      "asyncio",
+      "brain.student_brain",
+      "cognition.world_model",
+      "fastapi",
+      "fastapi.middleware.cors",
+      "json",
+      "logging",
+      "pathlib",
+      "pydantic",
+      "sys",
+      "teacher.jarvis_teacher",
+      "time",
+      "uvicorn"
+    ],
+    "classes": [
+      "TeachReq",
+      "AskReq",
+      "LearnReq",
+      "FeedbackReq",
+      "WorldReq",
+      "CausalReq"
+    ],
+    "functions": [
+      "status",
+      "teach",
+      "ask_student",
+      "give_feedback",
+      "learn_fact",
+      "daily_lesson",
+      "get_mistakes",
+      "get_progress",
+      "get_curriculum",
+      "get_curiosity",
+      "add_world_concept",
+      "add_causal",
+      "why",
+      "explain_analogy",
+      "check_consistency",
+      "health",
+      "autonomous_daily_loop",
+      "cli_main"
+    ],
+    "lines": 469
+  },
+  "backend.learning.student_agi.api.student_routes": {
+    "file": "backend\\learning\\student_agi\\api\\student_routes.py",
+    "imports": [
+      "fastapi",
+      "httpx",
+      "logging",
+      "pydantic",
+      "typing"
+    ],
+    "classes": [
+      "TeachRequest",
+      "AskRequest",
+      "FeedbackRequest"
+    ],
+    "functions": [
+      "student_agi_health",
+      "teach",
+      "ask",
+      "give_feedback",
+      "student_status",
+      "learning_progress",
+      "recent_mistakes",
+      "run_daily_lesson",
+      "get_topic_knowledge",
+      "get_curiosity_queue"
+    ],
+    "lines": 216
+  },
+  "backend.learning.student_agi.api.__init__": {
+    "file": "backend\\learning\\student_agi\\api\\__init__.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "lines": 0
+  },
+  "backend.learning.student_agi.brain.student_brain": {
+    "file": "backend\\learning\\student_agi\\brain\\student_brain.py",
+    "imports": [
+      "__future__",
+      "asyncio",
+      "dataclasses",
+      "enum",
+      "httpx",
+      "json",
+      "logging",
+      "math",
+      "pathlib",
+      "re",
+      "sqlite3",
+      "time",
+      "typing",
+      "uuid"
+    ],
+    "classes": [
+      "Emotion",
+      "EmotionalState",
+      "Thought",
+      "ReasoningTrace",
+      "MistakeAnalysis",
+      "StudentBrain"
+    ],
+    "functions": [],
+    "lines": 900
+  },
+  "backend.learning.student_agi.brain.__init__": {
+    "file": "backend\\learning\\student_agi\\brain\\__init__.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "lines": 0
+  },
+  "backend.learning.student_agi.cognition.world_model": {
+    "file": "backend\\learning\\student_agi\\cognition\\world_model.py",
+    "imports": [
+      "__future__",
+      "dataclasses",
+      "json",
+      "logging",
+      "math",
+      "pathlib",
+      "re",
+      "sqlite3",
+      "time",
+      "typing"
+    ],
+    "classes": [
+      "WorldNode",
+      "WorldEdge",
+      "WorldModel",
+      "CausalEngine",
+      "AnalogyEngine",
+      "ConsistencyChecker",
+      "MetaCognition"
+    ],
+    "functions": [],
+    "lines": 460
+  },
+  "backend.learning.student_agi.cognition.__init__": {
+    "file": "backend\\learning\\student_agi\\cognition\\__init__.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "lines": 0
+  },
+  "backend.learning.student_agi.learning.__init__": {
+    "file": "backend\\learning\\student_agi\\learning\\__init__.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "lines": 0
+  },
+  "backend.learning.student_agi.teacher.jarvis_teacher": {
+    "file": "backend\\learning\\student_agi\\teacher\\jarvis_teacher.py",
+    "imports": [
+      "__future__",
+      "asyncio",
+      "brain.student_brain",
+      "dataclasses",
+      "enum",
+      "httpx",
+      "json",
+      "logging",
+      "re",
+      "time",
+      "typing",
+      "uuid"
+    ],
+    "classes": [
+      "TeachingStyle",
+      "Lesson",
+      "Question",
+      "GradingResult",
+      "TeachingSession",
+      "JarvisTeacher"
+    ],
+    "functions": [],
+    "lines": 688
+  },
+  "backend.learning.student_agi.teacher.__init__": {
+    "file": "backend\\learning\\student_agi\\teacher\\__init__.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "lines": 0
+  },
+  "backend.learning.student_agi.tests.__init__": {
+    "file": "backend\\learning\\student_agi\\tests\\__init__.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "lines": 0
+  },
+  "backend.jarvis_os.agents.coding_agent": {
+    "file": "backend\\jarvis_os\\agents\\coding_agent.py",
+    "imports": [
+      "_base"
+    ],
+    "classes": [
+      "CodingAgent"
+    ],
+    "functions": [],
+    "lines": 6
+  },
+  "backend.jarvis_os.agents.debugging_agent": {
+    "file": "backend\\jarvis_os\\agents\\debugging_agent.py",
+    "imports": [
+      "_base"
+    ],
+    "classes": [
+      "DebuggingAgent"
+    ],
+    "functions": [],
+    "lines": 6
+  },
+  "backend.jarvis_os.agents.hub": {
+    "file": "backend\\jarvis_os\\agents\\hub.py",
+    "imports": [
+      "__future__",
+      "coding_agent",
+      "debugging_agent",
+      "planner_agent",
+      "research_agent",
+      "typing"
+    ],
+    "classes": [
+      "MultiAgentHub"
+    ],
+    "functions": [],
+    "lines": 50
+  },
+  "backend.jarvis_os.agents.planner_agent": {
+    "file": "backend\\jarvis_os\\agents\\planner_agent.py",
+    "imports": [
+      "_base"
+    ],
+    "classes": [
+      "PlannerAgent"
+    ],
+    "functions": [],
+    "lines": 6
+  },
+  "backend.jarvis_os.agents.research_agent": {
+    "file": "backend\\jarvis_os\\agents\\research_agent.py",
+    "imports": [
+      "_base"
+    ],
+    "classes": [
+      "ResearchAgent"
+    ],
+    "functions": [],
+    "lines": 6
+  },
+  "backend.jarvis_os.agents._base": {
+    "file": "backend\\jarvis_os\\agents\\_base.py",
+    "imports": [
+      "__future__",
+      "typing"
+    ],
+    "classes": [
+      "_BaseSpecialist"
+    ],
+    "functions": [],
+    "lines": 25
+  },
+  "backend.jarvis_os.agents.__init__": {
+    "file": "backend\\jarvis_os\\agents\\__init__.py",
+    "imports": [
+      "coding_agent",
+      "debugging_agent",
+      "hub",
+      "planner_agent",
+      "research_agent"
+    ],
+    "classes": [],
+    "functions": [],
+    "lines": 7
+  },
+  "backend.jarvis_os.api.routes": {
+    "file": "backend\\jarvis_os\\api\\routes.py",
+    "imports": [
+      "__future__",
+      "core",
+      "fastapi",
+      "observability",
+      "pydantic",
+      "typing"
+    ],
+    "classes": [
+      "AgentThinkRequest",
+      "AgentSubmitRequest",
+      "AgentRunRequest",
+      "StateUpdateRequest",
+      "ApprovalActionRequest",
+      "ScheduleCreateRequest",
+      "GatewaySendRequest",
+      "MobileSyncRequest"
+    ],
+    "functions": [
+      "_startup",
+      "_shutdown",
+      "status",
+      "agent_think",
+      "agent_submit",
+      "agent_plan",
+      "execution_status",
+      "world_search",
+      "world_state",
+      "update_world_state",
+      "tool_catalog",
+      "agents",
+      "agent_run",
+      "skills",
+      "local_skills",
+      "local_models",
+      "supervisor_status",
+      "control_status",
+      "access_status",
+      "access_approve",
+      "access_reject",
+      "mobile_status",
+      "mobile_scan",
+      "mobile_sync",
+      "scheduler_status",
+      "scheduler_add",
+      "channels_status",
+      "channels_send",
+      "observability_events",
+      "observability_metrics"
+    ],
+    "lines": 260
+  },
+  "backend.jarvis_os.browser.controller": {
+    "file": "backend\\jarvis_os\\browser\\controller.py",
+    "imports": [
+      "__future__",
+      "importlib.util",
+      "logging",
+      "os",
+      "pathlib",
+      "typing",
+      "urllib",
+      "webbrowser"
+    ],
+    "classes": [
+      "LocalBrowserController"
+    ],
+    "functions": [],
+    "lines": 371
+  },
+  "backend.jarvis_os.browser.__init__": {
+    "file": "backend\\jarvis_os\\browser\\__init__.py",
+    "imports": [
+      "controller"
+    ],
+    "classes": [],
+    "functions": [],
+    "lines": 5
+  },
+  "backend.jarvis_os.control_plane.access_manager": {
+    "file": "backend\\jarvis_os\\control_plane\\access_manager.py",
+    "imports": [
+      "__future__",
+      "json",
+      "pathlib",
+      "time",
+      "typing",
+      "uuid"
+    ],
+    "classes": [
+      "AccessManager"
+    ],
+    "functions": [],
+    "lines": 131
+  },
+  "backend.jarvis_os.control_plane.gateway": {
+    "file": "backend\\jarvis_os\\control_plane\\gateway.py",
+    "imports": [
+      "__future__",
+      "time",
+      "typing"
+    ],
+    "classes": [
+      "LocalGateway"
+    ],
+    "functions": [],
+    "lines": 48
+  },
+  "backend.jarvis_os.control_plane.mobile_sync": {
+    "file": "backend\\jarvis_os\\control_plane\\mobile_sync.py",
+    "imports": [
+      "__future__",
+      "json",
+      "pathlib",
+      "shutil",
+      "subprocess",
+      "time",
+      "typing"
+    ],
+    "classes": [
+      "MobileSyncService"
+    ],
+    "functions": [],
+    "lines": 71
+  },
+  "backend.jarvis_os.control_plane.scheduler": {
+    "file": "backend\\jarvis_os\\control_plane\\scheduler.py",
+    "imports": [
+      "__future__",
+      "asyncio",
+      "json",
+      "pathlib",
+      "time",
+      "typing",
+      "uuid"
+    ],
+    "classes": [
+      "HeartbeatScheduler"
+    ],
+    "functions": [],
+    "lines": 87
+  },
+  "backend.jarvis_os.control_plane.__init__": {
+    "file": "backend\\jarvis_os\\control_plane\\__init__.py",
+    "imports": [
+      "access_manager",
+      "gateway",
+      "mobile_sync",
+      "scheduler"
+    ],
+    "classes": [],
+    "functions": [],
+    "lines": 13
+  },
+  "backend.jarvis_os.daemon.supervisor": {
+    "file": "backend\\jarvis_os\\daemon\\supervisor.py",
+    "imports": [
+      "__future__",
+      "asyncio",
+      "logging",
+      "time",
+      "typing"
+    ],
+    "classes": [
+      "LocalSupervisor"
+    ],
+    "functions": [],
+    "lines": 69
+  },
+  "backend.jarvis_os.daemon.__init__": {
+    "file": "backend\\jarvis_os\\daemon\\__init__.py",
+    "imports": [
+      "supervisor"
+    ],
+    "classes": [],
+    "functions": [],
+    "lines": 5
+  },
+  "backend.jarvis_os.executor.executor": {
+    "file": "backend\\jarvis_os\\executor\\executor.py",
+    "imports": [
+      "__future__",
+      "asyncio",
+      "contracts",
+      "logging",
+      "time",
+      "typing",
+      "uuid"
+    ],
+    "classes": [
+      "Executor"
+    ],
+    "functions": [],
+    "lines": 261
+  },
+  "backend.jarvis_os.executor.__init__": {
+    "file": "backend\\jarvis_os\\executor\\__init__.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "lines": 1
+  },
+  "backend.jarvis_os.interface.api_server": {
+    "file": "backend\\jarvis_os\\interface\\api_server.py",
+    "imports": [
+      "api.routes"
+    ],
+    "classes": [],
+    "functions": [],
+    "lines": 3
+  },
+  "backend.jarvis_os.interface.cli": {
+    "file": "backend\\jarvis_os\\interface\\cli.py",
+    "imports": [
+      "__future__",
+      "core",
+      "typing"
+    ],
+    "classes": [
+      "AgentCLI"
+    ],
+    "functions": [],
+    "lines": 25
+  },
+  "backend.jarvis_os.interface.voice_interface": {
+    "file": "backend\\jarvis_os\\interface\\voice_interface.py",
+    "imports": [
+      "__future__",
+      "typing"
+    ],
+    "classes": [
+      "VoiceInterface"
+    ],
+    "functions": [],
+    "lines": 20
+  },
+  "backend.jarvis_os.interface.__init__": {
+    "file": "backend\\jarvis_os\\interface\\__init__.py",
+    "imports": [
+      "api_server",
+      "cli",
+      "voice_interface"
+    ],
+    "classes": [],
+    "functions": [],
+    "lines": 5
+  },
+  "backend.jarvis_os.learning.learning_engine": {
+    "file": "backend\\jarvis_os\\learning\\learning_engine.py",
+    "imports": [
+      "__future__",
+      "importlib.util",
+      "logging",
+      "pathlib",
+      "sys",
+      "typing"
+    ],
+    "classes": [
+      "LearningEngine"
+    ],
+    "functions": [],
+    "lines": 140
+  },
+  "backend.jarvis_os.learning.__init__": {
+    "file": "backend\\jarvis_os\\learning\\__init__.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "lines": 1
+  },
+  "backend.jarvis_os.memory.context_manager": {
+    "file": "backend\\jarvis_os\\memory\\context_manager.py",
+    "imports": [
+      "__future__",
+      "time",
+      "typing"
+    ],
+    "classes": [
+      "ContextManager"
+    ],
+    "functions": [],
+    "lines": 19
+  },
+  "backend.jarvis_os.memory.memory_manager": {
+    "file": "backend\\jarvis_os\\memory\\memory_manager.py",
+    "imports": [
+      "__future__",
+      "context_manager",
+      "typing",
+      "vector_store"
+    ],
+    "classes": [
+      "MemoryManager"
+    ],
+    "functions": [],
+    "lines": 22
+  },
+  "backend.jarvis_os.memory.vector_store": {
+    "file": "backend\\jarvis_os\\memory\\vector_store.py",
+    "imports": [
+      "__future__",
+      "typing"
+    ],
+    "classes": [
+      "VectorStore"
+    ],
+    "functions": [],
+    "lines": 11
+  },
+  "backend.jarvis_os.memory.__init__": {
+    "file": "backend\\jarvis_os\\memory\\__init__.py",
+    "imports": [
+      "context_manager",
+      "memory_manager",
+      "vector_store"
+    ],
+    "classes": [],
+    "functions": [],
+    "lines": 5
+  },
+  "backend.jarvis_os.models.model_manager": {
+    "file": "backend\\jarvis_os\\models\\model_manager.py",
+    "imports": [
+      "__future__",
+      "typing"
+    ],
+    "classes": [
+      "ModelManager"
+    ],
+    "functions": [],
+    "lines": 17
+  },
+  "backend.jarvis_os.models.ollama_router": {
+    "file": "backend\\jarvis_os\\models\\ollama_router.py",
+    "imports": [
+      "__future__",
+      "typing"
+    ],
+    "classes": [
+      "OllamaRouter"
+    ],
+    "functions": [],
+    "lines": 15
+  },
+  "backend.jarvis_os.models.__init__": {
+    "file": "backend\\jarvis_os\\models\\__init__.py",
+    "imports": [
+      "model_manager",
+      "ollama_router"
+    ],
+    "classes": [],
+    "functions": [],
+    "lines": 4
+  },
+  "backend.jarvis_os.runtime.config": {
+    "file": "backend\\jarvis_os\\runtime\\config.py",
+    "imports": [
+      "__future__",
+      "dataclasses",
+      "os",
+      "pathlib",
+      "typing"
+    ],
+    "classes": [
+      "RuntimeConfig"
+    ],
+    "functions": [
+      "load_runtime_config"
+    ],
+    "lines": 39
+  },
+  "backend.jarvis_os.runtime.logger": {
+    "file": "backend\\jarvis_os\\runtime\\logger.py",
+    "imports": [
+      "__future__",
+      "logging",
+      "sys",
+      "typing"
+    ],
+    "classes": [],
+    "functions": [
+      "configure_logging",
+      "get_logger"
+    ],
+    "lines": 26
+  },
+  "backend.jarvis_os.safety.safety_layer": {
+    "file": "backend\\jarvis_os\\safety\\safety_layer.py",
+    "imports": [
+      "__future__",
+      "contracts",
+      "logging",
+      "pathlib",
+      "time",
+      "typing"
+    ],
+    "classes": [
+      "SafetyError",
+      "SafetyLayer"
+    ],
+    "functions": [],
+    "lines": 161
+  },
+  "backend.jarvis_os.safety.__init__": {
+    "file": "backend\\jarvis_os\\safety\\__init__.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "lines": 1
+  },
+  "backend.jarvis_os.skills.registry": {
+    "file": "backend\\jarvis_os\\skills\\registry.py",
+    "imports": [
+      "__future__",
+      "logging",
+      "pathlib",
+      "typing"
+    ],
+    "classes": [
+      "SkillRegistry"
+    ],
+    "functions": [],
+    "lines": 66
+  },
+  "backend.jarvis_os.skills.__init__": {
+    "file": "backend\\jarvis_os\\skills\\__init__.py",
+    "imports": [
+      "registry"
+    ],
+    "classes": [],
+    "functions": [],
+    "lines": 5
+  },
+  "backend.jarvis_os.tool_router.router": {
+    "file": "backend\\jarvis_os\\tool_router\\router.py",
+    "imports": [
+      "__future__",
+      "asyncio",
+      "cache",
+      "contracts",
+      "datetime",
+      "json",
+      "logging",
+      "os",
+      "pathlib",
+      "re",
+      "subprocess",
+      "tools.tool_loader",
+      "typing",
+      "urllib",
+      "webbrowser",
+      "xml.etree.ElementTree"
+    ],
+    "classes": [
+      "ToolInvocationError",
+      "ToolRouter"
+    ],
+    "functions": [],
+    "lines": 794
+  },
+  "backend.jarvis_os.tool_router.__init__": {
+    "file": "backend\\jarvis_os\\tool_router\\__init__.py",
+    "imports": [
+      "router"
+    ],
+    "classes": [],
+    "functions": [],
+    "lines": 5
+  },
+  "backend.autonomy.api.autonomous_routes": {
+    "file": "backend\\autonomy\\api\\autonomous_routes.py",
+    "imports": [
+      "__future__",
+      "fastapi",
+      "logging",
+      "pydantic",
+      "time"
+    ],
+    "classes": [
+      "ThinkReq",
+      "PlanReq",
+      "ExecReq",
+      "AssistReq",
+      "SysActionReq"
+    ],
+    "functions": [
+      "inject_autonomous",
+      "mount_autonomous_routes",
+      "think",
+      "plan",
+      "execute",
+      "assist",
+      "memory_search",
+      "system_action",
+      "layers_status",
+      "proactive_status",
+      "proactive_trigger",
+      "recent_executions",
+      "safety_blocks"
+    ],
+    "lines": 269
+  },
+  "backend.autonomy.api.__init__": {
+    "file": "backend\\autonomy\\api\\__init__.py",
+    "imports": [
+      "autonomous_routes"
+    ],
+    "classes": [],
+    "functions": [],
+    "lines": 1
+  },
+  "backend.autonomy.cli.jarvis_cli": {
+    "file": "backend\\autonomy\\cli\\jarvis_cli.py",
+    "imports": [
+      "json",
+      "os",
+      "re",
+      "sys",
+      "textwrap",
+      "urllib.error",
+      "urllib.parse",
+      "urllib.request"
+    ],
+    "classes": [],
+    "functions": [
+      "c",
+      "hdr",
+      "div",
+      "ok",
+      "err",
+      "api",
+      "cmd_think",
+      "cmd_plan",
+      "cmd_run",
+      "cmd_status",
+      "cmd_memory",
+      "cmd_exec",
+      "cmd_logs",
+      "cmd_chat",
+      "_fmt",
+      "main"
+    ],
+    "lines": 345
+  },
+  "backend.autonomy.cli.__init__": {
+    "file": "backend\\autonomy\\cli\\__init__.py",
+    "imports": [],
+    "classes": [],
+    "functions": [],
+    "lines": 0
+  },
+  "backend.autonomy.core.autonomous_orchestrator": {
+    "file": "backend\\autonomy\\core\\autonomous_orchestrator.py",
+    "imports": [
+      "__future__",
+      "asyncio",
+      "dataclasses",
+      "logging",
+      "re",
+      "time",
+      "typing"
+    ],
+    "classes": [
+      "OrchestratorResult",
+      "AutonomousOrchestrator"
+    ],
+    "functions": [],
+    "lines": 260
+  },
+  "backend.autonomy.core.autonomous_system": {
+    "file": "backend\\autonomy\\core\\autonomous_system.py",
+    "imports": [
+      "__future__",
+      "asyncio",
+      "dataclasses",
+      "logging",
+      "os",
+      "pathlib",
+      "time",
+      "typing"
+    ],
+    "classes": [
+      "AutonomousRequest",
+      "AutonomousResult",
+      "AutonomousSystem"
+    ],
+    "functions": [
+      "get_system",
+      "create_system"
+    ],
+    "lines": 321
+  },
+  "backend.autonomy.core.proactive_worker": {
+    "file": "backend\\autonomy\\core\\proactive_worker.py",
+    "imports": [
+      "__future__",
+      "asyncio",
+      "dataclasses",
+      "datetime",
+      "json",
+      "logging",
+      "time",
+      "typing"
+    ],
+    "classes": [
+      "ProactiveAction",
+      "CooldownManager",
+      "DeadlineWatcher",
+      "IdleRecovery",
+      "MorningPrepWorker",
+      "CodeHealthWatcher",
+      "MemoryInsightWorker",
+      "GoalStagnationWatcher",
+      "InboxSummaryWorker",
+      "ProactiveWorker"
+    ],
+    "functions": [],
+    "lines": 497
+  },
+  "backend.autonomy.core.__init__": {
+    "file": "backend\\autonomy\\core\\__init__.py",
+    "imports": [
+      "autonomous_orchestrator",
+      "proactive_worker"
+    ],
+    "classes": [],
+    "functions": [],
+    "lines": 2
+  },
+  "backend.autonomy.l1_brain.brain_ext": {
+    "file": "backend\\autonomy\\l1_brain\\brain_ext.py",
+    "imports": [
+      "__future__",
+      "asyncio",
+      "dataclasses",
+      "logging",
+      "time",
+      "typing"
+    ],
+    "classes": [
+      "AutonomousBrainResult",
+      "BrainExtension",
+      "PromptOrchestrator"
+    ],
+    "functions": [],
+    "lines": 251
+  },
+  "backend.autonomy.l1_brain.brain_layer": {
+    "file": "backend\\autonomy\\l1_brain\\brain_layer.py",
+    "imports": [
+      "__future__",
+      "asyncio",
+      "dataclasses",
+      "enum",
+      "json",
+      "logging",
+      "re",
+      "time"
+    ],
+    "classes": [
+      "LayerRoute",
+      "L1Result",
+      "BrainLayer",
+      "ReasoningPlanner"
+    ],
+    "functions": [
+      "_extract_goals"
+    ],
+    "lines": 190
+  },
+  "backend.autonomy.l1_brain.__init__": {
+    "file": "backend\\autonomy\\l1_brain\\__init__.py",
+    "imports": [
+      "brain_layer"
+    ],
+    "classes": [],
+    "functions": [],
+    "lines": 1
+  },
+  "backend.autonomy.l2_assistant.assistant_engine": {
+    "file": "backend\\autonomy\\l2_assistant\\assistant_engine.py",
+    "imports": [
+      "__future__",
+      "ast",
+      "dataclasses",
+      "hashlib",
+      "json",
+      "logging",
+      "os",
+      "pathlib",
+      "re",
+      "time",
+      "typing"
+    ],
+    "classes": [
+      "FileSymbol",
+      "FileNode",
+      "AssistantContext",
+      "CodebaseIndex",
+      "MultiFileReasoner",
+      "InlineReasoningEngine",
+      "AssistantEngine"
+    ],
+    "functions": [],
+    "lines": 452
+  },
+  "backend.autonomy.l2_assistant.assistant_layer": {
+    "file": "backend\\autonomy\\l2_assistant\\assistant_layer.py",
+    "imports": [
+      "__future__",
+      "ast",
+      "dataclasses",
+      "hashlib",
+      "json",
+      "logging",
+      "os",
+      "pathlib",
+      "re",
+      "time"
+    ],
+    "classes": [
+      "FileNode",
+      "AssistantResult",
+      "CodebaseIndexer",
+      "AssistantLayer"
+    ],
+    "functions": [],
+    "lines": 267
+  },
+  "backend.autonomy.l2_assistant.__init__": {
+    "file": "backend\\autonomy\\l2_assistant\\__init__.py",
+    "imports": [
+      "assistant_layer"
+    ],
+    "classes": [],
+    "functions": [],
+    "lines": 1
+  },
+  "backend.autonomy.l3_executor.executor_engine": {
+    "file": "backend\\autonomy\\l3_executor\\executor_engine.py",
+    "imports": [
+      "__future__",
+      "asyncio",
+      "dataclasses",
+      "enum",
+      "json",
+      "logging",
+      "os",
+      "pathlib",
+      "sqlite3",
+      "subprocess",
+      "time",
+      "traceback",
+      "typing"
+    ],
+    "classes": [
+      "StepStatus",
+      "ExecutionStep",
+      "ExecutionPlan",
+      "ExecutionResult",
+      "ExecutionSandbox",
+      "ExecutionLogger",
+      "ExecutorEngine"
+    ],
+    "functions": [],
+    "lines": 525
+  },
+  "backend.autonomy.l3_executor.executor_layer": {
+    "file": "backend\\autonomy\\l3_executor\\executor_layer.py",
+    "imports": [
+      "__future__",
+      "asyncio",
+      "contextlib",
+      "dataclasses",
+      "enum",
+      "io",
+      "json",
+      "logging",
+      "re",
+      "sqlite3",
+      "textwrap",
+      "time",
+      "traceback",
+      "typing"
+    ],
+    "classes": [
+      "ExecStatus",
+      "TaskStep",
+      "ExecutionPlan",
+      "ExecutionResult",
+      "ExecutionSandbox",
+      "AuditLog",
+      "TaskPlanner",
+      "ExecutionLoop",
+      "ExecutorLayer"
+    ],
+    "functions": [],
+    "lines": 433
+  },
+  "backend.autonomy.l3_executor.__init__": {
+    "file": "backend\\autonomy\\l3_executor\\__init__.py",
+    "imports": [
+      "executor_layer"
+    ],
+    "classes": [],
+    "functions": [],
+    "lines": 1
+  },
+  "backend.autonomy.l4_controller.controller_layer": {
+    "file": "backend\\autonomy\\l4_controller\\controller_layer.py",
+    "imports": [
+      "__future__",
+      "asyncio",
+      "dataclasses",
+      "enum",
+      "json",
+      "logging",
+      "os",
+      "pathlib",
+      "re",
+      "subprocess",
+      "time",
+      "typing"
+    ],
+    "classes": [
+      "ControlAction",
+      "ControlResult",
+      "SafetyGuard",
+      "TerminalController",
+      "FSController",
+      "AppController",
+      "ControllerLayer"
+    ],
+    "functions": [],
+    "lines": 378
+  },
+  "backend.autonomy.l4_controller.system_controller": {
+    "file": "backend\\autonomy\\l4_controller\\system_controller.py",
+    "imports": [
+      "__future__",
+      "asyncio",
+      "dataclasses",
+      "logging",
+      "os",
+      "pathlib",
+      "platform",
+      "re",
+      "subprocess",
+      "time",
+      "typing"
+    ],
+    "classes": [
+      "SafetyGuard",
+      "CommandLayer",
+      "FileSystemController",
+      "AppController",
+      "ADBBridge",
+      "SystemController"
+    ],
+    "functions": [],
+    "lines": 479
+  },
+  "backend.autonomy.l4_controller.vision_integration": {
+    "file": "backend\\autonomy\\l4_controller\\vision_integration.py",
+    "imports": [
+      "__future__",
+      "dataclasses",
+      "logging",
+      "time",
+      "typing"
+    ],
+    "classes": [
+      "VisionTaskResult",
+      "VisionIntegration"
+    ],
+    "functions": [
+      "extend_controller"
+    ],
+    "lines": 148
+  },
+  "backend.autonomy.l4_controller.__init__": {
+    "file": "backend\\autonomy\\l4_controller\\__init__.py",
+    "imports": [
+      "controller_layer",
+      "vision_integration"
+    ],
+    "classes": [],
+    "functions": [],
+    "lines": 2
+  },
+  "backend.autonomy.patches.world_state_patch": {
+    "file": "backend\\autonomy\\patches\\world_state_patch.py",
+    "imports": [
+      "__future__",
+      "logging"
+    ],
+    "classes": [],
+    "functions": [
+      "apply_patches",
+      "_patch_world_state",
+      "_patch_semantic_store",
+      "_patch_notification_hub"
+    ],
+    "lines": 155
+  },
+  "backend.autonomy.patches.__init__": {
+    "file": "backend\\autonomy\\patches\\__init__.py",
+    "imports": [
+      "world_state_patch"
+    ],
+    "classes": [],
+    "functions": [],
+    "lines": 1
+  },
+  "archive.duplicates.files (6).pc_automation": {
+    "file": "archive\\duplicates\\files (6)\\pc_automation.py",
+    "imports": [
+      "datetime",
+      "json",
+      "os",
+      "pathlib",
+      "platform",
+      "pyautogui",
+      "re",
+      "selenium",
+      "selenium.webdriver.chrome.options",
+      "selenium.webdriver.chrome.service",
+      "selenium.webdriver.common.by",
+      "selenium.webdriver.common.keys",
+      "selenium.webdriver.support",
+      "selenium.webdriver.support.ui",
+      "subprocess",
+      "time",
+      "typing",
+      "urllib.parse",
+      "webbrowser",
+      "webdriver_manager.chrome"
+    ],
+    "classes": [
+      "ContactsDB",
+      "BrowserManager",
+      "WhatsAppSender",
+      "InstagramSender",
+      "SystemCtrl",
+      "Parser"
+    ],
+    "functions": [
+      "launch_app",
+      "execute_command"
+    ],
+    "lines": 617
+  },
+  "archive.duplicates.files (6).routes": {
+    "file": "archive\\duplicates\\files (6)\\routes.py",
+    "imports": [
+      "fastapi",
+      "pc_automation",
+      "re",
+      "typing"
+    ],
+    "classes": [],
+    "functions": [
+      "run_command",
+      "list_contacts",
+      "search_contacts",
+      "add_contact",
+      "delete_contact",
+      "send_whatsapp",
+      "send_instagram",
+      "open_url",
+      "google_search",
+      "youtube",
+      "maps_search",
+      "list_sites",
+      "open_app",
+      "list_apps",
+      "screenshot",
+      "volume",
+      "lock_screen",
+      "sleep_pc",
+      "shutdown_pc",
+      "cancel_shutdown"
+    ],
+    "lines": 191
+  },
+  "archive.duplicates.files (7).pc_automation": {
+    "file": "archive\\duplicates\\files (7)\\pc_automation.py",
+    "imports": [
+      "datetime",
+      "json",
+      "os",
+      "pathlib",
+      "platform",
+      "pyautogui",
+      "re",
+      "selenium",
+      "selenium.webdriver.chrome.options",
+      "selenium.webdriver.chrome.service",
+      "selenium.webdriver.common.by",
+      "selenium.webdriver.common.keys",
+      "selenium.webdriver.support",
+      "selenium.webdriver.support.ui",
+      "subprocess",
+      "time",
+      "typing",
+      "urllib.parse",
+      "webbrowser",
+      "webdriver_manager.chrome"
+    ],
+    "classes": [
+      "ContactsDB",
+      "BrowserManager",
+      "WhatsAppSender",
+      "InstagramSender",
+      "SystemCtrl",
+      "Parser"
+    ],
+    "functions": [
+      "launch_app",
+      "execute_command"
+    ],
+    "lines": 617
+  },
+  "archive.duplicates.files (7).routes": {
+    "file": "archive\\duplicates\\files (7)\\routes.py",
+    "imports": [
+      "fastapi",
+      "pc_automation",
+      "re",
+      "typing"
+    ],
+    "classes": [],
+    "functions": [
+      "run_command",
+      "list_contacts",
+      "search_contacts",
+      "add_contact",
+      "delete_contact",
+      "send_whatsapp",
+      "send_instagram",
+      "open_url",
+      "google_search",
+      "youtube",
+      "maps_search",
+      "list_sites",
+      "open_app",
+      "list_apps",
+      "screenshot",
+      "volume",
+      "lock_screen",
+      "sleep_pc",
+      "shutdown_pc",
+      "cancel_shutdown"
+    ],
+    "lines": 191
+  },
+  "archive.duplicates.files (9).main": {
+    "file": "archive\\duplicates\\files (9)\\main.py",
+    "imports": [
+      "api.server",
+      "asyncio",
+      "contextlib",
+      "fastapi",
+      "fastapi.middleware.cors",
+      "orchestrator.brain",
+      "os",
+      "sys"
+    ],
+    "classes": [],
+    "functions": [
+      "lifespan",
+      "legacy_chat",
+      "api_status",
+      "root"
+    ],
+    "lines": 119
+  },
+  "apps.jarvis_app.ios.Flutter.ephemeral.flutter_lldb_helper": {
+    "file": "apps\\jarvis_app\\ios\\Flutter\\ephemeral\\flutter_lldb_helper.py",
+    "imports": [
+      "lldb"
+    ],
+    "classes": [],
+    "functions": [
+      "handle_new_rx_page",
+      "__lldb_init_module"
+    ],
+    "lines": 32
+  }
+}

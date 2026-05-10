@@ -1,0 +1,1461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JARVIS AI - Personal Life OS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Share+Tech&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-blue: #00d4ff;
+            --secondary-blue: #0078ff;
+            --accent-cyan: #00fff2;
+            --dark-bg: #0a0a0f;
+            --darker-bg: #050508;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-border-hover: rgba(0, 212, 255, 0.3);
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.6);
+            --text-dim: rgba(255, 255, 255, 0.4);
+            --success: #00ff88;
+            --warning: #ffaa00;
+            --error: #ff4466;
+            --gradient-dark: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #0a0a0f 100%);
+            --gradient-blue: linear-gradient(135deg, #0078ff 0%, #00d4ff 50%, #00fff2 100%);
+            --glow-blue: 0 0 30px rgba(0, 212, 255, 0.3);
+            --glow-cyan: 0 0 50px rgba(0, 255, 242, 0.2);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: var(--darker-bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            cursor: default;
+        }
+
+        /* 3D Animated Background */
+        .bg-3d {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .bg-3d::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: 
+                radial-gradient(ellipse at 20% 20%, rgba(0, 120, 255, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(0, 212, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(0, 255, 242, 0.05) 0%, transparent 70%);
+            animation: bgFloat 20s ease-in-out infinite;
+        }
+
+        .grid-lines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: gridMove 30s linear infinite;
+        }
+
+        .floating-shapes {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            perspective: 1000px;
+        }
+
+        .shape {
+            position: absolute;
+            border: 1px solid rgba(0, 212, 255, 0.1);
+            transform-style: preserve-3d;
+            animation: float3d 15s ease-in-out infinite;
+        }
+
+        .shape-1 {
+            width: 300px;
+            height: 300px;
+            top: 10%;
+            left: 10%;
+            border-radius: 50%;
+            animation-delay: 0s;
+        }
+
+        .shape-2 {
+            width: 200px;
+            height: 200px;
+            top: 60%;
+            right: 15%;
+            border-radius: 30%;
+            transform: rotateX(60deg);
+            animation-delay: -5s;
+        }
+
+        .shape-3 {
+            width: 150px;
+            height: 150px;
+            bottom: 20%;
+            left: 30%;
+            transform: rotateY(45deg);
+            animation-delay: -10s;
+        }
+
+        @keyframes bgFloat {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            25% { transform: translate(20px, -20px) rotate(5deg); }
+            50% { transform: translate(0, -40px) rotate(0deg); }
+            75% { transform: translate(-20px, -20px) rotate(-5deg); }
+        }
+
+        @keyframes gridMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+
+        @keyframes float3d {
+            0%, 100% { transform: translateZ(0) rotateX(0deg) rotateY(0deg); }
+            25% { transform: translateZ(50px) rotateX(10deg) rotateY(10deg); }
+            50% { transform: translateZ(0) rotateX(0deg) rotateY(0deg); }
+            75% { transform: translateZ(-30px) rotateX(-10deg) rotateY(-10deg); }
+        }
+
+        /* Main Container */
+        .app-container {
+            display: flex;
+            height: 100vh;
+            padding: 20px;
+            gap: 20px;
+        }
+
+        /* Glass Card Effect */
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass-card:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: var(--glass-border-hover);
+            box-shadow: var(--glow-blue);
+            transform: translateY(-2px);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .logo-icon {
+            width: 50px;
+            height: 50px;
+            background: var(--gradient-blue);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 20px;
+            color: white;
+            box-shadow: var(--glow-blue);
+            animation: logoPulse 3s ease-in-out infinite;
+        }
+
+        @keyframes logoPulse {
+            0%, 100% { box-shadow: var(--glow-blue); }
+            50% { box-shadow: 0 0 50px rgba(0, 212, 255, 0.5); }
+        }
+
+        .logo-text {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 22px;
+            font-weight: 700;
+            background: var(--gradient-blue);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .nav-label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-dim);
+            padding: 8px 16px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 16px;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 3px;
+            height: 100%;
+            background: var(--primary-blue);
+            transform: scaleY(0);
+            transition: transform 0.3s ease;
+        }
+
+        .nav-item:hover::before,
+        .nav-item.active::before {
+            transform: scaleY(1);
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            background: rgba(0, 212, 255, 0.1);
+        }
+
+        .nav-item.active {
+            background: rgba(0, 212, 255, 0.15);
+        }
+
+        .nav-icon {
+            width: 22px;
+            height: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            transition: all 0.3s ease;
+        }
+
+        .nav-item:hover .nav-icon,
+        .nav-item.active .nav-icon {
+            color: var(--primary-blue);
+        }
+
+        .nav-text {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            transition: all 0.3s ease;
+        }
+
+        .nav-item:hover .nav-text,
+        .nav-item.active .nav-text {
+            color: var(--text-primary);
+        }
+
+        /* Status Indicator */
+        .status-panel {
+            padding: 20px;
+            margin-top: auto;
+        }
+
+        .status-title {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-dim);
+            margin-bottom: 12px;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 0;
+        }
+
+        .status-label {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: statusPulse 2s ease-in-out infinite;
+        }
+
+        .status-dot.online {
+            background: var(--success);
+            box-shadow: 0 0 10px var(--success);
+        }
+
+        .status-dot.offline {
+            background: var(--error);
+            box-shadow: 0 0 10px var(--error);
+        }
+
+        @keyframes statusPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Header */
+        .header {
+            padding: 20px 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .header-subtitle {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .icon-btn {
+            width: 46px;
+            height: 46px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .icon-btn::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: var(--gradient-blue);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .icon-btn:hover::after {
+            opacity: 0.15;
+        }
+
+        .icon-btn i {
+            position: relative;
+            z-index: 1;
+            color: var(--text-primary);
+            font-size: 18px;
+        }
+
+        /* Chat Area */
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 8px;
+            overflow: hidden;
+        }
+
+        .chat-display {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .chat-display::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-display::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .chat-display::-webkit-scrollbar-thumb {
+            background: var(--glass-border);
+            border-radius: 3px;
+        }
+
+        .message {
+            display: flex;
+            gap: 14px;
+            max-width: 85%;
+            animation: messageSlide 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes messageSlide {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .message-avatar.jarvis {
+            background: var(--gradient-blue);
+            color: white;
+        }
+
+        .message-avatar.user {
+            background: rgba(255, 170, 0, 0.2);
+            color: var(--warning);
+        }
+
+        .message-content {
+            padding: 16px 20px;
+            border-radius: 20px;
+            position: relative;
+        }
+
+        .message:not(.user) .message-content {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-bottom-left-radius: 4px;
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, rgba(0, 120, 255, 0.2) 0%, rgba(0, 212, 255, 0.1) 100%);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-bottom-right-radius: 4px;
+        }
+
+        .message-text {
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .message-verification {
+            position: absolute;
+            top: -10px;
+            right: 16px;
+            font-size: 9px;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 20px;
+            background: var(--darker-bg);
+            border: 1px solid;
+        }
+
+        .message-verification.verified {
+            border-color: var(--success);
+            color: var(--success);
+        }
+
+        .message-verification.assumed {
+            border-color: var(--warning);
+            color: var(--warning);
+        }
+
+        .message-verification.uncertain {
+            border-color: var(--error);
+            color: var(--error);
+        }
+
+        .message-time {
+            font-size: 10px;
+            color: var(--text-dim);
+            margin-top: 8px;
+            text-align: right;
+        }
+
+        .typing-indicator {
+            display: flex;
+            gap: 6px;
+            padding: 16px 20px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            border-bottom-left-radius: 4px;
+            width: fit-content;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--primary-blue);
+            animation: typingBounce 1.4s ease-in-out infinite;
+        }
+
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typingBounce {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-8px); }
+        }
+
+        /* Chat Input */
+        .chat-input-container {
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .voice-btn, .play-btn {
+            width: 52px;
+            height: 52px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .voice-btn.recording, .play-btn.playing {
+            background: rgba(255, 68, 102, 0.2);
+            border-color: var(--error);
+            animation: recordPulse 1s ease-in-out infinite;
+        }
+
+        @keyframes recordPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(255, 68, 102, 0.4); }
+            50% { box-shadow: 0 0 0 15px rgba(255, 68, 102, 0); }
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 16px 20px;
+            border-radius: 16px;
+            border: 1px solid var(--glass-border);
+            background: var(--glass-bg);
+            color: var(--text-primary);
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 15px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .chat-input::placeholder {
+            color: var(--text-dim);
+        }
+
+        .chat-input:focus {
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.1);
+        }
+
+        .send-btn {
+            width: 52px;
+            height: 52px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            background: var(--gradient-blue);
+            transition: all 0.3s ease;
+        }
+
+        .send-btn:hover {
+            transform: scale(1.05);
+            box-shadow: var(--glow-blue);
+        }
+
+        .send-btn i {
+            color: white;
+            font-size: 18px;
+        }
+
+        /* Right Panel */
+        .right-panel {
+            width: 320px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow-y: auto;
+        }
+
+        .panel-section {
+            padding: 20px;
+        }
+
+        .panel-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .panel-title i {
+            color: var(--primary-blue);
+        }
+
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .quick-action {
+            padding: 16px;
+            border-radius: 14px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .quick-action i {
+            font-size: 20px;
+            color: var(--primary-blue);
+        }
+
+        .quick-action span {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .tier-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .tier-badge.tier1 {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid var(--success);
+            color: var(--success);
+        }
+
+        .tier-badge.tier2 {
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid var(--primary-blue);
+            color: var(--primary-blue);
+        }
+
+        .tier-badge.tier3 {
+            background: rgba(255, 170, 0, 0.1);
+            border: 1px solid var(--warning);
+            color: var(--warning);
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            width: 90%;
+            max-width: 500px;
+            padding: 32px;
+            transform: scale(0.9) translateY(20px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .modal-overlay.active .modal {
+            transform: scale(1) translateY(0);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .modal-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .modal-close {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .settings-form {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .form-input {
+            padding: 14px 18px;
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+            background: var(--glass-bg);
+            color: var(--text-primary);
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            border-color: var(--primary-blue);
+        }
+
+        .form-select {
+            padding: 14px 18px;
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+            background: var(--glass-bg);
+            color: var(--text-primary);
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 14px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        /* Animations */
+        .fade-in {
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .slide-up {
+            animation: slideUp 0.5s ease forwards;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 3D Mouse Effect */
+        .tilt-element {
+            transform-style: preserve-3d;
+            transition: transform 0.1s ease;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--glass-border);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--glass-border-hover);
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .right-panel {
+                display: none;
+            }
+        }
+
+        @media (max-width: 900px) {
+            .sidebar {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 3D Animated Background -->
+    <div class="bg-3d">
+        <div class="grid-lines"></div>
+        <div class="floating-shapes">
+            <div class="shape shape-1"></div>
+            <div class="shape shape-2"></div>
+            <div class="shape shape-3"></div>
+        </div>
+    </div>
+
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar glass-card tilt-element">
+            <div class="logo">
+                <div class="logo-icon">J</div>
+                <span class="logo-text">JARVIS</span>
+            </div>
+
+            <nav class="nav-section">
+                <span class="nav-label">Main</span>
+                <div class="nav-item active" data-section="chat">
+                    <div class="nav-icon"><i class="fas fa-comments"></i></div>
+                    <span class="nav-text">Chat</span>
+                </div>
+                <div class="nav-item" data-section="brain">
+                    <div class="nav-icon"><i class="fas fa-brain"></i></div>
+                    <span class="nav-text">Mythos Brain</span>
+                </div>
+                <div class="nav-item" data-section="automation">
+                    <div class="nav-icon"><i class="fas fa-robot"></i></div>
+                    <span class="nav-text">Automation</span>
+                </div>
+                <div class="nav-item" data-section="agents">
+                    <div class="nav-icon"><i class="fas fa-users"></i></div>
+                    <span class="nav-text">Agents</span>
+                </div>
+                <div class="nav-item" data-section="memory">
+                    <div class="nav-icon"><i class="fas fa-memory"></i></div>
+                    <span class="nav-text">Memory</span>
+                </div>
+                <div class="nav-item" data-section="governance">
+                    <div class="nav-icon"><i class="fas fa-shield-alt"></i></div>
+                    <span class="nav-text">Governance</span>
+                </div>
+
+                <span class="nav-label">Tools</span>
+                <div class="nav-item" data-section="reminders">
+                    <div class="nav-icon"><i class="fas fa-bell"></i></div>
+                    <span class="nav-text">Reminders</span>
+                </div>
+                <div class="nav-item" data-section="notes">
+                    <div class="nav-icon"><i class="fas fa-sticky-note"></i></div>
+                    <span class="nav-text">Notes</span>
+                </div>
+                <div class="nav-item" data-section="files">
+                    <div class="nav-icon"><i class="fas fa-folder"></i></div>
+                    <span class="nav-text">Files</span>
+                </div>
+                <div class="nav-item" data-section="media">
+                    <div class="nav-icon"><i class="fas fa-music"></i></div>
+                    <span class="nav-text">Media</span>
+                </div>
+                <div class="nav-item" data-section="vision">
+                    <div class="nav-icon"><i class="fas fa-eye"></i></div>
+                    <span class="nav-text">Vision</span>
+                </div>
+            </nav>
+
+            <div class="status-panel">
+                <div class="status-title">System Status</div>
+                <div class="status-item">
+                    <span class="status-label">Server</span>
+                    <div class="status-indicator">
+                        <div class="status-dot online" id="server-status"></div>
+                        <span id="server-text">Online</span>
+                    </div>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Model</span>
+                    <div class="status-indicator">
+                        <span id="model-name">Loading...</span>
+                    </div>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Privacy</span>
+                    <div class="status-indicator">
+                        <span class="tier-badge tier1" id="privacy-tier">TIER 1</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="header glass-card">
+                <div>
+                    <h1 class="header-title">JARVIS Assistant</h1>
+                    <p class="header-subtitle">Your Personal AI Life Operating System</p>
+                </div>
+                <div class="header-actions">
+                    <div class="icon-btn" id="settings-btn" title="Settings">
+                        <i class="fas fa-cog"></i>
+                    </div>
+                    <div class="icon-btn" id="refresh-btn" title="Refresh">
+                        <i class="fas fa-sync"></i>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Chat Area -->
+            <section class="chat-area glass-card">
+                <div class="chat-display" id="chat-display">
+                    <!-- Messages will be inserted here -->
+                    <div class="message" style="align-self: center; margin: auto;">
+                        <div class="message-content" style="text-align: center;">
+                            <div class="message-text" style="font-family: 'Orbitron'; font-size: 16px; color: var(--primary-blue);">
+                                <i class="fas fa-robot" style="margin-right: 10px;"></i>
+                                AWAITING COMMAND
+                            </div>
+                            <div class="message-text" style="margin-top: 12px; color: var(--text-secondary);">
+                                Type a message or use voice input
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chat-input-container">
+                    <div class="voice-btn glass-card" id="voice-btn" title="Voice Input">
+                        <i class="fas fa-microphone"></i>
+                    </div>
+                    <input type="text" class="chat-input" id="chat-input" placeholder="Enter command or query...">
+                    <div class="play-btn glass-card" id="play-btn" title="Play Response">
+                        <i class="fas fa-volume-up"></i>
+                    </div>
+                    <div class="send-btn" id="send-btn">
+                        <i class="fas fa-paper-plane"></i>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Right Panel -->
+        <aside class="right-panel glass-card">
+            <div class="panel-section">
+                <h3 class="panel-title">
+                    <i class="fas fa-bolt"></i>
+                    Quick Actions
+                </h3>
+                <div class="quick-actions">
+                    <div class="quick-action glass-card" data-action="plan">
+                        <i class="fas fa-clipboard-list"></i>
+                        <span>Plan</span>
+                    </div>
+                    <div class="quick-action glass-card" data-action="goal">
+                        <i class="fas fa-bullseye"></i>
+                        <span>Goal</span>
+                    </div>
+                    <div class="quick-action glass-card" data-action="develop">
+                        <i class="fas fa-code"></i>
+                        <span>Develop</span>
+                    </div>
+                    <div class="quick-action glass-card" data-action="mode">
+                        <i class="fas fa-adjust"></i>
+                        <span>Mode</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <h3 class="panel-title">
+                    <i class="fas fa-microchip"></i>
+                    Active Models
+                </h3>
+                <div class="status-item">
+                    <span class="status-label">Chat</span>
+                    <span class="status-indicator" style="color: var(--primary-blue);" id="chat-model">qwen3:4b</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Code</span>
+                    <span class="status-indicator" style="color: var(--primary-blue);" id="code-model">qwen2.5-coder:3b</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Vision</span>
+                    <span class="status-indicator" style="color: var(--primary-blue);" id="vision-model">moondream</span>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <h3 class="panel-title">
+                    <i class="fas fa-history"></i>
+                    Recent Activity
+                </h3>
+                <div id="activity-list">
+                    <div class="status-item">
+                        <span class="status-label">Commands</span>
+                        <span class="status-indicator" id="command-count">0</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Reminders</span>
+                        <span class="status-indicator" id="reminder-count">0</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Notes</span>
+                        <span class="status-indicator" id="note-count">0</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal-overlay" id="settings-modal">
+        <div class="modal glass-card">
+            <div class="modal-header">
+                <h2 class="modal-title">Settings</h2>
+                <div class="modal-close" id="modal-close">
+                    <i class="fas fa-times"></i>
+                </div>
+            </div>
+            <div class="settings-form">
+                <div class="form-group">
+                    <label class="form-label">API Server URL</label>
+                    <input type="text" class="form-input" id="api-url" placeholder="http://127.0.0.1:8000">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Privacy Tier</label>
+                    <select class="form-select" id="privacy-select">
+                        <option value="tier_1">Tier 1 - Local Only (Maximum Privacy)</option>
+                        <option value="tier_2">Tier 2 - Hybrid (PII Stripped)</option>
+                        <option value="tier_3">Tier 3 - Cloud (Full Access)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Default Model</label>
+                    <select class="form-select" id="model-select">
+                        <option value="qwen3:4b">Qwen 3 (4B)</option>
+                        <option value="llama3.1:8b">Llama 3.1 (8B)</option>
+                        <option value="mistral:7b">Mistral (7B)</option>
+                        <option value="deepseek-r1:1.5b">DeepSeek R1 (1.5B)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // JARVIS Web UI - Professional 3D Desktop Interface
+        const API_URL = localStorage.getItem('jarvis_api_url') || 'http://127.0.0.1:8000';
+        let isRecording = false;
+        let isPlaying = false;
+        let currentTier = 'tier_1';
+        let ws = null;
+
+        // DOM Elements
+        const chatDisplay = document.getElementById('chat-display');
+        const chatInput = document.getElementById('chat-input');
+        const voiceBtn = document.getElementById('voice-btn');
+        const playBtn = document.getElementById('play-btn');
+        const sendBtn = document.getElementById('send-btn');
+        const settingsBtn = document.getElementById('settings-btn');
+        const refreshBtn = document.getElementById('refresh-btn');
+        const settingsModal = document.getElementById('settings-modal');
+        const modalClose = document.getElementById('modal-close');
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            checkServerStatus();
+            connectWebSocket();
+            loadHistory();
+        });
+
+        // Check Server Status
+        async function checkServerStatus() {
+            try {
+                const res = await fetch(`${API_URL}/health`);
+                const data = await res.json();
+                document.getElementById('server-status').className = 'status-dot online';
+                document.getElementById('server-text').textContent = 'Online';
+                document.getElementById('model-name').textContent = data.llm_available ? 'Ollama' : 'Offline';
+            } catch (e) {
+                document.getElementById('server-status').className = 'status-dot offline';
+                document.getElementById('server-text').textContent = 'Offline';
+                document.getElementById('model-name').textContent = 'N/A';
+            }
+        }
+
+        // Connect WebSocket
+        function connectWebSocket() {
+            try {
+                ws = new WebSocket(`ws://${API_URL.replace('http://', '')}/ws/chat_stream`);
+                
+                ws.onopen = () => {
+                    console.log('WS Connected');
+                };
+                
+                ws.onmessage = (event) => {
+                    const msg = JSON.parse(event.data);
+                    if (msg.type === 'stream_token') {
+                        handleStreamToken(msg);
+                    } else if (msg.type === 'tier_status') {
+                        updateTierDisplay(msg.tier);
+                    }
+                };
+                
+                ws.onerror = (e) => console.log('WS Error:', e);
+                ws.onclose = () => {
+                    setTimeout(connectWebSocket, 5000);
+                };
+            } catch (e) {
+                console.log('WS Connection failed:', e);
+            }
+        }
+
+        // Handle Stream Token
+        let currentMessageEl = null;
+        function handleStreamToken(msg) {
+            if (!currentMessageEl) {
+                addMessage('jarvis', '');
+                currentMessageEl = chatDisplay.querySelector('.message:not(.user):last-child .message-text');
+            }
+            
+            currentMessageEl.textContent += msg.token;
+            
+            if (msg.complete) {
+                const lastMsg = chatDisplay.querySelector('.message:not(.user):last-child');
+                if (lastMsg) {
+                    const verification = document.createElement('span');
+                    verification.className = `message-verification ${msg.verification?.toLowerCase() || 'none'}`;
+                    verification.textContent = `[${msg.verification || 'NONE'}]`;
+                    lastMsg.querySelector('.message-content').appendChild(verification);
+                }
+                currentMessageEl = null;
+            }
+            
+            chatDisplay.scrollTop = chatDisplay.scrollHeight;
+        }
+
+        // Update Tier Display
+        function updateTierDisplay(tier) {
+            currentTier = tier;
+            document.getElementById('privacy-tier').textContent = tier.toUpperCase();
+            document.getElementById('privacy-tier').className = `tier-badge ${tier}`;
+        }
+
+        // Load Chat History
+        async function loadHistory() {
+            try {
+                const res = await fetch(`${API_URL}/api/chat/history`);
+                if (res.ok) {
+                    const history = await res.json();
+                    history.forEach(msg => {
+                        addMessage(msg.role, msg.message);
+                    });
+                }
+            } catch (e) {
+                console.log('History load failed:', e);
+            }
+        }
+
+        // Add Message to Chat
+        function addMessage(role, text) {
+            const now = new Date();
+            const time = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+            
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${role}`;
+            msgDiv.innerHTML = `
+                <div class="message-avatar ${role}">${role === 'jarvis' ? 'J' : 'U'}</div>
+                <div class="message-content">
+                    <div class="message-text">${text}</div>
+                    <div class="message-time">${time}</div>
+                </div>
+            `;
+            
+            chatDisplay.appendChild(msgDiv);
+            chatDisplay.scrollTop = chatDisplay.scrollHeight;
+        }
+
+        // Send Message
+        async function sendMessage() {
+            const text = chatInput.value.trim();
+            if (!text) return;
+            
+            chatInput.value = '';
+            addMessage('user', text);
+            
+            // Show typing indicator
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'message';
+            typingDiv.id = 'typing-indicator';
+            typingDiv.innerHTML = `
+                <div class="message-avatar jarvis">J</div>
+                <div class="typing-indicator">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                </div>
+            `;
+            chatDisplay.appendChild(typingDiv);
+            chatDisplay.scrollTop = chatDisplay.scrollHeight;
+            
+            try {
+                const res = await fetch(`${API_URL}/api/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: text })
+                });
+                
+                const data = await res.json();
+                
+                // Remove typing
+                document.getElementById('typing-indicator')?.remove();
+                
+                addMessage('jarvis', data.response || data.text || 'No response');
+                
+                // Update tier display
+                if (data.tier) updateTierDisplay(data.tier);
+                if (data.verification) {
+                    updateVerification(data.verification);
+                }
+            } catch (e) {
+                document.getElementById('typing-indicator')?.remove();
+                addMessage('jarvis', 'Connection error. Is the server running?');
+            }
+        }
+
+        // Update Verification Badge
+        function updateVerification(verification) {
+            const lastMsg = chatDisplay.querySelector('.message:not(.user):last-child');
+            if (lastMsg) {
+                const existing = lastMsg.querySelector('.message-verification');
+                existing?.remove();
+                
+                const badge = document.createElement('span');
+                badge.className = `message-verification ${verification.toLowerCase()}`;
+                badge.textContent = `[${verification}]`;
+                lastMsg.querySelector('.message-content').appendChild(badge);
+            }
+        }
+
+        // Voice Recording
+        async function toggleVoice() {
+            if (isRecording) {
+                isRecording = false;
+                voiceBtn.classList.remove('recording');
+                voiceBtn.querySelector('i').className = 'fas fa-microphone';
+            } else {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    // In production, send audio to STT endpoint
+                    isRecording = true;
+                    voiceBtn.classList.add('recording');
+                    voiceBtn.querySelector('i').className = 'fas fa-stop';
+                } catch (e) {
+                    console.log('Mic error:', e);
+                }
+            }
+        }
+
+        // Play TTS
+        async function playResponse() {
+            if (isPlaying) {
+                isPlaying = false;
+                playBtn.classList.remove('playing');
+                playBtn.querySelector('i').className = 'fas fa-volume-up';
+            } else {
+                isPlaying = true;
+                playBtn.classList.add('playing');
+                playBtn.querySelector('i').className = 'fas fa-stop';
+                // In production, fetch TTS and play
+            }
+        }
+
+        // Quick Actions
+        function executeQuickAction(action) {
+            chatInput.value = `/${action} `;
+            chatInput.focus();
+        }
+
+        // Event Listeners
+        sendBtn.addEventListener('click', sendMessage);
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+        voiceBtn.addEventListener('click', toggleVoice);
+        playBtn.addEventListener('click', playResponse);
+
+        settingsBtn.addEventListener('click', () => {
+            settingsModal.classList.add('active');
+        });
+        modalClose.addEventListener('click', () => {
+            settingsModal.classList.remove('active');
+        });
+        settingsModal.addEventListener('click', (e) => {
+            if (e.target === settingsModal) {
+                settingsModal.classList.remove('active');
+            }
+        });
+
+        refreshBtn.addEventListener('click', () => {
+            checkServerStatus();
+        });
+
+        document.querySelectorAll('.quick-action').forEach(btn => {
+            btn.addEventListener('click', () => {
+                executeQuickAction(btn.dataset.action);
+            });
+        });
+
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', () => {
+                document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+            });
+        });
+
+        // 3D Mouse Tilt Effect
+        document.querySelectorAll('.tilt-element').forEach(el => {
+            el.addEventListener('mousemove', (e) => {
+                const rect = el.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                const rotateX = (y - centerY) / 20;
+                const rotateY = (centerX - x) / 20;
+                
+                el.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+            });
+            
+            el.addEventListener('mouseleave', () => {
+                el.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg)';
+            });
+        });
+
+        // Save Settings
+        document.getElementById('api-url').addEventListener('change', (e) => {
+            localStorage.setItem('jarvis_api_url', e.target.value);
+        });
+    </script>
+</body>
+</html>
