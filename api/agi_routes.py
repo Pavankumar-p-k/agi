@@ -42,7 +42,9 @@ class ConfigRequest(BaseModel):
     dnd_hours:            Optional[list]  = None
 
 
-# ── Routes ─────────────────────────────────────────────────
+# -------------------------------------------------------------
+# Routes
+# -------------------------------------------------------------
 
 @router.get("/status")
 async def agi_status():

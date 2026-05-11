@@ -67,6 +67,7 @@ async def initialize_autonomous_stack():
             
         try:
             from jarvis_os.memory.memory_manager import MemoryManager
+            semantic_store = MemoryManager(None) # Or appropriate init
         except:
             semantic_store = None
             
@@ -105,7 +106,7 @@ async def initialize_autonomous_stack():
                 world_state=world_state,
                 personality=personality_filter
             )
-            logger.info("[AUTONOMY] ✓ L1 Brain Layer online")
+            logger.info("[AUTONOMY] [OK] L1 Brain Layer online")
         except Exception as e:
             logger.error(f"[AUTONOMY] L1 Brain Layer failed: {e}")
             _brain_layer = None
@@ -128,7 +129,7 @@ async def initialize_autonomous_stack():
             )
             # Async scan in background (scan is blocking, run in thread)
             asyncio.create_task(asyncio.to_thread(_assistant_layer.scan, str(project_root)))
-            logger.info("[AUTONOMY] ✓ L2 Assistant Layer online (scanning project...)")
+            logger.info("[AUTONOMY] [OK] L2 Assistant Layer online (scanning project...)")
         except Exception as e:
             logger.error(f"[AUTONOMY] L2 Assistant Layer failed: {e}")
             _assistant_layer = None
@@ -145,7 +146,7 @@ async def initialize_autonomous_stack():
                 tool_registry = None
             
             _executor_layer = ExecutorLayer()
-            logger.info("[AUTONOMY] ✓ L3 Executor Layer online")
+            logger.info("[AUTONOMY] [OK] L3 Executor Layer online")
         except Exception as e:
             logger.error(f"[AUTONOMY] L3 Executor Layer failed: {e}")
             _executor_layer = None
@@ -173,7 +174,7 @@ async def initialize_autonomous_stack():
                 workspace=str(project_root),
                 strict=True,
             )
-            logger.info("[AUTONOMY] ✓ L4 Controller Layer online")
+            logger.info("[AUTONOMY] [OK] L4 Controller Layer online")
         except Exception as e:
             logger.error(f"[AUTONOMY] L4 Controller Layer failed: {e}")
             _controller_layer = None
@@ -195,7 +196,7 @@ async def initialize_autonomous_stack():
                     semantic_store,
                     notification_hub,
                 )
-                logger.info("[AUTONOMY] ✓ Orchestrator wired, 4 layers integrated")
+                logger.info("[AUTONOMY] [OK] Orchestrator wired, 4 layers integrated")
             else:
                 logger.warning("[AUTONOMY] Not all 4 layers initialized, skipping orchestrator")
                 _orchestrator = None
@@ -217,7 +218,7 @@ async def initialize_autonomous_stack():
                     personality=personality_filter,
                 )
                 asyncio.create_task(_proactive_worker.run())
-                logger.info("[AUTONOMY] ✓ Proactive Worker running (background, 30s checks)")
+                logger.info("[AUTONOMY] [OK] Proactive Worker running (background, 30s checks)")
         except Exception as e:
             logger.error(f"[AUTONOMY] Proactive Worker failed: {e}")
             _proactive_worker = None
@@ -239,7 +240,7 @@ async def initialize_autonomous_stack():
             except Exception as e:
                 logger.warning(f"[AUTONOMY] Failed to inject API dependencies: {e}")
 
-            logger.info("[AUTONOMY] All layers ONLINE ✓")
+            logger.info("[AUTONOMY] All layers ONLINE [OK]")
             return True
         else:
             logger.warning("[AUTONOMY] Initialization incomplete, some layers missing")

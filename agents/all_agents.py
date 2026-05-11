@@ -55,7 +55,7 @@ class ClassifierAgent:
         return FALLBACK
 
 
-# ──────────────────────────────────────────────────────────────
+# --------------------------------------------------------------
 # agents/emotion.py
 #
 # EMOTION AGENT — uses tinyllama (small fast prompt)
@@ -87,7 +87,7 @@ class EmotionAgent:
         return emotion if emotion in valid else "neutral"
 
 
-# ──────────────────────────────────────────────────────────────
+# --------------------------------------------------------------
 # agents/generator.py
 #
 # GENERATOR AGENT — routes to correct model and generates reply
@@ -212,7 +212,7 @@ class GeneratorAgent:
         )
 
 
-# ──────────────────────────────────────────────────────────────
+# --------------------------------------------------------------
 # agents/quality.py
 #
 # QUALITY CHECK AGENT — uses phi3:mini (fast, cheap)

@@ -30,10 +30,10 @@ C = {"c":"\033[96m","y":"\033[93m","g":"\033[92m","r":"\033[91m",
 def c(text, *s):
     return "".join(C.get(x,"") for x in s) + str(text) + C["R"]
 
-def hdr(t): print(f"\n{c('┌─ '+t,'c','b')}")
-def div():  print(c("─"*64,"d"))
-def ok(t):  print(c("  ✓ ","g") + t)
-def err(t): print(c("  ✗ ","r") + t)
+def hdr(t): print(f"\n{c('+- '+t,'c','b')}")
+def div():  print(c("-" * 64,"d"))
+def ok(t):  print(c("  [OK] ","g") + t)
+def err(t): print(c("  [FAIL] ","r") + t)
 
 def api(endpoint, data=None, method=None):
     url     = SERVER + endpoint
@@ -108,7 +108,7 @@ def cmd_plan(args):
     print(f"  {c('Risk:','d')} {c(f'{risk:.2f}',rc)}\n")
 
     for s in r.get("steps",[]):
-        icon = "⚙" if s.get("has_code") else "▸"
+        icon = "[CODE]" if s.get("has_code") else ">"
         tool = f" [{s['tool']}]" if s.get("tool") else ""
         print(f"  {c(icon,'c')} {c(str(s['index'])+'.','d')} "
               f"{s['description']}{c(tool,'d')}")
@@ -155,15 +155,15 @@ def cmd_status(_args):
     if not r: return
 
     icons = {
-        "L1_brain":      "🧠 BRAIN      (L1) — JarvisBrain 8-agent pipeline",
-        "L2_assistant":  "⚡ ASSISTANT  (L2) — Codebase indexer + Codex",
-        "L3_executor":   "🔧 EXECUTOR   (L3) — TaskPlanner + sandbox loop",
-        "L4_controller": "🖥  CONTROLLER (L4) — Terminal + ADB + Safety",
-        "orchestrator":  "🔗 ORCHESTRATOR      — 4-layer router",
+        "L1_brain":      "[BRAIN]      (L1) - JarvisBrain 8-agent pipeline",
+        "L2_assistant":  "[ASSISTANT]  (L2) - Codebase indexer + Codex",
+        "L3_executor":   "[EXECUTOR]   (L3) - TaskPlanner + sandbox loop",
+        "L4_controller": "[CONTROLLER] (L4) - Terminal + ADB + Safety",
+        "orchestrator":  "[ORCHESTRATOR]      - 4-layer router",
     }
     for key, label in icons.items():
         active = r["layers"].get(key, False)
-        print(f"  {c('●' if active else '○', 'g' if active else 'r')} {label}")
+        print(f"  {c('(*)' if active else '( )', 'g' if active else 'r')} {label}")
 
     mem = r.get("memory",{})
     if mem.get("online"):
@@ -172,14 +172,14 @@ def cmd_status(_args):
 
     blocks = r.get("safety",{}).get("recent_blocks",[])
     if blocks:
-        print(c(f"\n  ⚠ {len(blocks)} recent safety blocks","y"))
+        print(c(f"\n  [WARN] {len(blocks)} recent safety blocks","y"))
 
     # Also show existing /health
     h = api("/health", method="GET")
     if h:
         print(c("\n  Core modules:","d"))
         for mod, active in h.get("modules",{}).items():
-            print(f"    {c('●' if active else '○','g' if active else 'd')} {mod}")
+            print(f"    {c('(*) ' if active else '( ) ','g' if active else 'd')} {mod}")
 
 
 def cmd_memory(args):
@@ -255,15 +255,15 @@ def cmd_logs(args):
 
 
 def cmd_chat(_args):
-    print(c("\n┌──────────────────────────────────────────────┐","c"))
-    print(c("│  JARVIS AUTONOMOUS — Interactive Chat          │","c"))
-    print(c("│  /plan  /run  /exec  /memory  /status  /logs  │","c"))
-    print(c("│  Type 'exit' to quit                           │","c"))
-    print(c("└──────────────────────────────────────────────┘\n","c"))
+    print(c("\n+----------------------------------------------+","c"))
+    print(c("|  JARVIS AUTONOMOUS - Interactive Chat          |","c"))
+    print(c("|  /plan  /run  /exec  /memory  /status  /logs  |","c"))
+    print(c("|  Type 'exit' to quit                           |","c"))
+    print(c("+----------------------------------------------+\n","c"))
 
     while True:
         try:
-            text = input(c("You › ","c")).strip()
+            text = input(c("You > ","c")).strip()
         except (KeyboardInterrupt, EOFError):
             print(c("\nGoodbye.","d")); break
         if not text: continue
@@ -277,7 +277,7 @@ def cmd_chat(_args):
         elif text.startswith("/status"):  cmd_status([])
         elif text.startswith("/logs"):    cmd_logs(text[6:].split())
         else:
-            print(c("JARVIS › ","c"), end="", flush=True)
+            print(c("JARVIS > ","c"), end="", flush=True)
             r = api("/think", {"text":text,"platform":"cli"})
             if r:
                 _fmt(r.get("reply",""))

@@ -30,15 +30,30 @@ ExecutionResult = LayerExecutionResult
 class ExecutorLayer:
     def __init__(self, engine: ExecutorEngine | None = None) -> None:
         self._engine = engine or ExecutorEngine()
+        self._execution_history: list[dict] = []
+
+    def recent(self, n: int = 10) -> list:
+        try:
+            return self._execution_history[-n:]
+        except Exception:
+            return []
 
     async def execute(self, goal: str, intent: str = "task", context: str = "", dry_run: bool = False) -> LayerExecutionResult:
         del intent, context
         if dry_run:
             return LayerExecutionResult(status=ExecStatus.SUCCESS, output="dry-run plan prepared", steps_done=0, steps_total=0)
         result = self._engine.execute(goal, steps=[{"description": goal}])
-        return LayerExecutionResult(
+        exec_result = LayerExecutionResult(
             status=ExecStatus.SUCCESS if result.status == "success" else ExecStatus.FAILED,
             output=result.output,
             steps_done=result.steps_done,
             steps_total=result.steps_total,
         )
+        self._execution_history.append({
+            "goal": goal,
+            "status": exec_result.status.value,
+            "output": exec_result.output,
+            "steps_done": exec_result.steps_done,
+            "steps_total": exec_result.steps_total,
+        })
+        return exec_result

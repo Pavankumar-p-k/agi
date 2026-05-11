@@ -1,9 +1,9 @@
 # core/agi_core.py
 #
-# ╔══════════════════════════════════════════════════════════════╗
-# ║          J.A.R.V.I.S  —  AGI BRAIN v1.0                    ║
-# ║  Autonomous General Intelligence Layer                       ║
-# ╠══════════════════════════════════════════════════════════════╣
+# +--------------------------------------------------------------+
+# |          J.A.R.V.I.S  -  AGI BRAIN v1.0                    |
+# |  Autonomous General Intelligence Layer                       |
+# +--------------------------------------------------------------+
 # ║  What makes this AGI (not just AI):                          ║
 # ║                                                              ║
 # ║  1. AUTONOMOUS DECISIONS  — acts without being asked         ║

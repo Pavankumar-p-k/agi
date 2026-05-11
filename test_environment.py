@@ -26,16 +26,16 @@ class Colors:
     BOLD = '\033[1m'
 
 def log_pass(msg: str):
-    print(f"{Colors.GREEN}✓ PASS{Colors.RESET} {msg}")
+    print(f"{Colors.GREEN}[PASS]{Colors.RESET} {msg}")
 
 def log_fail(msg: str):
-    print(f"{Colors.RED}✗ FAIL{Colors.RESET} {msg}")
+    print(f"{Colors.RED}[FAIL]{Colors.RESET} {msg}")
 
 def log_warn(msg: str):
-    print(f"{Colors.YELLOW}⚠ WARN{Colors.RESET} {msg}")
+    print(f"{Colors.YELLOW}[WARN]{Colors.RESET} {msg}")
 
 def log_info(msg: str):
-    print(f"{Colors.BLUE}ℹ INFO{Colors.RESET} {msg}")
+    print(f"{Colors.BLUE}[INFO]{Colors.RESET} {msg}")
 
 def log_header(msg: str):
     print(f"\n{Colors.BOLD}{Colors.BLUE}{'='*60}")
@@ -247,7 +247,7 @@ def test_fallback_chain() -> bool:
     
     fallback_chain = [
         ("ollama:tinyllama", "11434"),
-        ("ollama:qwen2.5-coder:3b", "11435"),
+        ("ollama:qwen2.5-coder:3b", "11434"),
         ("claude-3-opus", "online"),
         ("gpt-4", "online"),
     ]
@@ -336,7 +336,7 @@ def main():
         f.write(report)
     print(f"Report saved to: {report_file}")
     
-    return 0 if failed == 0 else 1
+    return 0 if passed == total else 1
 
 if __name__ == "__main__":
     sys.exit(main())

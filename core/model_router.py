@@ -12,15 +12,15 @@ from core.config import OLLAMA_URL
 
 # Default per-model endpoints (Option 2: one Ollama server per model).
 DEFAULT_MODEL_ENDPOINTS: Dict[str, str] = {
-    "tinyllama": "http://127.0.0.1:11434",
-    "deepseek-r1:1.5b": "http://127.0.0.1:11435",
-    "qwen2.5-coder:3b": "http://127.0.0.1:11436",
-    "qwen3:4b": "http://127.0.0.1:11437",
-    "qwen2.5:7b": "http://127.0.0.1:11438",
-    "mistral:7b": "http://127.0.0.1:11439",
-    "llama3.1:8b": "http://127.0.0.1:11440",
-    "phi3:mini": "http://127.0.0.1:11441",
-    "moondream": "http://127.0.0.1:11442",
+    "tinyllama": "http://localhost:11434",
+    "deepseek-r1:1.5b": "http://localhost:11434",
+    "qwen2.5-coder:3b": "http://localhost:11434",
+    "qwen3:4b": "http://localhost:11434",
+    "qwen2.5:7b": "http://localhost:11434",
+    "mistral:7b": "http://localhost:11434",
+    "llama3.1:8b": "http://localhost:11434",
+    "phi3:mini": "http://localhost:11434",
+    "moondream": "http://localhost:11434",
 }
 
 

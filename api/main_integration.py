@@ -19,7 +19,7 @@ async def on_startup():
 
     # ADD THIS:
     await init_agents()
-    print("[Main] Vision Agent ready ✓")
+    print("[Main] Vision Agent ready [OK]")
 
 
 # ─────────────────────────────────────────────────────────────

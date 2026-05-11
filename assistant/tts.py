@@ -5,16 +5,22 @@ import soundfile as sf
 from kokoro import KPipeline
 import torch
 
+_tts_instance = None
+
 class JarvisTTS:
     """
     Kokoro-TTS integration for JARVIS.
     """
     def __init__(self, voice: str = "af_heart"):
-        device = "cuda" if torch.cuda.is_available() else "cpu"
-        print(f"[TTS] Initializing Kokoro-TTS on {device}...")
-        self.pipeline = KPipeline(lang_code='a', device=device)
         self.voice = voice
+        self.pipeline = None
         self.cache = {}
+
+    def _ensure_model(self):
+        if self.pipeline is None:
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+            print(f"[TTS] Initializing Kokoro-TTS on {device}...")
+            self.pipeline = KPipeline(lang_code='a', device=device)
 
     def synthesize(self, text: str) -> bytes:
         """
@@ -23,6 +29,7 @@ class JarvisTTS:
         if text in self.cache:
             return self.cache[text]
 
+        self._ensure_model()
         start_time = time.time()
         
         generator = self.pipeline(
@@ -52,5 +59,8 @@ class JarvisTTS:
 
         return audio_bytes
 
-# Singleton instance
-tts = JarvisTTS(voice=os.getenv("TTS_VOICE", "af_heart"))
+def get_tts():
+    global _tts_instance
+    if _tts_instance is None:
+        _tts_instance = JarvisTTS(voice=os.getenv("TTS_VOICE", "af_heart"))
+    return _tts_instance

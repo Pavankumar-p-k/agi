@@ -270,7 +270,7 @@ from api.hybrid_integration import setup_hybrid_routes
 async def on_startup():
     # ... existing startup code ...
     await hybrid_manager._init_clients()
-    print("[Main] Hybrid Automation System ready ✓")
+    print("[Main] Hybrid Automation System ready [OK]")
 
 # 3. Setup routes (after other app.include_router calls)
 setup_hybrid_routes(app)

@@ -2,6 +2,7 @@ import time, asyncio
 from typing import Any
 from .config import AIOSConfig
 from .planner import Planner
+from jarvis_os.core.planner import PlanningEngine
 from .policy import PolicyEngine
 from .tool_registry import ToolRegistry, get_default_tool_registry
 from .model_router import ModelRouter
@@ -15,9 +16,12 @@ class AIOrchestrator:
         self.events = EventBus()
         self.memory = MemoryManager(self.config)
         self.model_router = ModelRouter(self.config)
-        self.planner = Planner(self.model_router, self.config, self.events)
-        self.policy = PolicyEngine(self.config)
         self.tools = get_default_tool_registry()
+        
+        # Correct instantiation matching Planner(planner: PlanningEngine | None, **kwargs)
+        engine = PlanningEngine(self.tools, self.model_router)
+        self.planner = Planner(planner=engine, router=self.model_router, config=self.config, events=self.events)
+        self.policy = PolicyEngine(self.config)
 
     def warmup_models(self) -> dict[str, Any]:
         """Warm up available models by checking Ollama status."""

@@ -202,7 +202,7 @@ class WhatsAppSender:
             print(f"[WhatsApp] Sent -> {contact_name}: {message[:50]}")
             return {"success": True, "to": contact_name}
         except Exception as e:
-            print(f"[WhatsApp] ✗ {e}")
+            print(f"[WhatsApp] [FAIL] {e}")
             return {"success": False, "error": str(e)}
 
     def send_by_number(self, phone: str, message: str) -> dict:

@@ -74,13 +74,11 @@ class HybridModelManager:
         self._performance_stats = {}
         self._fallback_history = []
 
-        # Initialize clients
-        self._init_clients()
-
-    def _init_clients(self):
+    async def _init_clients(self):
         """Initialize all model clients"""
-        # Ollama client (already exists)
-        self._clients[ModelProvider.OLLAMA] = httpx.AsyncClient(timeout=60.0)
+        # Ollama client
+        if ModelProvider.OLLAMA not in self._clients:
+            self._clients[ModelProvider.OLLAMA] = httpx.AsyncClient(timeout=60.0)
 
         # Codex CLI (local executable)
         if CODEX_CLI_PATH and os.path.exists(CODEX_CLI_PATH):
@@ -94,8 +92,12 @@ class HybridModelManager:
         if openai is not None and COPILOT_API_KEY:
             self._clients[ModelProvider.COPILOT] = openai.OpenAI(
                 api_key=COPILOT_API_KEY,
-                base_url="https://api.github.com/copilot"  # Placeholder - actual endpoint may vary
+                base_url="https://api.github.com/copilot"
             )
+
+    async def _warmup_models(self):
+        """Pre-warm models if needed"""
+        pass
 
     async def generate_with_fallback(
         self,

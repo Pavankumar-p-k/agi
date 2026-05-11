@@ -208,9 +208,10 @@ class LLMEngine:
             reply = response.json()["message"]["content"]
             self.conversation_history.append({"role": "assistant", "content": reply})
             return reply
+        except requests.exceptions.ConnectionError:
+            return "Ollama is offline. Run: ollama serve"
         except Exception as e:
-            # Fallback responses when LLM is unavailable
-            return self._fallback_response(user_message)
+            return f"Model error: {e}"
 
     def chat_stream(self, user_message: str):
         """Generator that yields response tokens as they arrive."""
@@ -239,108 +240,7 @@ class LLMEngine:
             yield f"LLM unavailable: {e}"
 
     def _fallback_response(self, message: str) -> str:
-        """Rule-based fallback when Ollama isn't running - with action execution!"""
-        msg = message.lower()
-        
-        # Time
-        if any(w in msg for w in ["time", "clock"]):
-            from datetime import datetime
-            return f"The current time is {datetime.now().strftime('%I:%M %p')}."
-        
-        # Greeting
-        if any(w in msg for w in ["hello", "hi", "hey"]):
-            return "Hello! I'm JARVIS. How can I assist you today?"
-        
-        # Reminder - CREATE IT!
-        if any(w in msg for w in ["remind", "reminder", "alert"]):
-            import re
-            # Try to extract reminder text
-            match = re.search(r'remind (.+) (to|at|on|in) (.+)', msg)
-            if match:
-                title = match.group(1).strip()
-                return self._create_reminder_fallback(title)
-            # Just "remind me to X"
-            match2 = re.search(r'remind me to (.+)', msg)
-            if match2:
-                title = match2.group(1).strip()
-                return self._create_reminder_fallback(title)
-            return "I'll set a reminder. What should I remind you about?"
-        
-        # Note - CREATE IT!
-        if any(w in msg for w in ["note", "write down", "remember this", "take note"]):
-            import re
-            match = re.search(r'(note|remember) (.+)', msg)
-            if match:
-                content = match.group(2).strip()
-                return self._create_note_fallback(content)
-            return "What would you like me to note down?"
-        
-        # Open apps
-        if any(w in msg for w in ["open", "launch", "start"]):
-            app = msg.replace("open", "").replace("launch", "").replace("start", "").strip()
-            if "youtube" in app:
-                return self._open_url_fallback("https://youtube.com")
-            if "amazon" in app:
-                return self._open_url_fallback("https://amazon.com")
-            if "google" in app:
-                return self._open_url_fallback("https://google.com")
-            if "whatsapp" in app:
-                return self._open_url_fallback("https://web.whatsapp.com")
-            return f"I'll open {app} for you."
-        
-        # Weather
-        if any(w in msg for w in ["weather"]):
-            return "I need an internet connection to check the weather. Please connect Ollama for full AI features."
-        
-        return "I'm currently running in limited mode. Please start Ollama for full AI capabilities."
-
-    def _create_reminder_fallback(self, title: str) -> str:
-        """Create reminder via API."""
-        import urllib.request, json
-        from datetime import datetime, timedelta
-        try:
-            remind_at = (datetime.now() + timedelta(hours=1)).isoformat()
-            data = json.dumps({
-                'title': title,
-                'remind_at': remind_at,
-                'description': 'From JARVIS chat'
-            }).encode()
-            req = urllib.request.Request(
-                'http://localhost:8000/api/reminders',
-                data=data,
-                headers={'Content-Type': 'application/json'}
-            )
-            urllib.request.urlopen(req, timeout=5)
-            return f"✓ Reminder set: {title}"
-        except Exception as e:
-            return f"I understood: '{title}' - but couldn't create reminder right now."
-
-    def _create_note_fallback(self, content: str) -> str:
-        """Create note via API."""
-        import urllib.request, json
-        try:
-            data = json.dumps({
-                'title': content[:50],
-                'content': content
-            }).encode()
-            req = urllib.request.Request(
-                'http://localhost:8000/api/notes',
-                data=data,
-                headers={'Content-Type': 'application/json'}
-            )
-            urllib.request.urlopen(req, timeout=5)
-            return f"✓ Note saved: {content[:30]}..."
-        except Exception as e:
-            return f"I understood: '{content[:30]}' - but couldn't save note right now."
-
-    def _open_url_fallback(self, url: str) -> str:
-        """Open URL in browser."""
-        import webbrowser
-        try:
-            webbrowser.open(url)
-            return f"✓ Opened {url}"
-        except:
-            return f"I'll open {url} for you."
+        return "Ollama is offline. Run: ollama serve"
 
     def clear_history(self):
         self.conversation_history = []
@@ -372,6 +272,69 @@ def detect_intent(text: str) -> str | None:
 
 
 # ══════════════════════════════════════════════
+#  OPEN / LAUNCH COMMAND EXECUTOR
+# ══════════════════════════════════════════════
+import webbrowser
+import subprocess
+
+KNOWN_APPS = {
+    "youtube": "https://youtube.com",
+    "google": "https://google.com",
+    "amazon": "https://amazon.com",
+    "whatsapp": "https://web.whatsapp.com",
+    "gmail": "https://gmail.com",
+    "github": "https://github.com",
+}
+
+KNOWN_DESKTOP_APPS = {
+    "notepad": "notepad.exe",
+    "calculator": "calc.exe",
+    "vscode": "code",
+    "explorer": "explorer.exe",
+}
+
+def execute_open_command(target: str) -> dict:
+    target_lower = target.lower().strip()
+
+    for keyword, url in KNOWN_APPS.items():
+        if keyword in target_lower:
+            webbrowser.open(url)
+            return {
+                "action": "opened_browser",
+                "target": keyword,
+                "url": url,
+                "success": True,
+                "message": f"Opened {keyword} in browser"
+            }
+
+    for keyword, exe in KNOWN_DESKTOP_APPS.items():
+        if keyword in target_lower:
+            try:
+                subprocess.Popen([exe])
+                return {
+                    "action": "opened_app",
+                    "target": keyword,
+                    "exe": exe,
+                    "success": True,
+                    "message": f"Launched {keyword}"
+                }
+            except Exception as e:
+                return {
+                    "action": "opened_app",
+                    "target": keyword,
+                    "success": False,
+                    "error": str(e)
+                }
+
+    return {
+        "action": "unknown",
+        "target": target,
+        "success": False,
+        "message": f"Don't know how to open: {target}"
+    }
+
+
+# ══════════════════════════════════════════════
 #  MAIN ASSISTANT (combines everything)
 # ══════════════════════════════════════════════
 class JarvisAssistant:
@@ -398,7 +361,6 @@ class JarvisAssistant:
         # Execute action if detected
         action_response = None
         if intent == "set_reminder":
-            # Extract what to remind
             match = re.search(r'remind me? (.+)', text.lower())
             if match:
                 what = match.group(1).strip()
@@ -406,26 +368,34 @@ class JarvisAssistant:
                 intent = "reminder_created"
         
         elif intent == "create_note":
-            # Extract note content
             parts = re.split(r'note|remember', text.lower(), maxsplit=1)
             if len(parts) > 1 and parts[1].strip():
                 action_response = await self._execute_note_action(parts[1].strip())
                 intent = "note_created"
         
         elif intent == "open_app":
-            if "youtube" in text.lower():
-                action_response = self._open_url_action("https://youtube.com")
-            elif "amazon" in text.lower():
-                action_response = self._open_url_action("https://amazon.com")
+            words = text.lower().split()
+            target = ""
+            for idx, w in enumerate(words):
+                if w in ("open", "launch", "start") and idx + 1 < len(words):
+                    target = words[idx + 1]
+                    break
+            if target:
+                action_result = execute_open_command(target)
+                action_message = action_result.get("message", "")
+                if action_result.get("success"):
+                    action_response = f"[ACTION]: {action_message}"
+                else:
+                    action_response = f"[ACTION FAILED]: {action_message}"
             else:
-                action_response = f"I'll try to open that."
+                action_response = "[ACTION]: Tried to open, but no target specified"
         
-        # Get LLM response (or fallback)
+        # Get LLM response
         response = self.llm.chat(text)
         
-        # If action was executed, prepend to response
+        # If action was executed, append to response
         if action_response:
-            response = f"{action_response}\n\n{response}"
+            response = f"{response}\n{action_response}"
         
         return {
             "intent": intent,
@@ -472,15 +442,6 @@ class JarvisAssistant:
         except Exception as e:
             return f"Could not save note: {e}"
     
-    def _open_url_action(self, url: str) -> str:
-        """Open URL in browser."""
-        import webbrowser
-        try:
-            webbrowser.open(url)
-            return f"✓ Opened {url}"
-        except:
-            return f"I'll open {url}."
-
     def start_voice_loop(self, on_response=None):
         """Start continuous voice assistant loop."""
         self.is_running = True

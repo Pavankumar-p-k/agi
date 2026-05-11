@@ -30,7 +30,7 @@ _running: Optional[str] = None   # currently running task id
 async def init_agents():
     global _agent
     _agent = VisionAgent()
-    print("[VisionAPI] Vision Agent ready ✓")
+    print("[VisionAPI] Vision Agent ready [OK]")
 
 
 def _get():
@@ -174,7 +174,7 @@ async def _execute(tid: str, instr: str, platform: str) -> dict:
             task.status = "done"
             task.t_end  = time.time()
             done  = sum(1 for s in task.steps if s.get("_status")=="done")
-            task.result = f"✓ {hit['name']} — {done}/{len(steps)} steps done"
+            task.result = f"[OK] {hit['name']} — {done}/{len(steps)} steps done"
             agent._history.append(task)
 
         else:

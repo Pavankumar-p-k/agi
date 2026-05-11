@@ -362,7 +362,10 @@ class JarvisTools:
         try:
             async with httpx.AsyncClient(timeout=10) as c:
                 await c.post(f"{JARVIS_API}/api/automation/browser/open", json={"url": url})
-        raise RuntimeError("Placeholder/swallowed exception removed")
+        except Exception as e:
+            print(f"[Reflector] open_url failed: {e}")
+            return False
+        return True
 
     async def get_daily_briefing(self) -> str:
         """Generate morning briefing text."""

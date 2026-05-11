@@ -1009,54 +1009,98 @@
             </div>
         </aside>
 
-        <!-- Main Content -->
-        <main class="main-content">
-            <header class="header glass-card">
-                <div>
-                    <h1 class="header-title">JARVIS Assistant</h1>
-                    <p class="header-subtitle">Your Personal AI Life Operating System</p>
+            <!-- Left Panel: Mythos Brain reasoning chain -->
+            <aside class="sidebar glass-card tilt-element" id="brain-panel" style="display: none; width: 350px;">
+                <div class="logo">
+                    <div class="logo-icon"><i class="fas fa-microchip"></i></div>
+                    <span class="logo-text">MYTHOS BRAIN</span>
                 </div>
-                <div class="header-actions">
-                    <div class="icon-btn" id="settings-btn" title="Settings">
-                        <i class="fas fa-cog"></i>
-                    </div>
-                    <div class="icon-btn" id="refresh-btn" title="Refresh">
-                        <i class="fas fa-sync"></i>
-                    </div>
-                </div>
-            </header>
-
-            <!-- Chat Area -->
-            <section class="chat-area glass-card">
-                <div class="chat-display" id="chat-display">
-                    <!-- Messages will be inserted here -->
-                    <div class="message" style="align-self: center; margin: auto;">
-                        <div class="message-content" style="text-align: center;">
-                            <div class="message-text" style="font-family: 'Orbitron'; font-size: 16px; color: var(--primary-blue);">
-                                <i class="fas fa-robot" style="margin-right: 10px;"></i>
-                                AWAITING COMMAND
-                            </div>
-                            <div class="message-text" style="margin-top: 12px; color: var(--text-secondary);">
-                                Type a message or use voice input
-                            </div>
+                <div class="nav-section">
+                    <span class="nav-label">Cognitive Patterns</span>
+                    <div id="reasoning-chain" style="display: flex; flex-direction: column; gap: 10px; padding: 10px;">
+                        <!-- Patterns will be inserted here -->
+                        <div class="status-item" style="border-bottom: 1px solid var(--glass-border); padding-bottom: 8px;">
+                            <span class="status-label">constitutional_check</span>
+                            <span class="status-indicator" style="color: var(--success);"><i class="fas fa-check-circle"></i></span>
                         </div>
                     </div>
                 </div>
+            </aside>
 
-                <div class="chat-input-container">
-                    <div class="voice-btn glass-card" id="voice-btn" title="Voice Input">
-                        <i class="fas fa-microphone"></i>
+            <!-- Main Content -->
+            <main class="main-content">
+                <header class="header glass-card">
+                    <div>
+                        <h1 class="header-title">JARVIS Assistant</h1>
+                        <p class="header-subtitle">Your Personal AI Life Operating System</p>
                     </div>
-                    <input type="text" class="chat-input" id="chat-input" placeholder="Enter command or query...">
-                    <div class="play-btn glass-card" id="play-btn" title="Play Response">
-                        <i class="fas fa-volume-up"></i>
+                    <div class="header-actions">
+                        <div class="tier-badge tier1" id="privacy-tier-display">LOCAL</div>
+                        <div class="icon-btn" id="brain-toggle-btn" title="Toggle Brain Dashboard">
+                            <i class="fas fa-brain"></i>
+                        </div>
+                        <div class="icon-btn" id="settings-btn" title="Settings">
+                            <i class="fas fa-cog"></i>
+                        </div>
                     </div>
-                    <div class="send-btn" id="send-btn">
-                        <i class="fas fa-paper-plane"></i>
+                </header>
+
+                <!-- Chat Area -->
+                <section class="chat-area glass-card">
+                    <div class="chat-display" id="chat-display">
+                        <!-- Messages will be inserted here -->
+                    </div>
+
+                    <div class="chat-input-container">
+                        <div class="voice-btn glass-card" id="voice-btn" title="Voice Input">
+                            <i class="fas fa-microphone"></i>
+                        </div>
+                        <input type="text" class="chat-input" id="chat-input" placeholder="Enter command or query...">
+                        <div class="send-btn" id="send-btn">
+                            <i class="fas fa-paper-plane"></i>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- Bottom Panel: Privacy Visualization -->
+                <footer class="glass-card" style="padding: 10px 20px; display: flex; align-items: center; justify-content: space-between;">
+                    <div style="font-size: 11px; color: var(--text-dim);">
+                        <i class="fas fa-shield-halved" style="margin-right: 8px;"></i>
+                        PRIVACY ROUTING: <span id="privacy-reason" style="color: var(--text-secondary);">Analyzing intent...</span>
+                    </div>
+                    <div id="privacy-visual" style="display: flex; gap: 4px;">
+                        <div style="width: 20px; height: 4px; background: var(--success); border-radius: 2px;"></div>
+                        <div style="width: 20px; height: 4px; background: var(--glass-border); border-radius: 2px;"></div>
+                        <div style="width: 20px; height: 4px; background: var(--glass-border); border-radius: 2px;"></div>
+                    </div>
+                </footer>
+            </main>
+
+            <!-- Right Panel: System Metrics -->
+            <aside class="right-panel glass-card">
+                <div class="panel-section">
+                    <h3 class="panel-title">
+                        <i class="fas fa-server"></i>
+                        System Metrics
+                    </h3>
+                    <div class="status-item">
+                        <span class="status-label">GPU VRAM</span>
+                        <span class="status-indicator">4.2 / 12 GB</span>
+                    </div>
+                    <div style="width: 100%; height: 4px; background: var(--glass-border); border-radius: 2px; margin-bottom: 12px;">
+                        <div style="width: 35%; height: 100%; background: var(--primary-blue); border-radius: 2px;"></div>
+                    </div>
+                    
+                    <div class="status-item">
+                        <span class="status-label">Memory Tiers</span>
+                        <span class="status-indicator">Hot: 12% | Cold: 88%</span>
+                    </div>
+                    
+                    <div class="status-item">
+                        <span class="status-label">Search Queries</span>
+                        <span class="status-indicator" id="search-count">3</span>
                     </div>
                 </div>
-            </section>
-        </main>
 
         <!-- Right Panel -->
         <aside class="right-panel glass-card">

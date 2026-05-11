@@ -1,0 +1,393 @@
+﻿// lib/services/api_service.dart
+// JARVIS — Offline-first API client with local fallback
+import 'package:dio/dio.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../config/api_config.dart';
+import '../models/models.dart';
+import '../models/offline_models.dart';
+import '../db/local_db.dart';
+import '../ai/offline_ai.dart';
+import '../services/reminder_engine.dart';
+
+class ApiService {
+  late final Dio _dio;
+  static bool _online = false;
+  static DateTime _lastCheck = DateTime.fromMillisecondsSinceEpoch(0);
+
+  // Shared OfflineAI instance — loads dataset once for whole app
+  static final OfflineAI _localAI = OfflineAI();
+
+  ApiService() {
+    _dio = Dio(BaseOptions(
+      baseUrl: ApiConfig.baseUrl,
+      connectTimeout: const Duration(seconds: 5),
+      receiveTimeout: const Duration(seconds: 20),
+    ));
+
+    _dio.interceptors.add(InterceptorsWrapper(
+      onRequest: (options, handler) async {
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          final saved = prefs.getString('api_url');
+          if (saved != null && saved.trim().isNotEmpty) {
+            options.baseUrl = saved.trim();
+          }
+        } catch (_) {}
+        handler.next(options);
+      },
+      onError: (err, handler) => handler.next(err),
+    ));
+  }
+
+  // —— Connectivity ————————————————————————————————
+  Future<bool> isOnline() async {
+    if (DateTime.now().difference(_lastCheck).inSeconds < 8) return _online;
+    try {
+      final r = await _dio.get(ApiConfig.health);
+      _online = r.statusCode == 200;
+    } catch (_) {
+      _online = false;
+    }
+    _lastCheck = DateTime.now();
+    return _online;
+  }
+
+  // —— CHAT — server first, local AI fallback —————————
+  Future<Map<String, dynamic>> chat(String message) async {
+    if (await isOnline()) {
+      try {
+        final r = await _dio.post(ApiConfig.chat, data: {'message': message});
+        final reply = (r.data as Map)['response'] ?? (r.data as Map)['text'] ?? '';
+        if (reply.toString().isNotEmpty) {
+          await localDB.saveMessage('user', message);
+          await localDB.saveMessage('assistant', reply.toString());
+          return r.data as Map<String, dynamic>;
+        }
+      } catch (_) {}
+    }
+    // Local model fallback
+    final resp = await _localAI.process(message,
+        friendType: 'normal', language: 'mixed');
+    await localDB.saveMessage('user', message);
+    await localDB.saveMessage('assistant', resp.text);
+    return {'response': resp.text, 'source': 'local_model'};
+  }
+
+  Future<List<ChatMessage>> getChatHistory() async {
+    if (await isOnline()) {
+      try {
+        final r = await _dio.get(ApiConfig.chatHistory);
+        return (r.data as List).map((j) => ChatMessage.fromJson(j)).toList();
+      } catch (_) {}
+    }
+    final rows = await localDB.getHistory(limit: 40);
+    return rows.reversed.map((h) => ChatMessage(
+      role: h['role'] as String,
+      message: h['message'] as String,
+      timestamp: DateTime.tryParse(h['timestamp'] as String? ?? '') ?? DateTime.now(),
+    )).toList();
+  }
+
+  // —— Reminders — local SQLite first, server sync ——————
+  Future<List<Reminder>> getReminders() async {
+    final local = await localDB.getReminders();
+    if (await isOnline()) {
+      _pullRemindersFromServer();
+    }
+    return local.map((r) => Reminder(
+      id: r.id ?? 0,
+      title: r.title,
+      description: r.description,
+      remindAt: r.remindAt,
+      repeat: r.repeat,
+      isDone: r.isDone,
+    )).toList();
+  }
+
+  Future<Reminder> createReminder({
+    required String title,
+    required DateTime remindAt,
+    String description = '',
+    String repeat = 'none',
+  }) async {
+    final model = ReminderModel(
+      title: title,
+      description: description,
+      remindAt: remindAt,
+      repeat: repeat,
+    );
+    final id = await localDB.insertReminder(model);
+
+    await ReminderEngine.scheduleReminder(ReminderModel(
+      id: id,
+      title: title,
+      description: description,
+      remindAt: remindAt,
+      repeat: repeat,
+    ));
+
+    if (await isOnline()) {
+      try {
+        await _dio.post(ApiConfig.reminders, data: {
+          'title': title,
+          'remind_at': remindAt.toIso8601String(),
+          'description': description,
+          'repeat': repeat,
+        });
+      } catch (_) {}
+    }
+    return Reminder(id: id, title: title, description: description,
+        remindAt: remindAt, repeat: repeat);
+  }
+
+  Future<void> deleteReminder(int id) async {
+    await localDB.deleteReminder(id);
+    await ReminderEngine.cancelReminder(id);
+    if (await isOnline()) {
+      try { await _dio.delete('${ApiConfig.reminders}/$id'); } catch (_) {}
+    }
+  }
+
+  // —— Notes — local SQLite first ————————————————
+  Future<List<Note>> getNotes() async {
+    final local = await localDB.getNotes();
+    return local.map((n) => Note(
+      id: n.id ?? 0,
+      title: n.title,
+      content: n.content,
+      tags: n.tags,
+      updatedAt: DateTime.now(),
+    )).toList();
+  }
+
+  Future<Note> createNote(String title, String content, {String tags = ''}) async {
+    final model = NoteModel(title: title, content: content, tags: tags);
+    final id = await localDB.insertNote(model);
+    if (await isOnline()) {
+      try {
+        await _dio.post(ApiConfig.notes, data: {
+          'title': title,
+          'content': content,
+          'tags': tags,
+        });
+      } catch (_) {}
+    }
+    return Note(id: id, title: title, content: content,
+        tags: tags, updatedAt: DateTime.now());
+  }
+
+  Future<void> updateNote(int id, {String? title, String? content}) async {
+    final all = await localDB.getNotes();
+    final note = all.firstWhere(
+      (n) => n.id == id,
+      orElse: () => NoteModel(title: '', content: ''),
+    );
+    if (note.id == null) return;
+    note.title = title ?? note.title;
+    note.content = content ?? note.content;
+    await localDB.updateNote(note);
+
+    if (await isOnline()) {
+      try {
+        await _dio.put('${ApiConfig.notes}/$id', data: {
+          if (title != null) 'title': title,
+          if (content != null) 'content': content,
+        });
+      } catch (_) {}
+    }
+  }
+
+  Future<void> deleteNote(int id) async {
+    await localDB.deleteNote(id);
+    if (await isOnline()) {
+      try { await _dio.delete('${ApiConfig.notes}/$id'); } catch (_) {}
+    }
+  }
+
+  // —— Server-only features ————————————————————————
+  Future<List<Activity>> getTodayActivity() async {
+    if (!await isOnline()) return [];
+    try {
+      final res = await _dio.get(ApiConfig.activity);
+      return (res.data as List).map((j) => Activity.fromJson(j)).toList();
+    } catch (_) { return []; }
+  }
+
+  Future<DailySummary> getDailySummary() async {
+    if (!await isOnline()) return DailySummary(
+      date: DateTime.now().toIso8601String(),
+      summary: 'Laptop offline',
+      productivityScore: 0,
+    );
+    try {
+      final res = await _dio.get(ApiConfig.summary);
+      return DailySummary.fromJson(res.data);
+    } catch (_) {
+      return DailySummary(
+        date: DateTime.now().toIso8601String(),
+        summary: 'Unavailable',
+        productivityScore: 0,
+      );
+    }
+  }
+
+  Future<bool> sendMessage(String platform, String recipient, String msg) async {
+    if (!await isOnline()) return false;
+    try {
+      final r = await _dio.post(ApiConfig.messageSend,
+          data: {'platform': platform, 'recipient': recipient, 'message': msg});
+      return r.statusCode == 200;
+    } catch (_) { return false; }
+  }
+
+  Future<List<KnownFace>> getFaces() async {
+    if (!await isOnline()) return [];
+    try {
+      final r = await _dio.get(ApiConfig.facesList);
+      return (r.data as List).map((j) => KnownFace.fromJson(j)).toList();
+    } catch (_) { return []; }
+  }
+
+  Future<Map<String, dynamic>> identifyFace(List<int> bytes) async {
+    if (!await isOnline()) return {'status': 'offline'};
+    try {
+      final f = await MultipartFile.fromBytes(bytes, filename: 'face.jpg');
+      final r = await _dio.post(ApiConfig.facesIdentify,
+          data: FormData.fromMap({'image': f}));
+      return r.data as Map<String, dynamic>;
+    } catch (_) { return {'status': 'error'}; }
+  }
+
+  Future<Map<String, dynamic>> registerFace({
+    required String name,
+    required List<List<int>> imageBytesList,
+    String relation = 'unknown',
+    String info = '',
+    String accessLevel = 'visitor',
+  }) async {
+    if (!await isOnline()) return {'status': 'offline'};
+    try {
+      final files = imageBytesList.asMap().entries.map((e) =>
+        MapEntry('images', MultipartFile.fromBytes(e.value,
+            filename: 'img_${e.key}.jpg'))).toList();
+      final form = FormData.fromMap({
+        'person_name': name,
+        'relation': relation,
+        'info': info,
+        'access_level': accessLevel,
+      });
+      for (final f in files) form.files.add(f);
+      final r = await _dio.post(ApiConfig.facesRegister, data: form);
+      return r.data as Map<String, dynamic>;
+    } catch (_) { return {'status': 'error'}; }
+  }
+
+  Future<MediaStatus> getMediaStatus() async {
+    if (!await isOnline()) {
+      return MediaStatus(
+        state: 'stopped', position: 0, volume: 80, shuffle: false, repeat: false,
+      );
+    }
+    try {
+      final res = await _dio.get(ApiConfig.mediaStatus);
+      return MediaStatus.fromJson(res.data as Map<String, dynamic>);
+    } catch (_) {
+      return MediaStatus(
+        state: 'stopped', position: 0, volume: 80, shuffle: false, repeat: false,
+      );
+    }
+  }
+
+  Future<void> mediaPlay({int? trackIndex, String? query}) async {
+    if (!await isOnline()) return;
+    try {
+      await _dio.post(ApiConfig.mediaPlay, queryParameters: {
+        if (trackIndex != null) 'track_index': trackIndex,
+        if (query != null) 'query': query,
+      });
+    } catch (_) {}
+  }
+
+  Future<void> mediaPause() async {
+    if (await isOnline()) {
+      try { await _dio.post(ApiConfig.mediaPause); } catch (_) {}
+    }
+  }
+
+  Future<void> mediaNext() async {
+    if (await isOnline()) {
+      try { await _dio.post(ApiConfig.mediaNext); } catch (_) {}
+    }
+  }
+
+  Future<void> setVolume(int vol) async {
+    if (await isOnline()) {
+      try { await _dio.post('${ApiConfig.mediaVolume}/$vol'); } catch (_) {}
+    }
+  }
+
+  Future<List<Track>> getPlaylist() async {
+    if (!await isOnline()) return [];
+    try {
+      final res = await _dio.get(ApiConfig.mediaPlaylist);
+      return (res.data as List).map((j) => Track.fromJson(j)).toList();
+    } catch (_) { return []; }
+  }
+
+  Future<List<Track>> getSuggestions(String mood) async {
+    if (!await isOnline()) return [];
+    try {
+      final res = await _dio.get('${ApiConfig.musicSuggest}/$mood');
+      return (res.data as List).map((j) => Track.fromJson(j)).toList();
+    } catch (_) { return []; }
+  }
+
+  Future<Map<String, dynamic>> listFiles(String path) async {
+    if (!await isOnline()) return {'files': [], 'dirs': []};
+    try {
+      final res = await _dio.get(ApiConfig.files, queryParameters: {'path': path});
+      return res.data as Map<String, dynamic>;
+    } catch (_) {
+      return {'files': [], 'dirs': []};
+    }
+  }
+
+  void _pullRemindersFromServer() async {
+    try {
+      final r = await _dio.get(ApiConfig.reminders);
+      for (final j in r.data as List) {
+        final m = ReminderModel(
+          title: j['title'],
+          description: j['description'] ?? '',
+          remindAt: DateTime.parse(j['remind_at']),
+          repeat: j['repeat'] ?? 'none',
+        );
+        await localDB.insertReminder(m);
+      }
+    } catch (_) {}
+  }
+
+  // —— Voice — STT and TTS —————————————————————
+  Future<String> transcribeAudio(String filePath) async {
+    try {
+      final file = await MultipartFile.fromFile(filePath, filename: 'audio.wav');
+      final form = FormData.fromMap({'audio': file});
+      final r = await _dio.post(ApiConfig.stt, data: form);
+      return (r.data as Map)['text'] as String? ?? '';
+    } catch (e) {
+      print('[STT] Error: $e');
+      return '';
+    }
+  }
+
+  Future<String> textToSpeech(String text) async {
+    try {
+      final r = await _dio.post(ApiConfig.tts, data: {'text': text});
+      return (r.data as Map)['audio_url'] as String? ?? '';
+    } catch (e) {
+      print('[TTS] Error: $e');
+      return '';
+    }
+  }
+}
+

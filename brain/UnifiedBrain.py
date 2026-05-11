@@ -193,6 +193,13 @@ class MythosBrain:
         Apply Mythos cognitive patterns to a raw response.
         Returns enhanced response + audit trail.
         """
+        from memory.tiered_memory import tiered_memory
+        # Pull context from memory
+        memory_context = tiered_memory.recall(task)
+        if memory_context:
+            context_str = "\n".join([m.get("content", m.get("text", "")) for m in memory_context])
+            task = f"CONTEXT FROM MEMORY:\n{context_str}\n\nTASK: {task}"
+
         if not response or not response.strip():
             return {"enhanced": response, "patterns_applied": [], "issues": ["empty response"]}
 
