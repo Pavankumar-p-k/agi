@@ -2,8 +2,15 @@ import os
 import asyncio
 from typing import List, Dict, Optional
 from browser_use import Agent, Browser, BrowserConfig
-from langchain_openai import ChatOpenAI
-from langchain_ollama import ChatOllama
+
+try:
+    from langchain_openai import ChatOpenAI
+except ImportError:
+    ChatOpenAI = None
+try:
+    from langchain_ollama import ChatOllama
+except ImportError:
+    ChatOllama = None
 
 class JarvisBrowser:
     """
@@ -18,11 +25,12 @@ class JarvisBrowser:
         )
         
         # Prefer local Ollama if possible
-        if "qwen" in model_name or "llama" in model_name:
+        if ChatOllama is not None and ("qwen" in model_name or "llama" in model_name):
             self.llm = ChatOllama(model=model_name, base_url="http://localhost:11434")
-        else:
-            # Fallback to OpenAI/Claude if configured
+        elif ChatOpenAI is not None:
             self.llm = ChatOpenAI(model="gpt-4o")
+        else:
+            raise ImportError("browser-use requires either langchain-ollama or langchain-openai. Install with: pip install langchain-ollama")
 
     async def execute(self, instruction: str) -> Dict:
         """

@@ -208,10 +208,10 @@ class HybridModelManager:
             payload["images"] = images
 
         start_time = time.time()
-        async with self._clients[ModelProvider.OLLAMA] as client:
-            response = await client.post(url, json=payload)
-            response.raise_for_status()
-            data = response.json()
+        client = self._clients[ModelProvider.OLLAMA]
+        response = await client.post(url, json=payload)
+        response.raise_for_status()
+        data = response.json()
 
         latency = int((time.time() - start_time) * 1000)
 

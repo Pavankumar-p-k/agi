@@ -527,7 +527,7 @@ class OpenClawExecutor:
             "active_browser_sessions": len(self.browser_instances),
             "audit_log_entries": len(self.audit_log),
             "recent_activity": recent_logs,
-            "system_info": asyncio.run(self.get_system_info())
+            "system_info": "unavailable (call get_system_info() from async context)"
         }
 
     def cleanup(self):

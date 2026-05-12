@@ -366,15 +366,44 @@ JSON format: {"intent":"intent_name","action":"...","target":"...","parameters":
 """
 
 
+def _regex_intent(message: str) -> dict:
+    msg_lower = message.lower().strip()
+    # Media play
+    if any(kw in msg_lower for kw in ["play ", "play music", "play song", "play video", "on yt", "on youtube", "on spotify"]):
+        target = re.sub(r'^(play\s+)|(\s+on\s+(?:yt|youtube|spotify).*)$', '', msg_lower).strip()
+        if not target:
+            target = msg_lower
+        return {"intent": "media_play", "action": "play", "target": target, "parameters": {}}
+    # Open app/URL or PC control
+    if any(msg_lower.startswith(x) for x in ["open ", "launch ", "go to "]):
+        target = msg_lower.replace("open ", "").replace("launch ", "").replace("go to ", "").strip()
+        pc_keywords = ["folder", "explorer", "notepad", "calculator", "calc", "vscode", "code", "cmd", "terminal", "chrome", "edge", "firefox", "settings", "task manager"]
+        if target.lower() in pc_keywords or any(kw in msg_lower for kw in pc_keywords):
+            return {"intent": "pc_control", "action": "open_app", "target": target, "parameters": {}}
+        for name in ["youtube", "google", "whatsapp", "gmail", "github", "netflix", "spotify", "twitter", "instagram", "facebook", "reddit", "linkedin", "amazon"]:
+            if name in msg_lower:
+                return {"intent": "open_app", "action": "open", "target": name, "parameters": {}}
+        return {"intent": "open_app", "action": "open", "target": target, "parameters": {}}
+    # Web search
+    if any(msg_lower.startswith(x) for x in ["search ", "find ", "look up ", "google "]):
+        target = re.sub(r'^(search|find|look up|google)\s+', '', msg_lower)
+        return {"intent": "web_search", "action": "search", "target": target, "parameters": {}}
+    # Reminder
+    if any(kw in msg_lower for kw in ["remind", "reminder", "alarm", "set a"]):
+        return {"intent": "reminder", "action": "create", "target": msg_lower, "parameters": {}}
+    # Default
+    return {"intent": "chat", "action": "answer", "target": msg_lower, "parameters": {}}
+
+
 async def extract_intent(message: str) -> dict:
     try:
         examples = """
 Examples:
-USER: opn yt
-AI: {"intent":"open_app","action":"open","target":"youtube","parameters":{}}
+USER: play cry for me on youtube
+AI: {"intent":"media_play","action":"play","target":"cry for me","parameters":{}}
 
-USER: play beat it by michael jackson
-AI: {"intent":"media_play","action":"play","target":"beat it by michael jackson","parameters":{}}
+USER: open youtube
+AI: {"intent":"open_app","action":"open","target":"youtube","parameters":{}}
 
 USER: search latest AI news
 AI: {"intent":"web_search","action":"search","target":"latest AI news","parameters":{}}
@@ -386,27 +415,32 @@ USER: remind me to drink water in 1 minute
 AI: {"intent":"reminder","action":"create","target":"drink water","parameters":{"time":"in 1 minute"}}
 
 USER: what is python
-AI: {"intent":"chat","action":"answer","target":"python explanation","parameters":{}}
+AI: {"intent":"chat","action":"answer","target":"python","parameters":{}}
 """
         payload = {
-            "model": "qwen3:4b",
+            "model": "llama3.1:8b",
             "messages": [
                 {"role": "system", "content": INTENT_SYSTEM_PROMPT},
                 {"role": "user", "content": f"{examples}\n\nClassify this message (return ONLY valid JSON):\n{message}"}
             ],
-            "stream": False
+            "stream": False,
+            "options": {
+                "temperature": 0,
+                "num_predict": 50,
+                "stop": ["\n\n"]
+            }
         }
-        r = httpx.post("http://localhost:11434/api/chat", json=payload, timeout=30)
+        r = httpx.post("http://localhost:11434/api/chat", json=payload, timeout=120)
         content = r.json()["message"]["content"]
         content = re.sub(r'<think>.*?</think>', '', content, flags=re.DOTALL).strip()
         parsed = json.loads(content)
         intent = parsed.get("intent", "chat")
-        if intent not in ("open_app", "media_play", "web_search", "reminder", "pc_control", "chat"):
+        if intent not in ("open_app", "media_play", "web_search", "reminder", "pc_control", "chat", "play_media", "open_url"):
             intent = "chat"
         parsed["intent"] = intent
         return parsed
     except Exception:
-        return {"intent": "chat", "action": "answer", "target": message}
+        return _regex_intent(message)
 
 
 def parse_time_relative(time_str: str):
@@ -436,7 +470,7 @@ def parse_time_relative(time_str: str):
     return now + timedelta(hours=1)
 
 
-def build_ollama_llm(messages: list, timeout: int = 60) -> str:
+def build_ollama_llm(messages: list, timeout: int = 120) -> str:
     available_models = ["qwen3:4b", "qwen2.5-coder:3b", "mistral:latest"]
     chat_model = "qwen3:4b"
     try:
@@ -479,6 +513,7 @@ async def execute_action(intent_data: dict, db=None, user=None) -> dict:
         "notepad": "notepad.exe",
         "calculator": "calc.exe",
         "explorer": "explorer.exe",
+        "folder": "explorer.exe",
         "vscode": "code",
         "cmd": "cmd.exe",
         "chrome": "chrome.exe",
@@ -486,7 +521,7 @@ async def execute_action(intent_data: dict, db=None, user=None) -> dict:
         "firefox": "firefox.exe",
     }
 
-    if intent == "open_app":
+    if intent in ("open_app", "open_url"):
         for app, url in url_map.items():
             if app in target.lower():
                 webbrowser.open(url)
@@ -494,13 +529,23 @@ async def execute_action(intent_data: dict, db=None, user=None) -> dict:
         webbrowser.open(f"https://google.com/search?q={urllib.parse.quote(target)}")
         return {"executed": True, "action": f"Searched for {target}"}
 
-    elif intent == "media_play":
+    elif intent in ("media_play", "play_media"):
         query = urllib.parse.quote(target)
-        url = f"https://www.youtube.com/results?search_query={query}"
-        webbrowser.open(url)
-        return {"executed": True, "action": f"Opened YouTube search for: {target}", "url": url}
+        search_url = f"https://www.youtube.com/results?search_query={query}"
+        try:
+            r = httpx.get(search_url, headers={"User-Agent": "Mozilla/5.0"}, timeout=10)
+            match = re.search(r'/watch\?v=([a-zA-Z0-9_-]{11})', r.text)
+            if match:
+                video_id = match.group(1)
+                video_url = f"https://www.youtube.com/watch?v={video_id}"
+                webbrowser.open(video_url)
+                return {"executed": True, "action": f"Playing {target}", "url": video_url}
+        except Exception:
+            pass
+        webbrowser.open(search_url)
+        return {"executed": True, "action": f"Opened YouTube search for: {target}", "url": search_url}
 
-    elif intent == "web_search":
+    elif intent in ("web_search", "search", "search_web", "google"):
         query = urllib.parse.quote(target)
         try:
             r = httpx.get(
@@ -516,7 +561,7 @@ async def execute_action(intent_data: dict, db=None, user=None) -> dict:
         except Exception as e:
             return {"executed": True, "action": f"Web search for {target} opened in browser", "url": f"https://duckduckgo.com/?q={query}"}
 
-    elif intent == "reminder":
+    elif intent in ("reminder", "set_reminder"):
         if db is not None and user is not None:
             try:
                 from reminders.manager import create_reminder
@@ -529,7 +574,7 @@ async def execute_action(intent_data: dict, db=None, user=None) -> dict:
                 return {"executed": False, "error": f"Failed to create reminder: {e}"}
         return {"executed": True, "action": f"Reminder noted: {target}"}
 
-    elif intent == "pc_control":
+    elif intent in ("pc_control", "open_app_desktop"):
         for app, exe in pc_apps.items():
             if app in target.lower():
                 try:

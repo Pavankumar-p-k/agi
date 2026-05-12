@@ -5,6 +5,7 @@ import asyncio
 import json
 import queue
 import threading
+import httpx
 import requests
 import pyttsx3
 try:
@@ -180,8 +181,8 @@ class LLMEngine:
         role = route_role_for_text(user_message)
         return model_for_role(role)
 
-    def chat(self, user_message: str, context: str = "") -> str:
-        """Send a message and get a response from the local LLM."""
+    async def chat(self, user_message: str, context: str = "") -> str:
+        """Send a message and get a response from the local LLM (async)."""
         model = self._select_model(user_message)
         base_url = get_ollama_url(model)
         self.conversation_history.append({
@@ -199,19 +200,29 @@ class LLMEngine:
         }
 
         try:
-            response = requests.post(
-                f"{base_url}/api/chat",
-                json=payload,
-                timeout=30
-            )
-            response.raise_for_status()
-            reply = response.json()["message"]["content"]
+            async with httpx.AsyncClient(timeout=30) as client:
+                response = await client.post(
+                    f"{base_url}/api/chat",
+                    json=payload
+                )
+                response.raise_for_status()
+                reply = response.json()["message"]["content"]
             self.conversation_history.append({"role": "assistant", "content": reply})
             return reply
-        except requests.exceptions.ConnectionError:
+        except httpx.ConnectError:
             return "Ollama is offline. Run: ollama serve"
         except Exception as e:
             return f"Model error: {e}"
+
+    def chat_sync(self, user_message: str, context: str = "") -> str:
+        """Synchronous wrapper for chat(). Used by non-async callers."""
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                return asyncio.run_coroutine_threadsafe(self.chat(user_message, context), loop).result()
+        except RuntimeError:
+            pass
+        return asyncio.run(self.chat(user_message, context))
 
     def chat_stream(self, user_message: str):
         """Generator that yields response tokens as they arrive."""
@@ -252,13 +263,13 @@ class LLMEngine:
 INTENTS = {
     "set_reminder":    ["remind", "reminder", "alarm", "alert me", "set alarm"],
     "create_note":     ["note", "write down", "remember this", "take note"],
+    "file_manager":    ["file", "folder", "open folder", "find file"],
     "open_app":        ["open", "launch", "start"],
     "send_whatsapp":   ["whatsapp", "send whatsapp", "message on whatsapp"],
     "send_instagram":  ["instagram", "insta", "dm on insta"],
     "face_recognize":  ["who is", "recognize", "identify face"],
     "play_music":      ["play music", "play song", "music", "shuffle"],
     "daily_summary":   ["summary", "what did i do", "my day", "activity"],
-    "file_manager":    ["file", "folder", "open folder", "find file"],
     "screen_share":    ["screen share", "share screen", "mirror"],
     "stop":            ["stop", "cancel", "quit", "exit", "shutdown"],
 }
@@ -361,7 +372,7 @@ class JarvisAssistant:
         # Execute action if detected
         action_response = None
         if intent == "set_reminder":
-            match = re.search(r'remind me? (.+)', text.lower())
+            match = re.search(r'(?:remind\s+(?:me|us)\s+(?:to\s+)?|reminder(?:\s+to\s+)?|set\s+(?:a\s+)?(?:reminder|alarm)\s+(?:for\s+)?|alert\s+me\s+(?:to\s+)?)(.+)', text.lower())
             if match:
                 what = match.group(1).strip()
                 action_response = await self._execute_reminder_action(what)
@@ -378,7 +389,7 @@ class JarvisAssistant:
             target = ""
             for idx, w in enumerate(words):
                 if w in ("open", "launch", "start") and idx + 1 < len(words):
-                    target = words[idx + 1]
+                    target = " ".join(words[idx + 1:])
                     break
             if target:
                 action_result = execute_open_command(target)
@@ -390,8 +401,39 @@ class JarvisAssistant:
             else:
                 action_response = "[ACTION]: Tried to open, but no target specified"
         
+        elif intent == "play_music":
+            query = urllib.parse.quote(text.replace("play", "").replace("music", "").replace("song", "").strip())
+            url = f"https://www.youtube.com/results?search_query={query}" if query else "https://music.youtube.com"
+            webbrowser.open(url)
+            action_response = f"[ACTION]: Playing music on YouTube"
+        
+        elif intent == "send_whatsapp":
+            webbrowser.open("https://web.whatsapp.com")
+            action_response = "[ACTION]: Opened WhatsApp Web"
+        
+        elif intent == "send_instagram":
+            webbrowser.open("https://instagram.com")
+            action_response = "[ACTION]: Opened Instagram"
+        
+        elif intent == "face_recognize":
+            action_response = "[ACTION]: Face recognition is available via the /api/faces endpoint"
+        
+        elif intent == "daily_summary":
+            action_response = "[ACTION]: Daily summary feature is available via the dashboard"
+        
+        elif intent == "file_manager":
+            subprocess.Popen(["explorer.exe"])
+            action_response = "[ACTION]: Opened File Explorer"
+        
+        elif intent == "screen_share":
+            action_response = "[ACTION]: Screen sharing is not available in the current session"
+        
+        elif intent == "stop":
+            self.is_running = False
+            action_response = "[ACTION]: JARVIS voice assistant stopped"
+        
         # Get LLM response
-        response = self.llm.chat(text)
+        response = await self.llm.chat(text)
         
         # If action was executed, append to response
         if action_response:
@@ -452,7 +494,7 @@ class JarvisAssistant:
             if any(wake in text_lower for wake in self.wake_words):
                 self.tts.speak_async("Yes?")
             elif self.is_running:
-                response = self.llm.chat(text)
+                response = self.llm.chat_sync(text)
                 self.tts.speak_async(response)
                 if on_response:
                     on_response(text, response)
