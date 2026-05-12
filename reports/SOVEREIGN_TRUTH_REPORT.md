@@ -2,13 +2,19 @@
 
 ## 1. Audited Targets
 - `audit_and_purge.py`
+- `audit_check.py`
+- `copy_codebase.py`
 - `execute_fusion.py`
 - `fusion_audit.py`
-- `import_rewriter.py`
 - `jarvis.py`
 - `jarvis_conversation.py`
 - `jarvis_main.py`
 - `phase5_validation.py`
+- `phase61_truth_audit.py`
+- `phase62_truth_audit.py`
+- `phase6_validation.py`
+- `privacy_classifier.py`
+- `quick_audit.py`
 - `test_autonomy.py`
 - `test_environment.py`
 - `test_governance.py`
@@ -42,7 +48,22 @@
 - `api/__init__.py`
 - `apps/jarvis_app/build/windows/x64/extracted/firebase_cpp_sdk_windows/generate_xml_from_google_services_json.py`
 - `apps/jarvis_app/ios/Flutter/ephemeral/flutter_lldb_helper.py`
+- `archive/legacy_memory/agi_memory.py`
+- `archive/legacy_memory/context.py`
+- `archive/legacy_memory/EpisodicMemory.py`
+- `archive/legacy_memory/SemanticMemory.py`
+- `archive/legacy_memory/store.py`
+- `archive/legacy_memory/TemporalMemoryCore.py`
+- `archive/legacy_theater/ContinuousCognitionLoop.py`
+- `archive/legacy_theater/CounterfactualSimulator.py`
+- `archive/legacy_theater/executor_engine.py`
+- `archive/legacy_theater/executor_layer.py`
+- `archive/legacy_theater/ProviderSimulationEngine.py`
 - `assistant/engine.py`
+- `assistant/smart_actions.py`
+- `assistant/stt.py`
+- `assistant/tts.py`
+- `assistant/wake_word.py`
 - `assistant/__init__.py`
 - `automation/call_sync_server.py`
 - `automation/messaging.py`
@@ -77,6 +98,19 @@
 - `benchmarks/coding_benchmarks/test_coding_skills.py`
 - `benchmarks/cognitive_benchmarks/test_cognition.py`
 - `benchmarks/governance_benchmarks/test_governance.py`
+- `benchmarks/phase6/test_coding_capability_suite.py`
+- `benchmarks/phase6/test_governance_attack_suite.py`
+- `benchmarks/phase6/test_long_horizon_autonomy_suite.py`
+- `benchmarks/phase6/test_self_repair_suite.py`
+- `benchmarks/phase61/test_autonomy_no_theater.py`
+- `benchmarks/phase61/test_duplicate_collapse.py`
+- `benchmarks/phase61/test_governance_absolute.py`
+- `benchmarks/phase61/test_patch_execution_reality.py`
+- `benchmarks/phase61/test_provider_boundary_integrity.py`
+- `benchmarks/phase62/test_import_purity.py`
+- `benchmarks/phase62/test_missing_files_resolved.py`
+- `benchmarks/phase62/test_no_duplicate_authority.py`
+- `benchmarks/phase62/test_single_execution_path.py`
 - `benchmarks/self_repair_benchmarks/test_self_repair.py`
 - `brain/adapters.py`
 - `brain/AdaptiveSelfRepair.py`
@@ -85,6 +119,7 @@
 - `brain/CapabilityMatrix.py`
 - `brain/ContinuousCognitionLoop.py`
 - `brain/CounterfactualSimulator.py`
+- `brain/epistemic_tagger.py`
 - `brain/execution_context.py`
 - `brain/ExecutiveGovernor.py`
 - `brain/GovernanceValidator.py`
@@ -92,7 +127,6 @@
 - `brain/MetaCognitionEngine.py`
 - `brain/SelfGovernanceMonitor.py`
 - `brain/StrategicDelegator.py`
-- `brain/TemporalMemoryCore.py`
 - `brain/UnifiedBrain.py`
 - `brain/WorldStateEngine.py`
 - `brain/__init__.py`
@@ -103,6 +137,7 @@
 - `core/database.py`
 - `core/main.py`
 - `core/model_router.py`
+- `core/privacy_classifier.py`
 - `core/types.py`
 - `core/vision_agent.py`
 - `core/__init__.py`
@@ -113,6 +148,7 @@
 - `governance/MetaGovernor.py`
 - `governance/PolicyEngine.py`
 - `governance/RuntimeGovernanceLayer.py`
+- `governance/strict_verification.py`
 - `governance/TrustRegistry.py`
 - `governance/__init__.py`
 - `gpu/optimizer.py`
@@ -170,19 +206,29 @@
 - `jarvis_os/core/agent.py`
 - `jarvis_os/core/critic.py`
 - `jarvis_os/core/executor.py`
+- `jarvis_os/core/factory.py`
 - `jarvis_os/core/intent.py`
 - `jarvis_os/core/loop.py`
 - `jarvis_os/core/meta_controller.py`
 - `jarvis_os/core/planner.py`
 - `jarvis_os/core/reasoning.py`
 - `jarvis_os/core/reflection.py`
+- `jarvis_os/core/sovereign_router.py`
+- `jarvis_os/core/stage_pruner.py`
 - `jarvis_os/core/__init__.py`
 - `jarvis_os/daemon/supervisor.py`
 - `jarvis_os/daemon/__init__.py`
+- `jarvis_os/economics/cost_model.py`
+- `jarvis_os/economics/latency_model.py`
+- `jarvis_os/economics/__init__.py`
+- `jarvis_os/extensions/manager.py`
+- `jarvis_os/extensions/__init__.py`
 - `jarvis_os/interface/api_server.py`
 - `jarvis_os/interface/cli.py`
 - `jarvis_os/interface/voice_interface.py`
 - `jarvis_os/interface/__init__.py`
+- `jarvis_os/links/manager.py`
+- `jarvis_os/links/__init__.py`
 - `jarvis_os/memory/context_manager.py`
 - `jarvis_os/memory/memory_manager.py`
 - `jarvis_os/memory/vector_store.py`
@@ -198,6 +244,7 @@
 - `jarvis_os/plugins/__init__.py`
 - `jarvis_os/runtime/config.py`
 - `jarvis_os/runtime/daemon.py`
+- `jarvis_os/runtime/exceptions.py`
 - `jarvis_os/runtime/jobs.py`
 - `jarvis_os/runtime/logger.py`
 - `jarvis_os/runtime/monitor.py`
@@ -216,12 +263,17 @@
 - `jarvis_os/tools/communication_tools.py`
 - `jarvis_os/tools/file_tools.py`
 - `jarvis_os/tools/internet_tools.py`
+- `jarvis_os/tools/multi_source_grounding.py`
 - `jarvis_os/tools/system_tools.py`
 - `jarvis_os/tools/tool_registry.py`
 - `jarvis_os/tools/__init__.py`
 - `jarvis_os/tool_router/router.py`
+- `jarvis_os/trust/confidence_calibrator.py`
+- `jarvis_os/trust/__init__.py`
 - `jarvis_os/utils/paths.py`
 - `jarvis_os/utils/__init__.py`
+- `jarvis_os/verification/adversarial_verifier.py`
+- `jarvis_os/verification/__init__.py`
 - `learning/habit_tracker.py`
 - `learning/pattern_engine.py`
 - `learning/__init__.py`
@@ -239,10 +291,8 @@
 - `media/player.py`
 - `media/__init__.py`
 - `memory/agi_memory.py`
-- `memory/context.py`
-- `memory/EpisodicMemory.py`
-- `memory/SemanticMemory.py`
-- `memory/store.py`
+- `memory/embedding_memory.py`
+- `memory/tiered_memory.py`
 - `memory/__init__.py`
 - `models/hybrid_models.py`
 - `network/websocket_server.py`
@@ -256,6 +306,7 @@
 - `orchestrator/brain.py`
 - `orchestrator/hybrid_orchestrator.py`
 - `orchestrator/__init__.py`
+- `pc_agent/computer_agent.py`
 - `pc_agent/playbooks.py`
 - `pc_agent/__init__.py`
 - `prediction/predictor.py`
@@ -265,7 +316,6 @@
 - `reminders/manager.py`
 - `reminders/__init__.py`
 - `runtime/ModelRuntimeManager.py`
-- `runtime/ProviderDecisionMatrix.py`
 - `runtime/ProviderHealthRegistry.py`
 - `runtime/RuntimeSecurity.py`
 - `runtime/__init__.py`
@@ -300,39 +350,29 @@
 - `services/jarvis_social/voice/__init__.py`
 - `tests/test_hybrid_system.py`
 - `tests/test_jarvis_os.py`
+- `tests/test_phase7_reconstruction.py`
 - `tools/base_tool.py`
+- `tools/browser_tool.py`
 - `tools/executor.py`
 - `tools/jarvis_tools.py`
 - `tools/registry.py`
+- `tools/search_tool.py`
 - `tools/tool_loader.py`
 - `tools/__init__.py`
+- `utils/logger.py`
+- `utils/__init__.py`
 - `vision/face_recognition.py`
 - `vision/__init__.py`
 
 ## 2. Theater Detection Results
-- ⚠️ THEATER DETECTED: Function `render_self_repair_validation` in phase5_validation.py appears to log or advise repairs but lacks file I/O or system execution abilities.
-- ⚠️ WEAK GOVERNANCE: Function `_validate_plan` in planner.py validates but does not explicitly raise hard boundaries (Exceptions).
-- ⚠️ WEAK GOVERNANCE: Function `enforce` in policy.py validates but does not explicitly raise hard boundaries (Exceptions).
-- ⚠️ THEATER DETECTED: Function `apply_patches` in world_state_patch.py appears to log or advise repairs but lacks file I/O or system execution abilities.
-- ⚠️ THEATER DETECTED: Function `_patch_world_state` in world_state_patch.py appears to log or advise repairs but lacks file I/O or system execution abilities.
-- ⚠️ THEATER DETECTED: Function `_patch_semantic_store` in world_state_patch.py appears to log or advise repairs but lacks file I/O or system execution abilities.
-- ⚠️ THEATER DETECTED: Function `_patch_notification_hub` in world_state_patch.py appears to log or advise repairs but lacks file I/O or system execution abilities.
-- ⚠️ THEATER DETECTED: Function `dispatch` in world_state_patch.py appears to log or advise repairs but lacks file I/O or system execution abilities.
-- ⚠️ UNREACHABLE/EMPTY: Function `__init__` in adapters.py is a placeholder (`pass`).
-- ⚠️ THEATER DETECTED: Function `_simulate_brain_patch` in AdaptiveSelfRepair.py appears to log or advise repairs but lacks file I/O or system execution abilities.
-- ⚠️ WEAK GOVERNANCE: Function `validate` in AuthorityStack.py validates but does not explicitly raise hard boundaries (Exceptions).
-- ⚠️ WEAK GOVERNANCE: Function `validate_execution` in GovernanceValidator.py validates but does not explicitly raise hard boundaries (Exceptions).
-- ⚠️ WEAK GOVERNANCE: Function `self_audit` in MetaCognitionEngine.py validates but does not explicitly raise hard boundaries (Exceptions).
-- ⚠️ THEATER DETECTED: Function `trigger_detect_and_patch_loop` in MetaCognitionEngine.py appears to log or advise repairs but lacks file I/O or system execution abilities.
-- ⚠️ THEATER DETECTED: Function `repair` in SelfGovernanceMonitor.py appears to log or advise repairs but lacks file I/O or system execution abilities.
-- ⚠️ WEAK GOVERNANCE: Function `_audit` in access_manager.py validates but does not explicitly raise hard boundaries (Exceptions).
+- ⚠️ THEATER DETECTED: Function `test_patch_generation_task_profile` in test_coding_capability_suite.py appears to log or advise repairs but lacks file I/O or system execution abilities.
+- ⚠️ THEATER DETECTED: Function `test_bug_fix_task_profile` in test_coding_capability_suite.py appears to log or advise repairs but lacks file I/O or system execution abilities.
+- ⚠️ THEATER DETECTED: Function `test_meta_patch_loop_rejects_missing_fields` in test_self_repair_suite.py appears to log or advise repairs but lacks file I/O or system execution abilities.
+- ⚠️ WEAK GOVERNANCE: Function `test_access_manager_hard_raises_on_failed_audit` in test_governance_absolute.py validates but does not explicitly raise hard boundaries (Exceptions).
+- ⚠️ THEATER DETECTED: Function `test_patch_path_points_to_real_filesystem` in test_patch_execution_reality.py appears to log or advise repairs but lacks file I/O or system execution abilities.
 - ⚠️ THEATER DETECTED: Function `set_dispatch` in scheduler.py appears to log or advise repairs but lacks file I/O or system execution abilities.
-- ⚠️ THEATER DETECTED: Function `_propose_patch` in coding_tools.py appears to log or advise repairs but lacks file I/O or system execution abilities.
-- ⚠️ THEATER DETECTED: Function `_parse_patch_payload` in coding_tools.py appears to log or advise repairs but lacks file I/O or system execution abilities.
-- ⚠️ PARSE ERROR: `alias_scan.py` could not be parsed (f-string: expecting '}' at line 6).
 - ⚠️ WEAK GOVERNANCE: Function `test_audit_logging` in test_hybrid_system.py validates but does not explicitly raise hard boundaries (Exceptions).
 - ⚠️ WEAK GOVERNANCE: Function `test_tool_registry_validates_required_arguments` in test_jarvis_os.py validates but does not explicitly raise hard boundaries (Exceptions).
-- ⚠️ UNREACHABLE/EMPTY: Function `__init__` in jarvis_tools.py is a placeholder (`pass`).
 
 ## 3. Verdict
 The system exhibits `Architecturally Advanced Prototype` behavior in some self-repair functions. True V2 Sovereign state requires these components to generate physical patches and execute them natively.

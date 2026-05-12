@@ -1,12 +1,12 @@
 # DUPLICATE COLLAPSE REPORT
 
-- duplicate authority entries: 12
+- duplicate authority entries: 15
 
 ## Duplicates by authority
 - planner: 4
 - governance: 4
 - runtime: 1
-- memory: 3
+- memory: 6
 
 ## Duplicate files
 - ai_os/planner.py
@@ -21,4 +21,7 @@
 - ai_os/memory.py
 - jarvis_os/ProviderStrategicMemory.py
 - jarvis_os/compat/legacy_memory.py
+- memory/agi_memory.py
+- memory/embedding_memory.py
+- memory/tiered_memory.py
 

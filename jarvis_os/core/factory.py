@@ -160,6 +160,9 @@ def verify_safety_enforcement(agent_loop: AgentLoop) -> Dict[str, bool]:
     checks["all_safety_checks_passed"] = all_passed
 
     if not all_passed:
-        logger.warning("Safety checks failed: %s", {k: v for k, v in checks.items() if not v})
+        failed = [k for k, v in checks.items() if not v]
+        error_msg = f"Safety checks failed: {failed}"
+        logger.error(error_msg)
+        raise RuntimeError(error_msg)
 
     return checks

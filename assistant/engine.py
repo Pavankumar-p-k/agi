@@ -181,9 +181,9 @@ class LLMEngine:
         role = route_role_for_text(user_message)
         return model_for_role(role)
 
-    async def chat(self, user_message: str, context: str = "") -> str:
+    async def chat(self, user_message: str, context: str = "", model: str = None) -> str:
         """Send a message and get a response from the local LLM (async)."""
-        model = self._select_model(user_message)
+        model = model or self._select_model(user_message)
         base_url = get_ollama_url(model)
         self.conversation_history.append({
             "role": "user",
@@ -214,15 +214,15 @@ class LLMEngine:
         except Exception as e:
             return f"Model error: {e}"
 
-    def chat_sync(self, user_message: str, context: str = "") -> str:
+    def chat_sync(self, user_message: str, context: str = "", model: str = None) -> str:
         """Synchronous wrapper for chat(). Used by non-async callers."""
         try:
             loop = asyncio.get_event_loop()
             if loop.is_running():
-                return asyncio.run_coroutine_threadsafe(self.chat(user_message, context), loop).result()
+                return asyncio.run_coroutine_threadsafe(self.chat(user_message, context, model=model), loop).result()
         except RuntimeError:
             pass
-        return asyncio.run(self.chat(user_message, context))
+        return asyncio.run(self.chat(user_message, context, model=model))
 
     def chat_stream(self, user_message: str):
         """Generator that yields response tokens as they arrive."""
@@ -364,7 +364,7 @@ class JarvisAssistant:
         self.tts.speak_async(msg)
         return msg
 
-    async def process_text(self, text: str, user_id: int = None) -> dict:
+    async def process_text(self, text: str, user_id: int = None, model: str = None) -> dict:
         """Process a text command and return structured response."""
         import re
         intent = detect_intent(text)
@@ -433,7 +433,7 @@ class JarvisAssistant:
             action_response = "[ACTION]: JARVIS voice assistant stopped"
         
         # Get LLM response
-        response = await self.llm.chat(text)
+        response = await self.llm.chat(text, model=model)
         
         # If action was executed, append to response
         if action_response:

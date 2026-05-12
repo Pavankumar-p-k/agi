@@ -34,6 +34,7 @@ from typing import Any, Callable, Dict, List, Optional
 
 from utils.logger import SystemLogger
 from utils.telemetry import HealthTelemetry, HealthState, SystemSnapshot
+from jarvis_os.runtime.exceptions import GovernanceViolation
 
 logger = SystemLogger(__name__)
 
@@ -417,6 +418,17 @@ class MetaGovernor:
 
     def is_safe_mode(self) -> bool:
         return self.safe_mode_event.is_set()
+
+    def authorize_execution(self, task: str) -> bool:
+        """
+        Hard enforcement: block any task if system is in SAFE MODE.
+        """
+        if self.is_safe_mode():
+            reason = "Unknown"
+            if self._decisions:
+                reason = self._decisions[-1].reason
+            raise GovernanceViolation(f"Execution blocked: Meta-Governor has activated SAFE MODE. Reason: {reason}")
+        return True
 
     def get_stats(self) -> Dict[str, Any]:
         snapshot = self.telemetry.compute_global_health()

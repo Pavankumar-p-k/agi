@@ -187,6 +187,12 @@ class ExecutiveMetaCognitionV3:
         error_trace = error_report.get("error_trace", "Unknown failure")
         if not target_file or not failing_test:
             return {"patched": False, "reason": "missing_error_report_fields"}
+
+        # Real I/O: record the trigger to the cognition log
+        log_path = Path(self.workspace_root) / "reports" / "cognition_trigger.log"
+        log_path.parent.mkdir(exist_ok=True)
+        with open(log_path, "a", encoding="utf-8") as f:
+            f.write(f"{time.ctime()} - TRIGGER: {target_file} failing {failing_test}\n")
         
         async def _run() -> Dict[str, Any]:
             patch = await self.autonomous_patch_generation(target_file, failing_test, error_trace)

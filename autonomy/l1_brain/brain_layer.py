@@ -104,9 +104,15 @@ class BrainLayer:
             ctx_info = {"sources": fused.sources_used,
                         "confidence": fused.confidence}
         except Exception as err:
-            import logging
-            logging.getLogger(__name__).error("Exception swallowed: %s", err)
-            raise RuntimeError(f"Exception swallowed: {err}")
+            logger.error("[L1] Context Fusion failed: %s", err)
+            return L1Result(
+                reply=f"Error in context fusion: {err}",
+                intent="error",
+                emotion="neutral",
+                confidence=0.0,
+                latency_ms=int((time.time() - t0) * 1000),
+                model_used="error",
+            )
 
         # 2. Run existing JarvisBrain 8-agent pipeline
         intent = "small_talk"; emotion = "neutral"
@@ -123,7 +129,15 @@ class BrainLayer:
             reply  = r.reply;   model    = r.model_used
             conf   = r.confidence
         except Exception as e:
-            logger.warning("[L1] JarvisBrain error: %s", e)
+            logger.error("[L1] JarvisBrain pipeline failed: %s", e)
+            return L1Result(
+                reply=f"Error in brain pipeline: {e}",
+                intent="error",
+                emotion="neutral",
+                confidence=0.0,
+                latency_ms=int((time.time() - t0) * 1000),
+                model_used="error",
+            )
 
         # 3. Route decision
         route = self._route(intent, text)
@@ -191,5 +205,5 @@ class ReasoningPlanner:
             if m:
                 return json.loads(m.group())
         except Exception as e:
-            logger.warning("[L1] Planner: %s", e)
+            logger.error("[L1] Planner decomposition failed: %s", e)
         return [f"1. Analyze: {task[:60]}", "2. Execute", "3. Verify"]

@@ -1,6 +1,7 @@
 import re
 from typing import Any
 from .config import AIOSConfig
+from jarvis_os.runtime.exceptions import GovernanceViolation
 
 
 class PolicyEngine:
@@ -41,5 +42,5 @@ class PolicyEngine:
             assessment = self.assess_step(step)
             results.append({"step": step, "policy": assessment})
             if not assessment.get("allowed", False):
-                break
+                raise GovernanceViolation(f"Policy enforcement failed: {assessment.get('reason', 'Unknown reason')}")
         return results

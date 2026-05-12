@@ -3,7 +3,7 @@ import re
 
 root = pathlib.Path(r'c:\Users\peter\Desktop\jarvis')
 aliases = ['ai_os','core','api','cognitive_agent','autonomy','tools','learning','memory','models','orchestrator','gpu']
-pattern = re.compile(rf'^(?:from|import)\s+({'|'.join(re.escape(a) for a in aliases)})\b')
+pattern = re.compile(r'^(?:from|import)\s+(' + '|'.join(re.escape(a) for a in aliases) + r')\b')
 
 for path in sorted(root.rglob('*.py')):
     if 'backend' not in path.parts:

@@ -24,7 +24,13 @@ class SelfGovernanceMonitor:
             self.issue_log.append({"type": "trust_risk", "detail": execution_result})
 
     def repair(self) -> Dict[str, Any]:
+        import os
+        import json
         issues = self.issue_log.copy()
+        if issues:
+            os.makedirs("reports", exist_ok=True)
+            with open("reports/governance_repair.json", "a", encoding="utf-8") as f:
+                f.write(json.dumps(issues) + "\n")
         self.issue_log.clear()
         return {"repaired": len(issues), "issues": issues}
 

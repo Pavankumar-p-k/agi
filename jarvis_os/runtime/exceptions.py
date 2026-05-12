@@ -11,4 +11,3 @@ class SecurityViolation(Exception):
 
 class RuntimeBoundaryViolation(Exception):
     """Raised when runtime enters an unsafe or undefined operating boundary."""
-

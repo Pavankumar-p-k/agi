@@ -58,12 +58,15 @@ def analyze_and_purge(root_dir):
             elif visitor.total_funcs == 0 and sum(1 for node in ast.walk(tree) if isinstance(node, ast.ClassDef)) > 0:
                  # Check if all classes just have 'pass' or docstrings
                  all_empty_classes = True
+                 has_exception = False
                  for node in ast.walk(tree):
                      if isinstance(node, ast.ClassDef):
+                         if any(isinstance(base, ast.Name) and "Exception" in base.id for base in node.bases):
+                             has_exception = True
                          for stmt in node.body:
                              if not (isinstance(stmt, ast.Pass) or (isinstance(stmt, ast.Expr) and isinstance(stmt.value, ast.Constant))):
                                  all_empty_classes = False
-                 if all_empty_classes:
+                 if all_empty_classes and not has_exception:
                      fake_modules.append(filepath)
                      os.remove(filepath)
                      deleted.append(filepath)

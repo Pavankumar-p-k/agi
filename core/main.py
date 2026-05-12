@@ -598,6 +598,7 @@ async def chat(
     user: User = Depends(verify_token)
 ):
     from core.database import ChatHistory
+    from core.model_router import route_request
 
     # Step 1: Check Ollama connectivity
     try:
@@ -613,10 +614,13 @@ async def chat(
             content={"response": "Ollama is offline. Run: ollama serve", "intent": {"intent": "chat"}, "action": {"executed": False}}
         )
 
-    # Step 2: Extract intent using LLM
-    intent_data = await extract_intent(req.message)
+    # Step 2: Privacy routing (tier-based model selection + PII sanitization)
+    model_name, privacy_tier, sanitized_message = route_request(req.message)
 
-    # Step 3: Execute real action if needed
+    # Step 3: Extract intent using LLM
+    intent_data = await extract_intent(sanitized_message)
+
+    # Step 4: Execute real action if needed
     action_result = await execute_action(intent_data, db=db, user=user)
 
     # Step 4: Build action context for LLM
@@ -624,7 +628,7 @@ async def chat(
     if action_result.get("executed") and intent_data["intent"] != "chat":
         action_context = f"\n[SYSTEM: Action executed: {json.dumps(action_result)}]"
 
-    # Step 5: Get real Ollama response with action awareness
+    # Step 5: Get real Ollama response with action awareness and privacy tier
     try:
         reply = build_ollama_llm([
             {"role": "system", "content": (
@@ -633,7 +637,7 @@ async def chat(
                 "If an action was executed, confirm it naturally. "
                 "Never say you cannot do things you just did."
             ) + action_context},
-            {"role": "user", "content": req.message}
+            {"role": "user", "content": sanitized_message}
         ])
     except Exception as e:
         reply = ""
@@ -642,15 +646,16 @@ async def chat(
         else:
             reply = f"Model error: {e}"
 
-    # Step 6: Build response
+    # Step 6: Build response with privacy metadata
     result = {
         "response": reply,
         "intent": intent_data,
         "action": action_result,
-        "model": "qwen3:4b",
+        "model": model_name,
+        "privacy_tier": privacy_tier.value if privacy_tier else "LOCAL",
     }
 
-    db.add(ChatHistory(user_id=user.id, role="user", message=req.message))
+    db.add(ChatHistory(user_id=user.id, role="user", message=sanitized_message))
     db.add(ChatHistory(user_id=user.id, role="assistant", message=result["response"]))
     await db.commit()
 
@@ -1022,7 +1027,7 @@ async def chat_stream_websocket(ws: WebSocket):
                 model, tier, processed_query = route_request(text)
                 
                 # 1. Process text (LLM Intent → Execute Action → LLM Response)
-                result = await jarvis.process_text(processed_query, user_id=1)
+                result = await jarvis.process_text(processed_query, user_id=1, model=model)
                 response_text = result.get('response', '')
                 intent = result.get('intent', 'general_chat')
                 

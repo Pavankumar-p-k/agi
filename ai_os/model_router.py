@@ -42,10 +42,9 @@ class ModelRouter:
         try:
             return self.client.generate(model, prompt, max_tokens=max_tokens or self.config.max_response_tokens)
         except Exception as exc:
-            # Ollama failed; use deterministic fallback for planning or simple response
-            if task.lower() in {"planning", "plan", "goal", "task decomposition", "break down"}:
-                return "[{\"tool\": \"code_agent\", \"args\": {\"task\": \"Fallback: please execute goal manually\"}}]"
-            return "Fallback response: unable to call model"
+            import logging
+            logging.getLogger(__name__).error(f"Ollama call failed: {exc}")
+            raise RuntimeError(f"Model generation failed for task '{task}': {exc}") from exc
 
     def status(self) -> dict:
         return self.client.status()

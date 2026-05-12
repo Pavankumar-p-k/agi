@@ -8,7 +8,8 @@ from core.config import DEV_MODE
 
 class JarvisTools:
     def __init__(self) -> None:
-        pass
+        self.dev_mode = DEV_MODE
+        self.initialized_at = 0.0
 
     async def count_pending_reminders(self) -> int:
         # Placeholder; integrate with reminders DB in production

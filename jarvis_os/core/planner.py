@@ -33,7 +33,13 @@ Output STRICT JSON only:
   ]
 }}
 """
-        response = self.models.generate(plan_prompt, task="planner")
+        try:
+            response = self.models.generate(plan_prompt, task="planner")
+        except RuntimeError as exc:
+            import logging
+            logging.getLogger(__name__).error(f"Planner failed to generate initial plan: {exc}")
+            raise
+        
         try:
             # Extract response text from dict, handling both string and dict returns
             if isinstance(response, dict):
@@ -41,18 +47,24 @@ Output STRICT JSON only:
             else:
                 response_text = response
             plan_data = json.loads(response_text.strip())
-        except json.JSONDecodeError:
+        except (json.JSONDecodeError, AttributeError):
             # Retry with corrected prompt
             retry_prompt = plan_prompt + "\n\nEnsure the output is valid JSON."
-            response = self.models.generate(retry_prompt, task="planner")
+            try:
+                response = self.models.generate(retry_prompt, task="planner")
+            except RuntimeError as exc:
+                import logging
+                logging.getLogger(__name__).error(f"Planner failed to generate retry plan: {exc}")
+                raise
+
             try:
                 if isinstance(response, dict):
                     response_text = response.get("response", "")
                 else:
                     response_text = response
                 plan_data = json.loads(response_text.strip())
-            except json.JSONDecodeError:
-                # Fallback
+            except (json.JSONDecodeError, AttributeError):
+                # Fallback - last resort if model is being weird but reachable
                 plan_data = {"tasks": [{"id": "t1", "tool": "assistant_chat", "args": {"prompt": prompt}, "deps": [], "success": ""}]}
 
         steps = []

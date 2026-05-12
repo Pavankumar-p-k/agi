@@ -1,15 +1,8 @@
 {
-  "generated": "2026-05-04T07:57:55.519587+00:00",
+  "generated": "2026-05-11T10:57:53.974144+00:00",
   "critical_findings": [],
   "weak_governance": [],
-  "missing_critical": [
-    "autonomy/l3_executor/executor_engine.py",
-    "autonomy/l3_executor/executor_layer.py",
-    "brain/ContinuousCognitionLoop.py",
-    "brain/CounterfactualSimulator.py",
-    "brain/adapters.py",
-    "jarvis_os/ProviderSimulationEngine.py"
-  ],
+  "missing_critical": [],
   "duplicates": {
     "planner": [
       "ai_os/planner.py",
@@ -29,19 +22,22 @@
     "memory": [
       "ai_os/memory.py",
       "jarvis_os/ProviderStrategicMemory.py",
-      "jarvis_os/compat/legacy_memory.py"
+      "jarvis_os/compat/legacy_memory.py",
+      "memory/agi_memory.py",
+      "memory/embedding_memory.py",
+      "memory/tiered_memory.py"
     ]
   },
   "compileall": {
     "command": "C:\\Users\\peter\\AppData\\Local\\Programs\\Python\\Python311\\python.exe -m compileall brain jarvis_os governance runtime autonomy",
     "returncode": 0,
-    "stdout": "Listing 'brain'...\nListing 'jarvis_os'...\nListing 'jarvis_os\\\\agent'...\nListing 'jarvis_os\\\\agents'...\nListing 'jarvis_os\\\\browser'...\nListing 'jarvis_os\\\\cli'...\nListing 'jarvis_os\\\\compat'...\nListing 'jarvis_os\\\\control_plane'...\nListing 'jarvis_os\\\\core'...\nListing 'jarvis_os\\\\daemon'...\nListing 'jarvis_os\\\\interface'...\nListing 'jarvis_os\\\\memory'...\nListing 'jarvis_os\\\\models'...\nListing 'jarvis_os\\\\plugins'...\nListing 'jarvis_os\\\\runtime'...\nListing 'jarvis_os\\\\self_improve'...\nListing 'jarvis_os\\\\skills'...\nListing 'jarvis_os\\\\tool_router'...\nListing 'jarvis_os\\\\tools'...\nListing 'jarvis_os\\\\utils'...\nListing 'governance'...\nListing 'runtime'...\nListing 'autonomy'...\nListing 'autonomy\\\\api'...\nListing 'autonomy\\\\cli'...\nListing 'autonomy\\\\config'...\nListing 'autonomy\\\\core'...\nListing 'autonomy\\\\l1_brain'...\nListing 'autonomy\\\\l1_brain\\\\agents'...\nListing 'autonomy\\\\l1_brain\\\\context'...\nListing 'autonomy\\\\l1_brain\\\\memory'...\nListing 'autonomy\\\\l1_brain\\\\routing'...\nListing 'autonomy\\\\l2_assistant'...\nListing 'autonomy\\\\l2_assistant\\\\indexer'...\nListing 'autonomy\\\\l2_assistant\\\\reasoner'...\nListing 'autonomy\\\\l2_assistant\\\\suggestions'...\nListing 'autonomy\\\\l3_executor'...\nListing 'autonomy\\\\l3_executor\\\\logging'...\nListing 'autonomy\\\\l3_executor\\\\loop'...\nListing 'autonomy\\\\l3_executor\\\\planner'...\nListing 'autonomy\\\\l3_executor\\\\sandbox'...\nListing 'autonomy\\\\l4_controller'...\nListing 'autonomy\\\\l4_controller\\\\apps'...\nListing 'autonomy\\\\l4_controller\\\\commands'...\nListing 'autonomy\\\\l4_controller\\\\filesystem'...\nListing 'autonomy\\\\l4_controller\\\\safety'...\nListing 'autonomy\\\\memory'...\nListing 'autonomy\\\\patches'...\n",
+    "stdout": "Listing 'brain'...\nListing 'jarvis_os'...\nListing 'jarvis_os\\\\agent'...\nListing 'jarvis_os\\\\agents'...\nListing 'jarvis_os\\\\browser'...\nListing 'jarvis_os\\\\cli'...\nListing 'jarvis_os\\\\compat'...\nListing 'jarvis_os\\\\control_plane'...\nListing 'jarvis_os\\\\core'...\nListing 'jarvis_os\\\\daemon'...\nListing 'jarvis_os\\\\economics'...\nListing 'jarvis_os\\\\extensions'...\nListing 'jarvis_os\\\\interface'...\nListing 'jarvis_os\\\\links'...\nListing 'jarvis_os\\\\memory'...\nListing 'jarvis_os\\\\models'...\nListing 'jarvis_os\\\\plugins'...\nListing 'jarvis_os\\\\runtime'...\nListing 'jarvis_os\\\\self_improve'...\nListing 'jarvis_os\\\\skills'...\nListing 'jarvis_os\\\\tool_router'...\nListing 'jarvis_os\\\\tools'...\nListing 'jarvis_os\\\\trust'...\nListing 'jarvis_os\\\\utils'...\nListing 'jarvis_os\\\\verification'...\nListing 'governance'...\nListing 'runtime'...\nListing 'autonomy'...\nListing 'autonomy\\\\api'...\nListing 'autonomy\\\\cli'...\nListing 'autonomy\\\\config'...\nListing 'autonomy\\\\core'...\nListing 'autonomy\\\\l1_brain'...\nListing 'autonomy\\\\l1_brain\\\\agents'...\nListing 'autonomy\\\\l1_brain\\\\context'...\nListing 'autonomy\\\\l1_brain\\\\memory'...\nListing 'autonomy\\\\l1_brain\\\\routing'...\nListing 'autonomy\\\\l2_assistant'...\nListing 'autonomy\\\\l2_assistant\\\\indexer'...\nListing 'autonomy\\\\l2_assistant\\\\reasoner'...\nListing 'autonomy\\\\l2_assistant\\\\suggestions'...\nListing 'autonomy\\\\l3_executor'...\nListing 'autonomy\\\\l3_executor\\\\logging'...\nListing 'autonomy\\\\l3_executor\\\\loop'...\nListing 'autonomy\\\\l3_executor\\\\planner'...\nListing 'autonomy\\\\l3_executor\\\\sandbox'...\nListing 'autonomy\\\\l4_controller'...\nListing 'autonomy\\\\l4_controller\\\\apps'...\nListing 'autonomy\\\\l4_controller\\\\commands'...\nListing 'autonomy\\\\l4_controller\\\\filesystem'...\nListing 'autonomy\\\\l4_controller\\\\safety'...\nListing 'autonomy\\\\memory'...\nListing 'autonomy\\\\patches'...\nCompiling 'autonomy\\\\patches\\\\world_state_patch.py'...\n",
     "stderr": ""
   },
   "benchmarks": {
     "command": "C:\\Users\\peter\\AppData\\Local\\Programs\\Python\\Python311\\python.exe -m pytest benchmarks/phase61 -q",
     "returncode": 0,
-    "stdout": "......                                                                   [100%]\n6 passed in 0.30s\n",
+    "stdout": "......                                                                   [100%]\n============================== warnings summary ===============================\n..\\..\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\site-packages\\torch\\jit\\_script.py:1488\n  C:\\Users\\peter\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\site-packages\\torch\\jit\\_script.py:1488: DeprecationWarning: `torch.jit.script` is deprecated. Please switch to `torch.compile` or `torch.export`.\n    warnings.warn(\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n6 passed, 1 warning in 8.63s\n",
     "stderr": ""
   }
 }
