@@ -50,17 +50,18 @@ CODEX_CLI_PATH = _env("CODEX_CLI_PATH", str(BASE_DIR / "tools" / "codex-cli"))
 HYBRID_MAX_RETRIES = int(_env("HYBRID_MAX_RETRIES", "3") or 3)
 HYBRID_TIMEOUT_SECONDS = int(_env("HYBRID_TIMEOUT_SECONDS", "30") or 30)
 
-# Multi-instance Ollama ports (for different models)
+# Multi-instance Ollama ports - standard port is 11434
+# model_router.py handles mapping to 11434 if multi-instance is not used.
 OLLAMA_PORTS = {
     "tinyllama": 11434,
-    "deepseek-r1:1.5b": 11435,
-    "qwen2.5-coder:3b": 11436,
-    "qwen3:4b": 11437,
-    "qwen2.5:7b": 11438,
-    "mistral:7b": 11439,
-    "llama3.1:8b": 11440,
-    "phi3:mini": 11441,
-    "moondream": 11442,
+    "deepseek-r1:1.5b": 11434,
+    "qwen2.5-coder:3b": 11434,
+    "qwen3:4b": 11434,
+    "qwen2.5:7b": 11434,
+    "mistral:7b": 11434,
+    "llama3.1:8b": 11434,
+    "phi3:mini": 11434,
+    "moondream": 11434,
 }
 
 FACES_DIR = Path(_env("FACES_DIR", str(BASE_DIR / "data" / "faces")) or str(BASE_DIR / "data" / "faces"))

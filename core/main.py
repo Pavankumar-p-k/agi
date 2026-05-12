@@ -687,7 +687,12 @@ async def websocket_endpoint(ws: WebSocket, device_id: str, user_id: int):
 # ══════════════════════════════════════════════
 @app.websocket("/ws/chat_stream")
 async def chat_stream_websocket(ws: WebSocket):
+    """
+    Unified WebSocket handler for chat + actions.
+    Uses LLM intent extraction → execute → conversational response.
+    """
     from core.model_router import route_request
+    from assistant.engine import jarvis
     
     await ws.accept()
     try:
@@ -701,13 +706,12 @@ async def chat_stream_websocket(ws: WebSocket):
                 text = msg.get('text', '')
                 model, tier, processed_query = route_request(text)
                 
-                # Stream tokens from assistant
-                from assistant.engine import jarvis
+                # 1. Process text (LLM Intent → Execute Action → LLM Response)
                 result = await jarvis.process_text(processed_query, user_id=1)
-                
                 response_text = result.get('response', '')
+                intent = result.get('intent', 'general_chat')
                 
-                # Send tokens one word at a time for streaming effect
+                # 2. Stream tokens (simulated word-by-word)
                 words = response_text.split()
                 for i, word in enumerate(words):
                     await ws.send_json({
@@ -716,17 +720,26 @@ async def chat_stream_websocket(ws: WebSocket):
                         'complete': i == len(words) - 1,
                         'privacy_tier': tier.value,
                         'model': model,
+                        'intent': intent,
                     })
+                    # Yield slightly for a smoother "streaming" UI effect if desired
+                    # await asyncio.sleep(0.02)
                 
                 await ws.send_json({
                     'type': 'tier_status',
                     'tier': f'Tier {tier.value}',
+                    'status': 'completed'
                 })
             elif msg_type == 'ping':
                 await ws.send_json({'type': 'pong'})
+    except WebSocketDisconnect:
+        pass
     except Exception as e:
         print(f'[WS Chat] Error: {e}')
-        await ws.close()
+        try:
+            await ws.close()
+        except:
+            pass
 
 
 # ══════════════════════════════════════════════

@@ -5,7 +5,7 @@ import asyncio
 import json
 import queue
 import threading
-import requests
+import httpx
 import pyttsx3
 try:
     import pyaudio
@@ -25,7 +25,7 @@ except ImportError:
 from pathlib import Path
 from core.config import VOSK_MODEL_PATH
 from core.model_router import get_ollama_url, model_for_role, route_role_for_text
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Optional
 
 
 # ══════════════════════════════════════════════
@@ -153,6 +153,14 @@ class STTEngine:
         self.is_listening = False
 
 
+async def build_ollama_llm(model_name: str = None):
+    """Factory for Ollama LLM interactions using httpx."""
+    model = model_name or model_for_role("chat")
+    return {
+        "model": model,
+        "url": get_ollama_url(model)
+    }
+
 # ══════════════════════════════════════════════
 #  OLLAMA LLM ENGINE
 # ══════════════════════════════════════════════
@@ -162,16 +170,24 @@ You can control apps, set reminders, take notes, recognize faces, and analyze th
 Always respond in 1-3 sentences unless the user asks for detail.
 When performing actions, confirm what you've done briefly."""
 
+INTENT_PROMPT = """Analyze the user message and extract the intent and parameters.
+Respond ONLY with a JSON object.
+Supported intents: pc_control, media_play, web_search, set_reminder, create_note, general_chat.
+Example: {"intent": "pc_control", "params": {"app": "notepad"}}
+Example: {"intent": "set_reminder", "params": {"title": "buy milk", "time": "in 1 hour"}}
+Example: {"intent": "general_chat", "params": {}}"""
+
 class LLMEngine:
     def __init__(self):
         self.default_model = model_for_role("chat")
         self.base_url = get_ollama_url(self.default_model)
         self.model = self.default_model
         self.conversation_history = []
+        self._client = httpx.AsyncClient(timeout=60.0)
 
-    def is_available(self) -> bool:
+    async def is_available(self) -> bool:
         try:
-            r = requests.get(f"{self.base_url}/api/tags", timeout=2)
+            r = await self._client.get(f"{self.base_url}/api/tags", timeout=2)
             return r.status_code == 200
         except Exception:
             return False
@@ -180,7 +196,30 @@ class LLMEngine:
         role = route_role_for_text(user_message)
         return model_for_role(role)
 
-    def chat(self, user_message: str, context: str = "") -> str:
+    async def extract_intent(self, user_message: str) -> dict:
+        """Use automation model to extract structured intent."""
+        model = model_for_role("automation")
+        base_url = get_ollama_url(model)
+
+        payload = {
+            "model": model,
+            "messages": [
+                {"role": "system", "content": INTENT_PROMPT},
+                {"role": "user", "content": user_message}
+            ],
+            "stream": False,
+            "format": "json"
+        }
+        try:
+            r = await self._client.post(f"{base_url}/api/chat", json=payload)
+            r.raise_for_status()
+            content = r.json()["message"]["content"]
+            return json.loads(content)
+        except Exception as e:
+            print(f"[Intent] Extraction failed: {e}")
+            return {"intent": "general_chat", "params": {}}
+
+    async def chat(self, user_message: str, context: str = "") -> str:
         """Send a message and get a response from the local LLM."""
         model = self._select_model(user_message)
         base_url = get_ollama_url(model)
@@ -199,10 +238,9 @@ class LLMEngine:
         }
 
         try:
-            response = requests.post(
+            response = await self._client.post(
                 f"{base_url}/api/chat",
-                json=payload,
-                timeout=30
+                json=payload
             )
             response.raise_for_status()
             reply = response.json()["message"]["content"]
@@ -212,7 +250,7 @@ class LLMEngine:
             # Fallback responses when LLM is unavailable
             return self._fallback_response(user_message)
 
-    def chat_stream(self, user_message: str):
+    async def chat_stream(self, user_message: str) -> AsyncGenerator[str, None]:
         """Generator that yields response tokens as they arrive."""
         model = self._select_model(user_message)
         base_url = get_ollama_url(model)
@@ -226,8 +264,8 @@ class LLMEngine:
             "stream": True
         }
         try:
-            with requests.post(f"{base_url}/api/chat", json=payload, stream=True, timeout=60) as r:
-                for line in r.iter_lines():
+            async with self._client.stream("POST", f"{base_url}/api/chat", json=payload) as r:
+                async for line in r.aiter_lines():
                     if line:
                         chunk = json.loads(line)
                         token = chunk.get("message", {}).get("content", "")
@@ -392,45 +430,31 @@ class JarvisAssistant:
 
     async def process_text(self, text: str, user_id: int = None) -> dict:
         """Process a text command and return structured response."""
-        import re
-        intent = detect_intent(text)
+        from assistant.smart_actions import execute_action
         
-        # Execute action if detected
-        action_response = None
-        if intent == "set_reminder":
-            # Extract what to remind
-            match = re.search(r'remind me? (.+)', text.lower())
-            if match:
-                what = match.group(1).strip()
-                action_response = await self._execute_reminder_action(what)
-                intent = "reminder_created"
+        # 1. Extract intent using LLM
+        extraction = await self.llm.extract_intent(text)
+        intent = extraction.get("intent", "general_chat")
+        params = extraction.get("params", {})
         
-        elif intent == "create_note":
-            # Extract note content
-            parts = re.split(r'note|remember', text.lower(), maxsplit=1)
-            if len(parts) > 1 and parts[1].strip():
-                action_response = await self._execute_note_action(parts[1].strip())
-                intent = "note_created"
+        # 2. Execute action if not general chat
+        action_result = {"executed": False}
+        if intent != "general_chat":
+            action_result = await execute_action({"action": intent, **params})
         
-        elif intent == "open_app":
-            if "youtube" in text.lower():
-                action_response = self._open_url_action("https://youtube.com")
-            elif "amazon" in text.lower():
-                action_response = self._open_url_action("https://amazon.com")
-            else:
-                action_response = f"I'll try to open that."
+        # 3. Get LLM conversational response
+        response = await self.llm.chat(text)
         
-        # Get LLM response (or fallback)
-        response = self.llm.chat(text)
-        
-        # If action was executed, prepend to response
-        if action_response:
-            response = f"{action_response}\n\n{response}"
+        # If action was executed, prepend status
+        if action_result.get("executed"):
+            msg = action_result.get("speech", "Action completed.")
+            response = f"{msg}\n\n{response}"
         
         return {
             "intent": intent,
             "response": response,
-            "user_text": text
+            "user_text": text,
+            "action_result": action_result
         }
     
     async def _execute_reminder_action(self, title: str) -> str:

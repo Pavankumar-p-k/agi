@@ -11,3 +11,4 @@ numpy>=1.24.0
 deepface>=0.0.79
 aiofiles>=23.0.0
 websockets>=11.0.0
+httpx
