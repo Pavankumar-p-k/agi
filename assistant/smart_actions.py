@@ -135,38 +135,38 @@ async def execute_action(action: dict) -> dict:
                 result["speech"] = f"Sorry, I couldn't save the note."
                 print(f"[Action] Note error: {e}")
 
-    elif act == 'pc_control':
-        app_name = action.get('app', '').lower()
-        exe = PC_APPS.get(app_name, app_name)
-        try:
-            subprocess.Popen(exe, shell=True)
-            result["executed"] = True
-            result["speech"] = f"Opening {app_name}."
-        except Exception as e:
-            result["speech"] = f"Failed to open {app_name}."
-            print(f"[Action] PC Control error: {e}")
+        elif act == 'pc_control':
+            app_name = action.get('app', '').lower()
+            exe = PC_APPS.get(app_name, app_name)
+            try:
+                subprocess.Popen(exe, shell=True)
+                result["executed"] = True
+                result["speech"] = f"Opening {app_name}."
+            except Exception as e:
+                result["speech"] = f"Failed to open {app_name}."
+                print(f"[Action] PC Control error: {e}")
 
-    elif act == 'media_play':
-        query = action.get('query', '')
-        url = f"https://www.youtube.com/results?search_query={query}"
-        try:
-            webbrowser.open(url)
-            result["executed"] = True
-            result["speech"] = f"Playing {query} on YouTube."
-        except Exception as e:
-            result["speech"] = f"Failed to play media."
-            print(f"[Action] Media error: {e}")
+        elif act == 'media_play':
+            query = action.get('query', '')
+            url = f"https://www.youtube.com/results?search_query={query}"
+            try:
+                webbrowser.open(url)
+                result["executed"] = True
+                result["speech"] = f"Playing {query} on YouTube."
+            except Exception as e:
+                result["speech"] = f"Failed to play media."
+                print(f"[Action] Media error: {e}")
 
-    elif act == 'web_search':
-        query = action.get('query', '')
-        url = f"https://www.google.com/search?q={query}"
-        try:
-            webbrowser.open(url)
-            result["executed"] = True
-            result["speech"] = f"Searching for {query}."
-        except Exception as e:
-            result["speech"] = f"Failed to perform search."
-            print(f"[Action] Search error: {e}")
+        elif act == 'web_search':
+            query = action.get('query', '')
+            url = f"https://www.google.com/search?q={query}"
+            try:
+                webbrowser.open(url)
+                result["executed"] = True
+                result["speech"] = f"Searching for {query}."
+            except Exception as e:
+                result["speech"] = f"Failed to perform search."
+                print(f"[Action] Search error: {e}")
     
     return result
 
