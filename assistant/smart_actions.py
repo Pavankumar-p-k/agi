@@ -8,7 +8,6 @@ import webbrowser
 import subprocess
 from datetime import datetime, timedelta
 
-OLLAMA_RESPONDED = False  # Set to True after implementing function calling
 
 PC_APPS = {
     "notepad": "notepad.exe",
@@ -29,15 +28,15 @@ def parse_time_relative(time_str: str) -> datetime:
     target_time = now + timedelta(hours=1)
 
     try:
-        if 'minute' in time_str:
-            mins = int(re.search(r'(\d+)', time_str).group(1))
-            target_time = now + timedelta(minutes=mins)
+        if 'day' in time_str:
+            days = int(re.search(r'(\d+)', time_str).group(1))
+            target_time = now + timedelta(days=days)
         elif 'hour' in time_str:
             hours = int(re.search(r'(\d+)', time_str).group(1))
             target_time = now + timedelta(hours=hours)
-        elif 'day' in time_str:
-            days = int(re.search(r'(\d+)', time_str).group(1))
-            target_time = now + timedelta(days=days)
+        elif 'minute' in time_str:
+            mins = int(re.search(r'(\d+)', time_str).group(1))
+            target_time = now + timedelta(minutes=mins)
         elif 'tomorrow' in time_str:
             target_time = now + timedelta(days=1)
             # Check for specific time like "tomorrow at 9am"
@@ -139,7 +138,7 @@ async def execute_action(action: dict) -> dict:
             app_name = action.get('app', '').lower()
             exe = PC_APPS.get(app_name, app_name)
             try:
-                subprocess.Popen(exe, shell=True)
+                subprocess.Popen([exe], shell=False)
                 result["executed"] = True
                 result["speech"] = f"Opening {app_name}."
             except Exception as e:

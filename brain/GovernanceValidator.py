@@ -17,9 +17,9 @@ class GovernanceValidator:
 
     def audit_decision(self, decision: Dict[str, Any], context: BrainExecutionContext) -> None:
         if not decision.get("identity_aligned", False):
-            raise RuntimeError("Governance audit failed: identity alignment missing.")
+            raise GovernanceViolation("Governance audit failed: identity alignment missing.")
         if decision.get("trust_risk", 0.0) > 0.75:
-            raise RuntimeError("Governance audit failed: trust risk too high.")
+            raise GovernanceViolation("Governance audit failed: trust risk too high.")
 
     def validate_execution(self, result: Dict[str, Any], context: BrainExecutionContext) -> bool:
         if result.get("success") is False and result.get("trust_risk", 0.0) > 0.5:

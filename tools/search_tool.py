@@ -47,7 +47,7 @@ class SearXNGSearch:
                 "format": "json",
                 "engines": "google,bing,duckduckgo",
             }
-            resp = requests.get(self.base_url, params=params, timeout=10)
+            resp = requests.get(self.base_url.rstrip('/') + "/search", params=params, timeout=10)
             resp.raise_for_status()
             data = resp.json()
             
@@ -78,35 +78,50 @@ class SearXNGSearch:
                         r.score *= 0.8
                     if age_days > 365: # Older than a year
                         r.score *= 0.5
-                except:
+                except Exception:
                     pass
         return sorted(results, key=lambda x: x.score, reverse=True)
 
-    def scrape_top(self, results: List[SearchResult], n: int = 3) -> List[str]:
-        """Scrape full content from top results."""
+    async def scrape_top(self, results: List[SearchResult], n: int = 3) -> List[str]:
+        """Scrape full content from top results using Crawl4AI with trafilatura fallback."""
         contents = []
-        for r in results[:n]:
-            try:
-                downloaded = trafilatura.fetch_url(r.url)
-                if downloaded:
-                    content = trafilatura.extract(downloaded)
-                    if content:
-                        contents.append(f"SOURCE: {r.url}\nCONTENT: {content}")
-            except:
-                continue
+        try:
+            from tools.crawl4ai_tool import get_crawler
+            crawler = get_crawler()
+            urls = [r.url for r in results[:n]]
+            scraped = await crawler.scrape_multi(urls)
+            for s in scraped:
+                if s.get("success") and s.get("content"):
+                    contents.append(f"SOURCE: {s['url']}\nTITLE: {s.get('title', '')}\nCONTENT: {s['content'][:3000]}")
+                elif s.get("success") and s.get("markdown"):
+                    contents.append(f"SOURCE: {s['url']}\nCONTENT: {s['markdown'][:3000]}")
+        except Exception as e:
+            print(f"[Search] Crawl4AI scrape failed, falling back to trafilatura: {e}")
+
+        # Fallback to trafilatura for any results crawl4ai missed
+        if len(contents) < n:
+            for r in results[:n]:
+                if any(r.url in c for c in contents):
+                    continue
+                try:
+                    downloaded = trafilatura.fetch_url(r.url)
+                    if downloaded:
+                        content = trafilatura.extract(downloaded)
+                        if content:
+                            contents.append(f"SOURCE: {r.url}\nCONTENT: {content}")
+                except Exception:
+                    continue
         return contents
 
     async def multi_hop(self, query: str, max_iterations: int = 3) -> str:
         """
         Search -> read -> "what do I still not know?" -> search gap -> repeat.
         """
-        # This would require an LLM to decide the 'next hop'
-        # For now, a simple one-hop implementation
         results = self.search(query)
         if not results:
             return "No results found."
-        
-        scraped = self.scrape_top(results)
+
+        scraped = await self.scrape_top(results)
         return "\n\n".join(scraped)
 
 # Instances

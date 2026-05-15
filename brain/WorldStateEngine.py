@@ -164,6 +164,7 @@ class EpistemicStateEngine:
 
         self._claims[claim.claim_id]    = claim
         self._fp_index[fp]              = claim.claim_id
+        self._save()
         return claim.claim_id
 
     # ── State management ──────────────────────────────────────────
@@ -203,6 +204,7 @@ class EpistemicStateEngine:
         if old_state != claim.epistemic_state:
             self._log_transition(claim, old_state, claim.epistemic_state,
                                  f"evidence from {attachment.source}")
+        self._save()
         return claim.epistemic_state
 
     def mark_contradicted(self, claim_id_a: str, claim_id_b: str):
@@ -215,6 +217,7 @@ class EpistemicStateEngine:
                 claim.epistemic_state = EpistemicState.CONTRADICTORY
                 self._log_transition(claim, old_state, EpistemicState.CONTRADICTORY,
                                      f"contradicts {other_id}")
+        self._save()
 
     def get_state(self, claim_id: str) -> Optional[EpistemicState]:
         claim = self._claims.get(claim_id)
@@ -291,8 +294,9 @@ class EpistemicStateEngine:
             source_task_id=task_id,
         )
 
+    @staticmethod
     def _classify_and_extract(
-        self, sentence: str
+        sentence: str
     ) -> Tuple[ClaimType, str, str, str]:
         """Pattern-based SPO extraction. Returns (type, subject, predicate, object)."""
         sl  = sentence.lower()
@@ -389,8 +393,14 @@ class EpistemicStateEngine:
         fpath = os.path.join(self.storage_path, "epistemic_state.json")
         try:
             subset = dict(list(self._claims.items())[-500:])
+
+            def _enum_to_val(obj):
+                if isinstance(obj, Enum):
+                    return obj.value
+                return str(obj)
+
             with open(fpath, "w") as f:
-                json.dump({cid: asdict(c) for cid, c in subset.items()}, f, default=str)
+                json.dump({cid: asdict(c) for cid, c in subset.items()}, f, default=_enum_to_val)
         except Exception as e:
             logger.warning(f"[EpistemicEngine] Save failed: {e}")
 
@@ -410,9 +420,17 @@ class EpistemicStateEngine:
             logger.warning(f"[EpistemicEngine] Load failed: {e}")
 
 class WorldStateEngine:
-    async def snapshot(self) -> dict:
-        return {
+    def __init__(self):
+        self._state: dict[str, Any] = {
             "strategic": {"risk_level": 0.5},
             "user": {"trust_score": 0.8},
             "tasks": []
         }
+
+    async def snapshot(self) -> dict:
+        return dict(self._state)
+
+    async def update(self, data: dict, event: str = "") -> None:
+        self._state.update(data)
+        if event:
+            self._state["_last_event"] = event

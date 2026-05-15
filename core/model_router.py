@@ -8,6 +8,7 @@ import re
 from typing import Dict, List
 
 from core.config import OLLAMA_URL
+from core.privacy_classifier import privacy_classifier, PrivacyTier
 
 
 # Default per-model endpoints (Option 2: one Ollama server per model).
@@ -146,26 +147,66 @@ def route_role_for_text(text: str) -> str:
     return "chat"
 
 
-from core.privacy_classifier import privacy_classifier, PrivacyTier
-
-def route_request(query: str, context: dict = None):
+def route_request(query: str, context: dict = None, force_tier: str = None):
     """
     Route request based on privacy classifier.
+    
+    Args:
+        query: The user's message
+        context: Optional context dict
+        force_tier: "cloud" to force cloud API, "local" to force local, None for auto
+    
     Returns (model_name, privacy_tier, processed_query).
     """
+    # Explicit user choice overrides everything
+    if force_tier == "cloud":
+        return "cloud", PrivacyTier.CLOUD, query
+    if force_tier == "local":
+        tier = privacy_classifier.classify(query, context)
+        processed_query = query
+        if tier == PrivacyTier.LOCAL:
+            model = model_for_role(route_role_for_text(query))
+        elif tier == PrivacyTier.HYBRID:
+            processed_query = privacy_classifier.sanitize(query, tier=PrivacyTier.HYBRID)
+            model = model_for_role(route_role_for_text(processed_query))
+        else:
+            model = model_for_role(route_role_for_text(query))
+        return model, tier, processed_query
+
+    # FORCE_CLOUD env var as default when no user choice
+    if os.getenv("FORCE_CLOUD", "").lower() in ("1", "true", "yes"):
+        return "cloud", PrivacyTier.CLOUD, query
+
     tier = privacy_classifier.classify(query, context)
     processed_query = query
     
     if tier == PrivacyTier.LOCAL:
-        # Strictly local
         model = model_for_role(route_role_for_text(query))
     elif tier == PrivacyTier.HYBRID:
-        # Sanitize and then maybe cloud (if confidence is low, etc. - for now just local)
-        processed_query = privacy_classifier.sanitize(query)
+        processed_query = privacy_classifier.sanitize(query, tier=PrivacyTier.HYBRID)
         model = model_for_role(route_role_for_text(processed_query))
     else:
-        # Explicit cloud or complex
-        model = "claude-3-5-sonnet-latest" # Example cloud model
+        model = model_for_role(route_role_for_text(query))
     
     return model, tier, processed_query
+
+
+ROLE_TO_ROUTER_GROUP: Dict[str, str] = {
+    "chat": "chat",
+    "analysis": "analysis",
+    "reasoning": "reasoning",
+    "planning": "chat",
+    "code": "code",
+    "automation": "automation",
+    "creative": "creative",
+    "vision": "vision",
+    "classifier": "fast",
+    "emotion": "fast",
+    "quality": "fast",
+    "fallback": "fast",
+}
+
+
+def get_router_model(role: str) -> str:
+    return ROLE_TO_ROUTER_GROUP.get(role, "chat")
 

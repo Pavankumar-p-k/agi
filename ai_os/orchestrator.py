@@ -51,7 +51,7 @@ class AIOrchestrator:
 
         try:
             self.events.publish("planning", metadata)
-            plan = self.planner.build_plan(goal, context)
+            plan = self.planner.build_plan(goal, {"type": "auto"}, context or {})
 
             policy_results = self.policy.enforce(plan)
             blocked = [r for r in policy_results if not r["policy"]["allowed"]]

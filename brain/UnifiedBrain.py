@@ -360,13 +360,13 @@ RESPONSE:"""
         try:
             return json.loads(text)
         except Exception:
-            m = re.search(r'\{.*\}', text, re.DOTALL)
+            m = re.search(r'\{.*?\}', text, re.DOTALL)
             if m:
                 try:
                     return json.loads(m.group())
                 except Exception as parse_err:
                     logger.error(f"[MythosBrain] JSON extraction parsing failed: {parse_err}")
-                    raise RuntimeError(f"JSON parsing failed: {parse_err}")
+                    return None
         return None
 
     def get_stats(self) -> Dict:

@@ -64,8 +64,8 @@ class ExecutionContext:
                     )
             except Exception as err:
                 import logging
-                logging.getLogger(__name__).error("Exception swallowed: %s", err)
-                raise RuntimeError(f"Exception swallowed: {err}")
+                logging.getLogger(__name__).error("Memory store failed: %s", err)
+                raise
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -227,8 +227,24 @@ class ToolCall:
 
 class IdentityKernel:
     """Core identity configuration and alignment checker."""
+
+    def __init__(self):
+        self.mission = "Assist users autonomously and ethically."
+        self.profile = type('obj', (object,), {'mission': self.mission})()
+
     def check_alignment(self, context: Any, candidate: Any) -> bool:
+        if not candidate:
+            return False
+        if isinstance(candidate, dict):
+            risk = candidate.get("trust_risk", 0.0)
+            return risk < 0.8
         return True
-        
+
     def resolve_conflict(self, conflict: Dict[str, Any]) -> Dict[str, Any]:
         return {"resolved": True, "conflict": conflict}
+
+    async def store_memory(self, key: str, value: Any) -> None:
+        pass
+
+    async def recall_memory(self, key: str) -> Optional[Any]:
+        return None

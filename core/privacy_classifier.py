@@ -15,7 +15,7 @@ class PrivacyClassifier:
     def __init__(self):
         try:
             self.nlp = spacy.load("en_core_web_sm")
-        except:
+        except Exception:
             self.nlp = None
             print("[Privacy] spacy model not found. NER disabled.")
 
@@ -36,11 +36,7 @@ class PrivacyClassifier:
         """
         query_lower = query.lower()
 
-        # Tier 3: Explicit Cloud Request
-        if any(kw in query_lower for kw in ["ask claude", "use gpt", "use gemini", "ask openai"]):
-            return PrivacyTier.CLOUD
-
-        # Tier 1: Local Only (Sensitive Info)
+        # Tier 1: Local Only (Sensitive Info) — check BEFORE cloud keyword
         if any(re.search(p, query_lower) for p in self.tier_1_patterns):
             return PrivacyTier.LOCAL
         
@@ -53,23 +49,41 @@ class PrivacyClassifier:
         if re.search(r'\b\d{3}[-.\s]?\d{3}[-.\s]?\d{4}\b', query):
             return PrivacyTier.LOCAL
 
+        # Tier 3: Explicit Cloud Request (after PII checks — never leak sensitive data)
+        if any(kw in query_lower for kw in ["ask claude", "use gpt", "use gemini", "ask openai"]):
+            return PrivacyTier.CLOUD
+
         # Tier 2: Hybrid (Sanitize then Cloud)
-        # Default for general coding/reasoning if no sensitive info found
         return PrivacyTier.HYBRID
 
-    def sanitize(self, text: str) -> str:
+    def sanitize(self, text: str, tier: PrivacyTier = PrivacyTier.HYBRID) -> str:
         """
         Strip PII using spacy NER.
+        LOCAL: strip all PII entities (PERSON, ORG, GPE, etc.) + patterns.
+        HYBRID: only strip email, phone, SSN, credit card patterns — NOT names.
+        CLOUD: no sanitization (user explicitly opted in).
         """
-        if not self.nlp:
+        if tier == PrivacyTier.CLOUD:
             return text
 
-        doc = self.nlp(text)
+        # Pattern-based sanitization (always for LOCAL and HYBRID)
         sanitized = text
-        for ent in reversed(doc.ents):
-            if ent.label_ in self.pii_entities:
-                sanitized = sanitized[:ent.start_char] + f"[{ent.label_}]" + sanitized[ent.end_char:]
-        
+        patterns = {
+            r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b': '[EMAIL]',
+            r'\b\d{3}[-.\s]?\d{3}[-.\s]?\d{4}\b': '[PHONE]',
+            r'\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b': '[CC]',
+        }
+        for pattern, replacement in patterns.items():
+            sanitized = re.sub(pattern, replacement, sanitized)
+
+        if tier == PrivacyTier.LOCAL:
+            if not self.nlp:
+                return sanitized
+            doc = self.nlp(sanitized)
+            for ent in reversed(doc.ents):
+                if ent.label_ in self.pii_entities:
+                    sanitized = sanitized[:ent.start_char] + f"[{ent.label_}]" + sanitized[ent.end_char:]
+
         return sanitized
 
 # Singleton

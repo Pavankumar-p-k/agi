@@ -7,11 +7,7 @@ class BrainPolicyEngine:
     """Policy engine for governing legal, ethical, and safety bounds."""
 
     def __init__(self):
-        self.rules = [
-            {"name": "no_high_risk_without_user_confirmation", "threshold": 0.7},
-            {"name": "deny_identity_violation", "threshold": 0.0},
-            {"name": "respect_user_emotion", "threshold": 0.6},
-        ]
+        pass
 
     def evaluate(self, intent: Dict[str, Any]) -> Dict[str, Any]:
         if intent.get("risk", 0.0) > 0.8 and intent.get("requires_context", True):

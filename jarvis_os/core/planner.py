@@ -34,7 +34,7 @@ Output STRICT JSON only:
 }}
 """
         try:
-            response = self.models.generate(plan_prompt, task="planner")
+            response = self.models.generate("planner", plan_prompt)
         except RuntimeError as exc:
             import logging
             logging.getLogger(__name__).error(f"Planner failed to generate initial plan: {exc}")
@@ -51,7 +51,7 @@ Output STRICT JSON only:
             # Retry with corrected prompt
             retry_prompt = plan_prompt + "\n\nEnsure the output is valid JSON."
             try:
-                response = self.models.generate(retry_prompt, task="planner")
+                response = self.models.generate("planner", retry_prompt)
             except RuntimeError as exc:
                 import logging
                 logging.getLogger(__name__).error(f"Planner failed to generate retry plan: {exc}")

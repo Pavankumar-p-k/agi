@@ -22,6 +22,13 @@ async def get_db():
 async def init_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+    # Migrate: add intent column if missing (SQLite)
+    try:
+        async with engine.begin() as conn:
+            from sqlalchemy import text
+            await conn.execute(text("ALTER TABLE chat_history ADD COLUMN intent VARCHAR(50) DEFAULT 'chat'"))
+    except Exception:
+        pass  # column already exists
     print("[DB] Database initialized")
 
 
@@ -130,6 +137,7 @@ class ChatHistory(Base):
     user_id:    Mapped[int]  = mapped_column(ForeignKey("users.id"))
     role:       Mapped[str]  = mapped_column(String(20))   # user|assistant
     message:    Mapped[str]  = mapped_column(Text)
+    intent:     Mapped[Optional[str]] = mapped_column(String(50), default="chat")
     timestamp:  Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 

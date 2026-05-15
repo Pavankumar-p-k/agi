@@ -161,7 +161,7 @@ def _google(v):
     return [
         _s(1,  "Open Chrome",                    "open_app",  app="chrome"),
         _s(2,  "Wait",                           "wait",      sec=1.5),
-        _s(3,  f"Search Google: {q}",            "navigate",  url=f"google.com/search?q={q.replace(' ',' ')}"),
+        _s(3,  f"Search Google: {q}",            "navigate",  url=f"https://www.google.com/search?q={q.replace(' ', '+')}"),
         _s(4,  "Wait for results",               "wait",      sec=2.0),
     ]
 

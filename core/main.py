@@ -1,19 +1,23 @@
 """
 core/main.py — JARVIS FastAPI server: all routes + WebSocket + startup
 """
+import os
 import sys
 import io
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
 sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
 import asyncio
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 from contextlib import asynccontextmanager
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Literal
 
 from fastapi import FastAPI, Depends, HTTPException, WebSocket, WebSocketDisconnect, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 import base64
@@ -23,7 +27,13 @@ import subprocess
 import json
 import re
 import urllib.parse
+import numpy as np
+import cv2
+import instructor
+from openai import OpenAI
+from smolagents import ToolCallingAgent, tool, LiteLLMModel
 
+from .composio_tools import COMPOSIO_TOOLS
 from .config import HOST, PORT, ALLOWED_ORIGINS
 from .database import get_db, init_db, User
 from .auth import verify_token, init_firebase
@@ -117,7 +127,8 @@ async def lifespan(app: FastAPI):
             startup_status["hybrid"] = True
             print("  [HYBRID] Model fallback system ready [OK]")
 
-            asyncio.create_task(hybrid_manager._warmup_models())
+            _warmup = asyncio.ensure_future(hybrid_manager._warmup_models())
+            _warmup.add_done_callback(lambda t: print(f"  [HYBRID] Warmup {'OK' if not t.exception() else 'FAILED: '+str(t.exception())}" if t.exception() else None))
             print("  [HYBRID] Hybrid Automation System ready [OK]")
         else:
             print("  [HYBRID] Skipping hybrid automation init because autonomy layer failed.")
@@ -141,19 +152,15 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         startup_status["warnings"].append(f"ollama_check: {e}")
 
-    # Start WakeWordDetector
+    # Start WakeWordDetector + VoiceLoop
     try:
-        from assistant.wake_word import wake_word_detector
-        from assistant.engine import jarvis
-        
-        def on_wake():
-            print("[EVENT] Wake word detected!")
-            # Trigger something or just log
-        
-        wake_word_detector.start(on_wake)
-        print("  [VOICE] Wake word detector started [OK]")
+        from assistant.voice_pipeline import get_pipeline, VoiceLoop
+        _voice_loop = VoiceLoop()
+        app.state.voice_loop = _voice_loop
+        _voice_loop.start()
+        print("  [VOICE] Wake word + voice loop started [OK]")
     except Exception as e:
-        print(f"  [WARNING] Wake word detector failed: {e}")
+        print(f"  [WARNING] Wake word/voice loop: {e}")
 
     if startup_status["warnings"]:
         print("[JARVIS] Startup completed with warnings:")
@@ -166,6 +173,9 @@ async def lifespan(app: FastAPI):
     # Shutdown
     from automation.messaging import messaging
     messaging.shutdown()
+    if hasattr(app.state, "voice_loop"):
+        app.state.voice_loop.stop()
+        print("  [VOICE] Voice loop stopped")
     print("[JARVIS] Shutdown complete.")
 
 
@@ -269,6 +279,7 @@ except Exception as e:
 class ChatRequest(BaseModel):
     message: str
     context: Optional[str] = ""
+    tier: Optional[str] = None  # "local", "cloud", or None for default
 
 class ReminderCreate(BaseModel):
     title: str
@@ -302,12 +313,10 @@ class FaceRegisterRequest(BaseModel):
 # ==============================================
 @app.get("/")
 async def root():
-    return {
-        "status": "online",
-        "system": "JARVIS",
-        "version": "1.0.0",
-        "timestamp": datetime.utcnow().isoformat()
-    }
+    return FileResponse("static/index.html")
+
+app.mount("/assets", StaticFiles(directory="static/assets"), name="assets")
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.get("/health")
 async def health():
@@ -352,95 +361,467 @@ async def health():
 #  LLM INTENT EXTRACTION + ACTION EXECUTOR
 # ==============================================
 
-INTENT_SYSTEM_PROMPT = """Classify the user message into one of these intents. Return ONLY valid JSON with no other text.
+class IntentResult(BaseModel):
+    intent: Literal[
+        "play_media", "open_url", "open_app",
+        "web_search", "reminder", "pc_control", "browser_task", "message", "chat"
+    ]
+    target: str = ""
+    parameters: dict = {}
 
-intents:
-- open_app: user wants to open a website or URL
-- media_play: user wants to play music, video, or media
-- web_search: user wants to search the web
-- reminder: user wants to set a reminder or alert
-- pc_control: user wants to open a desktop application
-- chat: anything else
 
-JSON format: {"intent":"intent_name","action":"...","target":"...","parameters":{}}
+_STRICT_EXAMPLES = """
+Examples:
+User: play cry for me on youtube
+Intent: play_media
+
+User: open youtube
+Intent: open_url
+
+User: search latest AI news
+Intent: web_search
+
+User: open notepad
+Intent: pc_control
+
+User: remind me to drink water in 1 minute
+Intent: reminder
+
+User: what is python
+Intent: chat
+
+User: launch chrome
+Intent: pc_control
+
+User: go to github
+Intent: open_url
+
+User: open github
+Intent: open_url
+
+User: open github and complete sign up
+Intent: browser_task
+
+User: go to amazon and add a monitor to cart
+Intent: browser_task
+
+User: login to gmail and send an email
+Intent: browser_task
+
+User: send an email to john@example.com with subject hello saying hi
+Intent: message
+
+User: send a slack message to general
+Intent: message
+
+User: create a github issue in my repo
+Intent: message
+
+User: browse amazon for laptops
+Intent: browser_task
+
+User: sign up for a new account on any site
+Intent: browser_task
+
+User: register for github with google
+Intent: browser_task
+
+User: open spotify
+Intent: open_url
+
+User: go to youtube and search for music
+Intent: browser_task
+
+User: fill out the contact form
+Intent: browser_task
 """
 
 
-def _regex_intent(message: str) -> dict:
-    msg_lower = message.lower().strip()
-    # Media play
-    if any(kw in msg_lower for kw in ["play ", "play music", "play song", "play video", "on yt", "on youtube", "on spotify"]):
-        target = re.sub(r'^(play\s+)|(\s+on\s+(?:yt|youtube|spotify).*)$', '', msg_lower).strip()
-        if not target:
-            target = msg_lower
-        return {"intent": "media_play", "action": "play", "target": target, "parameters": {}}
-    # Open app/URL or PC control
-    if any(msg_lower.startswith(x) for x in ["open ", "launch ", "go to "]):
-        target = msg_lower.replace("open ", "").replace("launch ", "").replace("go to ", "").strip()
-        pc_keywords = ["folder", "explorer", "notepad", "calculator", "calc", "vscode", "code", "cmd", "terminal", "chrome", "edge", "firefox", "settings", "task manager"]
-        if target.lower() in pc_keywords or any(kw in msg_lower for kw in pc_keywords):
-            return {"intent": "pc_control", "action": "open_app", "target": target, "parameters": {}}
-        for name in ["youtube", "google", "whatsapp", "gmail", "github", "netflix", "spotify", "twitter", "instagram", "facebook", "reddit", "linkedin", "amazon"]:
-            if name in msg_lower:
-                return {"intent": "open_app", "action": "open", "target": name, "parameters": {}}
-        return {"intent": "open_app", "action": "open", "target": target, "parameters": {}}
-    # Web search
-    if any(msg_lower.startswith(x) for x in ["search ", "find ", "look up ", "google "]):
-        target = re.sub(r'^(search|find|look up|google)\s+', '', msg_lower)
-        return {"intent": "web_search", "action": "search", "target": target, "parameters": {}}
-    # Reminder
-    if any(kw in msg_lower for kw in ["remind", "reminder", "alarm", "set a"]):
-        return {"intent": "reminder", "action": "create", "target": msg_lower, "parameters": {}}
-    # Default
-    return {"intent": "chat", "action": "answer", "target": msg_lower, "parameters": {}}
+_INTENT_CLIENT = None
+
+
+def _get_intent_client():
+    global _INTENT_CLIENT
+    if _INTENT_CLIENT is None:
+        _INTENT_CLIENT = instructor.from_openai(
+            OpenAI(base_url="http://localhost:11434/v1", api_key="ollama"),
+            mode=instructor.Mode.JSON,
+        )
+    return _INTENT_CLIENT
 
 
 async def extract_intent(message: str) -> dict:
     try:
-        examples = """
-Examples:
-USER: play cry for me on youtube
-AI: {"intent":"media_play","action":"play","target":"cry for me","parameters":{}}
-
-USER: open youtube
-AI: {"intent":"open_app","action":"open","target":"youtube","parameters":{}}
-
-USER: search latest AI news
-AI: {"intent":"web_search","action":"search","target":"latest AI news","parameters":{}}
-
-USER: open notepad
-AI: {"intent":"pc_control","action":"open_app","target":"notepad","parameters":{}}
-
-USER: remind me to drink water in 1 minute
-AI: {"intent":"reminder","action":"create","target":"drink water","parameters":{"time":"in 1 minute"}}
-
-USER: what is python
-AI: {"intent":"chat","action":"answer","target":"python","parameters":{}}
-"""
-        payload = {
-            "model": "llama3.1:8b",
-            "messages": [
-                {"role": "system", "content": INTENT_SYSTEM_PROMPT},
-                {"role": "user", "content": f"{examples}\n\nClassify this message (return ONLY valid JSON):\n{message}"}
+        client = _get_intent_client()
+        result = client.chat.completions.create(
+            model="qwen2.5:7b",
+            response_model=IntentResult,
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are an intent classifier. Output ONLY the intent, target, and parameters.\n\n"
+                        "Intents:\n"
+                        "- play_media: user wants to play music/video/media\n"
+                        "- open_url: ONLY when the user simply wants to navigate to a URL with no further action. Single verb like 'open youtube', 'go to github'.\n"
+                        "- web_search: user explicitly says 'search for', 'look up', or wants current/live information from the web\n"
+                        "- reminder: user wants to set a reminder/alarm\n"
+                        "- pc_control: user wants to open a desktop app (notepad, vscode, chrome, etc.)\n"
+                        "- browser_task: ANY multi-step browser operation — signup, login, form filling, shopping, booking, clicking, scrolling, filling fields, submitting forms, OR when the user says 'open X and Y' where Y is an action beyond just opening. This includes any mention of: sign up, sign in, register, create account, login, fill, submit, search for (on a site), add to cart, purchase, book, order.\n"
+                        "- message: user wants to send an email, Slack message, or any electronic message. Examples: 'send an email', 'send a message', 'send email to', 'send slack message', 'create a github issue', 'create an issue'.\n"
+                        "- chat: general knowledge questions ('what is X', 'who is Y', 'how does Z work'), greetings, conversation, stories, jokes, opinions, advice, explanations. CRITICAL: 'what is X', 'who is Y', 'how does Z work', 'tell me about X' are ALWAYS chat, NOT web_search.\n\n"
+                        "CRITICAL RULE: if the user wants to do ANYTHING beyond just navigating to a URL (like sign up, login, search on a site, fill a form, buy something), use browser_task — NOT open_url.\n"
+                        "CRITICAL RULE: 'remember that' or 'remember my' is chat (storing info), NOT reminder.\n"
+                        f"{_STRICT_EXAMPLES}"
+                    ),
+                },
+                {"role": "user", "content": message},
             ],
-            "stream": False,
-            "options": {
-                "temperature": 0,
-                "num_predict": 50,
-                "stop": ["\n\n"]
-            }
-        }
-        r = httpx.post("http://localhost:11434/api/chat", json=payload, timeout=120)
-        content = r.json()["message"]["content"]
-        content = re.sub(r'<think>.*?</think>', '', content, flags=re.DOTALL).strip()
-        parsed = json.loads(content)
-        intent = parsed.get("intent", "chat")
-        if intent not in ("open_app", "media_play", "web_search", "reminder", "pc_control", "chat", "play_media", "open_url"):
-            intent = "chat"
-        parsed["intent"] = intent
-        return parsed
+            max_retries=3,
+        )
+        intent_data = result.model_dump()
     except Exception:
-        return _regex_intent(message)
+        intent_data = {"intent": "chat", "target": message, "parameters": {}}
+
+    # Rule-based overrides for common misclassifications
+    msg_lower = message.lower().strip()
+
+    # "open [app]" → pc_control if app is a known desktop app
+    if msg_lower.startswith("open "):
+        app_name = msg_lower.replace("open ", "", 1).strip()
+        if app_name in ("notepad", "calculator", "cmd", "terminal", "vscode", "code", "chrome", "edge", "firefox", "explorer", "settings"):
+            if intent_data.get("intent") not in ("pc_control",):
+                intent_data["intent"] = "pc_control"
+                intent_data["target"] = app_name
+
+    # "what is X", "who is Y" → chat (not web_search), but allow weather/time queries
+    if msg_lower.startswith(("what is ", "what are ", "who is ", "who's ",
+                              "how does ", "how do ", "how can ", "how to ",
+                              "tell me about ", "explain ")):
+        if intent_data.get("intent") == "web_search":
+            intent_data["intent"] = "chat"
+
+    # "what's the weather/time/news" → keep as web_search if LLM said so
+    if msg_lower.startswith("what's "):
+        rest = msg_lower[6:]
+        if any(w in rest for w in ("weather", "time", "news", "temperature", "forecast", "stock")):
+            pass  # keep whatever the LLM decided
+        elif intent_data.get("intent") == "web_search":
+            intent_data["intent"] = "chat"
+
+    # "remember that" or "remember my" → chat (not reminder)
+    if msg_lower.startswith("remember"):
+        if intent_data.get("intent") == "reminder":
+            intent_data["intent"] = "chat"
+            intent_data["target"] = message
+
+    # "create a github issue" or "create issue" → message (not browser_task)
+    if any(p in msg_lower for p in ["create a github", "create an issue", "create issue",
+                                      "send an email", "send email", "send a message"]):
+        if intent_data.get("intent") in ("browser_task", "open_url"):
+            intent_data["intent"] = "message"
+
+    # "play [song]" without "search" → play_media (not web_search)
+    if msg_lower.startswith("play ") and "search" not in msg_lower:
+        if intent_data.get("intent") == "web_search":
+            intent_data["intent"] = "play_media"
+
+    return intent_data
+
+
+# ══════════════════════════════════════════════
+#  SMOLAGENTS TOOL FUNCTIONS
+# ══════════════════════════════════════════════
+
+@tool
+def open_website(name: str) -> str:
+    """Opens a website or web app in the browser.
+    Use for: youtube, google, whatsapp, gmail, github, amazon, netflix, spotify, twitter, instagram, facebook, reddit, linkedin.
+    Args:
+        name: The name of the website to open (e.g., youtube, google, gmail, github, amazon)
+    """
+    sites = {
+        "youtube": "https://youtube.com", "google": "https://google.com",
+        "whatsapp": "https://web.whatsapp.com", "gmail": "https://gmail.com",
+        "github": "https://github.com", "amazon": "https://amazon.com",
+        "netflix": "https://netflix.com", "spotify": "https://open.spotify.com",
+        "twitter": "https://twitter.com", "instagram": "https://instagram.com",
+        "facebook": "https://facebook.com", "reddit": "https://reddit.com",
+        "linkedin": "https://linkedin.com",
+    }
+    for key, url in sites.items():
+        if key in name.lower():
+            webbrowser.open(url)
+            return f"Opened {key}"
+    webbrowser.open(f"https://google.com/search?q={urllib.parse.quote(name)}")
+    return f"Searched google for {name}"
+
+
+@tool
+def launch_app(name: str) -> str:
+    """Launches a desktop application on the computer.
+    Use for: notepad, calculator, vscode, cmd, terminal, chrome, edge, firefox, explorer, folder, settings.
+    Args:
+        name: The application name (e.g., notepad, vscode, chrome, cmd, explorer)
+    """
+    apps = {
+        "notepad": "notepad.exe", "calculator": "calc.exe",
+        "vscode": "code", "code": "code",
+        "cmd": "cmd.exe", "terminal": "cmd.exe",
+        "chrome": "chrome.exe", "edge": "msedge.exe",
+        "firefox": "firefox.exe", "explorer": "explorer.exe",
+        "folder": "explorer.exe",
+    }
+    for key, exe in apps.items():
+        if key in name.lower():
+            try:
+                subprocess.Popen([exe])
+                return f"Launched {key}"
+            except Exception as e:
+                return f"Failed to launch {key}: {e}"
+    return f"Unknown app: {name}"
+
+
+@tool
+def play_media(query: str) -> str:
+    """Plays music, video, or media from YouTube.
+    Use when the user asks to play a song, video, music, or any media.
+    Args:
+        query: The song or video name to search and play
+    """
+    q = urllib.parse.quote(query)
+    search_url = f"https://www.youtube.com/results?search_query={q}"
+    try:
+        r = httpx.get(search_url, headers={"User-Agent": "Mozilla/5.0"}, timeout=10)
+        match = re.search(r"/watch\?v=([a-zA-Z0-9_-]{11})", r.text)
+        if match:
+            video_url = f"https://www.youtube.com/watch?v={match.group(1)}"
+            webbrowser.open(video_url)
+            return f"Playing {query}"
+    except Exception:
+        pass
+    webbrowser.open(search_url)
+    return f"Searching YouTube for {query}"
+
+
+@tool
+def web_search(query: str) -> str:
+    """Searches the web for information.
+    Use when the user wants to search for news, facts, information, or anything online.
+    Args:
+        query: The search query
+    """
+    try:
+        q = urllib.parse.quote(query)
+        r = httpx.get(
+            f"http://localhost:8888/search?q={q}&format=json",
+            timeout=15,
+        )
+        data = r.json()
+        results = []
+        for item in data.get("results", [])[:5]:
+            title = item.get("title", "")
+            content = item.get("content", "")
+            if title and content:
+                results.append(f"{title}: {content[:300]}")
+            elif content:
+                results.append(content[:300])
+        if results:
+            return "Search results: " + " | ".join(results)
+        return f"No search results found for {query}"
+    except Exception as e:
+        return f"Search failed: {e}"
+
+
+_KNOWN_SITES = {
+    "github": "https://github.com",
+    "google": "https://google.com",
+    "youtube": "https://youtube.com",
+    "gmail": "https://gmail.com",
+    "amazon": "https://amazon.com",
+    "netflix": "https://netflix.com",
+    "spotify": "https://open.spotify.com",
+    "twitter": "https://twitter.com",
+    "instagram": "https://instagram.com",
+    "facebook": "https://facebook.com",
+    "reddit": "https://reddit.com",
+    "linkedin": "https://linkedin.com",
+    "whatsapp": "https://web.whatsapp.com",
+}
+
+
+def _extract_url(task: str) -> str:
+    """Extract a URL from a task description."""
+    url = task.strip()
+    if not url.startswith("http"):
+        for site, site_url in _KNOWN_SITES.items():
+            if site in url.lower():
+                url = site_url
+                break
+        else:
+            m = re.search(r'(?:https?://\S+)', url)
+            if m:
+                url = m.group(0)
+            else:
+                url = "https://google.com/search?q=" + urllib.parse.quote(task)
+    return url
+
+
+async def _browser_automation(task: str) -> str:
+    """Core async Playwright browser.
+    Extracts a URL from the task description and navigates to it.
+    Fresh Playwright context per call — avoids stale browser crashes.
+    """
+    try:
+        url = _extract_url(task)
+        from playwright.async_api import async_playwright
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(
+                headless=True,
+                args=["--disable-blink-features=AutomationControlled"]
+            )
+            page = await browser.new_page()
+            await page.goto(url, timeout=60000, wait_until="domcontentloaded")
+            title = await page.title()
+            await browser.close()
+            return f"Navigated to {url}: {title}"
+    except Exception as e:
+        return f"Browser error: {e}"
+
+
+def _browser_automation_sync(task: str) -> str:
+    """Synchronous wrapper: runs Playwright in a dedicated event loop
+    (avoids Windows event loop conflicts when called from FastAPI routes)."""
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        return loop.run_until_complete(_browser_automation(task))
+    finally:
+        loop.close()
+
+
+@tool
+def browser_automation(task: str) -> str:
+    """Opens a URL in the browser using Playwright.
+    Use for: navigating to a specific webpage to see its content or interact with it.
+    Args:
+        task: A URL or description starting with 'go to', 'open', or a direct URL
+    """
+    return _browser_automation_sync(task)
+
+
+_ACTION_AGENT = None
+
+
+def _get_action_agent():
+    global _ACTION_AGENT
+    if _ACTION_AGENT is None:
+        model = LiteLLMModel(model_id="ollama/llama3.1:8b", api_base="http://localhost:11434")
+        _ACTION_AGENT = ToolCallingAgent(
+            tools=[play_media, open_website, web_search, launch_app, browser_automation] + COMPOSIO_TOOLS,
+            model=model,
+            instructions=(
+                "You are JARVIS's action executor. You have full autonomy to decide which tools to use. "
+                "Users often ask for MULTIPLE actions in one message. "
+                "You MUST identify and execute EVERY distinct action requested — do NOT stop after just one. "
+                "Use the right tool for each task: play_media for music/video playback, "
+                "open_website for navigating to a URL (simple open), web_search for information lookups, "
+                "launch_app for desktop applications, "
+                "browser_automation for visiting a specific URL in the Playwright browser (use this instead of open_website when the user wants to interact with the page content). "
+                "You also have access to external service tools via Composio: gmail_send_email (requires Gmail OAuth), "
+                "github_create_issue (requires GitHub OAuth), slack_send_message (requires Slack OAuth). "
+                "Be honest about what you can do — if a task is too complex, say so."
+            ),
+            max_steps=12,
+        )
+    return _ACTION_AGENT
+
+
+async def execute_action(intent_data: dict, message: str = "", db=None, user=None) -> dict:
+    intent = intent_data.get("intent", "chat")
+
+    # Handle reminders via old path (needs db+user)
+    if intent in ("reminder", "set_reminder"):
+        target = intent_data.get("target", "")
+        if db is not None and user is not None:
+            try:
+                from reminders.manager import create_reminder
+                params = intent_data.get("parameters", {})
+                time_str = params.get("time", "")
+                remind_at = parse_time_relative(time_str)
+                r = await create_reminder(db, user, target, remind_at, f"Reminder: {target}")
+                return {"executed": True, "action": "reminder_created", "title": target, "remind_at": remind_at.isoformat(), "id": r.id}
+            except Exception as e:
+                return {"executed": False, "error": f"Failed to create reminder: {e}"}
+        return {"executed": True, "action": f"Reminder noted: {target}"}
+
+    # Browser task → use synchronous wrapper (avoids Windows event loop conflict with Playwright)
+    if intent == "browser_task":
+        target = intent_data.get("target") or message or ""
+        if target:
+            result = await asyncio.to_thread(_browser_automation_sync, target)
+            if "error" in result.lower() or "failed" in result.lower() or "can't" in result.lower():
+                return {"executed": True, "error": result}
+            return {"executed": True, "action": result}
+        return {"executed": False, "error": "no browser task target"}
+
+    # Open URL → direct webbrowser open (avoids agent model failures)
+    if intent == "open_url":
+        target = intent_data.get("target") or message or ""
+        if not target:
+            # Try to extract a URL/name from the message
+            for site, url in _KNOWN_SITES.items():
+                if site in message.lower():
+                    target = site
+                    break
+        if target:
+            site_url = _KNOWN_SITES.get(target.lower(), "")
+            if site_url:
+                webbrowser.open(site_url)
+                return {"executed": True, "action": f"Opened {target}"}
+            # Treat as direct URL
+            if not target.startswith("http"):
+                target = "https://" + target
+            webbrowser.open(target)
+            return {"executed": True, "action": f"Navigated to {target}"}
+        return {"executed": False, "error": "no URL target"}
+
+    # Play media → direct YouTube search + open (avoids agent model failures)
+    if intent == "play_media":
+        target = intent_data.get("target") or message or ""
+        if not target:
+            return {"executed": False, "error": "no media target"}
+        try:
+            q = urllib.parse.quote(target)
+            search_url = f"https://www.youtube.com/results?search_query={q}"
+            r = httpx.get(search_url, headers={"User-Agent": "Mozilla/5.0"}, timeout=10)
+            match = re.search(r"/watch\?v=([a-zA-Z0-9_-]{11})", r.text)
+            if match:
+                video_url = f"https://www.youtube.com/watch?v={match.group(1)}"
+                webbrowser.open(video_url)
+                return {"executed": True, "action": f"Playing {target} on YouTube"}
+            return {"executed": True, "action": f"Opened YouTube search for {target}"}
+        except Exception as e:
+            return {"executed": False, "error": f"Failed to play media: {e}"}
+
+    # Chat intent → no action
+    if intent == "chat":
+        return {"executed": False, "action": "chat_only"}
+
+    # Everything else → smolagens agent decides tools and handles multi-step
+    try:
+        agent = _get_action_agent()
+        msg = message or intent_data.get("target", "")
+        if not msg:
+            return {"executed": False, "error": "no message to act on"}
+        loop = asyncio.get_event_loop()
+        future = loop.run_in_executor(None, agent.run, msg)
+        result = await asyncio.wait_for(future, timeout=90)
+        return {"executed": True, "action": str(result)}
+    except asyncio.TimeoutError:
+        return {"executed": False, "error": "Agent timed out after 90s"}
+    except Exception as e:
+        return {"executed": False, "error": str(e)}
 
 
 def parse_time_relative(time_str: str):
@@ -470,124 +851,6 @@ def parse_time_relative(time_str: str):
     return now + timedelta(hours=1)
 
 
-def build_ollama_llm(messages: list, timeout: int = 120) -> str:
-    available_models = ["qwen3:4b", "qwen2.5-coder:3b", "mistral:latest"]
-    chat_model = "qwen3:4b"
-    try:
-        r = httpx.get("http://localhost:11434/api/tags", timeout=2)
-        if r.status_code == 200:
-            installed = [m["name"] for m in r.json().get("models", [])]
-            for candidate in available_models:
-                if candidate in installed or candidate.replace(":latest", "") in [x.replace(":latest", "") for x in installed]:
-                    chat_model = candidate
-                    break
-    except Exception:
-        pass
-    payload = {"model": chat_model, "messages": messages, "stream": False}
-    resp = httpx.post("http://localhost:11434/api/chat", json=payload, timeout=timeout)
-    resp.raise_for_status()
-    return resp.json()["message"]["content"]
-
-
-async def execute_action(intent_data: dict, db=None, user=None) -> dict:
-    intent = intent_data.get("intent")
-    target = intent_data.get("target", "")
-    action = intent_data.get("action", "")
-
-    url_map = {
-        "youtube": "https://youtube.com",
-        "google": "https://google.com",
-        "whatsapp": "https://web.whatsapp.com",
-        "amazon": "https://amazon.com",
-        "gmail": "https://gmail.com",
-        "netflix": "https://netflix.com",
-        "spotify": "https://open.spotify.com",
-        "github": "https://github.com",
-        "twitter": "https://twitter.com",
-        "instagram": "https://instagram.com",
-        "facebook": "https://facebook.com",
-        "reddit": "https://reddit.com",
-        "linkedin": "https://linkedin.com",
-    }
-    pc_apps = {
-        "notepad": "notepad.exe",
-        "calculator": "calc.exe",
-        "explorer": "explorer.exe",
-        "folder": "explorer.exe",
-        "vscode": "code",
-        "cmd": "cmd.exe",
-        "chrome": "chrome.exe",
-        "edge": "msedge.exe",
-        "firefox": "firefox.exe",
-    }
-
-    if intent in ("open_app", "open_url"):
-        for app, url in url_map.items():
-            if app in target.lower():
-                webbrowser.open(url)
-                return {"executed": True, "action": f"Opened {app}", "url": url}
-        webbrowser.open(f"https://google.com/search?q={urllib.parse.quote(target)}")
-        return {"executed": True, "action": f"Searched for {target}"}
-
-    elif intent in ("media_play", "play_media"):
-        query = urllib.parse.quote(target)
-        search_url = f"https://www.youtube.com/results?search_query={query}"
-        try:
-            r = httpx.get(search_url, headers={"User-Agent": "Mozilla/5.0"}, timeout=10)
-            match = re.search(r'/watch\?v=([a-zA-Z0-9_-]{11})', r.text)
-            if match:
-                video_id = match.group(1)
-                video_url = f"https://www.youtube.com/watch?v={video_id}"
-                webbrowser.open(video_url)
-                return {"executed": True, "action": f"Playing {target}", "url": video_url}
-        except Exception:
-            pass
-        webbrowser.open(search_url)
-        return {"executed": True, "action": f"Opened YouTube search for: {target}", "url": search_url}
-
-    elif intent in ("web_search", "search", "search_web", "google"):
-        query = urllib.parse.quote(target)
-        try:
-            r = httpx.get(
-                f"https://api.duckduckgo.com/?q={query}&format=json&no_html=1",
-                timeout=10
-            )
-            data = r.json()
-            results = []
-            for item in data.get("RelatedTopics", [])[:5]:
-                if "Text" in item and "FirstURL" in item:
-                    results.append({"title": item["Text"][:200], "url": item["FirstURL"]})
-            return {"executed": True, "search_results": results}
-        except Exception as e:
-            return {"executed": True, "action": f"Web search for {target} opened in browser", "url": f"https://duckduckgo.com/?q={query}"}
-
-    elif intent in ("reminder", "set_reminder"):
-        if db is not None and user is not None:
-            try:
-                from reminders.manager import create_reminder
-                params = intent_data.get("parameters", {})
-                time_str = params.get("time", "")
-                remind_at = parse_time_relative(time_str)
-                r = await create_reminder(db, user, target, remind_at, f"Reminder: {target}")
-                return {"executed": True, "action": "reminder_created", "title": target, "remind_at": remind_at.isoformat(), "id": r.id}
-            except Exception as e:
-                return {"executed": False, "error": f"Failed to create reminder: {e}"}
-        return {"executed": True, "action": f"Reminder noted: {target}"}
-
-    elif intent in ("pc_control", "open_app_desktop"):
-        for app, exe in pc_apps.items():
-            if app in target.lower():
-                try:
-                    subprocess.Popen([exe])
-                    return {"executed": True, "action": f"Launched {app}"}
-                except Exception as e:
-                    return {"executed": False, "error": str(e)}
-        return {"executed": False, "error": f"Unknown app: {target}"}
-
-    else:
-        return {"executed": False, "action": "chat_only"}
-
-
 # ==============================================
 #  ROUTES — ASSISTANT
 # ==============================================
@@ -598,47 +861,123 @@ async def chat(
     user: User = Depends(verify_token)
 ):
     from core.database import ChatHistory
-    from core.model_router import route_request
+    from core.model_router import route_request, get_router_model
+    from core.llm_router import router as llm_router, health_check
 
-    # Step 1: Check Ollama connectivity
-    try:
-        ollama_check = httpx.get("http://localhost:11434/api/tags", timeout=2)
-        if ollama_check.status_code != 200:
+    # Step 1: Check LLM connectivity
+    if not await health_check():
+        # fallback: direct Ollama ping
+        try:
+            ollama_check = httpx.get("http://localhost:11434/api/tags", timeout=2)
+            if ollama_check.status_code != 200:
+                return JSONResponse(
+                    status_code=503,
+                    content={"response": "Ollama is offline. Run: ollama serve", "intent": {"intent": "chat"}, "action": {"executed": False}}
+                )
+        except (httpx.ConnectError, httpx.TimeoutException):
             return JSONResponse(
                 status_code=503,
                 content={"response": "Ollama is offline. Run: ollama serve", "intent": {"intent": "chat"}, "action": {"executed": False}}
             )
-    except (httpx.ConnectError, httpx.TimeoutException):
-        return JSONResponse(
-            status_code=503,
-            content={"response": "Ollama is offline. Run: ollama serve", "intent": {"intent": "chat"}, "action": {"executed": False}}
-        )
 
     # Step 2: Privacy routing (tier-based model selection + PII sanitization)
-    model_name, privacy_tier, sanitized_message = route_request(req.message)
+    model_name, privacy_tier, sanitized_message = route_request(req.message, force_tier=req.tier)
 
     # Step 3: Extract intent using LLM
     intent_data = await extract_intent(sanitized_message)
 
     # Step 4: Execute real action if needed
-    action_result = await execute_action(intent_data, db=db, user=user)
+    action_result = await execute_action(intent_data, message=req.message, db=db, user=user)
 
-    # Step 4: Build action context for LLM
+    # Step 4: Determine current intent for history scoping
+    current_intent = intent_data.get("intent", "chat")
+
+    # Step 5: If action failed, respond directly without LLM (avoid hallucination)
+    if action_result.get("executed") and action_result.get("error"):
+        reply = f"I tried but couldn't complete that: {action_result['error']}"
+        result = {
+            "response": reply,
+            "intent": intent_data,
+            "action": action_result,
+            "model": model_name,
+            "privacy_tier": privacy_tier.value if privacy_tier else "LOCAL",
+        }
+        db.add(ChatHistory(user_id=user.id, role="user", message=sanitized_message, intent=current_intent))
+        db.add(ChatHistory(user_id=user.id, role="assistant", message=result["response"], intent=current_intent))
+        await db.commit()
+        from notes.activity_tracker import activity_tracker
+        await activity_tracker.log(db, user.id, "voice_command", f"Chat: {sanitized_message[:100]}")
+        return result
+
+    # Build action context: include last action done by user for recall
     action_context = ""
-    if action_result.get("executed") and intent_data["intent"] != "chat":
+    if action_result.get("executed") and not action_result.get("error") and current_intent != "chat":
         action_context = f"\n[SYSTEM: Action executed: {json.dumps(action_result)}]"
 
-    # Step 5: Get real Ollama response with action awareness and privacy tier
+    # Check if user is asking about previous actions ("what did you do")
+    asking_about_actions = any(phrase in req.message.lower() for phrase in
+        ["what did you do", "what you did", "what have you done", "what happened", "what did i ask"])
+
+    if asking_about_actions:
+        # Fetch last 5 actions across any intent for recall
+        try:
+            from datetime import datetime, timedelta
+            from sqlalchemy import select
+            from core.database import ChatHistory
+            cutoff = datetime.utcnow() - timedelta(minutes=30)
+            action_result_db = await db.execute(
+                select(ChatHistory)
+                .where(ChatHistory.user_id == user.id)
+                .where(ChatHistory.timestamp >= cutoff)
+                .where(ChatHistory.intent != "chat")
+                .order_by(ChatHistory.timestamp.desc())
+                .limit(5)
+            )
+            recent_actions = list(action_result_db.scalars().all())
+            if recent_actions:
+                action_lines = []
+                for a in reversed(recent_actions):
+                    action_lines.append(f"[{a.timestamp.strftime('%H:%M')}] {a.role}: {a.message[:200]}")
+                action_context += "\n[SYSTEM: Recent non-chat history:\n" + "\n".join(action_lines) + "\n]"
+        except Exception:
+            pass
+
+    # Step 6: Build conversation history context (full history, all intents)
+    messages = [
+        {"role": "system", "content": (
+            "You are JARVIS, a personal AI assistant. "
+            "Be concise and direct. "
+            "You remember our full conversation — use previous messages to answer contextually. "
+            "If the user asks about something you discussed earlier, use that history. "
+            "Tell the user what you actually did — do NOT invent details that didn't happen."
+        ) + action_context},
+    ]
     try:
-        reply = build_ollama_llm([
-            {"role": "system", "content": (
-                "You are JARVIS, a personal AI assistant. "
-                "Be concise and direct. "
-                "If an action was executed, confirm it naturally. "
-                "Never say you cannot do things you just did."
-            ) + action_context},
-            {"role": "user", "content": sanitized_message}
-        ])
+        from sqlalchemy import select
+        from core.database import ChatHistory
+        result = await db.execute(
+            select(ChatHistory)
+            .where(ChatHistory.user_id == user.id)
+            .order_by(ChatHistory.timestamp.desc())
+            .limit(15)
+        )
+        recent = list(result.scalars().all())
+        recent.reverse()
+        for turn in recent:
+            messages.append({"role": turn.role, "content": turn.message})
+    except Exception:
+        pass
+    messages.append({"role": "user", "content": sanitized_message})
+
+    # Step 6: Get LLM response via LiteLLM router
+    try:
+        model_group = "cloud" if model_name == "cloud" else get_router_model(intent_data.get("intent", "chat"))
+        reply = await llm_router.acompletion(
+            model=model_group,
+            messages=messages,
+            timeout=120,
+        )
+        reply = reply.choices[0].message.content
     except Exception as e:
         reply = ""
         if action_result.get("executed"):
@@ -646,7 +985,7 @@ async def chat(
         else:
             reply = f"Model error: {e}"
 
-    # Step 6: Build response with privacy metadata
+    # Step 7: Build response with privacy metadata
     result = {
         "response": reply,
         "intent": intent_data,
@@ -655,12 +994,12 @@ async def chat(
         "privacy_tier": privacy_tier.value if privacy_tier else "LOCAL",
     }
 
-    db.add(ChatHistory(user_id=user.id, role="user", message=sanitized_message))
-    db.add(ChatHistory(user_id=user.id, role="assistant", message=result["response"]))
+    db.add(ChatHistory(user_id=user.id, role="user", message=sanitized_message, intent=current_intent))
+    db.add(ChatHistory(user_id=user.id, role="assistant", message=result["response"], intent=current_intent))
     await db.commit()
 
     from notes.activity_tracker import activity_tracker
-    await activity_tracker.log(db, user.id, "voice_command", f"Chat: {req.message[:100]}")
+    await activity_tracker.log(db, user.id, "voice_command", f"Chat: {sanitized_message[:100]}")
 
     return result
 
@@ -975,6 +1314,33 @@ async def tts_stream_websocket(ws: WebSocket):
                 await ws.send_bytes(audio_bytes)
     except Exception as e:
         print(f"[TTS Stream] Error: {e}")
+        await ws.close()
+
+
+# ==============================================
+#  WEBSOCKET — VOICE PIPELINE (STT + LLM + TTS)
+# ==============================================
+@app.websocket("/voice")
+async def voice_websocket(ws: WebSocket):
+    """WebSocket voice endpoint: receives raw audio, returns WAV audio.
+    Flow: mic audio -> STT -> llm_router -> TTS -> speaker audio
+    """
+    from assistant.voice_pipeline import get_pipeline
+
+    await ws.accept()
+    pipeline = get_pipeline()
+    try:
+        while True:
+            audio_bytes = await ws.receive_bytes()
+            if not audio_bytes or len(audio_bytes) < 1024:
+                continue
+            audio_out = await pipeline.process_audio(audio_bytes)
+            if audio_out:
+                await ws.send_bytes(audio_out)
+    except WebSocketDisconnect:
+        pass
+    except Exception as e:
+        print(f"[Voice WS] Error: {e}")
         await ws.close()
 
 

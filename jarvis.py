@@ -4,19 +4,9 @@
 from __future__ import annotations
 
 import sys
-import io
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
-sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
-
-import argparse
-import asyncio
-import json
 import os
-import shutil
-import socket
-import subprocess
-import sys
 import time
+import logging
 import urllib.error
 import urllib.request
 import uuid
@@ -408,9 +398,10 @@ def backend_server_cmd(host: str, port: int, reload_enabled: bool) -> list[str]:
         "import sys, uvicorn; "
         "getattr(sys.stdout, 'reconfigure', lambda **kwargs: None)(encoding='utf-8', errors='replace'); "
         "getattr(sys.stderr, 'reconfigure', lambda **kwargs: None)(encoding='utf-8', errors='replace'); "
-        f"uvicorn.run('core.main:app', host='{host}', port={port}, reload={str(reload_enabled)})"
+        "h, p, r = sys.argv[1], int(sys.argv[2]), sys.argv[3].lower() == 'true'; "
+        "uvicorn.run('core.main:app', host=h, port=p, reload=r)"
     )
-    return [python_exe(), "-c", code]
+    return [python_exe(), "-c", code, host, str(port), str(reload_enabled).lower()]
 
 
 def parse_server_location(base_url: str) -> tuple[str, int]:
@@ -700,14 +691,14 @@ def request_json(base_url: str, endpoint: str, payload: dict | None = None, meth
             if not _local_runtime_notice_shown:
                 print("JARVIS > backend AI OS routes unavailable; using local JARVIS OS runtime.")
                 _local_runtime_notice_shown = True
-            return _run_async(local_request_json(endpoint, payload, method=method or ("POST" if data else "GET")))
+            return local_request_json(endpoint, payload, method=method or ("POST" if data else "GET"))
         raise
     except urllib.error.URLError:
         if endpoint.startswith("/os/"):
             if not _local_runtime_notice_shown:
                 print("JARVIS > backend unreachable; using local JARVIS OS runtime.")
                 _local_runtime_notice_shown = True
-            return _run_async(local_request_json(endpoint, payload, method=method or ("POST" if data else "GET")))
+            return local_request_json(endpoint, payload, method=method or ("POST" if data else "GET"))
         raise
 
 
@@ -803,7 +794,6 @@ def workspace_snapshot(root: Path) -> str:
         for entry in entries[:12]:
             top_entries.append(entry.name + ("/" if entry.is_dir() else ""))
     except Exception as err:
-        import logging
         logging.getLogger(__name__).error("workspace_snapshot error: %s", err, exc_info=True)
         raise
     readme_excerpt = ""

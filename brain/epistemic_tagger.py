@@ -25,12 +25,17 @@ class EpistemicTagger:
         if sources:
             tagged_response = "[RETRIEVED] " + tagged_response
             
+        def _strip_prefix(text: str, prefix: str) -> str:
+            if text.startswith(prefix):
+                return text[len(prefix):]
+            return text
+
         # 2. Check for uncertainty
         if confidence < 0.6:
-            tagged_response = tagged_response.replace("[RETRIEVED] ", "")
+            tagged_response = _strip_prefix(tagged_response, "[RETRIEVED] ")
             tagged_response = "[UNCERTAIN] " + tagged_response
         elif confidence > 0.9 and sources:
-            tagged_response = tagged_response.replace("[RETRIEVED] ", "")
+            tagged_response = _strip_prefix(tagged_response, "[RETRIEVED] ")
             tagged_response = "[VERIFIED] " + tagged_response
 
         # Heuristics for internal sentences

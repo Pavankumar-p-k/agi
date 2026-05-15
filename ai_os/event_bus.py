@@ -24,8 +24,7 @@ class EventBus:
                         asyncio.create_task(result)
                 except Exception as err:
                     import logging
-                    logging.getLogger(__name__).error("Exception swallowed: %s", err)
-                    raise RuntimeError(f"Exception swallowed: {err}")
+                    logging.getLogger(__name__).error("Subscriber error: %s", err)
         
         # Publish to all streaming subscribers
         for queue in self._event_queues:

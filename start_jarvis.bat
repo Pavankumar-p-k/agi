@@ -19,7 +19,9 @@ echo.
 start "Ollama" ollama serve
 timeout /t 2 >nul
 
-start "JARVIS Backend" /D "%ROOT%backend" "%ROOT%backend\.venv311\Scripts\python.exe" -m core.main
+start "JARVIS Backend" /D "%ROOT%" "%ROOT%.venv311\Scripts\python.exe" -m core.main
+if errorlevel 1 start "JARVIS Backend" /D "%ROOT%" "%ROOT%.venv\Scripts\python.exe" -m core.main
+if errorlevel 1 start "JARVIS Backend" /D "%ROOT%" python -m core.main
 timeout /t 2 >nul
 
 if exist "%ROOT%apps\jarvis_app\pubspec.yaml" (

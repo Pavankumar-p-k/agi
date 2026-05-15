@@ -121,10 +121,13 @@ class ExecutiveMetaCognitionV3:
 
     def identity_consistency(self) -> float:
         """Evaluates whether recent outputs violate core immutable boundaries."""
-        audit = self.self_audit()
-        if audit["syntax_errors"]:
-            return 0.2
-        return 0.95 if not audit["stub_functions"] else 0.75
+        try:
+            audit = self.self_audit()
+            if audit["syntax_errors"]:
+                return 0.2
+            return 0.95 if not audit["stub_functions"] else 0.75
+        except GovernanceViolation:
+            return 0.0
 
     def strategic_regret(self) -> float:
         """Penalty metric for overrides that ended in test regressions."""
@@ -180,7 +183,7 @@ class ExecutiveMetaCognitionV3:
         self.metrics_history.append(scores)
         return scores
 
-    def trigger_detect_and_patch_loop(self, error_report: dict):
+    async def trigger_detect_and_patch_loop(self, error_report: dict):
         """Top level executive command: DETECT -> PLAN -> PATCH -> TEST -> SCORE -> LEARN"""
         target_file = error_report.get("target_file")
         failing_test = error_report.get("failing_test")
@@ -193,8 +196,8 @@ class ExecutiveMetaCognitionV3:
         log_path.parent.mkdir(exist_ok=True)
         with open(log_path, "a", encoding="utf-8") as f:
             f.write(f"{time.ctime()} - TRIGGER: {target_file} failing {failing_test}\n")
-        
-        async def _run() -> Dict[str, Any]:
+
+        try:
             patch = await self.autonomous_patch_generation(target_file, failing_test, error_trace)
             if patch is None:
                 self.last_patch_result = {"validated": False, "status": "FAILED", "reason": "patch_generation_failed"}
@@ -202,5 +205,36 @@ class ExecutiveMetaCognitionV3:
             validation = await self.patch_validation(patch.patch_id)
             score = self.benchmark_self_scoring()
             return {"patch": validation, "score": score}
-        
-        return asyncio.ensure_future(_run())
+        except Exception as e:
+            logger.exception(f"[MetaCognition] Patch loop failed: {e}")
+            return {"patched": False, "reason": str(e)}
+
+
+class MetaCognitionEngine(ExecutiveMetaCognitionV3):
+    """Adapter wrapper matching the interface expected by UnifiedBrain."""
+
+    def __init__(self, world_state=None, memory_core=None, identity=None, archive=None, monitor=None, workspace_root: str = "."):
+        super().__init__(workspace_root=workspace_root)
+        self.world_state = world_state
+        self.memory_core = memory_core
+        self.identity = identity
+        self.archive = archive
+        self.monitor = monitor
+
+    async def audit_decision_chain(self, decision: dict, context: Any, notification: dict) -> None:
+        pass
+
+    async def audit_subsystem_performance(self, subsystem: str, result: dict, context: Any) -> None:
+        pass
+
+    async def audit_goal_outcomes(self, goal: str, result: dict, context: Any) -> None:
+        pass
+
+    async def audit_strategy_quality(self, decision: dict, context: Any) -> None:
+        pass
+
+    async def detect_trust_drift(self) -> bool:
+        return self.trust_drift() > 0.3
+
+    async def repair_trust_strategy(self) -> None:
+        logger.info("[MetaCognition] Trust repair triggered (stub).")

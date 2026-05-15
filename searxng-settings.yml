@@ -1,0 +1,13 @@
+use_default_settings: true
+general:
+  instance_name: "JARVIS Search"
+server:
+  secret_key: "jarvis-searxng-local-8f3a2b1c4d5e"
+  limiter: false
+  image_proxy: false
+search:
+  safe_search: 0
+  autocomplete: ""
+  formats:
+    - html
+    - json

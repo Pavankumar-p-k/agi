@@ -1036,6 +1036,12 @@
                     </div>
                     <div class="header-actions">
                         <div class="tier-badge tier1" id="privacy-tier-display">LOCAL</div>
+                        <div class="icon-btn" id="play-btn" title="Play Response">
+                            <i class="fas fa-volume-up"></i>
+                        </div>
+                        <div class="icon-btn" id="refresh-btn" title="Refresh">
+                            <i class="fas fa-sync-alt"></i>
+                        </div>
                         <div class="icon-btn" id="brain-toggle-btn" title="Toggle Brain Dashboard">
                             <i class="fas fa-brain"></i>
                         </div>
@@ -1076,7 +1082,7 @@
                 </footer>
             </main>
 
-            <!-- Right Panel: System Metrics -->
+            <!-- Right Panel -->
             <aside class="right-panel glass-card">
                 <div class="panel-section">
                     <h3 class="panel-title">
@@ -1101,9 +1107,6 @@
                         <span class="status-indicator" id="search-count">3</span>
                     </div>
                 </div>
-
-        <!-- Right Panel -->
-        <aside class="right-panel glass-card">
             <div class="panel-section">
                 <h3 class="panel-title">
                     <i class="fas fa-bolt"></i>
@@ -1186,11 +1189,10 @@
                     <input type="text" class="form-input" id="api-url" placeholder="http://127.0.0.1:8000">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Privacy Tier</label>
+                    <label class="form-label">Processing Mode</label>
                     <select class="form-select" id="privacy-select">
-                        <option value="tier_1">Tier 1 - Local Only (Maximum Privacy)</option>
-                        <option value="tier_2">Tier 2 - Hybrid (PII Stripped)</option>
-                        <option value="tier_3">Tier 3 - Cloud (Full Access)</option>
+                        <option value="tier_3">Cloud — Groq/Gemini (Fast)</option>
+                        <option value="tier_1">Local — Ollama (Private)</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -1208,7 +1210,7 @@
 
     <script>
         // JARVIS Web UI - Professional 3D Desktop Interface
-        const API_URL = localStorage.getItem('jarvis_api_url') || 'http://127.0.0.1:8000';
+        let API_URL = localStorage.getItem('jarvis_api_url') || 'http://127.0.0.1:8000';
         let isRecording = false;
         let isPlaying = false;
         let currentTier = 'tier_1';
@@ -1250,7 +1252,8 @@
         // Connect WebSocket
         function connectWebSocket() {
             try {
-                ws = new WebSocket(`ws://${API_URL.replace('http://', '')}/ws/chat_stream`);
+                const wsBase = API_URL.replace(/^https?:\/\//, '');
+                ws = new WebSocket(`ws://${wsBase}/ws/chat_stream`);
                 
                 ws.onopen = () => {
                     console.log('WS Connected');
@@ -1363,10 +1366,12 @@
             chatDisplay.scrollTop = chatDisplay.scrollHeight;
             
             try {
+                const tierMap = { tier_1: 'local', tier_2: 'local', tier_3: 'cloud' };
+                const selectedTier = tierMap[localStorage.getItem('jarvis_tier') || 'tier_3'] || 'cloud';
                 const res = await fetch(`${API_URL}/api/chat`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: text })
+                    body: JSON.stringify({ message: text, tier: selectedTier })
                 });
                 
                 const data = await res.json();
@@ -1464,6 +1469,16 @@
             checkServerStatus();
         });
 
+        const brainToggle = document.getElementById('brain-toggle-btn');
+        if (brainToggle) {
+            brainToggle.addEventListener('click', () => {
+                const panel = document.getElementById('brain-panel');
+                if (panel) {
+                    panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
+                }
+            });
+        }
+
         document.querySelectorAll('.quick-action').forEach(btn => {
             btn.addEventListener('click', () => {
                 executeQuickAction(btn.dataset.action);
@@ -1498,8 +1513,26 @@
 
         // Save Settings
         document.getElementById('api-url').addEventListener('change', (e) => {
-            localStorage.setItem('jarvis_api_url', e.target.value);
+            const newUrl = e.target.value;
+            localStorage.setItem('jarvis_api_url', newUrl);
+            if (newUrl !== API_URL) {
+                API_URL = newUrl;
+                if (ws) ws.close();
+                connectWebSocket();
+            }
         });
+
+        document.getElementById('privacy-select').addEventListener('change', (e) => {
+            localStorage.setItem('jarvis_tier', e.target.value);
+            const name = e.target.options[e.target.selectedIndex].text.split('—')[0].trim();
+            document.getElementById('privacy-tier').textContent = name.toUpperCase();
+        });
+
+        // Load saved settings
+        const savedTier = localStorage.getItem('jarvis_tier') || 'tier_3';
+        document.getElementById('privacy-select').value = savedTier;
+        const tierName = document.getElementById('privacy-select').options[document.getElementById('privacy-select').selectedIndex].text.split('—')[0].trim();
+        document.getElementById('privacy-tier').textContent = tierName.toUpperCase();
     </script>
 </body>
 </html>

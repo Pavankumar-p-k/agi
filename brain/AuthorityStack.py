@@ -34,7 +34,7 @@ class AuthorityStack:
     async def evaluate(self, context: BrainExecutionContext) -> Dict[str, Any]:
         """Evaluate the request through the full authority stack."""
         intent = await self.executive.interpret_intent(context, self.world_state)
-        decision = await self.executive.decide(intent, context, self.world_state)
+        decision = await self.executive.decide(intent, context)
         self.validator.audit_decision(decision, context)
         return decision
 

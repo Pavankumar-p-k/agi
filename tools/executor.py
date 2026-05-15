@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Any, Union
 import psutil
 import pyautogui
-import webbrowser
+
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By

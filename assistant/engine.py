@@ -5,6 +5,7 @@ import asyncio
 import json
 import queue
 import threading
+import urllib.parse
 import httpx
 import requests
 import pyttsx3
@@ -24,9 +25,10 @@ except ImportError:
     KaldiRecognizer = None
 
 from pathlib import Path
+import subprocess
+import webbrowser
 from core.config import VOSK_MODEL_PATH
 from core.model_router import get_ollama_url, model_for_role, route_role_for_text
-from typing import AsyncGenerator
 
 
 # ══════════════════════════════════════════════
@@ -285,8 +287,6 @@ def detect_intent(text: str) -> str | None:
 # ══════════════════════════════════════════════
 #  OPEN / LAUNCH COMMAND EXECUTOR
 # ══════════════════════════════════════════════
-import webbrowser
-import subprocess
 
 KNOWN_APPS = {
     "youtube": "https://youtube.com",

@@ -11,9 +11,10 @@ Instead of just tweaking model selection weights, this layer actively:
 6. Rolls back strictly if regressions occur.
 """
 
+import asyncio
 import os
 import shutil
-import subprocess
+import sys
 import time
 from dataclasses import dataclass, field
 from enum import Enum
@@ -129,12 +130,15 @@ class AutonomousSelfRepairV3:
             logger.info(f"[SelfRepairV3] Executing validation suite for {patch.patch_id}")
             
             # Wait for test benchmark
-            result = subprocess.run(
-                ["python", "-m", "pytest", patch.test_target],
-                capture_output=True, text=True, cwd=self.workspace_root
+            proc = await asyncio.create_subprocess_exec(
+                sys.executable, "-m", "pytest", patch.test_target,
+                stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
+                cwd=self.workspace_root
             )
+            stdout, stderr = await proc.communicate()
+            result_returncode = proc.returncode
             
-            if result.returncode == 0:
+            if result_returncode == 0:
                 logger.info(f"[SelfRepairV3] Patch {patch.patch_id} validated successfully.")
                 patch.status = RepairStatus.SUCCESS
                 patch.confidence = 0.9
@@ -160,3 +164,13 @@ class AutonomousSelfRepairV3:
             shutil.copy2(backup_path, target_file)
             os.remove(backup_path)
             logger.info(f"[SelfRepairV3] Rollback completed for {target_file}")
+
+
+class AdaptiveSelfRepair(AutonomousSelfRepairV3):
+    """Adapter wrapper matching the interface expected by UnifiedBrain."""
+
+    def __init__(self, monitor=None, world_state=None, memory_core=None, workspace_root: str = "."):
+        super().__init__(workspace_root=workspace_root)
+        self.monitor = monitor
+        self.world_state = world_state
+        self.memory_core = memory_core

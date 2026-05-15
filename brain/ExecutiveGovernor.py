@@ -49,15 +49,10 @@ class ExecutiveGovernor:
         }
         return intent
 
-    async def decide(self, intent: Dict[str, Any], context: BrainExecutionContext, world_state: WorldStateEngine) -> Dict[str, Any]:
+    async def decide(self, intent: Dict[str, Any], context: BrainExecutionContext) -> Dict[str, Any]:
         policy_result = self.policy.evaluate(intent)
         if not policy_result["allowed"]:
             return self._deny(intent, policy_result)
-
-        candidate = self.delegator.evaluate(intent, context.to_dict())
-        identity_ok = self.identity.check_alignment(context, candidate)
-        if not identity_ok:
-            return self._override_intent(intent)
 
         candidate = self.delegator.evaluate(intent, context.to_dict())
         identity_ok = self.identity.check_alignment(context, candidate)

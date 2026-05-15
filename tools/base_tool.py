@@ -25,11 +25,13 @@ class ToolDefinition:
         return ToolSpec(
             name=self.name,
             description=self.description,
-            capabilities=list(self.capabilities),
-            risk_tags=list(self.risk_tags),
+            arguments=list(self.capabilities),
+            parameters=dict(self.input_schema),
             read_only=self.read_only,
             category=self.category,
             permission=self.permission,
-            input_schema=dict(self.input_schema),
-            metadata=dict(self.metadata),
+            metadata={
+                **dict(self.metadata),
+                "risk_tags": list(self.risk_tags),
+            },
         )
