@@ -64,6 +64,9 @@ OLLAMA_PORTS = {
     "moondream": 11434,
 }
 
+SUPABASE_URL = _env("SUPABASE_URL")
+SUPABASE_SERVICE_KEY = _env("SUPABASE_SERVICE_KEY")
+
 FACES_DIR = Path(_env("FACES_DIR", str(BASE_DIR / "data" / "faces")) or str(BASE_DIR / "data" / "faces"))
 FACE_RECOGNITION_MODEL = _env("FACE_RECOGNITION_MODEL", "VGG-Face")
 FACE_DETECTION_BACKEND = _env("FACE_DETECTION_BACKEND", "opencv")

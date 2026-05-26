@@ -207,10 +207,6 @@ class GodLevelOrchestrator:
         except Exception:
             self.semantic_memory = None
 
-        # ── MYTHOS BRAIN ──────────────────────────────────────────
-        from reasoning.mythos_brain import MythosBrain
-        self.mythos_brain = MythosBrain(model_router=self.model_router)
-
         logger.info(f"GOD LEVEL AI [MYTHOS V3] initialized | session={self.session_id}")
 
     # ──────────────────────────────────────────────────────────────────
@@ -461,24 +457,9 @@ class GodLevelOrchestrator:
             state.confidence = confidence_score
 
             # ── MYTHOS BRAIN ENHANCEMENT ──────────────────────────────────
-            # Apply 6 Claude cognitive patterns: constitutional, steelman,
-            # epistemic, analogical, counterfactual, meta-cognitive watchdog
             if generation and generation.best_output:
-                try:
-                    mythos_depth = self.config.get("mythos_depth", "standard")
-                    if mythos_depth != "off":
-                        mythos_result = await self.mythos_brain.enhance(
-                            task=ctx.task,
-                            response=generation.best_output,
-                            depth=mythos_depth
-                        )
-                        if mythos_result.get("improved") and mythos_result.get("enhanced"):
-                            generation.consensus = mythos_result["enhanced"]
-                        trace.append({"step": "MYTHOS", "patterns": mythos_result.get("patterns_applied",[]),
-                                       "issues_caught": mythos_result.get("issues",[]),
-                                       "improved": mythos_result.get("improved", False)})
-                except Exception as _me:
-                    logger.debug(f"[Mythos] Enhancement skipped: {_me}")
+                # MythosBrain removed; no enhancement performed
+                pass
 
             # ── V3: CONVERGENCE GATE ──────────────────────────────────────
             conv = self.convergence.record(

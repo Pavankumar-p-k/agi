@@ -106,7 +106,7 @@ class _WakeOverlayWrapperState extends State<WakeOverlayWrapper>
         Positioned.fill(
           child: GestureDetector(
             onTap: _hideOverlay,
-            child: Container(color: Colors.black.withOpacity(0.6)),
+            child: Container(color: Colors.black.withValues(alpha: 0.6)),
           ),
         ),
 
@@ -156,9 +156,9 @@ class _WakeBanner extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: const Color(0xFF061420),
-            border: Border.all(color: _cyan.withOpacity(0.5), width: 1.5),
+            border: Border.all(color: _cyan.withValues(alpha: 0.5), width: 1.5),
             boxShadow: [
-              BoxShadow(color: _cyan.withOpacity(0.15), blurRadius: 24, spreadRadius: 4),
+              BoxShadow(color: _cyan.withValues(alpha: 0.15), blurRadius: 24, spreadRadius: 4),
             ],
           ),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -170,9 +170,9 @@ class _WakeBanner extends StatelessWidget {
                   width: 10, height: 10,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: _cyan.withOpacity(0.5 + pulseCtrl.value * 0.5),
+                    color: _cyan.withValues(alpha: 0.5 + pulseCtrl.value * 0.5),
                     boxShadow: [BoxShadow(
-                      color: _cyan.withOpacity(pulseCtrl.value * 0.5), blurRadius: 8)],
+                      color: _cyan.withValues(alpha: pulseCtrl.value * 0.5), blurRadius: 8)],
                   ),
                 ),
               ),
@@ -222,7 +222,7 @@ class _WakeBanner extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 talkback.lastSpoken,
-                style: GoogleFonts.shareTech(fontSize: 13, color: _green.withOpacity(0.8), height: 1.4),
+                style: GoogleFonts.shareTech(fontSize: 13, color: _green.withValues(alpha: 0.8), height: 1.4),
                 textAlign: TextAlign.center,
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
@@ -286,7 +286,7 @@ class _MiniWaveState extends State<_MiniWave> with SingleTickerProviderStateMixi
           width: 3,
           height: (28 * v).clamp(3.0, 28.0),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.4 + v * 0.6),
+            color: color.withValues(alpha: 0.4 + v * 0.6),
             borderRadius: BorderRadius.circular(2),
           ),
         )).toList(),

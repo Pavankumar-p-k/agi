@@ -87,7 +87,7 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen> with Sing
                 },
                 child: Container(
                   padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(border: Border.all(color: JarvisColors.cyan.withOpacity(0.4), style: BorderStyle.solid), color: JarvisColors.bgPanel),
+                  decoration: BoxDecoration(border: Border.all(color: JarvisColors.cyan.withValues(alpha: 0.4), style: BorderStyle.solid), color: JarvisColors.bgPanel),
                   child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                     const Icon(Icons.add_photo_alternate_outlined, color: JarvisColors.cyan, size: 18),
                     const SizedBox(width: 8),
@@ -186,7 +186,7 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen> with Sing
                     Container(
                       width: 44, height: 44,
                       decoration: BoxDecoration(
-                        border: Border.all(color: JarvisColors.cyan.withOpacity(0.4)),
+                        border: Border.all(color: JarvisColors.cyan.withValues(alpha: 0.4)),
                         color: JarvisColors.bgPanel,
                         shape: BoxShape.circle,
                       ),
@@ -199,7 +199,7 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen> with Sing
                     ])),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(border: Border.all(color: _accessColor(f.accessLevel).withOpacity(0.4))),
+                      decoration: BoxDecoration(border: Border.all(color: _accessColor(f.accessLevel).withValues(alpha: 0.4))),
                       child: Text(f.accessLevel.toUpperCase(), style: GoogleFonts.orbitron(fontSize: 8, color: _accessColor(f.accessLevel), letterSpacing: 1)),
                     ),
                   ])));
@@ -223,7 +223,7 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen> with Sing
               '▸ Avoid sunglasses or masks',
               '▸ Clear, high-quality images',
             ].map((t) => Padding(padding: const EdgeInsets.only(bottom: 6), child: Text(t,
-              style: GoogleFonts.shareTech(fontSize: 12, color: JarvisColors.textPrimary.withOpacity(0.8))))).toList(),
+              style: GoogleFonts.shareTech(fontSize: 12, color: JarvisColors.textPrimary.withValues(alpha: 0.8))))).toList(),
           )),
         ])),
       ]),

@@ -1,8 +1,8 @@
 // lib/ai/social_prompt_builder.dart
 
 import 'package:jarvis_app/db/local_db.dart';
+import 'package:jarvis_app/models/models.dart';
 import 'package:jarvis_app/services/feature_settings.dart';
-import 'package:jarvis_app/services/message_inbox_service.dart';
 
 enum ReplyTone { casual, friendly, formal, brief }
 

@@ -358,3 +358,17 @@ _PB = {
         "build": _open_only,
     },
 }
+
+# ── Confirmation gate for destructive playbooks ─────────────────────
+
+REQUIRES_CONFIRMATION = [
+    "delete", "remove", "uninstall", "format", "clear",
+    "empty trash", "erase", "wipe", "destroy",
+]
+
+def needs_confirmation(action: str) -> bool:
+    """Check if an action requires user confirmation before proceeding."""
+    if not action:
+        return False
+    action_lower = action.lower()
+    return any(word in action_lower for word in REQUIRES_CONFIRMATION)

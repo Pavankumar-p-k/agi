@@ -68,7 +68,6 @@ class MessageAnalysis {
 
 class MessageAnalyzer {
   final _rand = Random();
-  final _ai   = OfflineAI();
 
   // ── Language detection ────────────────────────────────────
   static const _teluguWords = [
@@ -436,8 +435,12 @@ class MessageAnalyzer {
 
   double _sentimentScore(String text) {
     double score = 0;
-    for (final w in _posWords) if (text.contains(w)) score += 0.2;
-    for (final w in _negWords) if (text.contains(w)) score -= 0.2;
+    for (final w in _posWords) {
+      if (text.contains(w)) score += 0.2;
+    }
+    for (final w in _negWords) {
+      if (text.contains(w)) score -= 0.2;
+    }
     return score.clamp(-1.0, 1.0);
   }
 

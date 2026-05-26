@@ -392,7 +392,7 @@ class EpistemicStateEngine:
     def _save(self):
         fpath = os.path.join(self.storage_path, "epistemic_state.json")
         try:
-            subset = dict(list(self._claims.items())[-500:])
+            subset = dict(list(self._claims.items())[-5000:])
 
             def _enum_to_val(obj):
                 if isinstance(obj, Enum):

@@ -29,6 +29,11 @@ async def init_db():
             await conn.execute(text("ALTER TABLE chat_history ADD COLUMN intent VARCHAR(50) DEFAULT 'chat'"))
     except Exception:
         pass  # column already exists
+    try:
+        async with engine.begin() as conn:
+            await conn.execute(text("ALTER TABLE chat_history ADD COLUMN session_id VARCHAR(36)"))
+    except Exception:
+        pass  # column already exists
     print("[DB] Database initialized")
 
 
@@ -138,6 +143,7 @@ class ChatHistory(Base):
     role:       Mapped[str]  = mapped_column(String(20))   # user|assistant
     message:    Mapped[str]  = mapped_column(Text)
     intent:     Mapped[Optional[str]] = mapped_column(String(50), default="chat")
+    session_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True, index=True)
     timestamp:  Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
@@ -151,3 +157,29 @@ class ConnectedDevice(Base):
     ip_address:   Mapped[Optional[str]] = mapped_column(String(45))
     last_connected: Mapped[Optional[datetime]] = mapped_column(DateTime)
     is_online:    Mapped[bool]          = mapped_column(Boolean, default=False)
+
+
+class JarvisSkill(Base):
+    __tablename__ = "skills"
+
+    id:          Mapped[int]  = mapped_column(Integer, primary_key=True)
+    name:        Mapped[str]  = mapped_column(String(255), unique=True, index=True)
+    description: Mapped[Optional[str]] = mapped_column(Text)
+    template:    Mapped[str]  = mapped_column(Text)
+    created_at:  Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class ExecutionLog(Base):
+    __tablename__ = "execution_logs"
+
+    id:          Mapped[int]       = mapped_column(Integer, primary_key=True)
+    plan_id:     Mapped[Optional[str]] = mapped_column(String(128), index=True)
+    goal:        Mapped[Optional[str]] = mapped_column(Text)
+    step_id:     Mapped[int]       = mapped_column(Integer)
+    agent:       Mapped[str]       = mapped_column(String(50))
+    command:     Mapped[Optional[str]] = mapped_column(Text)
+    status:      Mapped[str]       = mapped_column(String(20))
+    result:      Mapped[Optional[str]] = mapped_column(Text)
+    error:       Mapped[Optional[str]] = mapped_column(Text)
+    duration_ms: Mapped[Optional[float]] = mapped_column(Float)
+    created_at:  Mapped[datetime]  = mapped_column(DateTime, default=datetime.utcnow)

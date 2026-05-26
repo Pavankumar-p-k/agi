@@ -1,0 +1,8 @@
+INFO:     Started server process [9324]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:50060 - "WebSocket /ws/chat_stream" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:63377 - "WebSocket /ws/chat_stream" [accepted]
+INFO:     connection open

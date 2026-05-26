@@ -12,3 +12,4 @@ deepface>=0.0.79
 aiofiles>=23.0.0
 websockets>=11.0.0
 httpx
+crewai>=0.20.0

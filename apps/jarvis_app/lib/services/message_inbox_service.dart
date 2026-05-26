@@ -119,7 +119,7 @@ class MessageInboxService {
         }
       }
     } catch (e) {
-      print('[Inbox] Error processing message: $e');
+      debugPrint('[Inbox] Error processing message: $e');
     }
   }
 
@@ -138,9 +138,9 @@ class MessageInboxService {
       if (sent == true) {
         await _markReplySent(msg);
       }
-      print('[Inbox] Replied to ${msg.sender}: ${msg.replyText} (sent=$sent)');
+      debugPrint('[Inbox] Replied to ${msg.sender}: ${msg.replyText} (sent=$sent)');
     } catch (e) {
-      print('[Inbox] Reply failed: $e');
+      debugPrint('[Inbox] Reply failed: $e');
     }
   }
 

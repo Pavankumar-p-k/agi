@@ -153,7 +153,7 @@ class _MessagingScreenState extends State<MessagingScreen> {
                         color: (_result!.startsWith('Draft')
                                 ? JarvisColors.green
                                 : JarvisColors.red)
-                            .withOpacity(0.07),
+                            .withValues(alpha: 0.07),
                       ),
                       child: Text(
                         _result!,
@@ -219,7 +219,7 @@ class _PlatformChip extends StatelessWidget {
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: selected ? color.withOpacity(0.12) : Colors.transparent,
+            color: selected ? color.withValues(alpha: 0.12) : Colors.transparent,
             border: Border.all(color: selected ? color : JarvisColors.border),
           ),
           child: Row(

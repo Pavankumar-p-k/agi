@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/api_service.dart';
 import '../services/feature_settings.dart';
@@ -32,6 +31,11 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen>
     with TickerProviderStateMixin {
   int _tab = 0;
+
+  void changeTab(int index) {
+    setState(() => _tab = index);
+  }
+
   bool _serverOnline = false;
   bool _backendConnected = false;
   String _backendType = 'Unknown';
@@ -250,7 +254,7 @@ class _HomeScreenState extends State<HomeScreen>
                   padding: const EdgeInsets.symmetric(vertical: 9),
                   decoration: BoxDecoration(
                     color: selected
-                        ? JarvisColors.cyan.withOpacity(0.08)
+                        ? JarvisColors.cyan.withValues(alpha: 0.08)
                         : Colors.transparent,
                     border: Border(
                       top: BorderSide(
@@ -439,20 +443,20 @@ class _DashboardTab extends StatelessWidget {
           const SizedBox(height: 16),
           JPanel(
             label: 'LOCAL MODEL STATUS',
-            accentColor: _backendConnected ? JarvisColors.green : JarvisColors.orange,
+            accentColor: backendConnected ? JarvisColors.green : JarvisColors.orange,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Model: ${_backendModel.toUpperCase()}',
+                Text('Model: ${backendModel.toUpperCase()}',
                     style: J.shareTech(12, color: JarvisColors.textPrimary)),
                 const SizedBox(height: 6),
-                Text('Backend: $_backendType',
+                Text('Backend: $backendType',
                     style: J.shareTech(11, color: JarvisColors.textSecondary)),
                 const SizedBox(height: 2),
                 Text(
-                  _backendConnected
-                      ? 'Connected at $_backendUrl'
-                      : _backendMessage,
+                  backendConnected
+                      ? 'Connected at $backendUrl'
+                      : backendMessage,
                   style: J.shareTech(11, color: JarvisColors.textSecondary),
                 ),
               ],
@@ -560,7 +564,7 @@ class _SystemTab extends StatelessWidget {
           child: GestureDetector(
             onTap: () => onOpen(item.screen),
             child: JPanel(
-              borderColor: item.color.withOpacity(0.25),
+              borderColor: item.color.withValues(alpha: 0.25),
               accentColor: item.color,
               child: Row(
                 children: [
@@ -568,8 +572,8 @@ class _SystemTab extends StatelessWidget {
                     width: 46,
                     height: 46,
                     decoration: BoxDecoration(
-                      color: item.color.withOpacity(0.08),
-                      border: Border.all(color: item.color.withOpacity(0.35)),
+                      color: item.color.withValues(alpha: 0.08),
+                      border: Border.all(color: item.color.withValues(alpha: 0.35)),
                     ),
                     child: Icon(item.icon, color: item.color, size: 22),
                   ),
@@ -653,8 +657,8 @@ class _ModeChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        border: Border.all(color: color.withOpacity(0.4)),
-        color: color.withOpacity(0.08),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+        color: color.withValues(alpha: 0.08),
       ),
       child: Text(
         label,
@@ -685,14 +689,14 @@ class _LaunchTile extends StatelessWidget {
       onTap: title == 'Assistant'
           ? () {
               final state = context.findAncestorStateOfType<_HomeScreenState>();
-              state?.setState(() => state._tab = 1);
+              state?.changeTab(1);
             }
           : onTap,
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: JarvisColors.bgPanel,
-          border: Border.all(color: color.withOpacity(0.28)),
+          border: Border.all(color: color.withValues(alpha: 0.28)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

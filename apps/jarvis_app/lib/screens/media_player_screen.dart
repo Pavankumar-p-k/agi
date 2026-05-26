@@ -380,7 +380,7 @@ class _MediaPlayerScreenState extends State<MediaPlayerScreen>
                   bottom: BorderSide(
                     color: sel ? J.cyan : Colors.transparent, width: 2),
                 ),
-                color: sel ? J.cyan.withOpacity(0.06) : Colors.transparent,
+                color: sel ? J.cyan.withValues(alpha: 0.06) : Colors.transparent,
               ),
               child: Center(child: Text(tabs[i],
                 style: J.orbitron(9, color: sel ? J.cyan : J.t3, spacing: 1))),
@@ -460,7 +460,7 @@ class _MediaPlayerScreenState extends State<MediaPlayerScreen>
                       margin: const EdgeInsets.only(bottom: 6),
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                       decoration: BoxDecoration(
-                        color: cur ? J.cyan.withOpacity(0.08) : J.bg2,
+                        color: cur ? J.cyan.withValues(alpha: 0.08) : J.bg2,
                         border: Border(
                           left: BorderSide(color: cur ? J.cyan : J.border0, width: cur ? 2 : 1),
                           top:    const BorderSide(color: J.border0),
@@ -693,7 +693,7 @@ class _MediaPlayerScreenState extends State<MediaPlayerScreen>
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
                   border: Border.all(color: _sleepMinutes == min && _sleepActive ? J.red : J.border0),
-                  color: _sleepMinutes == min && _sleepActive ? J.red.withOpacity(0.1) : J.bg3,
+                  color: _sleepMinutes == min && _sleepActive ? J.red.withValues(alpha: 0.1) : J.bg3,
                 ),
                 child: Text('${min}m',
                   style: J.orbitron(10, color: _sleepMinutes == min && _sleepActive ? J.red : J.t2, spacing: 0)),
@@ -704,7 +704,7 @@ class _MediaPlayerScreenState extends State<MediaPlayerScreen>
               onTap: () => setState(() => _sleepActive = false),
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                decoration: BoxDecoration(border: Border.all(color: J.red), color: J.red.withOpacity(0.1)),
+                decoration: BoxDecoration(border: Border.all(color: J.red), color: J.red.withValues(alpha: 0.1)),
                 child: Text('CANCEL', style: J.orbitron(10, color: J.red, spacing: 1)),
               ),
             ),
@@ -779,7 +779,7 @@ class _FullPlayerSheet extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(color: J.cyan, width: 2),
-              boxShadow: [BoxShadow(color: J.cyan.withOpacity(0.2),
+              boxShadow: [BoxShadow(color: J.cyan.withValues(alpha: 0.2),
                   blurRadius: 30, spreadRadius: 5)],
             ),
             child: ClipOval(child: QueryArtworkWidget(
@@ -815,7 +815,7 @@ class _FullPlayerSheet extends StatelessWidget {
                 activeTrackColor: J.cyan,
                 inactiveTrackColor: J.border0,
                 thumbColor: J.cyan,
-                overlayColor: J.cyan.withOpacity(0.2),
+                overlayColor: J.cyan.withValues(alpha: 0.2),
               ),
               child: Slider(
                 value: curSeconds,
@@ -887,7 +887,7 @@ class _CtrlBtn extends StatelessWidget {
             width: size + 16, height: size + 16,
             decoration: BoxDecoration(
               shape: BoxShape.circle, color: col,
-              boxShadow: [BoxShadow(color: col.withOpacity(0.3), blurRadius: 12)],
+              boxShadow: [BoxShadow(color: col.withValues(alpha: 0.3), blurRadius: 12)],
             ),
             child: Icon(icon, color: J.bg0, size: size),
           )

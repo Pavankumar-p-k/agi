@@ -1,61 +1,9 @@
 import re
-from typing import List, Dict, Optional
 
 class EpistemicTagger:
-    """
-    Epistemological tagging for JARVIS responses.
-    Tags: [VERIFIED], [RETRIEVED], [DERIVED], [ASSUMED], [UNCERTAIN]
-    """
-    def __init__(self):
-        self.tags = {
-            "VERIFIED": "Claim cross-checked against multiple sources or high-confidence RAG",
-            "RETRIEVED": "Claim retrieved from memory or external search",
-            "DERIVED": "Claim is a logical deduction from verified premises",
-            "ASSUMED": "Claim is plausible but unverified",
-            "UNCERTAIN": "Jarvis is unsure or guessing (confidence < 0.6)"
-        }
+    """Utility to strip epistemic tags from responses (tagging removed, only cleanup remains)."""
+    def strip_tags(self, text: str) -> str:
+        """Remove all epistemic tags from text."""
+        return re.sub(r'\[(VERIFIED|RETRIEVED|DERIVED|ASSUMED|UNCERTAIN)\]\s*', '', text).strip()
 
-    def tag_response(self, response: str, sources: List[str] = None, confidence: float = 1.0) -> str:
-        """
-        Add epistemological tags to a response.
-        """
-        tagged_response = response
-        
-        # 1. Check for retrieval
-        if sources:
-            tagged_response = "[RETRIEVED] " + tagged_response
-            
-        def _strip_prefix(text: str, prefix: str) -> str:
-            if text.startswith(prefix):
-                return text[len(prefix):]
-            return text
-
-        # 2. Check for uncertainty
-        if confidence < 0.6:
-            tagged_response = _strip_prefix(tagged_response, "[RETRIEVED] ")
-            tagged_response = "[UNCERTAIN] " + tagged_response
-        elif confidence > 0.9 and sources:
-            tagged_response = _strip_prefix(tagged_response, "[RETRIEVED] ")
-            tagged_response = "[VERIFIED] " + tagged_response
-
-        # Heuristics for internal sentences
-        sentences = re.split(r'(?<=[.!?]) +', tagged_response)
-        processed_sentences = []
-        for sent in sentences:
-            if any(kw in sent.lower() for kw in ["probably", "maybe", "might", "i think", "possibly"]):
-                processed_sentences.append(f"[ASSUMED] {sent}")
-            elif any(kw in sent.lower() for kw in ["therefore", "thus", "consequently", "so", "leads to"]):
-                processed_sentences.append(f"[DERIVED] {sent}")
-            else:
-                processed_sentences.append(sent)
-        
-        return " ".join(processed_sentences)
-
-    def explain_tags(self) -> str:
-        explanation = "### Epistemological Tags Explanation\n"
-        for tag, desc in self.tags.items():
-            explanation += f"- **[{tag}]**: {desc}\n"
-        return explanation
-
-# Instance
 epistemic_tagger = EpistemicTagger()

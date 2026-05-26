@@ -1,5 +1,4 @@
 // lib/models/models.dart
-import 'package:flutter/foundation.dart';
 import '../ai/message_analyzer.dart';
 
 // ── Chat Message ──

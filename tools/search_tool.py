@@ -117,12 +117,43 @@ class SearXNGSearch:
         """
         Search -> read -> "what do I still not know?" -> search gap -> repeat.
         """
-        results = self.search(query)
-        if not results:
-            return "No results found."
+        all_content = []
+        current_query = query
 
-        scraped = await self.scrape_top(results)
-        return "\n\n".join(scraped)
+        for hop in range(max_iterations):
+            results = self.search(current_query)
+            if not results:
+                break
+
+            scraped = await self.scrape_top(results)
+            all_content.extend(scraped)
+
+            if hop < max_iterations - 1:
+                gap_prompt = (
+                    f"Based on what I found: {' '.join(scraped[:2])} "
+                    f"What important aspect of '{query}' is still missing? "
+                    f"Answer with a search query only."
+                )
+                gap_query = self._refine_gap(gap_prompt)
+                if gap_query and gap_query != current_query:
+                    current_query = gap_query
+                else:
+                    break
+
+        return "\n\n".join(all_content)
+
+    def _refine_gap(self, prompt: str) -> str:
+        """Generate follow-up search query for missing info."""
+        try:
+            req = urllib.request.Request(
+                'http://localhost:11434/api/generate',
+                data=json.dumps({"model": "mistral:7b", "prompt": prompt, "stream": False}).encode(),
+                headers={'Content-Type': 'application/json'}
+            )
+            resp = json.loads(urllib.request.urlopen(req, timeout=15).read())
+            return resp.get("response", "").strip().strip('"')
+        except Exception:
+            return ""
 
 # Instances
 decision_gate = SearchDecisionGate()

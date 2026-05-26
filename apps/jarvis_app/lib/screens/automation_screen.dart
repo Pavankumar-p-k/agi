@@ -288,8 +288,8 @@ class _MessageTabState extends State<_MessageTab> {
             Container(
               width: double.infinity, padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                border: Border.all(color: (_success == true ? _green : _red).withOpacity(0.5)),
-                color: (_success == true ? _green : _red).withOpacity(0.07)),
+                border: Border.all(color: (_success == true ? _green : _red).withValues(alpha: 0.5)),
+                color: (_success == true ? _green : _red).withValues(alpha: 0.07)),
               child: Text(_result!, style: GoogleFonts.shareTech(fontSize: 13,
                 color: _success == true ? _green : _red)),
             ),
@@ -604,8 +604,8 @@ class _SysBtn extends StatelessWidget {
     child: Container(
       padding: const EdgeInsets.symmetric(vertical: 14),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.07),
-        border: Border.all(color: color.withOpacity(0.35))),
+        color: color.withValues(alpha: 0.07),
+        border: Border.all(color: color.withValues(alpha: 0.35))),
       child: Column(children: [
         Icon(icon, color: color, size: 20),
         const SizedBox(height: 6),
@@ -644,8 +644,8 @@ class _Btn extends StatelessWidget {
     child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
       decoration: BoxDecoration(
-        color: _cyan.withOpacity(onTap != null ? 0.1 : 0.04),
-        border: Border.all(color: _cyan.withOpacity(onTap != null ? 0.5 : 0.2))),
+        color: _cyan.withValues(alpha: onTap != null ? 0.1 : 0.04),
+        border: Border.all(color: _cyan.withValues(alpha: onTap != null ? 0.5 : 0.2))),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
         if (icon != null) ...[Icon(icon, color: _cyan, size: 14), const SizedBox(width: 6)],
         Text(label, style: GoogleFonts.orbitron(fontSize: 10, color: _cyan, letterSpacing: 2)),
@@ -666,7 +666,7 @@ class _HistoryTile extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: _bgCard, border: Border.all(color: col.withOpacity(0.2))),
+          color: _bgCard, border: Border.all(color: col.withValues(alpha: 0.2))),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
             Icon(result.success ? Icons.check_circle_outline : Icons.error_outline,
@@ -678,7 +678,7 @@ class _HistoryTile extends StatelessWidget {
           ]),
           if (result.response.isNotEmpty) ...[
             const SizedBox(height: 4),
-            Text(result.response, style: GoogleFonts.shareTech(fontSize: 12, color: col.withOpacity(0.8))),
+            Text(result.response, style: GoogleFonts.shareTech(fontSize: 12, color: col.withValues(alpha: 0.8))),
           ],
         ]),
       ),

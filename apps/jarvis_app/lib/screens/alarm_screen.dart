@@ -14,9 +14,6 @@ import 'dart:convert';
 import 'package:timezone/timezone.dart' as tz;
 import '../theme/app_theme.dart';
 import '../widgets/jarvis_widgets.dart';
-import '../db/local_db.dart';
-import '../models/offline_models.dart';
-import '../services/reminder_engine.dart';
 
 // ── Alarm model ───────────────────────────────────────────────
 
@@ -300,7 +297,7 @@ class _AlarmScreenState extends State<AlarmScreen> with TickerProviderStateMixin
             child: AnimatedBuilder(
               animation: _pulseCtrl,
               builder: (_, __) => Text(s,
-                style: J.orbitron(22, color: J.cyan.withOpacity(0.4 + _pulseCtrl.value * 0.4),
+                style: J.orbitron(22, color: J.cyan.withValues(alpha: 0.4 + _pulseCtrl.value * 0.4),
                     spacing: 2)),
             ),
           ),
@@ -407,7 +404,8 @@ class _AlarmScreenState extends State<AlarmScreen> with TickerProviderStateMixin
             value: alarm.enabled,
             onChanged: (_) => _toggleAlarm(alarm),
             activeColor: J.cyan,
-            activeTrackColor: J.cyan.withOpacity(0.2),
+            activeTrackColor: J.cyan.withValues(alpha: 0.2),
+            inactiveThumbColor: J.t4,
           ),
         ]),
         const SizedBox(height: 8),
@@ -433,7 +431,7 @@ class _AlarmScreenState extends State<AlarmScreen> with TickerProviderStateMixin
                 width: 24, height: 24,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: alarm.days[i] ? J.cyan.withOpacity(0.15) : Colors.transparent,
+                  color: alarm.days[i] ? J.cyan.withValues(alpha: 0.15) : Colors.transparent,
                   border: Border.all(
                     color: alarm.days[i] ? J.cyan : J.border0),
                 ),
@@ -468,8 +466,8 @@ class _AlarmTag extends StatelessWidget {
       margin: const EdgeInsets.only(right: 6),
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        border: Border.all(color: c.withOpacity(0.4)),
-        color:  c.withOpacity(0.08),
+        border: Border.all(color: c.withValues(alpha: 0.4)),
+        color:  c.withValues(alpha: 0.08),
       ),
       child: Text(text, style: J.orbitron(7, color: c, spacing: 0.5)),
     );
@@ -572,7 +570,7 @@ class _AlarmEditorState extends State<_AlarmEditor> {
                   width: 36, height: 36,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: _alarm.days[i] ? J.cyan.withOpacity(0.15) : J.bg3,
+                    color: _alarm.days[i] ? J.cyan.withValues(alpha: 0.15) : J.bg3,
                     border: Border.all(color: _alarm.days[i] ? J.cyan : J.border0),
                   ),
                   child: Center(child: Text(labels[i],
@@ -594,7 +592,7 @@ class _AlarmEditorState extends State<_AlarmEditor> {
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     border: Border.all(color: _alarm.sound == s ? J.cyan : J.border0),
-                    color: _alarm.sound == s ? J.cyan.withOpacity(0.08) : J.bg3,
+                    color: _alarm.sound == s ? J.cyan.withValues(alpha: 0.08) : J.bg3,
                   ),
                   child: Text(s.toUpperCase(),
                     style: J.orbitron(9, color: _alarm.sound == s ? J.cyan : J.t3, spacing: 1)),
@@ -614,7 +612,7 @@ class _AlarmEditorState extends State<_AlarmEditor> {
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   border: Border.all(color: _alarm.snoozeMin == m ? J.amber : J.border0),
-                  color: _alarm.snoozeMin == m ? J.amber.withOpacity(0.08) : J.bg3,
+                  color: _alarm.snoozeMin == m ? J.amber.withValues(alpha: 0.08) : J.bg3,
                 ),
                 child: Text('${m}m',
                   style: J.orbitron(9, color: _alarm.snoozeMin == m ? J.amber : J.t3, spacing: 0)),
@@ -655,7 +653,7 @@ class _Toggle2 extends StatelessWidget {
         Text(label, style: J.orbitron(10, color: J.t1, spacing: 1)),
         const Spacer(),
         Switch(value: value, onChanged: onChange,
-          activeColor: J.cyan, activeTrackColor: J.cyan.withOpacity(0.2),
+          activeColor: J.cyan, activeTrackColor: J.cyan.withValues(alpha: 0.2),
           inactiveThumbColor: J.t3, inactiveTrackColor: J.bg4),
       ]),
     );
@@ -733,7 +731,7 @@ class _NapTimerWidgetState extends State<_NapTimerWidget> {
               border: Border.all(color: _running ? J.amber : J.border0, width: 2),
               color: J.bg2,
               boxShadow: _running ? [BoxShadow(
-                  color: J.amber.withOpacity(0.2), blurRadius: 30)] : null,
+                  color: J.amber.withValues(alpha: 0.2), blurRadius: 30)] : null,
             ),
             child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
               Text(_running ? _timeDisplay : '${_selectedMin}:00',
@@ -756,7 +754,7 @@ class _NapTimerWidgetState extends State<_NapTimerWidget> {
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
                   border: Border.all(color: _selectedMin == m ? J.amber : J.border0),
-                  color: _selectedMin == m ? J.amber.withOpacity(0.1) : J.bg3,
+                  color: _selectedMin == m ? J.amber.withValues(alpha: 0.1) : J.bg3,
                 ),
                 child: Text('${m}m',
                   style: J.orbitron(11,

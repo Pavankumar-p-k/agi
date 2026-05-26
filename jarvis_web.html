@@ -1234,19 +1234,32 @@
             loadHistory();
         });
 
-        // Check Server Status
+        // Check Server Status + Refresh All Panels
         async function checkServerStatus() {
             try {
                 const res = await fetch(`${API_URL}/health`);
                 const data = await res.json();
                 document.getElementById('server-status').className = 'status-dot online';
                 document.getElementById('server-text').textContent = 'Online';
-                document.getElementById('model-name').textContent = data.llm_available ? 'Ollama' : 'Offline';
+                document.getElementById('model-name').textContent = data.ollama ? 'Ollama' : 'Offline';
+                if (data.stt_loaded) document.getElementById('search-count').textContent = 'Ready';
             } catch (e) {
                 document.getElementById('server-status').className = 'status-dot offline';
                 document.getElementById('server-text').textContent = 'Offline';
                 document.getElementById('model-name').textContent = 'N/A';
             }
+            try {
+                const sr = await fetch(`${API_URL}/api/stats`);
+                const st = await sr.json();
+                document.getElementById('command-count').textContent = st.commands || 0;
+                document.getElementById('reminder-count').textContent = st.reminders || 0;
+                document.getElementById('note-count').textContent = st.notes || 0;
+                if (st.active_models) {
+                    document.getElementById('chat-model').textContent = st.active_models.chat || 'offline';
+                    document.getElementById('code-model').textContent = st.active_models.code || 'offline';
+                    document.getElementById('vision-model').textContent = st.active_models.vision || 'offline';
+                }
+            } catch(e) { console.log('Stats fetch failed:', e); }
         }
 
         // Connect WebSocket
@@ -1406,36 +1419,178 @@
             }
         }
 
-        // Voice Recording
+        // Convert AudioBuffer to WAV Blob
+        function audioBufferToWav(audioBuf) {
+            const numChannels = audioBuf.numberOfChannels;
+            const sampleRate = audioBuf.sampleRate;
+            const format = 1; // PCM
+            const bitDepth = 16;
+            const samples = audioBuf.getChannelData(0);
+            const dataLength = samples.length * (bitDepth / 8);
+            const buffer = new ArrayBuffer(44 + dataLength);
+            const view = new DataView(buffer);
+            function writeString(offset, str) { for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i)); }
+            writeString(0, 'RIFF');
+            view.setUint32(4, 36 + dataLength, true);
+            writeString(8, 'WAVE');
+            writeString(12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, format, true);
+            view.setUint16(22, numChannels, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, sampleRate * numChannels * (bitDepth / 8), true);
+            view.setUint16(32, numChannels * (bitDepth / 8), true);
+            view.setUint16(34, bitDepth, true);
+            writeString(36, 'data');
+            view.setUint32(40, dataLength, true);
+            let offset = 44;
+            for (let i = 0; i < samples.length; i++) {
+                const s = Math.max(-1, Math.min(1, samples[i]));
+                view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+                offset += 2;
+            }
+            return new Blob([buffer], { type: 'audio/wav' });
+        }
+
+        // Voice Recording — real STT + TTS
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let audioContext = null;
+
         async function toggleVoice() {
             if (isRecording) {
                 isRecording = false;
                 voiceBtn.classList.remove('recording');
                 voiceBtn.querySelector('i').className = 'fas fa-microphone';
+                if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                    mediaRecorder.stop();
+                }
             } else {
                 try {
                     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    // In production, send audio to STT endpoint
+                    addMessage('user', '[Recording... tap mic to stop]');
+                    const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' :
+                                     MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' :
+                                     MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' : '';
+                    mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
+                    audioChunks = [];
+                    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                    mediaRecorder.onstop = async () => {
+                        stream.getTracks().forEach(t => t.stop());
+                        const blob = new Blob(audioChunks, { type: 'audio/webm' });
+                        // Convert webm to WAV in-browser
+                        const arrayBuf = await blob.arrayBuffer();
+                        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                        const audioBuf = await audioCtx.decodeAudioData(arrayBuf);
+                        const wavBlob = audioBufferToWav(audioBuf);
+                        // Remove the placeholder message
+                        const placeholder = chatDisplay.querySelector('.message:last-child');
+                        if (placeholder && placeholder.textContent.includes('[Recording...')) {
+                            placeholder.remove();
+                        }
+                        addMessage('user', '[Processing speech...]');
+                        try {
+                            const form = new FormData();
+                            form.append('file', wavBlob, 'recording.wav');
+                            const sttRes = await fetch(`${API_URL}/stt/local`, { method: 'POST', body: form });
+                            const sttData = await sttRes.json();
+                            const transcript = sttData.transcript || '';
+                            // Replace placeholder with actual transcript
+                            const procMsg = chatDisplay.querySelector('.message:last-child');
+                            if (procMsg && procMsg.textContent.includes('[Processing speech...]')) {
+                                procMsg.querySelector('.message-text').textContent = transcript || '[No speech detected]';
+                            } else {
+                                addMessage('user', transcript || '[No speech detected]');
+                            }
+                            if (transcript) {
+                                chatInput.value = transcript;
+                                // Auto-send
+                                const typingDiv = document.createElement('div');
+                                typingDiv.className = 'message';
+                                typingDiv.id = 'typing-indicator';
+                                typingDiv.innerHTML = '<div class="message-avatar jarvis">J</div><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>';
+                                chatDisplay.appendChild(typingDiv);
+                                chatDisplay.scrollTop = chatDisplay.scrollHeight;
+                                const tierMap = { tier_1: 'local', tier_2: 'local', tier_3: 'cloud' };
+                                const selectedTier = tierMap[localStorage.getItem('jarvis_tier') || 'tier_3'] || 'cloud';
+                                const res = await fetch(`${API_URL}/api/chat`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ message: transcript, tier: selectedTier })
+                                });
+                                const data = await res.json();
+                                document.getElementById('typing-indicator')?.remove();
+                                const responseText = data.response || data.text || 'No response';
+                                addMessage('jarvis', responseText);
+                                if (data.tier) updateTierDisplay(data.tier);
+                                // Auto-play TTS response
+                                try {
+                                    const ttsRes = await fetch(`${API_URL}/tts`, {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ text: responseText })
+                                    });
+                                    if (ttsRes.ok) {
+                                        const audioBlob = await ttsRes.blob();
+                                        const audioUrl = URL.createObjectURL(audioBlob);
+                                        const audio = new Audio(audioUrl);
+                                        audio.onended = () => URL.revokeObjectURL(audioUrl);
+                                        audio.play();
+                                    }
+                                } catch (ttsErr) {
+                                    console.log('TTS error:', ttsErr);
+                                }
+                            }
+                        } catch (e) {
+                            const procMsg = chatDisplay.querySelector('.message:last-child');
+                            if (procMsg && procMsg.textContent.includes('[Processing speech...]')) {
+                                procMsg.querySelector('.message-text').textContent = 'Speech processing failed: ' + e.message;
+                            }
+                            console.log('STT error:', e);
+                        }
+                    };
                     isRecording = true;
                     voiceBtn.classList.add('recording');
                     voiceBtn.querySelector('i').className = 'fas fa-stop';
+                    mediaRecorder.start();
                 } catch (e) {
                     console.log('Mic error:', e);
+                    addMessage('jarvis', 'Microphone access denied. Check browser permissions.');
                 }
             }
         }
 
-        // Play TTS
+        // Play TTS for last assistant response
         async function playResponse() {
             if (isPlaying) {
                 isPlaying = false;
                 playBtn.classList.remove('playing');
                 playBtn.querySelector('i').className = 'fas fa-volume-up';
-            } else {
-                isPlaying = true;
-                playBtn.classList.add('playing');
-                playBtn.querySelector('i').className = 'fas fa-stop';
-                // In production, fetch TTS and play
+                return;
+            }
+            const lastMsg = chatDisplay.querySelector('.message.jarvis:last-child .message-text');
+            if (!lastMsg || !lastMsg.textContent) return;
+            isPlaying = true;
+            playBtn.classList.add('playing');
+            playBtn.querySelector('i').className = 'fas fa-stop';
+            try {
+                const res = await fetch(`${API_URL}/tts`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: lastMsg.textContent })
+                });
+                if (res.ok) {
+                    const blob = await res.blob();
+                    const url = URL.createObjectURL(blob);
+                    const audio = new Audio(url);
+                    audio.onended = () => { URL.revokeObjectURL(url); isPlaying = false; playBtn.classList.remove('playing'); playBtn.querySelector('i').className = 'fas fa-volume-up'; };
+                    audio.play();
+                }
+            } catch (e) {
+                console.log('TTS error:', e);
+                isPlaying = false;
+                playBtn.classList.remove('playing');
+                playBtn.querySelector('i').className = 'fas fa-volume-up';
             }
         }
 

@@ -264,7 +264,7 @@ class LLMEngine:
 # ══════════════════════════════════════════════
 INTENTS = {
     "set_reminder":    ["remind", "reminder", "alarm", "alert me", "set alarm"],
-    "create_note":     ["note", "write down", "remember this", "take note"],
+    "create_note":     ["write down", "remember this", "take note", "create a note", "make a note"],
     "file_manager":    ["file", "folder", "open folder", "find file"],
     "open_app":        ["open", "launch", "start"],
     "send_whatsapp":   ["whatsapp", "send whatsapp", "message on whatsapp"],
@@ -477,7 +477,7 @@ class JarvisAssistant:
             req = urllib.request.Request(
                 'http://localhost:8000/api/notes',
                 data=data,
-                headers={'Content-Type': 'application/json', 'Authorization': 'Bearer dev'}
+                headers={'Content-Type': 'application/json', 'Authorization': os.getenv('JARVIS_API_KEY', 'Bearer dev')}
             )
             urllib.request.urlopen(req, timeout=5)
             return f"✓ Note saved"

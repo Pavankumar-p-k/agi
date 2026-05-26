@@ -9,7 +9,7 @@
 //  • Send / Edit / Dismiss controls
 
 import 'package:flutter/material.dart';
-import '../ai/message_analyzer.dart';
+import '../models/models.dart';
 import '../services/message_inbox_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/jarvis_widgets.dart';
@@ -105,7 +105,7 @@ class _MessageAnalyzerScreenState extends State<MessageAnalyzerScreen>
               MessageInboxService.autoReplyEnabled = v;
             },
             activeColor: J.cyan,
-            activeTrackColor: J.cyan.withOpacity(0.2),
+            activeTrackColor: J.cyan.withValues(alpha: 0.2),
             inactiveThumbColor: J.t3,
             inactiveTrackColor: J.bg4,
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -134,7 +134,7 @@ class _MessageAnalyzerScreenState extends State<MessageAnalyzerScreen>
               margin: const EdgeInsets.only(right: 8),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               decoration: BoxDecoration(
-                color:  selected ? color.withOpacity(0.12) : J.bg3,
+                color:  selected ? color.withValues(alpha: 0.12) : J.bg3,
                 border: Border.all(
                   color: selected ? color : J.border0,
                   width: selected ? 1.5 : 1,
@@ -184,7 +184,7 @@ class _MessageAnalyzerScreenState extends State<MessageAnalyzerScreen>
                 decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(color: pCol, width: 1.5),
-                    color: pCol.withOpacity(0.1)),
+                    color: pCol.withValues(alpha: 0.1)),
                 child: Center(
                   child: Text(
                     msg.sender.isNotEmpty
@@ -216,8 +216,8 @@ class _MessageAnalyzerScreenState extends State<MessageAnalyzerScreen>
                 padding: const EdgeInsets.symmetric(
                     horizontal: 7, vertical: 3),
                 decoration: BoxDecoration(
-                  border: Border.all(color: uCol.withOpacity(0.5)),
-                  color: uCol.withOpacity(0.08),
+                  border: Border.all(color: uCol.withValues(alpha: 0.5)),
+                  color: uCol.withValues(alpha: 0.08),
                 ),
                 child: Text(a.urgency.toUpperCase(),
                     style: J.orbitron(7, color: uCol, spacing: 1)),
@@ -277,9 +277,9 @@ class _MessageAnalyzerScreenState extends State<MessageAnalyzerScreen>
                   width: double.infinity,
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: J.cyan.withOpacity(0.04),
+                    color: J.cyan.withValues(alpha: 0.04),
                     border: Border.all(
-                        color: J.cyan.withOpacity(0.25)),
+                        color: J.cyan.withValues(alpha: 0.25)),
                   ),
                   child: Text(a.suggestedReply,
                       style: J.rajdhani(14, color: J.t1)),
@@ -426,8 +426,8 @@ class _Badge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
-        color:  color.withOpacity(0.08),
-        border: Border.all(color: color.withOpacity(0.35)),
+        color:  color.withValues(alpha: 0.08),
+        border: Border.all(color: color.withValues(alpha: 0.35)),
       ),
       child: Text(label, style: J.orbitron(7, color: color, spacing: 1)),
     );

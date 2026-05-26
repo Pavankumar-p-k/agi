@@ -15,6 +15,7 @@ class JarvisColors {
   static const greenDim   = Color(0xFF00897B);
   static const orange     = Color(0xFFFF6A00);
   static const red        = Color(0xFFFF1744);
+  static const purple     = Color(0xFFBB86FC);
   static const textPrimary   = Color(0xFFB0EEFF);
   static const textSecondary = Color(0xFF4A7A8A);
   static const textDim       = Color(0xFF1E4A5A);

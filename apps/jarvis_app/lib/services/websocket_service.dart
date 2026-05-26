@@ -1,6 +1,6 @@
 ﻿// lib/services/websocket_service.dart
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'dart:convert';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/api_config.dart';
@@ -64,9 +64,9 @@ class WebSocketService extends ChangeNotifier {
       }
       _messageQueue.clear();
 
-      print('[WS] Connected ✓');
+      debugPrint('[WS] Connected ✓');
     } catch (e) {
-      print('[WS] Connection failed: $e');
+      debugPrint('[WS] Connection failed: $e');
     }
   }
 
@@ -82,21 +82,21 @@ class WebSocketService extends ChangeNotifier {
         case 'screen_frame':    onScreenFrame?.call(payload['frame_base64'] as String? ?? '');
         case 'command_response': onCommandResponse?.call(payload);
         case 'notification':    onNotification?.call(payload);
-        case 'pong':            print('[WS] Pong received');
+        case 'pong':            debugPrint('[WS] Pong received');
       }
     } catch (e) {
-      print('[WS] Parse error: $e');
+      debugPrint('[WS] Parse error: $e');
     }
   }
 
   void _onError(error) {
-    print('[WS] Error: $error');
+    debugPrint('[WS] Error: $error');
     _isConnected = false;
     notifyListeners();
   }
 
   void _onDone() {
-    print('[WS] Disconnected');
+    debugPrint('[WS] Disconnected');
     _isConnected = false;
     notifyListeners();
   }
@@ -105,7 +105,7 @@ class WebSocketService extends ChangeNotifier {
     try {
       _channel?.sink.add(jsonEncode(data));
     } catch (e) {
-      print('[WS] Send error: $e');
+      debugPrint('[WS] Send error: $e');
     }
   }
 

@@ -1,0 +1,113 @@
+"""core/plan_routes.py
+FastAPI routes for JARVIS Agent Orchestrator — goal submission, plan management,
+approval, and execution tracking.
+"""
+
+import logging
+from typing import Optional
+
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
+
+from .plan_manager import PlanManager
+
+logger = logging.getLogger("plan_routes")
+
+router = APIRouter(prefix="/api/plans", tags=["Agent Orchestrator"])
+plan_manager = PlanManager()
+
+
+class GoalRequest(BaseModel):
+    goal: str
+    preferences: Optional[dict] = None
+
+
+class ApprovalRequest(BaseModel):
+    plan_id: str
+    approve: bool
+    modifications: Optional[dict] = None
+
+
+class SetupRequest(BaseModel):
+    plan_id: str
+    preferences: dict
+
+
+@router.post("/goal")
+async def submit_goal(req: GoalRequest):
+    plan = await plan_manager.create_plan(req.goal, req.preferences)
+    return {
+        "plan_id": plan["id"],
+        "goal": plan["goal"],
+        "steps": plan.get("steps", []),
+        "status": plan["status"],
+        "setup_questions": plan_manager._goal_processor.build_setup_questions(req.goal),
+    }
+
+
+@router.post("/setup")
+async def set_preferences(req: SetupRequest):
+    plan = plan_manager.get_plan(req.plan_id)
+    if not plan:
+        raise HTTPException(404, "Plan not found")
+    plan.update(req.preferences)
+    plan["status"] = "pending_approval"
+    return {"plan_id": req.plan_id, "status": "pending_approval"}
+
+
+@router.post("/approve")
+async def approve_plan(req: ApprovalRequest):
+    if req.approve:
+        plan = plan_manager.approve_plan(req.plan_id)
+    else:
+        plan = plan_manager.reject_plan(req.plan_id)
+
+    if not plan:
+        raise HTTPException(404, "Plan not found")
+
+    return {"plan_id": req.plan_id, "status": plan["status"]}
+
+
+@router.post("/{plan_id}/execute")
+async def execute_plan(plan_id: str):
+    plan = plan_manager.get_plan(plan_id)
+    if not plan:
+        raise HTTPException(404, "Plan not found")
+    if plan["status"] != "approved":
+        raise HTTPException(400, f"Plan must be approved first (current: {plan['status']})")
+
+    import asyncio
+    asyncio.create_task(plan_manager.execute_plan(plan_id))
+    return {"plan_id": plan_id, "status": "executing", "message": "Execution started"}
+
+
+@router.get("/{plan_id}")
+async def get_plan(plan_id: str):
+    status = plan_manager.get_status(plan_id)
+    if not status:
+        raise HTTPException(404, "Plan not found")
+    return status
+
+
+@router.get("/{plan_id}/status")
+async def get_plan_status(plan_id: str):
+    status = plan_manager.get_status(plan_id)
+    if not status:
+        raise HTTPException(404, "Plan not found")
+    return {"plan_id": plan_id, "status": status["status"], "details": status}
+
+
+@router.post("/{plan_id}/cancel")
+async def cancel_execution(plan_id: str):
+    plan = plan_manager.get_plan(plan_id)
+    if not plan:
+        raise HTTPException(404, "Plan not found")
+    if plan_manager._executor:
+        plan_manager._executor.cancel()
+    plan["status"] = "cancelled"
+    return {"plan_id": plan_id, "status": "cancelled"}
+
+
+@router.get("/")
+async def list_plans():
+    return {"plans": plan_manager.list_plans()}

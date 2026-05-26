@@ -161,8 +161,8 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                               Container(
                                 padding: const EdgeInsets.all(10),
                                 decoration: BoxDecoration(
-                                  border: Border.all(color: JarvisColors.red.withOpacity(0.5)),
-                                  color: JarvisColors.red.withOpacity(0.08),
+                                  border: Border.all(color: JarvisColors.red.withValues(alpha: 0.5)),
+                                  color: JarvisColors.red.withValues(alpha: 0.08),
                                 ),
                                 child: Row(children: [
                                   const Icon(Icons.warning_outlined, color: JarvisColors.red, size: 14),
@@ -185,11 +185,11 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                                 padding: const EdgeInsets.symmetric(vertical: 14),
                                 decoration: BoxDecoration(
                                   gradient: LinearGradient(colors: [
-                                    JarvisColors.blue.withOpacity(_loading ? 0.3 : 0.5),
-                                    JarvisColors.cyan.withOpacity(_loading ? 0.15 : 0.25),
+                                    JarvisColors.blue.withValues(alpha: _loading ? 0.3 : 0.5),
+                                    JarvisColors.cyan.withValues(alpha: _loading ? 0.15 : 0.25),
                                   ]),
                                   border: Border.all(
-                                    color: JarvisColors.cyan.withOpacity(_loading ? 0.3 : 0.6),
+                                    color: JarvisColors.cyan.withValues(alpha: _loading ? 0.3 : 0.6),
                                   ),
                                 ),
                                 child: Center(
@@ -299,7 +299,7 @@ class _GridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = JarvisColors.blue.withOpacity(0.04)
+      ..color = JarvisColors.blue.withValues(alpha: 0.04)
       ..strokeWidth = 0.5;
 
     for (double x = 0; x < size.width; x += 36) {

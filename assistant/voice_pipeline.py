@@ -71,16 +71,30 @@ class VoicePipeline:
         return text
 
     async def think(self, text: str) -> str:
-        """Get LLM response via LiteLLM router."""
-        reply = await llm_complete(
-            model_group="chat",
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": text},
-            ],
-            timeout=30,
-        )
-        return reply
+        """Get LLM response — tries cloud (Groq) for speed, falls back to local qwen3:4b."""
+        import os
+        model = "cloud" if os.getenv("GROQ_API_KEY") else "automation"
+        try:
+            reply = await llm_complete(
+                model_group=model,
+                messages=[
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user", "content": text},
+                ],
+                timeout=10,
+            )
+            return reply
+        except Exception:
+            # Fallback to fast local model
+            reply = await llm_complete(
+                model_group="automation",
+                messages=[
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user", "content": text},
+                ],
+                timeout=15,
+            )
+            return reply
 
     async def speak(self, text: str) -> bytes:
         """Synthesize text to WAV audio bytes using Kokoro."""
@@ -107,9 +121,15 @@ class VoiceLoop:
         self._wake_event = threading.Event()
         self._stop_event = threading.Event()
         self._loop_thread = None
+        self._wake_preroll = b""
 
     def _on_wake(self):
-        """Called by WakeWordDetector when 'Hey Jarvis' is heard."""
+        """Called by WakeWordDetector when 'Hey Jarvis' is heard. Snap preroll BEFORE buffer clears."""
+        if self._wake_word:
+            try:
+                self._wake_preroll = self._wake_word.get_recent_audio()
+            except Exception:
+                self._wake_preroll = b""
         self._wake_event.set()
 
     def start(self):
@@ -122,17 +142,47 @@ class VoiceLoop:
         print("[VoiceLoop] Started. Say 'Hey Jarvis' to activate.")
 
     def _run_loop(self):
-        """Main loop: wait for wake -> record -> process -> play."""
+        """Main loop: wait for wake -> combine preroll + ring buffer -> process -> play.
+        No fresh recording — avoids dual-mic conflict with wake word InputStream."""
         while not self._stop_event.is_set():
             self._wake_event.wait()
             self._wake_event.clear()
             if self._stop_event.is_set():
                 break
-            print("[VoiceLoop] Recording...")
-            audio = _record_audio()
-            audio_out = asyncio.run(self.pipeline.process_audio(audio))
-            if audio_out:
-                _play_audio(audio_out)
+            try:
+                preroll = self._wake_preroll
+                self._wake_preroll = b""
+                # Let user finish speaking, then read ring buffer (fresh audio after clear)
+                time.sleep(3)
+                tail = b""
+                if self._wake_word:
+                    tail = self._wake_word.get_recent_audio()
+                import io, soundfile as sf, numpy as np
+                if preroll and tail:
+                    p_data, _ = sf.read(io.BytesIO(preroll))
+                    t_data, _ = sf.read(io.BytesIO(tail))
+                    combined = np.concatenate([p_data, t_data])
+                    buf = io.BytesIO()
+                    sf.write(buf, combined, SAMPLE_RATE, format="WAV", subtype="PCM_16")
+                    audio = buf.getvalue()
+                elif preroll:
+                    audio = preroll
+                elif tail:
+                    audio = tail
+                else:
+                    print("[VoiceLoop] No audio captured")
+                    continue
+                print(f"[VoiceLoop] Audio: {len(audio)} bytes, transcribing...")
+                audio_out = asyncio.run(self.pipeline.process_audio(audio))
+                if audio_out:
+                    print(f"[VoiceLoop] Got {len(audio_out)} bytes, playing...")
+                    _play_audio(audio_out)
+                    print("[VoiceLoop] Response played")
+                else:
+                    print("[VoiceLoop] No audio output from pipeline")
+            except Exception as e:
+                print(f"[VoiceLoop] Error in cycle: {e}")
+                # Don't die — resume listening for next wake word
 
     def stop(self):
         """Stop the voice loop."""

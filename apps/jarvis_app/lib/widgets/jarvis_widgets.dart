@@ -60,12 +60,12 @@ class _HudRingState extends State<HudRing> with TickerProviderStateMixin {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(colors: [
-                  JarvisColors.cyan.withOpacity(0.3 + _pulse.value * 0.3),
-                  JarvisColors.blue.withOpacity(0.1),
+                  JarvisColors.cyan.withValues(alpha: 0.3 + _pulse.value * 0.3),
+                  JarvisColors.blue.withValues(alpha: 0.1),
                 ]),
                 boxShadow: [
                   BoxShadow(
-                    color: JarvisColors.cyan.withOpacity(0.3 + _pulse.value * 0.3),
+                    color: JarvisColors.cyan.withValues(alpha: 0.3 + _pulse.value * 0.3),
                     blurRadius: 16 + _pulse.value * 12,
                     spreadRadius: 2,
                   ),
@@ -105,7 +105,7 @@ class _RingPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2 - strokeWidth;
     final paint  = Paint()
-      ..color = color.withOpacity(0.25)
+      ..color = color.withValues(alpha: 0.25)
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth;
 
@@ -113,7 +113,7 @@ class _RingPainter extends CustomPainter {
 
     // Draw 3 bright arc segments
     final arcPaint = Paint()
-      ..color = color.withOpacity(0.8)
+      ..color = color.withValues(alpha: 0.8)
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round;
@@ -182,7 +182,7 @@ class JPanel extends StatelessWidget {
                 '// $label',
                 style: GoogleFonts.orbitron(
                   fontSize: 10, letterSpacing: 2,
-                  color: accent.withOpacity(0.7),
+                  color: accent.withValues(alpha: 0.7),
                 ),
               ),
             ),
@@ -262,7 +262,7 @@ class _MetricBarState extends State<MetricBar> with SingleTickerProviderStateMix
                     JarvisColors.blue,
                     col,
                   ]),
-                  boxShadow: [BoxShadow(color: col.withOpacity(0.4), blurRadius: 4)],
+                  boxShadow: [BoxShadow(color: col.withValues(alpha: 0.4), blurRadius: 4)],
                 ),
               ),
             ),
@@ -298,7 +298,7 @@ class MetricCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: JarvisColors.bgPanel,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: col.withOpacity(0.3), width: 1),
+        border: Border.all(color: col.withValues(alpha: 0.3), width: 1),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
@@ -349,10 +349,10 @@ class _StatusDotState extends State<StatusDot> with SingleTickerProviderStateMix
       builder: (_, __) => Container(
         width: 8, height: 8,
         decoration: BoxDecoration(
-          color: col.withOpacity(widget.active ? 0.6 + _c.value * 0.4 : 0.3),
+          color: col.withValues(alpha: widget.active ? 0.6 + _c.value * 0.4 : 0.3),
           shape: BoxShape.circle,
           boxShadow: widget.active ? [
-            BoxShadow(color: col.withOpacity(_c.value * 0.6), blurRadius: 6, spreadRadius: 1),
+            BoxShadow(color: col.withValues(alpha: _c.value * 0.6), blurRadius: 6, spreadRadius: 1),
           ] : null,
         ),
       ),
@@ -391,8 +391,8 @@ class JButton extends StatelessWidget {
         width: width,
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         decoration: BoxDecoration(
-          color: filled ? col.withOpacity(0.18) : (outlined ? Colors.transparent : col.withOpacity(0.12)),
-          border: Border.all(color: col.withOpacity(0.5), width: 1),
+          color: filled ? col.withValues(alpha: 0.18) : (outlined ? Colors.transparent : col.withValues(alpha: 0.12)),
+          border: Border.all(color: col.withValues(alpha: 0.5), width: 1),
         ),
         child: Row(
           mainAxisSize: width != null ? MainAxisSize.max : MainAxisSize.min,
@@ -436,8 +436,8 @@ class CyberButton extends StatelessWidget {
         width: width,
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
-          color: filled ? col.withOpacity(0.18) : J.bg3,
-          border: Border.all(color: col.withOpacity(0.6), width: 1),
+          color: filled ? col.withValues(alpha: 0.18) : J.bg3,
+          border: Border.all(color: col.withValues(alpha: 0.6), width: 1),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -511,7 +511,7 @@ class _TypingIndicatorState extends State<TypingIndicator>
             margin: const EdgeInsets.only(right: 6),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: J.cyan.withOpacity(phase(i)),
+              color: J.cyan.withValues(alpha: phase(i)),
             ),
           )),
         );
@@ -557,7 +557,7 @@ class _JLoadingState extends State<JLoading> with SingleTickerProviderStateMixin
             colors: [
               JarvisColors.bgCard,
               JarvisColors.bgPanel,
-              JarvisColors.border.withOpacity(0.5),
+              JarvisColors.border.withValues(alpha: 0.5),
               JarvisColors.bgPanel,
               JarvisColors.bgCard,
             ],
@@ -592,7 +592,7 @@ class _ScanlinePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = JarvisColors.cyan.withOpacity(0.015)
+      ..color = JarvisColors.cyan.withValues(alpha: 0.015)
       ..strokeWidth = 1;
 
     for (double y = 0; y < size.height; y += 4) {

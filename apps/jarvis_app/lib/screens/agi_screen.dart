@@ -106,7 +106,7 @@ class _AGIScreenState extends State<AGIScreen> with TickerProviderStateMixin {
             width: 8, height: 8,
             decoration: BoxDecoration(
               shape: BoxShape.circle, color: _cyan,
-              boxShadow: [BoxShadow(color: _cyan.withOpacity(0.3 + _pulseCtrl.value * 0.5), blurRadius: 8)]),
+              boxShadow: [BoxShadow(color: _cyan.withValues(alpha: 0.3 + _pulseCtrl.value * 0.5), blurRadius: 8)]),
           )),
           const SizedBox(width: 10),
           Text('AGI BRAIN', style: GoogleFonts.orbitron(
@@ -115,8 +115,8 @@ class _AGIScreenState extends State<AGIScreen> with TickerProviderStateMixin {
           if (autonomous)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-              decoration: BoxDecoration(color: _green.withOpacity(0.1),
-                border: Border.all(color: _green.withOpacity(0.4))),
+              decoration: BoxDecoration(color: _green.withValues(alpha: 0.1),
+                border: Border.all(color: _green.withValues(alpha: 0.4))),
               child: Text('AUTO', style: GoogleFonts.orbitron(fontSize: 8, color: _green)),
             ),
         ]),
@@ -217,8 +217,8 @@ class _PredCard extends StatelessWidget {
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
           Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(color: typeColor.withOpacity(0.1),
-              border: Border.all(color: typeColor.withOpacity(0.4))),
+            decoration: BoxDecoration(color: typeColor.withValues(alpha: 0.1),
+              border: Border.all(color: typeColor.withValues(alpha: 0.4))),
             child: Text(type.toUpperCase(), style: GoogleFonts.orbitron(
               fontSize: 7, color: typeColor, letterSpacing: 1.5))),
           const SizedBox(width: 8),
@@ -292,7 +292,7 @@ class _ControlPanelState extends State<_ControlPanel> {
           setState(() => _dnd = v);
           await widget.svc.configure(dndMode: v);
           widget.onRefresh();
-        }, activeColor: _red, activeTrackColor: _red.withOpacity(0.2),
+        }, activeColor: _red, activeTrackColor: _red.withValues(alpha: 0.2),
           inactiveThumbColor: _tsec, inactiveTrackColor: _bgP),
       ]),
     ]),
@@ -344,8 +344,8 @@ class _GoalsTab extends StatelessWidget {
         onTap: () => _showAddGoal(context),
         child: Container(
           width: double.infinity, padding: const EdgeInsets.symmetric(vertical: 13),
-          decoration: BoxDecoration(border: Border.all(color: _cyan.withOpacity(0.4)),
-            color: _cyan.withOpacity(0.05)),
+          decoration: BoxDecoration(border: Border.all(color: _cyan.withValues(alpha: 0.4)),
+            color: _cyan.withValues(alpha: 0.05)),
           child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
             const Icon(Icons.add, color: _cyan, size: 16),
             const SizedBox(width: 8),
@@ -375,7 +375,7 @@ class _GoalsTab extends StatelessWidget {
       backgroundColor: _bgCard,
       child: Container(
         padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(border: Border.all(color: _cyan.withOpacity(0.3))),
+        decoration: BoxDecoration(border: Border.all(color: _cyan.withValues(alpha: 0.3))),
         child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text('// NEW GOAL', style: GoogleFonts.orbitron(fontSize: 11, color: _cyan, letterSpacing: 2)),
           const SizedBox(height: 14),
@@ -397,7 +397,7 @@ class _GoalsTab extends StatelessWidget {
             Expanded(child: GestureDetector(
               onTap: () => Navigator.pop(ctx),
               child: Container(padding: const EdgeInsets.symmetric(vertical: 10),
-                decoration: BoxDecoration(border: Border.all(color: _tsec.withOpacity(0.3))),
+                decoration: BoxDecoration(border: Border.all(color: _tsec.withValues(alpha: 0.3))),
                 child: Center(child: Text('CANCEL', style: GoogleFonts.orbitron(fontSize: 9, color: _tsec)))),
             )),
             const SizedBox(width: 10),
@@ -409,8 +409,8 @@ class _GoalsTab extends StatelessWidget {
                 onRefresh();
               },
               child: Container(padding: const EdgeInsets.symmetric(vertical: 10),
-                decoration: BoxDecoration(color: _cyan.withOpacity(0.1),
-                  border: Border.all(color: _cyan.withOpacity(0.4))),
+                decoration: BoxDecoration(color: _cyan.withValues(alpha: 0.1),
+                  border: Border.all(color: _cyan.withValues(alpha: 0.4))),
                 child: Center(child: Text('SET GOAL', style: GoogleFonts.orbitron(fontSize: 9, color: _cyan)))),
             )),
           ]),
@@ -433,7 +433,7 @@ class _GoalCard extends StatelessWidget {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(color: _bgCard, border: Border.all(color: color.withOpacity(0.25))),
+      decoration: BoxDecoration(color: _bgCard, border: Border.all(color: color.withValues(alpha: 0.25))),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Container(height: 1.5, decoration: BoxDecoration(
           gradient: LinearGradient(colors: [Colors.transparent, color, Colors.transparent]))),
@@ -441,8 +441,8 @@ class _GoalCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
               Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(color: color.withOpacity(0.1),
-                  border: Border.all(color: color.withOpacity(0.4))),
+                decoration: BoxDecoration(color: color.withValues(alpha: 0.1),
+                  border: Border.all(color: color.withValues(alpha: 0.4))),
                 child: Text(status.toUpperCase(), style: GoogleFonts.orbitron(
                   fontSize: 7, color: color, letterSpacing: 1.5))),
               const SizedBox(width: 8),
@@ -492,7 +492,7 @@ class _PatternsTab extends StatelessWidget {
           Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('$streak DAYS', style: GoogleFonts.orbitron(
               fontSize: 24, color: _orange, fontWeight: FontWeight.w900,
-              shadows: [Shadow(color: _orange.withOpacity(0.4), blurRadius: 12)])),
+              shadows: [Shadow(color: _orange.withValues(alpha: 0.4), blurRadius: 12)])),
             Text('consecutive usage streak', style: GoogleFonts.shareTech(fontSize: 12, color: _tsec)),
           ]),
         ]),
@@ -564,7 +564,7 @@ class _DecisionsTab extends StatelessWidget {
           margin: const EdgeInsets.only(bottom: 8),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(color: _bgCard, border: Border.all(
-            color: success ? _green.withOpacity(0.2) : _red.withOpacity(0.2))),
+            color: success ? _green.withValues(alpha: 0.2) : _red.withValues(alpha: 0.2))),
           child: Row(children: [
             Icon(success ? Icons.check_circle_outline : Icons.cancel_outlined,
               color: success ? _green : _red, size: 16),
@@ -603,7 +603,7 @@ class _Metric extends StatelessWidget {
     decoration: BoxDecoration(color: _bgCard, border: Border.all(color: _border)),
     child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
       Text(value, style: GoogleFonts.orbitron(fontSize: 18, color: color, fontWeight: FontWeight.w900,
-        shadows: [Shadow(color: color.withOpacity(0.4), blurRadius: 10)])),
+        shadows: [Shadow(color: color.withValues(alpha: 0.4), blurRadius: 10)])),
       const SizedBox(height: 3),
       Text(label, style: GoogleFonts.orbitron(fontSize: 7, color: _tsec, letterSpacing: 1)),
     ]),
@@ -617,7 +617,7 @@ class _SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.only(bottom: 8, top: 4),
     child: Text('// $text', style: GoogleFonts.orbitron(
-      fontSize: 9, letterSpacing: 2, color: _cyan.withOpacity(0.6))),
+      fontSize: 9, letterSpacing: 2, color: _cyan.withValues(alpha: 0.6))),
   );
 }
 

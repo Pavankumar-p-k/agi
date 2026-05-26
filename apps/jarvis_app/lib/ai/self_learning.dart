@@ -6,6 +6,7 @@
 //  100% local — learns on device without server.
 // ═══════════════════════════════════════════════════════════════════
 
+import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
 import '../db/local_db.dart';
 
@@ -94,9 +95,9 @@ class SelfLearningSystem {
         feedback.rating,
       );
 
-      print('[Learning] Feedback recorded: ${feedback.intent} → ${feedback.type.name}');
+      debugPrint('[Learning] Feedback recorded: ${feedback.intent} → ${feedback.type.name}');
     } catch (e) {
-      print('[Learning] Error: $e');
+      debugPrint('[Learning] Error: $e');
     }
   }
 
@@ -167,7 +168,7 @@ class SelfLearningSystem {
         );
       }
     } catch (e) {
-      print('[Learning] Pattern update failed: $e');
+      debugPrint('[Learning] Pattern update failed: $e');
     }
   }
 
@@ -205,7 +206,7 @@ class SelfLearningSystem {
         lastUsed: DateTime.tryParse(row['last_used'] as String? ?? '') ?? DateTime.now(),
       )).toList();
     } catch (e) {
-      print('[Learning] Fetch patterns failed: $e');
+      debugPrint('[Learning] Fetch patterns failed: $e');
       return [];
     }
   }
@@ -239,7 +240,7 @@ class SelfLearningSystem {
         responseTime: (row['response_time'] as int?) ?? 0,
       )).toList();
     } catch (e) {
-      print('[Learning] Fetch history failed: $e');
+      debugPrint('[Learning] Fetch history failed: $e');
       return [];
     }
   }
@@ -357,9 +358,9 @@ class SelfLearningSystem {
         )
       ''');
 
-      print('[Learning] Database initialized ✓');
+      debugPrint('[Learning] Database initialized ✓');
     } catch (e) {
-      print('[Learning] Init failed: $e');
+      debugPrint('[Learning] Init failed: $e');
     }
   }
 

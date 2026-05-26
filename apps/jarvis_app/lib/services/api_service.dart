@@ -1,5 +1,6 @@
-﻿// lib/services/api_service.dart
+// lib/services/api_service.dart
 // JARVIS — Offline-first API client with local fallback
+import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/api_config.dart';
@@ -13,6 +14,7 @@ class ApiService {
   late final Dio _dio;
   static bool _online = false;
   static DateTime _lastCheck = DateTime.fromMillisecondsSinceEpoch(0);
+  late String _sessionId;
 
   // Shared OfflineAI instance — loads dataset once for whole app
   static final OfflineAI _localAI = OfflineAI();
@@ -32,11 +34,27 @@ class ApiService {
           if (saved != null && saved.trim().isNotEmpty) {
             options.baseUrl = saved.trim();
           }
+          // Init session ID from prefs or generate new
+          _sessionId = prefs.getString('session_id') ?? '';
+          if (_sessionId.isEmpty) {
+            final now = DateTime.now().millisecondsSinceEpoch;
+            final rand = (DateTime.now().microsecondsSinceEpoch % 100000).toString();
+            _sessionId = 'flutter_${now}_$rand';
+            await prefs.setString('session_id', _sessionId);
+          }
         } catch (_) {}
         handler.next(options);
       },
       onError: (err, handler) => handler.next(err),
     ));
+  }
+
+  String get sessionId => _sessionId;
+
+  Future<void> setSessionId(String id) async {
+    _sessionId = id;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('session_id', id);
   }
 
   // —— Connectivity ————————————————————————————————
@@ -56,7 +74,7 @@ class ApiService {
   Future<Map<String, dynamic>> chat(String message) async {
     if (await isOnline()) {
       try {
-        final r = await _dio.post(ApiConfig.chat, data: {'message': message});
+        final r = await _dio.post(ApiConfig.chat, data: {'message': message, 'session_id': _sessionId});
         final reply = (r.data as Map)['response'] ?? (r.data as Map)['text'] ?? '';
         if (reply.toString().isNotEmpty) {
           await localDB.saveMessage('user', message);
@@ -251,7 +269,7 @@ class ApiService {
   Future<Map<String, dynamic>> identifyFace(List<int> bytes) async {
     if (!await isOnline()) return {'status': 'offline'};
     try {
-      final f = await MultipartFile.fromBytes(bytes, filename: 'face.jpg');
+      final f = MultipartFile.fromBytes(bytes, filename: 'face.jpg');
       final r = await _dio.post(ApiConfig.facesIdentify,
           data: FormData.fromMap({'image': f}));
       return r.data as Map<String, dynamic>;
@@ -375,7 +393,7 @@ class ApiService {
       final r = await _dio.post(ApiConfig.stt, data: form);
       return (r.data as Map)['text'] as String? ?? '';
     } catch (e) {
-      print('[STT] Error: $e');
+      debugPrint('[STT] Error: $e');
       return '';
     }
   }
@@ -385,9 +403,8 @@ class ApiService {
       final r = await _dio.post(ApiConfig.tts, data: {'text': text});
       return (r.data as Map)['audio_url'] as String? ?? '';
     } catch (e) {
-      print('[TTS] Error: $e');
+      debugPrint('[TTS] Error: $e');
       return '';
     }
   }
 }
-

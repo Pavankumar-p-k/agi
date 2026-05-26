@@ -189,8 +189,8 @@ class _WakeSettingsScreenState extends State<WakeSettingsScreen>
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(vertical: 11),
                     decoration: BoxDecoration(
-                      border: Border.all(color: _orange.withOpacity(0.5)),
-                      color: _orange.withOpacity(0.07),
+                      border: Border.all(color: _orange.withValues(alpha: 0.5)),
+                      color: _orange.withValues(alpha: 0.07),
                     ),
                     child: Center(child: Row(mainAxisSize: MainAxisSize.min, children: [
                       const Icon(Icons.battery_alert_outlined, color: _orange, size: 14),
@@ -214,8 +214,8 @@ class _WakeSettingsScreenState extends State<WakeSettingsScreen>
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    border: Border.all(color: _cyan.withOpacity(0.4)),
-                    color: _cyan.withOpacity(0.07),
+                    border: Border.all(color: _cyan.withValues(alpha: 0.4)),
+                    color: _cyan.withValues(alpha: 0.07),
                   ),
                   child: Text('"Hey Jarvis"',
                     style: GoogleFonts.orbitron(fontSize: 14, color: _cyan, fontWeight: FontWeight.w700)),
@@ -254,8 +254,8 @@ class _WakeSettingsScreenState extends State<WakeSettingsScreen>
                   Container(
                     width: 22, height: 22,
                     decoration: BoxDecoration(
-                      border: Border.all(color: _cyan.withOpacity(0.4)),
-                      color: _cyan.withOpacity(0.07),
+                      border: Border.all(color: _cyan.withValues(alpha: 0.4)),
+                      color: _cyan.withValues(alpha: 0.07),
                       shape: BoxShape.circle,
                     ),
                     child: Center(child: Text('${e.key + 1}',
@@ -355,7 +355,7 @@ class _BigToggleCard extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: _bgCard,
-        border: Border.all(color: running ? _cyan.withOpacity(0.3) : _border),
+        border: Border.all(color: running ? _cyan.withValues(alpha: 0.3) : _border),
       ),
       child: Column(children: [
         Row(children: [
@@ -366,9 +366,9 @@ class _BigToggleCard extends StatelessWidget {
               width: 12, height: 12,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: col.withOpacity(running ? 0.5 + pulseCtrl.value * 0.5 : 0.2),
+                color: col.withValues(alpha: running ? 0.5 + pulseCtrl.value * 0.5 : 0.2),
                 boxShadow: running ? [
-                  BoxShadow(color: _cyan.withOpacity(pulseCtrl.value * 0.4), blurRadius: 8),
+                  BoxShadow(color: _cyan.withValues(alpha: pulseCtrl.value * 0.4), blurRadius: 8),
                 ] : null,
               ),
             ),
@@ -393,7 +393,7 @@ class _BigToggleCard extends StatelessWidget {
             value: running,
             onChanged: (_) => onToggle(),
             activeColor: _cyan,
-            activeTrackColor: _cyan.withOpacity(0.25),
+            activeTrackColor: _cyan.withValues(alpha: 0.25),
             inactiveThumbColor: _textSec,
             inactiveTrackColor: _bgPanel,
           ),
@@ -404,8 +404,8 @@ class _BigToggleCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: _cyan.withOpacity(0.05),
-              border: Border.all(color: _cyan.withOpacity(0.2)),
+              color: _cyan.withValues(alpha: 0.05),
+              border: Border.all(color: _cyan.withValues(alpha: 0.2)),
             ),
             child: Row(children: [
               const Icon(Icons.info_outline, color: _cyan, size: 14),
@@ -459,7 +459,7 @@ class _SectionPanel extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text('// $label', style: GoogleFonts.orbitron(
-            fontSize: 9, letterSpacing: 2, color: _cyan.withOpacity(0.7))),
+            fontSize: 9, letterSpacing: 2, color: _cyan.withValues(alpha: 0.7))),
           const SizedBox(height: 12),
           child,
         ]),
@@ -478,8 +478,8 @@ class _Dot extends StatelessWidget {
     width: 8, height: 8,
     decoration: BoxDecoration(
       shape: BoxShape.circle,
-      color: color.withOpacity(active ? 0.9 : 0.3),
-      boxShadow: active ? [BoxShadow(color: color.withOpacity(0.4), blurRadius: 6)] : null,
+      color: color.withValues(alpha: active ? 0.9 : 0.3),
+      boxShadow: active ? [BoxShadow(color: color.withValues(alpha: 0.4), blurRadius: 6)] : null,
     ),
   );
 }

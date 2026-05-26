@@ -24,6 +24,17 @@ class SandboxedExecutor:
         "rm", "del", "format", "diskpart", "cipher",  # Destructive
         "shutdown", "reboot", "halt",  # System control
         "taskkill", "kill",  # Process termination
+        "reg", "regedit", "regedit32",  # Registry
+        "fsutil", "chkdsk", "sfc", "bcdedit",  # System tools
+        "diskpart", "mountvol", "vssadmin",  # Volume management
+    ]
+
+    # Only allow writes within these directories
+    ALLOWED_WRITE_PATHS = [
+        os.path.expanduser("~"),           # Home directory
+        os.getcwd(),                       # Current working directory
+        os.path.expandvars("%TEMP%"),      # Temp directory
+        os.path.expandvars("%APPDATA%"),   # AppData
     ]
     
     def __init__(self, timeout: int = DEFAULT_TIMEOUT, cwd: Optional[str] = None):

@@ -206,7 +206,7 @@ class _ReminderTile extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: JPanel(
-        borderColor: isPast ? JarvisColors.textDim : JarvisColors.cyan.withOpacity(0.3),
+        borderColor: isPast ? JarvisColors.textDim : JarvisColors.cyan.withValues(alpha: 0.3),
         child: Row(children: [
           Container(
             width: 4, height: 50,

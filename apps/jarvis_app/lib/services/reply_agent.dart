@@ -305,7 +305,7 @@ class ReplyAgent {
   Future<void> _sendReply(InboxMessage msg, String reply) async {
     debugPrint('[ReplyAgent] Sending on ${msg.platform} to ${msg.sender}: $reply');
     try {
-      await _replyViaNotificationAction(msg.cacheKey ?? '', reply);
+      await _replyViaNotificationAction(msg.cacheKey, reply);
     } catch (e) {
       debugPrint('[ReplyAgent] Send error: $e');
       // DB already marked — no retry loop

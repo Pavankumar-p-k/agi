@@ -162,8 +162,10 @@ class CommandLayer:
         work_dir = Path(cwd).resolve() if cwd else self.cwd
 
         try:
-            proc = await asyncio.create_subprocess_shell(
-                command,
+            import shlex
+            cmd_args = shlex.split(command)
+            proc = await asyncio.create_subprocess_exec(
+                *cmd_args,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
                 cwd=str(work_dir),

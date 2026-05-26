@@ -30,7 +30,7 @@ class TieredMemory:
             }
             self.mem0 = Memory.from_config(config)
         except Exception as e:
-            print(f"[WARN] Qdrant unavailable, TieredMemory running without vector store: {e}")
+            print(f"[MEMORY] Qdrant unavailable — running without vector store: {e}")
             self.mem0 = None
 
     def remember(self, content: str, importance: float = 0.5, metadata: Dict = None):

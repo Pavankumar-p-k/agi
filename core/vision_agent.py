@@ -4,7 +4,7 @@
 ║   J.A.R.V.I.S  VISION AGENT  —  See → Think → Act → Verify    ║
 ╠══════════════════════════════════════════════════════════════════╣
 ║  Works exactly like Cursor/Devin/Claude Computer Use but 100%   ║
-║  offline on YOUR machine using Moondream + Llama3.1 via Ollama.║
+║  offline on YOUR machine using Gemma4 + Moondream via Ollama.   ║
 ║                                                                  ║
 ║  You say: "open chrome, go to amazon, buy white tshirt ₹500"   ║
 ║  JARVIS:                                                         ║
@@ -372,13 +372,18 @@ class VisionAgent:
         except: return ""
 
     async def _llava(self, sys: str, prompt: str, b64: str, maxt=80) -> str:
-        try:
-            r = await self._http.post(f"{get_ollama_url(VISION_MODEL)}/api/generate", json={
-                "model":VISION_MODEL,"system":sys,"prompt":prompt,
-                "images":[b64],"stream":False,
-                "options":{"num_predict":maxt,"num_gpu":99,"temperature":0.1}})
-            return r.json().get("response","").strip()
-        except: return ""
+        # Try primary vision model (gemma4:e4b), fall back to moondream
+        for model in (VISION_MODEL, "moondream"):
+            try:
+                r = await self._http.post(f"{get_ollama_url(model)}/api/generate", json={
+                    "model": model, "system": sys, "prompt": prompt,
+                    "images": [b64], "stream": False,
+                    "options": {"num_predict": maxt, "num_gpu": 99, "temperature": 0.1}})
+                if r.status_code == 200:
+                    return r.json().get("response", "").strip()
+            except Exception:
+                continue
+        return ""
 
     def get_history(self) -> list:
         return [{"id":t.id,"instruction":t.instruction,"status":t.status,

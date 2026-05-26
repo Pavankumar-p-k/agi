@@ -202,8 +202,8 @@ class _ContactsScreenState extends State<ContactsScreen> {
                                           height: 42,
                                           decoration: BoxDecoration(
                                             shape: BoxShape.circle,
-                                            border: Border.all(color: _cyan.withOpacity(0.35)),
-                                            color: _cyan.withOpacity(0.08),
+                                            border: Border.all(color: _cyan.withValues(alpha: 0.35)),
+                                            color: _cyan.withValues(alpha: 0.08),
                                           ),
                                           child: Center(
                                             child: Text(
@@ -314,8 +314,8 @@ class _ActionButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
-          color: enabled ? color.withOpacity(0.08) : Colors.transparent,
-          border: Border.all(color: enabled ? color.withOpacity(0.35) : _border),
+          color: enabled ? color.withValues(alpha: 0.08) : Colors.transparent,
+          border: Border.all(color: enabled ? color.withValues(alpha: 0.35) : _border),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,

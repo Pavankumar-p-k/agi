@@ -47,7 +47,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
                 MetricBar(label: 'PRODUCTIVITY', value: _summary!.productivityScore / 10),
                 const SizedBox(height: 16),
                 if (_summary!.insights.isNotEmpty) ...[
-                  Text('// INSIGHTS', style: GoogleFonts.orbitron(fontSize: 9, letterSpacing: 2, color: JarvisColors.cyan.withOpacity(0.7))),
+                  Text('// INSIGHTS', style: GoogleFonts.orbitron(fontSize: 9, letterSpacing: 2, color: JarvisColors.cyan.withValues(alpha: 0.7))),
                   const SizedBox(height: 8),
                   ..._summary!.insights.map((ins) => Padding(
                     padding: const EdgeInsets.only(bottom: 6),

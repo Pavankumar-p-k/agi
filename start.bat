@@ -14,6 +14,10 @@ if %errorlevel% neq 0 (
 )
 echo [OK] Docker is running.
 
+:: Wait for Docker Desktop to fully initialize after Windows boot
+echo Waiting for Docker to initialize...
+timeout /t 5 /nobreak >nul
+
 :: Start Docker containers (if not already running)
 echo.
 echo [1/4] Starting Docker services...
@@ -43,7 +47,14 @@ start /B "" "cmd /c python -m core.main > jarvis_server.log 2>&1"
 echo   Server starting... (check jarvis_server.log for status)
 echo   This takes ~50s due to litellm imports.
 echo.
-echo [4/4] Opening Dashboard...
+echo [4/4] Starting Telegram Bot...
+setlocal enabledelayedexpansion
+for /f "tokens=*" %%a in ('findstr /b "TELEGRAM_BOT_TOKEN" .env') do set %%a
+start "" python channels\telegram_bot.py
+endlocal
+echo   - Telegram:    @JARVIS_bot (polling)
+
+echo [5/5] Opening Dashboard...
 timeout /t 10 /nobreak >nul
 start "" http://localhost:8000
 echo.

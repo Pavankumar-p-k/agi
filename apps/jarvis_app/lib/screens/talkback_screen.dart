@@ -13,8 +13,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../ai/offline_ai.dart';
 import '../services/talkback_service.dart';
+import '../services/supabase_service.dart';
 import '../services/device_automation_service.dart';
 import '../services/device_data_service.dart';
 import '../widgets/talkback_button.dart';
@@ -41,7 +41,7 @@ class TalkBackScreen extends StatefulWidget {
 
 class _TalkBackScreenState extends State<TalkBackScreen> with TickerProviderStateMixin {
   late final TalkBackService _talkback;
-  final OfflineAI _offlineAi = OfflineAI();
+  final SupabaseService _supabase = SupabaseService();
   final DeviceAutomationService _automation = DeviceAutomationService();
   final DeviceDataService _device = DeviceDataService();
   final List<_Msg> _history = [];
@@ -60,9 +60,10 @@ class _TalkBackScreenState extends State<TalkBackScreen> with TickerProviderStat
     // Wire up the speech → AI → speak pipeline
     _talkback.onUserSpeech = _handleUserSpeech;
 
-    _talkback.initialize().then((ok) {
+    _talkback.initialize().then((ok) async {
+      await _supabase.init();
       if (ok && mounted) {
-        _talkback.speak("JARVIS TalkBack ready. Tap the microphone to speak.");
+        _talkback.speak("JARVIS remote ready. Tap the microphone to speak.");
       }
     });
   }
@@ -76,21 +77,60 @@ class _TalkBackScreenState extends State<TalkBackScreen> with TickerProviderStat
   }
 
   Future<void> _handleUserSpeech(String text) async {
-    // Add user message to history
     setState(() => _history.add(_Msg(role: 'user', text: text)));
     _scrollDown();
 
     try {
       final handled = await _handleLocalCommand(text);
       if (handled) return;
-      final result = await _offlineAi.process(text);
-      final response = result.text;
-      setState(() => _history.add(_Msg(role: 'jarvis', text: response)));
+
+      // Detect project goals — route to agent orchestrator
+      final lower = text.toLowerCase().trim();
+      final goalPatterns = ['build ', 'create ', 'make ', 'develop ', 'write a ', 'write an ',
+                            'scaffold ', 'start a project', 'new project', 'website for',
+                            'app for ', 'start building'];
+      final isGoal = goalPatterns.any((p) => lower.contains(p));
+
+      await _talkback.respondWithSpeech('Connecting to JARVIS...');
+
+      SupabaseResponse response;
+      if (isGoal) {
+        response = await _supabase.sendGoal(text);
+      } else {
+        response = await _supabase.sendAndWait(text);
+      }
+
+      String displayText = response.text;
+      if (response.files.isNotEmpty) {
+        final names = response.files.map((f) => f.name).join(', ');
+        final saved = response.files.where((f) => f.localPath != null).length;
+        displayText += '\n\n[FILES] Received: $names';
+        if (saved > 0) displayText += '\n✓ $saved file(s) saved to device';
+      }
+
+      // Show plan info if present
+      if (response.plan != null) {
+        final p = response.plan!;
+        final steps = p['steps'] as List? ?? [];
+        displayText += '\n\n[PLAN] Goal: ${p['goal']}';
+        for (final s in steps) {
+          final sMap = s as Map;
+          displayText += '\n  Step ${sMap['id']}: [${sMap['agent']}] ${sMap['prompt']?.toString().substring(0, 60) ?? ''}...';
+        }
+        displayText += '\n\nReply "approve <plan_id>" or "reject <plan_id>"';
+      }
+
+      // Show progress info if present
+      if (response.progress != null) {
+        final prog = response.progress!;
+        displayText += '\n\n[PROGRESS] Status: ${prog['status']} (plan ${prog['plan_id']})';
+      }
+
+      setState(() => _history.add(_Msg(role: 'jarvis', text: displayText)));
       _scrollDown();
-      await _talkback.respondWithSpeech(response);
+      await _talkback.respondWithSpeech(response.text);
     } catch (e) {
-      const fallback =
-          'I hit a local error while handling that command. Please try again.';
+      const fallback = 'I had trouble reaching JARVIS. Please try again.';
       setState(() => _history.add(_Msg(role: 'jarvis', text: fallback)));
       await _talkback.respondWithSpeech(fallback);
     }
@@ -494,8 +534,8 @@ class _SettingsSheetState extends State<_SettingsSheet> {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 13),
             decoration: BoxDecoration(
-              color: _cyan.withOpacity(0.08),
-              border: Border.all(color: _cyan.withOpacity(0.4)),
+              color: _cyan.withValues(alpha: 0.08),
+              border: Border.all(color: _cyan.withValues(alpha: 0.4)),
             ),
             child: Center(child: Row(mainAxisSize: MainAxisSize.min, children: [
               const Icon(Icons.play_circle_outline, color: _cyan, size: 16),
@@ -567,8 +607,8 @@ class _HistoryBubble extends StatelessWidget {
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: _green.withOpacity(0.5)),
-                color: _green.withOpacity(0.07),
+                border: Border.all(color: _green.withValues(alpha: 0.5)),
+                color: _green.withValues(alpha: 0.07),
               ),
               child: const Icon(Icons.smart_toy_outlined, color: _green, size: 14),
             ),
@@ -578,13 +618,13 @@ class _HistoryBubble extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.07),
-                border: Border.all(color: color.withOpacity(0.2)),
+                color: color.withValues(alpha: 0.07),
+                border: Border.all(color: color.withValues(alpha: 0.2)),
               ),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(
                   isUser ? 'YOU' : 'JARVIS',
-                  style: GoogleFonts.orbitron(fontSize: 8, letterSpacing: 2, color: color.withOpacity(0.6)),
+                  style: GoogleFonts.orbitron(fontSize: 8, letterSpacing: 2, color: color.withValues(alpha: 0.6)),
                 ),
                 const SizedBox(height: 4),
                 Text(msg.text, style: GoogleFonts.shareTech(
@@ -598,8 +638,8 @@ class _HistoryBubble extends StatelessWidget {
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: _cyan.withOpacity(0.5)),
-                color: _cyan.withOpacity(0.07),
+                border: Border.all(color: _cyan.withValues(alpha: 0.5)),
+                color: _cyan.withValues(alpha: 0.07),
               ),
               child: const Icon(Icons.person_outline, color: _cyan, size: 14),
             ),
@@ -658,9 +698,9 @@ class _StatusDotState extends State<_StatusDot> with SingleTickerProviderStateMi
         width: 7, height: 7,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: col.withOpacity(widget.active ? 0.5 + _c.value * 0.5 : 0.2),
+          color: col.withValues(alpha: widget.active ? 0.5 + _c.value * 0.5 : 0.2),
           boxShadow: widget.active ? [
-            BoxShadow(color: col.withOpacity(_c.value * 0.5), blurRadius: 5)
+            BoxShadow(color: col.withValues(alpha: _c.value * 0.5), blurRadius: 5)
           ] : null,
         ),
       ),
@@ -672,7 +712,7 @@ class _GridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final p = Paint()
-      ..color = const Color(0xFF0066FF).withOpacity(0.04)
+      ..color = const Color(0xFF0066FF).withValues(alpha: 0.04)
       ..strokeWidth = 0.5;
     for (double x = 0; x < size.width; x += 40) {
       canvas.drawLine(Offset(x, 0), Offset(x, size.height), p);

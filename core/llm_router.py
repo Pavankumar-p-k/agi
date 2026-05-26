@@ -10,9 +10,11 @@ MODEL_LIST = [
     {"model_name": "analysis", "litellm_params": {"model": "ollama/qwen2.5:7b", "api_base": "http://localhost:11434", "max_tokens": 4096, "temperature": 0.5}},
     {"model_name": "reasoning", "litellm_params": {"model": "ollama/deepseek-r1:1.5b", "api_base": "http://localhost:11434", "max_tokens": 4096, "temperature": 0.6}},
     {"model_name": "creative", "litellm_params": {"model": "ollama/mistral:7b", "api_base": "http://localhost:11434", "max_tokens": 4096, "temperature": 0.8}},
+    {"model_name": "vision", "litellm_params": {"model": "ollama/gemma4:e4b", "api_base": "http://localhost:11434", "max_tokens": 4096}},
     {"model_name": "vision", "litellm_params": {"model": "ollama/moondream", "api_base": "http://localhost:11434", "max_tokens": 2048}},
     {"model_name": "fast", "litellm_params": {"model": "ollama/tinyllama", "api_base": "http://localhost:11434", "max_tokens": 2048, "temperature": 0.3}},
-    {"model_name": "automation", "litellm_params": {"model": "ollama/qwen3:4b", "api_base": "http://localhost:11434", "max_tokens": 4096, "temperature": 0.3}},
+    {"model_name": "automation", "litellm_params": {"model": "ollama/qwen2.5-coder:3b", "api_base": "http://localhost:11434", "max_tokens": 16384, "num_predict": 8192, "temperature": 0.3}},
+    {"model_name": "automation", "litellm_params": {"model": "ollama/qwen2.5:7b", "api_base": "http://localhost:11434", "max_tokens": 16384, "num_predict": 8192, "temperature": 0.3}},
 ]
 
 CLOUD_MODELS = []
@@ -52,6 +54,53 @@ async def complete(model_group: str, messages: list, timeout: int = 120) -> str:
         timeout=timeout,
     )
     return response.choices[0].message.content
+
+
+_VISION_KEYWORDS = frozenset([
+    "screen", "screenshot", "what do you see", "look at this",
+    "what is this", "what's this", "describe this image",
+    "describe the image", "what error", "what's on my screen",
+    "what is on my screen", "what am i looking at",
+])
+
+
+def _has_vision_content(messages: list) -> bool:
+    """Check if messages contain image data or vision-trigger keywords."""
+    text_lower = ""
+    for msg in messages:
+        content = msg.get("content", "")
+        if isinstance(content, list):
+            for part in content:
+                if isinstance(part, dict):
+                    if part.get("type") == "image_url":
+                        return True
+                    text_lower += str(part.get("text", "")).lower()
+        elif isinstance(content, str):
+            text_lower += content.lower()
+    for kw in _VISION_KEYWORDS:
+        if kw in text_lower:
+            return True
+    return False
+
+
+async def complete_vision(messages: list, timeout: int = 120) -> str:
+    """Vision-aware completion: tries gemma4:e4b first, falls back to moondream.
+    For non-vision requests, routes to the default chat model instead."""
+    if not _has_vision_content(messages):
+        return await complete("chat", messages, timeout)
+    try:
+        return await complete("vision", messages, timeout)
+    except Exception:
+        pass
+    try:
+        fallback_response = await router.acompletion(
+            model="ollama/moondream",
+            messages=messages,
+            timeout=timeout,
+        )
+        return fallback_response.choices[0].message.content
+    except Exception:
+        return await complete("chat", messages, timeout)
 
 
 async def health_check() -> bool:

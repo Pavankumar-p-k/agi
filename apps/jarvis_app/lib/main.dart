@@ -2,10 +2,13 @@
 // COMPLETE REPLACEMENT — ModelDetector on startup, Call Guard REMOVED
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:jarvis_app/ai/model_detector.dart';
 import 'package:jarvis_app/services/feature_settings.dart';
+import 'package:jarvis_app/services/services.dart';
 import 'package:jarvis_app/theme/app_theme.dart';
 import 'package:jarvis_app/screens/home_screen.dart';
+import 'package:jarvis_app/screens/login_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,7 +17,6 @@ void main() async {
   await FeatureSettings.init();
 
   // Auto-detect local model in background — non-blocking
-  // Finds Gemma 4 E2B on MLC Chat, Ollama, LM Studio, or llama.cpp
   ModelDetector.autoDetectAndSave().then((model) {
     if (model != null) {
       debugPrint('[JARVIS] Auto-detected model: $model');
@@ -23,7 +25,16 @@ void main() async {
     }
   });
 
-  runApp(const JarvisApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthService()),
+        ChangeNotifierProvider(create: (_) => WebSocketService()),
+        Provider(create: (_) => DeviceDataService()),
+      ],
+      child: const JarvisApp(),
+    ),
+  );
 }
 
 class JarvisApp extends StatelessWidget {
@@ -37,7 +48,26 @@ class JarvisApp extends StatelessWidget {
       theme:     AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: ThemeMode.system,
-      home: const HomeScreen(),
+      home: const _AuthGate(),
     );
+  }
+}
+
+class _AuthGate extends StatelessWidget {
+  const _AuthGate();
+
+  @override
+  Widget build(BuildContext context) {
+    final auth = context.watch<AuthService>();
+
+    if (!auth.ready) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(color: JarvisColors.cyan),
+        ),
+      );
+    }
+
+    return auth.isLoggedIn ? const HomeScreen() : const LoginScreen();
   }
 }

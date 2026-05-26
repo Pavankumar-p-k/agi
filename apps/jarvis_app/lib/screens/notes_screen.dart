@@ -9,7 +9,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../theme/app_theme.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../widgets/jarvis_widgets.dart';
 import '../db/local_db.dart';
 import '../models/offline_models.dart';
@@ -23,16 +22,16 @@ class RichNote extends NoteModel {
   final String type;   // text|checklist|voice
 
   RichNote({
-    int?   id,
-    required String title,
-    String content = '',
-    String tags    = '',
-    bool   pinned  = false,
+    super.id,
+    required super.title,
+    super.content = '',
+    super.tags    = '',
+    super.pinned  = false,
     this.color     = 'default',
     this.locked    = false,
     this.folder    = 'All',
     this.type      = 'text',
-  }) : super(id: id, title: title, content: content, tags: tags, pinned: pinned);
+  });
 }
 
 class NotesScreen extends StatefulWidget {
@@ -48,15 +47,6 @@ class _NotesScreenState extends State<NotesScreen> {
   String _folder  = 'All';
   int    _view    = 0;  // 0=grid 1=list
   final _searchCtrl = TextEditingController();
-
-  static const _noteColors = {
-    'default': JarvisColors.bgPanel,
-    'cyan':    Color(0xFF00F0FF),
-    'amber':   Color(0xFFFFC300),
-    'green':   Color(0xFF00FF9D),
-    'red':     Color(0xFFFF2D55),
-    'purple':  Color(0xFFBF5AF2),
-  };
 
   @override
   void initState() { super.initState(); _load(); }
@@ -169,7 +159,7 @@ class _NotesScreenState extends State<NotesScreen> {
                 margin: const EdgeInsets.only(right: 8),
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
-                  color:  sel ? JarvisColors.cyan.withOpacity(0.12) : JarvisColors.bgPanel,
+                  color:  sel ? JarvisColors.cyan.withValues(alpha: 0.12) : JarvisColors.bgPanel,
                   border: Border.all(color: sel ? JarvisColors.cyan : JarvisColors.border, width: sel ? 1.5 : 1),
                 ),
                 child: Text(f, style: J.orbitron(8, color: sel ? JarvisColors.cyan : JarvisColors.textSecondary, spacing: 1)),
@@ -287,7 +277,7 @@ class _NotesScreenState extends State<NotesScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     border: Border.all(color: JarvisColors.cyan),
-                    color: JarvisColors.cyan.withOpacity(0.3),
+                    color: JarvisColors.cyan.withValues(alpha: 0.3),
                   ),
                   child: Text(note.tags.split(',').first.trim(),
                     style: J.shareTech(8, color: JarvisColors.cyan)),
@@ -672,7 +662,7 @@ class _CheckItem extends StatelessWidget {
           width: 16, height: 16,
           decoration: BoxDecoration(
             border: Border.all(color: checked ? JarvisColors.green : JarvisColors.border),
-            color: checked ? JarvisColors.green.withOpacity(0.2) : Colors.transparent,
+            color: checked ? JarvisColors.green.withValues(alpha: 0.2) : Colors.transparent,
           ),
           child: checked ? const Icon(Icons.check, size: 10, color: JarvisColors.green) : null,
         ),

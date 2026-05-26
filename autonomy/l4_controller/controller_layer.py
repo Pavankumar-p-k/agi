@@ -124,8 +124,10 @@ class TerminalController:
             return ControlResult(ControlAction.TERMINAL, False,
                                   "", f"BLOCKED: {reason}", 0)
         try:
-            proc = await asyncio.create_subprocess_shell(
-                cmd,
+            import shlex
+            cmd_args = shlex.split(cmd)
+            proc = await asyncio.create_subprocess_exec(
+                *cmd_args,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
                 cwd=cwd,

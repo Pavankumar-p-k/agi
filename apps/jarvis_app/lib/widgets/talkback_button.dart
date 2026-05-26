@@ -112,7 +112,7 @@ class _TalkBackButtonState extends State<TalkBackButton>
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: _stateColor.withOpacity(0.15 + _pulseAnim.value * 0.2),
+                      color: _stateColor.withValues(alpha: 0.15 + _pulseAnim.value * 0.2),
                       width: 1.5,
                     ),
                   ),
@@ -141,10 +141,10 @@ class _TalkBackButtonState extends State<TalkBackButton>
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: const Color(0xFF061420),
-                  border: Border.all(color: _stateColor.withOpacity(0.8), width: 1.5),
+                  border: Border.all(color: _stateColor.withValues(alpha: 0.8), width: 1.5),
                   boxShadow: _isActive ? [
                     BoxShadow(
-                      color: _stateColor.withOpacity(0.25 + _pulseAnim.value * 0.2),
+                      color: _stateColor.withValues(alpha: 0.25 + _pulseAnim.value * 0.2),
                       blurRadius: 16 + _pulseAnim.value * 12,
                       spreadRadius: 2,
                     ),
@@ -162,7 +162,7 @@ class _TalkBackButtonState extends State<TalkBackButton>
           style: GoogleFonts.orbitron(
             fontSize: 9,
             letterSpacing: 2,
-            color: _stateColor.withOpacity(0.8),
+            color: _stateColor.withValues(alpha: 0.8),
           ),
         ),
       ]),
@@ -202,7 +202,7 @@ class _DashedRingPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2 - 1;
     final paint  = Paint()
-      ..color = color.withOpacity(0.5)
+      ..color = color.withValues(alpha: 0.5)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.5
       ..strokeCap = StrokeCap.round;
@@ -309,11 +309,11 @@ class _SoundWaveVisualizerState extends State<SoundWaveVisualizer>
             height: barH,
             decoration: BoxDecoration(
               color: isActive
-                  ? color.withOpacity(0.4 + v * 0.6)
-                  : const Color(0xFF1A4A5A).withOpacity(0.4 + v * 0.3),
+                  ? color.withValues(alpha: 0.4 + v * 0.6)
+                  : const Color(0xFF1A4A5A).withValues(alpha: 0.4 + v * 0.3),
               borderRadius: BorderRadius.circular(2),
               boxShadow: isActive && v > 0.5 ? [
-                BoxShadow(color: color.withOpacity(v * 0.3), blurRadius: 4),
+                BoxShadow(color: color.withValues(alpha: v * 0.3), blurRadius: 4),
               ] : null,
             ),
           );
@@ -352,11 +352,11 @@ class TranscriptBubble extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.05),
-          border: Border.all(color: color.withOpacity(0.25)),
+          color: color.withValues(alpha: 0.05),
+          border: Border.all(color: color.withValues(alpha: 0.25)),
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(label, style: GoogleFonts.orbitron(fontSize: 9, letterSpacing: 2, color: color.withOpacity(0.7))),
+          Text(label, style: GoogleFonts.orbitron(fontSize: 9, letterSpacing: 2, color: color.withValues(alpha: 0.7))),
           const SizedBox(height: 4),
           Text(
             text,

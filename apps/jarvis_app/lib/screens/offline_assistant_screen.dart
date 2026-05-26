@@ -432,8 +432,8 @@ class _OfflineAssistantScreenState extends State<OfflineAssistantScreen>
                     padding: const EdgeInsets.symmetric(
                         horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      border: Border.all(color: J.green.withOpacity(0.4)),
-                      color: J.green.withOpacity(0.08),
+                      border: Border.all(color: J.green.withValues(alpha: 0.4)),
+                      color: J.green.withValues(alpha: 0.08),
                     ),
                     child: Text('REMINDER SET',
                         style: J.orbitron(7, color: J.green, spacing: 1)),
@@ -445,8 +445,8 @@ class _OfflineAssistantScreenState extends State<OfflineAssistantScreen>
                     padding: const EdgeInsets.symmetric(
                         horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      border: Border.all(color: J.amber.withOpacity(0.4)),
-                      color: J.amber.withOpacity(0.08),
+                      border: Border.all(color: J.amber.withValues(alpha: 0.4)),
+                      color: J.amber.withValues(alpha: 0.08),
                     ),
                     child: Text('NOTE SAVED',
                         style: J.orbitron(7, color: J.amber, spacing: 1)),
@@ -458,8 +458,8 @@ class _OfflineAssistantScreenState extends State<OfflineAssistantScreen>
                     padding: const EdgeInsets.symmetric(
                         horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      border: Border.all(color: J.cyan.withOpacity(0.4)),
-                      color: J.cyan.withOpacity(0.06),
+                      border: Border.all(color: J.cyan.withValues(alpha: 0.4)),
+                      color: J.cyan.withValues(alpha: 0.06),
                     ),
                     child: Text('IDENTITY',
                         style: J.orbitron(7, color: J.cyan, spacing: 1)),
@@ -473,7 +473,7 @@ class _OfflineAssistantScreenState extends State<OfflineAssistantScreen>
             decoration: BoxDecoration(
               color: msg.isUser ? J.bg4 : J.bg2,
               border: Border.all(
-                color: msg.isUser ? J.border1 : J.border0.withOpacity(0.5),
+                color: msg.isUser ? J.border1 : J.border0.withValues(alpha: 0.5),
               ),
             ),
             child: Text(msg.text, style: J.rajdhani(14,
@@ -489,7 +489,7 @@ class _OfflineAssistantScreenState extends State<OfflineAssistantScreen>
   Widget _buildListeningBar() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      color: J.cyan.withOpacity(0.06),
+      color: J.cyan.withValues(alpha: 0.06),
       child: Row(children: [
         AnimatedBuilder(
           animation: _micCtrl,
@@ -497,9 +497,9 @@ class _OfflineAssistantScreenState extends State<OfflineAssistantScreen>
             width: 8, height: 8,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: J.cyan.withOpacity(0.5 + _micCtrl.value * 0.5),
+              color: J.cyan.withValues(alpha: 0.5 + _micCtrl.value * 0.5),
               boxShadow: [BoxShadow(
-                  color: J.cyan.withOpacity(0.3 + _micCtrl.value * 0.3),
+                  color: J.cyan.withValues(alpha: 0.3 + _micCtrl.value * 0.3),
                   blurRadius: 8)],
             ),
           ),
@@ -540,7 +540,7 @@ class _OfflineAssistantScreenState extends State<OfflineAssistantScreen>
               width: 44, height: 44,
               decoration: BoxDecoration(
                 color: _listening
-                    ? J.cyan.withOpacity(0.15)
+                    ? J.cyan.withValues(alpha: 0.15)
                     : J.bg3,
                 border: Border.all(
                     color: _listening ? J.cyan : J.border0),
@@ -584,7 +584,7 @@ class _OfflineAssistantScreenState extends State<OfflineAssistantScreen>
             child: Container(
               width: 44, height: 44,
               decoration: BoxDecoration(
-                color: J.cyan.withOpacity(0.9),
+                color: J.cyan.withValues(alpha: 0.9),
                 border: Border.all(color: J.cyan),
               ),
               child: const Icon(Icons.send, color: J.bg0, size: 18),

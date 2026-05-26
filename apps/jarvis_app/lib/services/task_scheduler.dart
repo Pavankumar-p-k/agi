@@ -10,6 +10,7 @@
 // ═══════════════════════════════════════════════════════════════════
 
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import 'dart:async';
 import 'package:sqflite/sqflite.dart';
 import '../ai/automation_engine.dart';
@@ -81,7 +82,7 @@ class TaskScheduler {
 
   /// Initialize and start scheduler
   Future<void> init() async {
-    print('[Scheduler] Initializing...');
+    debugPrint('[Scheduler] Initializing...');
     await _loadTasks();
     start();
   }
@@ -97,28 +98,28 @@ class TaskScheduler {
       (_) => _checkAndExecutePendingTasks(),
     );
 
-    print('[Scheduler] Started ✓');
+    debugPrint('[Scheduler] Started ✓');
   }
 
   /// Stop the scheduler
   void stop() {
     _checkTimer?.cancel();
     _isRunning = false;
-    print('[Scheduler] Stopped');
+    debugPrint('[Scheduler] Stopped');
   }
 
   /// Add a new scheduled task
   Future<void> addTask(ScheduledTask task) async {
     _tasks.add(task);
     await _saveTask(task);
-    print('[Scheduler] Task added: ${task.name}');
+    debugPrint('[Scheduler] Task added: ${task.name}');
   }
 
   /// Remove task by ID
   Future<void> removeTask(String taskId) async {
     _tasks.removeWhere((t) => t.id == taskId);
     await _deleteTask(taskId);
-    print('[Scheduler] Task removed: $taskId');
+    debugPrint('[Scheduler] Task removed: $taskId');
   }
 
   /// Get all tasks
@@ -186,14 +187,14 @@ class TaskScheduler {
   /// Execute a task with retry logic
   Future<void> _executeTask(ScheduledTask task, {int attempt = 1}) async {
     try {
-      print('[Scheduler] Executing: ${task.name} (attempt $attempt)');
+      debugPrint('[Scheduler] Executing: ${task.name} (attempt $attempt)');
       final result = await AutomationEngine.execute(task.task);
 
       if (result.success) {
-        print('[Scheduler] ✓ ${task.name} succeeded');
+        debugPrint('[Scheduler] ✓ ${task.name} succeeded');
         await _updateLastRun(task.id);
       } else {
-        print('[Scheduler] ✗ ${task.name} failed: ${result.message}');
+        debugPrint('[Scheduler] ✗ ${task.name} failed: ${result.message}');
 
         // Retry if available
         if (attempt < task.retries) {
@@ -202,7 +203,7 @@ class TaskScheduler {
         }
       }
     } catch (e) {
-      print('[Scheduler] Error executing ${task.name}: $e');
+      debugPrint('[Scheduler] Error executing ${task.name}: $e');
       if (attempt < task.retries) {
         await Future.delayed(Duration(seconds: 10 * attempt));
         await _executeTask(task, attempt: attempt + 1);
@@ -220,9 +221,9 @@ class TaskScheduler {
       for (final row in rows) {
         _tasks.add(_fromRow(row));
       }
-      print('[Scheduler] Loaded ${_tasks.length} tasks');
+      debugPrint('[Scheduler] Loaded ${_tasks.length} tasks');
     } catch (e) {
-      print('[Scheduler] Failed to load tasks: $e');
+      debugPrint('[Scheduler] Failed to load tasks: $e');
     }
   }
 
@@ -232,7 +233,7 @@ class TaskScheduler {
       await db.insert('scheduled_tasks', task.toMap(),
           conflictAlgorithm: ConflictAlgorithm.replace);
     } catch (e) {
-      print('[Scheduler] Failed to save task: $e');
+      debugPrint('[Scheduler] Failed to save task: $e');
     }
   }
 
@@ -285,7 +286,7 @@ class TaskScheduler {
       final db = await LocalDB.db;
       await db.delete('scheduled_tasks', where: 'id = ?', whereArgs: [taskId]);
     } catch (e) {
-      print('[Scheduler] Failed to delete task: $e');
+      debugPrint('[Scheduler] Failed to delete task: $e');
     }
   }
 
@@ -319,7 +320,7 @@ class TaskScheduler {
         );
       }
     } catch (e) {
-      print('[Scheduler] Failed to update lastRun: $e');
+      debugPrint('[Scheduler] Failed to update lastRun: $e');
     }
   }
 
@@ -400,9 +401,9 @@ class EventTaskListener {
             break;
         }
       });
-      print('[EventListener] Setup complete ✓');
+      debugPrint('[EventListener] Setup complete ✓');
     } catch (e) {
-      print('[EventListener] Setup failed: $e');
+      debugPrint('[EventListener] Setup failed: $e');
     }
   }
 
@@ -429,10 +430,10 @@ class EventTaskListener {
   }
 
   static Future<void> _onScreenOn() async {
-    print('[EventListener] Screen turned ON');
+    debugPrint('[EventListener] Screen turned ON');
   }
 
   static Future<void> _onScreenOff() async {
-    print('[EventListener] Screen turned OFF — background mode active');
+    debugPrint('[EventListener] Screen turned OFF — background mode active');
   }
 }

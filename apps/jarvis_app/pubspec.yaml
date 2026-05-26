@@ -36,7 +36,7 @@ dependencies:
   just_audio_background: ^0.0.1-beta.11
   audio_session: ^0.1.18
   on_audio_query: ^2.9.0
-  record: ^5.1.2
+  record: ^6.1.0
   audioplayers: ^6.1.0
 
   # Notifications
