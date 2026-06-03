@@ -5,6 +5,9 @@ import subprocess
 from pathlib import Path
 from datetime import datetime, timezone
 from typing import Optional
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class ContextHub:
@@ -44,8 +47,8 @@ class ContextHub:
             if mf.exists():
                 try:
                     result["manifests"][manifest_name] = mf.read_text(encoding="utf-8", errors="replace")[:2000]
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.exception("[ContextHub] reading manifest %s: %s", manifest_name, e)
         readme = root / "README.md"
         if readme.exists():
             result["readme"] = readme.read_text(encoding="utf-8", errors="replace")[:1000]
@@ -67,32 +70,32 @@ class ContextHub:
                 cwd=self.workspace_root, capture_output=True, text=True, timeout=5
             )
             result["branch"] = branch.stdout.strip()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.exception("[ContextHub] getting git branch: %s", e)
         try:
             status = subprocess.run(
                 ["git", "status", "--short"],
                 cwd=self.workspace_root, capture_output=True, text=True, timeout=5
             )
             result["status"] = status.stdout.strip()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.exception("[ContextHub] getting git status: %s", e)
         try:
             diff = subprocess.run(
                 ["git", "diff", "--stat"],
                 cwd=self.workspace_root, capture_output=True, text=True, timeout=5
             )
             result["diff"] = diff.stdout.strip()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.exception("[ContextHub] getting git diff: %s", e)
         try:
             log = subprocess.run(
                 ["git", "log", "--oneline", "-10"],
                 cwd=self.workspace_root, capture_output=True, text=True, timeout=5
             )
             result["commits"] = [l.strip() for l in log.stdout.strip().split("\n") if l.strip()]
-        except Exception:
-            pass
+        except Exception as e:
+            logger.exception("[ContextHub] getting git log: %s", e)
         return result
 
     def _system_context(self) -> dict:
@@ -121,8 +124,8 @@ class ContextHub:
                 content = (root / "pyproject.toml").read_text()
                 if "pytest" in content:
                     return "pytest"
-            except Exception:
-                pass
+            except Exception as e:
+                logger.exception("[ContextHub] detecting test framework: %s", e)
         if (root / "jest.config.js").exists() or (root / "jest.config.ts").exists():
             return "jest"
         if (root / "Cargo.toml").exists():

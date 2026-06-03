@@ -1,72 +1,45 @@
-import io
+from __future__ import annotations
+
+import logging
 import os
-import tempfile
-import numpy as np
-import torch
-import soundfile as sf
-from faster_whisper import WhisperModel
 
-_stt_instance = None
+from .stt_protocol import STTProvider, stt_registry
+from .providers import FasterWhisperProvider, DeepgramProvider, AzureSpeechProvider
 
-class JarvisSTT:
-    """
-    Faster-Whisper STT integration for JARVIS with audio normalization.
-    """
-    def __init__(self, model_size: str = "base"):
-        self.model_size = model_size
-        self.model = None
+logger = logging.getLogger(__name__)
 
-    def _ensure_model(self):
-        if self.model is None:
-            device = "cuda" if torch.cuda.is_available() else "cpu"
-            compute_type = "float16" if device == "cuda" else "int8"
-            print(f"[STT] Initializing Faster-Whisper ({self.model_size}) on {device}...")
-            self.model = WhisperModel(self.model_size, device=device, compute_type=compute_type)
 
-    def _normalize_audio(self, wav_bytes: bytes) -> bytes:
-        """Normalize audio volume + reduce DC offset."""
-        try:
-            data, sr = sf.read(io.BytesIO(wav_bytes))
-            if len(data) == 0:
-                return wav_bytes
-            data = data.astype(np.float32)
-            data -= np.mean(data)
-            peak = np.max(np.abs(data))
-            if peak > 0:
-                data = data / peak * 0.95
-            buf = io.BytesIO()
-            sf.write(buf, data, sr, format="WAV", subtype="PCM_16")
-            return buf.getvalue()
-        except Exception:
-            return wav_bytes
+def init_stt_providers():
+    """Register all STT providers at startup."""
+    stt_registry.register(FasterWhisperProvider(), make_default=True)
 
-    def transcribe(self, audio_bytes: bytes, language: str = None) -> str:
-        """
-        Transcribe audio bytes to text with normalization.
-        """
-        self._ensure_model()
-        audio_bytes = self._normalize_audio(audio_bytes)
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
-            tmp.write(audio_bytes)
-            tmp_path = tmp.name
-        
-        kwargs = dict(beam_size=5, vad_filter=True,
-                      vad_parameters=dict(min_silence_duration_ms=500))
-        if language:
-            kwargs["language"] = language
-        try:
-            segments, info = self.model.transcribe(tmp_path, **kwargs)
-            text = " ".join([seg.text for seg in segments])
-            return text.strip()
-        except Exception as e:
-            print(f"[STT] Transcription error: {e}")
-            return ""
-        finally:
-            if os.path.exists(tmp_path):
-                os.unlink(tmp_path)
+    deepgram = DeepgramProvider()
+    if await_deepgram_health(deepgram):
+        stt_registry.register(deepgram)
 
-def get_stt():
-    global _stt_instance
-    if _stt_instance is None:
-        _stt_instance = JarvisSTT(model_size=os.getenv("STT_MODEL", "base"))
-    return _stt_instance
+    azure = AzureSpeechProvider()
+    if azure._healthy:
+        stt_registry.register(azure)
+
+
+def await_deepgram_health(dg) -> bool:
+    try:
+        import asyncio
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            future = asyncio.run_coroutine_threadsafe(dg.health(), loop)
+            return future.result(timeout=10)
+        return asyncio.run(dg.health())
+    except Exception as e:
+        logger.warning("[STT] Deepgram health check failed: %s", e)
+        return False
+
+
+def get_stt(provider: str | None = None) -> STTProvider:
+    """Get STT provider by name (or default). Backward-compatible with existing code."""
+    if not stt_registry.list():
+        init_stt_providers()
+    return stt_registry.get(provider)
+
+
+# Backward-compatible singleton for existing code that does `from assistant.stt import get_stt`

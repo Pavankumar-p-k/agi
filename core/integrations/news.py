@@ -1,5 +1,9 @@
 """News - free RSS feeds + web search fallback."""
+import logging
+from datetime import datetime
 import httpx
+
+logger = logging.getLogger(__name__)
 import xml.etree.ElementTree as ET
 
 RSS_FEEDS = {
@@ -11,44 +15,50 @@ RSS_FEEDS = {
     "ai": "https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml",
 }
 
-def get_news(topic: str = "latest", max_results: int = 5) -> str:
+async def get_news(topic: str = "latest", max_results: int = 5) -> str:
     """Get latest news headlines for a topic from free RSS."""
     topic = topic.lower().strip()
     
-    # Try RSS feeds
     feed_url = None
     for key, url in RSS_FEEDS.items():
         if key in topic or topic in key:
             feed_url = url
             break
     if not feed_url:
-        feed_url = RSS_FEEDS.get("technology", list(RSS_FEEDS.values())[0])
-    
+        feed_url = RSS_FEEDS["technology"]
+
     try:
-        r = httpx.get(feed_url, timeout=10)
-        if r.status_code == 200:
-            root = ET.fromstring(r.text)
-            items = root.findall(".//item") or root.findall(".//entry")
-            if items:
-                lines = [f"Latest {topic} news:"]
-                for item in items[:max_results]:
-                    title = item.findtext("title", "")
-                    link = item.findtext("link", "")
-                    if title:
-                        lines.append(f"- {title}")
-                return "\n".join(lines)
-    except Exception:
-        pass
-    
+        async with httpx.AsyncClient(timeout=10) as client:
+            r = await client.get(feed_url)
+            if r.status_code == 200:
+                root = ET.fromstring(r.text)
+                items = root.findall(".//item") or root.findall(".//entry")
+                if items:
+                    lines = [f"Latest {topic} news:"]
+                    for item in items[:max_results]:
+                        title = item.findtext("title", "")
+                        if title:
+                            lines.append(f"- {title}")
+                    return "\n".join(lines)
+    except (httpx.HTTPError, ET.ParseError) as e:
+        logger.exception("[news] RSS feed: %s", e)
+
     # Fallback: search
     try:
         from tools.search_tool import search_engine
-        results = search_engine.search(f"latest {topic} news 2026")
+        year = datetime.now().year
+        sr = await search_engine.search(f"latest {topic} news {year}")
+        if sr.is_err():
+            logger.warning("[news] search fallback failed: %s", sr._error)
+            results = []
+        else:
+            results = sr.unwrap()
         if results:
             lines = [f"Latest {topic} news:"]
             for r in results[:max_results]:
                 lines.append(f"- {r.title}: {r.snippet[:200]}")
             return "\n".join(lines)
         return f"No news found for {topic}"
-    except Exception:
+    except Exception as e:
+        logger.exception("[news] search fallback: %s", e)
         return f"No news found for {topic}"

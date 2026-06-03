@@ -1,3 +1,4 @@
+
 """core/self_healing.py
 Self-healing framework + continuous learning loop for JARVIS.
 3-layer: detection -> diagnosis -> recovery.
@@ -19,7 +20,7 @@ _LEARNINGS_FILE = os.path.join(os.path.dirname(__file__), "..", "data", "learnin
 _FEEDBACK_FILE = os.path.join(os.path.dirname(__file__), "..", "data", "feedback.json")
 
 
-# ── Self-Healing Framework ────────────────────────────────────────────
+# â”€â”€ Self-Healing Framework â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class HealthRecord:
     def __init__(self):
@@ -79,7 +80,7 @@ class SelfHealing:
                 "detected_at_iso": datetime.now(timezone.utc).isoformat(),
             }
             self.record.failures.append(failure)
-            logger.warning(f"[SELF-HEAL] Detection: {component} failed — {detail}")
+            logger.warning(f"[SELF-HEAL] Detection: {component} failed â€” {detail}")
             # Layer 2 + 3: Diagnose + Recover
             await self._heal(component, detail)
             return False
@@ -97,7 +98,7 @@ class SelfHealing:
     # Layer 2 + 3: Diagnosis + Recovery
     async def _heal(self, component: str, detail: str):
         diagnosis = self._diagnose(component, detail)
-        logger.info(f"[SELF-HEAL] Diagnosis: {component} — {diagnosis}")
+        logger.info(f"[SELF-HEAL] Diagnosis: {component} â€” {diagnosis}")
         if component in self._recovery_handlers:
             try:
                 result = await self._recovery_handlers[component](diagnosis)
@@ -114,7 +115,7 @@ class SelfHealing:
                         "recovered_at": time.time(),
                         "recovered_at_iso": datetime.now(timezone.utc).isoformat(),
                     })
-                    logger.info(f"[SELF-HEAL] Recovery: {component} — {result}")
+                    logger.info(f"[SELF-HEAL] Recovery: {component} â€” {result}")
             except Exception as e:
                 logger.error(f"[SELF-HEAL] Recovery failed for {component}: {e}")
 
@@ -156,8 +157,14 @@ class SelfHealing:
         except Exception as e:
             logger.debug(f"[SELF-HEAL] Save error: {e}")
 
+    async def heal_ollama(self, detail: str = ""):
+        await self._heal("ollama", detail)
 
-# ── Continuous Learning Loop ──────────────────────────────────────────
+    async def heal_search(self, detail: str = ""):
+        await self._heal("search", detail)
+
+
+# â”€â”€ Continuous Learning Loop â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class LearningLoop:
     """Records accepts/rejects from user feedback to auto-improve prompts and examples."""
@@ -180,7 +187,7 @@ class LearningLoop:
         self._extract_rule(entry)
         self._update_examples(entry)
         self.save()
-        logger.info(f"[LEARN] Feedback recorded: {'accepted' if accepted else 'rejected'} — {reason[:50]}")
+        logger.info(f"[LEARN] Feedback recorded: {'accepted' if accepted else 'rejected'} â€” {reason[:50]}")
 
     def _extract_rule(self, entry: Dict):
         if not entry["accepted"] and entry["reason"]:
@@ -256,28 +263,20 @@ class LearningLoop:
             logger.debug(f"[LEARN] Save error: {e}")
 
 
-# ── Auto-Healing Recovery Handlers ────────────────────────────────────
+# â”€â”€ Auto-Healing Recovery Handlers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 async def heal_ollama(diagnosis: str) -> str:
     """Recovery handler for Ollama failures."""
-    import subprocess, sys
+    import httpx
     try:
-        result = subprocess.run(
-            [sys.executable, "-c", """
-import urllib.request
-try:
-    r = urllib.request.urlopen("http://localhost:11434/api/tags", timeout=2)
-    print("ok")
-except:
-    print("down")
-"""],
-            capture_output=True, text=True, timeout=5,
-        )
-        if "ok" in result.stdout:
-            return "ollama_is_running"
-    except Exception:
-        pass
+        async with httpx.AsyncClient(timeout=5) as client:
+            r = await client.get("http://localhost:11434/api/tags")
+            if r.status_code == 200:
+                return "ollama_is_running"
+    except Exception as e:
+        logger.warning("[SelfHeal] ollama health check failed: %s", e)
 
+    import subprocess
     try:
         subprocess.Popen(["ollama", "serve"], creationflags=subprocess.CREATE_NO_WINDOW)
         return "restarted_ollama_serve"
@@ -287,27 +286,18 @@ except:
 
 async def heal_search(diagnosis: str) -> str:
     """Recovery handler for SearXNG search failures."""
-    import subprocess, sys
+    import httpx
     try:
-        result = subprocess.run(
-            [sys.executable, "-c", """
-import urllib.request
-try:
-    r = urllib.request.urlopen("http://localhost:8888/search?q=test&format=json", timeout=2)
-    print("ok")
-except:
-    print("down")
-"""],
-            capture_output=True, text=True, timeout=5,
-        )
-        if "ok" in result.stdout:
-            return "searxng_is_running"
-    except Exception:
-        pass
+        async with httpx.AsyncClient(timeout=5) as client:
+            r = await client.get("http://localhost:8888/search?q=test&format=json")
+            if r.status_code == 200:
+                return "searxng_is_running"
+    except Exception as e:
+        logger.warning("[SelfHeal] search health check failed: %s", e)
     return "searxng_not_available"
 
 
-# ── Singleton instances ───────────────────────────────────────────────
+# â”€â”€ Singleton instances â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 self_healing = SelfHealing()
 learning_loop = LearningLoop()

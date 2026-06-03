@@ -7,7 +7,10 @@ from typing import Any
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
-from jarvis_os.bootstrap import build_jarvis_os
+try:
+    from jarvis_os.bootstrap import build_jarvis_os
+except ImportError:
+    build_jarvis_os = None
 
 
 router = APIRouter(prefix="/os", tags=["jarvis-os"])
@@ -54,7 +57,7 @@ def _status_payload() -> dict[str, Any]:
     return {
         "initialized": True,
         "components": {
-            "tools": runtime.tools.catalog(),
+            "tools": runtime.tools.as_dicts(),
             "models": status.get("models", {}),
             "scheduler": {"count": status.get("schedule_count", 0)},
             "skills_registry": {"count": status.get("skills", 0)},
@@ -78,7 +81,7 @@ def _status_payload() -> dict[str, Any]:
 
 @router.get("/tools")
 def tools() -> dict[str, Any]:
-    return {"tools": get_runtime().tools.catalog()}
+    return {"tools": get_runtime().tools.as_dicts()}
 
 
 @router.get("/status")

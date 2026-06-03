@@ -4,6 +4,7 @@ Playwright-based browser automation for JARVIS.
 import asyncio
 from typing import Dict
 from playwright.async_api import async_playwright
+from core.ssrf import assert_safe_url
 
 
 class JarvisBrowser:
@@ -22,6 +23,10 @@ class JarvisBrowser:
             self._page = await self._browser.new_page()
 
     async def navigate(self, url: str) -> Dict:
+        try:
+            assert_safe_url(url)
+        except ValueError as e:
+            return {"status": "error", "error": str(e)}
         await self._ensure()
         try:
             await self._page.goto(url, timeout=30000)

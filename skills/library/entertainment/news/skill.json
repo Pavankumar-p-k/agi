@@ -1,0 +1,11 @@
+{
+  "name": "entertainment.news",
+  "version": "1.0.0",
+  "description": "JARVIS Skill for News",
+  "author": "JARVIS Core",
+  "entry_point": "main.py",
+  "enabled": true,
+  "tools": [
+    "news"
+  ]
+}

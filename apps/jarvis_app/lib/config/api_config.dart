@@ -64,4 +64,15 @@ class ApiConfig {
   // Voice
   static const String stt = '/stt';
   static const String tts = '/tts';
+
+  // Build System (Phase 4/5)
+  static const String buildProjects = '/api/build/projects';
+  static const String buildStatus = '/api/build/status';  // + /{project}
+  static const String buildInterrupt = '/api/build/interrupt';  // + /{project}
+  static const String buildOverride = '/api/build/override';  // + /{project}
+  static const String buildCheckpoints = '/api/build/checkpoints';  // + /{project}
+  static const String buildDecisions = '/api/build/decisions';  // + /{project}
+  static const String buildGovernor = '/api/build/governor/history';  // + /{project}
+  static const String buildEnvironment = '/api/build/environment';
+  static const String buildIdentity = '/api/build/identity';
 }

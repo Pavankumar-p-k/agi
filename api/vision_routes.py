@@ -17,25 +17,36 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import Optional
 
-from core.vision_agent   import VisionAgent, Task
 from pc_agent.playbooks  import match, build_steps
 
 router = APIRouter(prefix="/vision", tags=["vision"])
 
-_agent:   Optional[VisionAgent] = None
+_agent:   Optional[object] = None
+_VisionAgent: type = None
+_Task: type = None
 _tasks:   dict = {}    # bg tasks: id → result
 _running: Optional[str] = None   # currently running task id
 
 
+async def _lazy_init():
+    global _VisionAgent, _Task
+    if _VisionAgent is None:
+        from core.vision_agent import VisionAgent, Task as VA_Task
+        _VisionAgent = VisionAgent
+        _Task = VA_Task
+
+
 async def init_agents():
     global _agent
-    _agent = VisionAgent()
+    await _lazy_init()
+    _agent = _VisionAgent()
     print("[VisionAPI] Vision Agent ready [OK]")
 
 
-def _get():
+async def _get_agent():
     global _agent
-    if _agent is None: _agent = VisionAgent()
+    if _agent is None:
+        await init_agents()
     return _agent
 
 
@@ -95,13 +106,14 @@ async def get_task(task_id: str):
 @router.get("/history")
 async def get_history():
     """Recent task history."""
-    return {"tasks": _get().get_history()}
+    agent = await _get_agent()
+    return {"tasks": agent.get_history()}
 
 
 @router.post("/screenshot")
 async def screenshot(req: ScreenReq):
     """Capture current screen and return as base64 JPEG."""
-    agent = _get()
+    agent = await _get_agent()
     state = await agent._capture()
     return {"b64": state.b64, "w": state.w, "h": state.h}
 
@@ -109,7 +121,7 @@ async def screenshot(req: ScreenReq):
 @router.post("/describe")
 async def describe_screen():
     """LLava describes what's currently on screen."""
-    agent = _get()
+    agent = await _get_agent()
     state = await agent._capture()
     desc  = await agent._describe(state)
     return {"description": desc, "b64": state.b64}
@@ -131,10 +143,11 @@ async def list_playbooks():
 @router.get("/status")
 async def status():
     """Vision agent status."""
+    agent = await _get_agent()
     return {
         "ready":        _agent is not None,
         "running_task": _running,
-        "tasks_done":   len(_get().get_history()),
+        "tasks_done":   len(agent.get_history()),
     }
 
 
@@ -148,7 +161,7 @@ async def _execute(tid: str, instr: str, platform: str) -> dict:
     global _running
     _running = tid
     t0 = time.time()
-    agent = _get()
+    agent = await _get_agent()
 
     try:
         # Try playbook first — faster and more reliable
@@ -156,7 +169,7 @@ async def _execute(tid: str, instr: str, platform: str) -> dict:
         if hit:
             print(f"[VisionAPI] Playbook: {hit['name']}")
             steps = build_steps(hit)
-            task  = Task(id=tid, instruction=instr)
+            task  = _Task(id=tid, instruction=instr)
             task.steps  = steps
             task.status = "running"
 
@@ -189,7 +202,7 @@ async def _execute(tid: str, instr: str, platform: str) -> dict:
         return {"task_id": tid, "status": "failed", "error": str(e), "latency_ms": int((time.time()-t0)*1000)}
 
 
-def _task_dict(task: Task, t0: float, playbook: Optional[str]) -> dict:
+def _task_dict(task: object, t0: float, playbook: Optional[str]) -> dict:
     done  = sum(1 for s in task.steps if isinstance(s,dict) and s.get("_status")=="done")
     total = len(task.steps)
     return {

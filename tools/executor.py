@@ -4,24 +4,22 @@ OpenClaw Executor - Real-World Execution Engine
 Provides system access for automation: files, commands, browser, APIs
 Research-grade implementation with safety controls and monitoring
 """
+from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import os
 import platform
+import shlex
+import shutil
 import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import Dict, List, Optional, Any, Union
-import psutil
-import pyautogui
 
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+logger = logging.getLogger(__name__)
+from typing import Dict, List, Optional, Any, Union
 
 from core.types import ExecutionContext, ExecutionResult, SafetyCheck
 
@@ -54,6 +52,7 @@ class OpenClawExecutor:
             "chmod 777",
             "chown root"
         ]
+        self.shell_control_tokens = ["&&", "||", ";", "|", "`", "$(", "<", "\n", "\r"]
 
         # Browser automation setup
         self.browser_instances: Dict[str, webdriver.Chrome] = {}
@@ -161,22 +160,43 @@ class OpenClawExecutor:
         # Audit logging
         self._log_execution(command, result, context)
 
+        result_dict = {
+            "command": command,
+            "success": result.success,
+            "output": result.output,
+            "error": result.error,
+            "execution_time": result.execution_time,
+        }
+        from core.plugins import plugin_registry
+        await plugin_registry.run_hook("after_tool_call", action=command.split()[0] if command else "", result=result_dict)
+        for _, persisted in await plugin_registry.run_hook("tool_result_persist", result=result_dict):
+            if isinstance(persisted, dict):
+                result_dict.update(persisted)
+
         return result
 
     def _check_command_safety(self, command: str, context: ExecutionContext) -> SafetyCheck:
         """Comprehensive safety check for commands"""
+        permissions = context.permissions if context else ["read"]
 
         # Check dangerous patterns
+        command_lower = command.lower()
         for pattern in self.dangerous_patterns:
-            if pattern in command.lower():
+            if pattern in command_lower:
                 return SafetyCheck(
                     allowed=False,
                     reason=f"Dangerous pattern detected: {pattern}",
                     risk_level="critical"
                 )
+        if any(token in command for token in self.shell_control_tokens):
+            return SafetyCheck(
+                allowed=False,
+                reason="Shell control operators are not allowed in executor commands",
+                risk_level="high",
+            )
 
         # Check permissions
-        if "write" not in context.permissions and self._command_modifies_files(command):
+        if "write" not in permissions and self._command_modifies_files(command):
             return SafetyCheck(
                 allowed=False,
                 reason="Write permissions required",
@@ -184,7 +204,14 @@ class OpenClawExecutor:
             )
 
         # Check command whitelist
-        base_cmd = command.split()[0].lower()
+        parsed = self._parse_command(command)
+        if not parsed:
+            return SafetyCheck(
+                allowed=False,
+                reason="Empty command",
+                risk_level="low",
+            )
+        base_cmd = Path(parsed[0]).name.lower()
         if base_cmd not in self.allowed_commands and not self._is_path_command(base_cmd):
             return SafetyCheck(
                 allowed=False,
@@ -233,13 +260,25 @@ class OpenClawExecutor:
         return "/" in cmd or "\\" in cmd or cmd.endswith((".exe", ".bat", ".sh", ".py"))
 
     def _parse_command(self, command: str) -> List[str]:
-        """Parse command string into executable arguments"""
-        if self.system == "windows":
-            # Use cmd for complex commands
-            return ["cmd", "/c", command]
-        else:
-            # Use shell for complex commands
-            return ["bash", "-c", command]
+        """Parse command string into executable arguments, avoiding shell injection."""
+        try:
+            tokens = shlex.split(command, posix=(os.name != "nt"))
+        except ValueError as e:
+            logger.warning("[Executor] command parse failed: %s", e)
+            return []
+        tokens = [
+            token[1:-1] if len(token) >= 2 and token[0] == token[-1] and token[0] in {"'", '"'}
+            else token
+            for token in tokens
+        ]
+        if not tokens:
+            return []
+        executable = shutil.which(tokens[0]) if tokens else None
+        if executable:
+            return [executable] + tokens[1:]
+        if os.name == "nt":
+            return ["cmd", "/c"] + tokens if len(tokens) > 1 else [tokens[0]]
+        return tokens
 
     def _get_safe_working_directory(self, context: ExecutionContext) -> Path:
         """Get safe working directory for execution"""
@@ -273,7 +312,8 @@ class OpenClawExecutor:
 
             return True
 
-        except Exception:
+        except Exception as e:
+            logger.warning("[Executor] _is_safe_directory check failed: %s", e)
             return False
 
     async def execute_file_operation(
@@ -390,7 +430,8 @@ class OpenClawExecutor:
 
             return True
 
-        except Exception:
+        except Exception as e:
+            logger.warning("[Executor] path safety check failed: %s", e)
             return False
 
     async def execute_browser_action(
@@ -406,6 +447,10 @@ class OpenClawExecutor:
         start_time = time.time()
 
         try:
+            from selenium.webdriver.support.ui import WebDriverWait
+            from selenium.webdriver.support import expected_conditions as EC
+            from selenium.webdriver.common.by import By
+
             # Get or create browser instance
             session_id = context.session_id if context else "default"
             driver = self._get_browser_instance(session_id)
@@ -469,9 +514,11 @@ class OpenClawExecutor:
                 execution_time=time.time() - start_time
             )
 
-    def _get_browser_instance(self, session_id: str) -> webdriver.Chrome:
+    def _get_browser_instance(self, session_id: str):
         """Get or create browser instance for session"""
         if session_id not in self.browser_instances:
+            from selenium.webdriver.chrome.options import Options
+            from selenium import webdriver
             options = Options()
             options.add_argument("--headless")  # Run headless for automation
             options.add_argument("--no-sandbox")
@@ -479,7 +526,8 @@ class OpenClawExecutor:
 
             try:
                 self.browser_instances[session_id] = webdriver.Chrome(options=options)
-            except Exception:
+            except Exception as e:
+                logger.warning("[Executor] Chrome init failed: %s", e)
                 # Fallback to system browser
                 return None
 
@@ -488,6 +536,7 @@ class OpenClawExecutor:
     async def get_system_info(self) -> Dict[str, Any]:
         """Get comprehensive system information"""
         try:
+            import psutil
             return {
                 "platform": self.system,
                 "cpu_count": psutil.cpu_count(),

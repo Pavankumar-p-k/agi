@@ -1,0 +1,21 @@
+{
+  "id": "weather_skill",
+  "name": "Weather Skill",
+  "version": "1.0.0",
+  "description": "Fetches current weather and forecasts using OpenWeatherMap",
+  "author": "JARVIS",
+  "entry": "skills.library.entertainment.weather.main",
+  "hooks": ["on_intent"],
+  "settings_schema": {
+    "type": "object",
+    "required": ["api_key"],
+    "properties": {
+      "api_key":  { "type": "string", "description": "OpenWeatherMap API key" },
+      "units":    { "type": "string", "description": "metric | imperial | standard" },
+      "city":     { "type": "string", "description": "Default city for weather queries" }
+    }
+  },
+  "requires": ["requests>=2.28.0"],
+  "min_jarvis_version": "1.0.0",
+  "enabled": true
+}

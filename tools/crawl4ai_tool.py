@@ -7,6 +7,7 @@ Usage:
     results = await crawler.scrape_multi(["https://a.com", "https://b.com"])
 """
 import asyncio
+import threading
 from typing import List, Optional
 from crawl4ai import AsyncWebCrawler, CrawlerRunConfig, CacheMode
 
@@ -70,7 +71,7 @@ class Crawl4AITool:
     ) -> List[dict]:
         """Scrape multiple URLs in parallel."""
         tasks = [self.scrape(url, word_count_threshold=word_count_threshold) for url in urls]
-        return await asyncio.gather(*tasks)
+        return await asyncio.gather(*tasks, return_exceptions=True)
 
     async def close(self):
         if self._crawler:
@@ -79,10 +80,13 @@ class Crawl4AITool:
 
 
 _crawler_instance: Optional[Crawl4AITool] = None
+_crawler_lock = threading.Lock()
 
 
 def get_crawler() -> Crawl4AITool:
     global _crawler_instance
     if _crawler_instance is None:
-        _crawler_instance = Crawl4AITool()
+        with _crawler_lock:
+            if _crawler_instance is None:
+                _crawler_instance = Crawl4AITool()
     return _crawler_instance

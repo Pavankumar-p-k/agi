@@ -1,0 +1,133 @@
+"""core/sub_agents/base_agent.py — Base class for all JARVIS sub-agents."""
+from __future__ import annotations
+import asyncio, time, uuid, logging
+from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
+from typing import Any, AsyncIterator, Literal, Optional
+
+from core.llm_router import complete
+
+logger = logging.getLogger("jarvis.agents")
+
+@dataclass
+class AgentResult:
+    agent_id: str
+    agent_name: str
+    mode: str
+    input: str
+    output: str
+    success: bool
+    duration_s: float
+    token_estimate: int
+    error: Optional[str] = None
+    metadata: dict = field(default_factory=dict)
+
+    def to_dict(self) -> dict:
+        return {
+            "agent_id": self.agent_id,
+            "agent_name": self.agent_name,
+            "mode": self.mode,
+            "input": self.input[:200] + "..." if len(self.input) > 200 else self.input,
+            "output": self.output,
+            "success": self.success,
+            "duration_s": round(self.duration_s, 2),
+            "token_estimate": self.token_estimate,
+            "error": self.error,
+            "metadata": self.metadata,
+        }
+
+
+class SubAgent(ABC):
+    """Base class for all JARVIS sub-agents."""
+
+    NAME: str = "BASE"
+    DESCRIPTION: str = ""
+    DEFAULT_MODE: str = "default"
+    AVAILABLE_MODES: list[str] = ["default"]
+    MODEL_GROUP: str = "chat" 
+    MAX_TOKENS: int = 2000
+
+    def __init__(self):
+        self.id = str(uuid.uuid4())[:8]
+        self.status: Literal["idle", "running", "done", "failed"] = "idle"
+        self._result: Optional[AgentResult] = None
+
+    @abstractmethod
+    def get_system_prompt(self, mode: str) -> str:
+        """Return the system prompt for this agent and mode."""
+        ...
+
+    async def run(self, task: str, mode: Optional[str] = None, **kwargs) -> AgentResult:
+        mode = mode or self.DEFAULT_MODE
+        if mode not in self.AVAILABLE_MODES:
+            mode = self.DEFAULT_MODE
+
+        self.status = "running"
+        start = time.time()
+
+        system = self.get_system_prompt(mode)
+        user_content = self._build_user_content(task, mode, **kwargs)
+
+        try:
+            logger.info(f"[{self.NAME}:{self.id}] Starting mode={mode} task={task[:60]}...")
+            
+            # Use the JARVIS LLM Router
+            messages = [
+                {"role": "system", "content": system},
+                {"role": "user", "content": user_content}
+            ]
+            
+            res = await complete(self.MODEL_GROUP, messages)
+            if res.is_err():
+                raise res.unwrap_err()
+                
+            output = res.unwrap()
+            tokens = len(output) // 4 # Rough estimate
+
+            self._result = AgentResult(
+                agent_id=self.id,
+                agent_name=self.NAME,
+                mode=mode,
+                input=task,
+                output=output,
+                success=True,
+                duration_s=time.time() - start,
+                token_estimate=tokens,
+            )
+            self.status = "done"
+            logger.info(f"[{self.NAME}:{self.id}] Done in {self._result.duration_s:.1f}s")
+
+            # Phase 3: Emit hook
+            try:
+                from core.plugins.events import PluginEventBus
+                asyncio.create_task(PluginEventBus.instance().emit("on_agent_reply", result=self._result))
+            except Exception as hook_exc:
+                logger.debug("on_agent_reply hook failed: %s", hook_exc)
+
+        except Exception as e:
+            logger.error(f"[{self.NAME}:{self.id}] Error: {e}")
+            self._result = AgentResult(
+                agent_id=self.id, agent_name=self.NAME, mode=mode,
+                input=task, output="", success=False,
+                duration_s=time.time() - start, token_estimate=0, error=str(e),
+            )
+            self.status = "failed"
+
+        return self._result
+
+    def _build_user_content(self, task: str, mode: str, **kwargs) -> str:
+        return task
+
+    @property
+    def result(self) -> Optional[AgentResult]:
+        return self._result
+
+    def info(self) -> dict:
+        return {
+            "id": self.id,
+            "name": self.NAME,
+            "description": self.DESCRIPTION,
+            "status": self.status,
+            "modes": self.AVAILABLE_MODES,
+            "default_mode": self.DEFAULT_MODE,
+        }

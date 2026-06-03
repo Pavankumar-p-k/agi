@@ -1,22 +1,23 @@
 """assistant/voice_pipeline.py — Unified voice pipeline.
 mic -> STT -> text -> llm_router -> response -> TTS -> speaker
 """
+from __future__ import annotations
 import asyncio
 import io
+import logging
 import os
 import sys
 import threading
 import time
 
-import numpy as np
-import sounddevice as sd
-import soundfile as sf
+logger = logging.getLogger(__name__)
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from assistant.stt import get_stt
 from assistant.tts import get_tts
 from core.llm_router import complete as llm_complete
+from core.settings.store import get_settings_store
 
 
 SYSTEM_PROMPT = (
@@ -30,7 +31,8 @@ SAMPLE_RATE = 16000
 
 
 def _record_audio(duration: int = RECORD_SECONDS, sr: int = SAMPLE_RATE) -> bytes:
-    """Record from default mic, return WAV bytes."""
+    import sounddevice as sd
+    import soundfile as sf
     recording = sd.rec(int(sr * duration), samplerate=sr, channels=1, dtype="float32")
     sd.wait()
     buf = io.BytesIO()
@@ -39,7 +41,8 @@ def _record_audio(duration: int = RECORD_SECONDS, sr: int = SAMPLE_RATE) -> byte
 
 
 def _play_audio(wav_bytes: bytes):
-    """Play WAV audio bytes through default speaker."""
+    import sounddevice as sd
+    import soundfile as sf
     data, sr = sf.read(io.BytesIO(wav_bytes))
     sd.play(data, sr)
     sd.wait()
@@ -51,89 +54,131 @@ class VoicePipeline:
     def __init__(self):
         self._stt = None
         self._tts = None
+        self._lock = threading.Lock()
+        self._settings = get_settings_store()
 
     @property
     def stt(self):
         if self._stt is None:
-            self._stt = get_stt()
+            with self._lock:
+                if self._stt is None:
+                    self._stt = get_stt()
         return self._stt
 
     @property
     def tts(self):
         if self._tts is None:
-            self._tts = get_tts()
+            with self._lock:
+                if self._tts is None:
+                    self._tts = get_tts()
         return self._tts
 
     async def transcribe(self, audio_bytes: bytes) -> str:
-        """Transcribe audio bytes to text using Faster-Whisper."""
-        loop = asyncio.get_event_loop()
-        text = await loop.run_in_executor(None, self.stt.transcribe, audio_bytes)
+        result = self.stt.transcribe(audio_bytes)
+        if asyncio.iscoroutine(result):
+            text = await result
+        else:
+            text = result
         return text
 
-    async def think(self, text: str) -> str:
-        """Get LLM response — tries cloud (Groq) for speed, falls back to local qwen3:4b."""
-        import os
-        model = "cloud" if os.getenv("GROQ_API_KEY") else "automation"
+    async def think(self, text: str, emotion_context: dict | None = None) -> str:
+        system = SYSTEM_PROMPT
+        if emotion_context and emotion_context.get("emotion_guidance"):
+            system = f"{system}\n\n{emotion_context['emotion_guidance']}"
+        model = "cloud" if self._settings.get("groq_api_key") else "automation"
         try:
-            reply = await llm_complete(
+            reply = (await llm_complete(
                 model_group=model,
                 messages=[
-                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "system", "content": system},
                     {"role": "user", "content": text},
                 ],
                 timeout=10,
-            )
+            )).unwrap_or("")
             return reply
         except Exception:
-            # Fallback to fast local model
-            reply = await llm_complete(
+            logger.exception("[VoicePipeline] Cloud LLM failed, falling back to local")
+        try:
+            reply = (await llm_complete(
                 model_group="automation",
                 messages=[
-                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "system", "content": system},
                     {"role": "user", "content": text},
                 ],
                 timeout=15,
-            )
+            )).unwrap_or("")
             return reply
+        except Exception as e:
+            logger.exception("[VoicePipeline] Local LLM also failed: %s", e)
+            return ""
 
     async def speak(self, text: str) -> bytes:
-        """Synthesize text to WAV audio bytes using Kokoro."""
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         audio = await loop.run_in_executor(None, self.tts.synthesize, text)
         return audio
 
     async def process_audio(self, audio_bytes: bytes) -> bytes:
-        """Full pipeline: audio in -> audio out."""
+        emotion_context = {}
+        try:
+            import tempfile
+            tmp = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
+            tmp.write(audio_bytes)
+            tmp_path = tmp.name
+            tmp.close()
+            from core.audio_emotion import emotion_detector
+            audio_ctx = await emotion_detector.analyze(tmp_path)
+            emotion_context = audio_ctx.as_context_dict()
+            if audio_ctx.is_urgent:
+                logger.info("Voice: urgent emotion detected (%.2f confidence)", audio_ctx.confidence)
+            os.unlink(tmp_path)
+        except Exception as e:
+            logger.exception("[VoicePipeline] process_audio emotion: %s", e)
+
         transcribed = await self.transcribe(audio_bytes)
+
+        # Phase 3: Emit hook
+        try:
+            from core.plugins.events import PluginEventBus
+            asyncio.create_task(PluginEventBus.instance().emit("on_voice_command", text=transcribed))
+        except Exception:
+            pass
+
         if not transcribed:
             return await self.speak("Sorry, I didn't catch that. Could you please repeat?")
-        response = await self.think(transcribed)
+        response = await self.think(transcribed, emotion_context)
+        if not response:
+            return await self.speak("Sorry, I'm having trouble thinking right now.")
         audio_out = await self.speak(response)
         return audio_out
 
 
 class VoiceLoop:
-    """Continuous voice loop: wake word -> record -> process -> respond -> repeat."""
-
     def __init__(self):
         self.pipeline = get_pipeline()
+        self._settings = get_settings_store()
         self._wake_word = None
         self._wake_event = threading.Event()
         self._stop_event = threading.Event()
         self._loop_thread = None
+        self._wake_lock = threading.Lock()
         self._wake_preroll = b""
 
     def _on_wake(self):
-        """Called by WakeWordDetector when 'Hey Jarvis' is heard. Snap preroll BEFORE buffer clears."""
         if self._wake_word:
             try:
-                self._wake_preroll = self._wake_word.get_recent_audio()
-            except Exception:
+                preroll = b""
+                with self._wake_lock:
+                    preroll = self._wake_word.get_recent_audio()
+                self._wake_preroll = preroll
+            except Exception as e:
+                logger.exception("[VoicePipeline] _on_wake get_recent_audio: %s", e)
                 self._wake_preroll = b""
         self._wake_event.set()
 
     def start(self):
-        """Start the voice loop in a background thread."""
+        if not self._settings.get("voice.wake_word_enabled"):
+            logger.info("[VoiceLoop] Wake word detector disabled in settings.")
+            return
         from assistant.wake_word import WakeWordDetector
         self._wake_word = WakeWordDetector()
         self._wake_word.start(self._on_wake)
@@ -142,50 +187,52 @@ class VoiceLoop:
         print("[VoiceLoop] Started. Say 'Hey Jarvis' to activate.")
 
     def _run_loop(self):
-        """Main loop: wait for wake -> combine preroll + ring buffer -> process -> play.
-        No fresh recording — avoids dual-mic conflict with wake word InputStream."""
-        while not self._stop_event.is_set():
-            self._wake_event.wait()
-            self._wake_event.clear()
-            if self._stop_event.is_set():
-                break
-            try:
-                preroll = self._wake_preroll
-                self._wake_preroll = b""
-                # Let user finish speaking, then read ring buffer (fresh audio after clear)
-                time.sleep(3)
-                tail = b""
-                if self._wake_word:
-                    tail = self._wake_word.get_recent_audio()
-                import io, soundfile as sf, numpy as np
-                if preroll and tail:
-                    p_data, _ = sf.read(io.BytesIO(preroll))
-                    t_data, _ = sf.read(io.BytesIO(tail))
-                    combined = np.concatenate([p_data, t_data])
-                    buf = io.BytesIO()
-                    sf.write(buf, combined, SAMPLE_RATE, format="WAV", subtype="PCM_16")
-                    audio = buf.getvalue()
-                elif preroll:
-                    audio = preroll
-                elif tail:
-                    audio = tail
-                else:
-                    print("[VoiceLoop] No audio captured")
-                    continue
-                print(f"[VoiceLoop] Audio: {len(audio)} bytes, transcribing...")
-                audio_out = asyncio.run(self.pipeline.process_audio(audio))
-                if audio_out:
-                    print(f"[VoiceLoop] Got {len(audio_out)} bytes, playing...")
-                    _play_audio(audio_out)
-                    print("[VoiceLoop] Response played")
-                else:
-                    print("[VoiceLoop] No audio output from pipeline")
-            except Exception as e:
-                print(f"[VoiceLoop] Error in cycle: {e}")
-                # Don't die — resume listening for next wake word
+        _loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(_loop)
+        try:
+            while not self._stop_event.is_set():
+                self._wake_event.wait()
+                self._wake_event.clear()
+                if self._stop_event.is_set():
+                    break
+                try:
+                    preroll = self._wake_preroll
+                    with self._wake_lock:
+                        self._wake_preroll = b""
+                    time.sleep(3)
+                    tail = b""
+                    if self._wake_word:
+                        with self._wake_lock:
+                            tail = self._wake_word.get_recent_audio()
+                    import io, soundfile as sf, numpy as np
+                    if preroll and tail:
+                        p_data, _ = sf.read(io.BytesIO(preroll))
+                        t_data, _ = sf.read(io.BytesIO(tail))
+                        combined = np.concatenate([p_data, t_data])
+                        buf = io.BytesIO()
+                        sf.write(buf, combined, SAMPLE_RATE, format="WAV", subtype="PCM_16")
+                        audio = buf.getvalue()
+                    elif preroll:
+                        audio = preroll
+                    elif tail:
+                        audio = tail
+                    else:
+                        logger.warning("[VoiceLoop] No audio captured")
+                        continue
+                    logger.info("[VoiceLoop] Audio: %d bytes, transcribing...", len(audio))
+                    audio_out = _loop.run_until_complete(self.pipeline.process_audio(audio))
+                    if audio_out:
+                        logger.info("[VoiceLoop] Got %d bytes, playing...", len(audio_out))
+                        _play_audio(audio_out)
+                        logger.info("[VoiceLoop] Response played")
+                    else:
+                        logger.warning("[VoiceLoop] No audio output from pipeline")
+                except Exception as e:
+                    logger.exception("[VoiceLoop] Error in cycle: %s", e)
+        finally:
+            _loop.close()
 
     def stop(self):
-        """Stop the voice loop."""
         self._stop_event.set()
         self._wake_event.set()
         if self._wake_word:
@@ -193,10 +240,13 @@ class VoiceLoop:
 
 
 _pipeline_instance = None
+_pipeline_lock = threading.Lock()
 
 
 def get_pipeline() -> VoicePipeline:
     global _pipeline_instance
     if _pipeline_instance is None:
-        _pipeline_instance = VoicePipeline()
+        with _pipeline_lock:
+            if _pipeline_instance is None:
+                _pipeline_instance = VoicePipeline()
     return _pipeline_instance

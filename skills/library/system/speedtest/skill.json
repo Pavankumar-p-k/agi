@@ -1,0 +1,11 @@
+{
+  "name": "system.speedtest",
+  "version": "1.0.0",
+  "description": "JARVIS Skill for Speedtest",
+  "author": "JARVIS Core",
+  "entry_point": "main.py",
+  "enabled": true,
+  "tools": [
+    "speedtest"
+  ]
+}

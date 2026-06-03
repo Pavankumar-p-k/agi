@@ -25,7 +25,10 @@ Supports:
 """
 
 import re
+import logging
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 
 def match(instruction: str) -> Optional[dict]:
@@ -241,7 +244,8 @@ def _extract_query(s, *keywords):
     for kw in keywords:
         m = re.search(rf'{kw}\s+(.+?)(?:\s+under|\s+below|\s+on\s|\s+from\s|$)', s, re.I)
         if m: return m.group(1).strip()
-    return ""
+    logger.warning("[PLAYBOOKS] _extract_query no match in: %s", s[:50])
+    return {"steps": []}
 
 
 _PB = {

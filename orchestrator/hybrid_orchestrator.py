@@ -10,11 +10,22 @@ import time
 from typing import Dict, List, Optional, Any, Callable, Awaitable
 import re
 
-from core.types import ExecutionState, Task, ExecutionContext
-from models.hybrid_models import hybrid_manager, TaskType, ModelResult
-from tools.executor import OpenClawExecutor
-from jarvis_os.memory.memory_manager import MemoryManager
-from core.config import HYBRID_MAX_RETRIES
+try:
+    from core.types import ExecutionState, Task, ExecutionContext
+except Exception:
+    ExecutionState = Task = ExecutionContext = None
+try:
+    from models.hybrid_models import hybrid_manager, TaskType, ModelResult
+except Exception:
+    hybrid_manager = TaskType = ModelResult = None
+try:
+    from tools.executor import OpenClawExecutor
+except Exception:
+    OpenClawExecutor = None
+try:
+    from core.config import HYBRID_MAX_RETRIES
+except Exception:
+    HYBRID_MAX_RETRIES = 3
 
 
 class HybridOrchestrator:
@@ -27,7 +38,16 @@ class HybridOrchestrator:
     """
 
     def __init__(self):
-        from jarvis_os.memory.memory_manager import MemoryManager
+        from core.config import HYBRID_MAX_RETRIES
+        try:
+            from jarvis_os.memory.memory_manager import MemoryManager
+        except ImportError:
+            MemoryManager = None
+        try:
+            from tools.executor import OpenClawExecutor
+        except Exception:
+            OpenClawExecutor = None
+
         from dataclasses import dataclass
         
         @dataclass
@@ -35,8 +55,8 @@ class HybridOrchestrator:
             short_term_limit: int = 100
             data_dir: str = "data/memory"
         
-        self.memory = MemoryManager(MemoryConfig())
-        self.executor = OpenClawExecutor()
+        self.memory = MemoryManager(MemoryConfig()) if MemoryManager else None
+        self.executor = OpenClawExecutor() if OpenClawExecutor else None
         self.active_tasks: Dict[str, Task] = {}
         self.task_history: List[Task] = []
         self.performance_metrics = {

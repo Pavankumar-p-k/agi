@@ -1,0 +1,11 @@
+{
+  "name": "productivity.meeting_minutes",
+  "version": "1.0.0",
+  "description": "JARVIS Skill for Meeting Minutes",
+  "author": "JARVIS Core",
+  "entry_point": "main.py",
+  "enabled": true,
+  "tools": [
+    "meeting_minutes"
+  ]
+}

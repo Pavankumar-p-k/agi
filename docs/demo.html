@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Demo - JARVIS AI OS</title>
+    <style>
+:root {
+    --primary: #00d4ff;
+    --secondary: #0078ff;
+    --accent: #00fff2;
+    --bg: #0a0a0f;
+    --bg2: #12121a;
+    --card: #1a1a2e;
+    --text: #ffffff;
+    --text2: rgba(255,255,255,0.7);
+    --border: rgba(255,255,255,0.08);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    min-height: 100vh;
+}
+.navbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 2rem;
+    background: rgba(10,10,15,0.95);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(10px);
+}
+.nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.brand-icon {
+    color: var(--primary);
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+.brand-text {
+    font-size: 1.3rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+.navbar ul { list-style: none; display: flex; gap: 1.5rem; }
+.navbar a {
+    color: var(--text2);
+    text-decoration: none;
+    font-size: 0.9rem;
+    padding: 0.5rem 0;
+    transition: color 0.2s;
+    position: relative;
+}
+.navbar a:hover, .navbar a.active { color: var(--primary); }
+.navbar a.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--primary);
+    border-radius: 1px;
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+.hero {
+    text-align: center;
+    padding: 6rem 2rem 4rem;
+    background: radial-gradient(ellipse at 50% 0%, rgba(0,120,255,0.1) 0%, transparent 60%);
+}
+.hero h1 {
+    font-size: 3.5rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+.hero p {
+    font-size: 1.2rem;
+    color: var(--text2);
+    max-width: 600px;
+    margin: 0 auto 2rem;
+}
+.btn {
+    display: inline-block;
+    padding: 0.8rem 2rem;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: #fff;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,212,255,0.3); }
+.btn-outline {
+    background: transparent;
+    border: 1px solid var(--primary);
+    color: var(--primary);
+    margin-left: 1rem;
+}
+.btn-outline:hover { background: rgba(0,212,255,0.1); }
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    padding: 2rem 0;
+}
+.card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 2rem;
+    transition: border-color 0.2s, transform 0.2s;
+}
+.card:hover { border-color: var(--primary); transform: translateY(-4px); }
+.card-icon { font-size: 2rem; margin-bottom: 1rem; }
+.card h3 { margin-bottom: 0.5rem; }
+.card p { color: var(--text2); font-size: 0.9rem; }
+h2 {
+    font-size: 2rem;
+    text-align: center;
+    margin: 3rem 0 1rem;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+.skills-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+    margin: 2rem 0;
+}
+.skill-tag {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+    font-size: 0.9rem;
+    transition: border-color 0.2s;
+}
+.skill-tag:hover { border-color: var(--primary); }
+.skill-category {
+    color: var(--primary);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 0.25rem;
+}
+footer {
+    text-align: center;
+    padding: 3rem 2rem;
+    border-top: 1px solid var(--border);
+    color: var(--text2);
+    font-size: 0.85rem;
+}
+.terminal {
+    background: #000;
+    border-radius: 12px;
+    padding: 1.5rem;
+    font-family: 'Courier New', monospace;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    border: 1px solid var(--border);
+    margin: 2rem 0;
+}
+.terminal .prompt { color: var(--primary); }
+.terminal .output { color: var(--accent); }
+.terminal .comment { color: #666; }
+</style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">
+            <span class="brand-icon">▲</span>
+            <span class="brand-text">JARVIS</span>
+        </div>
+        <ul><li><a href="index.html">Home</a></li><li><a href="features.html">Features</a></li><li><a href="skills.html">Skills</a></li><li><a href="docs.html">Docs</a></li><li class="active"><a href="demo.html">Demo</a></li></ul>
+    </nav>
+    <div class="container" style="padding-top:3rem;">
+        <h2>Live Demo</h2>
+        <p style="text-align:center;color:var(--text2);margin-bottom:2rem;">Try JARVIS commands directly from your browser</p>
+        <div class="terminal" id="demo-terminal" style="min-height:300px;">
+            <div id="demo-output">
+                <div><span class="prompt">$</span> <span class="comment"># JARVIS AI OS — interactive demo</span></div>
+                <div><span class="prompt">$</span> type a command below</div>
+            </div>
+            <div style="display:flex;gap:0.5rem;margin-top:1rem;border-top:1px solid var(--border);padding-top:1rem;">
+                <span class="prompt">$</span>
+                <input type="text" id="demo-input" placeholder="try: open notepad, play music, search AI news..."
+                       style="flex:1;background:transparent;border:none;color:var(--accent);font-family:inherit;font-size:0.85rem;outline:none;">
+            </div>
+        </div>
+        <h2>Quick Examples</h2>
+        <div class="grid" style="margin-top:2rem;">
+            <div class="card" onclick="runDemo('open notepad')" style="cursor:pointer;">
+                <h3>📂 Open Apps</h3>
+                <p>"open notepad" — launches Notepad via PC Agent</p>
+            </div>
+            <div class="card" onclick="runDemo('play relaxing music')" style="cursor:pointer;">
+                <h3>🎵 Play Music</h3>
+                <p>"play relaxing music" — searches Spotify</p>
+            </div>
+            <div class="card" onclick="runDemo('search latest AI news')" style="cursor:pointer;">
+                <h3>🔍 Web Search</h3>
+                <p>"search latest AI news" — multi-engine search</p>
+            </div>
+            <div class="card" onclick="runDemo('build a portfolio website')" style="cursor:pointer;">
+                <h3>🏗️ Build Website</h3>
+                <p>"build a portfolio website" — generates a site</p>
+            </div>
+        </div>
+    </div>
+    <script>
+    const output = document.getElementById('demo-output');
+    const input = document.getElementById('demo-input');
+    
+    function addLine(text, cls='') {
+        const div = document.createElement('div');
+        if (cls) div.className = cls;
+        div.innerHTML = text;
+        output.appendChild(div);
+        output.scrollTop = output.scrollHeight;
+    }
+    
+    function runDemo(cmd) {
+        input.value = cmd;
+        processCommand(cmd);
+    }
+    
+    function processCommand(cmd) {
+        addLine('<span class="prompt">$</span> ' + cmd);
+        const lower = cmd.toLowerCase();
+        if (lower.startsWith('open ') || lower.startsWith('launch ')) {
+            const app = cmd.substring(cmd.indexOf(' ') + 1);
+            addLine('<span class="output">→ Opening ' + app + '...</span>', 'output');
+            addLine('<span class="output">✓ ' + app + ' launched successfully</span>', 'output');
+        } else if (lower.startsWith('play ')) {
+            const song = cmd.substring(cmd.indexOf(' ') + 1);
+            addLine('<span class="output">→ Searching Spotify for "' + song + '"...</span>', 'output');
+            addLine('<span class="output">✓ Playing: ' + song + '</span>', 'output');
+        } else if (lower.startsWith('search ')) {
+            const query = cmd.substring(cmd.indexOf(' ') + 1);
+            addLine('<span class="output">→ Searching for "' + query + '"...</span>', 'output');
+            addLine('<span class="output">✓ Found 3 relevant results</span>', 'output');
+        } else if (lower.startsWith('build ') || lower.startsWith('create ') || lower.startsWith('generate ')) {
+            addLine('<span class="output">→ Planning website generation...</span>', 'output');
+            addLine('<span class="output">✓ Website generated successfully!</span>', 'output');
+        } else {
+            addLine('<span class="output">JARVIS: I understand you want to "' + cmd + '". Processing...</span>', 'output');
+            addLine('<span class="output">✓ Done! (connect to local server for full AI response)</span>', 'output');
+        }
+        addLine('', '');
+    }
+    
+    input.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && this.value.trim()) {
+            processCommand(this.value.trim());
+            this.value = '';
+        }
+    });
+    </script>
+    <footer>
+        <p>JARVIS AI OS — Privacy-First Personal Life Operating System<br>
+        Built with Python, FastAPI, and ❤️</p>
+    </footer>
+</body>
+</html>

@@ -1,5 +1,8 @@
+
 import re
-import spacy
+import logging
+
+logger = logging.getLogger(__name__)
 from enum import Enum
 from typing import Optional, Dict, List
 
@@ -13,11 +16,18 @@ class PrivacyClassifier:
     3-tier privacy classifier for JARVIS.
     """
     def __init__(self):
-        try:
-            self.nlp = spacy.load("en_core_web_sm")
-        except Exception:
-            self.nlp = None
-            print("[Privacy] spacy model not found. NER disabled.")
+        self.nlp = None
+        self._nlp_loaded = False
+
+    def _ensure_nlp(self):
+        if not self._nlp_loaded:
+            self._nlp_loaded = True
+            try:
+                import spacy
+                self.nlp = spacy.load("en_core_web_sm")
+            except Exception as e:
+                logger.exception("[PRIVACY] spacy model load failed: %s", e)
+                self.nlp = None
 
         self.tier_1_patterns = [
             r'api[_-]?key', r'password', r'token', r'ssh[_-]?key',
@@ -36,7 +46,7 @@ class PrivacyClassifier:
         """
         query_lower = query.lower()
 
-        # Tier 1: Local Only (Sensitive Info) — check BEFORE cloud keyword
+        # Tier 1: Local Only (Sensitive Info) â€” check BEFORE cloud keyword
         if any(re.search(p, query_lower) for p in self.tier_1_patterns):
             return PrivacyTier.LOCAL
         
@@ -49,18 +59,18 @@ class PrivacyClassifier:
         if re.search(r'\b\d{3}[-.\s]?\d{3}[-.\s]?\d{4}\b', query):
             return PrivacyTier.LOCAL
 
-        # Tier 3: Explicit Cloud Request (after PII checks — never leak sensitive data)
+        # Tier 3: Explicit Cloud Request (after PII checks â€” never leak sensitive data)
         if any(kw in query_lower for kw in ["ask claude", "use gpt", "use gemini", "ask openai"]):
             return PrivacyTier.CLOUD
 
-        # Tier 2: Hybrid (Sanitize then Cloud)
-        return PrivacyTier.HYBRID
+        # Default: LOCAL â€” all normal chat stays local
+        return PrivacyTier.LOCAL
 
     def sanitize(self, text: str, tier: PrivacyTier = PrivacyTier.HYBRID) -> str:
         """
         Strip PII using spacy NER.
         LOCAL: strip all PII entities (PERSON, ORG, GPE, etc.) + patterns.
-        HYBRID: only strip email, phone, SSN, credit card patterns — NOT names.
+        HYBRID: only strip email, phone, SSN, credit card patterns â€” NOT names.
         CLOUD: no sanitization (user explicitly opted in).
         """
         if tier == PrivacyTier.CLOUD:
@@ -77,6 +87,7 @@ class PrivacyClassifier:
             sanitized = re.sub(pattern, replacement, sanitized)
 
         if tier == PrivacyTier.LOCAL:
+            self._ensure_nlp()
             if not self.nlp:
                 return sanitized
             doc = self.nlp(sanitized)

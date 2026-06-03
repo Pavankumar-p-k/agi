@@ -2,11 +2,14 @@
 Each gracefully says "not connected" if COMPOSIO_API_KEY is missing
 or if no OAuth connection exists for the service.
 """
+import logging
 import os
 import json
 from typing import Optional
 
 from smolagents import tool
+
+logger = logging.getLogger(__name__)
 
 COMPOSIO_ENABLED = bool(os.environ.get("COMPOSIO_API_KEY"))
 
@@ -17,7 +20,8 @@ def _get_composio():
     try:
         from composio import Composio
         return Composio()
-    except Exception:
+    except Exception as e:
+        logger.exception("[composio] init: %s", e)
         return None
 
 
@@ -32,7 +36,8 @@ def _check_connected(c, app_slug: str) -> Optional[str]:
             if slug == app_slug and getattr(acct, "status", "") == "ACTIVE":
                 return getattr(acct, "id", None)
         return None
-    except Exception:
+    except Exception as e:
+        logger.exception("[composio] check connected: %s", e)
         return None
 
 

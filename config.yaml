@@ -1,0 +1,9 @@
+# JARVIS Plugin System Configuration
+plugins:
+  hot_reload:
+    enabled: true
+    poll_interval: 2.0
+  directories:
+    - plugins/
+    - core/plugins/
+  config_dir: data/plugin_configs

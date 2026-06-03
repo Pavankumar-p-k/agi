@@ -460,7 +460,7 @@ async def cli_main():
         loop_task   = asyncio.create_task(autonomous_daily_loop())
         logger.info("JARVIS Student AGI started — API at http://localhost:11436")
         logger.info("Docs: http://localhost:11436/docs")
-        await asyncio.gather(server_task, loop_task)
+        await asyncio.gather(server_task, loop_task, return_exceptions=True)
 
     await run_all()
 

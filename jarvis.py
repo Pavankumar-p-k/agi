@@ -21,15 +21,45 @@ from datetime import datetime
 from pathlib import Path
 from urllib.parse import urlparse
 
-# --- CLI Enhancement Imports ---
-from prompt_toolkit import PromptSession
-from prompt_toolkit.history import FileHistory
-from prompt_toolkit.completion import Completer, Completion, WordCompleter, PathCompleter
-from prompt_toolkit.formatted_text import FormattedText
-from prompt_toolkit.styles import Style
-from pygments.lexers import PythonLexer, guess_lexer_for_filename
-from pygments import highlight
-from pygments.formatters import TerminalFormatter
+# --- Optional CLI enhancement imports ---
+try:
+    from prompt_toolkit import PromptSession
+    from prompt_toolkit.history import FileHistory
+    from prompt_toolkit.completion import Completer, Completion, WordCompleter, PathCompleter
+    from prompt_toolkit.formatted_text import FormattedText
+    from prompt_toolkit.styles import Style
+except Exception:
+    PromptSession = None
+    FileHistory = None
+    WordCompleter = None
+    PathCompleter = None
+    FormattedText = lambda value: value
+
+    class Completer:
+        pass
+
+    class Completion:
+        def __init__(self, text, start_position=0, display_meta=None):
+            self.text = text
+            self.start_position = start_position
+            self.display_meta = display_meta
+
+    class Style:
+        @staticmethod
+        def from_dict(_value):
+            return None
+
+try:
+    from pygments.lexers import PythonLexer, guess_lexer_for_filename
+    from pygments import highlight
+    from pygments.formatters import TerminalFormatter
+except Exception:
+    PythonLexer = None
+    guess_lexer_for_filename = None
+    TerminalFormatter = None
+
+    def highlight(text, *_args, **_kwargs):
+        return text
 
 
 ROOT = Path(__file__).resolve().parent
@@ -84,8 +114,8 @@ class JarvisConfig:
                 valid_keys = cls.__dataclass_fields__
                 filtered = {k: v for k, v in data.items() if k in valid_keys}
                 return cls(**filtered)
-            except Exception:
-                pass
+            except Exception as e:
+                logging.getLogger(__name__).warning("[Config] Failed to load %s: %s", CONFIG_PATH, e)
         return cls()
 
 
@@ -99,7 +129,7 @@ class JarvisCompleter(Completer):
         "/stash", "/stash-list", "/stash-load",
         "/read", "/write", "/edit", "/ls", "/dir", "/tree", "/run", "/diff",
         "/status", "/help", "/h", "/exit", "/quit",
-        "/generate-ui", "/gui", "/opencode",
+        "/generate-ui", "/gui", "/opencode", "/templates", "/website",
         "/plan", "/goal", "/develop", "/vision", "/feedback", "/tools",
     ]
 
@@ -138,8 +168,8 @@ class JarvisCompleter(Completer):
                         if name.startswith(file_part):
                             display = name + ("/" if entry.is_dir() else "")
                             yield Completion(display, start_position=-len(file_part))
-            except (PermissionError, OSError):
-                pass
+            except (PermissionError, OSError) as e:
+                logging.getLogger(__name__).debug("[Completer] Path completion failed for %s: %s", prefix, e)
 
         elif cmd in ("/session-switch",):
             from core.session import list_sessions
@@ -149,8 +179,8 @@ class JarvisCompleter(Completer):
                     sid = s.get("session_id", "")
                     if sid.startswith(prefix):
                         yield Completion(sid, start_position=-len(prefix))
-            except Exception:
-                pass
+            except Exception as e:
+                logging.getLogger(__name__).debug("[Completer] Session completion failed: %s", e)
 
         elif cmd in ("/model",):
             yield from self._complete_model(prefix)
@@ -166,8 +196,8 @@ class JarvisCompleter(Completer):
                         meta_text = f"#{idx} {label}"
                         if str(idx).startswith(prefix):
                             yield Completion(display, start_position=-len(prefix), display_meta=meta_text)
-                    except (ValueError, json.JSONDecodeError):
-                        pass
+                    except (OSError, ValueError, json.JSONDecodeError) as e:
+                        logging.getLogger(__name__).debug("[Completer] Stash completion skipped %s: %s", f, e)
 
     def _complete_model(self, prefix):
         models = ["gemma4:e4b", "qwen3:4b", "llama3.1:8b", "qwen2.5:7b",
@@ -219,6 +249,7 @@ class CliState:
     debug: bool = False
     debug_search: bool = False
     show_timestamps: bool = False
+    stream: bool = True
     current_model: str = "gemma4:e4b"
     base_url: str = "http://127.0.0.1:8000"
     _pending_text: str = ""
@@ -451,26 +482,23 @@ def cmd_cli(args: argparse.Namespace) -> int:
                     payload["model"] = state.current_model
                 if state.debug:
                     payload["debug"] = True
-                result = request_json(state.base_url, "/api/chat", payload)
-                reply = extract_reply(result)
-                if is_limited_mode_reply(reply):
-                    ensure_ollama_running(env)
+                if state.stream:
+                    reply = stream_chat_ws(state.base_url, payload)
+                    if is_limited_mode_reply(reply):
+                        ensure_ollama_running(env)
+                        reply = stream_chat_ws(state.base_url, payload)
+                else:
                     result = request_json(state.base_url, "/api/chat", payload)
                     reply = extract_reply(result)
+                    if is_limited_mode_reply(reply):
+                        ensure_ollama_running(env)
+                        result = request_json(state.base_url, "/api/chat", payload)
+                        reply = extract_reply(result)
                 state.session.add_message("assistant", reply)
                 state.session.save()
 
-                if state.debug and "_debug" in result:
-                    dbg = result["_debug"]
-                    print(f"{colorize('[DEBUG]', 'yellow')} session_id={dbg['session_id']}")
-                    print(f"{colorize('[DEBUG]', 'yellow')} model={dbg['model']} history_count={dbg['history_count']}")
-                    print(f"{colorize('[DEBUG]', 'yellow')} messages sent: {json.dumps(dbg['messages_sent'], indent=2)}")
-                if state.debug_search:
-                    intent = result.get("intent", {})
-                    action = result.get("action", {})
-                    if intent.get("intent") in ("web_search", "search"):
-                        print(f"{colorize('[DEBUG-SEARCH]', 'yellow')} query: {text}")
-                        print(f"{colorize('[DEBUG-SEARCH]', 'yellow')} action: {action.get('action', '')[:500]}")
+                if state.debug:
+                    pass  # streaming mode doesn't return debug info in same way
             else:
                 endpoint = "/os/agents/run"
                 payload = {"prompt": text, "context": context, "agent_name": "auto"}
@@ -1005,7 +1033,11 @@ def handle_cli_slash_command(text: str, state: CliState) -> str:
             print(f"{colorize('Error:', 'red')} {result['error']}")
         else:
             fp = result.get("file_path", "?")
+            template_name = result.get("template_name", "?")
+            template_cat = ", ".join(result.get("template_category", []))
             print(f"{colorize('Generated UI:', 'green')} {fp}")
+            if template_name:
+                print(f"{colorize('Template:', 'cyan')} {template_name} ({template_cat})")
             print(f"{colorize('Preview:', 'cyan')}")
             code = result.get("code", "")
             if len(code) > 500:
@@ -1013,6 +1045,72 @@ def handle_cli_slash_command(text: str, state: CliState) -> str:
                 print(f"\n... ({len(code) - 500} more chars)")
             else:
                 print(code)
+        return "handled"
+
+    if lowered.startswith("/templates "):
+        parts = lowered.split()
+        subcmd = parts[1] if len(parts) > 1 else "help"
+        if subcmd == "sync":
+            from tools.template_library import TemplateLibrary
+            print(f"{colorize('Syncing templates...', 'yellow')} (this may take 5-15 minutes)")
+            tl = TemplateLibrary()
+            tl.sync()
+            print(f"{colorize('Done!', 'green')} {len(tl.registry)} templates available")
+        elif subcmd == "list":
+            from tools.template_library import TemplateLibrary
+            tl = TemplateLibrary()
+            tl._load_registry()
+            cats = {}
+            for t in tl.registry:
+                for c in t.get("category", ["uncategorized"]):
+                    cats.setdefault(c, []).append(t.get("name", "?"))
+            for cat in sorted(cats):
+                items = cats[cat]
+                print(f"  {colorize(cat, 'cyan')} ({len(items)})")
+                for name in items[:5]:
+                    print(f"    - {name}")
+                if len(items) > 5:
+                    print(f"    ... and {len(items)-5} more")
+        elif subcmd == "search":
+            query = " ".join(parts[2:]) if len(parts) > 2 else ""
+            if not query:
+                print("Usage: /templates search <query>")
+            else:
+                from tools.template_library import TemplateLibrary
+                tl = TemplateLibrary()
+                tl._load_registry()
+                matches = tl.find_template(query, top_n=10)
+                if matches:
+                    print(f"{colorize(f'Top {len(matches)} matches:', 'green')}")
+                    for m in matches:
+                        print(f"  - {m.get('name')} ({', '.join(m.get('category', []))})")
+                else:
+                    print("No matches found")
+        else:
+            print("Usage: /templates <sync|list|search <query>>")
+        return "handled"
+
+    # --- Website generator ---
+    if lowered.startswith("/website "):
+        topic = text.split(None, 1)[1].strip()
+        if not topic:
+            print("Usage: /website <topic> [pages...]")
+            return "handled"
+        from tools.website_generator import generate_site
+        pages = None
+        rest = topic.split(" --pages ")
+        if len(rest) > 1:
+            topic = rest[0].strip()
+            pages = [p.strip() for p in rest[1].split(",")]
+        print(f"{colorize('Building website:', 'cyan')} {topic}")
+        result = generate_site(topic, pages)
+        if result.get("error"):
+            print(f"{colorize('Error:', 'red')} {result['error']}")
+        else:
+            print(f"{colorize('Site:', 'green')} {result['directory']}")
+            print(f"{colorize('Pages:', 'cyan')} {result['page_count']}")
+            for p in result['pages'][:6]:
+                print(f"  {p['page']:15s} {os.path.basename(p['file']):20s} ({p['size']} bytes)")
         return "handled"
 
     # --- Legacy commands (forward-compat) ---
@@ -1093,6 +1191,192 @@ def handle_cli_slash_command(text: str, state: CliState) -> str:
         print(f"JARVIS > starting development goal {result['goal']['goal_id']}")
         print_plan_preview(result)
         poll_job(state.base_url, result["job_id"])
+        return "handled"
+    if lowered.startswith("/supervisor "):
+        goal = text.split(None, 1)[1].strip()
+        print(f"JARVIS > Starting autonomous build: {goal}")
+        try:
+            result = request_json(state.base_url, "/api/supervisor/start", {
+                "goal": goal, "auto_approve": True, "max_parallel": 2
+            })
+            bid = result.get("build_id", "?")
+            print(f"  Build ID: {bid}")
+            print(f"  Project: {result.get('project', '?')}")
+            print(f"  Tasks: {result.get('tasks', 0)}")
+            print(f"  Status: {result.get('status', '?')}")
+            print(f"  Workspace: {result.get('workspace', '?')}")
+            print(f"\n  Check status with: /supervisor-status")
+            if bid != "?":
+                poll_supervisor(state.base_url, bid)
+        except Exception as e:
+            print(f"  Failed: {e}")
+        return "handled"
+    if lowered.startswith("/supervisor-status"):
+        try:
+            result = request_json(state.base_url, "/api/supervisor/list", method="GET")
+            builds = result.get("builds", [])
+            if not builds:
+                print("No active builds.")
+            else:
+                for b in builds:
+                    print(f"  [{b['status']}] {b['id']}: {b['goal']} ({b['completed']}/{b['failed']})")
+        except Exception as e:
+            print(f"  Failed: {e}")
+        return "handled"
+    if lowered.startswith("/build "):
+        goal = text.split(None, 1)[1].strip()
+        print(f"JARVIS > Starting autonomous build: {goal}")
+        try:
+            result = request_json(state.base_url, "/api/build/start", {
+                "goal": goal, "auto_approve": True
+            })
+            print(f"  Project: {result.get('name', '?')}")
+            print(f"  Status: {result.get('status', '?')}")
+            print(f"  Retries: {result.get('retries', 0)}")
+            issues = result.get('issues', [])
+            if issues:
+                print(f"  Issues: {', '.join(issues[:5])}")
+            print(f"\n  Check status with: /projects")
+        except Exception as e:
+            print(f"  Failed: {e}")
+        return "handled"
+    if lowered.startswith("/projects"):
+        try:
+            result = request_json(state.base_url, "/api/build/projects", method="GET")
+            projects = result.get("projects", [])
+            if not projects:
+                print("No projects found.")
+            else:
+                print(f"\nProjects ({len(projects)}):")
+                for p in projects:
+                    status_icon = {"done": "✓", "failed": "✗", "building": "▶", "running": "▶",
+                                   "queued": "○", "paused": "⏸", "cancelled": "⊘", "created": "·"}
+                    icon = status_icon.get(p.get("status", ""), "·")
+                    name = p.get("name", "?")
+                    goal = p.get("goal", "")[:60]
+                    retries = p.get("retries", 0)
+                    issues = p.get("issues", 0)
+                    print(f"  {icon} {name}: {goal} [{p.get('status', '?')}] "
+                          f"retries={retries} issues={issues}")
+        except Exception as e:
+            print(f"  Failed: {e}")
+        return "handled"
+    if lowered.startswith("/service "):
+        action = text.split(None, 1)[1].strip().lower()
+        try:
+            result = request_json(state.base_url, "/api/build/daemon", {"action": action})
+            print(f"Daemon: {result.get('status', 'done')}")
+        except Exception as e:
+            print(f"  Failed: {e}")
+        return "handled"
+    if lowered.startswith("/interrupt ") or lowered.startswith("/pause "):
+        target = text.split(None, 1)[1].strip()
+        try:
+            result = request_json(state.base_url, f"/api/build/interrupt/{target}", method="POST")
+            print(f"Interrupt: {result.get('status')} for {target}")
+        except Exception as e:
+            print(f"  Failed: {e}")
+        return "handled"
+    if lowered.startswith("/override "):
+        parts = text.split(None, 2)
+        if len(parts) < 3:
+            print("Usage: /override <project> <field=value> [field2=value2 ...]")
+            return "handled"
+        proj = parts[1]
+        pairs = parts[2].split()
+        overrides = {}
+        for p in pairs:
+            if "=" in p:
+                k, v = p.split("=", 1)
+                overrides[k.strip()] = v.strip()
+        try:
+            result = request_json(state.base_url, f"/api/build/override/{proj}",
+                                  {"overrides": overrides}, method="POST")
+            print(f"Override: {result.get('status')} on {proj}")
+        except Exception as e:
+            print(f"  Failed: {e}")
+        return "handled"
+    if lowered.startswith("/resume "):
+        target = text.split(None, 1)[1].strip()
+        try:
+            result = request_json(state.base_url, f"/api/build/resume/{target}", method="POST")
+            print(f"Resume: {result.get('status')} for {target}")
+        except Exception as e:
+            print(f"  Failed: {e}")
+        return "handled"
+    if lowered.startswith("/checkpoints "):
+        target = text.split(None, 1)[1].strip()
+        try:
+            result = request_json(state.base_url, f"/api/build/checkpoints/{target}", method="GET")
+            cps = result.get("checkpoints", [])
+            print(f"Checkpoints for {target}: {len(cps)}")
+            for cp in cps[-10:]:
+                print(f"  {cp}")
+        except Exception as e:
+            print(f"  Failed: {e}")
+        return "handled"
+    if lowered.startswith("/decisions "):
+        target = text.split(None, 1)[1].strip()
+        try:
+            result = request_json(state.base_url, f"/api/build/decisions/{target}", method="GET")
+            entries = result.get("decisions", [])
+            seed = result.get("seed")
+            replay = result.get("replay_mode", False)
+            print(f"Decisions for {target} (seed={seed}, replay={replay}): {len(entries)} entries")
+            for e in entries[-10:]:
+                print(f"  [{e['step']}] {e['decision_type']} → {e['chosen'][:60]}")
+        except Exception as e:
+            print(f"  Failed: {e}")
+        return "handled"
+    if lowered.startswith("/identity"):
+        try:
+            result = request_json(state.base_url, "/api/build/identity", method="GET")
+            print(f"JARVIS v{result.get('version', '?')}")
+            print(f"  Capabilities ({len(result.get('capabilities', []))}): {', '.join(result.get('capabilities', [])[:8])}")
+            print(f"  Models: {result.get('models', {})}")
+            print(f"  Phases: {len(result.get('phases_implemented', []))}")
+        except Exception as e:
+            print(f"  Identity error: {e}")
+        return "handled"
+    if lowered.startswith("/governor "):
+        target = text.split(None, 1)[1].strip()
+        try:
+            result = request_json(state.base_url, f"/api/build/governor/history/{target}", method="GET")
+            decisions = result.get("decisions", [])
+            print(f"Governor history for {target}: {len(decisions)} decisions")
+            for d in decisions[-5:]:
+                print(f"  {d['action']} ({d['confidence']}): {d['reason']}")
+        except Exception as e:
+            print(f"  Failed: {e}")
+        return "handled"
+    if lowered.startswith("/env"):
+        try:
+            result = request_json(state.base_url, "/api/build/environment", method="GET")
+            print("Environment:")
+            print(f"  Disk: {result.get('disk_free_gb', '?')}/{result.get('disk_total_gb', '?')} GB free")
+            print(f"  Memory: {result.get('memory_free_mb', '?')}/{result.get('memory_total_mb', '?')} MB")
+            print(f"  Ollama: {'✓' if result.get('ollama_available') else '✗'} ({result.get('ollama_latency_ms', 0):.0f}ms)")
+            print(f"  Network: {'✓' if result.get('network_reachable') else '✗'}")
+            for w in result.get('warnings', []):
+                print(f"  ⚠ {w}")
+        except Exception as e:
+            print(f"  Failed: {e}")
+        return "handled"
+    if lowered.startswith("/adapt"):
+        try:
+            result = request_json(state.base_url, "/api/build/adaptation", method="GET")
+            actions = result.get("actions", [])
+            rules = result.get("rules_triggered", {})
+            if actions:
+                print(f"Adaptation: {len(actions)} actions")
+                for a in actions:
+                    print(f"  {a['action']}: {a['reason']}")
+            else:
+                print("No adaptation actions needed")
+            if rules:
+                print(f"Rules triggered: {rules}")
+        except Exception as e:
+            print(f"  Failed: {e}")
         return "handled"
     if lowered.startswith("/vision "):
         prompt = text.split(None, 1)[1].strip()
@@ -1179,17 +1463,44 @@ Files:
   /run <command>        Run a shell command
   /diff [path]          Show git diff
 
+Templates:
+  /templates sync       Download all templates (~3 GB)
+  /templates list       List template categories
+  /templates search <q> Search templates by keyword
+
+Sites:
+  /website <topic>      Generate multi-page website from templates
+
 Generate:
-  /generate-ui <desc>   Generate a UI from description (--flutter for Flutter)
+  /generate-ui <desc>   Generate a UI from template (--flutter for Flutter)
   /gui <desc>           Shortcut for /generate-ui
 
 Delegation:
   /opencode <task>      Delegate heavy coding task to opencode (--force to bypass detection)
 
-Other:
+Build System:
+  /build <goal>         Start autonomous build with control loop
+  /projects             List all projects and their status
+  /service <action>     Daemon: start|stop|install|uninstall|status
+  /interrupt <proj>     Pause build after current step
+  /cancel <proj>        Cancel build immediately
+  /override <proj> k=v  Override a field (e.g. status=done, retries=0)
+  /resume <proj>        Resume a paused build
+  /checkpoints <proj>   List checkpoints for a project
+  /decisions <proj>     Show decision log for a project
+  /identity             Show JARVIS system identity
+  /governor <proj>      Show governor decision history
+  /env                  Show environment health snapshot
+  /adapt                Show proactive adaptation actions
   /plan <goal>          Preview an execution plan
   /goal <goal>          Submit a long-running goal
+
+Supervisor:
+  /supervisor <goal>    Launch autonomous multi-agent build (parallel CLI agents)
+  /supervisor-status    Check active supervisor builds
   /develop <goal>       Start development workflow
+
+Other:
   /vision <prompt>      Vision analysis
   /feedback <yes|no> <reason>  Provide feedback
   /tools                List available tools
@@ -1258,6 +1569,59 @@ def cmd_status(args: argparse.Namespace) -> int:
     print(f"Ollama ready:       {ollama_ready}")
     if not ollama_ready:
         print("Ollama info:        unavailable; local/fallback mode is enabled.")
+    return 0
+
+def cmd_doctor(args: argparse.Namespace) -> int:
+    from core.diagnostics import build_diagnostic_report
+    report = build_diagnostic_report()
+    if getattr(args, "json", False):
+        print(json.dumps(report.to_dict(), indent=2))
+        return 0 if report.status in {"ok", "warning"} else 1
+
+    print(colorize(f"JARVIS doctor: {report.status}", "green" if report.status == "ok" else "yellow"))
+    print(f"Root: {report.root}")
+    print(f"Python files: {report.counts.get('python_files', 0)} | tests: {report.counts.get('tests', 0)}")
+    missing = [name for name, ok in report.optional_dependencies.items() if not ok]
+    print("Missing optional deps: " + (", ".join(missing) if missing else "none"))
+    print("Runtime flags: " + ", ".join(f"{k}={v}" for k, v in sorted(report.runtime_flags.items())))
+    print("Top issues:")
+    for issue in report.issues[:20]:
+        print(f"- [{issue.severity}] {issue.category} {issue.path}: {issue.message}")
+    if len(report.issues) > 20:
+        print(f"... {len(report.issues) - 20} more issue(s). Use --json for full detail.")
+    print("Capability gaps vs OpenClaw source:")
+    for gap in report.capability_gaps:
+        print(f"- {gap}")
+    return 0 if report.status in {"ok", "warning"} else 1
+
+def cmd_cleanup_audit(args: argparse.Namespace) -> int:
+    from core.cleanup_audit import build_cleanup_audit
+    audit = build_cleanup_audit()
+    data = audit.to_dict()
+    if getattr(args, "json", False):
+        print(json.dumps(data, indent=2))
+        return 0
+
+    print(colorize("JARVIS cleanup audit", "cyan"))
+    print(f"Root: {audit.root}")
+    for key, value in audit.totals.items():
+        print(f"{key}: {value}")
+    print("\nEntrypoints:")
+    for item in audit.entrypoints:
+        print(f"- {item}")
+    print("\nTop orphan candidates:")
+    for item in audit.orphan_candidates[:30]:
+        print(f"- {item}")
+    if len(audit.orphan_candidates) > 30:
+        print(f"... {len(audit.orphan_candidates) - 30} more. Use --json for full list.")
+    print("\nRoot clutter:")
+    for item in audit.root_clutter[:30]:
+        print(f"- {item}")
+    if len(audit.root_clutter) > 30:
+        print(f"... {len(audit.root_clutter) - 30} more. Use --json for full list.")
+    print("\nRecommendations:")
+    for item in audit.recommendations:
+        print(f"- {item}")
     return 0
 
 
@@ -1414,7 +1778,8 @@ def is_ollama_reachable(env: dict, timeout: float = 1.0) -> bool:
     try:
         with urllib.request.urlopen(f"{base_url}/api/tags", timeout=timeout):
             return True
-    except Exception:
+    except Exception as e:
+        logger.debug("[JARVIS] Ollama unreachable at %s: %s", base_url, e)
         return False
 
 
@@ -1492,9 +1857,15 @@ def get_local_os_runtime():
     if str(ROOT) not in sys.path:
         sys.path.insert(0, str(ROOT))
     if _local_os_runtime is None:
-        from jarvis_os.bootstrap import build_jarvis_os
+        try:
+            from jarvis_os.bootstrap import build_jarvis_os
+        except ImportError:
+            build_jarvis_os = None
         
-        _local_os_runtime = build_jarvis_os()
+        if build_jarvis_os is None:
+            _local_os_runtime = {}
+        else:
+            _local_os_runtime = build_jarvis_os()
     return _local_os_runtime
 
 
@@ -1535,13 +1906,13 @@ def local_request_json(endpoint: str, payload: dict | None = None, method: str |
     agent_name = data.get("agent_name", "auto")
 
     if method == "GET" and endpoint == "/os/tools":
-        return {"tools": runtime.tools.catalog()}
+        return {"tools": runtime.tools.as_dicts()}
     if method == "GET" and endpoint == "/os/status":
         status = runtime.status()
         return {
             "initialized": True,
             "components": {
-                "tools": runtime.tools.catalog(),
+                "tools": runtime.tools.as_dicts(),
                 "models": status.get("models", {}),
                 "scheduler": {"count": status.get("schedule_count", 0)},
                 "skills_registry": {"count": status.get("skills", 0)},
@@ -1661,6 +2032,35 @@ def poll_job(base_url: str, job_id: str, max_wait_s: int = 180) -> int:
         time.sleep(2)
         waited += 2
     print("Timed out waiting for job completion.")
+    return 1
+
+
+def poll_supervisor(base_url: str, build_id: str, max_wait_s: int = 3600) -> int:
+    waited = 0
+    last_status = ""
+    while waited < max_wait_s:
+        result = request_json(base_url, f"/api/supervisor/status/{build_id}", method="GET")
+        status = result.get("status", "missing")
+        if status in ("completed", "partial"):
+            print(f"\nBuild complete! Status: {status}")
+            completed = result.get("completed", [])
+            failed = result.get("failed", [])
+            print(f"  Tasks completed: {len(completed)}")
+            if failed:
+                print(f"  Tasks failed: {len(failed)}")
+            return 0 if status == "completed" else 1
+        if status == "cancelled":
+            print("\nBuild cancelled.")
+            return 1
+        current = result.get("current_agent") or "idle"
+        if current != last_status:
+            print(f"[{current}] ", end="", flush=True)
+            last_status = current
+        else:
+            print(".", end="", flush=True)
+        time.sleep(3)
+        waited += 3
+    print("\nTimed out.")
     return 1
 
 
@@ -1996,6 +2396,41 @@ def cmd_cognitive(args: argparse.Namespace) -> int:
     return run_command(cmd, cwd=BACKEND, env=common_env(), dry_run=getattr(args, "dry_run", False))
 
 
+def stream_chat_ws(base_url: str, payload: dict) -> str:
+    """Stream chat via WebSocket, print tokens as they arrive. Returns full reply."""
+    import asyncio
+    try:
+        ws_url = base_url.replace("http://", "ws://").replace("https://", "wss://")
+        ws_url += "/ws/chat_stream"
+
+        async def _stream():
+            from websockets import connect
+            full_reply = ""
+            async with connect(ws_url) as ws:
+                await ws.send(json.dumps(payload))
+                while True:
+                    msg = await ws.recv()
+                    data = json.loads(msg)
+                    if data.get("type") == "stream_token":
+                        token = data.get("token", "")
+                        print(token, end="", flush=True)
+                        full_reply += token
+                    elif data.get("type") == "stream_end":
+                        print()
+                        full_reply = data.get("full_response", full_reply)
+                        break
+                    elif data.get("type") == "error":
+                        print(f"\n{colorize('[STREAM ERROR]', 'red')} {data.get('message', '')}")
+                        break
+            return full_reply
+
+        return asyncio.run(_stream())
+    except Exception as e:
+        print(f"\n{colorize('[WS STREAM]', 'yellow')} falling back to POST: {e}")
+        result = request_json(base_url, "/api/chat", payload)
+        return extract_reply(result)
+
+
 def extract_reply(result: dict) -> str:
     # /api/chat format: top-level "response" key
     direct = result.get("response")
@@ -2031,6 +2466,238 @@ def is_limited_mode_reply(reply: str) -> bool:
     return "limited mode" in lowered or "start ollama" in lowered or "ollama" in lowered and "full ai features" in lowered
 
 
+def cmd_agent_list(args):
+    from core.sub_agents.registry import agent_registry
+    agents = agent_registry.list_agents()
+    print(f"\n{'NAME':<12} {'DESCRIPTION':<55} {'MODES'}")
+    print("-" * 100)
+    for a in agents:
+        modes = ", ".join(a["modes"])
+        print(f"{a['name']:<12} {a['description'][:54]:<55} {modes}")
+    print()
+    return 0
+
+
+def cmd_agent_run(args):
+    import asyncio
+    from core.sub_agents.registry import agent_registry
+    result = asyncio.run(agent_registry.run(
+        args.name.upper(), args.task,
+        mode=getattr(args, "mode", None),
+        lang=getattr(args, "lang", "auto")
+    ))
+    print(f"\n[{result.agent_name}:{result.mode}] — {result.duration_s:.1f}s\n")
+    print(result.output)
+    if result.error:
+        print(f"\nERROR: {result.error}")
+    return 0 if result.success else 1
+
+
+def cmd_settings(args: argparse.Namespace) -> int:
+    from core.settings.store import get_settings_store
+    store = get_settings_store()
+    
+    if args.settings_command == "get":
+        try:
+            val = store.get(args.key)
+            print(val)
+        except KeyError as e:
+            print(f"Error: {e}")
+            return 1
+    elif args.settings_command == "set":
+        try:
+            # Try to parse value as JSON if it's complex, otherwise use as is
+            try:
+                import json
+                parsed_val = json.loads(args.value)
+            except json.JSONDecodeError:
+                # Handle boolean strings specifically
+                if args.value.lower() == "true": parsed_val = True
+                elif args.value.lower() == "false": parsed_val = False
+                # Handle numeric strings
+                elif args.value.isdigit(): parsed_val = int(args.value)
+                else:
+                    try:
+                        parsed_val = float(args.value)
+                    except ValueError:
+                        parsed_val = args.value
+            
+            if store.set(args.key, parsed_val):
+                print(f"Successfully set {args.key} = {parsed_val}")
+            else:
+                print(f"Failed to set {args.key}")
+                return 1
+        except Exception as e:
+            print(f"Error setting {args.key}: {e}")
+            return 1
+    elif args.settings_command == "reset":
+        store.reset(args.key)
+        if args.key:
+            print(f"Reset {args.key} to default.")
+        else:
+            print("Reset all settings to defaults.")
+    elif args.settings_command == "export":
+        data = store.export()
+        import json
+        print(json.dumps(data, indent=2))
+    elif args.settings_command == "import":
+        if store.import_from_json(args.file):
+            print(f"Successfully imported settings from {args.file}")
+        else:
+            print(f"Failed to import settings from {args.file}")
+            return 1
+    else:
+        # Default: list/show all
+        data = store.export()
+        print("\nJARVIS Settings:")
+        print("-" * 40)
+        
+        def print_nested(d, prefix=""):
+            for k, v in d.items():
+                full_key = f"{prefix}{k}"
+                if isinstance(v, dict):
+                    print_nested(v, f"{full_key}.")
+                else:
+                    print(f"{full_key:<30} = {v}")
+        
+        print_nested(data)
+        print("-" * 40)
+    
+    return 0
+
+
+def cmd_agent_shortcut(args, agent_name: str):
+    args.name = agent_name
+    return cmd_agent_run(args)
+
+
+# ── Plugin CLI commands ──────────────────────────────────────────────────────
+def cmd_plugin(args):
+    from core.plugins.registry import get_plugin_registry
+    from core.plugins.loader import get_plugin_loader
+    registry = get_plugin_registry()
+    loader = get_plugin_loader()
+
+    if args.plugin_action == "list":
+        for p in registry.list_plugins():
+            status = "E" if p.get("enabled") else "D"
+            print(f"[{status}] {p['id']:30s} v{p.get('version','?'):10s} {p.get('name','')}")
+        return 0
+
+    elif args.plugin_action == "enable":
+        print("Enabled" if registry.enable(args.id) else "Not found")
+        return 0
+
+    elif args.plugin_action == "disable":
+        print("Disabled" if registry.disable(args.id) else "Not found")
+        return 0
+
+    elif args.plugin_action == "reload":
+        print("Reloaded" if loader.reload(args.id) else "Failed")
+        return 0
+
+    elif args.plugin_action == "settings":
+        import json
+        s = registry.get_settings(args.id)
+        print(json.dumps(s, indent=2))
+        return 0
+
+    elif args.plugin_action == "info":
+        m = registry.get_manifest(args.id)
+        if m:
+            import json
+            print(json.dumps(m.to_dict() if hasattr(m, 'to_dict') else vars(m), indent=2))
+        else:
+            print("Not found")
+        return 0
+
+    elif args.plugin_action == "install":
+        pkg = args.id # reused id arg as name
+        print(f"JARVIS > Installing plugin package: {pkg}")
+        try:
+            subprocess.check_call([sys.executable, "-m", "pip", "install", pkg])
+            print(f"JARVIS > Successfully installed {pkg}. Restart JARVIS to discover it via entry points.")
+            return 0
+        except Exception as e:
+            print(f"JARVIS > Installation failed: {e}")
+            return 1
+
+    elif args.plugin_action == "search":
+        query = args.id # reused id arg as query
+        print(f"JARVIS > Searching PyPI for 'jarvis-plugin-{query}'...")
+        # Note: 'pip search' is disabled on PyPI. 
+        # For a real implementation we would use the PyPI JSON API.
+        print(f"JARVIS > Please visit: https://pypi.org/search/?q=jarvis-plugin-{query}")
+        return 0
+
+    elif args.plugin_action == "publish":
+        print("JARVIS > Plugin Publication Guide")
+        print("1. Create your jarvis_plugin_sdk.Plugin subclass.")
+        print("2. Define [project.entry-points.'jarvis.plugins'] in your pyproject.toml.")
+        print("3. Run: python -m build && python -m twine upload dist/*")
+        return 0
+
+    return 1
+
+
+def cmd_cloud(args):
+    import asyncio
+    from core.cloud.supabase_client import is_connected
+    from core.cloud.cloud_memory import CloudMemory
+
+    if args.cloud_action == "status":
+        print("Supabase:", "Connected" if is_connected() else "Offline (SQLite mode)")
+        return 0
+
+    elif args.cloud_action == "sync":
+        n = asyncio.run(CloudMemory().sync_from_local())
+        print(f"Synced {n} rows to Supabase")
+        return 0
+
+    elif args.cloud_action == "pull":
+        n = asyncio.run(CloudMemory().sync_to_local())
+        print(f"Pulled {n} rows from Supabase")
+        return 0
+
+    return 1
+
+
+def cmd_project(args):
+    import asyncio
+    from core.cloud.project_manager import ProjectManager
+    pm = ProjectManager()
+
+    if args.project_action == "list":
+        projects = asyncio.run(pm.list_projects())
+        for p in projects:
+            print(f"[{p.status}] {str(p.id)[:8]}  {p.name}")
+        return 0
+
+    elif args.project_action == "create":
+        p = asyncio.run(pm.create_project(args.name, goal=getattr(args, "goal", "")))
+        print(f"Created: {p.id}")
+        return 0
+
+    elif args.project_action == "show":
+        p = asyncio.run(pm.get_project(args.id))
+        if p:
+            import json
+            print(json.dumps(p.to_dict() if hasattr(p, 'to_dict') else vars(p), indent=2))
+        return 0
+
+    elif args.project_action == "complete":
+        ok = asyncio.run(pm.complete_step(args.step_id))
+        print("Completed" if ok else "Step not found")
+        return 0
+
+    elif args.project_action == "delete":
+        asyncio.run(pm.delete_project(args.id))
+        print("Deleted")
+        return 0
+
+    return 1
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="jarvis",
@@ -2038,6 +2705,43 @@ def build_parser() -> argparse.ArgumentParser:
         prefix_chars="-/",
     )
     subparsers = parser.add_subparsers(dest="subcommand")
+
+    # Governance CLI commands
+    try:
+        from core.governance.cli_commands import register_governance_commands
+        register_governance_commands(subparsers)
+    except Exception:
+        pass
+
+    agent_parser = subparsers.add_parser("agent", help="Run JARVIS sub-agents", prefix_chars="-/")
+    agent_sub = agent_parser.add_subparsers(dest="agent_command")
+
+    agent_list = agent_sub.add_parser("list", help="List all agents", prefix_chars="-/")
+    agent_list.set_defaults(func=cmd_agent_list)
+
+    agent_run = agent_sub.add_parser("run", help="Run an agent", prefix_chars="-/")
+    agent_run.add_argument("name", help="Agent name (NEXUS, FORGE, ORACLE, etc.)")
+    agent_run.add_argument("task", help="Task for the agent")
+    agent_run.add_argument("--mode", "-m", default=None, help="Agent mode")
+    agent_run.add_argument("--lang", default="auto", help="Language (for FORGE)")
+    agent_run.set_defaults(func=cmd_agent_run)
+
+    for shortname in ["nexus", "forge", "oracle", "cipher", "herald", "atlas", "scribe", "sentinel", "maestro"]:
+        p = subparsers.add_parser(shortname, help=f"Run {shortname.upper()} agent", prefix_chars="-/")
+        p.add_argument("task", help="Task to run")
+        p.add_argument("--mode", "-m", default=None)
+        p.add_argument("--lang", default="auto")
+        p.set_defaults(func=lambda args, n=shortname: cmd_agent_shortcut(args, n))
+
+    # Website generator sub-commands
+    try:
+        from tools.jarvis_website_cli import _add_website_commands, cmd_website
+        _add_website_commands(subparsers)
+        wp = subparsers.choices.get("website")
+        if wp:
+            wp.set_defaults(func=cmd_website)
+    except Exception:
+        pass
 
     cli_parser = subparsers.add_parser("cli", help="Start the interactive JARVIS terminal chat.", prefix_chars="-/")
     cli_parser.add_argument("--new-session", action="store_true", help="Start a fresh session (ignore previous).")
@@ -2055,6 +2759,14 @@ def build_parser() -> argparse.ArgumentParser:
 
     status = subparsers.add_parser("status", help="Show current JARVIS autonomous status.", prefix_chars="-/")
     status.set_defaults(func=cmd_status)
+
+    doctor = subparsers.add_parser("doctor", help="Run dependency, crash-risk, and degraded-response diagnostics.", prefix_chars="-/")
+    doctor.add_argument("--json", action="store_true", help="Print full machine-readable report.")
+    doctor.set_defaults(func=cmd_doctor)
+
+    cleanup_audit = subparsers.add_parser("cleanup-audit", help="Map active modules, orphan candidates, and root clutter.", prefix_chars="-/")
+    cleanup_audit.add_argument("--json", action="store_true", help="Print full machine-readable cleanup report.")
+    cleanup_audit.set_defaults(func=cmd_cleanup_audit)
 
     server = subparsers.add_parser("server", help="Start the FastAPI backend server.", prefix_chars="-/")
     server.add_argument("/m", "--multi-model", action="store_true", dest="multi_model", help="Start multi-model Ollama servers before backend.")
@@ -2124,6 +2836,49 @@ def build_parser() -> argparse.ArgumentParser:
     extension_show.add_argument("--port", type=int, default=8000)
     extension_show.set_defaults(func=cmd_extension)
 
+    # Plugin commands — jarvis plugin list|enable|disable|reload|settings|info
+    plugin_cmd = subparsers.add_parser("plugin", help="Manage plugins", prefix_chars="-/")
+    plugin_sub = plugin_cmd.add_subparsers(dest="plugin_action")
+    plugin_sub.add_parser("list", help="List all plugins", prefix_chars="-/").set_defaults(func=cmd_plugin)
+    pe = plugin_sub.add_parser("enable", help="Enable a plugin", prefix_chars="-/")
+    pe.add_argument("id"); pe.set_defaults(func=cmd_plugin)
+    pd = plugin_sub.add_parser("disable", help="Disable a plugin", prefix_chars="-/")
+    pd.add_argument("id"); pd.set_defaults(func=cmd_plugin)
+    pr = plugin_sub.add_parser("reload", help="Hot-reload a plugin", prefix_chars="-/")
+    pr.add_argument("id"); pr.set_defaults(func=cmd_plugin)
+    ps = plugin_sub.add_parser("settings", help="Show plugin settings", prefix_chars="-/")
+    ps.add_argument("id"); ps.set_defaults(func=cmd_plugin)
+    pi = plugin_sub.add_parser("info", help="Show plugin manifest", prefix_chars="-/")
+    pi.add_argument("id"); pi.set_defaults(func=cmd_plugin)
+    
+    # Phase 2 subcommands
+    p_inst = plugin_sub.add_parser("install", help="Install a plugin from PyPI", prefix_chars="-/")
+    p_inst.add_argument("id", help="Plugin package name"); p_inst.set_defaults(func=cmd_plugin)
+    p_srch = plugin_sub.add_parser("search", help="Search for plugins on PyPI", prefix_chars="-/")
+    p_srch.add_argument("id", help="Search query"); p_srch.set_defaults(func=cmd_plugin)
+    p_pub = plugin_sub.add_parser("publish", help="Publish your plugin to PyPI", prefix_chars="-/")
+    p_pub.set_defaults(func=cmd_plugin)
+
+    # Cloud commands — jarvis cloud status|sync|pull
+    cloud_cmd = subparsers.add_parser("cloud", help="Cloud/Supabase commands", prefix_chars="-/")
+    cloud_sub = cloud_cmd.add_subparsers(dest="cloud_action")
+    cloud_sub.add_parser("status", help="Show Supabase connection status", prefix_chars="-/").set_defaults(func=cmd_cloud)
+    cloud_sub.add_parser("sync", help="Push SQLite to Supabase", prefix_chars="-/").set_defaults(func=cmd_cloud)
+    cloud_sub.add_parser("pull", help="Pull Supabase to SQLite", prefix_chars="-/").set_defaults(func=cmd_cloud)
+
+    # Project commands — jarvis project list|create|show|complete|delete
+    proj_cmd = subparsers.add_parser("project", help="Manage projects", prefix_chars="-/")
+    proj_sub = proj_cmd.add_subparsers(dest="project_action")
+    proj_sub.add_parser("list", help="List projects", prefix_chars="-/").set_defaults(func=cmd_project)
+    pc = proj_sub.add_parser("create", help="Create a project", prefix_chars="-/")
+    pc.add_argument("name"); pc.add_argument("--goal", default=""); pc.set_defaults(func=cmd_project)
+    ps2 = proj_sub.add_parser("show", help="Show project details", prefix_chars="-/")
+    ps2.add_argument("id"); ps2.set_defaults(func=cmd_project)
+    pco = proj_sub.add_parser("complete", help="Complete a step", prefix_chars="-/")
+    pco.add_argument("step_id"); pco.set_defaults(func=cmd_project)
+    pdel = proj_sub.add_parser("delete", help="Delete a project", prefix_chars="-/")
+    pdel.add_argument("id"); pdel.set_defaults(func=cmd_project)
+
     return parser
 
 
@@ -2149,6 +2904,33 @@ def main() -> int:
         return cmd_cognitive(argparse.Namespace(forward=forward, dry_run=dry_run))
 
     parser = build_parser()
+    # --- Settings ---
+    subparsers = None
+    for action in parser._actions:
+        if isinstance(action, argparse._SubParsersAction):
+            subparsers = action
+            break
+            
+    if subparsers:
+        p_settings = subparsers.add_parser("settings", help="Manage JARVIS settings")
+        p_settings.set_defaults(func=cmd_settings)
+        settings_subs = p_settings.add_subparsers(dest="settings_command")
+        
+        p_settings_get = settings_subs.add_parser("get", help="Get a setting value")
+        p_settings_get.add_argument("key", help="Setting key (dot-notation)")
+        
+        p_settings_set = settings_subs.add_parser("set", help="Set a setting value")
+        p_settings_set.add_argument("key", help="Setting key (dot-notation)")
+        p_settings_set.add_argument("value", help="New value")
+        
+        p_settings_reset = settings_subs.add_parser("reset", help="Reset settings to defaults")
+        p_settings_reset.add_argument("key", nargs="?", help="Specific key to reset (optional)")
+        
+        p_settings_export = settings_subs.add_parser("export", help="Export settings to JSON")
+        
+        p_settings_import = settings_subs.add_parser("import", help="Import settings from JSON")
+        p_settings_import.add_argument("file", help="JSON file path")
+
     args = parser.parse_args()
     if not getattr(args, "subcommand", None):
         parser.print_help()

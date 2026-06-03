@@ -34,7 +34,7 @@ from typing import Any, Callable, Dict, List, Optional
 
 from utils.logger import SystemLogger
 from utils.telemetry import HealthTelemetry, HealthState, SystemSnapshot
-from jarvis_os.runtime.exceptions import GovernanceViolation
+from governance.exceptions import GovernanceViolation
 
 logger = SystemLogger(__name__)
 

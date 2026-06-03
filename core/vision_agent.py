@@ -17,12 +17,14 @@
 ╚══════════════════════════════════════════════════════════════════╝
 """
 
-import asyncio, base64, io, json, re, time
+import asyncio, base64, io, json, re, shlex, time, logging, os
 from dataclasses import dataclass, field
 from typing import Optional
 import httpx, pyautogui, mss
 from PIL import Image
 from core.model_router import get_ollama_url, model_for_role
+
+logger = logging.getLogger(__name__)
 
 pyautogui.FAILSAFE = True   # move mouse top-left to emergency stop
 pyautogui.PAUSE    = 0.35
@@ -109,8 +111,8 @@ No explanation. Only JSON."""
 VERIFY_SYS = """You verify if a UI action succeeded.
 Return ONLY JSON: {"ok": true/false, "reason": "one line"}"""
 
-SCREEN_SYS = """Describe this screenshot in one sentence.
-Say: what app/website is open, what is visible, any notable UI elements."""
+SCREEN_SYS = """Describe this screenshot in 2-3 sentences.
+List: what app/website is open, windows visible, UI elements, text, colors, icons."""
 
 CORRECT_SYS = """A step failed. Suggest one alternative.
 Return ONLY JSON: {"desc":"new approach","action":"action_name","params":{}}"""
@@ -209,8 +211,8 @@ class VisionAgent:
                 x, y = d.get("x"), d.get("y")
                 if x is not None and y is not None:
                     return (int(x)*2, int(y)*2)   # scale back to full res
-        except Exception:
-            pass
+        except Exception as e:
+            logging.getLogger(__name__).warning("[VisionAgent] _cluster_coord parse failed: %s", e)
         return None
 
     async def _verify(self, step: dict, s: ScreenState) -> bool:
@@ -220,8 +222,8 @@ class VisionAgent:
             m = re.search(r'\{[^}]+\}', raw or "")
             if m:
                 return json.loads(m.group()).get("ok", True)
-        except Exception:
-            pass
+        except Exception as e:
+            logging.getLogger(__name__).debug("[VisionAgent] _verify JSON parse failed: %s", e)
         return True
 
     # ═══ PLANNING ═══════════════════════════════════════════
@@ -233,8 +235,8 @@ class VisionAgent:
             m = re.search(r'\[.*\]', raw or "", re.DOTALL)
             if m:
                 return json.loads(m.group())
-        except Exception:
-            pass
+        except Exception as e:
+            logging.getLogger(__name__).debug("[VisionAgent] _plan parse failed: %s", e)
         return [{"step_num":1,"desc":"Take screenshot","action":"screenshot","params":{}}]
 
     # ═══ EXECUTION ══════════════════════════════════════════
@@ -253,15 +255,32 @@ class VisionAgent:
     async def _exec(self, action: str, p: dict) -> str:
         if action == "open_app":
             app = p.get("app","").lower()
+            import shutil, subprocess
             CMDS = {
-                "chrome":"start chrome", "firefox":"start firefox",
-                "notepad":"notepad", "explorer":"explorer",
-                "photos":"start ms-photos:", "settings":"start ms-settings:",
-                "calculator":"calc", "cmd":"start cmd", "spotify":"start spotify",
-                "vscode":"code", "terminal":"start cmd",
+                "chrome": shutil.which("chrome") or "start chrome",
+                "firefox": shutil.which("firefox") or "start firefox",
+                "notepad": shutil.which("notepad") or "notepad",
+                "explorer": shutil.which("explorer") or "explorer",
+                "photos": "start ms-photos:",
+                "settings": "start ms-settings:",
+                "calculator": shutil.which("calc") or "calc",
+                "cmd": "start cmd",
+                "spotify": shutil.which("spotify") or "start spotify",
+                "vscode": shutil.which("code") or "code",
+                "terminal": "start cmd",
             }
-            cmd = CMDS.get(app, f"start {app}")
-            import subprocess; subprocess.Popen(cmd, shell=True)
+            cmd = CMDS.get(app, shutil.which(app) or f"start {shlex.quote(app)}")
+            if isinstance(cmd, str) and cmd.startswith("start "):
+                # Avoid shell=True: invoke platform shell explicitly
+                if os.name == 'nt':
+                    subprocess.Popen(["cmd", "/c"] + shlex.split(cmd), shell=False)
+                else:
+                    subprocess.Popen(["/bin/sh", "-c", cmd], shell=False)
+            else:
+                if isinstance(cmd, str) and ' ' in cmd:
+                    subprocess.Popen(shlex.split(cmd), shell=False)
+                else:
+                    subprocess.Popen([cmd], shell=False)
             await asyncio.sleep(2.5)
             return f"Opened {app}"
 
@@ -351,8 +370,8 @@ class VisionAgent:
             m = re.search(r'\{.*\}', raw or "", re.DOTALL)
             if m:
                 return json.loads(m.group())
-        except Exception:
-            pass
+        except Exception as e:
+            logging.getLogger(__name__).warning("[VisionAgent] _correct parse failed: %s", e)
         return None
 
     async def _summarize(self, task: Task) -> str:
@@ -369,11 +388,13 @@ class VisionAgent:
                 "model":model,"system":sys,"prompt":prompt,
                 "stream":False,"options":{"num_predict":maxt,"num_gpu":99,"temperature":0.25}})
             return r.json().get("response","").strip()
-        except: return ""
+        except Exception as e:
+            logging.getLogger(__name__).error(f"[VisionAgent] _llm failed: {e}")
+            logger.warning("[VisionAgent] _llm returning empty after failure")
+            return ""
 
     async def _llava(self, sys: str, prompt: str, b64: str, maxt=80) -> str:
-        # Try primary vision model (gemma4:e4b), fall back to moondream
-        for model in (VISION_MODEL, "moondream"):
+        for model in (VISION_MODEL, "moondream:latest"):
             try:
                 r = await self._http.post(f"{get_ollama_url(model)}/api/generate", json={
                     "model": model, "system": sys, "prompt": prompt,
@@ -381,8 +402,10 @@ class VisionAgent:
                     "options": {"num_predict": maxt, "num_gpu": 99, "temperature": 0.1}})
                 if r.status_code == 200:
                     return r.json().get("response", "").strip()
-            except Exception:
+            except Exception as e:
+                logger.debug("[VisionAgent] _llava model %s failed: %s", model, e)
                 continue
+        logger.warning("[VisionAgent] _llava all models failed")
         return ""
 
     def get_history(self) -> list:

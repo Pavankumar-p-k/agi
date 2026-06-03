@@ -1,0 +1,9 @@
+{
+  "name": "jarvis.pcautomation",
+  "version": "1.0.0",
+  "description": "Autonomous PC control via Open-Interpreter with governance validation",
+  "author": "JARVIS",
+  "entry_point": "pc_automation_plugin.py",
+  "enabled": true,
+  "hooks": ["on_execute", "on_governance_check", "on_load", "on_unload"]
+}

@@ -1,12 +1,14 @@
 """tools/search_fallback.py
 Unified web search with automatic fallback chain:
 1. SearXNG (port 8888) — best privacy, self-hosted
-2. duckduckgo-search (DDGS) — free, no API key
-3. Google URL fallback — last resort, opens browser
+2. duckduckgo-search (DDGS) — free, no API key (with retry+backoff)
+3. Page content extraction for top results via httpx
 """
 
 import logging
 import urllib.parse
+import time
+import re
 from typing import List, Dict, Optional
 
 import httpx
@@ -15,6 +17,8 @@ logger = logging.getLogger("search_fallback")
 
 SEARXNG_URL = "http://localhost:8888/search"
 DDGS_AVAILABLE = False
+MAX_RETRIES = 3
+BACKOFF_BASE = 2.0
 
 try:
     from ddgs import DDGS
@@ -25,6 +29,44 @@ except ImportError:
         DDGS_AVAILABLE = True
     except ImportError:
         pass
+
+
+def _extract_page_content(url: str, max_chars: int = 2000) -> str:
+    """Fetch a URL and extract meaningful text content."""
+    try:
+        resp = httpx.get(
+            url,
+            timeout=15,
+            follow_redirects=True,
+            headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                              "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+            },
+        )
+        if resp.status_code != 200:
+            logger.warning("[SEARCH] _extract_page_content status %s for %s", resp.status_code, url)
+            return ""
+        text = resp.text
+
+        # Strip script/style tags
+        text = re.sub(r'<script[^>]*>.*?</script>', '', text, flags=re.DOTALL | re.IGNORECASE)
+        text = re.sub(r'<style[^>]*>.*?</style>', '', text, flags=re.DOTALL | re.IGNORECASE)
+
+        # Strip HTML tags
+        text = re.sub(r'<[^>]+>', ' ', text)
+
+        # Decode HTML entities
+        text = text.replace('&amp;', '&').replace('&lt;', '<').replace('&gt;', '>')
+        text = text.replace('&quot;', '"').replace('&#39;', "'")
+
+        # Collapse whitespace
+        text = re.sub(r'\s+', ' ', text).strip()
+
+        return text[:max_chars]
+    except Exception as e:
+        logger.debug(f"Page content extraction failed for {url}: {e}")
+        logger.warning("[SEARCH] _extract_page_content exception for %s: %s", url, e)
+        return ""
 
 
 def search_searxng(query: str, max_results: int = 5) -> List[Dict]:
@@ -54,8 +96,8 @@ def search_searxng(query: str, max_results: int = 5) -> List[Dict]:
     return []
 
 
-def search_ddgs(query: str, max_results: int = 5) -> List[Dict]:
-    """Search via duckduckgo-search library. Returns list of {title, content, url} dicts."""
+def search_ddgs(query: str, max_results: int = 5, attempt: int = 1) -> List[Dict]:
+    """Search via duckduckgo-search with exponential backoff retry."""
     if not DDGS_AVAILABLE:
         return []
     try:
@@ -74,13 +116,36 @@ def search_ddgs(query: str, max_results: int = 5) -> List[Dict]:
             return results
         logger.info(f"DDGS returned 0 results for: {query}")
     except Exception as e:
+        err_str = str(e).lower()
+        if attempt < MAX_RETRIES and any(w in err_str for w in ("ratelimit", "rate limit", "429", "timeout", "time out")):
+            delay = BACKOFF_BASE ** attempt
+            logger.warning(f"DDGS rate-limited (attempt {attempt}/{MAX_RETRIES}), retrying in {delay:.1f}s...")
+            time.sleep(delay)
+            return search_ddgs(query, max_results, attempt + 1)
         logger.warning(f"DDGS error: {e}")
     return []
+
+
+def search_with_content(query: str, max_results: int = 5) -> List[Dict]:
+    """Search and enrich results with full page content extraction."""
+    results = search(query, max_results)
+    if not results:
+        return []
+    enriched = []
+    for r in results:
+        url = r.get("url", "")
+        if url and not r.get("content", ""):
+            page_text = _extract_page_content(url)
+            if page_text:
+                r["content"] = page_text
+        enriched.append(r)
+    return enriched
 
 
 def format_results(results: List[Dict], max_len: int = 300) -> str:
     """Format search results into a single string for LLM context."""
     if not results:
+        logger.warning("[SEARCH] format_results called with no results")
         return ""
     parts = []
     for i, r in enumerate(results, 1):
@@ -113,4 +178,5 @@ def search_formatted(query: str, max_results: int = 5) -> str:
     results = search(query, max_results)
     if results:
         return format_results(results)
+    logger.warning("[SEARCH] search_formatted: no results for query")
     return ""

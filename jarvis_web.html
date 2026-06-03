@@ -86,14 +86,12 @@
             position: absolute;
             width: 100%;
             height: 100%;
-            perspective: 1000px;
         }
 
         .shape {
             position: absolute;
             border: 1px solid rgba(0, 212, 255, 0.1);
-            transform-style: preserve-3d;
-            animation: float3d 15s ease-in-out infinite;
+            animation: floatSimple 15s ease-in-out infinite;
         }
 
         .shape-1 {
@@ -136,11 +134,9 @@
             100% { transform: translate(50px, 50px); }
         }
 
-        @keyframes float3d {
-            0%, 100% { transform: translateZ(0) rotateX(0deg) rotateY(0deg); }
-            25% { transform: translateZ(50px) rotateX(10deg) rotateY(10deg); }
-            50% { transform: translateZ(0) rotateX(0deg) rotateY(0deg); }
-            75% { transform: translateZ(-30px) rotateX(-10deg) rotateY(-10deg); }
+        @keyframes floatSimple {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(0, -30px); }
         }
 
         /* Main Container */
@@ -217,10 +213,10 @@
         }
 
         .nav-section {
-            flex: 1;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 4px;
+            overflow-y: auto;
         }
 
         .nav-label {
@@ -877,10 +873,66 @@
             }
         }
 
-        /* 3D Mouse Effect */
-        .tilt-element {
-            transform-style: preserve-3d;
-            transition: transform 0.1s ease;
+        /* New panel styles */
+.panel-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+}
+.panel-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 16px;
+    transition: all 0.3s;
+}
+.panel-card:hover {
+    border-color: var(--glass-border-hover);
+    box-shadow: var(--glow-blue);
+}
+.panel-card .card-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.panel-card .card-body {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+.panel-card .card-status {
+    font-size: 11px;
+    padding: 2px 10px;
+    border-radius: 20px;
+    display: inline-block;
+    margin-top: 8px;
+}
+.status-running { background: rgba(0,255,136,0.15); color: var(--success); }
+.status-stopped { background: rgba(255,68,102,0.15); color: var(--error); }
+.cmt-pending { border-left: 3px solid var(--warning); padding-left: 12px; }
+.cmt-completed { border-left: 3px solid var(--success); padding-left: 12px; opacity: 0.6; }
+.cmt-overdue { border-left: 3px solid var(--error); padding-left: 12px; }
+.badge {
+    background: var(--error);
+    color: #fff;
+    border-radius: 20px;
+    padding: 2px 10px;
+    font-size: 11px;
+    vertical-align: middle;
+}
+.audit-critical { color: var(--error); }
+.audit-high { color: #ff6644; }
+.audit-medium { color: var(--warning); }
+.audit-low { color: var(--text-dim); }
+.audit-info { color: var(--primary-blue); }
+
+/* Sidebar scrollable */
+        .sidebar {
+            overflow-y: auto;
         }
 
         /* Scrollbar */
@@ -902,6 +954,13 @@
             background: var(--glass-border-hover);
         }
 
+        /* Build panels - scrollable, fill space */
+        .builds-area {
+            flex: 1;
+            overflow-y: auto;
+            min-height: 0;
+        }
+
         /* Responsive */
         @media (max-width: 1200px) {
             .right-panel {
@@ -910,9 +969,84 @@
         }
 
         @media (max-width: 900px) {
+            .app-container {
+                flex-direction: column;
+                padding: 10px;
+                gap: 10px;
+                height: 100dvh;
+            }
             .sidebar {
+                position: fixed;
+                top: 0;
+                left: -300px;
+                width: 260px;
+                height: 100dvh;
+                z-index: 999;
+                transition: left 0.3s ease;
+                display: flex;
+                border-radius: 0 24px 24px 0;
+            }
+            .sidebar.open {
+                left: 0;
+            }
+            .sidebar-overlay {
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(0,0,0,0.6);
+                z-index: 998;
+            }
+            .sidebar-overlay.active {
+                display: block;
+            }
+            .right-panel {
                 display: none;
             }
+            .main-content {
+                height: 100%;
+                min-height: 0;
+            }
+            .header {
+                padding: 12px 16px;
+            }
+            .header-title {
+                font-size: 18px;
+            }
+            .header-subtitle {
+                font-size: 11px;
+            }
+            .chat-input-container {
+                padding: 10px 12px;
+                gap: 8px;
+            }
+            .chat-input {
+                font-size: 14px;
+                padding: 12px 14px;
+            }
+            .message {
+                max-width: 95%;
+            }
+            .builds-area {
+                max-height: none;
+            }
+            .mobile-menu-btn {
+                display: flex !important;
+            }
+        }
+
+        .mobile-menu-btn {
+            display: none;
+            width: 46px;
+            height: 46px;
+            border-radius: 14px;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--text-primary);
+            font-size: 20px;
         }
     </style>
 </head>
@@ -929,7 +1063,7 @@
 
     <div class="app-container">
         <!-- Sidebar -->
-        <aside class="sidebar glass-card tilt-element">
+        <aside class="sidebar glass-card">
             <div class="logo">
                 <div class="logo-icon">J</div>
                 <span class="logo-text">JARVIS</span>
@@ -983,6 +1117,64 @@
                     <div class="nav-icon"><i class="fas fa-eye"></i></div>
                     <span class="nav-text">Vision</span>
                 </div>
+                <div class="nav-item" data-section="builds">
+                    <div class="nav-icon"><i class="fas fa-hammer"></i></div>
+                    <span class="nav-text">Builds</span>
+                </div>
+
+                <span class="nav-label">Intelligence</span>
+                <div class="nav-item" data-section="quality">
+                    <div class="nav-icon"><i class="fas fa-chart-line"></i></div>
+                    <span class="nav-text">Quality</span>
+                </div>
+                <div class="nav-item" data-section="governor">
+                    <div class="nav-icon"><i class="fas fa-gavel"></i></div>
+                    <span class="nav-text">Governor</span>
+                </div>
+                <div class="nav-item" data-section="environment">
+                    <div class="nav-icon"><i class="fas fa-microchip"></i></div>
+                    <span class="nav-text">Environment</span>
+                </div>
+                <div class="nav-item" data-section="identity">
+                    <div class="nav-icon"><i class="fas fa-id-card"></i></div>
+                    <span class="nav-text">Identity</span>
+                </div>
+
+                <span class="nav-label">Integrations</span>
+                <div class="nav-item" data-section="channels">
+                    <div class="nav-icon"><i class="fas fa-plug"></i></div>
+                    <span class="nav-text">Channels</span>
+                </div>
+                <div class="nav-item" data-section="commitments">
+                    <div class="nav-icon"><i class="fas fa-check-double"></i></div>
+                    <span class="nav-text">Commitments</span>
+                </div>
+                <div class="nav-item" data-section="plugins">
+                    <div class="nav-icon"><i class="fas fa-puzzle-piece"></i></div>
+                    <span class="nav-text">Plugins</span>
+                </div>
+                <div class="nav-item" data-section="mcp">
+                    <div class="nav-icon"><i class="fas fa-network-wired"></i></div>
+                    <span class="nav-text">MCP Tools</span>
+                </div>
+                <div class="nav-item" data-section="sandbox">
+                    <div class="nav-icon"><i class="fas fa-container"></i></div>
+                    <span class="nav-text">Sandbox</span>
+                </div>
+
+                <span class="nav-label">System</span>
+                <div class="nav-item" data-section="security">
+                    <div class="nav-icon"><i class="fas fa-shield"></i></div>
+                    <span class="nav-text">Security</span>
+                </div>
+                <div class="nav-item" data-section="oauth">
+                    <div class="nav-icon"><i class="fas fa-key"></i></div>
+                    <span class="nav-text">OAuth</span>
+                </div>
+                <div class="nav-item" data-section="stt">
+                    <div class="nav-icon"><i class="fas fa-microphone"></i></div>
+                    <span class="nav-text">STT Providers</span>
+                </div>
             </nav>
 
             <div class="status-panel">
@@ -1010,7 +1202,7 @@
         </aside>
 
             <!-- Left Panel: Mythos Brain reasoning chain -->
-            <aside class="sidebar glass-card tilt-element" id="brain-panel" style="display: none; width: 350px;">
+            <aside class="sidebar glass-card" id="brain-panel" style="display: none; width: 350px;">
                 <div class="logo">
                     <div class="logo-icon"><i class="fas fa-microchip"></i></div>
                     <span class="logo-text">MYTHOS BRAIN</span>
@@ -1030,9 +1222,14 @@
             <!-- Main Content -->
             <main class="main-content">
                 <header class="header glass-card">
-                    <div>
-                        <h1 class="header-title">JARVIS Assistant</h1>
-                        <p class="header-subtitle">Your Personal AI Life Operating System</p>
+                    <div style="display:flex;align-items:center;gap:12px;">
+                        <div class="mobile-menu-btn" id="mobile-menu-btn">
+                            <i class="fas fa-bars"></i>
+                        </div>
+                        <div>
+                            <h1 class="header-title">JARVIS Assistant</h1>
+                            <p class="header-subtitle">Your Personal AI Life Operating System</p>
+                        </div>
                     </div>
                     <div class="header-actions">
                         <div class="tier-badge tier1" id="privacy-tier-display">LOCAL</div>
@@ -1067,7 +1264,164 @@
                         </div>
                     </div>
                 </section>
-                
+
+                <!-- Builds Panel -->
+                <section class="builds-area glass-card" id="builds-panel" style="display: none;">
+                    <div style="padding: 20px;">
+                        <h2 style="margin-bottom: 16px;"><i class="fas fa-hammer"></i> Build Dashboard</h2>
+                        <div style="margin-bottom: 16px; display: flex; gap: 10px;">
+                            <input type="text" id="build-goal-input" placeholder="Enter build goal..." style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--glass-border); background: var(--glass-bg); color: var(--text-primary);">
+                            <button onclick="startBuild()" style="padding: 10px 20px; background: var(--primary-blue); color: white; border: none; border-radius: 8px; cursor: pointer;">Build</button>
+                            <button onclick="refreshBuilds()" style="padding: 10px 20px; background: var(--glass-bg); color: var(--text-primary); border: 1px solid var(--glass-border); border-radius: 8px; cursor: pointer;">Refresh</button>
+                        </div>
+                        <div id="builds-list">
+                            <div class="status-item"><span class="status-label">No builds yet</span></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Quality Panel -->
+                <section class="builds-area glass-card" id="quality-panel" style="display: none;">
+                    <div style="padding: 20px;">
+                        <h2 style="margin-bottom: 16px;"><i class="fas fa-chart-line"></i> Quality Scores</h2>
+                        <div id="quality-content" style="display: flex; flex-direction: column; gap: 12px;">
+                            <div class="status-item"><span class="status-label">Loading...</span></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Governor Panel -->
+                <section class="builds-area glass-card" id="governor-panel" style="display: none;">
+                    <div style="padding: 20px;">
+                        <h2 style="margin-bottom: 16px;"><i class="fas fa-gavel"></i> Governor Decisions</h2>
+                        <div style="margin-bottom: 12px; display: flex; gap: 8px;">
+                            <select id="governor-project-select" style="flex:1; padding:8px; border-radius:6px; border:1px solid var(--glass-border); background:var(--glass-bg); color:var(--text-primary);">
+                                <option value="">-- Select project --</option>
+                            </select>
+                            <button onclick="refreshGovernor()" style="padding:8px 16px; background:var(--glass-bg); color:var(--text-primary); border:1px solid var(--glass-border); border-radius:6px; cursor:pointer;">Load</button>
+                        </div>
+                        <div id="governor-content">
+                            <div class="status-item"><span class="status-label">Select a project</span></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Environment Panel -->
+                <section class="builds-area glass-card" id="environment-panel" style="display: none;">
+                    <div style="padding: 20px;">
+                        <h2 style="margin-bottom: 16px;"><i class="fas fa-microchip"></i> Environment Health</h2>
+                        <div id="environment-content" style="display: flex; flex-direction: column; gap: 12px;">
+                            <div class="status-item"><span class="status-label">Loading...</span></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Identity Panel -->
+                <section class="builds-area glass-card" id="identity-panel" style="display: none;">
+                    <div style="padding: 20px;">
+                        <h2 style="margin-bottom: 16px;"><i class="fas fa-id-card"></i> System Identity</h2>
+                        <div id="identity-content" style="display: flex; flex-direction: column; gap: 12px;">
+                            <div class="status-item"><span class="status-label">Loading...</span></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Channels Panel -->
+                <section class="builds-area glass-card" id="channels-panel" style="display: none;">
+                    <div style="padding: 20px;">
+                        <h2 style="margin-bottom: 16px;"><i class="fas fa-plug"></i> Channel Integrations</h2>
+                        <div id="channels-content" class="panel-grid"></div>
+                    </div>
+                </section>
+
+                <!-- Commitments Panel -->
+                <section class="builds-area glass-card" id="commitments-panel" style="display: none;">
+                    <div style="padding: 20px;">
+                        <h2 style="margin-bottom: 16px;"><i class="fas fa-check-double"></i> Commitments <span id="commitment-badge" class="badge" style="display:none;"></span></h2>
+                        <div id="commitments-content" style="display: flex; flex-direction: column; gap: 8px;"></div>
+                    </div>
+                </section>
+
+                <!-- MCP Panel -->
+                <section class="builds-area glass-card" id="mcp-panel" style="display: none;">
+                    <div style="padding: 20px;">
+                        <h2 style="margin-bottom: 16px;"><i class="fas fa-network-wired"></i> MCP Tools</h2>
+                        <div id="mcp-content" class="panel-grid"></div>
+                    </div>
+                </section>
+
+                <!-- Sandbox Panel -->
+                <section class="builds-area glass-card" id="sandbox-panel" style="display: none;">
+                    <div style="padding: 20px;">
+                        <h2 style="margin-bottom: 16px;"><i class="fas fa-container"></i> Docker Sandbox</h2>
+                        <div id="sandbox-content" style="display: flex; flex-direction: column; gap: 12px;">
+                            <div class="status-item"><span class="status-label">Status: <span id="sandbox-status">Checking...</span></span></div>
+                            <textarea id="sandbox-code" placeholder="Enter Python code to run in isolated container..." style="width:100%;height:120px;background:var(--darker-bg);color:var(--text-primary);border:1px solid var(--glass-border);border-radius:12px;padding:12px;font-family:'Share Tech',monospace;font-size:14px;"></textarea>
+                            <button onclick="runSandbox()" style="background:var(--gradient-blue);border:none;border-radius:12px;padding:10px 24px;color:#fff;cursor:pointer;font-family:'Space Grotesk',sans-serif;width:fit-content;">Execute</button>
+                            <pre id="sandbox-output" style="background:var(--darker-bg);border:1px solid var(--glass-border);border-radius:12px;padding:12px;min-height:60px;font-size:13px;color:var(--text-secondary);overflow:auto;"></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Security Panel -->
+                <section class="builds-area glass-card" id="security-panel" style="display: none;">
+                    <div style="padding: 20px;">
+                        <h2 style="margin-bottom: 16px;"><i class="fas fa-shield"></i> Security Audit</h2>
+                        <div style="display:flex;gap:12px;margin-bottom:16px;">
+                            <button onclick="runSecurityAudit()" style="background:var(--gradient-blue);border:none;border-radius:12px;padding:10px 24px;color:#fff;cursor:pointer;font-family:'Space Grotesk',sans-serif;">Run Full Audit</button>
+                        </div>
+                        <div id="security-content"></div>
+                    </div>
+                </section>
+
+                <!-- OAuth Panel -->
+                <section class="builds-area glass-card" id="oauth-panel" style="display: none;">
+                    <div style="padding: 20px;">
+                        <h2 style="margin-bottom: 16px;"><i class="fas fa-key"></i> OAuth Connections</h2>
+                        <div id="oauth-content" class="panel-grid"></div>
+                    </div>
+                </section>
+
+                <!-- Agents Panel -->
+                <section class="builds-area glass-card" id="agents-panel" style="display: none;">
+                    <div style="padding: 20px;">
+                        <h2 style="margin-bottom: 16px;"><i class="fas fa-users"></i> JARVIS Sub-Agents</h2>
+                        <div id="agents-status" style="margin-bottom: 12px; font-size: 13px; color: var(--text-secondary);">Loading agents...</div>
+                        <div id="agents-grid" class="panel-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; margin-bottom: 16px;"></div>
+                        <div id="agent-output-area" style="display: none; margin-top: 12px; padding: 12px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 8px;">
+                            <h3 style="margin-bottom: 8px;"><i class="fas fa-terminal"></i> <span id="agent-output-title">Output</span></h3>
+                            <pre id="agent-output-content" style="white-space: pre-wrap; font-size: 12px; max-height: 300px; overflow-y: auto; color: var(--text-secondary);"></pre>
+                            <div id="agent-output-error" style="color: var(--error); display: none; margin-top: 8px;"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Plugins Panel -->
+                <section class="builds-area glass-card" id="plugins-panel" style="display: none;">
+                    <div style="padding: 20px;">
+                        <h2 style="margin-bottom: 16px;"><i class="fas fa-puzzle-piece"></i> Plugin Store</h2>
+                        
+                        <div class="plugin-tabs" style="display: flex; gap: 20px; margin-bottom: 20px; border-bottom: 1px solid var(--glass-border);">
+                            <div class="plugin-tab active" data-ptab="installed" style="cursor: pointer; padding: 10px 5px; color: var(--primary-blue); border-bottom: 2px solid var(--primary-blue);">Installed</div>
+                            <div class="plugin-tab" data-ptab="marketplace" style="cursor: pointer; padding: 10px 5px;">Marketplace</div>
+                        </div>
+
+                        <div id="installed-plugins">
+                            <div class="status-item"><span class="status-label">Loading installed plugins...</span></div>
+                        </div>
+
+                        <div id="marketplace-plugins" style="display: none;">
+                            <div style="margin-bottom: 16px; display: flex; gap: 10px;">
+                                <input type="text" id="plugin-search-input" placeholder="Search PyPI for 'jarvis-plugin-*'..." style="flex: 1; padding: 12px; border-radius: 12px; border: 1px solid var(--glass-border); background: var(--glass-bg); color: var(--text-primary); outline: none;">
+                                <button onclick="searchPlugins()" style="padding: 10px 24px; background: var(--gradient-blue); color: white; border: none; border-radius: 12px; cursor: pointer; font-family: inherit; font-weight: 600;">Search</button>
+                            </div>
+                            <div id="marketplace-list" class="panel-grid">
+                                <div class="status-item"><span class="status-label">Search for plugins to see results</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
                 <!-- Bottom Panel: Privacy Visualization -->
                 <footer class="glass-card" style="padding: 10px 20px; display: flex; align-items: center; justify-content: space-between;">
                     <div style="font-size: 11px; color: var(--text-dim);">
@@ -1173,6 +1527,9 @@
             </div>
         </aside>
     </div>
+
+    <!-- Mobile Sidebar Overlay -->
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
     <!-- Settings Modal -->
     <div class="modal-overlay" id="settings-modal">
@@ -1634,6 +1991,16 @@
             });
         }
 
+        // Mobile sidebar toggle
+        document.getElementById('mobile-menu-btn')?.addEventListener('click', () => {
+            document.querySelector('.sidebar')?.classList.toggle('open');
+            document.querySelector('.sidebar-overlay')?.classList.toggle('active');
+        });
+        document.getElementById('sidebar-overlay')?.addEventListener('click', () => {
+            document.querySelector('.sidebar')?.classList.remove('open');
+            document.querySelector('.sidebar-overlay')?.classList.remove('active');
+        });
+
         document.querySelectorAll('.quick-action').forEach(btn => {
             btn.addEventListener('click', () => {
                 executeQuickAction(btn.dataset.action);
@@ -1644,25 +2011,156 @@
             item.addEventListener('click', () => {
                 document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
                 item.classList.add('active');
+                document.querySelector('.sidebar')?.classList.remove('open');
+                document.querySelector('.sidebar-overlay')?.classList.remove('active');
+                const section = item.dataset.section;
+                const chatArea = document.querySelector('.chat-area');
+                const panelSections = ['builds','quality','governor','environment','identity',
+                    'channels','commitments','mcp','sandbox','security','oauth','stt','agents', 'plugins'];
+                const panels = ['builds-panel','quality-panel','governor-panel','environment-panel','identity-panel',
+                    'channels-panel','commitments-panel','mcp-panel','sandbox-panel','security-panel','oauth-panel','stt-panel','agents-panel', 'plugins-panel'];
+                panels.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.style.display = 'none';
+                });
+                if (panelSections.includes(section)) {
+                    chatArea.style.display = 'none';
+                    const panelId = section === 'builds' ? 'builds-panel' : section + '-panel';
+                    const el = document.getElementById(panelId);
+                    if (el) el.style.display = 'block';
+                    if (section === 'builds') refreshBuilds();
+                    else if (section === 'quality') refreshQuality();
+                    else if (section === 'governor') refreshGovernorProjects();
+                    else if (section === 'environment') refreshEnvironment();
+                    else if (section === 'identity') refreshIdentity();
+                    else if (section === 'channels') refreshChannels();
+                    else if (section === 'commitments') refreshCommitments();
+                    else if (section === 'mcp') refreshMCP();
+                    else if (section === 'sandbox') refreshSandbox();
+                    else if (section === 'security') { /* manual trigger via button */ }
+                    else if (section === 'oauth') refreshOAuth();
+                    else if (section === 'stt') refreshSTT();
+                    else if (section === 'agents') refreshAgents();
+                    else if (section === 'plugins') refreshPlugins();
+                } else {
+                    chatArea.style.display = 'flex';
+                }
             });
         });
 
-        // 3D Mouse Tilt Effect
-        document.querySelectorAll('.tilt-element').forEach(el => {
-            el.addEventListener('mousemove', (e) => {
-                const rect = el.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-                const centerX = rect.width / 2;
-                const centerY = rect.height / 2;
-                const rotateX = (y - centerY) / 20;
-                const rotateY = (centerX - x) / 20;
-                
-                el.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
-            });
-            
-            el.addEventListener('mouseleave', () => {
-                el.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg)';
+        // Plugin Dashboard Functions
+        async function refreshPlugins() {
+            const instList = document.getElementById('installed-plugins');
+            try {
+                const r = await fetch(API_URL + '/api/plugins');
+                const data = await r.json();
+                const plugins = data.plugins || [];
+                if (plugins.length === 0) {
+                    instList.innerHTML = '<div class="status-item"><span class="status-label">No plugins installed</span></div>';
+                    return;
+                }
+                instList.innerHTML = `
+                    <div class="panel-grid">
+                        ${plugins.map(p => `
+                            <div class="panel-card">
+                                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                                    <div class="card-title"><i class="fas fa-puzzle-piece" style="color:var(--primary-blue);"></i> ${p.name || p.id}</div>
+                                    <div style="display:flex;gap:4px;">
+                                        <button onclick="togglePlugin('${p.id}', ${p.enabled})" style="padding:4px 8px;font-size:10px;background:var(--glass-bg);color:var(--text-primary);border:1px solid var(--glass-border);border-radius:4px;cursor:pointer;">
+                                            ${p.enabled ? 'Disable' : 'Enable'}
+                                        </button>
+                                        <button onclick="reloadPlugin('${p.id}')" style="padding:4px 8px;font-size:10px;background:var(--glass-bg);color:var(--text-primary);border:1px solid var(--glass-border);border-radius:4px;cursor:pointer;">
+                                            Reload
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="card-body" style="font-size:11px;">${p.description || 'No description'}</div>
+                                <div style="font-size:10px;color:var(--text-dim);margin-top:8px;">Version: ${p.version || '0.1.0'}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            } catch (e) {
+                instList.innerHTML = '<div class="status-item"><span class="status-label">Error loading plugins</span></div>';
+            }
+        }
+
+        async function searchPlugins() {
+            const qInput = document.getElementById('plugin-search-input');
+            const q = qInput.value.trim();
+            if (!q) return;
+            const list = document.getElementById('marketplace-list');
+            list.innerHTML = '<div class="status-item"><span class="status-label">Searching PyPI...</span></div>';
+            try {
+                const r = await fetch(API_URL + '/api/plugins/search?q=' + encodeURIComponent(q));
+                const data = await r.json();
+                const results = data.results || [];
+                if (results.length === 0) {
+                    list.innerHTML = '<div class="status-item"><span class="status-label">No plugins found</span></div>';
+                    return;
+                }
+                list.innerHTML = results.map(p => `
+                    <div class="panel-card">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                            <div class="card-title"><i class="fab fa-python" style="color:var(--warning);"></i> ${p.name}</div>
+                            <button onclick="installPlugin('${p.name}')" style="padding:6px 12px;font-size:11px;background:var(--gradient-blue);border:none;border-radius:6px;color:#fff;cursor:pointer;">
+                                <i class="fas fa-download"></i> Install
+                            </button>
+                        </div>
+                        <div class="card-body" style="font-size:11px;">${p.description}</div>
+                        <div style="font-size:10px;color:var(--text-dim);margin-top:8px;">v${p.version}</div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                list.innerHTML = '<div class="status-item"><span class="status-label">Search failed</span></div>';
+            }
+        }
+
+        async function installPlugin(name) {
+            if (!confirm(`Install ${name} via pip?`)) return;
+            try {
+                const r = await fetch(API_URL + '/api/plugins/install', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({package_name: name})
+                });
+                const data = await r.json();
+                alert(`Successfully installed ${name}! Restart JARVIS to load.`);
+            } catch (e) {
+                alert(`Installation failed: ${e.message}`);
+            }
+        }
+
+        async function togglePlugin(id, currentlyEnabled) {
+            const action = currentlyEnabled ? 'disable' : 'enable';
+            try {
+                await fetch(`${API_URL}/api/plugins/${id}/${action}`, {method: 'POST'});
+                refreshPlugins();
+            } catch (e) { console.error(e); }
+        }
+
+        async function reloadPlugin(id) {
+            try {
+                await fetch(`${API_URL}/api/plugins/${id}/reload`, {method: 'POST'});
+                refreshPlugins();
+            } catch (e) { console.error(e); }
+        }
+
+        // Plugin tab switching
+        document.querySelectorAll('.plugin-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.plugin-tab').forEach(t => {
+                    t.classList.remove('active');
+                    t.style.color = 'var(--text-secondary)';
+                    t.style.borderBottom = 'none';
+                });
+                tab.classList.add('active');
+                tab.style.color = 'var(--primary-blue)';
+                tab.style.borderBottom = '2px solid var(--primary-blue)';
+                const target = tab.dataset.ptab;
+                document.getElementById('installed-plugins').style.display = target === 'installed' ? 'block' : 'none';
+                document.getElementById('marketplace-plugins').style.display = target === 'marketplace' ? 'block' : 'none';
+                if (target === 'installed') refreshPlugins();
             });
         });
 
@@ -1688,6 +2186,603 @@
         document.getElementById('privacy-select').value = savedTier;
         const tierName = document.getElementById('privacy-select').options[document.getElementById('privacy-select').selectedIndex].text.split('—')[0].trim();
         document.getElementById('privacy-tier').textContent = tierName.toUpperCase();
+
+        // Build Dashboard Functions
+        function startBuild() {
+            const goal = document.getElementById('build-goal-input').value.trim();
+            if (!goal) return;
+            fetch(API_URL + '/api/build/start', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({goal: goal})
+            })
+            .then(r => r.json())
+            .then(data => {
+                document.getElementById('build-goal-input').value = '';
+                refreshBuilds();
+            })
+            .catch(err => console.error('Build start error:', err));
+        }
+
+        function refreshBuilds() {
+            fetch(API_URL + '/api/build/projects')
+            .then(r => r.json())
+            .then(data => {
+                const projects = data.projects || data || [];
+                const list = document.getElementById('builds-list');
+                if (!Array.isArray(projects) || projects.length === 0) {
+                    list.innerHTML = '<div class="status-item"><span class="status-label">No builds yet</span></div>';
+                    return;
+                }
+                list.innerHTML = projects.map(p => {
+                    const statusColor = p.status === 'done' ? 'var(--success)' : p.status === 'failed' ? 'var(--error)' : 'var(--warning)';
+                    return '<div class="status-item" style="border-bottom: 1px solid var(--glass-border); padding: 8px 0;">' +
+                        '<span class="status-label">' + (p.goal || p.name).substring(0, 50) + '</span>' +
+                        '<span class="status-indicator" style="color: ' + statusColor + ';">' + p.status + '</span>' +
+                        '</div>';
+                }).join('');
+            })
+            .catch(err => console.error('Build refresh error:', err));
+        }
+
+        // Quality Dashboard Functions
+        async function refreshQuality() {
+            try {
+                const r = await fetch(API_URL + '/api/build/projects');
+                const data = await r.json();
+                const projects = data.projects || [];
+                const container = document.getElementById('quality-content');
+                if (projects.length === 0) {
+                    container.innerHTML = '<div class="status-item"><span class="status-label">No projects to score</span></div>';
+                    return;
+                }
+                let html = '';
+                for (const p of projects) {
+                    html += '<div class="status-item" style="border-bottom:1px solid var(--glass-border);padding:10px 0;cursor:pointer;" onclick="showQualityDetail(\'' + p.name + '\')">' +
+                        '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+                        '<span class="status-label">' + p.name + '</span>' +
+                        '<span style="color:' + (p.status === 'done' ? 'var(--success)' : 'var(--warning)') + ';font-size:12px;">' + p.status + '</span>' +
+                        '</div></div>';
+                }
+                container.innerHTML = html;
+            } catch (e) {
+                document.getElementById('quality-content').innerHTML = '<div class="status-item"><span class="status-label">Offline</span></div>';
+            }
+        }
+
+        async function showQualityDetail(projectName) {
+            try {
+                const r = await fetch(API_URL + '/api/build/status/' + projectName);
+                const detail = await r.json();
+                const qs = detail.quality_score;
+                const pp = detail.partial_progress;
+                let html = '<div style="padding:8px;background:var(--glass-bg);border-radius:8px;margin-bottom:8px;">' +
+                    '<h3 style="margin-bottom:8px;">' + projectName + '</h3>';
+                if (qs) {
+                    html += '<div style="margin:8px 0;"><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-secondary);margin-bottom:4px;">' +
+                        '<span>Overall Score</span><span>' + qs.average + '/10</span></div>' +
+                        '<div style="height:6px;background:var(--glass-bg);border-radius:3px;overflow:hidden;">' +
+                        '<div style="height:100%;width:' + (qs.average * 10) + '%;background:var(--gradient-blue);border-radius:3px;transition:width 0.5s;"></div></div></div>' +
+                        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px;">' +
+                        '<span>Design: ' + qs.design_consistency + '</span>' +
+                        '<span>Responsiveness: ' + qs.responsiveness + '</span>' +
+                        '<span>Content: ' + qs.content_quality + '</span>' +
+                        '<span>Navigation: ' + qs.navigation_quality + '</span>' +
+                        '<span>Code: ' + qs.code_quality + '</span>' +
+                        '</div>';
+                }
+                if (pp) {
+                    html += '<div style="margin-top:8px;font-size:12px;color:var(--text-secondary);">Progress: ' +
+                        (pp.overall || 0) + '% (' + (pp.completed_pages || 0) + '/' + (pp.total_pages || 0) + ' pages)</div>';
+                }
+                html += '<button onclick="document.getElementById(\'quality-detail\').innerHTML=\'\';refreshQuality();" style="margin-top:10px;padding:6px 12px;background:var(--glass-bg);color:var(--text-primary);border:1px solid var(--glass-border);border-radius:6px;cursor:pointer;">Back</button></div>';
+                document.getElementById('quality-content').innerHTML = html;
+            } catch (e) {
+                console.error('Quality detail error:', e);
+            }
+        }
+
+        // Governor Dashboard Functions
+        async function refreshGovernorProjects() {
+            try {
+                const r = await fetch(API_URL + '/api/build/projects');
+                const data = await r.json();
+                const projects = data.projects || [];
+                const sel = document.getElementById('governor-project-select');
+                sel.innerHTML = '<option value="">-- Select project --</option>' +
+                    projects.map(p => '<option value="' + p.name + '">' + p.name + ' (' + p.status + ')</option>').join('');
+                sel.onchange = function() {
+                    if (this.value) refreshGovernor();
+                };
+            } catch (e) {
+                document.getElementById('governor-content').innerHTML = '<div class="status-item"><span class="status-label">Offline</span></div>';
+            }
+        }
+
+        async function refreshGovernor() {
+            const projectName = document.getElementById('governor-project-select').value;
+            if (!projectName) return;
+            try {
+                const r = await fetch(API_URL + '/api/build/governor/history/' + projectName);
+                const data = await r.json();
+                const decisions = data.decisions || [];
+                const container = document.getElementById('governor-content');
+                if (decisions.length === 0) {
+                    container.innerHTML = '<div class="status-item"><span class="status-label">No decisions recorded</span></div>';
+                    return;
+                }
+                container.innerHTML = decisions.map(d => {
+                    const actionColor = d.action === 'abort' ? 'var(--error)' : d.action === 'retry' ? 'var(--primary-blue)' :
+                        d.action === 'replan' ? 'var(--warning)' : 'var(--success)';
+                    const actionIcon = d.action === 'abort' ? 'fa-ban' : d.action === 'retry' ? 'fa-rotate' :
+                        d.action === 'replan' ? 'fa-pen' : 'fa-check';
+                    return '<div class="status-item" style="border-bottom:1px solid var(--glass-border);padding:8px 0;">' +
+                        '<div style="display:flex;align-items:center;gap:8px;">' +
+                        '<i class="fas ' + actionIcon + '" style="color:' + actionColor + ';width:16px;"></i>' +
+                        '<span class="status-label" style="text-transform:capitalize;">' + d.action + '</span>' +
+                        '<span style="color:var(--text-dim);font-size:11px;">(' + d.confidence.toFixed(2) + ')</span>' +
+                        '</div>' +
+                        '<div style="color:var(--text-dim);font-size:11px;margin-top:4px;margin-left:24px;">' + d.reason + '</div>' +
+                        '</div>';
+                }).join('');
+            } catch (e) {
+                document.getElementById('governor-content').innerHTML = '<div class="status-item"><span class="status-label">Failed to load</span></div>';
+            }
+        }
+
+        // Environment Dashboard Functions
+        async function refreshEnvironment() {
+            try {
+                const r = await fetch(API_URL + '/api/build/environment');
+                const env = await r.json();
+                const container = document.getElementById('environment-content');
+                const healthItems = [
+                    { label: 'Disk', value: env.disk_free_gb + ' / ' + env.disk_total_gb + ' GB', icon: 'fa-hard-drive', ok: env.disk_free_gb > 5 },
+                    { label: 'Memory', value: env.memory_free_mb + ' / ' + env.memory_total_mb + ' MB', icon: 'fa-memory', ok: env.memory_free_mb > 500 },
+                    { label: 'Ollama', value: env.ollama_available ? (env.ollama_latency_ms + ' ms') : 'Offline', icon: 'fa-brain', ok: env.ollama_available },
+                    { label: 'Network', value: env.network_reachable ? 'Connected' : 'Disconnected', icon: 'fa-wifi', ok: env.network_reachable },
+                ];
+                container.innerHTML = healthItems.map(h =>
+                    '<div class="status-item" style="border-bottom:1px solid var(--glass-border);padding:10px 0;">' +
+                    '<div style="display:flex;align-items:center;gap:10px;">' +
+                    '<i class="fas ' + h.icon + '" style="color:' + (h.ok ? 'var(--success)' : 'var(--error)') + ';width:18px;"></i>' +
+                    '<span class="status-label">' + h.label + '</span>' +
+                    '<span style="margin-left:auto;color:' + (h.ok ? 'var(--success)' : 'var(--error)') + ';font-size:13px;">' + h.value + '</span>' +
+                    '</div></div>'
+                ).join('');
+                if (env.warnings && env.warnings.length > 0) {
+                    container.innerHTML += '<div style="margin-top:12px;padding:10px;background:rgba(255,170,0,0.1);border:1px solid var(--warning);border-radius:8px;">' +
+                        '<div style="color:var(--warning);font-weight:600;margin-bottom:6px;"><i class="fas fa-exclamation-triangle"></i> Warnings</div>' +
+                        env.warnings.map(w => '<div style="color:var(--warning);font-size:12px;padding:2px 0;">' + w + '</div>').join('') +
+                        '</div>';
+                }
+            } catch (e) {
+                document.getElementById('environment-content').innerHTML = '<div class="status-item"><span class="status-label">Offline</span></div>';
+            }
+        }
+
+        // Identity Dashboard Functions
+        async function refreshIdentity() {
+            try {
+                const r = await fetch(API_URL + '/api/build/identity');
+                const id = await r.json();
+                const container = document.getElementById('identity-content');
+                container.innerHTML =
+                    '<div style="text-align:center;margin-bottom:16px;">' +
+                    '<div style="font-size:28px;font-weight:800;background:var(--gradient-blue);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">' + id.name + '</div>' +
+                    '<div style="color:var(--text-dim);font-size:13px;">v' + id.version + '</div></div>' +
+                    '<div style="margin-bottom:12px;"><strong style="color:var(--text-secondary);font-size:12px;">CAPABILITIES (' + id.capabilities.length + ')</strong></div>' +
+                    '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;">' +
+                    id.capabilities.map(c => '<span style="padding:4px 10px;background:rgba(0,212,255,0.1);border:1px solid rgba(0,212,255,0.2);border-radius:12px;font-size:11px;color:var(--primary-blue);">' + c + '</span>').join('') +
+                    '</div>' +
+                    '<div style="margin-bottom:12px;"><strong style="color:var(--text-secondary);font-size:12px;">MODELS</strong></div>' +
+                    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">' +
+                    Object.entries(id.models || {}).map(([k,v]) => '<div style="padding:6px;background:var(--glass-bg);border-radius:6px;font-size:11px;"><span style="color:var(--text-dim);">' + k + ':</span> ' + v + '</div>').join('') +
+                    '</div>' +
+                    '<div style="margin-bottom:12px;"><strong style="color:var(--text-secondary);font-size:12px;">PHASES IMPLEMENTED</strong></div>' +
+                    (id.phases_implemented || []).map(p => '<div style="padding:4px 0;font-size:11px;color:var(--text-dim);"><i class="fas fa-check-circle" style="color:var(--success);width:16px;"></i> ' + p + '</div>').join('');
+            } catch (e) {
+                document.getElementById('identity-content').innerHTML = '<div class="status-item"><span class="status-label">Offline</span></div>';
+            }
+        }
+
+        // ══════════════════════════════════════════════
+        //  NEW PANEL FUNCTIONS
+        // ══════════════════════════════════════════════
+
+        // Channels Panel
+        async function refreshChannels() {
+            try {
+                const r = await fetch(API_URL + '/api/channels');
+                const data = await r.json();
+                const ch = data.channels || [];
+                const container = document.getElementById('channels-content');
+                if (ch.length === 0) {
+                    container.innerHTML = '<div class="status-item"><span class="status-label">No channels configured</span></div>';
+                    return;
+                }
+                container.innerHTML = ch.map(c => `
+                    <div class="panel-card">
+                        <div class="card-title"><i class="fas fa-plug"></i> ${c.name}</div>
+                        <div class="card-body">${c.description}</div>
+                        <div><span class="card-status ${c.running ? 'status-running' : 'status-stopped'}">${c.running ? 'Running' : 'Stopped'}</span></div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                document.getElementById('channels-content').innerHTML = '<div class="status-item"><span class="status-label">Offline</span></div>';
+            }
+        }
+
+        // Commitments Panel
+        async function refreshCommitments() {
+            try {
+                const r = await fetch(API_URL + '/api/commitments');
+                const data = await r.json();
+                const cmts = data.commitments || [];
+                const container = document.getElementById('commitments-content');
+                const badge = document.getElementById('commitment-badge');
+                const pending = cmts.filter(c => c.status === 'pending');
+                if (pending.length > 0) {
+                    badge.style.display = 'inline';
+                    badge.textContent = pending.length;
+                } else {
+                    badge.style.display = 'none';
+                }
+                if (cmts.length === 0) {
+                    container.innerHTML = '<div class="status-item"><span class="status-label">No commitments yet</span></div>';
+                    return;
+                }
+                container.innerHTML = cmts.map(c => {
+                    const cls = c.status === 'pending' ? 'cmt-pending' : 'cmt-completed';
+                    const icon = c.status === 'completed' ? 'fa-check-circle' : 'fa-circle';
+                    const color = c.status === 'completed' ? 'var(--success)' : c.status === 'pending' && c.due && new Date(c.due) < new Date() ? 'var(--error)' : 'var(--warning)';
+                    return `<div class="${cls}" style="padding:8px 0;border-bottom:1px solid var(--glass-border);">
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <i class="fas ${icon}" style="color:${color};"></i>
+                            <span>${c.description}</span>
+                            <span style="margin-left:auto;font-size:11px;color:var(--text-dim);">
+                                ${c.priority} ${c.due ? '| due ' + new Date(c.due).toLocaleDateString() : ''}
+                            </span>
+                        </div>
+                    </div>`;
+                }).join('');
+            } catch (e) {
+                document.getElementById('commitments-content').innerHTML = '<div class="status-item"><span class="status-label">Offline</span></div>';
+            }
+        }
+
+        // MCP Tools Panel
+        async function refreshMCP() {
+            try {
+                const r = await fetch(API_URL + '/mcp/tools');
+                const data = await r.json();
+                const tools = data.tools || [];
+                const container = document.getElementById('mcp-content');
+                if (tools.length === 0) {
+                    container.innerHTML = '<div class="status-item"><span class="status-label">No MCP tools available</span></div>';
+                    return;
+                }
+                container.innerHTML = tools.map(t => `
+                    <div class="panel-card">
+                        <div class="card-title"><i class="fas fa-wrench"></i> ${t.name}</div>
+                        <div class="card-body">${t.description}</div>
+                        <div style="font-size:11px;color:var(--text-dim);margin-top:8px;">
+                            ${t.inputSchema && t.inputSchema.properties ? Object.keys(t.inputSchema.properties).length + ' parameter(s)' : ''}
+                        </div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                document.getElementById('mcp-content').innerHTML = '<div class="status-item"><span class="status-label">Offline</span></div>';
+            }
+        }
+
+        // Sandbox Panel
+        async function refreshSandbox() {
+            try {
+                const r = await fetch(API_URL + '/api/sandbox/status');
+                const data = await r.json();
+                document.getElementById('sandbox-status').textContent = data.available ? 'Available' : 'Not available';
+                document.getElementById('sandbox-status').style.color = data.available ? 'var(--success)' : 'var(--error)';
+            } catch (e) {
+                document.getElementById('sandbox-status').textContent = 'Offline';
+                document.getElementById('sandbox-status').style.color = 'var(--error)';
+            }
+        }
+
+        async function runSandbox() {
+            const code = document.getElementById('sandbox-code').value;
+            if (!code) return;
+            const output = document.getElementById('sandbox-output');
+            output.textContent = 'Running...';
+            try {
+                const r = await fetch(API_URL + '/api/sandbox/exec', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({code, timeout: 30}),
+                });
+                const data = await r.json();
+                output.textContent = data.success ? data.stdout : (data.stderr || data.error || 'Error');
+                output.style.color = data.success ? 'var(--success)' : 'var(--error)';
+            } catch (e) {
+                output.textContent = 'Failed: ' + e.message;
+                output.style.color = 'var(--error)';
+            }
+        }
+
+        // Security Audit Panel
+        async function runSecurityAudit() {
+            const container = document.getElementById('security-content');
+            container.innerHTML = '<div class="status-item"><span class="status-label">Running audit...</span></div>';
+            try {
+                const r = await fetch(API_URL + '/api/security/audit', {method: 'POST'});
+                const data = await r.json();
+                const summary = data.summary || {};
+                const findings = data.findings || [];
+                let html = `
+                    <div class="status-item" style="margin-bottom:16px;">
+                        <span class="status-label">Summary</span>
+                        <div style="display:flex;gap:16px;margin-top:8px;">
+                            <div style="padding:8px 16px;background:rgba(255,68,102,0.1);border-radius:8px;text-align:center;">
+                                <div style="font-size:24px;color:var(--error);">${summary.critical || 0}</div>
+                                <div style="font-size:11px;color:var(--text-dim);">Critical</div>
+                            </div>
+                            <div style="padding:8px 16px;background:rgba(255,106,0,0.1);border-radius:8px;text-align:center;">
+                                <div style="font-size:24px;color:var(--warning);">${summary.high || 0}</div>
+                                <div style="font-size:11px;color:var(--text-dim);">High</div>
+                            </div>
+                            <div style="padding:8px 16px;background:rgba(255,170,0,0.1);border-radius:8px;text-align:center;">
+                                <div style="font-size:24px;color:#ffaa00;">${summary.medium || 0}</div>
+                                <div style="font-size:11px;color:var(--text-dim);">Medium</div>
+                            </div>
+                            <div style="padding:8px 16px;background:rgba(0,212,255,0.1);border-radius:8px;text-align:center;">
+                                <div style="font-size:24px;color:var(--primary-blue);">${summary.total || 0}</div>
+                                <div style="font-size:11px;color:var(--text-dim);">Total</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                findings.forEach(f => {
+                    const severityClass = 'audit-' + f.severity;
+                    html += `<div class="status-item" style="border-bottom:1px solid var(--glass-border);padding:8px 0;">
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <i class="fas fa-circle" style="color:var(--${f.severity === 'critical' ? 'error' : f.severity === 'high' ? 'warning' : f.severity === 'medium' ? '#ffaa00' : '--primary-blue'});font-size:8px;"></i>
+                            <span class="${severityClass}" style="font-size:11px;text-transform:uppercase;font-weight:600;">${f.severity}</span>
+                            <span class="status-label">${f.message}</span>
+                        </div>
+                        ${f.recommendation ? '<div style="font-size:11px;color:var(--text-dim);margin-left:20px;margin-top:4px;">→ ' + f.recommendation + '</div>' : ''}
+                        ${f.path ? '<div style="font-size:10px;color:var(--text-dim);margin-left:20px;">' + f.path + '</div>' : ''}
+                    </div>`;
+                });
+                container.innerHTML = html;
+            } catch (e) {
+                container.innerHTML = '<div class="status-item"><span class="status-label">Failed: ' + e.message + '</span></div>';
+            }
+        }
+
+        // OAuth Panel
+        async function refreshOAuth() {
+            try {
+                const r = await fetch(API_URL + '/auth/providers');
+                const providersData = await r.json();
+                const r2 = await fetch(API_URL + '/auth/tokens');
+                const tokensData = await r2.json();
+                const providers = providersData.providers || [];
+                const tokens = tokensData.tokens || [];
+                const container = document.getElementById('oauth-content');
+                let html = '';
+                if (providers.length > 0) {
+                    html += '<div style="margin-bottom:12px;"><strong style="font-size:12px;">Available Providers</strong></div>';
+                    html += providers.map(p => `
+                        <div class="panel-card">
+                            <div class="card-title"><i class="fas fa-${p === 'google' ? 'google' : p === 'github' ? 'github' : 'discord'}"></i> ${p.charAt(0).toUpperCase() + p.slice(1)}</div>
+                            <div class="card-body">
+                                <a href="${API_URL}/auth/login/${p}" style="color:var(--primary-blue);font-size:13px;text-decoration:none;">
+                                    <i class="fas fa-external-link-alt"></i> Login with ${p.charAt(0).toUpperCase() + p.slice(1)}
+                                </a>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    html += '<div class="status-item"><span class="status-label">No OAuth providers configured</span></div>';
+                }
+                if (tokens.length > 0) {
+                    html += '<div style="margin-top:16px;margin-bottom:12px;"><strong style="font-size:12px;">Connected Accounts</strong></div>';
+                    html += tokens.map(t => `
+                        <div class="panel-card">
+                            <div class="card-title"><i class="fas fa-user-check"></i> ${t.user || 'Unknown'}</div>
+                            <div class="card-body">
+                                <div>${t.email}</div>
+                                <div style="font-size:11px;color:var(--text-dim);">Provider: ${t.provider} | Connected: ${t.stored_at ? new Date(t.stored_at).toLocaleDateString() : ''}</div>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+                container.innerHTML = html;
+            } catch (e) {
+                document.getElementById('oauth-content').innerHTML = '<div class="status-item"><span class="status-label">Offline</span></div>';
+            }
+        }
+
+        // STT Providers Panel
+        async function refreshSTT() {
+            try {
+                const r = await fetch(API_URL + '/api/stt/providers');
+                const data = await r.json();
+                const providers = data.providers || [];
+                const defaultP = data.default || '';
+                const container = document.getElementById('stt-content');
+                if (providers.length === 0) {
+                    container.innerHTML = '<div class="status-item"><span class="status-label">No STT providers</span></div>';
+                    return;
+                }
+                container.innerHTML = providers.map(p => `
+                    <div class="panel-card">
+                        <div class="card-title">
+                            <i class="fas fa-microphone"></i> ${p}
+                            ${p === defaultP ? '<span class="card-status status-running" style="font-size:10px;">default</span>' : ''}
+                        </div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                document.getElementById('stt-content').innerHTML = '<div class="status-item"><span class="status-label">Offline</span></div>';
+            }
+        }
+
+        // ══════════════════════════════════════════════
+        //  AGENTS — Sub-agent management
+        // ══════════════════════════════════════════════
+
+        async function refreshAgents() {
+            const grid = document.getElementById('agents-grid');
+            const status = document.getElementById('agents-status');
+            if (!grid) return;
+            status.textContent = 'Loading agents...';
+            try {
+                const r = await fetch(API_URL + '/api/v1/agents/');
+                const data = await r.json();
+                const agents = data.agents || [];
+                status.textContent = agents.length + ' sub-agents available';
+                grid.innerHTML = agents.map(a => `
+                    <div class="panel-card" style="padding: 14px;">
+                        <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
+                            <span><i class="fas fa-robot" style="color:var(--primary-blue);"></i> ${a.name}</span>
+                            <span class="card-status" style="font-size:10px;text-transform:uppercase;">${a.status || 'idle'}</span>
+                        </div>
+                        <div style="font-size:11px;color:var(--text-secondary);margin:6px 0;">${a.description || ''}</div>
+                        <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px;">
+                            ${(a.modes || []).map(m => `<span style="font-size:10px;padding:2px 6px;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:4px;">${m}</span>`).join('')}
+                        </div>
+                        <div style="display:flex;gap:6px;">
+                            <input id="agent-task-${a.name}" type="text" placeholder="Enter task..." style="flex:1;padding:6px 10px;font-size:12px;background:var(--darker-bg);border:1px solid var(--glass-border);border-radius:4px;color:var(--text-primary);">
+                            <select id="agent-mode-${a.name}" style="padding:6px;font-size:12px;background:var(--darker-bg);border:1px solid var(--glass-border);border-radius:4px;color:var(--text-primary);">
+                                ${(a.modes || []).map(m => `<option value="${m}">${m}</option>`).join('')}
+                            </select>
+                            <button onclick="runAgent('${a.name}')" style="padding:6px 14px;font-size:12px;background:var(--gradient-blue);border:none;border-radius:4px;color:#fff;cursor:pointer;white-space:nowrap;">
+                                <i class="fas fa-play"></i> Run
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                status.textContent = 'Offline — start the JARVIS server';
+                grid.innerHTML = '<div class="status-item"><span class="status-label">Server unreachable</span></div>';
+            }
+        }
+
+        async function runAgent(name) {
+            const taskInput = document.getElementById('agent-task-' + name);
+            const modeSelect = document.getElementById('agent-mode-' + name);
+            const outputArea = document.getElementById('agent-output-area');
+            const outputTitle = document.getElementById('agent-output-title');
+            const outputContent = document.getElementById('agent-output-content');
+            const outputError = document.getElementById('agent-output-error');
+            if (!taskInput || !taskInput.value.trim()) return;
+
+            outputArea.style.display = 'block';
+            outputTitle.textContent = name + ' running...';
+            outputContent.textContent = 'Waiting for response...';
+            outputError.style.display = 'none';
+
+            try {
+                const r = await fetch(API_URL + '/api/v1/agents/' + name + '/run', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        task: taskInput.value,
+                        mode: modeSelect ? modeSelect.value : null,
+                    }),
+                });
+                const data = await r.json();
+                outputTitle.textContent = name + ' — ' + (data.mode || '') + ' (' + (data.duration_s || 0).toFixed(1) + 's)';
+                outputContent.textContent = data.output || '(no output)';
+                if (!data.success && data.error) {
+                    outputError.style.display = 'block';
+                    outputError.textContent = 'Error: ' + data.error;
+                }
+            } catch (e) {
+                outputTitle.textContent = name + ' — Failed';
+                outputContent.textContent = '';
+                outputError.style.display = 'block';
+                outputError.textContent = 'Request failed: ' + e.message;
+            }
+        }
+
+        // ══════════════════════════════════════════════
+        //  WEBSOCKET — Real-time reasoning traces
+        // ══════════════════════════════════════════════
+        function connectWebSocket() {
+            const wsProto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = wsProto + '//' + window.location.host + '/ws/chat_stream';
+            let ws = null;
+            let reconnectTimer = null;
+
+            function connect() {
+                try {
+                    ws = new WebSocket(wsUrl);
+                    ws.onopen = () => {
+                        console.log('[WS] Connected to JARVIS');
+                        document.getElementById('chat-status-dot') && (document.getElementById('chat-status-dot').style.color = 'var(--success)');
+                    };
+                    ws.onmessage = (e) => {
+                        try {
+                            const msg = JSON.parse(e.data);
+                            if (msg.type === 'stream_token') {
+                                const brainPanel = document.getElementById('brain-panel');
+                                if (brainPanel && brainPanel.style.display !== 'none') {
+                                    const chain = document.getElementById('reasoning-chain');
+                                    if (chain && msg.token) {
+                                        const el = document.createElement('div');
+                                        el.className = 'status-item';
+                                        el.style.cssText = 'border-bottom:1px solid var(--glass-border);padding:4px 0;font-size:11px;';
+                                        el.innerHTML = `<span class="status-label">${msg.token}</span>`;
+                                        chain.appendChild(el);
+                                        chain.scrollTop = chain.scrollHeight;
+                                    }
+                                }
+                            } else if (msg.type === 'tier_status') {
+                                const tierEl = document.getElementById('privacy-tier');
+                                if (tierEl) tierEl.textContent = msg.tier || 'TIER 1';
+                                const tierDisplay = document.getElementById('privacy-tier-display');
+                                if (tierDisplay) tierDisplay.textContent = msg.tier || 'LOCAL';
+                            }
+                        } catch (e) { /* ignore parse errors */ }
+                    };
+                    ws.onclose = () => {
+                        console.log('[WS] Disconnected, reconnecting in 3s...');
+                        document.getElementById('chat-status-dot') && (document.getElementById('chat-status-dot').style.color = 'var(--error)');
+                        reconnectTimer = setTimeout(connect, 3000);
+                    };
+                    ws.onerror = () => { ws && ws.close(); };
+                } catch (e) {
+                    reconnectTimer = setTimeout(connect, 5000);
+                }
+            }
+
+            connect();
+        }
+
+        // Auto-refresh for visible panels
+        setInterval(() => {
+            const panels = ['builds-panel','quality-panel','environment-panel',
+                'channels-panel','commitments-panel','mcp-panel','oauth-panel','stt-panel'];
+            panels.forEach(id => {
+                const el = document.getElementById(id);
+                if (el && el.style.display === 'block') {
+                    const fn = id.replace('-panel','');
+                    if (fn === 'builds') refreshBuilds();
+                    else if (fn === 'quality') refreshQuality();
+                    else if (fn === 'environment') refreshEnvironment();
+                    else if (fn === 'channels') refreshChannels();
+                    else if (fn === 'commitments') refreshCommitments();
+                    else if (fn === 'mcp') refreshMCP();
+                    else if (fn === 'oauth') refreshOAuth();
+                    else if (fn === 'stt') refreshSTT();
+                }
+            });
+        }, 15000);
+
+        // Init WebSocket
+        connectWebSocket();
     </script>
 </body>
 </html>

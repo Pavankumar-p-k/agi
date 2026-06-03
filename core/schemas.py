@@ -1,0 +1,171 @@
+"""core/schemas.py — Pydantic + dataclass models for JARVIS"""
+from __future__ import annotations
+from dataclasses import dataclass, field
+from datetime import datetime
+from dataclasses import dataclass
+from typing import Optional, List, Literal, Any
+from pydantic import BaseModel
+
+
+# ---- Brain dataclasses (Phase 1) ----
+
+@dataclass
+class ReasonResult:
+    answer: str
+    thinking_trace: str = ""
+    confidence: float = 0.0
+    steps_taken: int = 0
+    provenance: dict[str, str] = field(default_factory=dict)
+    model_group: str = "reasoning"
+
+    def to_dict(self) -> dict:
+        return {
+            "conclusion": self.answer,
+            "trace": [t for t in self.thinking_trace.split("\n") if t.strip()] if self.thinking_trace else [],
+            "confidence": self.confidence,
+            "model_group": self.model_group,
+        }
+
+
+@dataclass
+class CritiqueResult:
+    flaws: list[str] = field(default_factory=list)
+    severity: str = "minor"
+    revised_output: str = ""
+
+
+@dataclass
+class Step:
+    id: str = ""
+    description: str = ""
+    depends_on: list[str] = field(default_factory=list)
+    agent_type: str = "general"
+    tools_allowed: list[str] = field(default_factory=lambda: ["*"])
+
+
+@dataclass
+class ToolCall:
+    name: str = ""
+    params: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class LoopStep:
+    thought: str = ""
+    action: ToolCall | None = None
+    observation: str = ""
+
+
+@dataclass
+class LoopResult:
+    done: bool = False
+    answer: str = ""
+    history: list[LoopStep] = field(default_factory=list)
+    steps: int = 0
+
+
+COMPLEX_TASK_TYPES = {"website", "code", "email", "report", "analysis", "research"}
+
+class ChatRequest(BaseModel):
+    message: str
+    context: Optional[str] = ""
+    tier: Optional[str] = None
+    session_id: Optional[str] = None
+    task_type: Optional[str] = None
+    platform: Optional[str] = None
+
+
+class BrowserActionRequest(BaseModel):
+    action: str
+    url: Optional[str] = None
+    selector: Optional[str] = None
+    value: Optional[str] = None
+    script: Optional[str] = None
+
+
+class ReminderCreate(BaseModel):
+    title: str
+    remind_at: datetime
+    description: Optional[str] = ""
+    repeat: Optional[str] = "none"
+
+
+class NoteCreate(BaseModel):
+    title: str
+    content: str
+    tags: Optional[str] = ""
+
+
+class NoteUpdate(BaseModel):
+    title: Optional[str] = None
+    content: Optional[str] = None
+
+
+class MessageRequest(BaseModel):
+    platform: str
+    recipient: str
+    message: str
+
+
+class FaceRegisterRequest(BaseModel):
+    person_name: str
+    relation: Optional[str] = "unknown"
+    info: Optional[str] = ""
+    access_level: Optional[str] = "visitor"
+
+
+class IntentResult(BaseModel):
+    intent: Literal[
+        "play_media", "open_url", "open_app",
+        "web_search", "reminder", "pc_control", "browser_task", "message",
+        "weather", "news", "stocks", "sports", "time",
+        "build", "chat", "code_task"
+    ]
+    target: str = ""
+    parameters: dict = {}
+
+
+class SkillRunRequest(BaseModel):
+    variables: dict = {}
+
+
+class BuildRequest(BaseModel):
+    goal: str
+    output_dir: str = "."
+
+
+class TaskAddRequest(BaseModel):
+    task_id: str
+    schedule: str
+    action_type: str = "custom"
+    params: dict = {}
+
+
+class CodeReviewRequest(BaseModel):
+    code: str
+    language: Optional[str] = "python"
+    context: Optional[str] = ""
+
+
+class HorizonGoalRequest(BaseModel):
+    goal: str
+    domain: str = "general"
+    horizon: str = "weekly"
+    deadline: str = ""
+
+
+class HorizonStatusUpdate(BaseModel):
+    status: str
+
+class QualityGradeRequest(BaseModel):
+    type: str
+    content: str
+
+@dataclass
+class MultiFormatResponse:
+    prose: str
+    json_data: Optional[dict] = None
+    html: Optional[str] = None
+    artifact_type: Optional[str] = None
+    artifact_code: Optional[str] = None
+    format_used: str = "prose"

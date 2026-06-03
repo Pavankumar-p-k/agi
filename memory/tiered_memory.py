@@ -1,8 +1,46 @@
 import time
 import os
+import logging
+from dataclasses import dataclass, field
 from typing import List, Dict, Any, Optional
-from mem0 import Memory
+
+logger = logging.getLogger(__name__)
+
+from mem0 import Memory as Mem0Memory
 from memory.embedding_memory import embedding_memory
+
+
+@dataclass
+class Memory:
+    type: str = "fact"
+    value: str = ""
+    summary: str = ""
+    count: int = 1
+    trigger: Optional[str] = None
+    fix: Optional[str] = None
+    input_pattern: Optional[str] = None
+    outcome: Optional[str] = None
+    embedding: Optional[list[float]] = None
+    timestamp: float = 0.0
+    metadata: Optional[dict] = None
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "Memory":
+        content = d.get("content") or d.get("value") or d.get("text", "")
+        meta = d.get("metadata") or {}
+        return cls(
+            type=meta.get("type", "fact"),
+            value=content,
+            summary=meta.get("summary", content[:200]),
+            count=meta.get("count", 1),
+            trigger=meta.get("trigger"),
+            fix=meta.get("fix"),
+            input_pattern=meta.get("input_pattern"),
+            outcome=meta.get("outcome"),
+            timestamp=d.get("timestamp", 0.0),
+            metadata=meta,
+        )
+
 
 class TieredMemory:
     """
@@ -15,7 +53,7 @@ class TieredMemory:
         self.user_id = user_id
         self.hot_tier: List[Dict] = []
         self.max_hot = 10
-        
+
         # Initialize Mem0 for warm/cold tiers with local Qdrant storage
         try:
             qdrant_path = os.path.join(os.getcwd(), "data", "qdrant_storage")
@@ -28,7 +66,7 @@ class TieredMemory:
                     }
                 }
             }
-            self.mem0 = Memory.from_config(config)
+            self.mem0 = Mem0Memory.from_config(config)
         except Exception as e:
             print(f"[MEMORY] Qdrant unavailable — running without vector store: {e}")
             self.mem0 = None
@@ -41,14 +79,14 @@ class TieredMemory:
         self.hot_tier.append({
             "content": content,
             "timestamp": time.time(),
-            "metadata": metadata
+            "metadata": metadata or {}
         })
         if len(self.hot_tier) > self.max_hot:
             to_archive = self.hot_tier.pop(0)
             # Consolidate to Warm/Cold tier via Mem0
             if self.mem0:
                 self.mem0.add(to_archive["content"], user_id=self.user_id, metadata=to_archive["metadata"])
-        
+
         # If very important, store in semantic memory immediately
         if importance > 0.8:
             embedding_memory.store(content, metadata)
@@ -58,12 +96,20 @@ class TieredMemory:
         Recall memories across all tiers.
         """
         results = []
-        
+
         # 1. Search Hot tier
         for m in reversed(self.hot_tier):
             if query.lower() in m["content"].lower():
                 results.append(m)
-        
+
+        # Phase 3: Emit hook
+        try:
+            from core.plugins.events import PluginEventBus
+            import asyncio
+            asyncio.create_task(PluginEventBus.instance().emit("on_memory_recall", query=query, results=results))
+        except Exception:
+            pass
+
         # 2. Search Warm/Cold tier via Mem0
         if self.mem0:
             try:
@@ -71,12 +117,73 @@ class TieredMemory:
                 results.extend(mem0_results)
             except Exception as e:
                 print(f"[WARN] Mem0 search failed: {e}")
-        
+
         # 3. Search Semantic tier
-        semantic_results = embedding_memory.semantic_search(query, top_k=limit)
+        semantic_result = embedding_memory.semantic_search(query, top_k=limit)
+        if semantic_result.is_err():
+            logger.warning("[Memory] Semantic search failed: %s", semantic_result._error)
+            semantic_results = []
+        else:
+            semantic_results = semantic_result.unwrap()
         results.extend(semantic_results)
-        
+
         return results
+
+    def recall_filtered(
+        self,
+        query: str,
+        threshold: float = 0.6,
+        max_results: int = 5,
+    ) -> list[Memory]:
+        """Returns only memories relevant to query, scored by cosine similarity."""
+        raw = self.recall(query, limit=20)
+        if not raw:
+            return []
+
+        candidates = [Memory.from_dict(d) for d in raw]
+        embed_result = embedding_memory.embed(query)
+        if embed_result.is_err():
+            return []
+        q_vec = embed_result.unwrap().tolist()
+
+        scored = []
+        for m in candidates:
+            if m.embedding:
+                sim = self._cosine(q_vec, m.embedding)
+                scored.append((m, sim))
+            else:
+                # Include without cosine score (from hot/mem0 tiers)
+                scored.append((m, threshold))
+
+        filtered = [(m, s) for m, s in scored if s is not None and s > threshold]
+        filtered.sort(key=lambda x: x[1], reverse=True)
+        return [m for m, _ in filtered[:max_results]]
+
+    @staticmethod
+    def _cosine(a: list[float], b: list[float]) -> float:
+        import numpy as np
+        a, b = np.array(a), np.array(b)
+        denom = np.linalg.norm(a) * np.linalg.norm(b)
+        return float(np.dot(a, b) / denom) if denom > 0 else 0.0
+
+    def format_for_context(self, memories: list[Memory], query: str = "") -> str:
+        """Format memories as actionable context string for LLM injection."""
+        if not memories:
+            logger.warning("[MEMORY] format_for_context called with no memories")
+            return ""
+        lines = ["RELEVANT PAST CONTEXT:"]
+        for m in memories:
+            if m.type == "preference":
+                lines.append(f"- User prefers {m.value} (confirmed {m.count}x)")
+            elif m.type == "failure" and m.fix:
+                trigger = m.trigger or "unknown trigger"
+                lines.append(f"- Previous failure: {trigger} → resolution: {m.fix}")
+            elif m.type == "strategy" and m.input_pattern:
+                lines.append(f"- Successful strategy: {m.input_pattern} → {m.outcome or 'worked'}")
+            else:
+                summary = m.summary or m.value[:200]
+                lines.append(f"- {summary}")
+        return "\n".join(lines)
 
     def consolidate(self):
         """
@@ -84,6 +191,7 @@ class TieredMemory:
         """
         # Mem0 handles much of this internally
         pass
+
 
 # Instance
 tiered_memory = TieredMemory()

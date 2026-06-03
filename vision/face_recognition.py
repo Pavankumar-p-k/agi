@@ -6,6 +6,9 @@ import numpy as np
 import os
 import pickle
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 from pathlib import Path
 from datetime import datetime
 from typing import Optional
@@ -49,7 +52,7 @@ class FaceRecognizer:
             )
             return np.array(result[0]["embedding"])
         except Exception as e:
-            print(f"[FaceRec] No face detected: {e}")
+            logger.warning("[FaceRec] No face detected: %s", e)
             return None
 
     def cosine_distance(self, a: np.ndarray, b: np.ndarray) -> float:

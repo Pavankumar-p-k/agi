@@ -1,6 +1,0 @@
-from prompts.system import SYSTEM_PROMPT, UI_GENERATION_PROMPT, CODE_GENERATION_PROMPT, build_prompt, UI_SYSTEM_PROMPT
-
-__all__ = [
-    "SYSTEM_PROMPT", "UI_GENERATION_PROMPT", "CODE_GENERATION_PROMPT",
-    "UI_SYSTEM_PROMPT", "build_prompt",
-]

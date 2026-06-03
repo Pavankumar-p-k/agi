@@ -407,4 +407,63 @@ class ApiService {
       return '';
     }
   }
+
+  // —— Build System (Phase 4/5) ————————————————————————
+  Future<List<BuildProject>> getBuildProjects() async {
+    if (!await isOnline()) return [];
+    try {
+      final r = await _dio.get(ApiConfig.buildProjects);
+      final list = (r.data as Map)['projects'] as List? ?? [];
+      return list.map((j) => BuildProject.fromJson(j as Map<String, dynamic>)).toList();
+    } catch (_) { return []; }
+  }
+
+  Future<BuildDetail?> getBuildDetail(String projectName) async {
+    if (!await isOnline()) return null;
+    try {
+      final r = await _dio.get('${ApiConfig.buildStatus}/$projectName');
+      return BuildDetail.fromJson(r.data as Map<String, dynamic>);
+    } catch (_) { return null; }
+  }
+
+  Future<List<GovernorDecision>> getGovernorHistory(String projectName) async {
+    if (!await isOnline()) return [];
+    try {
+      final r = await _dio.get('${ApiConfig.buildGovernor}/$projectName');
+      final list = (r.data as Map)['decisions'] as List? ?? [];
+      return list.map((j) => GovernorDecision.fromJson(j as Map<String, dynamic>)).toList();
+    } catch (_) { return []; }
+  }
+
+  Future<EnvironmentSnapshot?> getEnvironment() async {
+    if (!await isOnline()) return null;
+    try {
+      final r = await _dio.get(ApiConfig.buildEnvironment);
+      return EnvironmentSnapshot.fromJson(r.data as Map<String, dynamic>);
+    } catch (_) { return null; }
+  }
+
+  Future<SystemIdentity?> getSystemIdentity() async {
+    if (!await isOnline()) return null;
+    try {
+      final r = await _dio.get(ApiConfig.buildIdentity);
+      return SystemIdentity.fromJson(r.data as Map<String, dynamic>);
+    } catch (_) { return null; }
+  }
+
+  Future<bool> interruptBuild(String projectName) async {
+    if (!await isOnline()) return false;
+    try {
+      final r = await _dio.post('${ApiConfig.buildInterrupt}/$projectName');
+      return r.statusCode == 200;
+    } catch (_) { return false; }
+  }
+
+  Future<List<String>> getCheckpoints(String projectName) async {
+    if (!await isOnline()) return [];
+    try {
+      final r = await _dio.get('${ApiConfig.buildCheckpoints}/$projectName');
+      return List<String>.from((r.data as Map)['checkpoints'] ?? []);
+    } catch (_) { return []; }
+  }
 }

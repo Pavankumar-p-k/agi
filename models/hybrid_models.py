@@ -117,9 +117,6 @@ class HybridModelManager:
         errors = []
 
         for provider in self.config.fallback_chain:
-            if provider not in self._clients:
-                continue
-
             try:
                 result = await self._call_provider(
                     provider, prompt, task_type, system_prompt,
@@ -388,6 +385,12 @@ class HybridModelManager:
                     "total_calls": calls
                 }
         return report
+
+    async def aclose(self):
+        for provider, client in self._clients.items():
+            if hasattr(client, "aclose"):
+                await client.aclose()
+        self._clients.clear()
 
 
 # Global instance

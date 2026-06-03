@@ -4,7 +4,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from jarvis_os.memory.memory_manager import MemoryManager as CanonicalMemoryManager
+_MISSING = object()
+try:
+    from jarvis_os.memory.memory_manager import MemoryManager as CanonicalMemoryManager
+except ImportError:
+    CanonicalMemoryManager = _MISSING
 
 
 @dataclass
@@ -19,6 +23,8 @@ class AIOSMemoryAdapter:
     """
 
     def __init__(self, config: Any | None = None):
+        if CanonicalMemoryManager is _MISSING:
+            raise RuntimeError("jarvis_os.memory.memory_manager not available — install jarvis-os or set JARVIS_OS_SKIP_AI=1")
         cfg = config or object()
         data_dir = str(getattr(cfg, "data_dir", Path(getattr(cfg, "sqlite_path", "data/ai_os_memory.db")).parent))
         short_term = int(getattr(cfg, "short_term_limit", 200))

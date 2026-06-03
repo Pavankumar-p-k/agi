@@ -491,6 +491,7 @@ class JarvisTeacher:
                 return r.json().get("response", "").strip()
         except Exception as e:
             logger.warning("[Teacher] LLM error: %s", e)
+            logger.warning("[Teacher] _llm returning empty string after exception")
             return ""
 
     async def _generate_lesson(self, topic: str, concept: str,

@@ -1,0 +1,11 @@
+{
+  "name": "system.ip_lookup",
+  "version": "1.0.0",
+  "description": "JARVIS Skill for Ip Lookup",
+  "author": "JARVIS Core",
+  "entry_point": "main.py",
+  "enabled": true,
+  "tools": [
+    "ip_lookup"
+  ]
+}

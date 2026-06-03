@@ -245,3 +245,190 @@ class InboxMessage {
 
   String get replyText => customReply ?? analysis.suggestedReply;
 }
+
+// ── Build System (Phase 4/5) ──────────────────────────────────
+
+class BuildProject {
+  final String name;
+  final String status;
+  final String goal;
+  final int retries;
+  final int issues;
+  final String createdAt;
+
+  BuildProject({
+    required this.name,
+    required this.status,
+    required this.goal,
+    required this.retries,
+    required this.issues,
+    required this.createdAt,
+  });
+
+  factory BuildProject.fromJson(Map<String, dynamic> j) => BuildProject(
+    name: j['name'] ?? '',
+    status: j['status'] ?? 'unknown',
+    goal: j['goal'] ?? '',
+    retries: j['retries'] ?? 0,
+    issues: j['issues'] ?? 0,
+    createdAt: j['created_at'] ?? '',
+  );
+}
+
+class BuildDetail {
+  final String name;
+  final String status;
+  final String goal;
+  final int retries;
+  final int maxRetries;
+  final List<String> issues;
+  final QualityScoreData? qualityScore;
+  final Map<String, dynamic>? partialProgress;
+  final List<Map<String, dynamic>> events;
+  final List<Map<String, dynamic>> agentLog;
+
+  BuildDetail({
+    required this.name,
+    required this.status,
+    required this.goal,
+    required this.retries,
+    required this.maxRetries,
+    required this.issues,
+    this.qualityScore,
+    this.partialProgress,
+    required this.events,
+    required this.agentLog,
+  });
+
+  factory BuildDetail.fromJson(Map<String, dynamic> j) => BuildDetail(
+    name: j['name'] ?? '',
+    status: j['status'] ?? 'unknown',
+    goal: j['goal'] ?? '',
+    retries: j['retries'] ?? 0,
+    maxRetries: j['max_retries'] ?? 5,
+    issues: List<String>.from(j['issues'] ?? []),
+    qualityScore: j['quality_score'] != null
+        ? QualityScoreData.fromJson(j['quality_score'])
+        : null,
+    partialProgress: j['partial_progress'] as Map<String, dynamic>?,
+    events: List<Map<String, dynamic>>.from(j['events'] ?? []),
+    agentLog: List<Map<String, dynamic>>.from(j['agent_log'] ?? []),
+  );
+}
+
+class QualityScoreData {
+  final double designConsistency;
+  final double responsiveness;
+  final double contentQuality;
+  final double navigationQuality;
+  final double codeQuality;
+  final double total;
+  final double average;
+
+  QualityScoreData({
+    required this.designConsistency,
+    required this.responsiveness,
+    required this.contentQuality,
+    required this.navigationQuality,
+    required this.codeQuality,
+    required this.total,
+    required this.average,
+  });
+
+  factory QualityScoreData.fromJson(Map<String, dynamic> j) => QualityScoreData(
+    designConsistency: (j['design_consistency'] as num?)?.toDouble() ?? 0,
+    responsiveness: (j['responsiveness'] as num?)?.toDouble() ?? 0,
+    contentQuality: (j['content_quality'] as num?)?.toDouble() ?? 0,
+    navigationQuality: (j['navigation_quality'] as num?)?.toDouble() ?? 0,
+    codeQuality: (j['code_quality'] as num?)?.toDouble() ?? 0,
+    total: (j['total'] as num?)?.toDouble() ?? 0,
+    average: (j['average'] as num?)?.toDouble() ?? 0,
+  );
+}
+
+class GovernorDecision {
+  final String action;
+  final String reason;
+  final double confidence;
+  final String details;
+
+  GovernorDecision({
+    required this.action,
+    required this.reason,
+    required this.confidence,
+    required this.details,
+  });
+
+  factory GovernorDecision.fromJson(Map<String, dynamic> j) => GovernorDecision(
+    action: j['action'] ?? '',
+    reason: j['reason'] ?? '',
+    confidence: (j['confidence'] as num?)?.toDouble() ?? 0,
+    details: j['details'] ?? '',
+  );
+}
+
+class EnvironmentSnapshot {
+  final double diskFreeGb;
+  final double diskTotalGb;
+  final double memoryFreeMb;
+  final double memoryTotalMb;
+  final bool ollamaAvailable;
+  final double ollamaLatencyMs;
+  final bool networkReachable;
+  final List<String> warnings;
+
+  EnvironmentSnapshot({
+    required this.diskFreeGb,
+    required this.diskTotalGb,
+    required this.memoryFreeMb,
+    required this.memoryTotalMb,
+    required this.ollamaAvailable,
+    required this.ollamaLatencyMs,
+    required this.networkReachable,
+    required this.warnings,
+  });
+
+  factory EnvironmentSnapshot.fromJson(Map<String, dynamic> j) => EnvironmentSnapshot(
+    diskFreeGb: (j['disk_free_gb'] as num?)?.toDouble() ?? 0,
+    diskTotalGb: (j['disk_total_gb'] as num?)?.toDouble() ?? 0,
+    memoryFreeMb: (j['memory_free_mb'] as num?)?.toDouble() ?? 0,
+    memoryTotalMb: (j['memory_total_mb'] as num?)?.toDouble() ?? 0,
+    ollamaAvailable: j['ollama_available'] ?? false,
+    ollamaLatencyMs: (j['ollama_latency_ms'] as num?)?.toDouble() ?? 0,
+    networkReachable: j['network_reachable'] ?? false,
+    warnings: List<String>.from(j['warnings'] ?? []),
+  );
+}
+
+class SystemIdentity {
+  final String name;
+  final String version;
+  final List<String> capabilities;
+  final List<String> limitations;
+  final Map<String, dynamic> models;
+  final Map<String, dynamic> tools;
+  final Map<String, dynamic> buildSystem;
+  final List<String> phasesImplemented;
+
+  SystemIdentity({
+    required this.name,
+    required this.version,
+    required this.capabilities,
+    required this.limitations,
+    required this.models,
+    required this.tools,
+    required this.buildSystem,
+    required this.phasesImplemented,
+  });
+
+  factory SystemIdentity.fromJson(Map<String, dynamic> j) => SystemIdentity(
+    name: j['name'] ?? 'JARVIS',
+    version: j['version'] ?? '?',
+    capabilities: List<String>.from(j['capabilities'] ?? []),
+    limitations: List<String>.from(j['limitations'] ?? []),
+    models: Map<String, dynamic>.from(j['models'] ?? {}),
+    tools: Map<String, dynamic>.from(j['tools'] ?? {}),
+    buildSystem: Map<String, dynamic>.from(j['build_system'] ?? {}),
+    phasesImplemented: List<String>.from(j['phases_implemented'] ?? []),
+  );
+}

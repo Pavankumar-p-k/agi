@@ -1,0 +1,11 @@
+{
+  "name": "productivity.github_issues",
+  "version": "1.0.0",
+  "description": "JARVIS Skill for Github Issues",
+  "author": "JARVIS Core",
+  "entry_point": "main.py",
+  "enabled": true,
+  "tools": [
+    "github_issues"
+  ]
+}

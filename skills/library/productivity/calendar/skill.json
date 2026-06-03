@@ -1,0 +1,11 @@
+{
+  "name": "productivity.calendar",
+  "version": "1.0.0",
+  "description": "JARVIS Skill for Calendar",
+  "author": "JARVIS Core",
+  "entry_point": "main.py",
+  "enabled": true,
+  "tools": [
+    "calendar"
+  ]
+}

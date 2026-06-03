@@ -21,3 +21,21 @@ py-modules = ["jarvis"]
 
 [tool.setuptools.packages.find]
 include = ["jarvis_os*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests/unit", "tests/integration", "tests/contract", "tests/e2e", "tests"]
+markers = [
+    "unit: Fast unit tests with no external dependencies",
+    "integration: Cross-module integration tests",
+    "contract: API contract validation",
+    "e2e: End-to-end tests that require a running server",
+    "slow: Long-running tests (skipped by default)",
+    "intent: Tests for a specific intent type",
+]
+filterwarnings = ["ignore::DeprecationWarning"]
+log_cli = false
+
+# Run: pytest -m "unit"          (unit tests only)
+# Run: pytest -m "not slow"      (skip long-running tests)
+# Run: pytest -m "e2e"           (full server tests)

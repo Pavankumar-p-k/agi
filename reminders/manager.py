@@ -115,3 +115,7 @@ async def count_pending_reminders(db: AsyncSession, user: User) -> int:
         select(Reminder).where(Reminder.user_id == user.id, Reminder.remind_at >= now, Reminder.is_done == False)
     )
     return len(res.scalars().all())
+
+
+# Alias for compatibility — callers use `count_reminders`
+count_reminders = count_pending_reminders

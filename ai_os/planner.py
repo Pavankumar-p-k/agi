@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from jarvis_os.core.planner import PlanningEngine
+try:
+    from jarvis_os.core.planner import PlanningEngine
+except ImportError:
+    PlanningEngine = None
 
 
 class Planner:

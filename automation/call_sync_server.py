@@ -12,14 +12,14 @@ from pathlib import Path
 
 try:
     import plyer; _has_notif = True
-except: _has_notif = False
+except Exception: _has_notif = False
 
 try:
     import pyttsx3
     _tts = pyttsx3.init()
     _tts.setProperty('rate', 160)
     _has_tts = True
-except: _has_tts = False
+except Exception: _has_tts = False
 
 
 PORT     = 9001

@@ -9,11 +9,12 @@ import json
 import difflib
 import shutil
 import subprocess
+import shlex
 import logging
 import tempfile
 from pathlib import Path
 from datetime import datetime
-from typing import Optional, List, Tuple
+from typing import Optional, List
 
 from .llm_router import complete as llm_complete
 
@@ -87,6 +88,14 @@ class JarvisFileAgent:
 
         with open(path, "w", encoding="utf-8") as f:
             f.write(content)
+
+        # Phase 3: Emit hook
+        try:
+            from core.plugins.events import PluginEventBus
+            import asyncio
+            asyncio.create_task(PluginEventBus.instance().emit("on_file_saved", path=path, size=len(content)))
+        except Exception:
+            pass
 
         return {
             "path": path,
@@ -263,14 +272,43 @@ class JarvisFileAgent:
                 return {"stdout": "", "stderr": "", "returncode": -1, "cancelled": True}
 
         try:
-            result = subprocess.run(
-                cmd,
-                shell=True,
-                cwd=cwd,
-                capture_output=True,
-                text=True,
-                timeout=timeout,
-            )
+            import shlex as _shlex
+            try:
+                # Prefer running without a shell for safety
+                if isinstance(cmd, str):
+                    args = _shlex.split(cmd)
+                else:
+                    args = cmd
+                result = subprocess.run(
+                    args,
+                    shell=False,
+                    cwd=cwd,
+                    capture_output=True,
+                    text=True,
+                    timeout=timeout,
+                )
+            except (FileNotFoundError, OSError):
+                # Fallback by invoking a platform shell interpreter without shell=True
+                if isinstance(cmd, str):
+                    if os.name == 'nt':
+                        fallback_args = ["cmd", "/c", cmd]
+                    else:
+                        fallback_args = ["bash", "-lc", cmd]
+                else:
+                    if os.name == 'nt':
+                        fallback_args = ["cmd", "/c"] + list(cmd)
+                    else:
+                        fallback_args = ["bash", "-lc", " ".join(map(str, cmd))]
+
+                result = subprocess.run(
+                    fallback_args,
+                    shell=False,
+                    cwd=cwd,
+                    capture_output=True,
+                    text=True,
+                    timeout=timeout,
+                )
+
             stdout = result.stdout[-MAX_OUTPUT_CHARS:] if result.stdout else ""
             stderr = result.stderr[-MAX_OUTPUT_CHARS:] if result.stderr else ""
 
@@ -314,7 +352,7 @@ Instruction: {instruction}
 Generate a JSON plan to organize this folder. Return ONLY:
 {{"actions":[{{"type":"move|rename|create_dir","source":"...","target":"...","dir_name":"..."}}],"summary":"one line summary"}}"""
         try:
-            result = await llm_complete("analysis", [{"role": "user", "content": prompt}])
+            result = (await llm_complete("analysis", [{"role": "user", "content": prompt}])).unwrap_or("")
             content = result.strip()
             if "```json" in content:
                 content = content.split("```json")[1].split("```")[0].strip()
@@ -367,7 +405,7 @@ Generate a JSON plan to organize this folder. Return ONLY:
         prompt = f"""Template: {template}
 Data: {json.dumps(data, default=str)}
 Generate the filled document. Return ONLY the final content, no explanation."""
-        content = await llm_complete("creative", [{"role": "user", "content": prompt}])
+        content = (await llm_complete("creative", [{"role": "user", "content": prompt}])).unwrap_or("")
         return await self.write_file(output_path, content.strip(), skip_confirm=skip_confirm)
 
 

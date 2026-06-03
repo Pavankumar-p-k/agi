@@ -20,6 +20,7 @@ import 'offline_assistant_screen.dart';
 import 'reply_agent_screen.dart';
 import 'settings_screen.dart';
 import 'talkback_screen.dart';
+import 'build_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -544,6 +545,13 @@ class _SystemTab extends StatelessWidget {
         icon: Icons.analytics_outlined,
         color: JarvisColors.green,
         screen: const ActivityScreen(),
+      ),
+      _SystemItem(
+        title: 'Build Dashboard',
+        sub: 'Project tracking, quality scores, governor, env',
+        icon: Icons.construction_outlined,
+        color: JarvisColors.blue,
+        screen: const BuildScreen(),
       ),
       _SystemItem(
         title: 'Settings',

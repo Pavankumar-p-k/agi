@@ -1,6 +1,9 @@
 import asyncio
+import logging
 from typing import Any, Callable, AsyncGenerator
 from collections import deque
+
+logger = logging.getLogger(__name__)
 
 
 class EventBus:
@@ -31,7 +34,7 @@ class EventBus:
             try:
                 queue.put_nowait(event)
             except asyncio.QueueFull:
-                pass
+                logger.debug("[EventBus] Dropped event for full stream queue: %s", channel)
 
     def subscribe_stream(self) -> asyncio.Queue[dict[str, Any]]:
         """Create a new queue for streaming subscribers."""
@@ -47,3 +50,6 @@ class EventBus:
     def clear(self) -> None:
         self._subscribers.clear()
         self._event_queues.clear()
+
+# Global Event Bus
+event_bus = EventBus()

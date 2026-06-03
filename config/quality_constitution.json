@@ -1,0 +1,32 @@
+{
+  "code": [
+    {"id": "c1", "description": "All functions have docstrings", "weight": 0.15},
+    {"id": "c2", "description": "No hardcoded secrets or passwords in code", "weight": 0.25},
+    {"id": "c3", "description": "Type annotations present on all function signatures", "weight": 0.10},
+    {"id": "c4", "description": "No bare except clauses", "weight": 0.10},
+    {"id": "c5", "description": "Individual functions are under 50 lines", "weight": 0.15},
+    {"id": "c6", "description": "No unused imports", "weight": 0.10},
+    {"id": "c7", "description": "Error cases are handled gracefully", "weight": 0.15}
+  ],
+  "website": [
+    {"id": "w1", "description": "Brand name appears in H1 tag", "weight": 0.20},
+    {"id": "w2", "description": "All images return HTTP 200 (no broken images)", "weight": 0.20},
+    {"id": "w3", "description": "Content matches the stated business type", "weight": 0.25},
+    {"id": "w4", "description": "No template author credits or placeholder text visible", "weight": 0.15},
+    {"id": "w5", "description": "Page is mobile responsive", "weight": 0.10},
+    {"id": "w6", "description": "No corrupt SVG attributes", "weight": 0.10}
+  ],
+  "response": [
+    {"id": "r1", "description": "Directly answers the question asked", "weight": 0.30},
+    {"id": "r2", "description": "No hallucinated or unverified facts stated as certain", "weight": 0.30},
+    {"id": "r3", "description": "Length is appropriate for the complexity of the query", "weight": 0.20},
+    {"id": "r4", "description": "Epistemic tags present on factual claims", "weight": 0.20}
+  ],
+  "email": [
+    {"id": "e1", "description": "Clear subject line", "weight": 0.20},
+    {"id": "e2", "description": "Correct recipient name used", "weight": 0.20},
+    {"id": "e3", "description": "Professional tone", "weight": 0.25},
+    {"id": "e4", "description": "Clear call to action", "weight": 0.20},
+    {"id": "e5", "description": "No sensitive information exposed", "weight": 0.15}
+  ]
+}

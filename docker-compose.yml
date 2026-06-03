@@ -1,0 +1,34 @@
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: jarvis-ollama
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+    networks:
+      - jarvis-net
+
+  jarvis:
+    build: .
+    container_name: jarvis-app
+    depends_on:
+      - ollama
+    ports:
+      - "8000:8000"
+    volumes:
+      - jarvis_data:/app/data
+    environment:
+      - OLLAMA_URL=http://ollama:11434
+      - HOST=0.0.0.0
+      - PORT=8000
+    restart: unless-stopped
+    networks:
+      - jarvis-net
+
+networks:
+  jarvis-net:
+    driver: bridge
+
+volumes:
+  ollama_data:
+  jarvis_data:

@@ -2,18 +2,13 @@
 automation/messaging.py — WhatsApp & Instagram message automation
 Uses Selenium for web-based automation + accessibility fallback
 """
+from __future__ import annotations
 import time
-import pyautogui
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
-from webdriver_manager.chrome import ChromeDriverManager
+import logging
 from typing import Optional
 import os
+
+logger = logging.getLogger(__name__)
 
 
 # ══════════════════════════════════════════════
@@ -25,6 +20,10 @@ class BrowserAutomation:
         self.headless = headless
 
     def start(self):
+        from selenium import webdriver
+        from selenium.webdriver.chrome.options import Options
+        from selenium.webdriver.chrome.service import Service
+        from webdriver_manager.chrome import ChromeDriverManager
         options = Options()
         if self.headless:
             options.add_argument("--headless=new")
@@ -48,11 +47,15 @@ class BrowserAutomation:
             self.driver = None
 
     def wait(self, by, selector, timeout=15):
+        from selenium.webdriver.support.ui import WebDriverWait
+        from selenium.webdriver.support import expected_conditions as EC
         return WebDriverWait(self.driver, timeout).until(
             EC.presence_of_element_located((by, selector))
         )
 
     def wait_clickable(self, by, selector, timeout=15):
+        from selenium.webdriver.support.ui import WebDriverWait
+        from selenium.webdriver.support import expected_conditions as EC
         return WebDriverWait(self.driver, timeout).until(
             EC.element_to_be_clickable((by, selector))
         )
@@ -67,6 +70,7 @@ class WhatsAppAutomation(BrowserAutomation):
     def open(self):
         if not self.driver:
             self.start()
+        from selenium.webdriver.common.by import By
         self.driver.get(self.WHATSAPP_URL)
         print("[WhatsApp] Waiting for page load...")
         try:
@@ -83,6 +87,8 @@ class WhatsAppAutomation(BrowserAutomation):
 
     def send_message(self, contact_name: str, message: str) -> bool:
         """Send a WhatsApp message to a contact by name."""
+        from selenium.webdriver.common.by import By
+        from selenium.webdriver.common.keys import Keys
         try:
             # Click search bar
             search = self.wait_clickable(By.XPATH, '//div[@contenteditable="true"][@data-tab="3"]')
@@ -110,6 +116,7 @@ class WhatsAppAutomation(BrowserAutomation):
 
     def send_to_phone(self, phone_number: str, message: str) -> bool:
         """Send message to a phone number directly."""
+        from selenium.webdriver.common.by import By
         url = f"https://web.whatsapp.com/send?phone={phone_number}&text={message}"
         self.driver.get(url)
         try:
@@ -124,6 +131,7 @@ class WhatsAppAutomation(BrowserAutomation):
 
     def get_unread_messages(self) -> list:
         """Get list of contacts with unread messages."""
+        from selenium.webdriver.common.by import By
         try:
             unread_spans = self.driver.find_elements(By.XPATH, '//span[@data-testid="icon-unread-count"]')
             results = []
@@ -134,12 +142,11 @@ class WhatsAppAutomation(BrowserAutomation):
                         "contact": contact.text,
                         "count": span.text
                     })
-                except Exception as err:
-                    import logging
-                    logging.getLogger(__name__).error("Exception swallowed: %s", err)
-                    raise RuntimeError(f"Exception swallowed: {err}")
+                except Exception:
+                    pass
             return results
-        except Exception:
+        except Exception as e:
+            logger.warning("[WhatsApp] Failed to get unread messages: %s", e)
             return []
 
 
@@ -158,6 +165,8 @@ class InstagramAutomation(BrowserAutomation):
     def login(self) -> bool:
         if not self.driver:
             self.start()
+        from selenium.webdriver.common.by import By
+        from selenium.webdriver.common.keys import Keys
         self.driver.get(self.INSTAGRAM_URL)
         time.sleep(2)
 
@@ -166,10 +175,8 @@ class InstagramAutomation(BrowserAutomation):
             self.driver.find_element(By.XPATH, '//a[@href="/direct/inbox/"]')
             print("[Instagram] Already logged in")
             return True
-        except Exception as err:
-            import logging
-            logging.getLogger(__name__).error("Exception swallowed: %s", err)
-            raise RuntimeError(f"Exception swallowed: {err}")
+        except Exception:
+            pass
 
         if not self.username or not self.password:
             print("[Instagram] No credentials provided. Please log in manually.")
@@ -193,6 +200,8 @@ class InstagramAutomation(BrowserAutomation):
 
     def send_dm(self, username: str, message: str) -> bool:
         """Send a direct message to a user."""
+        from selenium.webdriver.common.by import By
+        from selenium.webdriver.common.keys import Keys
         try:
             self.driver.get(self.DM_URL)
             time.sleep(2)

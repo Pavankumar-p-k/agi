@@ -1,0 +1,84 @@
+from __future__ import annotations
+from typing import Literal, Optional, Any
+from pydantic import BaseModel, Field, HttpUrl
+import os
+
+class LLMSettings(BaseModel):
+    default_model: str = "claude-sonnet-4-20250514"
+    ollama_host: str = "http://127.0.0.1:11434"
+    planner_model: str = "qwen2.5-coder:3b"
+    reasoning_model: str = "llama3.1:8b"
+    fast_model: str = "phi3:mini"
+    coder_model: str = "qwen3:4b"
+    lightweight_model: str = "tinyllama:latest"
+    max_response_tokens: int = 512
+
+class AGISettings(BaseModel):
+    autonomous_enabled: bool = False
+    confidence_threshold: float = 0.7
+    max_agents: int = 8
+    agent_timeout_s: int = 120
+
+class DNDSettings(BaseModel):
+    dnd_mode: bool = False
+    dnd_hours: list[int] = [23, 0, 1, 2, 3, 4, 5, 6]
+
+class MemorySettings(BaseModel):
+    backend: Literal["sqlite", "supabase", "auto"] = "auto"
+    db_path: str = "ai_os_memory.db"
+
+class VoiceSettings(BaseModel):
+    enabled: bool = False
+    wake_word: str = "jarvis"
+    wake_word_enabled: bool = True
+    stt_model: str = "tiny"
+    tts_engine: Literal["pyttsx3", "elevenlabs", "edge-tts"] = "pyttsx3"
+    tts_voice: str = "am_adam"
+
+class ServerSettings(BaseModel):
+    host: str = "0.0.0.0"
+    port: int = 8000
+    cors_origins: list[str] = ["*"]
+    dev_mode: bool = True
+    local_only: bool = True
+
+class LoggingSettings(BaseModel):
+    level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
+    file: str = str(os.path.expanduser("~/.jarvis/jarvis.log"))
+
+class UISettings(BaseModel):
+    theme: Literal["dark", "light"] = "dark"
+    show_timestamps: bool = False
+    debug: bool = False
+    debug_search: bool = False
+    mode: Literal["chat", "agent"] = "chat"
+    aliases: dict[str, str] = Field(default_factory=dict)
+
+class JarvisSettings(BaseModel):
+    llm: LLMSettings = Field(default_factory=LLMSettings)
+    agi: AGISettings = Field(default_factory=AGISettings)
+    dnd: DNDSettings = Field(default_factory=DNDSettings)
+    memory: MemorySettings = Field(default_factory=MemorySettings)
+    voice: VoiceSettings = Field(default_factory=VoiceSettings)
+    server: ServerSettings = Field(default_factory=ServerSettings)
+    logging: LoggingSettings = Field(default_factory=LoggingSettings)
+    ui: UISettings = Field(default_factory=UISettings)
+    
+    # Skills
+    enabled_skills: list[str] = []   # empty = all enabled
+    disabled_skills: list[str] = []
+
+    # API Keys (Stored as strings, masked in output)
+    news_api_key: Optional[str] = None
+    openweather_api_key: Optional[str] = None
+    alpha_vantage_key: Optional[str] = None
+    composio_api_key: Optional[str] = None
+    groq_api_key: Optional[str] = None
+    gemini_api_key: Optional[str] = None
+    openai_api_key: Optional[str] = None
+    github_token: Optional[str] = None
+    telegram_bot_token: Optional[str] = None
+    pexels_api_key: Optional[str] = None
+    nvidia_api_key: Optional[str] = None
+    meta_whatsapp_token: Optional[str] = None
+    meta_whatsapp_phone_id: Optional[str] = None

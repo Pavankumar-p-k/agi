@@ -71,7 +71,8 @@ class Agent:
     def config_instructions(self) -> str:
         missing = self.missing_api_keys()
         if not missing:
-            return ""
+            logger.debug("[AGENTS] config_instructions: no missing keys for %s", self.name)
+            return None
         if self.name == "codex":
             return f"Set OPENAI_API_KEY in .env (get from https://platform.openai.com/api-keys)"
         if self.name == "gemini":
@@ -80,6 +81,8 @@ class Agent:
             return f"Set GITHUB_TOKEN in .env with 'read:user' + 'repo' scopes"
         if self.name == "aider":
             return f"Aider needs an API key. Set OPENAI_API_KEY or ANTHROPIC_API_KEY in .env"
+        if self.name == "jules":
+            return f"Set ANTHROPIC_API_KEY in .env for Jules CLI"
         return f"Configure {self.label}: missing {', '.join(missing)}"
 
 
@@ -131,6 +134,14 @@ AGENTS: dict[str, Agent] = {
         capabilities=["repo_create", "repo_view", "pr", "clone"],
         install_cmd="",  # requires manual installer from https://cli.github.com/
         env_vars=["GITHUB_TOKEN"],
+    ),
+    "jules": Agent(
+        name="jules",
+        cmd="jules",
+        label="Jules CLI",
+        capabilities=["scaffold", "modify", "refactor", "research", "multi_step"],
+        install_cmd="pip install jules-cli",
+        env_vars=["ANTHROPIC_API_KEY"],
     ),
     "shell": Agent(
         name="shell",
@@ -231,7 +242,11 @@ async def auto_install_missing() -> list[str]:
 
 
 def write_env_file(missing_vars: list[str], env_path: Optional[str] = None) -> str:
-    """Return instructions for the user on what to add to .env."""
+    """Return instructions for the user on what to add to .env.
+
+    If env_path is provided, append the instructions to that file and return the
+    path written. Otherwise return the instruction string.
+    """
     instructions = []
     for var in missing_vars:
         if var == "OPENAI_API_KEY":
@@ -242,4 +257,12 @@ def write_env_file(missing_vars: list[str], env_path: Optional[str] = None) -> s
             instructions.append(f"{var}=ghp_...  # Get from https://github.com/settings/tokens")
         elif var == "ANTHROPIC_API_KEY":
             instructions.append(f"{var}=sk-ant-...  # Get from https://console.anthropic.com/")
-    return "\n".join(instructions)
+    content = "\n".join(instructions)
+    if env_path:
+        try:
+            with open(env_path, "a", encoding="utf-8") as f:
+                f.write("\n" + content + "\n")
+            return str(env_path)
+        except Exception:
+            logger.warning(f"[AGENTS] Failed to write env tips to {env_path}")
+    return content

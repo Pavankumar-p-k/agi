@@ -1,6 +1,9 @@
+
 """core/model_router.py
-Central model registry + routing helpers for multi-Ollama setups.
+Central model registry + routing helpers.
+Single source of truth for roleâ†’group mapping.
 """
+
 from __future__ import annotations
 
 import os
@@ -11,7 +14,6 @@ from core.config import OLLAMA_URL
 from core.privacy_classifier import privacy_classifier, PrivacyTier
 
 
-# Default per-model endpoints (Option 2: one Ollama server per model).
 DEFAULT_MODEL_ENDPOINTS: Dict[str, str] = {
     "tinyllama": "http://localhost:11434",
     "deepseek-r1:1.5b": "http://localhost:11434",
@@ -26,14 +28,14 @@ DEFAULT_MODEL_ENDPOINTS: Dict[str, str] = {
 }
 
 
-# Common aliases -> canonical model names.
 MODEL_ALIASES: Dict[str, str] = {
     "llama3.1:latest": "llama3.1:8b",
     "llama3.1": "llama3.1:8b",
     "llama3": "llama3.1:8b",
     "tinyllama:latest": "tinyllama",
     "tinyllama:1.1b": "tinyllama",
-    "moondream:latest": "moondream",
+    "moondream": "moondream:latest",
+    "moondream:latest": "moondream:latest",
     "gemma4": "gemma4:e4b",
     "gemma4:latest": "gemma4:e4b",
     "qwen3": "qwen3:4b",
@@ -41,35 +43,43 @@ MODEL_ALIASES: Dict[str, str] = {
 }
 
 
-# Task roles -> model mapping (auto-switching by task).
+# Role â†’ llm_router model group mapping (single source of truth).
+ROLE_TO_GROUP: Dict[str, str] = {
+    "chat": "chat",
+    "analysis": "analysis",
+    "reasoning": "reasoning",
+    "planning": "chat",
+    "code": "code",
+    "automation": "code",
+    "build": "code",
+    "creative": "chat",
+    "vision": "vision",
+    "classifier": "chat",
+    "emotion": "chat",
+    "quality": "grader",
+    "deep": "nim-deep",
+    "nim-code": "nim-code",
+    "fallback": "chat",
+}
+
+# Backward-compatible alias for existing imports.
+ROLE_TO_ROUTER_GROUP = ROLE_TO_GROUP
+
+# Role â†’ actual Ollama model name (for direct API callers, not llm_router).
 ROLE_MODELS: Dict[str, str] = {
-    "chat": "gemma4:e4b",
+    "chat": "llama3.1:8b",
     "analysis": "qwen2.5:7b",
     "reasoning": "deepseek-r1:1.5b",
     "planning": "qwen3:4b",
     "code": "qwen2.5-coder:3b",
-    "automation": "qwen3:4b",
+    "automation": "qwen2.5-coder:3b",
     "creative": "mistral:7b",
-    "vision": "gemma4:e4b",
+    "vision": "moondream:latest",
     "classifier": "tinyllama",
     "emotion": "tinyllama",
     "quality": "phi3:mini",
+    "deep": "qwen2.5:7b",
     "fallback": "tinyllama",
-}
-
-
-# Fallback chain per model (on failure).
-MODEL_FALLBACKS: Dict[str, List[str]] = {
-    "qwen3:4b": ["tinyllama", "phi3:mini"],
-    "llama3.1:8b": ["qwen2.5:7b", "mistral:7b", "qwen3:4b", "tinyllama"],
-    "qwen2.5:7b": ["llama3.1:8b", "mistral:7b", "qwen3:4b", "tinyllama"],
-    "mistral:7b": ["qwen2.5:7b", "llama3.1:8b", "qwen3:4b", "tinyllama"],
-    "qwen2.5-coder:3b": ["qwen2.5:7b", "llama3.1:8b", "qwen3:4b", "tinyllama"],
-    "deepseek-r1:1.5b": ["qwen2.5:7b", "llama3.1:8b", "qwen3:4b", "tinyllama"],
-    "phi3:mini": ["tinyllama"],
-    "gemma4:e4b": ["moondream", "llama3.1:8b", "qwen2.5:7b"],
-    "moondream": ["llama3.1:8b", "qwen2.5:7b"],
-    "tinyllama": [],
 }
 
 
@@ -79,7 +89,7 @@ _CACHED_ENDPOINTS: Dict[str, str] | None = None
 def resolve_model(name: str) -> str:
     key = (name or "").strip()
     if not key:
-        return ROLE_MODELS["chat"]
+        return "chat"
     return MODEL_ALIASES.get(key, key)
 
 
@@ -128,9 +138,39 @@ def get_ollama_url(model: str | None = None) -> str:
     return endpoints.get(model, OLLAMA_URL)
 
 
-def model_for_role(role: str) -> str:
-    return resolve_model(ROLE_MODELS.get(role, ROLE_MODELS["chat"]))
+def group_for_role(role: str) -> str:
+    """Return the llm_router group name for a role."""
+    return ROLE_TO_GROUP.get(role, "chat")
 
+
+def model_for_role(role: str) -> str:
+    """Return the actual model name for a role (for direct Ollama API calls)."""
+    model = os.getenv(f"{role.upper()}_MODEL", "")
+    if not model:
+        model = ROLE_MODELS.get(role, "llama3.1:8b")
+    
+    # Strip provider prefix if present for direct Ollama calls
+    # e.g. 'ollama/llama3.1:8b' -> 'llama3.1:8b'
+    if "/" in model:
+        model = model.split("/", 1)[1]
+    return model
+
+
+get_router_model = group_for_role  # backward-compatible alias
+
+# Fallback chain per model (for GPU pool / legacy callers).
+MODEL_FALLBACKS: Dict[str, List[str]] = {
+    "llama3.1:8b": ["qwen2.5:7b", "qwen2.5-coder:3b"],
+    "qwen2.5:7b": ["llama3.1:8b", "qwen2.5-coder:3b"],
+    "qwen2.5-coder:3b": ["qwen2.5:7b", "llama3.1:8b"],
+    "gemma4:e4b": ["moondream", "llama3.1:8b"],
+    "moondream": ["llama3.1:8b"],
+    "mistral:7b": ["qwen2.5:7b", "llama3.1:8b"],
+    "deepseek-r1:1.5b": ["qwen2.5:7b", "llama3.1:8b"],
+    "tinyllama": [],
+    "phi3:mini": ["tinyllama"],
+    "qwen3:4b": ["tinyllama"],
+}
 
 def get_fallbacks(model: str) -> List[str]:
     model = resolve_model(model)
@@ -140,78 +180,58 @@ def get_fallbacks(model: str) -> List[str]:
 def route_role_for_text(text: str) -> str:
     """Lightweight heuristic router for text-only tasks."""
     t = (text or "").lower()
+    if any(k in t for k in ("deep research", "thorough analysis", "comprehensive", "deep dive", "expert analysis", "in-depth")):
+        return "deep"
     if any(k in t for k in ("code", "bug", "stack trace", "exception", "compile", "syntax")):
         return "code"
-    if any(k in t for k in ("plan", "steps", "schedule", "roadmap", "automate", "workflow")):
-        return "reasoning"
     if any(k in t for k in ("analyze", "analysis", "compare", "pros and cons", "decision")):
         return "analysis"
     if any(k in t for k in ("write", "rewrite", "story", "poem", "script", "lyrics", "email")):
         return "creative"
+    if any(k in t for k in ("plan", "steps", "schedule", "roadmap", "automate", "workflow")):
+        return "reasoning"
     return "chat"
+
+
+# Health monitor callback â€” set during startup by core/main.py
+_health_checker: callable = lambda: True
+
+def set_health_checker(fn: callable):
+    """Inject health-monitor callback (set during server startup)."""
+    global _health_checker
+    _health_checker = fn
 
 
 def route_request(query: str, context: dict = None, force_tier: str = None):
     """
     Route request based on privacy classifier.
+    Auto-fails over to cloud if Ollama is down and cloud keys are available.
     
-    Args:
-        query: The user's message
-        context: Optional context dict
-        force_tier: "cloud" to force cloud API, "local" to force local, None for auto
-    
-    Returns (model_name, privacy_tier, processed_query).
+    Returns (router_group, privacy_tier, processed_query).
     """
-    # Explicit user choice overrides everything
     if force_tier == "cloud":
         return "cloud", PrivacyTier.CLOUD, query
     if force_tier == "local":
         tier = privacy_classifier.classify(query, context)
         processed_query = query
-        if tier == PrivacyTier.LOCAL:
-            model = model_for_role(route_role_for_text(query))
-        elif tier == PrivacyTier.HYBRID:
+        if tier == PrivacyTier.HYBRID:
             processed_query = privacy_classifier.sanitize(query, tier=PrivacyTier.HYBRID)
-            model = model_for_role(route_role_for_text(processed_query))
-        else:
-            model = model_for_role(route_role_for_text(query))
-        return model, PrivacyTier.LOCAL, processed_query
+        role = route_role_for_text(processed_query)
+        return group_for_role(role), PrivacyTier.LOCAL, processed_query
 
-    # FORCE_CLOUD env var as default when no user choice
     if os.getenv("FORCE_CLOUD", "").lower() in ("1", "true", "yes"):
         return "cloud", PrivacyTier.CLOUD, query
 
+    # Auto-failover to cloud if Ollama is down
+    if not _health_checker():
+        if os.getenv("ANTHROPIC_API_KEY") or os.getenv("OPENAI_API_KEY") or os.getenv("GEMINI_API_KEY"):
+            return "cloud", PrivacyTier.CLOUD, query
+
     tier = privacy_classifier.classify(query, context)
     processed_query = query
-    
-    if tier == PrivacyTier.LOCAL:
-        model = model_for_role(route_role_for_text(query))
-    elif tier == PrivacyTier.HYBRID:
+
+    if tier == PrivacyTier.HYBRID:
         processed_query = privacy_classifier.sanitize(query, tier=PrivacyTier.HYBRID)
-        model = model_for_role(route_role_for_text(processed_query))
-    else:
-        model = model_for_role(route_role_for_text(query))
-    
-    return model, tier, processed_query
 
-
-ROLE_TO_ROUTER_GROUP: Dict[str, str] = {
-    "chat": "chat",
-    "analysis": "analysis",
-    "reasoning": "reasoning",
-    "planning": "chat",
-    "code": "code",
-    "automation": "automation",
-    "build": "automation",
-    "creative": "creative",
-    "vision": "vision",
-    "classifier": "fast",
-    "emotion": "fast",
-    "quality": "fast",
-    "fallback": "fast",
-}
-
-
-def get_router_model(role: str) -> str:
-    return ROLE_TO_ROUTER_GROUP.get(role, "chat")
-
+    role = route_role_for_text(processed_query)
+    return group_for_role(role), tier, processed_query

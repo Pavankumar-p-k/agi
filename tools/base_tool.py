@@ -1,37 +1,29 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Awaitable, Callable, Dict, List, Optional
-
-from jarvis_os.contracts import ToolSpec
-
-ToolHandler = Callable[..., Any]
+from typing import Any, Callable
 
 
-@dataclass(slots=True)
+@dataclass
+class ToolResult:
+    output: str = ""
+    error: str | None = None
+    retryable: bool = False
+
+    def is_ok(self) -> bool:
+        return self.error is None
+
+
+@dataclass
 class ToolDefinition:
     name: str
     description: str
     category: str = "general"
-    permission: str = "standard"
-    input_schema: Dict[str, Any] = field(default_factory=dict)
-    capabilities: List[str] = field(default_factory=list)
-    risk_tags: List[str] = field(default_factory=list)
+    input_schema: dict[str, Any] = field(default_factory=dict)
+    handler: Callable | None = None
     read_only: bool = False
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    handler: Optional[ToolHandler] = None
-
-    def to_router_spec(self) -> ToolSpec:
-        return ToolSpec(
-            name=self.name,
-            description=self.description,
-            arguments=list(self.capabilities),
-            parameters=dict(self.input_schema),
-            read_only=self.read_only,
-            category=self.category,
-            permission=self.permission,
-            metadata={
-                **dict(self.metadata),
-                "risk_tags": list(self.risk_tags),
-            },
-        )
+    risk_tags: list[str] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
+    permission: str | None = None
+    capabilities: list[str] = field(default_factory=list)
+    examples: list[dict] | None = None

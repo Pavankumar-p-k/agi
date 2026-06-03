@@ -1,5 +1,6 @@
+
 """
-core/database.py — All SQLAlchemy models + async DB engine
+core/database.py â€” All SQLAlchemy models + async DB engine
 """
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
@@ -7,9 +8,12 @@ from sqlalchemy import String, Text, DateTime, Boolean, Float, Integer, ForeignK
 from datetime import datetime
 from typing import Optional, List
 from .config import DATABASE_URL
+import logging
+
+logger = logging.getLogger(__name__)
 
 
-# ── Engine & Session ──
+# â”€â”€ Engine & Session â”€â”€
 engine = create_async_engine(DATABASE_URL, echo=False)
 AsyncSessionLocal = async_sessionmaker(engine, expire_on_commit=False)
 
@@ -23,17 +27,18 @@ async def init_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     # Migrate: add intent column if missing (SQLite)
+    # Columns already exist in the model, so ALTER TABLE is a no-op guard for legacy tables
     try:
         async with engine.begin() as conn:
             from sqlalchemy import text
             await conn.execute(text("ALTER TABLE chat_history ADD COLUMN intent VARCHAR(50) DEFAULT 'chat'"))
     except Exception:
-        pass  # column already exists
+        pass
     try:
         async with engine.begin() as conn:
             await conn.execute(text("ALTER TABLE chat_history ADD COLUMN session_id VARCHAR(36)"))
     except Exception:
-        pass  # column already exists
+        pass
     print("[DB] Database initialized")
 
 
@@ -41,9 +46,9 @@ class Base(DeclarativeBase):
     pass
 
 
-# ══════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 #  MODELS
-# ══════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 class User(Base):
     __tablename__ = "users"

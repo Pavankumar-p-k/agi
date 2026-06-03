@@ -1,7 +1,7 @@
 import re
 from typing import Any
 from .config import AIOSConfig
-from jarvis_os.runtime.exceptions import GovernanceViolation
+from governance.exceptions import GovernanceViolation
 
 
 class PolicyEngine:

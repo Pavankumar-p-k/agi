@@ -184,14 +184,15 @@ class ConversationManager:
             try:
                 data = json.loads(f.read_text(encoding="utf-8"))
                 result.append(data)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.exception("[SESSION] Failed to list stash: %s", e)
         return result
 
     def load_stash(self, idx: int) -> str:
         stash_dir = Path.home() / ".jarvis" / "stash"
         path = stash_dir / f"{idx:03d}.json"
         if not path.exists():
+            logger.warning("[SESSION] load_stash: stash file not found: %s", path)
             return ""
         data = json.loads(path.read_text(encoding="utf-8"))
         return data.get("text", "")

@@ -4,8 +4,7 @@ import asyncio
 from typing import Any, Dict, Optional
 
 from brain.execution_context import BrainExecutionContext
-from jarvis_os.runtime.exceptions import GovernanceViolation
-from .strict_verification import StrictVerificationEngine, VerificationReport, VerificationVerdict
+from governance.exceptions import GovernanceViolation
 
 
 class GovernanceValidator:
@@ -38,6 +37,22 @@ class GovernanceValidator:
         result: Dict[str, Any],
         context: Optional[BrainExecutionContext] = None,
     ) -> bool:
+        """Synchronous wrapper for validate_execution_async."""
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            return asyncio.run(self.validate_execution_async(result, context))
+        
+        # If already in an async loop, we must run it in a thread to avoid nested loop error
+        import concurrent.futures
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+            return pool.submit(asyncio.run, self.validate_execution_async(result, context)).result(timeout=20)
+
+    async def validate_execution_async(
+        self,
+        result: Dict[str, Any],
+        context: Optional[BrainExecutionContext] = None,
+    ) -> bool:
         task = str(result.get("task", "")).lower()
 
         # 1. Keyword blocklist
@@ -49,14 +64,14 @@ class GovernanceValidator:
         # 2. Semantic check via TinyLlama
         if self._semantic_check_enabled:
             try:
-                loop = asyncio.new_event_loop()
-                safe = loop.run_until_complete(self._semantic_check(task))
-                loop.close()
+                safe = await self._semantic_check(task)
                 if not safe:
                     raise GovernanceViolation("Execution blocked: semantic safety check failed.")
             except GovernanceViolation:
                 raise
-            except Exception:
+            except Exception as e:
+                import logging
+                logging.getLogger("jarvis").warning("Semantic safety check error: %s", e)
                 pass
 
         if result.get("success") is False and float(result.get("trust_risk", 0.0)) > 0.5:
@@ -72,7 +87,7 @@ class GovernanceValidator:
     async def _semantic_check(self, command: str) -> bool:
         """Classify command as SAFE or UNSAFE using tinyllama."""
         try:
-            from core.llm_router import router as llm_router
+            from core.llm_router import get_router
             prompt = (
                 f"Does this command risk damaging the system?\n"
                 f"Command: {command}\n\n"
@@ -81,7 +96,7 @@ class GovernanceValidator:
                 f"disables firewall, kills processes, or alters system configuration.\n"
                 f"Reply ONLY: SAFE or UNSAFE"
             )
-            r = await llm_router.acompletion(
+            r = await get_router().acompletion(
                 model="fast",
                 messages=[{"role": "user", "content": prompt}],
                 timeout=10,
@@ -94,7 +109,4 @@ class GovernanceValidator:
 
 __all__ = [
     "GovernanceValidator",
-    "StrictVerificationEngine",
-    "VerificationReport",
-    "VerificationVerdict",
 ]

@@ -1,3 +1,4 @@
+
 # core/config.py
 import os
 from pathlib import Path
@@ -40,7 +41,7 @@ VOSK_MODEL_PATH = _env(
     str(BASE_DIR / "models" / "vosk-model-small-en-us-0.15"),
 )
 
-# ── HYBRID MODEL CONFIGURATION ──
+# â”€â”€ HYBRID MODEL CONFIGURATION â”€â”€
 CLAUDE_API_KEY = _env("CLAUDE_API_KEY")
 COPILOT_API_KEY = _env("COPILOT_API_KEY")
 GITHUB_TOKEN = _env("GITHUB_TOKEN")  # For Copilot API access
@@ -73,3 +74,10 @@ FACE_DETECTION_BACKEND = _env("FACE_DETECTION_BACKEND", "opencv")
 FACE_DISTANCE_THRESHOLD = float(_env("FACE_DISTANCE_THRESHOLD", "0.38") or 0.38)
 
 MUSIC_DIR = _env("MUSIC_DIR", str(Path.home() / "Music"))
+
+# Build System configuration
+MAX_RETRIES = int(_env("MAX_RETRIES", "5") or 5)
+DAEMON_MODE = (_env("DAEMON_MODE", "false") or "false").lower() in {"1", "true", "yes", "on"}
+VAULT_PATH = _env("VAULT_PATH", str(Path.home() / ".jarvis" / "api_keys.json"))
+MAX_PARALLEL_BUILDS = int(_env("MAX_PARALLEL_BUILDS", "2") or 2)
+PROJECTS_DIR = Path.home() / ".jarvis" / "projects"

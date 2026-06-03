@@ -1,0 +1,11 @@
+{
+  "name": "productivity.url_shortener",
+  "version": "1.0.0",
+  "description": "JARVIS Skill for Url Shortener",
+  "author": "JARVIS Core",
+  "entry_point": "main.py",
+  "enabled": true,
+  "tools": [
+    "url_shortener"
+  ]
+}

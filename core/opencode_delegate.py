@@ -1,8 +1,11 @@
 import os
 import sys
 import asyncio
+import logging
 from pathlib import Path
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 
 async def delegate_to_opencode(
@@ -102,8 +105,8 @@ def _find_opencode_path() -> Optional[str]:
         if result.returncode == 0 and result.stdout.strip():
             path = result.stdout.strip().split("\n")[0].strip()
             return path if os.path.isfile(path) else path
-    except Exception:
-        pass
+    except Exception as e:
+        logger.exception("[DELEGATE] find path: %s", e)
     return None
 
 

@@ -1,0 +1,9 @@
+{
+  "name": "jarvis.wakeword",
+  "version": "1.0.0",
+  "description": "Real-time wake word detection via WebRTC VAD + Faster-Whisper confirmation",
+  "author": "JARVIS",
+  "entry_point": "wake_word_plugin.py",
+  "enabled": true,
+  "hooks": ["on_stt", "on_wake_word", "on_load", "on_unload"]
+}

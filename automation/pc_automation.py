@@ -11,21 +11,12 @@
 #  7. NLP parser    — understands natural language commands
 # ─────────────────────────────────────────────────────────────
 
+from __future__ import annotations
 import re, os, json, time, subprocess, webbrowser, platform
 from pathlib import Path
 from datetime import datetime
 from typing import Optional
 from urllib.parse import quote_plus
-
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
-import pyautogui
 
 
 # ══════════════════════════════════════════════════════════
@@ -101,11 +92,15 @@ class BrowserManager:
         self._driver: Optional[webdriver.Chrome] = None
         self._profile = os.path.expanduser("~/.jarvis_browser_profile")
 
-    def get(self) -> webdriver.Chrome:
+    def get(self):
         if self._driver:
             try: _ = self._driver.title; return self._driver
-            except: self._driver = None
+            except Exception: self._driver = None
 
+        from selenium import webdriver
+        from selenium.webdriver.chrome.options import Options
+        from selenium.webdriver.chrome.service import Service
+        from webdriver_manager.chrome import ChromeDriverManager
         opts = Options()
         opts.add_argument(f"--user-data-dir={self._profile}")
         opts.add_argument("--no-sandbox")
@@ -138,6 +133,9 @@ class BrowserManager:
 
     def youtube_play(self, q: str):
         """Search and auto-click first video."""
+        from selenium.webdriver.support.ui import WebDriverWait
+        from selenium.webdriver.support import expected_conditions as EC
+        from selenium.webdriver.common.by import By
         self.youtube_search(q)
         try:
             d = self.get()
@@ -161,7 +159,10 @@ browser = BrowserManager()
 class WhatsAppSender:
     _ready = False
 
-    def _ensure(self) -> webdriver.Chrome:
+    def _ensure(self):
+        from selenium.webdriver.support.ui import WebDriverWait
+        from selenium.webdriver.support import expected_conditions as EC
+        from selenium.webdriver.common.by import By
         d = browser.get()
         if not self._ready:
             if "web.whatsapp.com" not in d.current_url:
@@ -171,12 +172,16 @@ class WhatsAppSender:
                     EC.presence_of_element_located(
                         (By.XPATH, '//div[@contenteditable="true"][@data-tab="3"]')))
                 self._ready = True; print("[WhatsApp] Ready")
-            except:
+            except Exception:
                 print("[WhatsApp] Scan QR code in browser window...")
         return d
 
     def send_by_name(self, contact_name: str, message: str) -> dict:
         """Send using WhatsApp contact name (searches in WA search bar)."""
+        from selenium.webdriver.support.ui import WebDriverWait
+        from selenium.webdriver.support import expected_conditions as EC
+        from selenium.webdriver.common.by import By
+        from selenium.webdriver.common.keys import Keys
         try:
             d = self._ensure()
             box = WebDriverWait(d, 10).until(
@@ -207,6 +212,9 @@ class WhatsAppSender:
 
     def send_by_number(self, phone: str, message: str) -> dict:
         """Send using phone number (no need to be in WA contacts)."""
+        from selenium.webdriver.support.ui import WebDriverWait
+        from selenium.webdriver.support import expected_conditions as EC
+        from selenium.webdriver.common.by import By
         clean = re.sub(r"[^\d+]", "", phone)
         if not clean.startswith("+"): clean = "+91" + clean  # ← change country code if needed
         try:
@@ -243,7 +251,11 @@ wa = WhatsAppSender()
 class InstagramSender:
     _ready = False
 
-    def _ensure(self) -> webdriver.Chrome:
+    def _ensure(self):
+        from selenium.webdriver.common.by import By
+        from selenium.webdriver.support.ui import WebDriverWait
+        from selenium.webdriver.support import expected_conditions as EC
+        from selenium.webdriver.common.keys import Keys
         d = browser.get()
         if not self._ready:
             d.get("https://www.instagram.com"); time.sleep(2)
@@ -264,6 +276,10 @@ class InstagramSender:
         return d
 
     def send(self, username: str, message: str) -> dict:
+        from selenium.webdriver.support.ui import WebDriverWait
+        from selenium.webdriver.support import expected_conditions as EC
+        from selenium.webdriver.common.by import By
+        from selenium.webdriver.common.keys import Keys
         username = username.lstrip("@")
         try:
             d = self._ensure()
@@ -354,15 +370,19 @@ def launch_app(name: str) -> dict:
 
 class SystemCtrl:
     def vol_up(self, n=2):
+        import pyautogui
         for _ in range(n): pyautogui.press("volumeup")
 
     def vol_down(self, n=2):
+        import pyautogui
         for _ in range(n): pyautogui.press("volumedown")
 
     def mute(self):
+        import pyautogui
         pyautogui.press("volumemute")
 
     def screenshot(self) -> str:
+        import pyautogui
         p = os.path.expanduser(f"~/Desktop/jarvis_{int(time.time())}.png")
         pyautogui.screenshot(p); return p
 

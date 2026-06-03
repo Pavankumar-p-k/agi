@@ -1,0 +1,11 @@
+{
+  "name": "finance.inflation",
+  "version": "1.0.0",
+  "description": "JARVIS Skill for Inflation",
+  "author": "JARVIS Core",
+  "entry_point": "main.py",
+  "enabled": true,
+  "tools": [
+    "inflation"
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "name": "JARVIS AI OS",
+  "pages": [
+    "index",
+    "features",
+    "skills",
+    "docs",
+    "demo"
+  ],
+  "version": "1.0.0"
+}

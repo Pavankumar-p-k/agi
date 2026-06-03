@@ -1,8 +1,18 @@
+import json
 import os
-import requests
+import logging
 import trafilatura
 from typing import List, Dict, Optional
 from datetime import datetime
+
+import httpx
+import requests
+import asyncio
+
+from core.result import Ok, Err, Result
+from core.errors import ProviderError
+
+logger = logging.getLogger(__name__)
 
 class SearchResult:
     def __init__(self, title: str, url: str, snippet: str, content: str = "", score: float = 1.0, published_date: str = ""):
@@ -14,33 +24,63 @@ class SearchResult:
         self.published_date = published_date
 
 class SearchDecisionGate:
-    """
-    Decides if a search is needed.
-    """
     def should_search(self, query: str, confidence: float) -> bool:
         search_keywords = ["latest", "current", "today", "2026", "recent", "now", "price", "score", "news", "who is", "weather"]
         query_lower = query.lower()
-        
         if any(kw in query_lower for kw in search_keywords):
             return True
-        
         if confidence < 0.75:
             return True
-        
-        # Heuristic for specific entities
         if any(char.isupper() for char in query if char.isalpha()) and len(query.split()) > 2:
             return True
-            
         return False
 
+class DuckDuckGoFallback:
+    async def search(self, query: str, max_results: int = 10) -> Result[List[SearchResult], ProviderError]:
+        try:
+            url = f"https://html.duckduckgo.com/html/?q={query.replace(' ', '+')}"
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            }
+            async with httpx.AsyncClient(timeout=15, follow_redirects=True) as client:
+                resp = await client.get(url, headers=headers)
+                resp.raise_for_status()
+
+            from bs4 import BeautifulSoup
+            soup = BeautifulSoup(resp.text, 'html.parser')
+            results = []
+            for i, result_div in enumerate(soup.select('.result')):
+                if len(results) >= max_results:
+                    break
+                title_el = result_div.select_one('.result__title a')
+                snippet_el = result_div.select_one('.result__snippet')
+                if title_el and snippet_el:
+                    title = title_el.get_text(strip=True)
+                    href = title_el.get('href', '')
+                    snippet = snippet_el.get_text(strip=True)
+                    results.append(SearchResult(title=title, url=href, snippet=snippet))
+            if not results:
+                for i, a in enumerate(soup.select('a[href^="http"]')):
+                    if len(results) >= max_results:
+                        break
+                    text = a.get_text(strip=True)
+                    if text and len(text) > 10:
+                        results.append(SearchResult(title=text, url=a['href'], snippet=""))
+            return Ok(results)
+        except ImportError:
+            logger.warning("[Search] BeautifulSoup not installed for DuckDuckGo fallback")
+            return Err(ProviderError("BeautifulSoup not installed"))
+        except Exception as e:
+            logger.warning("[Search] DuckDuckGo fallback failed: %s", e)
+            return Err(ProviderError(f"DuckDuckGo fallback failed: {e}"))
+
 class SearXNGSearch:
-    """
-    SearXNG integration for JARVIS.
-    """
     def __init__(self, base_url: str = None):
         self.base_url = base_url or os.getenv("SEARXNG_URL", "http://localhost:8888")
+        self._http = httpx.AsyncClient(timeout=10)
+        self._fallback = DuckDuckGoFallback()
 
-    def search(self, query: str, max_results: int = 10) -> List[SearchResult]:
+    def search_sync(self, query: str, max_results: int = 10) -> Result[List[SearchResult], ProviderError]:
         try:
             params = {
                 "q": query,
@@ -50,7 +90,6 @@ class SearXNGSearch:
             resp = requests.get(self.base_url.rstrip('/') + "/search", params=params, timeout=10)
             resp.raise_for_status()
             data = resp.json()
-            
             results = []
             for r in data.get("results", [])[:max_results]:
                 results.append(SearchResult(
@@ -59,31 +98,52 @@ class SearXNGSearch:
                     snippet=r.get("content", ""),
                     published_date=r.get("publishedDate", "")
                 ))
-            
-            return self._score_results(results)
+            return Ok(self._score_results(results))
         except Exception as e:
-            print(f"[Search] SearXNG error: {e}")
-            return []
+            logger.warning("[Search] SearXNG search error: %s", e)
+            logger.info("[Search] Falling back to DuckDuckGo for: %s", query)
+            return asyncio.run(self._fallback.search(query, max_results))
+
+    async def search(self, query: str, max_results: int = 10) -> Result[List[SearchResult], ProviderError]:
+        try:
+            params = {
+                "q": query,
+                "format": "json",
+                "engines": "google,bing,duckduckgo",
+            }
+            resp = await self._http.get(self.base_url.rstrip('/') + "/search", params=params)
+            resp.raise_for_status()
+            data = resp.json()
+            results = []
+            for r in data.get("results", [])[:max_results]:
+                results.append(SearchResult(
+                    title=r.get("title", ""),
+                    url=r.get("url", ""),
+                    snippet=r.get("content", ""),
+                    published_date=r.get("publishedDate", "")
+                ))
+            return Ok(self._score_results(results))
+        except Exception as e:
+            logger.warning("[Search] SearXNG search error: %s", e)
+            logger.info("[Search] Falling back to DuckDuckGo for: %s", query)
+            return await self._fallback.search(query, max_results)
 
     def _score_results(self, results: List[SearchResult]) -> List[SearchResult]:
-        """Apply freshness scoring."""
         now = datetime.now()
         for r in results:
             if r.published_date:
                 try:
-                    # Very simple date parsing
                     pub_date = datetime.fromisoformat(r.published_date.replace("Z", "+00:00"))
                     age_days = (now - pub_date).days
-                    if age_days > 180: # Older than 6 months
+                    if age_days > 180:
                         r.score *= 0.8
-                    if age_days > 365: # Older than a year
+                    if age_days > 365:
                         r.score *= 0.5
                 except Exception:
                     pass
         return sorted(results, key=lambda x: x.score, reverse=True)
 
     async def scrape_top(self, results: List[SearchResult], n: int = 3) -> List[str]:
-        """Scrape full content from top results using Crawl4AI with trafilatura fallback."""
         contents = []
         try:
             from tools.crawl4ai_tool import get_crawler
@@ -98,7 +158,6 @@ class SearXNGSearch:
         except Exception as e:
             print(f"[Search] Crawl4AI scrape failed, falling back to trafilatura: {e}")
 
-        # Fallback to trafilatura for any results crawl4ai missed
         if len(contents) < n:
             for r in results[:n]:
                 if any(r.url in c for c in contents):
@@ -114,47 +173,42 @@ class SearXNGSearch:
         return contents
 
     async def multi_hop(self, query: str, max_iterations: int = 3) -> str:
-        """
-        Search -> read -> "what do I still not know?" -> search gap -> repeat.
-        """
         all_content = []
         current_query = query
-
         for hop in range(max_iterations):
-            results = self.search(current_query)
+            search_result = await self.search(current_query)
+            if hasattr(search_result, 'is_err') and search_result.is_err():
+                break
+            results = search_result.unwrap() if hasattr(search_result, 'unwrap') else search_result
             if not results:
                 break
-
             scraped = await self.scrape_top(results)
             all_content.extend(scraped)
-
             if hop < max_iterations - 1:
                 gap_prompt = (
                     f"Based on what I found: {' '.join(scraped[:2])} "
                     f"What important aspect of '{query}' is still missing? "
                     f"Answer with a search query only."
                 )
-                gap_query = self._refine_gap(gap_prompt)
+                gap_query = await self._refine_gap(gap_prompt, current_query)
                 if gap_query and gap_query != current_query:
                     current_query = gap_query
                 else:
                     break
-
         return "\n\n".join(all_content)
 
-    def _refine_gap(self, prompt: str) -> str:
-        """Generate follow-up search query for missing info."""
+    async def _refine_gap(self, prompt: str, query: str) -> str:
         try:
-            req = urllib.request.Request(
-                'http://localhost:11434/api/generate',
-                data=json.dumps({"model": "mistral:7b", "prompt": prompt, "stream": False}).encode(),
-                headers={'Content-Type': 'application/json'}
-            )
-            resp = json.loads(urllib.request.urlopen(req, timeout=15).read())
-            return resp.get("response", "").strip().strip('"')
+            async with httpx.AsyncClient(timeout=15) as client:
+                resp = await client.post(
+                    'http://localhost:11434/api/generate',
+                    json={"model": "mistral:7b", "prompt": prompt, "stream": False},
+                )
+                data = resp.json()
+                return data.get("response", "").strip().strip('"')
         except Exception:
-            return ""
+            logger.warning("[SEARCH] _refine_gap LLM call failed, returning original query")
+            return query
 
-# Instances
 decision_gate = SearchDecisionGate()
 search_engine = SearXNGSearch()

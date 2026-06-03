@@ -1,0 +1,11 @@
+{
+  "name": "productivity.habit_tracker",
+  "version": "1.0.0",
+  "description": "JARVIS Skill for Habit Tracker",
+  "author": "JARVIS Core",
+  "entry_point": "main.py",
+  "enabled": true,
+  "tools": [
+    "habit_tracker"
+  ]
+}

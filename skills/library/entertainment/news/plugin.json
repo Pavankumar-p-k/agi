@@ -1,0 +1,21 @@
+{
+  "id": "news_skill",
+  "name": "News Skill",
+  "version": "1.0.0",
+  "description": "Fetches top headlines and news summaries via NewsAPI",
+  "author": "JARVIS",
+  "entry": "skills.library.entertainment.news.main",
+  "hooks": ["on_intent"],
+  "settings_schema": {
+    "type": "object",
+    "required": ["api_key"],
+    "properties": {
+      "api_key":  { "type": "string", "description": "NewsAPI key" },
+      "country":  { "type": "string", "description": "2-letter country code, e.g. 'us'" },
+      "max_articles": { "type": "integer", "description": "Max articles to return" }
+    }
+  },
+  "requires": ["newsapi-python>=0.2.7"],
+  "min_jarvis_version": "1.0.0",
+  "enabled": true
+}

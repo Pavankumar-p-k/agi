@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skills - JARVIS AI OS</title>
+    <style>
+:root {
+    --primary: #00d4ff;
+    --secondary: #0078ff;
+    --accent: #00fff2;
+    --bg: #0a0a0f;
+    --bg2: #12121a;
+    --card: #1a1a2e;
+    --text: #ffffff;
+    --text2: rgba(255,255,255,0.7);
+    --border: rgba(255,255,255,0.08);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    min-height: 100vh;
+}
+.navbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 2rem;
+    background: rgba(10,10,15,0.95);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(10px);
+}
+.nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.brand-icon {
+    color: var(--primary);
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+.brand-text {
+    font-size: 1.3rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+.navbar ul { list-style: none; display: flex; gap: 1.5rem; }
+.navbar a {
+    color: var(--text2);
+    text-decoration: none;
+    font-size: 0.9rem;
+    padding: 0.5rem 0;
+    transition: color 0.2s;
+    position: relative;
+}
+.navbar a:hover, .navbar a.active { color: var(--primary); }
+.navbar a.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--primary);
+    border-radius: 1px;
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+.hero {
+    text-align: center;
+    padding: 6rem 2rem 4rem;
+    background: radial-gradient(ellipse at 50% 0%, rgba(0,120,255,0.1) 0%, transparent 60%);
+}
+.hero h1 {
+    font-size: 3.5rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+.hero p {
+    font-size: 1.2rem;
+    color: var(--text2);
+    max-width: 600px;
+    margin: 0 auto 2rem;
+}
+.btn {
+    display: inline-block;
+    padding: 0.8rem 2rem;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: #fff;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,212,255,0.3); }
+.btn-outline {
+    background: transparent;
+    border: 1px solid var(--primary);
+    color: var(--primary);
+    margin-left: 1rem;
+}
+.btn-outline:hover { background: rgba(0,212,255,0.1); }
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    padding: 2rem 0;
+}
+.card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 2rem;
+    transition: border-color 0.2s, transform 0.2s;
+}
+.card:hover { border-color: var(--primary); transform: translateY(-4px); }
+.card-icon { font-size: 2rem; margin-bottom: 1rem; }
+.card h3 { margin-bottom: 0.5rem; }
+.card p { color: var(--text2); font-size: 0.9rem; }
+h2 {
+    font-size: 2rem;
+    text-align: center;
+    margin: 3rem 0 1rem;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+.skills-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+    margin: 2rem 0;
+}
+.skill-tag {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+    font-size: 0.9rem;
+    transition: border-color 0.2s;
+}
+.skill-tag:hover { border-color: var(--primary); }
+.skill-category {
+    color: var(--primary);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 0.25rem;
+}
+footer {
+    text-align: center;
+    padding: 3rem 2rem;
+    border-top: 1px solid var(--border);
+    color: var(--text2);
+    font-size: 0.85rem;
+}
+.terminal {
+    background: #000;
+    border-radius: 12px;
+    padding: 1.5rem;
+    font-family: 'Courier New', monospace;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    border: 1px solid var(--border);
+    margin: 2rem 0;
+}
+.terminal .prompt { color: var(--primary); }
+.terminal .output { color: var(--accent); }
+.terminal .comment { color: #666; }
+</style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">
+            <span class="brand-icon">▲</span>
+            <span class="brand-text">JARVIS</span>
+        </div>
+        <ul><li><a href="index.html">Home</a></li><li><a href="features.html">Features</a></li><li class="active"><a href="skills.html">Skills</a></li><li><a href="docs.html">Docs</a></li><li><a href="demo.html">Demo</a></li></ul>
+    </nav>
+    <div class="container" style="padding-top:3rem;">
+        <h2>50+ Skills</h2>
+        <p style="text-align:center;color:var(--text2);margin-bottom:2rem;">Organized across 5 categories — all extensible via plugin system</p>
+        <h3 style="color:var(--primary);margin:2rem 0 1rem;">Finance</h3><div class="skills-grid"><div class="skill-tag"><div class="skill-category">Finance</div>Bill Reminder</div><div class="skill-tag"><div class="skill-category">Finance</div>Budget</div><div class="skill-tag"><div class="skill-category">Finance</div>Crypto</div><div class="skill-tag"><div class="skill-category">Finance</div>Expenses</div><div class="skill-tag"><div class="skill-category">Finance</div>Gold Price</div><div class="skill-tag"><div class="skill-category">Finance</div>Inflation</div><div class="skill-tag"><div class="skill-category">Finance</div>Loan EMI</div><div class="skill-tag"><div class="skill-category">Finance</div>Stocks</div><div class="skill-tag"><div class="skill-category">Finance</div>Tax Calculator</div><div class="skill-tag"><div class="skill-category">Finance</div>UPI Generator</div></div><h3 style="color:var(--primary);margin:2rem 0 1rem;">System</h3><div class="skills-grid"><div class="skill-tag"><div class="skill-category">System</div>Clipboard</div><div class="skill-tag"><div class="skill-category">System</div>File Organizer</div><div class="skill-tag"><div class="skill-category">System</div>IP Lookup</div><div class="skill-tag"><div class="skill-category">System</div>Password Gen</div><div class="skill-tag"><div class="skill-category">System</div>QR Gen</div><div class="skill-tag"><div class="skill-category">System</div>Screenshot</div><div class="skill-tag"><div class="skill-category">System</div>Speedtest</div><div class="skill-tag"><div class="skill-category">System</div>System Monitor</div><div class="skill-tag"><div class="skill-category">System</div>Timer</div><div class="skill-tag"><div class="skill-category">System</div>Unit Converter</div></div><h3 style="color:var(--primary);margin:2rem 0 1rem;">Entertainment</h3><div class="skills-grid"><div class="skill-tag"><div class="skill-category">Entertainment</div>Games</div><div class="skill-tag"><div class="skill-category">Entertainment</div>Joke</div><div class="skill-tag"><div class="skill-category">Entertainment</div>Movie Recs</div><div class="skill-tag"><div class="skill-category">Entertainment</div>News</div><div class="skill-tag"><div class="skill-category">Entertainment</div>Quiz</div><div class="skill-tag"><div class="skill-category">Entertainment</div>Quote</div><div class="skill-tag"><div class="skill-category">Entertainment</div>Recipe</div><div class="skill-tag"><div class="skill-category">Entertainment</div>Spotify</div><div class="skill-tag"><div class="skill-category">Entertainment</div>Sports</div><div class="skill-tag"><div class="skill-category">Entertainment</div>Weather</div></div><h3 style="color:var(--primary);margin:2rem 0 1rem;">Knowledge</h3><div class="skills-grid"><div class="skill-tag"><div class="skill-category">Knowledge</div>Code Snippet</div><div class="skill-tag"><div class="skill-category">Knowledge</div>Dictionary</div><div class="skill-tag"><div class="skill-category">Knowledge</div>Fact Check</div><div class="skill-tag"><div class="skill-category">Knowledge</div>LaTeX Math</div><div class="skill-tag"><div class="skill-category">Knowledge</div>Paper Summarizer</div><div class="skill-tag"><div class="skill-category">Knowledge</div>Regex Helper</div><div class="skill-tag"><div class="skill-category">Knowledge</div>SQL Assistant</div><div class="skill-tag"><div class="skill-category">Knowledge</div>Thesaurus</div><div class="skill-tag"><div class="skill-category">Knowledge</div>Translator</div><div class="skill-tag"><div class="skill-category">Knowledge</div>Wikipedia</div></div><h3 style="color:var(--primary);margin:2rem 0 1rem;">Productivity</h3><div class="skills-grid"><div class="skill-tag"><div class="skill-category">Productivity</div>Calendar</div><div class="skill-tag"><div class="skill-category">Productivity</div>Email Summarizer</div><div class="skill-tag"><div class="skill-category">Productivity</div>GitHub Issues</div><div class="skill-tag"><div class="skill-category">Productivity</div>Habit Tracker</div><div class="skill-tag"><div class="skill-category">Productivity</div>LinkedIn Drafter</div><div class="skill-tag"><div class="skill-category">Productivity</div>Meeting Minutes</div><div class="skill-tag"><div class="skill-category">Productivity</div>PDF Extractor</div><div class="skill-tag"><div class="skill-category">Productivity</div>Pomodoro</div><div class="skill-tag"><div class="skill-category">Productivity</div>Todoist</div><div class="skill-tag"><div class="skill-category">Productivity</div>URL Shortener</div></div>
+    </div>
+    <footer>
+        <p>JARVIS AI OS — Privacy-First Personal Life Operating System<br>
+        Built with Python, FastAPI, and ❤️</p>
+    </footer>
+</body>
+</html>
