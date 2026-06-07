@@ -1,3 +1,5 @@
+from __future__ import annotations
+import logging
 # automation/pc_automation.py
 #
 # JARVIS PC Automation Engine
@@ -11,12 +13,12 @@
 #  7. NLP parser    — understands natural language commands
 # ─────────────────────────────────────────────────────────────
 
-from __future__ import annotations
 import re, os, json, time, subprocess, webbrowser, platform
 from pathlib import Path
 from datetime import datetime
 from typing import Optional
 from urllib.parse import quote_plus
+logger = logging.getLogger(__name__)
 
 
 # ══════════════════════════════════════════════════════════
@@ -143,8 +145,8 @@ class BrowserManager:
             WebDriverWait(d, 10).until(
                 EC.element_to_be_clickable(
                     (By.CSS_SELECTOR, "ytd-video-renderer a#thumbnail"))).click()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("[automation.pc_automation] execute_pc_action failed: %s", e)
 
     def maps(self, place: str):
         return self.open(f"https://www.google.com/maps/search/{quote_plus(place)}")
@@ -271,8 +273,8 @@ class InstagramSender:
                             EC.element_to_be_clickable((By.NAME,"username"))).send_keys(un)
                         d.find_element(By.NAME,"password").send_keys(pw + Keys.ENTER)
                         time.sleep(4); self._ready = True
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.warning("[automation.pc_automation] browser login failed: %s", e)
         return d
 
     def send(self, username: str, message: str) -> dict:
@@ -353,9 +355,9 @@ def launch_app(name: str) -> dict:
     try:
         if platform.system() == "Windows":
             if cmd.endswith(":"):
-                subprocess.Popen(["start", cmd], shell=True)
+                subprocess.Popen(["cmd", "/c", "start", cmd], shell=False)
             else:
-                subprocess.Popen([cmd], shell=True)
+                subprocess.Popen([cmd], shell=False)
         else:
             subprocess.Popen([cmd])
         print(f"[Launcher] Started {name}")

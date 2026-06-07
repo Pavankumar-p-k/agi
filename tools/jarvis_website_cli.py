@@ -1,3 +1,4 @@
+import logging
 """jarvis_website_cli.py
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 JARVIS Website CLI — paste these blocks into jarvis.py
@@ -23,6 +24,7 @@ import json
 import os
 import webbrowser
 from pathlib import Path
+logger = logging.getLogger(__name__)
 
 
 # ─── Sub-parser registration ─────────────────────────────────────────────────
@@ -149,7 +151,7 @@ def _cmd_website_build(args: argparse.Namespace) -> int:
         try:
             webbrowser.open(result["open_in_browser"])
         except Exception:
-            pass
+            logger.warning("[tools.jarvis_website_cli] generate_website failed: %s", e)
 
     return 0
 
@@ -170,8 +172,8 @@ def _cmd_website_preview(args: argparse.Namespace) -> int:
 
     try:
         webbrowser.open(url + "/index.html")
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("[tools.jarvis_website_cli] website_cli_operation failed: %s", e)
 
     try:
         import time
