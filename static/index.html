@@ -41,6 +41,7 @@
 
 html, body {
   width:100%; height:100%;
+  min-width:360px;
   background: var(--bg);
   overflow: hidden;
   font-family: 'Rajdhani', sans-serif;
@@ -190,6 +191,24 @@ html, body {
   border-color: rgba(0,255,157,0.15);
   background: rgba(0,255,157,0.025);
 }
+
+.msg.jarvis .msg-body h1,
+.msg.jarvis .msg-body h2,
+.msg.jarvis .msg-body h3 { margin:8px 0 4px; color:var(--cyan); font-family:Orbitron,sans-serif; letter-spacing:.05em; }
+.msg.jarvis .msg-body h1 { font-size:15px; }
+.msg.jarvis .msg-body h2 { font-size:14px; }
+.msg.jarvis .msg-body h3 { font-size:13px; }
+.msg.jarvis .msg-body code { background:rgba(0,245,255,0.08); padding:1px 5px; border-radius:2px; font-family:'Share Tech Mono',monospace; font-size:12px; color:var(--green); }
+.msg.jarvis .msg-body pre { background:rgba(0,0,0,0.4); border:1px solid rgba(0,245,255,0.15); border-radius:4px; padding:8px 12px; margin:6px 0; overflow-x:auto; }
+.msg.jarvis .msg-body pre code { background:none; padding:0; color:var(--cyan); }
+.msg.jarvis .msg-body strong { color:var(--orange); }
+.msg.jarvis .msg-body em { color:var(--purple); }
+.msg.jarvis .msg-body ul, .msg.jarvis .msg-body ol { margin:4px 0; padding-left:20px; }
+.msg.jarvis .msg-body li { margin:2px 0; color:var(--text); }
+.msg.jarvis .msg-body a { color:var(--cyan); text-decoration:underline; }
+.msg.jarvis .msg-body a:hover { color:var(--green); }
+.msg.jarvis .msg-body hr { border:none; border-top:1px solid var(--border); margin:8px 0; }
+.msg.jarvis .msg-body blockquote { border-left:2px solid var(--cyan); margin:6px 0; padding:4px 12px; color:var(--dim); font-style:italic; }
 
 /* highlighted keyword inside message */
 .kw {
@@ -2555,16 +2574,34 @@ function buildFlowSVG(nodes) {
 // ════════════════════════════════════════════════════════════
 const chatMsgs = document.getElementById('chat-messages');
 
+function renderMarkdown(text) {
+  let out = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  out = out.replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code class="lang-$1">$2</code></pre>');
+  out = out.replace(/`([^`]+)`/g, '<code>$1</code>');
+  out = out.replace(/### (.+)/g, '<h3>$1</h3>');
+  out = out.replace(/## (.+)/g, '<h2>$1</h2>');
+  out = out.replace(/# (.+)/g, '<h1>$1</h1>');
+  out = out.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  out = out.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+  out = out.replace(/^- (.+)/gm, '<li>$1</li>');
+  out = out.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
+  out = out.replace(/^(\d+)\. (.+)/gm, '<li value="$1">$2</li>');
+  out = out.replace(/(<li value=.*<\/li>\n?)+/g, '<ol>$&</ol>');
+  out = out.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+  out = out.replace(/\n/g, '<br>');
+  return out;
+}
+
 function addMsg(role, text, kws=[]) {
-  // compress old messages slightly
   chatMsgs.querySelectorAll('.msg').forEach(m => {
     if (!m.classList.contains('compressed')) m.classList.add('compressed');
   });
   const div = document.createElement('div');
   div.className = 'msg ' + role;
+  const body = role === 'jarvis' ? renderMarkdown(text) : highlightKeywordsChat(text, kws);
   div.innerHTML = `
     <div class="msg-role">${role==='user'?'you':'jarvis'}</div>
-    <div class="msg-body">${highlightKeywordsChat(text, kws)}</div>
+    <div class="msg-body">${body}</div>
   `;
   chatMsgs.appendChild(div);
   chatMsgs.scrollTop = chatMsgs.scrollHeight;
@@ -2756,24 +2793,28 @@ async function sendMessage(userText) {
   addThinking();
 
   try {
-    const res = await fetch('http://localhost:8000/api/chat',{
+    const apiBase = window.location.origin;
+    const res = await fetch(apiBase+'/api/chat',{
       method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer dev'},
+      headers:{'Content-Type':'application/json'},
       body: JSON.stringify({message:userText, history:history.map(h=>({role:h.role,content:h.content}))})
     });
 
     const data = await res.json();
     if (res.status!==200) throw new Error(data.detail||'API Error');
 
+    const replyText = data.response||data.message||JSON.stringify(data);
+    const rendered = renderMarkdown(replyText);
+
     let parsed = data;
     if (typeof data.response==='string' && !data.cards) {
       parsed = {
-        type:'answer', message:data.response, brain_intensity:0.3,
-        cards:[{type:'answer',title:'RESPONSE',icon:'◈',text:data.response}]
+        type:'answer', message:replyText, brain_intensity:0.3,
+        cards:[{type:'answer',title:'RESPONSE',icon:'◈',text:replyText}]
       };
     }
 
-    history.push({role:'assistant', content:data.response||JSON.stringify(data)});
+    history.push({role:'assistant', content:replyText});
     removeThinking();
     setOrbThinking(false);
     routeResponse(parsed, userText);
