@@ -53,21 +53,81 @@ def _warmup_ollama_models():
         logger.info("  [OLLAMA] All %d models verified installed [OK]", len(required_models))
 
 
+async def _migrate_legacy_settings_once():
+    """One-time migration: copy overlapping keys from old settings.json into the new SettingsStore.
+
+    Runs once, marks itself done with data/.settings_migrated flag.
+    """
+    from core.settings_legacy import _LEGACY_FILE, _load_legacy
+    from core.settings import get_settings_store
+
+    MIGRATION_DONE_FLAG = Path("data/.settings_migrated")
+    if MIGRATION_DONE_FLAG.exists():
+        return  # already done
+
+    legacy = _load_legacy()
+    store = get_settings_store()
+
+    # Only migrate keys that exist in the new schema
+    MIGRATABLE = {
+        "default_model": "llm.default_model",
+        "tts_enabled": "voice.enabled",
+        "tts_voice": "voice.tts_voice",
+        "wake_word": "voice.wake_word",
+        "debug": "ui.debug",
+    }
+
+    for old_key, new_path in MIGRATABLE.items():
+        if old_key in legacy:
+            try:
+                store.set(new_path, legacy[old_key])
+            except Exception as _e:
+                logger.debug("lifespan settings migration failed: %s", _e)
+                logger.warning("[startup] Could not migrate %s -> %s", old_key, new_path)
+
+    store.save()
+    MIGRATION_DONE_FLAG.parent.mkdir(parents=True, exist_ok=True)
+    MIGRATION_DONE_FLAG.touch()
+    logger.info("[startup] Legacy settings migrated to SettingsStore")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("=" * 50)
     print("  JARVIS â€” Starting up...")
     print("=" * 50)
 
+    # One-time legacy settings migration
+    try:
+        await _migrate_legacy_settings_once()
+    except Exception as e:
+        logger.warning("[LIFESPAN] Legacy settings migration skipped: %s", e)
+
     from core.database import init_db
-    from core.auth import init_firebase
+    from core.auth import init_firebase, AuthManager
 
     await init_db()
+
+    # Subagent orphan recovery
+    try:
+        from core.spawning.orphan import orphan_recovery
+        asyncio.create_task(orphan_recovery.recover())
+        logger.info("[LIFESPAN] Subagent orphan recovery started [OK]")
+    except Exception as e:
+        logger.warning("[LIFESPAN] Subagent orphan recovery failed: %s", e)
+
     try:
         init_firebase()
     except Exception as e:
         startup_status["warnings"].append(f"firebase: {e}")
         logger.warning("[LIFESPAN] Firebase init failed: %s", e)
+
+    try:
+        app.state.auth_manager = AuthManager()
+        logger.info("[LIFESPAN] AuthManager ready [OK]")
+    except Exception as e:
+        startup_status["warnings"].append(f"auth_manager: {e}")
+        logger.warning("[LIFESPAN] AuthManager init failed: %s", e)
 
     try:
         from reminders.manager import reminder_manager
@@ -90,8 +150,8 @@ async def lifespan(app: FastAPI):
                 data, sr = sf.read(io.BytesIO(audio_bytes))
                 sd.play(data, sr)
                 sd.wait()
-            except Exception:
-                pass
+            except Exception as _e:
+                logger.debug("lifespan play_audio failed: %s", _e)
 
         class _TTSWrapper:
             def speak_async(self, text: str):
@@ -106,45 +166,64 @@ async def lifespan(app: FastAPI):
         startup_status["warnings"].append(f"tts: {e}")
         logger.warning("[LIFESPAN] TTS init failed: %s", e)
 
+    # â”€â”€ Phase 10.1: Consolidated Monitoring (replaces health_monitor + proactive_monitor) â”€â”€â”€
     try:
-        from core.health_monitor import HealthMonitor
-        from core.model_router import set_health_checker
-        app.state.health = HealthMonitor(interval=30)
-        await app.state.health.start()
-        set_health_checker(app.state.health.ollama_alive)
-        logger.info("[LIFESPAN] Background health monitor started [OK]")
-    except Exception as e:
-        startup_status["warnings"].append(f"health_monitor: {e}")
-        logger.warning("[LIFESPAN] Health monitor init failed: %s", e)
-
-    try:
-        from core.proactive_monitor import ProactiveMonitor
+        from monitors import ResourceMonitor, ServiceHealthChecker, AlertRouter
         from network.websocket_server import connection_manager
         from assistant.tts import get_tts
         from tools.whatsapp_sender import whatsapp_sender
 
+        app.state.resource_monitor = ResourceMonitor()
         async def _tts_speak(text):
             loop = asyncio.get_event_loop()
             return await loop.run_in_executor(None, get_tts().synthesize, text)
 
-        app.state.proactive_monitor = ProactiveMonitor(
+        app.state.alert_router = AlertRouter(
             broadcast_fn=connection_manager.broadcast,
             speak_fn=_tts_speak,
             whatsapp_fn=whatsapp_sender.send if whatsapp_sender.ready else None,
         )
-        await app.state.proactive_monitor.start()
-        logger.info("[LIFESPAN] ProactiveMonitor started [OK]")
+        app.state.service_health = ServiceHealthChecker(interval=30)
+        await app.state.service_health.start()
+        from core.model_router import set_health_checker
+        set_health_checker(lambda: app.state.service_health.latest().ollama.status == "healthy")
+        logger.info("[LIFESPAN] Consolidated monitoring started [OK]")
     except Exception as e:
-        startup_status["warnings"].append(f"proactive: {e}")
-        logger.warning("[LIFESPAN] ProactiveMonitor init failed: %s", e)
+        startup_status["warnings"].append(f"monitoring: {e}")
+        logger.warning("[LIFESPAN] Consolidated monitoring init failed: %s", e)
+        # Fallback to legacy health monitor
+        try:
+            from core.health_monitor import HealthMonitor
+            from core.model_router import set_health_checker
+            app.state.health = HealthMonitor(interval=30)
+            await app.state.health.start()
+            set_health_checker(app.state.health.ollama_alive)
+            logger.info("[LIFESPAN] Legacy health monitor started (fallback) [OK]")
+        except Exception as e2:
+            startup_status["warnings"].append(f"health_monitor_fallback: {e2}")
+            logger.warning("[LIFESPAN] Legacy health monitor fallback failed: %s", e2)
+
+    # â”€â”€ Phase 10.2: LLM Failover Cooldown Probe â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    try:
+        from core.config_schema import jarvis_config
+        if jarvis_config.failover.enabled:
+            from core.llm_failover import llm_failover, CooldownProbe
+            app.state.failover_probe = CooldownProbe(llm_failover.pm)
+            await app.state.failover_probe.start()
+            logger.info("[LIFESPAN] LLM failover cooldown probe started [OK]")
+        else:
+            logger.info("[LIFESPAN] LLM failover disabled — using Ollama-first routing")
+    except Exception as e:
+        startup_status["warnings"].append(f"failover: {e}")
+        logger.warning("[LIFESPAN] LLM failover probe init failed: %s", e)
 
     try:
         from core.email_monitor import EmailMonitor
-        from core.proactive_monitor import Alert
+        from monitors.alerts import Alert, AlertPriority
 
         async def _email_callback(alert_dict):
-            await app.state.proactive_monitor._notify(Alert(
-                priority="critical" if alert_dict["priority"] == "urgent" else "info",
+            app.state.alert_router.send(Alert(
+                priority=AlertPriority.CRITICAL if alert_dict["priority"] == "urgent" else AlertPriority.INFO,
                 module=f"email:{alert_dict['from'].split('<')[0].strip()[:20]}",
                 message=f"Email: {alert_dict['subject'][:80]}",
                 voice_summary=f"Email from {alert_dict['from'].split('<')[0].strip()}: {alert_dict['subject'][:40]}",
@@ -358,7 +437,16 @@ async def lifespan(app: FastAPI):
     # Load skills/library plugins (new plugin system — plugin.json manifests)
     try:
         from core.plugins.loader import get_plugin_loader
+        from core.plugins.verification import manifest_verifier
         loader = get_plugin_loader()
+        # Verify manifest integrity before loading
+        import os as _os
+        skills_dir = "skills/library"
+        if _os.path.isdir(skills_dir):
+            for root, _dirs, files in _os.walk(skills_dir):
+                for fname in files:
+                    if fname in ("plugin.json", "skill.json"):
+                        manifest_verifier.verify_manifest_integrity(_os.path.join(root, fname))
         loaded = loader.load_all("skills/library")
         if loaded:
             logger.info("[LIFESPAN] %d skills/library plugins loaded: %s [OK]", len(loaded), loaded)
@@ -367,6 +455,14 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         startup_status["warnings"].append(f"skills_plugins: {e}")
         logger.warning("[LIFESPAN] Skills/library plugin loader failed: %s", e)
+
+    # Marketplace refresh (background, best-effort)
+    try:
+        from core.plugins.marketplace import plugin_marketplace
+        await plugin_marketplace.refresh_index()
+        logger.info("[LIFESPAN] Plugin marketplace index refreshed [OK]")
+    except Exception as e:
+        logger.info("[LIFESPAN] Plugin marketplace unavailable (offline) — %s", e)
 
     # Start governance work queue (background task processor)
     try:
@@ -386,7 +482,21 @@ async def lifespan(app: FastAPI):
         startup_status["warnings"].append(f"audit: {e}")
         logger.warning("[LIFESPAN] Audit log init failed: %s", e)
 
-    # â”€â”€ Phase 15: Channel Integrations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # â”€â”€ Phase 14.1: Tool Policies â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    try:
+        from core.tools.defaults import register_default_policies
+        # Already called on import, but explicit is better
+        logger.info("[LIFESPAN] Tool policies registered [OK]")
+    except Exception as e:
+        logger.warning("[LIFESPAN] Tool policies registration failed: %s", e)
+
+    # â”€â”€ Phase 14.2: AuthZ (RBAC) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    try:
+        from core.authz.loader import policy_loader
+        policy_loader.load_all()
+        logger.info("[LIFESPAN] RBAC policies loaded [OK]")
+    except Exception as e:
+        logger.warning("[LIFESPAN] RBAC policies load failed: %s", e)
     try:
         from channels import channel_controller
         from channels.discord_channel import DiscordChannel
@@ -422,12 +532,20 @@ async def lifespan(app: FastAPI):
         startup_status["warnings"].append(f"mcp: {e}")
         logger.warning("[LIFESPAN] MCP init failed: %s", e)
 
+    # â”€â”€ Phase 16.1: MCP Bridge (Bidirectional) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    try:
+        from core.gateway.bridge import mcp_bridge
+        app.state.mcp_bridge = mcp_bridge
+        logger.info("[LIFESPAN] MCP Bridge ready [OK]")
+    except Exception as e:
+        logger.warning("[LIFESPAN] MCP Bridge init failed: %s", e)
+
     # â”€â”€ Phase 17: Cron Scheduler â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     try:
-        from core.cron import cron_scheduler
-        await cron_scheduler.start()
-        app.state.cron_scheduler = cron_scheduler
-        logger.info("[LIFESPAN] Cron scheduler started â€” %d job(s) [OK]", len(cron_scheduler.list_jobs()))
+        from core.cron import scheduler as _cron
+        await _cron.start()
+        app.state.scheduler = _cron
+        logger.info("[LIFESPAN] Cron scheduler started â€” %d job(s) [OK]", len(_cron.list_jobs()))
     except Exception as e:
         startup_status["warnings"].append(f"cron: {e}")
         logger.warning("[LIFESPAN] Cron init failed: %s", e)
@@ -461,9 +579,9 @@ async def lifespan(app: FastAPI):
         logger.warning("[LIFESPAN] Skills init failed: %s", e)
 
     try:
-        from core.commitments import commitment_tracker
-        app.state.commitment_tracker = commitment_tracker
-        overdue = len(commitment_tracker.get_overdue())
+        from core.commitments import commitment_store
+        app.state.commitment_store = commitment_store
+        overdue = len(commitment_store.upcoming(hours=0))
         if overdue:
             logger.info("[LIFESPAN] Commitment tracker ready â€” %d overdue [OK]", overdue)
         else:
@@ -499,13 +617,22 @@ async def lifespan(app: FastAPI):
         logger.info("[SHUTDOWN] Queue processor stopped")
     if hasattr(app.state, "health"):
         await app.state.health.stop()
-        logger.info("[SHUTDOWN] Health monitor stopped")
-    if hasattr(app.state, "cron_scheduler"):
-        await app.state.cron_scheduler.stop()
+        logger.info("[SHUTDOWN] Legacy health monitor stopped")
+    if hasattr(app.state, "service_health"):
+        await app.state.service_health.stop()
+        logger.info("[SHUTDOWN] Service health checker stopped")
+    if hasattr(app.state, "failover_probe"):
+        await app.state.failover_probe.stop()
+        logger.info("[SHUTDOWN] Failover probe stopped")
+    if hasattr(app.state, "scheduler"):
+        await app.state.scheduler.stop()
         logger.info("[SHUTDOWN] Cron scheduler stopped")
     if hasattr(app.state, "mcp_server"):
         await app.state.mcp_server.stop()
         logger.info("[SHUTDOWN] MCP server stopped")
+    if hasattr(app.state, "mcp_bridge"):
+        await app.state.mcp_bridge.close()
+        logger.info("[SHUTDOWN] MCP Bridge closed")
     if hasattr(app.state, "channel_controller"):
         await app.state.channel_controller.stop_all()
         logger.info("[SHUTDOWN] All channels stopped")
