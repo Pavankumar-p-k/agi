@@ -3,16 +3,14 @@ from __future__ import annotations
 import json
 import logging
 import threading
-from typing import Any, Callable
+from collections.abc import Callable
 
-from core.llm_router import complete
-from core.schemas import CritiqueResult, ReasonResult, Step
-from core.prompts import get_prompt
 from core.plugins import plugin_registry
+from core.schemas import CritiqueResult, ReasonResult, Step
 
-from .reasoning_engine import reasoning_engine
 from .cognitive_patterns import CognitivePatterns
 from .epistemic_tagger import EpistemicTagger
+from .reasoning_engine import reasoning_engine
 
 logger = logging.getLogger(__name__)
 
@@ -115,7 +113,7 @@ class UnifiedBrain:
                 return ""
 
         turn_ctx = {"goal": goal, "context": context or {}}
-        r1 = await self.reason(goal, context)
+        r1 = await self.reason(goal, turn_ctx)
         if len(r1.answer) < 200:
             await plugin_registry.run_hook("agent_end", result={"goal": goal, "answer": r1.answer, "pass": 1})
             return r1.answer
@@ -123,10 +121,9 @@ class UnifiedBrain:
         if c.severity == "minor":
             await plugin_registry.run_hook("agent_end", result={"goal": goal, "answer": r1.answer, "pass": 2})
             return r1.answer
-        ctx = dict(context or {})
-        ctx["flaws"] = c.flaws
-        ctx["draft"] = r1.answer
-        r3 = await self.reason(f"Revise this output fixing the flaws listed.", ctx)
+        turn_ctx["flaws"] = c.flaws
+        turn_ctx["draft"] = r1.answer
+        r3 = await self.reason("Revise this output fixing the flaws listed.", turn_ctx)
         await plugin_registry.run_hook("agent_end", result={"goal": goal, "answer": r3.answer, "pass": 3})
         return r3.answer
 

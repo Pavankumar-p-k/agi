@@ -5,6 +5,8 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
 
+from core.observability.logging import LogContext
+
 logger = logging.getLogger("jarvis.request_id")
 
 _REQUEST_ID_CTX: dict = {}
@@ -18,16 +20,22 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
         start = time.perf_counter()
 
         _REQUEST_ID_CTX["id"] = rid
-        logger.info(f"[{rid}] → {request.method} {request.url.path}")
+        LogContext.set_request_id(rid)
+        uid = getattr(request.state, "current_user", "")
+        if uid:
+            LogContext.set_user_id(uid)
+
+        logger.info("→ %s %s", request.method, request.url.path)
 
         try:
             response: Response = await call_next(request)
         except Exception as e:
             elapsed = (time.perf_counter() - start) * 1000
-            logger.error(f"[{rid}] ✗ {request.method} {request.url.path} — {e} ({elapsed:.0f}ms)")
+            logger.error("✗ %s %s — %s (%dms)", request.method, request.url.path, e, elapsed)
             raise
 
         elapsed = (time.perf_counter() - start) * 1000
-        logger.info(f"[{rid}] ← {response.status_code} ({elapsed:.0f}ms)")
+        logger.info("← %d (%dms)", response.status_code, elapsed)
         response.headers["X-Request-ID"] = rid
+        LogContext.reset()
         return response

@@ -9,17 +9,24 @@ from __future__ import annotations
 
 import ast
 import importlib.util
+import logging
 import os
+import subprocess
 import sys
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Iterable
+
+logger = logging.getLogger(__name__)
 
 
 ROOT = Path(__file__).resolve().parents[1]
 IGNORED_DIRS = {
     ".git",
     ".venv",
+    ".venv_prod",
+    "venv",
+    "env",
     ".pytest_cache",
     "__pycache__",
     "archive",
@@ -27,6 +34,7 @@ IGNORED_DIRS = {
     "data",
     "devtools",
     "reports",
+    "node_modules",
 }
 
 
@@ -181,6 +189,11 @@ def build_diagnostic_report(root: Path = ROOT) -> DiagnosticReport:
             "Install server dependencies before running the API.",
         ))
 
+    _check_disk_space(report, root)
+    _check_ports(report)
+    _check_docker(report)
+    _check_git(report)
+
     report.capability_gaps = [
         "OpenClaw has a typed plugin SDK and contract tests; Jarvis plugins are Python hooks with weaker boundary checks.",
         "OpenClaw has embedded agent attempt recovery, transcript repair, failover observation, and idle timeout breakers; Jarvis has partial supervisor/build loops but less recovery metadata.",
@@ -196,3 +209,109 @@ def build_diagnostic_report(root: Path = ROOT) -> DiagnosticReport:
     elif report.issues:
         report.status = "warning"
     return report
+
+
+def _check_disk_space(report: DiagnosticReport, root: Path) -> None:
+    try:
+        free_gb = _get_free_gb(root)
+        report.runtime_flags["disk_free_gb"] = free_gb
+        if free_gb is not None and free_gb < 0.5:
+            report.issues.append(DiagnosticIssue(
+                "high", "disk_space", str(root),
+                f"Only {free_gb:.1f} GB free on {root.drive}. LLM context swapping may fail.",
+                "Free up disk space or move the project to a drive with more capacity.",
+            ))
+    except Exception as exc:
+        logger.debug("Disk space check failed: %s", exc)
+
+
+def _get_free_gb(path: Path) -> float | None:
+    if sys.platform == "win32":
+        try:
+            import ctypes
+            free_bytes = ctypes.c_ulonglong(0)
+            ctypes.windll.kernel32.GetDiskFreeSpaceExW(
+                ctypes.c_wchar_p(str(path.drive + "\\")),
+                None, None, ctypes.byref(free_bytes),
+            )
+            return free_bytes.value / (1024 ** 3)
+        except Exception as exc:
+            logger.debug("ctypes disk check failed: %s", exc)
+            return None
+    try:
+        stat = os.statvfs(path)
+        return stat.f_frsize * stat.f_bavail / (1024 ** 3)
+    except AttributeError:
+        return None
+
+
+def _check_ports(report: DiagnosticReport) -> None:
+    import socket
+    ports_to_check = [8080, 8081, 7860, 8000]
+    for port in ports_to_check:
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(0.3)
+            result = sock.connect_ex(("127.0.0.1", port))
+            sock.close()
+            if result == 0:
+                report.issues.append(DiagnosticIssue(
+                    "medium", "port_conflict", f"port:{port}",
+                    f"Port {port} is already in use.",
+                    "Stop the process using this port or configure JARVIS to use a different port.",
+                ))
+        except Exception as exc:
+            logger.debug("Failed to check port %d: %s", port, exc)
+
+
+def _check_docker(report: DiagnosticReport) -> None:
+    try:
+        result = subprocess.run(
+            ["docker", "info"],
+            capture_output=True, timeout=10,
+        )
+        docker_ok = result.returncode == 0
+    except FileNotFoundError:
+        docker_ok = False
+    except subprocess.TimeoutExpired:
+        docker_ok = False
+    except Exception:
+        docker_ok = False
+    report.runtime_flags["docker_available"] = docker_ok
+    if not docker_ok:
+        report.issues.append(DiagnosticIssue(
+            "low", "missing_optional", "ai_os/docker_sandbox.py",
+            "Docker is not available. Sandboxed execution will fall back to subprocess.",
+            "Install Docker Desktop and ensure the daemon is running.",
+        ))
+
+
+def _check_git(report: DiagnosticReport) -> None:
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--is-inside-work-tree"],
+            capture_output=True, timeout=5,
+        )
+        in_repo = result.returncode == 0
+    except FileNotFoundError:
+        in_repo = False
+    except subprocess.TimeoutExpired:
+        in_repo = False
+    report.runtime_flags["in_git_repo"] = in_repo
+    if not in_repo:
+        return
+    try:
+        result = subprocess.run(
+            ["git", "status", "--porcelain"],
+            capture_output=True, timeout=5,
+        )
+        dirty = bool(result.stdout.strip())
+        report.runtime_flags["git_dirty"] = dirty
+        if dirty:
+            report.issues.append(DiagnosticIssue(
+                "low", "git_dirty", ".",
+                "Working tree has uncommitted changes.",
+                "Commit or stash changes for reproducible builds.",
+            ))
+    except Exception as _e:
+        logger.warning("[diagnostics] git stat failed: %s", _e)

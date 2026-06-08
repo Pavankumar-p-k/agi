@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class FeatureSettings {
   static late SharedPreferences _prefs;
+  static FeatureSettings? _cached;
 
   final bool offlineOnly;
   final bool autoReplyEnabled;
@@ -41,8 +42,9 @@ class FeatureSettings {
       );
 
   static Future<FeatureSettings> load() async {
+    if (_cached != null) return _cached!;
     await init();
-    return FeatureSettings(
+    _cached = FeatureSettings(
       offlineOnly: isOfflineOnly(),
       autoReplyEnabled: isAutoReplyEnabled(),
       notificationsEnabled: isNotificationsEnabled(),
@@ -53,6 +55,11 @@ class FeatureSettings {
       automationEnabled: isAutomationEnabled(),
       contactsEnabled: isContactsEnabled(),
     );
+    return _cached!;
+  }
+
+  static void invalidateCache() {
+    _cached = null;
   }
 
   static Future<void> init() async {
@@ -62,8 +69,25 @@ class FeatureSettings {
   // ── Auto-reply master switch ──────────────────────────────
   static bool isAutoReplyEnabled() =>
       _prefs.getBool('auto_reply') ?? false;
-  static Future<void> setAutoReplyEnabled(bool v) =>
-      _prefs.setBool('auto_reply', v);
+  static Future<void> setAutoReplyEnabled(bool v) {
+    invalidateCache();
+    return _prefs.setBool('auto_reply', v);
+  }
+
+  static bool isNotificationsEnabled() =>
+      _prefs.getBool('notifications_enabled') ?? true;
+  static bool isVoiceEnabled() =>
+      _prefs.getBool('voice_enabled') ?? true;
+  static bool isAlarmsEnabled() =>
+      _prefs.getBool('alarms_enabled') ?? true;
+  static bool isNotesEnabled() =>
+      _prefs.getBool('notes_enabled') ?? true;
+  static bool isMediaEnabled() =>
+      _prefs.getBool('media_enabled') ?? true;
+  static bool isAutomationEnabled() =>
+      _prefs.getBool('automation_enabled') ?? true;
+  static bool isContactsEnabled() =>
+      _prefs.getBool('contacts_enabled') ?? true;
 
   // ── Platform toggles ──────────────────────────────────────
   static bool isWhatsappEnabled() =>
@@ -103,43 +127,30 @@ class FeatureSettings {
 
   static bool isOfflineOnly() =>
       _prefs.getBool('offline_only') ?? true;
-  static Future<void> setOfflineOnly(bool v) =>
-      _prefs.setBool('offline_only', v);
-
-  static bool isNotificationsEnabled() =>
-      _prefs.getBool('notifications_enabled') ?? true;
-  static Future<void> setNotificationsEnabled(bool v) =>
-      _prefs.setBool('notifications_enabled', v);
-
-  static bool isVoiceEnabled() =>
-      _prefs.getBool('voice_enabled') ?? true;
-  static Future<void> setVoiceEnabled(bool v) =>
-      _prefs.setBool('voice_enabled', v);
-
-  static bool isAlarmsEnabled() =>
-      _prefs.getBool('alarms_enabled') ?? true;
-  static Future<void> setAlarmsEnabled(bool v) =>
-      _prefs.setBool('alarms_enabled', v);
-
-  static bool isNotesEnabled() =>
-      _prefs.getBool('notes_enabled') ?? true;
-  static Future<void> setNotesEnabled(bool v) =>
-      _prefs.setBool('notes_enabled', v);
-
-  static bool isMediaEnabled() =>
-      _prefs.getBool('media_enabled') ?? true;
-  static Future<void> setMediaEnabled(bool v) =>
-      _prefs.setBool('media_enabled', v);
-
-  static bool isAutomationEnabled() =>
-      _prefs.getBool('automation_enabled') ?? true;
-  static Future<void> setAutomationEnabled(bool v) =>
-      _prefs.setBool('automation_enabled', v);
-
-  static bool isContactsEnabled() =>
-      _prefs.getBool('contacts_enabled') ?? true;
-  static Future<void> setContactsEnabled(bool v) =>
-      _prefs.setBool('contacts_enabled', v);
+  static Future<void> setOfflineOnly(bool v) {
+    invalidateCache(); return _prefs.setBool('offline_only', v);
+  }
+  static Future<void> setNotificationsEnabled(bool v) {
+    invalidateCache(); return _prefs.setBool('notifications_enabled', v);
+  }
+  static Future<void> setVoiceEnabled(bool v) {
+    invalidateCache(); return _prefs.setBool('voice_enabled', v);
+  }
+  static Future<void> setAlarmsEnabled(bool v) {
+    invalidateCache(); return _prefs.setBool('alarms_enabled', v);
+  }
+  static Future<void> setNotesEnabled(bool v) {
+    invalidateCache(); return _prefs.setBool('notes_enabled', v);
+  }
+  static Future<void> setMediaEnabled(bool v) {
+    invalidateCache(); return _prefs.setBool('media_enabled', v);
+  }
+  static Future<void> setAutomationEnabled(bool v) {
+    invalidateCache(); return _prefs.setBool('automation_enabled', v);
+  }
+  static Future<void> setContactsEnabled(bool v) {
+    invalidateCache(); return _prefs.setBool('contacts_enabled', v);
+  }
 
   /// Check if a named platform is enabled
   static bool isPlatformEnabled(String platform) {

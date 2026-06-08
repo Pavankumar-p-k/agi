@@ -19,9 +19,10 @@ from cli_utils import IDE_PRESETS
 from cli_commands import (
     cmd_cli, cmd_setup, cmd_status, cmd_doctor, cmd_cleanup_audit,
     cmd_goal, cmd_develop, cmd_server, cmd_restart, cmd_gui, cmd_up, cmd_student,
-    cmd_models, cmd_extension, cmd_os, cmd_cognitive, cmd_agent_list,
+    cmd_models, cmd_extension, cmd_web, cmd_os, cmd_cognitive, cmd_agent_list,
     cmd_agent_run, cmd_settings, cmd_agent_shortcut, cmd_plugin, cmd_cloud,
-    cmd_project, cmd_debug, cmd_index,
+    cmd_project, cmd_debug, cmd_index, cmd_tui,
+    cmd_boot, cmd_cli_agents, cmd_cli_design,
 )
 
 
@@ -74,6 +75,19 @@ def build_parser() -> argparse.ArgumentParser:
         p.add_argument("--debug-search", action="store_true")
         p.set_defaults(func=cmd_cli)
 
+    tui = subparsers.add_parser("tui", help="Launch the production-grade JARVIS AI TUI.", prefix_chars="-/")
+    tui.set_defaults(func=cmd_tui)
+
+    boot = subparsers.add_parser("boot", help="Show the animated JARVIS CLI diamond boot screen.", prefix_chars="-/")
+    boot.add_argument("--static", action="store_true", help="Render without animation")
+    boot.set_defaults(func=cmd_boot)
+
+    agents_screen = subparsers.add_parser("agents", help="Show the 9-agent terminal overview.", prefix_chars="-/")
+    agents_screen.set_defaults(func=cmd_cli_agents)
+
+    design = subparsers.add_parser("design", help="Show the CLI animation and build plan.", prefix_chars="-/")
+    design.set_defaults(func=cmd_cli_design)
+
     status = subparsers.add_parser("status", help="Show current JARVIS autonomous status.", prefix_chars="-/")
     status.set_defaults(func=cmd_status)
 
@@ -112,6 +126,16 @@ def build_parser() -> argparse.ArgumentParser:
     gui.add_argument("--droq-api-key", default="")
     gui.add_argument("--dry-run", action="store_true")
     gui.set_defaults(func=cmd_gui)
+
+    web = subparsers.add_parser("web", help="Build & serve the JARVIS web UI.", prefix_chars="-/")
+    web.add_argument("-b", "--build-only", action="store_true", help="Only build the web UI, don't serve")
+    web.add_argument("-r", "--rebuild", action="store_true", help="Force rebuild even if already built")
+    web.add_argument("--host", default="127.0.0.1")
+    web.add_argument("--port", type=int, default=8000)
+    web.add_argument("--no-open", action="store_true", help="Don't open browser automatically")
+    web.add_argument("--no-reload", action="store_true", help="Disable hot-reload")
+    web.add_argument("--dry-run", action="store_true")
+    web.set_defaults(func=cmd_web)
 
     up = subparsers.add_parser("up", help="Start JARVIS desktop stack (server + GUI).", prefix_chars="-/")
     up.add_argument("/m", "--multi-model", action="store_true", dest="multi_model")

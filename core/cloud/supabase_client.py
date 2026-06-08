@@ -61,7 +61,8 @@ def is_connected() -> bool:
         # Lightweight ping — list 1 row from a system table
         client.table("jarvis_memories").select("id").limit(1).execute()
         _connected = True
-    except Exception:
+    except Exception as _e:
+        logger.debug("supabase_client is_connected failed: %s", _e)
         _connected = False
 
     return _connected

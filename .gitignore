@@ -18,6 +18,9 @@ venv/
 firebase-credentials.json
 google-services.json
 
+# Android local dev config
+apps/jarvis_app/android/local.properties
+
 # Databases
 *.db
 *.db-journal
@@ -50,7 +53,10 @@ Desktop.ini
 *.bak
 *.err
 *.out
-*.txt
+
+# Specific generated text files (not a blanket *.txt rule)
+apps/jarvis_app/analysis_output.txt
+analysis_status.txt
 
 # Test artifacts
 htmlcov/
@@ -58,8 +64,10 @@ htmlcov/
 coverage/
 .pytest_cache/
 
-# Docs build
-node_modules/
+# Electron desktop app
+electron/node_modules/
+electron/out/
+electron/dist/
 
 # Archive cleanup artifacts (keep comparison docs, remove generated audit)
 archive/cleanup_20260602/

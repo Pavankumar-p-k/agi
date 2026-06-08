@@ -1,4 +1,7 @@
 import asyncio
+import logging
+
+logger = logging.getLogger(__name__)
 
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, UploadFile, File
 from fastapi.responses import Response
@@ -22,6 +25,7 @@ async def speech_to_text(file: UploadFile = File(...), user: User = Depends(veri
 
 @router.post("/stt/local")
 async def speech_to_text_local(file: UploadFile = File(...), user: User = Depends(verify_token)):
+    from assistant.stt import get_stt
     audio_data = await file.read()
     text = await get_stt().transcribe(audio_data)
     if not text:
@@ -34,6 +38,7 @@ async def speech_to_text_base64(req: dict, user: User = Depends(verify_token)):
     """STT accepting JSON with base64 audio."""
     if "audio" not in req:
         raise HTTPException(400, "Missing 'audio' field (base64 WAV)")
+    from assistant.stt import get_stt
     import base64
     audio_data = base64.b64decode(req["audio"])
     text = await get_stt().transcribe(audio_data)
@@ -115,8 +120,8 @@ async def tts_stream_websocket(ws: WebSocket):
         print(f"[TTS Stream] Error: {e}")
         try:
             await ws.close()
-        except Exception:
-            pass
+        except Exception as _e:
+            logger.debug("voice ws close failed: %s", _e)
 
 
 @router.websocket("/voice")

@@ -3,155 +3,145 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-import os
-from datetime import datetime
+import sqlite3
+from datetime import datetime, timedelta
 from pathlib import Path
+from typing import Any, Dict, Optional
 
-logger = logging.getLogger(__name__)
+try:
+    from croniter import croniter
+    _HAS_CRONITER = True
+except ImportError:
+    _HAS_CRONITER = False
 
-STORE_PATH = Path.home() / ".jarvis" / "cron_jobs.json"
+logger = logging.getLogger("jarvis.cron")
+
+DB_PATH = Path.home() / ".jarvis" / "cron.db"
 
 
-class CronScheduler:
-    """Simple cron scheduler for background jobs — matching OpenClaw's cron system."""
+class Scheduler:
+    """Persistent job scheduler with interval and cron support."""
 
     def __init__(self):
-        self._jobs: dict[str, dict] = {}
-        self._task: asyncio.Task | None = None
+        self._init_db()
+        self._task: Optional[asyncio.Task] = None
         self._running = False
-        self._load()
 
-    # ── Persistence ──
+    def _init_db(self):
+        DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with sqlite3.connect(DB_PATH) as conn:
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS jobs (
+                    id TEXT PRIMARY KEY,
+                    schedule TEXT,
+                    action TEXT,
+                    params TEXT,
+                    enabled INTEGER DEFAULT 1,
+                    last_run TIMESTAMP,
+                    next_run TIMESTAMP,
+                    created_at TIMESTAMP
+                )
+            """)
+            conn.commit()
 
-    def _load(self):
+    def add(self, job_id: str, schedule: str, action: str,
+            params: Optional[Dict] = None, enabled: bool = True) -> Dict:
+        now = datetime.now()
+        next_run = self._next_run(schedule, now)
+        with sqlite3.connect(DB_PATH) as conn:
+            conn.execute("""
+                INSERT INTO jobs (id, schedule, action, params, enabled, next_run, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(id) DO UPDATE SET
+                    schedule=excluded.schedule, action=excluded.action,
+                    params=excluded.params, enabled=excluded.enabled,
+                    next_run=excluded.next_run
+            """, (job_id, schedule, action, json.dumps(params or {}),
+                  1 if enabled else 0, next_run.isoformat() if next_run else None,
+                  now.isoformat()))
+            conn.commit()
+        logger.info("Scheduled job '%s': %s", job_id, schedule)
+        return {"id": job_id, "next_run": next_run.isoformat() if next_run else None}
+
+    def _next_run(self, schedule: str, after: datetime) -> Optional[datetime]:
+        s = schedule.strip().lower()
         try:
-            if STORE_PATH.exists():
-                data = json.loads(STORE_PATH.read_text())
-                self._jobs = {j["id"]: j for j in data}
-                logger.info("[Cron] Loaded %d jobs", len(self._jobs))
-        except Exception as e:
-            logger.warning("[Cron] Load failed: %s", e)
-
-    def _save(self):
-        try:
-            STORE_PATH.parent.mkdir(parents=True, exist_ok=True)
-            STORE_PATH.write_text(json.dumps(list(self._jobs.values()), indent=2))
-        except Exception as e:
-            logger.warning("[Cron] Save failed: %s", e)
-
-    # ── Job Management ──
-
-    def add_job(self, job_id: str, schedule: str, action: str,
-                params: dict | None = None, enabled: bool = True) -> dict:
-        job = {
-            "id": job_id,
-            "schedule": schedule,
-            "action": action,
-            "params": params or {},
-            "enabled": enabled,
-            "created": datetime.now().isoformat(),
-            "last_run": None,
-            "next_run": None,
-        }
-        self._jobs[job_id] = job
-        self._save()
-        logger.info("[Cron] Added job: %s (%s)", job_id, schedule)
-        return job
-
-    def remove_job(self, job_id: str) -> bool:
-        if job_id in self._jobs:
-            del self._jobs[job_id]
-            self._save()
-            logger.info("[Cron] Removed job: %s", job_id)
-            return True
-        return False
-
-    def get_job(self, job_id: str) -> dict | None:
-        return self._jobs.get(job_id)
-
-    def list_jobs(self) -> list[dict]:
-        return list(self._jobs.values())
-
-    # ── Execution ──
-
-    def _parse_interval(self, schedule: str) -> int | None:
-        try:
-            s = schedule.strip().lower()
             if s.endswith("s"):
-                return int(s[:-1])
+                return after + timedelta(seconds=int(s[:-1]))
             if s.endswith("m"):
-                return int(s[:-1]) * 60
+                return after + timedelta(minutes=int(s[:-1]))
             if s.endswith("h"):
-                return int(s[:-1]) * 3600
+                return after + timedelta(hours=int(s[:-1]))
             if s.endswith("d"):
-                return int(s[:-1]) * 86400
-            return int(s)
-        except (ValueError, AttributeError) as e:
-            logger.warning("[Cron] Invalid schedule '%s': %s", schedule, e)
-            return None
+                return after + timedelta(days=int(s[:-1]))
+        except (ValueError, AttributeError):
+            pass
+        if _HAS_CRONITER:
+            try:
+                return croniter(schedule, after).get_next(datetime)
+            except Exception as _e:
+                logger.debug("cron parse schedule failed: %s", _e)
+        logger.warning("Cannot parse schedule: %s", schedule)
+        return None
 
-    async def _execute_job(self, job: dict):
-        action = job["action"]
-        params = job.get("params", {})
-        logger.info("[Cron] Running job %s: %s", job["id"], action)
+    async def _execute(self, job_id: str, action: str, params: Dict):
+        logger.info("Executing job '%s': %s", job_id, action)
         try:
-            if action == "memory_consolidate":
-                from memory.tiered_memory import TieredMemory
-                tm = TieredMemory()
-                tm.consolidate()
-            elif action == "health_check":
-                from core.health_monitor import HealthMonitor
-                hm = HealthMonitor()
-                await hm.check_all()
-            elif action == "backup":
-                from core.backup import BackupManager
-                bm = BackupManager()
-                await bm.create_backup()
-            elif action == "daily_digest":
-                from channels import channel_controller
-                for c in channel_controller.running:
-                    await c.send(params.get("target", "") or "", "Daily digest: All systems operational.")
-            elif action == "webhook":
-                url = params.get("url")
-                if not url:
-                    logger.warning("[Cron] Webhook job %s has no URL", job["id"])
-                    return
-                import httpx
-                async with httpx.AsyncClient(timeout=30) as client:
-                    await client.post(url, json=params.get("data", {}))
-            elif action == "custom":
-                logger.info("[Cron] Custom job %s: %s", job["id"], params)
-            job["last_run"] = datetime.now().isoformat()
-            self._save()
+            if action == "backup":
+                from core.backup import backup_manager
+                await backup_manager.create_backup()
+            elif action == "remind":
+                from core.commitments import commitment_store
+                upcoming = commitment_store.upcoming(hours=1)
+                if upcoming:
+                    logger.info("Upcoming commitments: %d", len(upcoming))
+            now = datetime.now()
+            with sqlite3.connect(DB_PATH) as conn:
+                row = conn.execute("SELECT schedule FROM jobs WHERE id = ?", (job_id,)).fetchone()
+                if row:
+                    next_run = self._next_run(row[0], now)
+                    conn.execute(
+                        "UPDATE jobs SET last_run = ?, next_run = ? WHERE id = ?",
+                        (now.isoformat(), next_run.isoformat() if next_run else None, job_id),
+                    )
+                    conn.commit()
         except Exception as e:
-            logger.exception("[Cron] Job %s failed: %s", job["id"], e)
+            logger.exception("Job '%s' failed: %s", job_id, e)
 
     async def _loop(self):
         while self._running:
-            now = datetime.now()
-            for job in self._jobs.values():
-                if not job.get("enabled", True):
-                    continue
-                interval = self._parse_interval(job.get("schedule", ""))
-                if interval is None:
-                    continue
-                last_run = job.get("last_run")
-                if last_run:
-                    try:
-                        last = datetime.fromisoformat(last_run)
-                    except (ValueError, TypeError):
-                        logger.warning("[Cron] Invalid last_run for job %s: %s", job.get("id"), last_run)
-                        continue
-                    elapsed = (now - last).total_seconds()
-                    if elapsed < interval:
-                        continue
-                await self._execute_job(job)
-            await asyncio.sleep(30)
+            try:
+                now = datetime.now().isoformat()
+                with sqlite3.connect(DB_PATH) as conn:
+                    conn.row_factory = sqlite3.Row
+                    rows = conn.execute(
+                        "SELECT * FROM jobs WHERE enabled = 1 AND next_run IS NOT NULL AND next_run <= ?",
+                        (now,),
+                    ).fetchall()
+                for row in rows:
+                    params = json.loads(row["params"])
+                    asyncio.create_task(self._execute(row["id"], row["action"], params))
+            except Exception as e:
+                logger.error("Scheduler loop error: %s", e)
+            await asyncio.sleep(60)
+
+    def list_jobs(self):
+        with sqlite3.connect(DB_PATH) as conn:
+            conn.row_factory = sqlite3.Row
+            rows = conn.execute("SELECT * FROM jobs ORDER BY created_at DESC").fetchall()
+            return [dict(r) for r in rows]
+
+    def remove_job(self, job_id: str) -> bool:
+        with sqlite3.connect(DB_PATH) as conn:
+            cur = conn.execute("DELETE FROM jobs WHERE id = ?", (job_id,))
+            conn.commit()
+            return cur.rowcount > 0
 
     async def start(self):
-        self._running = True
-        self._task = asyncio.create_task(self._loop())
-        logger.info("[Cron] Scheduler started — %d job(s)", len(self._jobs))
+        if not self._running:
+            self._running = True
+            self._task = asyncio.create_task(self._loop())
+            logger.info("Scheduler started")
 
     async def stop(self):
         self._running = False
@@ -159,10 +149,12 @@ class CronScheduler:
             self._task.cancel()
             try:
                 await self._task
-            except (asyncio.CancelledError, Exception):
+            except asyncio.CancelledError:
                 pass
             self._task = None
-        logger.info("[Cron] Scheduler stopped")
+        logger.info("Scheduler stopped")
 
 
-cron_scheduler = CronScheduler()
+scheduler = Scheduler()
+
+__all__ = ["scheduler", "Scheduler"]

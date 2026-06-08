@@ -1,23 +1,56 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
-from typing import Any
+import time
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Literal, Optional, Set
 
-logger = logging.getLogger(__name__)
+from fastapi import WebSocket, WebSocketDisconnect
 
+logger = logging.getLogger("jarvis.mcp.server")
+
+@dataclass
+class QueueEvent:
+    cursor: int
+    type: str  # "message" | "approval_requested" | "approval_resolved"
+    payload: Dict[str, Any]
+    timestamp: float = field(default_factory=time.time)
+
+@dataclass
+class PendingApproval:
+    kind: Literal["exec", "plugin"]
+    id: str
+    tool_name: str
+    description: str
+    input_preview: str
+    created_at: float = field(default_factory=time.time)
+    expires_at: float = field(default=0.0)
+
+    def __post_init__(self):
+        if not self.expires_at:
+            self.expires_at = self.created_at + 1800  # 30 mins
 
 class MCPServer:
     """Exposes JARVIS tools and resources via the Model Context Protocol.
 
-    MCP allows LLMs (Claude, etc.) to discover and call JARVIS tools
-    through a standardized interface — matching OpenClaw's MCP bridge.
+    Handles both HTTP (for local agents) and WebSocket (for external bridge)
+    connections, providing a unified interface for tool discovery and execution.
     """
 
     def __init__(self):
         self._tools: dict[str, dict] = {}
         self._resources: dict[str, dict] = {}
         self._running = False
+        
+        # Bridge state
+        self._connected_clients: Set[WebSocket] = set()
+        self._event_queue: List[QueueEvent] = []
+        self._cursor_counter = 0
+        self._pending_approvals: Dict[str, PendingApproval] = {}
+        self._approval_waiters: Dict[str, asyncio.Future] = {}
+        self._waiters: List[asyncio.Event] = []
 
     @property
     def is_running(self) -> bool:
@@ -60,6 +93,26 @@ class MCPServer:
         tool = self._tools.get(name)
         if not tool:
             raise ValueError(f"Unknown MCP tool: {name}")
+
+        # Check for approval if tool needs confirmation
+        try:
+            from core.tools.policy import policy_engine
+            policy = policy_engine.get_policy(name)
+            if policy and policy.needs_confirmation:
+                import uuid
+                approval_id = str(uuid.uuid4())
+                decision = await self.wait_for_approval(
+                    kind="exec",
+                    approval_id=approval_id,
+                    tool_name=name,
+                    description=policy.description or f"Execution of {name}",
+                    input_preview=json.dumps(arguments)[:1000]
+                )
+                if decision == "deny":
+                    return {"content": [{"type": "text", "text": f"Tool '{name}' execution was denied by user."}], "isError": True}
+        except Exception as e:
+            logger.warning(f"[MCP] Approval check failed for {name}: {e}")
+
         return await tool["handler"](**arguments)
 
     async def read_resource(self, uri: str) -> Any:
@@ -68,9 +121,171 @@ class MCPServer:
             raise ValueError(f"Unknown MCP resource: {uri}")
         return await resource["handler"]()
 
+    # ── WebSocket Bridge ──
+
+    async def handle_websocket(self, websocket: WebSocket):
+        """Handle bidirectional MCP Bridge connections."""
+        await websocket.accept()
+        
+        # Enable token-based authentication
+        try:
+            from core.gateway.auth import BridgeAuth
+            if not await BridgeAuth().authenticate(websocket):
+                return
+        except ImportError:
+            logger.warning("[MCP] BridgeAuth not found, allowing unauthenticated connection")
+
+        self._connected_clients.add(websocket)
+        logger.info(f"[MCP] External bridge connected from {websocket.client}")
+
+        try:
+            while True:
+                data = await websocket.receive_text()
+                try:
+                    msg = json.loads(data)
+                    response = await self._handle_mcp_rpc(msg)
+                    if response:
+                        await websocket.send_text(json.dumps(response))
+                except json.JSONDecodeError:
+                    logger.warning(f"[MCP] Invalid JSON from bridge client: {data}")
+                except Exception as e:
+                    logger.exception(f"[MCP] Error handling bridge message: {e}")
+                    
+        except WebSocketDisconnect:
+            logger.info("[MCP] External bridge disconnected")
+        finally:
+            self._connected_clients.discard(websocket)
+
+    async def _handle_mcp_rpc(self, msg: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Dispatcher for JSON-RPC 2.0 messages from bridge clients."""
+        msg_id = msg.get("id")
+        method = msg.get("method")
+        params = msg.get("params", {})
+
+        if not method: return None
+
+        # Handle initialization
+        if method == "initialize":
+            return {
+                "jsonrpc": "2.0",
+                "id": msg_id,
+                "result": {
+                    "protocolVersion": "2024-11-05",
+                    "capabilities": {"tools": {}, "logging": {}},
+                    "serverInfo": {"name": "JARVIS MCP Server", "version": "1.0.0"}
+                }
+            }
+
+        if method == "tools/list":
+            return {
+                "jsonrpc": "2.0",
+                "id": msg_id,
+                "result": {"tools": self.get_tool_definitions()}
+            }
+
+        if method == "tools/call":
+            name = params.get("name")
+            args = params.get("arguments", {})
+            try:
+                result = await self.call_tool(name, args)
+                
+                # If result is already in MCP format, use it directly
+                if isinstance(result, dict) and "content" in result:
+                    return {
+                        "jsonrpc": "2.0",
+                        "id": msg_id,
+                        "result": result
+                    }
+
+                # Otherwise, wrap it
+                if isinstance(result, str):
+                    content = [{"type": "text", "text": result}]
+                else:
+                    content = [{"type": "text", "text": json.dumps(result, indent=2)}]
+                
+                return {
+                    "jsonrpc": "2.0",
+                    "id": msg_id,
+                    "result": {"content": content, "isError": False}
+                }
+            except Exception as e:
+                return {
+                    "jsonrpc": "2.0",
+                    "id": msg_id,
+                    "result": {"content": [{"type": "text", "text": str(e)}], "isError": True}
+                }
+
+        return {
+            "jsonrpc": "2.0",
+            "id": msg_id,
+            "error": {"code": -32601, "message": f"Method not found: {method}"}
+        }
+
+    # ── Event Queue & Approvals ──
+
+    def enqueue_event(self, type: str, payload: Dict[str, Any]):
+        """Enqueue an event and notify connected bridge clients."""
+        self._cursor_counter += 1
+        event = QueueEvent(cursor=self._cursor_counter, type=type, payload=payload)
+        self._event_queue.append(event)
+        
+        # Bounded queue
+        if len(self._event_queue) > 1000:
+            self._event_queue.pop(0)
+
+        # Notify long-pollers
+        for waiter in self._waiters:
+            waiter.set()
+        self._waiters.clear()
+
+        # Push notification to WebSocket clients
+        if self._connected_clients:
+            notification = {
+                "jsonrpc": "2.0",
+                "method": "notifications/event",
+                "params": {
+                    "cursor": event.cursor,
+                    "type": event.type,
+                    "payload": event.payload,
+                    "timestamp": event.timestamp
+                }
+            }
+            msg = json.dumps(notification)
+            for ws in self._connected_clients:
+                asyncio.create_task(ws.send_text(msg))
+
+    async def wait_for_approval(self, kind: str, approval_id: str, 
+                                tool_name: str, description: str, 
+                                input_preview: str, timeout: float = 600) -> str:
+        """Wait for an external client to resolve an approval."""
+        approval = PendingApproval(
+            kind=kind, id=approval_id, tool_name=tool_name,
+            description=description, input_preview=input_preview
+        )
+        self._pending_approvals[approval_id] = approval
+        
+        self.enqueue_event("approval_requested", {
+            "kind": kind, "id": approval_id, "tool_name": tool_name,
+            "description": description, "input_preview": input_preview
+        })
+
+        future = asyncio.get_event_loop().create_future()
+        self._approval_waiters[approval_id] = future
+        try:
+            logger.info(f"[MCP] Waiting for approval {approval_id}...")
+            decision = await asyncio.wait_for(future, timeout=timeout)
+            return decision
+        except asyncio.TimeoutError:
+            logger.warning(f"[MCP] Approval {approval_id} timed out")
+            return "deny"
+        finally:
+            self._pending_approvals.pop(approval_id, None)
+            self._approval_waiters.pop(approval_id, None)
+
     # ── JARVIS-local tools (registered at startup) ──
 
     def _register_jarvis_tools(self):
+        # 1. Standard tools
         self.register_tool(
             name="web_search",
             description="Search the web for current information",
@@ -145,6 +360,47 @@ class MCPServer:
             handler=self._handle_get_status,
         )
 
+        # 2. Bridge-specific tools (for external control)
+        self.register_tool(
+            name="conversations_list",
+            description="List active JARVIS sessions",
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "limit": {"type": "integer", "default": 50},
+                    "search": {"type": "string"},
+                }
+            },
+            handler=self._handle_conversations_list,
+        )
+        self.register_tool(
+            name="events_poll",
+            description="Poll for new JARVIS events since a cursor",
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "after_cursor": {"type": "integer", "default": 0},
+                    "limit": {"type": "integer", "default": 20}
+                }
+            },
+            handler=self._handle_events_poll,
+        )
+        self.register_tool(
+            name="permissions_respond",
+            description="Respond to a pending tool execution approval",
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "id": {"type": "string", "description": "The approval ID"},
+                    "decision": {"type": "string", "enum": ["allow-once", "allow-always", "deny"]}
+                },
+                "required": ["id", "decision"]
+            },
+            handler=self._handle_permissions_respond,
+        )
+
+    # ── Tool Implementation Handlers ──
+
     async def _handle_web_search(self, query: str, max_results: int = 5) -> str:
         try:
             from tools.search_tool import SearchDecisionGate
@@ -177,9 +433,8 @@ class MCPServer:
 
     async def _handle_memory_search(self, query: str, limit: int = 5) -> str:
         try:
-            from memory.tiered_memory import TieredMemory
-            tm = TieredMemory()
-            results = await tm.recall(query, limit=limit)
+            from memory.memory_facade import memory
+            results = memory.recall(query, limit=limit)
             return json.dumps(results, indent=2)
         except Exception as e:
             return f"Memory search failed: {e}"
@@ -216,6 +471,28 @@ class MCPServer:
         except Exception as e:
             return f"Status failed: {e}"
 
+    async def _handle_conversations_list(self, limit: int = 50, search: str = "") -> list[dict]:
+        from core.session import session_manager
+        return session_manager.list_conversations(limit=limit, search=search)
+
+    async def _handle_events_poll(self, after_cursor: int = 0, limit: int = 20) -> dict:
+        events = [e for e in self._event_queue if e.cursor > after_cursor]
+        events = events[:limit]
+        return {
+            "events": [
+                {"cursor": e.cursor, "type": e.type, "payload": e.payload, "timestamp": e.timestamp}
+                for e in events
+            ],
+            "last_cursor": events[-1].cursor if events else after_cursor
+        }
+
+    async def _handle_permissions_respond(self, id: str, decision: str) -> str:
+        future = self._approval_waiters.get(id)
+        if future and not future.done():
+            future.set_result(decision)
+            return f"Approval {id} resolved with {decision}"
+        return f"Approval {id} not found or already expired"
+
     # ── Lifecycle ──
 
     async def start(self) -> None:
@@ -226,6 +503,24 @@ class MCPServer:
 
     async def stop(self) -> None:
         self._running = False
+        # Clear event waiters
+        for waiter in self._waiters:
+            waiter.set()
+        self._waiters.clear()
+        
+        # Deny pending approvals
+        for future in self._approval_waiters.values():
+            if not future.done():
+                future.set_result("deny")
+        
+        # Close connections
+        for ws in self._connected_clients:
+            try:
+                await ws.close()
+            except Exception as e:
+                logger.warning("[mcp.server] mcp_handle_request failed: %s", e)
+        self._connected_clients.clear()
+        
         logger.info("[MCP] Server stopped")
 
     def get_fastapi_router(self):

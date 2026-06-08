@@ -132,8 +132,8 @@ class BackupManager:
             if manifest_path.exists():
                 try:
                     manifest = json.loads(manifest_path.read_text())
-                except Exception:
-                    pass
+                except Exception as _e:
+                    logger.debug("backup load manifest failed: %s", _e)
             backups.append({
                 "name": f.name,
                 "size_mb": round(size / 1024 / 1024, 2),

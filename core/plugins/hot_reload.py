@@ -80,7 +80,8 @@ class HotReloader:
                         if f:
                             file_path = Path(f)
                             break
-                    except Exception:
+                    except Exception as _e:
+                        logger.debug("plugins hot_reload resolve path failed: %s", _e)
                         continue
         if file_path is None:
             logger.warning("[HotReload] Cannot resolve path for plugin %s (module %s)", plugin_name, module_name)

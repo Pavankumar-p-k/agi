@@ -139,8 +139,8 @@ class SearXNGSearch:
                         r.score *= 0.8
                     if age_days > 365:
                         r.score *= 0.5
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.warning("[tools.search_tool] perform_search failed: %s", e)
         return sorted(results, key=lambda x: x.score, reverse=True)
 
     async def scrape_top(self, results: List[SearchResult], n: int = 3) -> List[str]:

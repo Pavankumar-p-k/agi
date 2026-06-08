@@ -1,14 +1,88 @@
 from skills.utils import success_response, error_response
 
+INFLATION_DATA = {
+    "us": {
+        1950: 1.09, 1951: 5.87, 1952: 2.25, 1953: 0.69, 1954: 0.34, 1955: 0.37, 1956: 2.99, 1957: 3.04, 1958: 1.76, 1959: 1.73,
+        1960: 1.36, 1961: 1.07, 1962: 1.20, 1963: 1.24, 1964: 1.28, 1965: 1.59, 1966: 2.86, 1967: 3.09, 1968: 4.27, 1969: 5.46,
+        1970: 5.84, 1971: 4.30, 1972: 3.27, 1973: 6.16, 1974: 11.03, 1975: 9.20, 1976: 5.75, 1977: 6.50, 1978: 7.62, 1979: 11.22,
+        1980: 13.55, 1981: 10.33, 1982: 6.13, 1983: 3.21, 1984: 4.30, 1985: 3.55, 1986: 1.91, 1987: 3.66, 1988: 4.08, 1989: 4.83,
+        1990: 5.40, 1991: 4.21, 1992: 3.01, 1993: 2.99, 1994: 2.56, 1995: 2.83, 1996: 2.95, 1997: 2.29, 1998: 1.56, 1999: 2.21,
+        2000: 3.36, 2001: 2.83, 2002: 1.59, 2003: 2.27, 2004: 2.68, 2005: 3.39, 2006: 3.23, 2007: 2.85, 2008: 3.84, 2009: -0.36,
+        2010: 1.64, 2011: 3.16, 2012: 2.07, 2013: 1.46, 2014: 1.62, 2015: 0.12, 2016: 1.26, 2017: 2.13, 2018: 2.44, 2019: 1.81,
+        2020: 1.23, 2021: 4.70, 2022: 8.00, 2023: 4.12, 2024: 3.20
+    },
+    "in": {
+        1950: 2.86, 1951: 6.94, 1952: 1.04, 1953: 3.63, 1954: -6.71, 1955: 6.21, 1956: 13.09, 1957: 2.67, 1958: 6.14, 1959: 4.17,
+        1960: 4.54, 1961: 1.99, 1962: 3.64, 1963: 2.90, 1964: 12.63, 1965: 7.62, 1966: 10.32, 1967: 12.97, 1968: 3.26, 1969: 2.84,
+        1970: 5.14, 1971: 4.50, 1972: 6.44, 1973: 16.81, 1974: 26.84, 1975: 4.93, 1976: -1.78, 1977: 8.88, 1978: 5.10, 1979: 7.75,
+        1980: 11.50, 1981: 12.65, 1982: 7.89, 1983: 11.83, 1984: 8.36, 1985: 5.45, 1986: 8.73, 1987: 8.83, 1988: 9.38, 1989: 5.99,
+        1990: 9.07, 1991: 13.66, 1992: 10.04, 1993: 7.26, 1994: 10.18, 1995: 10.19, 1996: 8.37, 1997: 6.82, 1998: 13.15, 1999: 4.73,
+        2000: 3.97, 2001: 4.28, 2002: 4.33, 2003: 3.81, 2004: 3.77, 2005: 4.25, 2006: 5.80, 2007: 6.37, 2008: 9.10, 2009: 12.34,
+        2010: 10.91, 2011: 8.86, 2012: 9.31, 2013: 11.06, 2014: 6.37, 2015: 4.91, 2016: 4.95, 2017: 3.33, 2018: 3.94, 2019: 3.73,
+        2020: 6.62, 2021: 5.13, 2022: 6.70, 2023: 5.65, 2024: 4.80
+    }
+}
+
+CURRENCY_NAMES = {"us": "USD", "in": "INR", "uk": "GBP", "eu": "EUR"}
+UK_DATA = {
+    1950: 3.05, 1951: 9.10, 1952: 9.30, 1953: 3.10, 1954: 2.70, 1955: 4.10, 1956: 4.90, 1957: 3.70, 1958: 3.00, 1959: 0.60,
+    1960: 1.10, 1961: 3.40, 1962: 4.20, 1963: 2.00, 1964: 3.30, 1965: 4.80, 1966: 3.90, 1967: 2.50, 1968: 4.70, 1969: 5.40,
+    1970: 6.40, 1971: 9.40, 1972: 7.10, 1973: 9.20, 1974: 15.90, 1975: 24.20, 1976: 16.50, 1977: 15.80, 1978: 8.30, 1979: 13.40,
+    1980: 18.00, 1981: 11.90, 1982: 8.60, 1983: 4.60, 1984: 5.00, 1985: 6.10, 1986: 3.40, 1987: 4.20, 1988: 4.90, 1989: 7.80,
+    1990: 9.50, 1991: 5.80, 1992: 3.70, 1993: 1.60, 1994: 2.40, 1995: 3.50, 1996: 2.40, 1997: 3.10, 1998: 3.40, 1999: 1.50,
+    2000: 2.90, 2001: 1.80, 2002: 1.60, 2003: 2.90, 2004: 3.00, 2005: 2.80, 2006: 3.20, 2007: 4.30, 2008: 3.60, 2009: 2.20,
+    2010: 3.30, 2011: 4.50, 2012: 2.80, 2013: 2.60, 2014: 1.40, 2015: 0.00, 2016: 0.60, 2017: 2.70, 2018: 2.50, 2019: 1.80,
+    2020: 0.90, 2021: 2.60, 2022: 9.10, 2023: 7.30, 2024: 3.50
+}
+EU_DATA = {
+    1991: 8.20, 1992: 6.10, 1993: 4.90, 1994: 4.50, 1995: 4.10, 1996: 3.00, 1997: 2.40, 1998: 1.90, 1999: 1.70, 2000: 3.40,
+    2001: 3.00, 2002: 2.30, 2003: 2.00, 2004: 2.10, 2005: 2.20, 2006: 2.60, 2007: 3.10, 2008: 4.30, 2009: 0.30, 2010: 1.60,
+    2011: 3.30, 2012: 2.50, 2013: 1.30, 2014: 0.80, 2015: 0.10, 2016: 0.60, 2017: 1.70, 2018: 2.00, 2019: 1.60, 2020: 0.70,
+    2021: 2.60, 2022: 8.40, 2023: 6.30, 2024: 3.20
+}
+INFLATION_DATA["uk"] = UK_DATA
+INFLATION_DATA["eu"] = EU_DATA
+
 async def inflation(params: dict) -> dict:
-    """Execute the inflation task."""
-    # TODO: Implement full logic for inflation
-    return success_response({"result": f"Executed inflation with params: {params}"} )
+    amount = params.get("amount")
+    from_year = params.get("from_year")
+    to_year = params.get("to_year")
+    country = (params.get("country", "us")).lower()
+    if not all([amount, from_year, to_year]):
+        return error_response("amount, from_year, and to_year are required")
+    amount = float(amount)
+    country_data = INFLATION_DATA.get(country)
+    if not country_data:
+        return error_response(f"Unsupported country: {country}")
+    if from_year < min(country_data.keys()) or to_year > max(country_data.keys()):
+        return error_response(f"Year range {from_year}-{to_year} not fully supported for {country}")
+    if from_year == to_year:
+        return success_response({
+            "original_amount": amount, "adjusted_amount": amount,
+            "total_inflation_pct": 0.0, "avg_annual_rate": 0.0,
+            "from_year": from_year, "to_year": to_year, "country": country
+        })
+    cumulative_factor = 1.0
+    for y in range(from_year, to_year):
+        rate = country_data.get(y, 0) / 100.0
+        cumulative_factor *= (1 + rate)
+    adjusted = amount * cumulative_factor
+    total_inflation_pct = (cumulative_factor - 1) * 100
+    num_years = to_year - from_year
+    avg_annual = (cumulative_factor ** (1 / num_years) - 1) * 100
+    return success_response({
+        "original_amount": amount,
+        "adjusted_amount": round(adjusted, 2),
+        "total_inflation_pct": round(total_inflation_pct, 2),
+        "avg_annual_rate": round(avg_annual, 2),
+        "from_year": from_year,
+        "to_year": to_year,
+        "country": country,
+        "currency": CURRENCY_NAMES.get(country, "USD")
+    })
 
 class Skill:
     def __init__(self, manifest):
         self.manifest = manifest
-    
     async def on_load(self):
-        # Register the tool with JARVIS
         pass

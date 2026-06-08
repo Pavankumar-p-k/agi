@@ -5,6 +5,7 @@ import logging
 import socket
 from typing import Any
 from urllib.parse import urlparse
+from core.plugins.errors import PluginNetworkError
 
 logger = logging.getLogger(__name__)
 

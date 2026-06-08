@@ -4,11 +4,14 @@
   <h1>The Privacy-First AI Operating System</h1>
 
   <p>
-    <b>Local-first · Voice-enabled · Self-healing · Plugin extensible</b>
+    <b>Local-first · Voice-enabled · Self-healing · Tool-extensible</b>
+  </p>
+  <p>
+    Chat, code, research, and automate — all on your hardware, zero data leaks.
   </p>
 
   <p>
-    <a href="https://github.com/Pavankumar-p-k/agi/blob/main/LICENSE">
+    <a href="LICENSE">
       <img src="https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square" alt="MIT License">
     </a>
     <a href="https://www.python.org/downloads/">
@@ -23,6 +26,9 @@
     <a href="https://ollama.com/">
       <img src="https://img.shields.io/badge/Ollama-Local%20First-5B5BD6?style=flat-square&logo=ollama" alt="Ollama Local First">
     </a>
+    <a href="https://modelcontextprotocol.io/">
+      <img src="https://img.shields.io/badge/MCP-Server-7B68EE?style=flat-square" alt="MCP Server">
+    </a>
     <a href="https://www.docker.com/">
       <img src="https://img.shields.io/badge/Docker-Ready-2496ED?style=flat-square&logo=docker" alt="Docker Ready">
     </a>
@@ -36,22 +42,7 @@
     <a href="#-architecture">
       <img src="https://img.shields.io/badge/Architecture-Modular-1A237E?style=flat-square" alt="Architecture">
     </a>
-    <a href="#-plugin-sdk">
-      <img src="https://img.shields.io/badge/Plugin_SDK-Python-3776AB?style=flat-square&logo=python" alt="Plugin SDK">
-    </a>
   </p>
-
-  <br>
-
-  <table>
-    <tr>
-      <td align="center">
-        <img src="https://raw.githubusercontent.com/Pavankumar-p-k/agi/main/docs/demo.gif" alt="Demo" width="600">
-        <br>
-        <i>JARVIS in action — voice, code, research, and PC control</i>
-      </td>
-    </tr>
-  </table>
 </div>
 
 ---
@@ -62,8 +53,8 @@
 - [Quick Start](#-quick-start)
 - [Features](#-features)
 - [Architecture](#-architecture)
+- [Security](#-security)
 - [Model Coverage](#-model-coverage)
-- [Plugin SDK](#-plugin-sdk)
 - [Contributing](#-contributing)
 - [License](#-license)
 
@@ -71,19 +62,24 @@
 
 ## 🌟 Why JARVIS?
 
-JARVIS is an all-in-one **AI Operating System** for your personal machine. Unlike cloud-dependent AI assistants, JARVIS is built **local-first** — your data stays on your hardware unless you explicitly choose otherwise.
+JARVIS is an all-in-one **AI Operating System** that runs on your machine. Unlike cloud-dependent assistants (Claude Code, ChatGPT, OpenClaw), JARVIS keeps your data **local by default** — no telemetry, no training on your conversations, no forced cloud dependency.
 
-| Capability | JARVIS | ChatGPT | OpenClaw |
-|------------|--------|---------|----------|
-| **Local-first** | ✅ Default (Ollama) | ❌ Cloud-only | ❌ Cloud-only |
-| **Privacy tiers** | ✅ 3-tier routing + PII stripping | ❌ None | ❌ None |
-| **Persistent memory** | ✅ Vector + semantic recall | ❌ Session-only | ❌ Session-only |
-| **Voice pipeline** | ✅ Full local (wake → STT → TTS) | ✅ Cloud-only | ❌ None |
-| **LLM providers** | ✅ **126** via LiteLLM | ❌ Proprietary | ✅ 50 plugins |
-| **Plugin SDK** | ✅ Python, 5 lines with `@hook` | ❌ Limited | ✅ TypeScript |
-| **Self-healing** | ✅ 3-layer auto-recovery | ❌ None | ❌ None |
-| **PC control** | ✅ Natural language automation | ❌ None | ❌ None |
-| **Docker-ready** | ✅ One-command deploy | ❌ Not applicable | ❌ Complex |
+| Capability | JARVIS | Claude Code | OpenClaw | ChatGPT |
+|------------|--------|-------------|----------|---------|
+| **Local-first** | ✅ Default (Ollama) | ❌ Cloud-only | ❌ Cloud-only | ❌ Cloud-only |
+| **Privacy tiers** | ✅ 3-tier (LOCAL/HYBRID/CLOUD) | ❌ None | ❌ None | ❌ None |
+| **Persistent shell sessions** | ✅ Stateful, `cd`/`export` recall | ✅ Stateful | ❌ Stateless | ❌ Stateless |
+| **Parallel sub-agents** | ✅ Free (unlimited) | ❌ Limited | ❌ Limited | ❌ Limited |
+| **LLM providers** | **126** via LiteLLM | ❌ Proprietary | 50 plugins | ❌ Proprietary |
+| **Voice pipeline** | ✅ Full local (wake → STT → TTS) | ❌ None | ❌ None | ✅ Cloud-only |
+| **Self-healing** | ✅ 3-layer auto-recovery | ❌ None | ❌ Partial | ❌ None |
+| **PC control** | ✅ Natural language automation | ❌ None | ❌ None | ❌ None |
+| **Docker sandbox** | ✅ One-command, network-isolated | ❌ None | ✅ Partial | ❌ None |
+| **Tool extensibility** | ✅ Python, 5 lines per tool | ✅ TypeScript | ✅ TypeScript | ❌ Limited |
+| **AST code graph** | ✅ Semantic search + symbol index | ❌ RAG only | ❌ RAG only | ❌ None |
+| **Cost** | **Free** | $100/mo | $20/mo + usage | $20/mo + usage |
+
+**JARVIS vs OpenClaw on security:** OpenClaw's plugin ecosystem has reported **512 CVEs** (including CVE-2026-25253, an RCE in the plugin loader). JARVIS addresses this with a hard audit: **8 security-critical fixes** shipped pre-launch (see [Security](#-security)).
 
 ---
 
@@ -107,12 +103,11 @@ Open [http://localhost:8000](http://localhost:8000) and start talking to JARVIS.
 git clone https://github.com/Pavankumar-p-k/agi.git
 cd agi
 pip install -e .
-python jarvis.py
+python jarvis.py setup   # Run the setup wizard
+python jarvis.py         # Launch the interactive CLI
 ```
 
 ### Configuration
-
-All configuration is done through `.env`. Copy the template and customize:
 
 ```env
 # Model Selection (any of 126 LiteLLM providers)
@@ -143,11 +138,11 @@ ANTHROPIC_API_KEY=sk-...
     </td>
     <td width="50%">
       <h3>🧠 Persistent Tiered Memory</h3>
-      <p>3-tier recall with vector embeddings:</p>
+      <p>Multi-tier recall with vector embeddings:</p>
       <ul>
         <li><b>Hot</b> — Recent session context (in-memory)</li>
-        <li><b>Warm</b> — Mem0 + Qdrant semantic search</li>
-        <li><b>Cold</b> — SQLite with nomic-embed-text vectors</li>
+        <li><b>Warm</b> — Semantic vector search</li>
+        <li><b>Cold</b> — Durable SQLite storage</li>
       </ul>
     </td>
   </tr>
@@ -162,19 +157,19 @@ ANTHROPIC_API_KEY=sk-...
       </ul>
     </td>
     <td width="50%">
-      <h3>🤖 10 Sub-Agents</h3>
-      <p>Specialized agents for every task:</p>
+      <h3>🤖 10 Parallel Sub-Agents</h3>
+      <p>Specialized agents for every task — runs in parallel, not serial:</p>
       <ul>
-        <li><b>FORGE</b> — Code generation & review</li>
-        <li><b>ATLAS</b> — Deep research & multi-hop search</li>
-        <li><b>ORACLE</b> — Chain-of-thought planning</li>
         <li><b>NEXUS</b> — Integration & automation</li>
-        <li><b>CIPHER</b> — Analysis & summarization</li>
-        <li><b>ECHO</b> — Social & communication</li>
-        <li><b>CRUX</b> — Quality & grading</li>
-        <li><b>LENS</b> — Vision & image understanding</li>
-        <li><b>AEGIS</b> — Security & governance</li>
-        <li><b>NOVA</b> — Creative generation</li>
+        <li><b>FORGE</b> — Code generation & review</li>
+        <li><b>ORACLE</b> — Chain-of-thought planning</li>
+        <li><b>PHANTOM</b> — Analysis & summarization</li>
+        <li><b>CIPHER</b> — Security & governance</li>
+        <li><b>HERALD</b> — Social & communication</li>
+        <li><b>SCRIBE</b> — Quality & grading</li>
+        <li><b>ATLAS</b> — Deep research & multi-hop search</li>
+        <li><b>SENTINEL</b> — Monitoring & alerting</li>
+        <li><b>MAESTRO</b> — Orchestration & planning</li>
       </ul>
     </td>
   </tr>
@@ -201,21 +196,68 @@ ANTHROPIC_API_KEY=sk-...
   </tr>
   <tr>
     <td width="50%">
-      <h3>🌐 6 Communication Channels</h3>
+      <h3>🐳 Docker Sandbox</h3>
+      <p>Isolated code execution with network-disabled containers:</p>
       <ul>
-        <li>Discord, Telegram, Slack</li>
-        <li>Email (IMAP), IRC, Matrix</li>
-        <li>MCP Server (Model Context Protocol)</li>
+        <li>Run any command in sandboxed environment</li>
+        <li>Memory-limited, read-only by default</li>
+        <li>Automatic container cleanup</li>
+        <li>Prefix any <code>shell</code> command with <code>sandbox:</code></li>
       </ul>
     </td>
     <td width="50%">
-      <h3>📦 Plugin SDK</h3>
-      <p>Python-native plugin system:</p>
+      <h3>🧩 Hot-Reloadable Skills</h3>
+      <p>Agent-writable, trigger-based skills that load without restart:</p>
       <ul>
-        <li><code>@hook(name)</code> decorator — 5 lines to extend</li>
-        <li>7 lifecycle hooks (voice, memory, channels, etc.)</li>
-        <li>PyPI distribution via <code>entry_points</code></li>
-        <li>Dashboard plugin manager</li>
+        <li><code>create_skill</code> tool generates <code>.md</code> + <code>.py</code> in one call</li>
+        <li>Trigger phrases route directly to handler (bypass LLM)</li>
+        <li>Cache invalidated automatically on creation</li>
+        <li>No server restart required</li>
+      </ul>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <h3>🔧 Persistent Shell Tool</h3>
+      <p>Stateful shell sessions that preserve <code>cd</code>, <code>export</code>, and virtualenvs:</p>
+      <ul>
+        <li>Per-conversation shell with 5-min idle GC</li>
+        <li>Works on Windows (cmd.exe) and Unix (/bin/sh)</li>
+        <li>Docker sandbox escape hatch for unsafe commands</li>
+        <li>Essential for interactive CLI workflows</li>
+      </ul>
+    </td>
+    <td width="50%">
+      <h3>📊 AST Code Graph</h3>
+      <p>Semantic code search with hybrid BM25 + vector + symbol regex:</p>
+      <ul>
+        <li><code>semantic_search</code> tool for natural-language queries</li>
+        <li><code>refactor</code> tool for multi-file transformations</li>
+        <li>Symbol-level indexing for fast navigation</li>
+        <li>Understands Python, JS, TS, Rust, Go, and more</li>
+      </ul>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <h3>🔌 MCP Server Support</h3>
+      <p>Model Context Protocol — the 2026 standard for AI tool interoperability:</p>
+      <ul>
+        <li>Built-in MCP server at <code>mcp/server.py</code> with tool/resource registration</li>
+        <li>Connect any <code>mcp_server.json</code> from the ecosystem</li>
+        <li>Email MCP server for IMAP/SMTP integration</li>
+        <li>Bridge to external MCP hosts via <code>manage_mcp</code> tool</li>
+        <li>Event bridge channels MCP notifications into agent loop</li>
+      </ul>
+    </td>
+    <td width="50%">
+      <h3>📊 AST Code Graph</h3>
+      <p>Semantic code search with hybrid BM25 + vector + symbol regex:</p>
+      <ul>
+        <li><code>semantic_search</code> tool for natural-language queries</li>
+        <li><code>refactor</code> tool for multi-file transformations</li>
+        <li>Symbol-level indexing for fast navigation</li>
+        <li>Understands Python, JS, TS, Rust, Go, and more</li>
       </ul>
     </td>
   </tr>
@@ -227,24 +269,60 @@ ANTHROPIC_API_KEY=sk-...
 
 ```
 jarvis/
-├── core/           # FastAPI brain, LLM router, config, auth
-│   ├── llm_router.py     # LiteLLM Router — 126+ providers
-│   ├── model_router.py   # Role-to-model mapping
-│   ├── main.py           # FastAPI application
-│   ├── plugins/          # Plugin registry & loader
-│   └── sub_agents/       # 10 specialized agents
-├── brain/          # Cognitive patterns, reasoning, epistemic tagging
-├── memory/         # Tiered memory, embeddings, vector search
-├── api/            # REST endpoints
-├── channels/       # 6 communication channels
-├── assistant/      # Voice pipeline (wake → STT → TTS)
-├── pc_agent/       # Computer control & automation
-├── governance/     # Security, privacy classification, validation
-├── tools/          # Search, browser, research, image generation
-├── jarvis_plugin_sdk/  # Python plugin SDK
-├── docker-compose.yml   # Ollama + JARVIS stack
-└── Dockerfile           # Container image
+├── core/                   # FastAPI brain, config, auth, diagnostics
+│   ├── agent_loop.py       # Main LLM orchestration loop
+│   ├── tools/              # All tools (edit, shell, search, skills, etc.)
+│   │   ├── execution.py    # Tool dispatcher + MCP bridge
+│   │   ├── persistent_shell.py  # Stateful shell sessions
+│   │   ├── skill_tools.py  # Skill management + create_skill
+│   │   ├── settings_tools.py    # Runtime settings
+│   │   ├── admin_tools.py       # Endpoints, MCP, webhooks
+│   │   └── cookbook_tools.py    # Model serving, image gen, research
+│   ├── config_schema.py    # Pydantic-validated config
+│   ├── prompt_security.py  # Content integrity verification
+│   ├── api_key_vault.py    # Encrypted key storage
+│   ├── ssrf.py             # DNS-based SSRF protection
+│   └── diagnostics.py      # Health checks (disk/port/docker/git)
+├── brain/                  # Cognitive patterns, reasoning
+├── memory/                 # Tiered memory, vector storage
+├── ai_os/                  # Docker sandbox, planner stubs
+├── channels/               # Discord, Telegram, Slack, Email, IRC
+├── assistant/              # Voice pipeline (wake → STT → TTS)
+├── pc_agent/               # Computer control & automation
+├── governance/             # Security, privacy, validation
+├── skills/                 # Hot-reloadable trigger skills (.md + .py)
+├── media/                  # Media player with subprocess fallback
+├── tests/                  # Unit + integration tests (no external deps)
+├── docker-compose.yml      # Docker stack definition
+└── Dockerfile              # Production container
 ```
+
+| Directory | Purpose |
+|-----------|---------|
+| `core/` | Everything you need to understand JARVIS: agent loop, tools, config, security, diagnostics |
+| `core/tools/` | All AI-callable tools: edit files, run shell, search code, manage skills |
+| `skills/` | User-created trigger skills — created dynamically via `create_skill` tool |
+| `channels/` | Communication channels (Discord, Telegram, Slack, Email, IRC, Matrix) |
+| `tests/` | Tests that mock external services — run without network |
+
+---
+
+## 🔒 Security
+
+Pre-launch security audit — **8 critical fixes** shipped before v1.0:
+
+| Issue | Fix | File |
+|-------|-----|------|
+| Hardcoded API keys in source | Replaced with `YOUR_*` placeholders | `google-services.json` (3 locations) |
+| `shell=True` subprocess calls | Converted to `shell=False` with list args | `pc_automation.py`, `computer_agent.py`, `spotify/main.py` |
+| `os.system()` command injection | Migrated to `subprocess.run()` | `daemon/jarvis_service.py` |
+| 82 silent `except: pass` blocks | Changed to `logger.warning()` with exception context | 30 files across `core/`, `daemon/`, `media/` |
+| SSRF via DNS rebinding | `resolve_and_check()` prevents internal network attacks | `core/ssrf.py` |
+| Prompt injection detection | `PromptSecurity` classifier identifies 5 attack types | `core/prompt_security.py` |
+| API key vault with audit | Key rotation + usage tracking + encrypted storage | `core/api_key_vault.py` |
+| Docker sandbox isolation | `network_disabled=True`, `read_only=True`, 256m mem limit | `ai_os/docker_sandbox.py` |
+
+**No hardcoded secrets** in any source file. All API keys come from environment variables or the key vault.
 
 ---
 
@@ -271,42 +349,6 @@ VISION_MODEL=openai/gpt-4o
 
 ---
 
-## 🔌 Plugin SDK
-
-JARVIS has a Python-native plugin SDK — no TypeScript required.
-
-```python
-from jarvis_plugin_sdk import Plugin, hook
-
-class MyPlugin(Plugin):
-    @hook("on_agent_reply")
-    def add_signature(self, reply: str) -> str:
-        return reply + "\n\n— Sent via MyPlugin"
-
-    @hook("on_voice_command")
-    def log_commands(self, text: str) -> str:
-        print(f"Voice: {text}")
-        return text
-```
-
-**7 hook points** across the entire system:
-- `on_agent_reply` — Modify agent responses
-- `on_channel_message` — Intercept channel messages
-- `on_voice_command` — Process voice input
-- `on_website_generate` — Customize generated websites
-- `on_dreaming_cycle` — Extend dreaming/reflection
-- `on_file_saved` — React to file changes
-- `on_memory_recall` — Augment memory search
-
-Install plugins via pip or the dashboard:
-```bash
-jarvis plugin search  # Browse marketplace
-jarvis plugin install my-plugin  # pip install
-jarvis plugin list    # See active plugins
-```
-
----
-
 ## 🤝 Contributing
 
 We welcome contributions! The project is in active development.
@@ -328,7 +370,7 @@ See our [issues page](https://github.com/Pavankumar-p-k/agi/issues) for good fir
 ---
 
 <div align="center">
-  <p>Built with ❤️ for a private AI future</p>
+  <p>Built for a private AI future</p>
   <p>
     <a href="https://github.com/Pavankumar-p-k/agi/issues">Report Bug</a>
     ·

@@ -32,11 +32,29 @@ class TelegramChannel(ChannelPlugin):
         async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             if not update.message or not update.message.text:
                 return
-            text = update.message.text
+            text = update.message.text.strip()
             user = update.effective_user
             chat_id = update.effective_chat.id if update.effective_chat else 0
             user_id = str(user.id) if user else "0"
             user_name = user.full_name if user else "Unknown"
+
+            # Access Control Check
+            if not self.check_access(user_id):
+                # Check for pairing response
+                if self.pairing.verify_response(user_id, text):
+                    self.config.allowlist.add(user_id)
+                    await context.bot.send_message(chat_id=chat_id, text="Pairing successful! You are now authorized.")
+                    return
+                
+                # Offer pairing if it's a private chat
+                from telegram.constants import ChatType
+                if update.effective_chat and update.effective_chat.type == ChatType.PRIVATE:
+                    challenge = self.pairing.create_challenge(user_id)
+                    await context.bot.send_message(
+                        chat_id=chat_id, 
+                        text=f"Access Denied. To pair this account, please reply with this code: {challenge}"
+                    )
+                return
 
             reply = await process_message(
                 text=text,

@@ -52,7 +52,13 @@ async def deep_research(
             f"that will help provide a comprehensive answer: {query}\n"
             "Return a simple bulleted list of questions."
         )
-        plan_text = await complete(plan_prompt, group=llm_group)
+        res = await complete(llm_group, [
+            {"role": "system", "content": "You are a research planner."},
+            {"role": "user", "content": plan_prompt}
+        ])
+        if res.is_err():
+            raise res.unwrap_err()
+        plan_text = res.unwrap()
         sub_questions = []
         for line in plan_text.split('\n'):
             q_match = re.search(r"[-*•]\s*(.*)", line)
@@ -161,9 +167,11 @@ async def deep_research(
                     f"Text: {chunk}\n"
                     "Return bullet points of key facts."
                 )
-                facts = await complete(extract_prompt, group=llm_group)
-                if facts and "extract" not in facts.lower(): # Basic check for content
-                    all_extracted_facts.append(facts)
+                res = await complete(llm_group, [{"role": "user", "content": extract_prompt}])
+                if res.is_ok():
+                    facts = res.unwrap()
+                    if facts and "extract" not in facts.lower(): # Basic check for content
+                        all_extracted_facts.append(facts)
 
         if not all_extracted_facts:
             logger.warning("No facts extracted from sources.")
@@ -178,7 +186,10 @@ async def deep_research(
             f"Findings:\n{all_facts_joined}\n\n"
             "Return JSON only: {\"summary\": \"...\", \"key_findings\": [\"...\"], \"confidence\": 0.0-1.0}"
         )
-        synth_response = await complete(synth_prompt, group=llm_group)
+        res = await complete(llm_group, [{"role": "user", "content": synth_prompt}])
+        if res.is_err():
+            raise res.unwrap_err()
+        synth_response = res.unwrap()
         
         # Parse synth JSON safely
         try:

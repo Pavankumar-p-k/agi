@@ -3,24 +3,72 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "jarvis-launcher"
-version = "0.1.0"
+name = "jarvis-ai"
+version = "1.1.0"
 description = "Unified JARVIS launcher for CLI, server, GUI, models, and IDE integrations."
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [
   { name = "JARVIS" }
 ]
-dependencies = []
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]>=0.23.0",
+    "sqlalchemy>=2.0.0",
+    "aiosqlite>=0.19.0",
+    "pydantic>=2.0.0",
+    "python-multipart",
+    "python-dotenv>=1.0.0",
+    "httpx>=0.27,<0.28",
+    "bcrypt>=3.2.0",
+    "numpy>=1.24.0",
+    "opencv-python-headless>=4.8.0",
+    "prompt_toolkit",
+    "textual>=2.0.0",
+    "pillow>=10.0.0",
+    "psutil>=5.9.0",
+    "websockets>=11.0.0",
+    "aiohttp>=3.9.0,<3.14",
+    "anthropic>=0.25.0",
+    "pyotp",
+    "python-socketio>=5.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "ruff",
+    "mypy",
+]
+vision = [
+    "deepface>=0.0.79",
+    "opencv-python-headless>=4.8.0",
+]
+firebase = [
+    "firebase-admin>=6.0.0",
+]
 
 [project.scripts]
 jarvis = "jarvis:main"
 
 [tool.setuptools]
-py-modules = ["jarvis"]
+py-modules = [
+    "jarvis",
+    "cli_commands",
+    "cli_completer",
+    "cli_config",
+    "cli_helpers",
+    "cli_requests",
+    "cli_server",
+    "cli_slash_commands",
+    "cli_state",
+    "cli_utils",
+    "cli_visuals",
+]
 
 [tool.setuptools.packages.find]
-include = ["jarvis_os*"]
+include = ["jarvis*", "core*", "ai_os*", "orchestrator*", "models*", "channels*", "services*", "brain*", "memory*", "tools*", "assistant*", "monitors*", "governance*", "skills*", "eval*", "learning*", "pc_agent*", "automation*", "api*", "daemon*", "mcp_servers*", "agents*", "cli*", "routes*", "routers*", "media*", "demo*", "cookbook*", "jarvis_os*", "mcp*", "utils*", "notifications*", "network*", "notes*", "reminders*", "vision*", "train*", "plugins*", "static*", "cli_tui*"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
@@ -35,7 +83,46 @@ markers = [
 ]
 filterwarnings = ["ignore::DeprecationWarning"]
 log_cli = false
+xfail_strict = true
+addopts = "--strict-markers"
 
-# Run: pytest -m "unit"          (unit tests only)
-# Run: pytest -m "not slow"      (skip long-running tests)
-# Run: pytest -m "e2e"           (full server tests)
+[tool.coverage.run]
+source = ["core", "monitors", "tools", "assistant", "plugins"]
+omit = ["*/tests/*", "*/learning/*", "*/migrations/*"]
+parallel = true
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 60
+precision = 1
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "def __str__",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "except Exception",
+    "except:",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "W", "I", "N", "UP", "YTT"]
+ignore = ["E402", "E501", "F841"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["N", "UP"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = false
+ignore_missing_imports = true
+warn_unused_ignores = true
+exclude = [
+    "tests/",
+    "learning/",
+    "plugins/",
+]

@@ -130,8 +130,6 @@ class BrowserAgent:
 
     async def deploy_to_vercel(self, repo_path: str, project_name: str) -> Optional[str]:
         """Deploy a project to Vercel via the web UI."""
-        from core.api_key_vault import vault
-
         vercel_token = vault.get("vercel")
         if vercel_token:
             import subprocess

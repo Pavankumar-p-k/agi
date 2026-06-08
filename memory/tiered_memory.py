@@ -1,13 +1,20 @@
 import time
 import os
 import logging
-from dataclasses import dataclass, field
-from typing import List, Dict, Any, Optional
+from dataclasses import dataclass
+from typing import List, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
-from mem0 import Memory as Mem0Memory
-from memory.embedding_memory import embedding_memory
+try:
+    from mem0 import Memory as Mem0Memory
+except ImportError:
+    Mem0Memory = None
+try:
+    from memory.embedding_memory import get_embedding_memory
+    _get_embedding = get_embedding_memory
+except Exception:
+    _get_embedding = lambda: None
 
 
 @dataclass
@@ -53,23 +60,26 @@ class TieredMemory:
         self.user_id = user_id
         self.hot_tier: List[Dict] = []
         self.max_hot = 10
+        self._embedding = None
+        self.mem0 = None
 
         # Initialize Mem0 for warm/cold tiers with local Qdrant storage
-        try:
-            qdrant_path = os.path.join(os.getcwd(), "data", "qdrant_storage")
-            os.makedirs(os.path.dirname(qdrant_path), exist_ok=True)
-            config = {
-                "vector_store": {
-                    "provider": "qdrant",
-                    "config": {
-                        "path": qdrant_path,
+        if Mem0Memory is not None:
+            try:
+                qdrant_path = os.path.join(os.getcwd(), "data", "qdrant_storage")
+                os.makedirs(os.path.dirname(qdrant_path), exist_ok=True)
+                config = {
+                    "vector_store": {
+                        "provider": "qdrant",
+                        "config": {
+                            "path": qdrant_path,
+                        }
                     }
                 }
-            }
-            self.mem0 = Mem0Memory.from_config(config)
-        except Exception as e:
-            print(f"[MEMORY] Qdrant unavailable — running without vector store: {e}")
-            self.mem0 = None
+                self.mem0 = Mem0Memory.from_config(config)
+            except Exception as e:
+                print(f"[MEMORY] Qdrant unavailable — running without vector store: {e}")
+                self.mem0 = None
 
     def remember(self, content: str, importance: float = 0.5, metadata: Dict = None):
         """
@@ -88,8 +98,13 @@ class TieredMemory:
                 self.mem0.add(to_archive["content"], user_id=self.user_id, metadata=to_archive["metadata"])
 
         # If very important, store in semantic memory immediately
-        if importance > 0.8:
-            embedding_memory.store(content, metadata)
+        if importance > 0.8 and self._embedding is not None:
+            self._embedding.store(content, metadata)
+        elif importance > 0.8:
+            emb = _get_embedding()
+            if emb is not None:
+                self._embedding = emb
+                self._embedding.store(content, metadata)
 
     def recall(self, query: str, limit: int = 5) -> List[Dict]:
         """
@@ -97,18 +112,22 @@ class TieredMemory:
         """
         results = []
 
-        # 1. Search Hot tier
+        # 1. Search Hot tier with word-overlap scoring
+        query_words = set(query.lower().split())
         for m in reversed(self.hot_tier):
-            if query.lower() in m["content"].lower():
-                results.append(m)
+            content_words = set(m["content"].lower().split())
+            if query_words and content_words:
+                overlap = len(query_words & content_words) / max(len(query_words), len(content_words))
+                if overlap >= 0.3:  # 30% word overlap threshold
+                    m["_score"] = overlap
+                    results.append(m)
 
         # Phase 3: Emit hook
         try:
             from core.plugins.events import PluginEventBus
-            import asyncio
-            asyncio.create_task(PluginEventBus.instance().emit("on_memory_recall", query=query, results=results))
-        except Exception:
-            pass
+            PluginEventBus.instance().emit("on_memory_recall", query=query, results=results)
+        except Exception as exc:
+            logger.debug("PluginEventBus.on_memory_recall failed: %s", exc)
 
         # 2. Search Warm/Cold tier via Mem0
         if self.mem0:
@@ -119,13 +138,16 @@ class TieredMemory:
                 print(f"[WARN] Mem0 search failed: {e}")
 
         # 3. Search Semantic tier
-        semantic_result = embedding_memory.semantic_search(query, top_k=limit)
-        if semantic_result.is_err():
-            logger.warning("[Memory] Semantic search failed: %s", semantic_result._error)
-            semantic_results = []
-        else:
-            semantic_results = semantic_result.unwrap()
-        results.extend(semantic_results)
+        if self._embedding is None:
+            self._embedding = _get_embedding()
+        if self._embedding is not None:
+            semantic_result = self._embedding.semantic_search(query, top_k=limit)
+            if semantic_result.is_err():
+                logger.warning("[Memory] Semantic search failed: %s", semantic_result._error)
+                semantic_results = []
+            else:
+                semantic_results = semantic_result.unwrap()
+            results.extend(semantic_results)
 
         return results
 
@@ -141,7 +163,11 @@ class TieredMemory:
             return []
 
         candidates = [Memory.from_dict(d) for d in raw]
-        embed_result = embedding_memory.embed(query)
+        if self._embedding is None:
+            self._embedding = _get_embedding()
+        if self._embedding is None:
+            return candidates[:max_results]
+        embed_result = self._embedding.embed(query)
         if embed_result.is_err():
             return []
         q_vec = embed_result.unwrap().tolist()

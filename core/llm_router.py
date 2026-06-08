@@ -10,10 +10,12 @@ import logging
 import os
 import threading
 import time
+
 from litellm import Router
 
-from core.result import Ok, Err, Result
-from core.errors import LLMError, Timeout, ProviderError
+from core.errors import LLMError
+from core.observability.metrics import observe_llm_latency
+from core.result import Err, Ok, Result
 
 logger = logging.getLogger(__name__)
 
@@ -25,18 +27,18 @@ def _model_config(env_var: str, default: str) -> dict:
     """
     raw = os.getenv(env_var, default)
     api_base = None
-    
+
     if " @ " in raw:
         raw, api_base = raw.split(" @ ", 1)
-    
+
     model = raw.strip()
     provider = model.split("/", 1)[0] if "/" in model else "openai"
-    
+
     # Auto-map provider to API key env var
     # e.g. 'anthropic' -> 'ANTHROPIC_API_KEY'
     key_var = f"{provider.upper().replace('-', '_')}_API_KEY"
     api_key = os.getenv(key_var)
-    
+
     # Special cases for Ollama / Local
     if provider == "ollama":
         api_base = api_base or os.getenv("OLLAMA_URL", "http://localhost:11434")
@@ -50,28 +52,33 @@ def _model_config(env_var: str, default: str) -> dict:
     }
     if api_base:
         params["api_base"] = api_base
-        
+
     return params
-
-
-MODEL_LIST = [
-    {"model_name": "chat",      "litellm_params": _model_config("CHAT_MODEL",      "ollama/llama3.1:8b")},
-    {"model_name": "code",      "litellm_params": _model_config("CODE_MODEL",      "ollama/qwen2.5-coder:3b")},
-    {"model_name": "analysis",  "litellm_params": _model_config("ANALYSIS_MODEL",  "ollama/qwen2.5:7b")},
-    {"model_name": "reasoning", "litellm_params": _model_config("REASONING_MODEL", "ollama/deepseek-r1:1.5b")},
-    {"model_name": "vision",    "litellm_params": _model_config("VISION_MODEL",    "ollama/moondream:latest")},
-    {"model_name": "grader",    "litellm_params": _model_config("GRADER_MODEL",    "ollama/phi3:mini")},
-]
-
-# Cloud fallback models (if keys exist but specific MODEL env vars are missing)
-if os.getenv("ANTHROPIC_API_KEY"):
-    MODEL_LIST.append({"model_name": "cloud", "litellm_params": {"model": "claude-sonnet-4-20250514", "api_key": os.getenv("ANTHROPIC_API_KEY")}})
-if os.getenv("OPENAI_API_KEY"):
-    MODEL_LIST.append({"model_name": "cloud", "litellm_params": {"model": "gpt-4o", "api_key": os.getenv("OPENAI_API_KEY")}})
 
 
 _router_instance = None
 _router_lock = threading.Lock()
+
+
+def _build_model_list() -> list:
+    """Lazily build the model list from current env var values."""
+    model_list = [
+        {"model_name": "chat",      "litellm_params": _model_config("CHAT_MODEL",      "ollama/llama3.1:8b")},
+        {"model_name": "code",      "litellm_params": _model_config("CODE_MODEL",      "ollama/qwen2.5-coder:3b")},
+        {"model_name": "analysis",  "litellm_params": _model_config("ANALYSIS_MODEL",  "ollama/qwen2.5:7b")},
+        {"model_name": "reasoning", "litellm_params": _model_config("REASONING_MODEL", "ollama/deepseek-r1:1.5b")},
+        {"model_name": "vision",    "litellm_params": _model_config("VISION_MODEL",    "ollama/moondream:latest")},
+        {"model_name": "grader",    "litellm_params": _model_config("GRADER_MODEL",    "ollama/phi3:mini")},
+    ]
+
+    if os.getenv("ANTHROPIC_API_KEY"):
+        model_list.append({"model_name": "cloud", "litellm_params": {"model": "claude-sonnet-4-20250514", "api_key": os.getenv("ANTHROPIC_API_KEY")}})
+    if os.getenv("OPENAI_API_KEY"):
+        model_list.append({"model_name": "cloud", "litellm_params": {"model": "gpt-4o", "api_key": os.getenv("OPENAI_API_KEY")}})
+
+    return model_list
+
+
 def get_router():
     global _router_instance
     if _router_instance is None:
@@ -79,7 +86,18 @@ def get_router():
             if _router_instance is None:
                 os.environ.setdefault("LITELLM_LOCAL_MODEL_COST_MAP", "true")
                 os.environ.setdefault("LITELLM_LOG", "WARNING")
-                _router_instance = Router(model_list=MODEL_LIST)
+                _router_instance = Router(model_list=_build_model_list())
+    return _router_instance
+
+
+def refresh_router():
+    """Rebuild the router with fresh env values. Call after changing env vars at runtime."""
+    global _router_instance
+    with _router_lock:
+        _router_instance = None
+        os.environ.setdefault("LITELLM_LOCAL_MODEL_COST_MAP", "true")
+        os.environ.setdefault("LITELLM_LOG", "WARNING")
+        _router_instance = Router(model_list=_build_model_list())
     return _router_instance
 
 
@@ -93,6 +111,11 @@ def get_available_providers() -> list[dict]:
 
 
 async def complete(model_group: str, messages: list, timeout: int = 120) -> Result[str, LLMError]:
+    from core.config_schema import jarvis_config
+    if jarvis_config.failover.enabled:
+        from core.llm_failover import llm_failover
+        return await llm_failover.complete(model_group, messages, timeout=timeout)
+
     try:
         from core.plugins import plugin_registry
         resolved = model_group
@@ -113,6 +136,7 @@ async def complete(model_group: str, messages: list, timeout: int = 120) -> Resu
             timeout=timeout,
         )
         elapsed = time.time() - start
+        observe_llm_latency(elapsed)
         content = response.choices[0].message.content
 
         for _, result in await plugin_registry.run_hook("llm_output", response=content):

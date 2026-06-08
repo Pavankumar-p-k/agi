@@ -13,13 +13,37 @@ def make_mock_response(text: str):
     resp.usage = usage
     return resp
 
-@pytest.fixture
-def mock_anthropic():
-    with patch("core.sub_agents.base_agent.anthropic.Anthropic") as mock_cls:
-        client = MagicMock()
-        mock_cls.return_value = client
-        client.messages.create.return_value = make_mock_response("Test output from agent.")
-        yield client
+from core.result import Ok
+
+@pytest.fixture(autouse=True)
+def mock_complete_global():
+    with patch("core.llm_router.complete") as mock:
+        mock.return_value = Ok("Test output from agent.")
+        yield mock
+
+@pytest.fixture(autouse=True)
+def mock_smolagents():
+    # Mock ForgeAgent's internal smolagents usage
+    with patch("core.sub_agents.agents.forge.CodeAgent") as mock_agent, \
+         patch("core.sub_agents.agents.forge.LiteLLMModel") as mock_model:
+        
+        agent_instance = MagicMock()
+        mock_agent.return_value = agent_instance
+        agent_instance.run.return_value = "Mocked smolagents code output"
+        
+        yield {
+            "agent": mock_agent,
+            "model": mock_model,
+            "instance": agent_instance
+        }
+
+@pytest.fixture(autouse=True)
+def mock_mem0():
+    # Mock NexusAgent's memory usage
+    with patch("memory.mem0_adapter.mem0_memory") as mock:
+        mock.search.return_value = []
+        mock.format_context.return_value = ""
+        yield mock
 
 def test_registry_has_all_agents():
     from core.sub_agents.registry import agent_registry
@@ -35,7 +59,7 @@ def test_agent_info():
     assert "research" in info["modes"]
 
 @pytest.mark.asyncio
-async def test_nexus_run(mock_anthropic):
+async def test_nexus_run():
     from core.sub_agents.agents.nexus import NexusAgent
     a = NexusAgent()
     result = await a.run("What is quantum computing?", mode="research")
@@ -45,29 +69,30 @@ async def test_nexus_run(mock_anthropic):
     assert len(result.output) > 0
 
 @pytest.mark.asyncio
-async def test_forge_run(mock_anthropic):
+async def test_forge_run():
     from core.sub_agents.agents.forge import ForgeAgent
     a = ForgeAgent()
     result = await a.run("Write a fibonacci function", mode="generate", lang="Python")
     assert result.success
     assert result.agent_name == "FORGE"
+    assert "smolagents" in result.output.lower() or "Mocked" in result.output
 
 @pytest.mark.asyncio
-async def test_invalid_mode_falls_back(mock_anthropic):
+async def test_invalid_mode_falls_back():
     from core.sub_agents.agents.nexus import NexusAgent
     a = NexusAgent()
     result = await a.run("test", mode="nonexistent_mode")
     assert result.success  # should use default mode, not crash
 
 @pytest.mark.asyncio
-async def test_registry_run(mock_anthropic):
+async def test_registry_run():
     from core.sub_agents.registry import agent_registry
     result = await agent_registry.run("ORACLE", "Plan a website build", mode="plan")
     assert result.success
     assert result.agent_name == "ORACLE"
 
 @pytest.mark.asyncio
-async def test_parallel_run(mock_anthropic):
+async def test_parallel_run():
     from core.sub_agents.registry import agent_registry
     tasks = [
         {"agent": "NEXUS", "task": "research AI", "mode": "brief"},
@@ -78,7 +103,7 @@ async def test_parallel_run(mock_anthropic):
     assert all(r.success for r in results)
 
 @pytest.mark.asyncio
-async def test_result_to_dict(mock_anthropic):
+async def test_result_to_dict():
     from core.sub_agents.agents.herald import HeraldAgent
     a = HeraldAgent()
     result = await a.run("Draft an update email")

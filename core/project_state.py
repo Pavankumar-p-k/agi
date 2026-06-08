@@ -121,8 +121,8 @@ def list_projects() -> list[dict]:
                     "created_at": data.get("created_at", ""),
                     "issues": len(data.get("issues", [])),
                 })
-            except Exception:
-                pass
+            except Exception as _e:
+                logger.debug("project_state load projects failed: %s", _e)
     return projects
 
 

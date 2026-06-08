@@ -150,7 +150,7 @@ def _cmd_website_build(args: argparse.Namespace) -> int:
     if not no_br:
         try:
             webbrowser.open(result["open_in_browser"])
-        except Exception:
+        except Exception as e:
             logger.warning("[tools.jarvis_website_cli] generate_website failed: %s", e)
 
     return 0

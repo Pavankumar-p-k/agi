@@ -1,3 +1,4 @@
+import logging
 import asyncio
 import os
 import subprocess
@@ -12,6 +13,7 @@ import random
 import tempfile
 from pathlib import Path
 from skills.utils import success_response, error_response
+logger = logging.getLogger(__name__)
 
 def _find_spotify_exe():
     candidates = [
@@ -70,8 +72,8 @@ def _play_melody():
             try:
                 import winsound
                 winsound.Beep(int(freq), int(dur * 1200))
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("[skills.library.entertainment.spotify.main] spotify_play failed: %s", e)
 
 def _now_playing_file(query):
     content = f"""Now Playing: {query}
@@ -112,13 +114,13 @@ async def _play_song(query: str) -> dict:
     if spotify_exe:
         try:
             uri = f"spotify:search:{query}"
-            subprocess.Popen([spotify_exe, uri], shell=True)
+            subprocess.Popen([spotify_exe, uri], shell=False)
             return success_response({
                 "action": "play", "query": query, "method": "native",
                 "audio": "melody_played", "now_playing": nf
             })
         except Exception as e:
-            pass
+            logger.warning("[skills.spotify] spotify_control failed: %s", e)
 
     search_url = f"https://open.spotify.com/search/{query.replace(' ', '%20')}"
     webbrowser.open(search_url)

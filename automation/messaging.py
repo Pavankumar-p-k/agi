@@ -142,8 +142,8 @@ class WhatsAppAutomation(BrowserAutomation):
                         "contact": contact.text,
                         "count": span.text
                     })
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.warning("[automation.messaging] send_message failed: %s", e)
             return results
         except Exception as e:
             logger.warning("[WhatsApp] Failed to get unread messages: %s", e)
@@ -175,8 +175,8 @@ class InstagramAutomation(BrowserAutomation):
             self.driver.find_element(By.XPATH, '//a[@href="/direct/inbox/"]')
             print("[Instagram] Already logged in")
             return True
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("[automation.messaging] poll_inbox failed: %s", e)
 
         if not self.username or not self.password:
             print("[Instagram] No credentials provided. Please log in manually.")

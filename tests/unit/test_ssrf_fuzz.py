@@ -1,8 +1,10 @@
+import logging
 """Property-based fuzz tests for SSRF protection using hypothesis."""
 import pytest
 from hypothesis import given, assume, strategies as st, settings, HealthCheck
 
 from core.ssrf import is_private_ip, resolve_and_check, assert_safe_url, sanitize_redirect_url
+logger = logging.getLogger(__name__)
 
 
 def _ip_to_hex(ip: str) -> str:
@@ -83,8 +85,8 @@ class TestIsPrivateIpFuzz:
         """Non-IP strings don't crash the function."""
         try:
             is_private_ip(s)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("[tests.unit.test_ssrf_fuzz] ssrf_fuzz_test failed: %s", e)
 
 
 class TestResolveAndCheckFuzz:
@@ -141,8 +143,8 @@ class TestResolveAndCheckFuzz:
         url = f"http://{domain}.nonexistent.invalid"
         try:
             assert resolve_and_check(url) is False
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("[tests.unit.test_ssrf_fuzz] ssrf_fuzz_cleanup failed: %s", e)
 
 
 class TestSanitizeRedirectUrl:

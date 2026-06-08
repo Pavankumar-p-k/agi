@@ -58,32 +58,38 @@ class AGICore:
         # Stubs for unimplemented modules — wire these to real classes in future
         try:
             self.memory = _StubAttr("memory_engine")
-        except Exception:
+        except Exception as _e:
+            logger.debug("AGI stub memory failed: %s", _e)
             self.memory = None
 
         try:
             self.reflector = _StubAttr("reflector")
-        except Exception:
+        except Exception as _e:
+            logger.debug("AGI stub reflector failed: %s", _e)
             self.reflector = None
 
         try:
             self.predictor = _StubAttr("predictor")
-        except Exception:
+        except Exception as _e:
+            logger.debug("AGI stub predictor failed: %s", _e)
             self.predictor = None
 
         try:
             self.patterns = _StubAttr("pattern_engine")
-        except Exception:
+        except Exception as _e:
+            logger.debug("AGI stub patterns failed: %s", _e)
             self.patterns = None
 
         try:
             self.habits = _StubAttr("habit_engine")
-        except Exception:
+        except Exception as _e:
+            logger.debug("AGI stub habits failed: %s", _e)
             self.habits = None
 
         try:
             self.goal_planner = _StubAttr("goal_planner")
-        except Exception:
+        except Exception as _e:
+            logger.debug("AGI stub goal_planner failed: %s", _e)
             self.goal_planner = None
 
         # Real sub-agent registry
@@ -160,7 +166,6 @@ class AGICore:
 
     async def solve(self, problem: str, context: dict | None = None) -> SolveResult:
         start = time.time()
-        ctx = context or {}
         result = SolveResult(problem=problem)
 
         try:
@@ -211,8 +216,8 @@ class AGICore:
             from core.plugins.registry import get_plugin_registry
             registry = get_plugin_registry()
             asyncio.create_task(registry.run_hook("on_decision", decision=self._decision_history[-1]))
-        except Exception:
-            pass
+        except Exception as _e:
+            logger.debug("on_decision hook dispatch failed: %s", _e)
 
 
 # ── Singleton ───────────────────────────────────────────────

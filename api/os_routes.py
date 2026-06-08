@@ -53,11 +53,17 @@ def _normalize_execution(result: dict[str, Any]) -> dict[str, Any]:
 
 def _status_payload() -> dict[str, Any]:
     runtime = get_runtime()
-    status = runtime.status()
+    if runtime is None or not getattr(runtime, 'ready', False):
+        return {
+            "initialized": False,
+            "components": {},
+            "status": "jarvis_os not available",
+        }
+    status = getattr(runtime, 'status', lambda: {})()
     return {
         "initialized": True,
         "components": {
-            "tools": runtime.tools.as_dicts(),
+            "tools": getattr(runtime, 'tools', None).as_dicts() if hasattr(runtime, 'tools') and getattr(runtime, 'tools', None) else [],
             "models": status.get("models", {}),
             "scheduler": {"count": status.get("schedule_count", 0)},
             "skills_registry": {"count": status.get("skills", 0)},
@@ -66,7 +72,7 @@ def _status_payload() -> dict[str, Any]:
             "self_improvement": {"running": status.get("daemon", {}).get("running", False)},
             "world_model": {
                 "memories": status.get("memory_items", 0),
-                "goals": len(runtime.list_jobs().get("jobs", [])),
+                "goals": len(getattr(runtime, 'list_jobs', lambda: {"jobs": []})().get("jobs", [])),
                 "knowledge": 0,
                 "experiences": 0,
             },
@@ -81,7 +87,9 @@ def _status_payload() -> dict[str, Any]:
 
 @router.get("/tools")
 def tools() -> dict[str, Any]:
-    return {"tools": get_runtime().tools.as_dicts()}
+    r = get_runtime()
+    tools_data = r.tools.as_dicts() if r and hasattr(r, 'tools') and r.tools else []
+    return {"tools": tools_data}
 
 
 @router.get("/status")
@@ -89,27 +97,49 @@ def status() -> dict[str, Any]:
     return _status_payload()
 
 
+def _require_runtime():
+    r = get_runtime()
+    if r is None or not getattr(r, 'ready', False):
+        return None
+    return r
+
+
 @router.post("/agents/preview")
 @router.post("/agent/plan")
 def preview(req: PromptRequest) -> dict[str, Any]:
-    runtime = get_runtime()
-    result = runtime.preview_prompt(req.prompt, context=req.context, agent_name=req.agent_name)
+    runtime = _require_runtime()
+    if not runtime:
+        return {"error": "jarvis_os not available", "goal": _goal(req.prompt, req.context)}
+    fn = getattr(runtime, 'preview_prompt', None)
+    if fn is None:
+        return {"error": "preview_prompt not implemented", "goal": _goal(req.prompt, req.context)}
+    result = fn(req.prompt, context=req.context, agent_name=req.agent_name)
     result["goal"] = _goal(req.prompt, req.context)
     return result
 
 
 @router.post("/run")
 def run_agent(req: PromptRequest) -> dict[str, Any]:
-    runtime = get_runtime()
-    result = runtime.handle_prompt(req.prompt, context=req.context, agent_name=req.agent_name)
+    runtime = _require_runtime()
+    if not runtime:
+        return {"error": "jarvis_os not available"}
+    fn = getattr(runtime, 'handle_prompt', None)
+    if fn is None:
+        return {"error": "handle_prompt not implemented"}
+    result = fn(req.prompt, context=req.context, agent_name=req.agent_name)
     return _normalize_execution(result)
 
 
 @router.post("/agents/submit")
 @router.post("/agent/submit")
 def submit(req: PromptRequest) -> dict[str, Any]:
-    runtime = get_runtime()
-    submission = runtime.submit_prompt(req.prompt, context=req.context, agent_name=req.agent_name)
+    runtime = _require_runtime()
+    if not runtime:
+        return {"error": "jarvis_os not available", "goal": _goal(req.prompt, req.context)}
+    fn = getattr(runtime, 'submit_prompt', None)
+    if fn is None:
+        return {"error": "submit_prompt not implemented", "goal": _goal(req.prompt, req.context)}
+    submission = fn(req.prompt, context=req.context, agent_name=req.agent_name)
     preview = submission.get("preview", {})
     job = submission.get("job", {})
     return {
@@ -123,8 +153,13 @@ def submit(req: PromptRequest) -> dict[str, Any]:
 
 @router.get("/executions/{job_id}")
 def execution(job_id: str) -> dict[str, Any]:
-    runtime = get_runtime()
-    job = runtime.get_job(job_id)
+    runtime = _require_runtime()
+    if not runtime:
+        return {"error": "jarvis_os not available"}
+    fn = getattr(runtime, 'get_job', None)
+    if fn is None:
+        return {"error": "get_job not implemented", "job_id": job_id}
+    job = fn(job_id)
     result = job.get("result", {})
     if result:
         result = _normalize_execution(result)
@@ -146,7 +181,13 @@ def execution(job_id: str) -> dict[str, Any]:
 
 @router.post("/jobs/{job_id}/pause")
 def pause_job(job_id: str) -> dict[str, Any]:
-    return get_runtime().pause_job(job_id)
+    runtime = _require_runtime()
+    if not runtime:
+        return {"error": "jarvis_os not available"}
+    fn = getattr(runtime, 'pause_job', None)
+    if fn is None:
+        return {"error": "pause_job not implemented"}
+    return fn(job_id)
 
 
 @router.post("/jobs/{job_id}/resume")

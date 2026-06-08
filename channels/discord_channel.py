@@ -43,19 +43,39 @@ class DiscordChannel(ChannelPlugin):
             async def on_message(self, message):
                 if message.author == self.user:
                     return
-                if self.user not in message.mentions:
+                
+                # Access Control Check
+                user_id = str(message.author.id)
+                if not self._channel_ref.check_access(user_id):
+                    # Check for pairing response
+                    content = message.content.strip()
+                    if self._channel_ref.pairing.verify_response(user_id, content):
+                        self._channel_ref.config.allowlist.add(user_id)
+                        await message.reply("Pairing successful! You are now authorized.")
+                        return
+                    
+                    # If it's a DM, offer pairing
+                    if isinstance(message.channel, discord.DMChannel):
+                        challenge = self._channel_ref.pairing.create_challenge(user_id)
+                        await message.reply(f"Access Denied. To pair this account, please reply with this code: **{challenge}**")
                     return
+
+                if self.user not in message.mentions and not isinstance(message.channel, discord.DMChannel):
+                    return
+
                 text = message.content
                 for mention in message.mentions:
                     text = text.replace(f"<@{mention.id}>", "").replace(f"<@!{mention.id}>", "").strip()
+                
                 if not text:
                     return
+                    
                 async with message.channel.typing():
                     reply = await process_message(
                         text=text,
                         source="discord",
                         channel_id=str(message.channel.id),
-                        user_id=str(message.author.id),
+                        user_id=user_id,
                         user_name=str(message.author),
                     )
                 await message.reply(reply[:2000], mention_author=False)

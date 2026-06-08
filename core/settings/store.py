@@ -5,7 +5,7 @@ import shutil
 import logging
 from pathlib import Path
 from typing import Any, Optional
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
 
 from core.settings.schema import JarvisSettings
 from ai_os.event_bus import EventBus
@@ -242,6 +242,25 @@ class SettingsStore:
         elif isinstance(data, list):
             for item in data:
                 self._mask_sensitive(item)
+
+    def model_dump_flat(self) -> dict:
+        """Flatten nested Pydantic model into flat keys for legacy compat.
+
+        JarvisSettings.llm.default_model → {"default_model": "llama3.2:3b"}
+        Also includes the nested path: {"llm.default_model": "llama3.2:3b"}
+        """
+        from pydantic import BaseModel
+
+        result: dict = {}
+        for section_name in self._settings.model_fields:
+            section = getattr(self._settings, section_name)
+            if isinstance(section, BaseModel):
+                for k, v in section.model_dump().items():
+                    result[k] = v
+                    result[f"{section_name}.{k}"] = v
+            else:
+                result[section_name] = section
+        return result
 
     def import_from_json(self, file_path: str) -> bool:
         """Import settings from a JSON file."""

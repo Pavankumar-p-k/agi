@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import logging
 
 logger = logging.getLogger(__name__)
@@ -13,9 +12,9 @@ async def process_message(
     user_id: str,
     user_name: str,
 ) -> str:
-    from core.model_router import route_request, model_for_role, get_ollama_url
-    from core.llm_router import get_router
     from brain.epistemic_tagger import epistemic_tagger
+    from core.llm_router import get_router
+    from core.model_router import get_ollama_url, model_for_role, route_request
 
     try:
         model, tier, processed_query = route_request(text)
@@ -24,7 +23,8 @@ async def process_message(
         current_intent = "chat"
 
         try:
-            from core.main import extract_intent, execute_action
+            from core.intent_router import extract_intent
+            from core.main import execute_action
             intent_data = await extract_intent(processed_query)
             action_result = await execute_action(intent_data, message=text)
             current_intent = intent_data.get("intent", "chat")
@@ -93,19 +93,41 @@ async def process_message(
 
         # Phase 3: Emit hook
         try:
-            from core.plugins.events import PluginEventBus
             import asyncio
+
+            from core.plugins.events import PluginEventBus
             asyncio.create_task(PluginEventBus.instance().emit(
-                "on_channel_message", 
-                text=text, 
-                source=source, 
-                channel_id=channel_id, 
-                user_id=user_id, 
+                "on_channel_message",
+                text=text,
+                source=source,
+                channel_id=channel_id,
+                user_id=user_id,
                 user_name=user_name,
                 response=response_text
             ))
         except Exception as hook_exc:
             logger.debug("on_channel_message hook failed: %s", hook_exc)
+
+        # Phase 6: MCP Bridge notification
+        try:
+            from mcp.server import mcp_server
+            if mcp_server.is_running:
+                mcp_server.enqueue_event("message", {
+                    "session_key": channel_id,
+                    "role": "user",
+                    "text": text,
+                    "source": source,
+                    "user_id": user_id,
+                    "user_name": user_name
+                })
+                mcp_server.enqueue_event("message", {
+                    "session_key": channel_id,
+                    "role": "assistant",
+                    "text": response_text,
+                    "source": "jarvis"
+                })
+        except Exception as bridge_exc:
+            logger.debug("MCP Server event enqueuing failed: %s", bridge_exc)
 
         return response_text
 

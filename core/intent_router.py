@@ -243,8 +243,8 @@ async def extract_intent(message: str) -> dict:
             from core.plugins.registry import get_plugin_registry
             registry = get_plugin_registry()
             asyncio.create_task(registry.run_hook("on_intent", intent=intent_data.get("intent"), text=message, data=intent_data))
-        except Exception:
-            pass
+        except Exception as _e:
+            logger.debug("intent_router plugin hook failed: %s", _e)
         return intent_data
     except Exception as e:
         logger.warning(f"[INTENT_ROUTER] LLM intent extraction failed: {e}")
@@ -252,6 +252,6 @@ async def extract_intent(message: str) -> dict:
         try:
             if os.environ.get("JARVIS_TEST_MODE"):
                 return _rule_based(message)
-        except Exception:
-            pass
+        except Exception as _e:
+            logger.debug("intent_router fallback failed: %s", _e)
         return {"intent": "chat", "target": message, "parameters": {}}

@@ -59,9 +59,9 @@ class NexusAgent(SubAgent):
         user_id = kwargs.get("user_id") or "default"
         
         # 1. Retrieve relevant memories
-        from memory.mem0_adapter import mem0_memory
-        relevant_memories = mem0_memory.search(task, user_id=user_id, limit=3)
-        memory_context = mem0_memory.format_context(relevant_memories)
+        from memory.memory_facade import memory
+        relevant_memories = memory.recall(task, user_id=user_id, limit=3)
+        memory_context = memory.format_context(relevant_memories)
         
         # Add memory context to task if it exists
         enhanced_task = task
@@ -120,7 +120,7 @@ class NexusAgent(SubAgent):
 
         # 3. Store the exchange in memory
         if self._result and self._result.success:
-            mem0_memory.add(
+            memory.store(
                 [{"role": "user", "content": task}, {"role": "assistant", "content": self._result.output}],
                 user_id=user_id,
             )

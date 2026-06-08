@@ -1,83 +1,43 @@
-
-# core/config.py
 import os
 from pathlib import Path
-from dotenv import load_dotenv
+from .config_schema import jarvis_config
 
 BASE_DIR = Path(__file__).resolve().parents[1]
-load_dotenv(BASE_DIR / ".env")
 
+HOST = jarvis_config.server.host
+PORT = jarvis_config.server.port
+ALLOWED_ORIGINS = jarvis_config.server.allowed_origins
+SECRET_KEY = jarvis_config.server.secret_key
+DEV_MODE = jarvis_config.server.dev_mode
+FIREBASE_CREDENTIALS = jarvis_config.server.firebase_credentials
 
-def _env(key: str, default: str | None = None) -> str | None:
-    return os.getenv(key, default)
+DATABASE_URL = jarvis_config.db.url
 
+OLLAMA_URL = jarvis_config.ollama.url
+OLLAMA_MODEL = jarvis_config.ollama.default_model
+OLLAMA_PORTS = jarvis_config.ollama.ports
 
-HOST = _env("HOST", "0.0.0.0")
-PORT = int(_env("PORT", "8000") or 8000)
+VOSK_MODEL_PATH = jarvis_config.hardware.vosk_model_path
 
-ALLOWED_ORIGINS_RAW = _env("ALLOWED_ORIGINS", "*") or "*"
-if ALLOWED_ORIGINS_RAW.strip() == "*":
-    ALLOWED_ORIGINS = ["*"]
-else:
-    ALLOWED_ORIGINS = [o.strip() for o in ALLOWED_ORIGINS_RAW.split(",") if o.strip()]
+CLAUDE_API_KEY = os.getenv("CLAUDE_API_KEY") or jarvis_config.get_api_key("claude_api_key")
+COPILOT_API_KEY = os.getenv("COPILOT_API_KEY") or jarvis_config.get_api_key("copilot_api_key")
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN") or jarvis_config.get_api_key("github_token")
+CODEX_CLI_PATH = jarvis_config.build.codex_cli_path
 
-SECRET_KEY = _env("SECRET_KEY", "dev-secret-change-me")
-DEV_MODE = (_env("DEV_MODE", "true") or "true").lower() in {"1", "true", "yes", "on"}
+HYBRID_MAX_RETRIES = jarvis_config.llm.hybrid_max_retries
+HYBRID_TIMEOUT_SECONDS = jarvis_config.llm.hybrid_timeout_seconds
 
-DATABASE_URL = _env(
-    "DATABASE_URL",
-    f"sqlite+aiosqlite:///{(BASE_DIR / 'data' / 'jarvis.db').as_posix()}",
-)
+SUPABASE_URL = os.getenv("SUPABASE_URL") or jarvis_config.supabase_url
+SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
 
-FIREBASE_CREDENTIALS = _env(
-    "FIREBASE_CREDENTIALS",
-    str(BASE_DIR / "firebase-credentials.json"),
-)
+FACES_DIR = Path(jarvis_config.hardware.faces_dir)
+FACE_RECOGNITION_MODEL = jarvis_config.hardware.face_recognition_model
+FACE_DETECTION_BACKEND = jarvis_config.hardware.face_detection_backend
+FACE_DISTANCE_THRESHOLD = jarvis_config.hardware.face_distance_threshold
+MUSIC_DIR = jarvis_config.hardware.music_dir
 
-OLLAMA_URL = _env("OLLAMA_URL", "http://localhost:11434")
-OLLAMA_MODEL = _env("OLLAMA_MODEL", "llama3")
-VOSK_MODEL_PATH = _env(
-    "VOSK_MODEL_PATH",
-    str(BASE_DIR / "models" / "vosk-model-small-en-us-0.15"),
-)
-
-# â”€â”€ HYBRID MODEL CONFIGURATION â”€â”€
-CLAUDE_API_KEY = _env("CLAUDE_API_KEY")
-COPILOT_API_KEY = _env("COPILOT_API_KEY")
-GITHUB_TOKEN = _env("GITHUB_TOKEN")  # For Copilot API access
-CODEX_CLI_PATH = _env("CODEX_CLI_PATH", str(BASE_DIR / "tools" / "codex-cli"))
-
-# Model fallback settings
-HYBRID_MAX_RETRIES = int(_env("HYBRID_MAX_RETRIES", "3") or 3)
-HYBRID_TIMEOUT_SECONDS = int(_env("HYBRID_TIMEOUT_SECONDS", "30") or 30)
-
-# Multi-instance Ollama ports - standard port is 11434
-# model_router.py handles mapping to 11434 if multi-instance is not used.
-OLLAMA_PORTS = {
-    "tinyllama": 11434,
-    "deepseek-r1:1.5b": 11434,
-    "qwen2.5-coder:3b": 11434,
-    "qwen3:4b": 11434,
-    "qwen2.5:7b": 11434,
-    "mistral:7b": 11434,
-    "llama3.1:8b": 11434,
-    "phi3:mini": 11434,
-    "moondream": 11434,
-}
-
-SUPABASE_URL = _env("SUPABASE_URL")
-SUPABASE_SERVICE_KEY = _env("SUPABASE_SERVICE_KEY")
-
-FACES_DIR = Path(_env("FACES_DIR", str(BASE_DIR / "data" / "faces")) or str(BASE_DIR / "data" / "faces"))
-FACE_RECOGNITION_MODEL = _env("FACE_RECOGNITION_MODEL", "VGG-Face")
-FACE_DETECTION_BACKEND = _env("FACE_DETECTION_BACKEND", "opencv")
-FACE_DISTANCE_THRESHOLD = float(_env("FACE_DISTANCE_THRESHOLD", "0.38") or 0.38)
-
-MUSIC_DIR = _env("MUSIC_DIR", str(Path.home() / "Music"))
-
-# Build System configuration
-MAX_RETRIES = int(_env("MAX_RETRIES", "5") or 5)
-DAEMON_MODE = (_env("DAEMON_MODE", "false") or "false").lower() in {"1", "true", "yes", "on"}
-VAULT_PATH = _env("VAULT_PATH", str(Path.home() / ".jarvis" / "api_keys.json"))
-MAX_PARALLEL_BUILDS = int(_env("MAX_PARALLEL_BUILDS", "2") or 2)
-PROJECTS_DIR = Path.home() / ".jarvis" / "projects"
+MAX_RETRIES = jarvis_config.build.max_retries
+DAEMON_MODE = jarvis_config.build.daemon_mode
+VAULT_PATH = jarvis_config.build.vault_path
+MAX_PARALLEL_BUILDS = jarvis_config.build.max_parallel_builds
+PROJECTS_DIR = Path(jarvis_config.build.projects_dir)

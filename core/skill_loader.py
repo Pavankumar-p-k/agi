@@ -47,7 +47,8 @@ def _parse_skill_header(path: Path) -> dict | None:
         if isinstance(val, str) and val.startswith("[") and val.endswith("]"):
             try:
                 val = ast.literal_eval(val)
-            except Exception:
+            except Exception as _e:
+                logger.debug("skill_loader parse header failed: %s", _e)
                 val = [v.strip().strip('"').strip("'") for v in val.strip("[]").split(",")]
         meta[key] = val
 

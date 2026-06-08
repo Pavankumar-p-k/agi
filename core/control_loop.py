@@ -881,7 +881,6 @@ class ControlLoop:
 
     def _log_autonomous_failure(self, project: str, action: str, reason: str, failures: list[str]):
         """Log a persistent failure to failures.jsonl instead of blocking the build."""
-        import json, time
         entry = {
             "timestamp": datetime.utcnow().isoformat(),
             "project": project,
@@ -971,7 +970,7 @@ class ControlLoop:
         executed = []
         for task in fix_tasks:
             try:
-                result = await launcher.launch(
+                await launcher.launch(
                     "shell" if task.get("type") == "shell" else "build",
                     task.get("description", ""),
                     timeout=300,

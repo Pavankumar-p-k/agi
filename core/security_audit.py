@@ -71,8 +71,8 @@ class SecurityAuditor:
                             path=str(f),
                             recommendation="Move credentials to environment variables.",
                         ))
-            except Exception:
-                pass
+            except Exception as _e:
+                logger.debug("security_audit scan config failed: %s", _e)
 
         # Check env vars for hardcoded credentials
         dangerous_env_prefixes = ["API_KEY", "TOKEN", "SECRET", "PASSWORD"]

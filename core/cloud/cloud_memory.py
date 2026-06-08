@@ -186,7 +186,8 @@ class CloudMemory:
         if row:
             try:
                 return json.loads(row[0])
-            except Exception:
+            except Exception as _e:
+                logger.debug("cloud_memory _sql_get json parse failed: %s", _e)
                 return {"raw": row[0]}
         return None
 
@@ -221,7 +222,8 @@ class CloudMemory:
         for key, vj in rows:
             try:
                 result.append({"key": key, "value": json.loads(vj)})
-            except Exception:
+            except Exception as _e:
+                logger.debug("cloud_memory _sql_list json parse failed: %s", _e)
                 result.append({"key": key, "value": {"raw": vj}})
         return result
 
@@ -235,7 +237,8 @@ class CloudMemory:
         for key, vj in rows:
             try:
                 result.append({"key": key, "value": json.loads(vj)})
-            except Exception:
+            except Exception as _e:
+                logger.debug("cloud_memory _sql_all json parse failed: %s", _e)
                 result.append({"key": key, "value": {"raw": vj}})
         return result
 
@@ -249,6 +252,7 @@ class CloudMemory:
         for key, vj in rows:
             try:
                 result.append({"key": key, "value": json.loads(vj)})
-            except Exception:
+            except Exception as _e:
+                logger.debug("cloud_memory _sql_search json parse failed: %s", _e)
                 result.append({"key": key, "value": {"raw": vj}})
         return result

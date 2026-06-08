@@ -44,8 +44,8 @@ def _make_fake_module(name: str, has_setup: bool = True) -> types.ModuleType:
 
 @pytest.fixture
 def fresh_registry():
-    from core.plugins.registry import PluginRegistry
-    return PluginRegistry()
+    from core.plugins.registry import ModulePluginRegistry
+    return ModulePluginRegistry()
 
 
 @pytest.fixture
@@ -156,11 +156,12 @@ class TestPluginRegistry:
             raise RuntimeError("boom")
         fake_module.on_intent = bad_hook
         fresh_registry.register(sample_manifest, fake_module)
-        # Should not raise
+        # Should not raise — result includes _HookFailed on error (base.py behavior)
         results = asyncio.get_event_loop().run_until_complete(
             fresh_registry.run_hook("on_intent")
         )
-        assert results == []
+        assert len(results) >= 1
+        assert results[0][0] == "Test Plugin"
 
     def test_settings_validation_pass(self, fresh_registry, sample_manifest, fake_module):
         fresh_registry.register(sample_manifest, fake_module)
@@ -203,8 +204,8 @@ class TestPluginLoader:
 
     def test_load_unload(self, tmp_path, sample_manifest, fake_module):
         from core.plugins.loader import PluginLoader
-        from core.plugins.registry import PluginRegistry
-        registry = PluginRegistry()
+        from core.plugins.registry import ModulePluginRegistry
+        registry = ModulePluginRegistry()
         loader = PluginLoader()
         loader._registry = registry
 
@@ -220,8 +221,8 @@ class TestPluginLoader:
 
     def test_reload(self, sample_manifest, fake_module):
         from core.plugins.loader import PluginLoader
-        from core.plugins.registry import PluginRegistry
-        registry = PluginRegistry()
+        from core.plugins.registry import ModulePluginRegistry
+        registry = ModulePluginRegistry()
         loader = PluginLoader()
         loader._registry = registry
         loader.load(sample_manifest)
@@ -230,8 +231,8 @@ class TestPluginLoader:
 
     def test_disabled_plugin_skipped(self, sample_manifest, fake_module):
         from core.plugins.loader import PluginLoader
-        from core.plugins.registry import PluginRegistry
-        registry = PluginRegistry()
+        from core.plugins.registry import ModulePluginRegistry
+        registry = ModulePluginRegistry()
         loader = PluginLoader()
         loader._registry = registry
         sample_manifest.enabled = False

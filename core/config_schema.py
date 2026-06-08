@@ -20,11 +20,11 @@ def _resolve_path(path: str) -> str:
 
 @dataclass
 class ServerConfig:
-    host: str = "0.0.0.0"
+    host: str = "127.0.0.1"
     port: int = 8000
-    secret_key: str = "dev-secret-change-me"
+    secret_key: str = ""
     dev_mode: bool = True
-    allowed_origins: List[str] = field(default_factory=lambda: ["*"])
+    allowed_origins: List[str] = field(default_factory=lambda: ["http://localhost:5173", "http://127.0.0.1:8000"])
     firebase_credentials: str = ""
 
 
@@ -233,6 +233,8 @@ def _coerce_type(val, target_type):
         if isinstance(val, str):
             return val.lower() in ("1", "true", "yes", "on")
         return bool(val)
+    if val == "null":
+        return None
     return val
 
 

@@ -16,7 +16,7 @@ class JarvisCompleter(Completer):
         "/history", "/timestamps", "/debug", "/debug-search", "/theme",
         "/stash", "/stash-list", "/stash-load",
         "/read", "/write", "/edit", "/ls", "/dir", "/tree", "/run", "/diff",
-        "/status", "/help", "/h", "/exit", "/quit",
+        "/status", "/boot", "/agents", "/design", "/frames", "/help", "/h", "/exit", "/quit",
         "/generate-ui", "/gui", "/opencode",
         "/plan", "/goal", "/develop", "/vision", "/feedback", "/tools",
     ]
@@ -63,7 +63,7 @@ class JarvisCompleter(Completer):
                     sid = s.get("session_id", "")
                     if sid.startswith(prefix):
                         yield Completion(sid, start_position=-len(prefix))
-            except Exception:
+            except Exception as e:
                 logger.warning("[cli_completer] complete_command failed: %s", e)
         elif cmd in ("/model",):
             yield from self._complete_model(prefix)

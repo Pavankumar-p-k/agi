@@ -263,6 +263,7 @@ def write_env_file(missing_vars: list[str], env_path: Optional[str] = None) -> s
             with open(env_path, "a", encoding="utf-8") as f:
                 f.write("\n" + content + "\n")
             return str(env_path)
-        except Exception:
+        except Exception as _e:
+            logger.debug("agent_registry write env tips failed: %s", _e)
             logger.warning(f"[AGENTS] Failed to write env tips to {env_path}")
     return content

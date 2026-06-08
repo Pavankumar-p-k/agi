@@ -11,18 +11,20 @@ from __future__ import annotations
 import logging
 import os
 
-from fastapi import APIRouter, Request, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import PlainTextResponse
 
-from tools.whatsapp_sender import whatsapp_sender
-from routers.chat import chat_handler
 from core.schemas import ChatRequest
+from routers.chat import chat_handler
+from tools.whatsapp_sender import whatsapp_sender
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/whatsapp", tags=["whatsapp"])
 
-VERIFY_TOKEN = os.getenv("META_VERIFY_TOKEN", "jarvis_verify_2026")
+VERIFY_TOKEN = os.getenv("META_VERIFY_TOKEN")
+if not VERIFY_TOKEN:
+    raise ValueError("META_VERIFY_TOKEN environment variable is required")
 
 
 @router.get("/webhook")

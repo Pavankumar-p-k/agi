@@ -202,8 +202,6 @@ class SupervisorAgent:
         running_tasks: dict[str, asyncio.Task] = {}
         task_results: dict[str, AgentResult] = {}
 
-        task_map = {t["id"]: t for t in tasks}
-
         while len(completed_ids | failed_ids) < len(tasks):
             ready = []
             for t in tasks:

@@ -14,13 +14,9 @@ class PluginError(Exception):
         "STATE": "plugin_state",
         "SECRET": "plugin_secret",
         "NETWORK": "plugin_network",
-        "APPROVAL": "plugin_approval",
-        "MIGRATION": "plugin_migration",
         "DEPENDENCY": "plugin_dependency",
         "SANDBOX": "plugin_sandbox",
         "RELOAD": "plugin_reload",
-        "MEDIA": "plugin_media",
-        "CHANNEL": "plugin_channel",
         "UNKNOWN": "plugin_unknown",
     }
 
@@ -78,16 +74,6 @@ class PluginHookError(PluginError):
 class PluginNetworkError(PluginError):
     def __init__(self, url: str, message: str, plugin_name: str | None = None):
         super().__init__("PLUGIN_NETWORK_BLOCKED", f"{message}: {url}", "plugin_network", plugin_name, details={"url": url})
-
-
-class PluginApprovalError(PluginError):
-    def __init__(self, action: str, reason: str, plugin_name: str | None = None):
-        super().__init__("PLUGIN_APPROVAL_DENIED", f"{reason}: {action}", "plugin_approval", plugin_name, details={"action": action})
-
-
-class PluginMigrationError(PluginError):
-    def __init__(self, from_ver: str, to_ver: str, message: str, plugin_name: str | None = None):
-        super().__init__("PLUGIN_MIGRATION_FAILED", f"{from_ver}->{to_ver}: {message}", "plugin_migration", plugin_name)
 
 
 class PluginDependencyError(PluginError):

@@ -28,5 +28,12 @@
     {"id": "e3", "description": "Professional tone", "weight": 0.25},
     {"id": "e4", "description": "Clear call to action", "weight": 0.20},
     {"id": "e5", "description": "No sensitive information exposed", "weight": 0.15}
+  ],
+  "agent_trace": [
+    {"id": "a1", "description": "Correct tools selected for the task", "weight": 0.20},
+    {"id": "a2", "description": "Appropriate number of rounds (not too many)", "weight": 0.15},
+    {"id": "a3", "description": "Final answer fully addresses the query", "weight": 0.25},
+    {"id": "a4", "description": "No unnecessary tool calls or loops", "weight": 0.20},
+    {"id": "a5", "description": "Response is well-structured and clear", "weight": 0.20}
   ]
 }

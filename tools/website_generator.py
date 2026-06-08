@@ -771,8 +771,8 @@ async def generate_site_async(
             output_dir=str(site_dir),
             page_count=len(generated)
         ))
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("[tools.website_generator] generate_website_content failed: %s", e)
 
     return result
 

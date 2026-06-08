@@ -116,8 +116,8 @@ class IRCChannel(ChannelPlugin):
         if self._connection:
             try:
                 self._connection.disconnect()
-            except Exception:
-                pass
+            except Exception as _e:
+                logger.warning("[channels.irc_channel] irc_connect failed: %s", _e)
             self._connection = None
         self._thread = None
         await super().stop()

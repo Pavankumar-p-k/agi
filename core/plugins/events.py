@@ -40,6 +40,13 @@ class PluginEventBus:
                 results.append(r)
             except Exception as e:
                 logger.exception("[EventBus] Handler %s failed on %s: %s", handler.__name__, event_type, e)
+
+        try:
+            from core.plugins.base import plugin_registry
+            await plugin_registry.run_hook(event_type, **data)
+        except Exception as _e:
+            logger.debug("plugins events emit run_hook failed: %s", _e)
+
         self._history.append({"type": event_type, "data": data})
         if len(self._history) > self._max_history:
             self._history.pop(0)

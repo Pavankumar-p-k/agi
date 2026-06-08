@@ -1,3 +1,4 @@
+import logging
 import asyncio
 import os
 import re
@@ -10,6 +11,7 @@ from pathlib import Path
 from governance.GovernanceValidator import GovernanceValidator
 from governance.exceptions import GovernanceViolation
 from ai_os.sandbox import SandboxedExecutor
+logger = logging.getLogger(__name__)
 
 APP_MAP = {
     "notepad": "notepad.exe",
@@ -97,8 +99,8 @@ class ComputerAgent:
             try:
                 interp.llm.model = "ollama/qwen2.5-coder:3b"
                 interp.llm.api_base = "http://localhost:11434"
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("[pc_agent.computer_agent] control_computer failed: %s", e)
             self._interpreter = interp
             return interp
         except ImportError:
@@ -110,9 +112,9 @@ class ComputerAgent:
         resolved = _resolve_app_path(app_name)
         try:
             if resolved and (resolved.startswith("ms-") or resolved == "control"):
-                subprocess.Popen(["explorer", resolved], shell=True)
+                subprocess.Popen(["explorer", resolved], shell=False)
             else:
-                subprocess.Popen(resolved or app_name, shell=True)
+                subprocess.Popen([resolved or app_name], shell=False)
             return {"status": "success", "app": app_name, "resolved_to": resolved}
         except Exception as e:
             return {"status": "error", "app": app_name, "error": str(e)}

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from datetime import timedelta
 from typing import Dict
@@ -13,5 +13,45 @@ router = APIRouter(tags=["Authentication"])
 async def auth_status():
     return {"status": "active", "provider": "firebase"}
 
-# More auth routes would go here if they weren't in core/auth.py
-# For now, we'll keep main.py's verify_token dependency as is.
+
+@router.get("/auth/providers")
+async def oauth_providers():
+    from ..oauth import oauth_manager
+    return {"providers": oauth_manager.get_providers()}
+
+
+@router.get("/auth/tokens")
+async def oauth_tokens():
+    from ..oauth import oauth_manager
+    return {"tokens": oauth_manager.list_tokens()}
+
+
+@router.get("/auth/login/{provider}")
+async def oauth_login(provider: str, request: Request):
+    from ..oauth import oauth_manager
+    redirect_uri = str(request.url_for("oauth_callback"))
+    return await oauth_manager.authorize_redirect(provider, request, redirect_uri)
+
+
+@router.get("/auth/callback")
+async def oauth_callback(request: Request):
+    from ..oauth import oauth_manager
+    provider = request.query_params.get("provider", "")
+    if not provider:
+        for p in oauth_manager.get_providers():
+            if request.query_params.get("code") or request.query_params.get("state", "").startswith(p):
+                provider = p
+                break
+    result = await oauth_manager.authorize_access_token(provider or "google", request)
+    if result:
+        return {"success": True, "user": result["userinfo"]}
+    return {"success": False, "error": "OAuth failed"}
+
+
+@router.post("/auth/revoke")
+async def oauth_revoke(body: dict):
+    from ..oauth import oauth_manager
+    provider = body.get("provider", "")
+    sub = body.get("sub", "")
+    ok = oauth_manager.remove_token(provider, sub)
+    return {"success": ok}

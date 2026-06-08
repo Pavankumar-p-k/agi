@@ -7,6 +7,4 @@ Student AGI runs as a separate service:
 
 Routes available at /student-agi/* when service is online.
 """
-__all__ = [
-    "student_agi",
-]
+from . import student_agi  # noqa: F401

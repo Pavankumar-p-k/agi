@@ -173,12 +173,12 @@ class JarvisDaemon:
             f'/TR "{sys.executable} {script} start" /F /DELAY 0001:00'
         )
         print(f"[SERVICE] Installing via: {cmd}")
-        os.system(cmd)
+        subprocess.run(cmd, shell=False)
         print("[SERVICE] Install scheduled. Will start ~1 min after next login.")
 
     @staticmethod
     def uninstall():
-        os.system('schtasks /Delete /TN "JARVIS Daemon" /F')
+        subprocess.run(['schtasks', '/Delete', '/TN', 'JARVIS Daemon', '/F'], shell=False)
         print("[SERVICE] Scheduled task removed.")
 
     @staticmethod

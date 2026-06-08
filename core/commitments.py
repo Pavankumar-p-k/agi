@@ -2,126 +2,105 @@ from __future__ import annotations
 
 import json
 import logging
-import re
+import sqlite3
+import uuid
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict, List, Optional
 
-logger = logging.getLogger(__name__)
+from core.llm_router import complete
 
-STORE_PATH = Path.home() / ".jarvis" / "commitments.json"
+logger = logging.getLogger("jarvis.commitments")
+
+DB_PATH = Path.home() / ".jarvis" / "commitments.db"
 
 
-class CommitmentTracker:
-    """Tracks inferred follow-up commitments from conversations — matching OpenClaw's commitments system."""
+class CommitmentStore:
+    """Tracks user commitments extracted from conversations."""
 
     def __init__(self):
-        self._commitments: dict[str, dict] = {}
-        self._load()
+        self._init_db()
 
-    def _load(self):
+    def _init_db(self):
+        DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with sqlite3.connect(DB_PATH) as conn:
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS commitments (
+                    id TEXT PRIMARY KEY,
+                    user_id TEXT,
+                    description TEXT,
+                    status TEXT DEFAULT 'pending',
+                    priority TEXT DEFAULT 'medium',
+                    created_at TIMESTAMP,
+                    due_at TIMESTAMP,
+                    completed_at TIMESTAMP,
+                    source_id TEXT
+                )
+            """)
+            conn.commit()
+
+    async def extract(self, user_id: str, user_msg: str, assistant_msg: str, source: str = ""):
+        prompt = (
+            "Extract commitments, tasks, or deadlines from this exchange. "
+            "Return JSON array: [{\"description\":\"...\",\"due_at\":\"ISO8601|null\",\"priority\":\"low|medium|high\"}]\n\n"
+            f"User: {user_msg}\nAssistant: {assistant_msg}"
+        )
         try:
-            if STORE_PATH.exists():
-                data = json.loads(STORE_PATH.read_text())
-                self._commitments = {c["id"]: c for c in data}
-                logger.info("[Commitments] Loaded %d commitments", len(self._commitments))
+            res = await complete("analysis", prompt)
+            if res.is_ok():
+                items = json.loads(res.unwrap())
+                for item in items:
+                    self.add(
+                        user_id=user_id,
+                        description=item["description"],
+                        due_at=item.get("due_at"),
+                        priority=item.get("priority", "medium"),
+                        source_id=source,
+                    )
         except Exception as e:
-            logger.warning("[Commitments] Load failed: %s", e)
+            logger.warning("Failed to extract commitments: %s", e)
 
-    def _save(self):
-        try:
-            STORE_PATH.parent.mkdir(parents=True, exist_ok=True)
-            STORE_PATH.write_text(json.dumps(list(self._commitments.values()), indent=2))
-        except Exception as e:
-            logger.warning("[Commitments] Save failed: %s", e)
+    def add(self, user_id: str, description: str, due_at: Optional[str] = None,
+            priority: str = "medium", source_id: str = "") -> str:
+        cid = f"cmt_{uuid.uuid4().hex[:8]}"
+        now = datetime.now().isoformat()
+        with sqlite3.connect(DB_PATH) as conn:
+            conn.execute(
+                "INSERT INTO commitments (id, user_id, description, status, priority, created_at, due_at, source_id) "
+                "VALUES (?, ?, ?, 'pending', ?, ?, ?, ?)",
+                (cid, user_id, description, priority, now, due_at, source_id),
+            )
+            conn.commit()
+        return cid
 
-    def _next_id(self) -> str:
-        import uuid
-        return f"cmt_{datetime.now().strftime('%Y%m%d%H%M%S%f')}_{uuid.uuid4().hex[:8]}"
+    def list(self, user_id: str, status: str = "pending") -> List[Dict[str, Any]]:
+        with sqlite3.connect(DB_PATH) as conn:
+            conn.row_factory = sqlite3.Row
+            rows = conn.execute(
+                "SELECT * FROM commitments WHERE user_id = ? AND status = ? ORDER BY created_at DESC",
+                (user_id, status),
+            ).fetchall()
+            return [dict(r) for r in rows]
 
-    def add(self, description: str, source: str = "conversation",
-            due: str | None = None, priority: str = "medium",
-            tags: list[str] | None = None) -> dict:
-        cmt = {
-            "id": self._next_id(),
-            "description": description,
-            "source": source,
-            "status": "pending",
-            "priority": priority,
-            "tags": tags or [],
-            "created": datetime.now().isoformat(),
-            "due": due,
-            "completed_at": None,
-        }
-        self._commitments[cmt["id"]] = cmt
-        self._save()
-        logger.info("[Commitments] Added: %.60s", description)
-        return cmt
+    def complete(self, cid: str):
+        with sqlite3.connect(DB_PATH) as conn:
+            conn.execute(
+                "UPDATE commitments SET status = 'completed', completed_at = ? WHERE id = ?",
+                (datetime.now().isoformat(), cid),
+            )
+            conn.commit()
 
-    def complete(self, cmt_id: str) -> bool:
-        cmt = self._commitments.get(cmt_id)
-        if cmt:
-            cmt["status"] = "completed"
-            cmt["completed_at"] = datetime.now().isoformat()
-            self._save()
-            return True
-        return False
-
-    def dismiss(self, cmt_id: str) -> bool:
-        cmt = self._commitments.get(cmt_id)
-        if cmt:
-            cmt["status"] = "dismissed"
-            self._save()
-            return True
-        return False
-
-    def list(self, status: str | None = None) -> list[dict]:
-        items = list(self._commitments.values())
-        if status:
-            items = [c for c in items if c["status"] == status]
-        return sorted(items, key=lambda c: c.get("due") or c["created"])
-
-    def get_overdue(self) -> list[dict]:
-        now = datetime.now()
-        overdue = []
-        for c in self._commitments.values():
-            if c["status"] != "pending":
-                continue
-            if c.get("due"):
-                due = datetime.fromisoformat(c["due"])
-                if due < now:
-                    overdue.append(c)
-        return overdue
-
-    def infer_from_text(self, text: str, source: str = "conversation") -> list[dict]:
-        patterns = [
-            r"(?:I'?ll|I will|let me|I need to|I have to|I should|I'm going to)\s+(.+?)(?:[.!,]|$)",
-            r"(?:remind me to|remind myself to)\s+(.+?)(?:[.!,]|$)",
-            r"(?:don'?t forget to|must remember to)\s+(.+?)(?:[.!,]|$)",
-            r"(?:next time|tomorrow|by\s+\w+day)\s+(?:I'?ll|I will|I need to)\s+(.+?)(?:[.!,]|$)",
-        ]
-        found = []
-        for pattern in patterns:
-            for match in re.finditer(pattern, text, re.IGNORECASE):
-                desc = match.group(1).strip()
-                if len(desc) > 10:
-                    cmt = self.add(description=desc, source=source)
-                    found.append(cmt)
-        return found
-
-    def stats(self) -> dict[str, Any]:
-        total = len(self._commitments)
-        pending = sum(1 for c in self._commitments.values() if c["status"] == "pending")
-        completed = sum(1 for c in self._commitments.values() if c["status"] == "completed")
-        dismissed = sum(1 for c in self._commitments.values() if c["status"] == "dismissed")
-        overdue = len(self.get_overdue())
-        return {
-            "total": total,
-            "pending": pending,
-            "completed": completed,
-            "dismissed": dismissed,
-            "overdue": overdue,
-        }
+    def upcoming(self, hours: int = 24) -> List[Dict[str, Any]]:
+        threshold = (datetime.now() + timedelta(hours=hours)).isoformat()
+        with sqlite3.connect(DB_PATH) as conn:
+            conn.row_factory = sqlite3.Row
+            rows = conn.execute(
+                "SELECT * FROM commitments WHERE status = 'pending' AND due_at IS NOT NULL AND due_at <= ?",
+                (threshold,),
+            ).fetchall()
+            return [dict(r) for r in rows]
 
 
-commitment_tracker = CommitmentTracker()
+commitment_store = CommitmentStore()
+
+__all__ = ["commitment_store", "CommitmentStore"]

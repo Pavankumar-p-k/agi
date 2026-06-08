@@ -11,6 +11,8 @@ from typing import Any
 
 from .manifest import PluginManifest
 from .registry import get_plugin_registry
+from .dependencies import dependency_resolver
+from .compatibility import compatibility_checker
 
 logger = logging.getLogger("jarvis.plugins.loader")
 
@@ -55,7 +57,7 @@ class PluginLoader:
     # Load / Unload / Reload
     # ------------------------------------------------------------------ #
 
-    def load(self, manifest: PluginManifest) -> bool:
+    def load(self, manifest: PluginManifest, verify_version: bool = True, install_deps: bool = True) -> bool:
         """
         Dynamically import the entry module and register the plugin.
         Calls plugin.setup(registry) if the function exists.
@@ -65,12 +67,19 @@ class PluginLoader:
             logger.info("Skipping disabled plugin: %s", manifest.id)
             return False
 
-        # Install deps first
-        if manifest.requires:
-            ok = self.install_deps(manifest)
+        # Version compatibility check
+        if verify_version:
+            compat_ok = compatibility_checker.check(manifest.id, manifest.min_jarvis_version, manifest.hooks)
+            if not compat_ok:
+                logger.warning("Version check failed for %s — loading anyway (warn mode)", manifest.id)
+
+        # Deps resolution + install
+        if install_deps and manifest.requires:
+            ok = dependency_resolver.install(manifest.requires)
             if not ok:
                 logger.error("Failed to install deps for %s — skipping", manifest.id)
                 return False
+            dependency_resolver.clear_session()
 
         try:
             module = importlib.import_module(manifest.entry)
@@ -125,19 +134,26 @@ class PluginLoader:
                     plugin_class = ep.load()
                     # Create a manifest shim
                     from .manifest import PluginManifest
+                    hooks: list[str] = []
+                    for attr_name in dir(plugin_class):
+                        attr = getattr(plugin_class, attr_name, None)
+                        hook_name = getattr(attr, "_jarvis_hook", None)
+                        if hook_name and hook_name not in hooks:
+                            hooks.append(hook_name)
                     m = PluginManifest(
                         id=ep.name,
                         name=getattr(plugin_class, "name", ep.name),
                         version=getattr(plugin_class, "version", "0.1.0"),
                         description=getattr(plugin_class, "description", ""),
-                        entry=ep.value, # Just for tracking
+                        hooks=hooks,
+                        entry=ep.value,
                         enabled=True
                     )
                     
                     # Instantiate and register
                     instance = plugin_class()
                     
-                    # Register hooks
+                    # Subscribe hooks to event bus
                     from .events import PluginEventBus
                     bus = PluginEventBus.instance()
                     for attr_name in dir(instance):
@@ -147,7 +163,6 @@ class PluginLoader:
                             bus.subscribe(hook_name, attr)
                             logger.info("Registered hook: %s -> %s", hook_name, attr_name)
 
-                    # We might need to wrap it or adapt it to the registry
                     self._registry.register(m, instance)
                     loaded.append(m.id)
                     logger.info("Loaded entry point plugin: %s", m.id)
@@ -199,30 +214,14 @@ class PluginLoader:
         return self.load(m)
 
     # ------------------------------------------------------------------ #
-    # Dependency installation
+    # Dependency installation (delegates to DependencyResolver)
     # ------------------------------------------------------------------ #
 
     def install_deps(self, manifest: PluginManifest) -> bool:
         """
-        Pip-install any packages listed in manifest.requires that are not
-        already importable.  Returns True if all deps are satisfied.
+        Install plugin dependencies via DependencyResolver.
         """
-        missing = [pkg for pkg in manifest.requires if not _is_installed(pkg)]
-        if not missing:
-            return True
-
-        logger.info("Installing deps for %s: %s", manifest.id, missing)
-        try:
-            subprocess.check_call(
-                [sys.executable, "-m", "pip", "install", "--quiet", *missing],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.PIPE,
-            )
-            logger.info("Installed: %s", missing)
-            return True
-        except subprocess.CalledProcessError as exc:
-            logger.error("pip install failed for %s: %s", manifest.id, exc.stderr)
-            return False
+        return dependency_resolver.install(manifest.requires)
 
 
 # ------------------------------------------------------------------ #
@@ -244,7 +243,8 @@ def _force_import(entry: str):
     try:
         importlib.invalidate_caches()
         return importlib.import_module(entry)
-    except Exception:
+    except Exception as _e:
+        logger.debug("plugins loader force_import failed: %s", _e)
         return None
 
 

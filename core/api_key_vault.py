@@ -106,6 +106,15 @@ class APIKeyVault:
         """Return list of configured services."""
         return sorted(self._keys.keys())
 
+    def get_profiles(self) -> list[tuple[str, str, int]]:
+        """Return (service, key, priority) tuples for all configured services."""
+        profiles = []
+        for service, keys in self._keys.items():
+            if keys:
+                # Default priority 10 for vault keys
+                profiles.append((service, keys[self._index.get(service, 0) % len(keys)], 10))
+        return profiles
+
     def has_keys(self, service: str) -> bool:
         """Check if service has any keys."""
         return bool(self._keys.get(service, [])) or bool(os.getenv(f"{service.upper()}_API_KEY"))

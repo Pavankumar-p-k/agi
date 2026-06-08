@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import asyncio
 import importlib.util
+import inspect
 import json
 import logging
 import os
@@ -8,6 +10,10 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from core.plugins.api import PluginAPI
+    from core.plugins.types import ChannelPlugin
 
 _VALID_HTTP_METHODS = {"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"}
 
@@ -21,6 +27,13 @@ class _HookFailed:
 
 
 logger = logging.getLogger(__name__)
+
+
+class _PluginRecord:
+    __slots__ = ("manifest", "module")
+    def __init__(self, manifest, module):
+        self.manifest = manifest
+        self.module = module
 
 
 @dataclass
@@ -55,14 +68,16 @@ class PluginManifest:
 _DEPENDENCY_GRAPH_CACHE: dict[tuple, list[str]] = {}
 
 
-def resolve_load_order(plugins: dict[str, Plugin]) -> list[str]:
+def resolve_load_order(plugins: dict) -> list[str]:
     cache_key = tuple(sorted(plugins.keys()))
     if cache_key in _DEPENDENCY_GRAPH_CACHE:
         return _DEPENDENCY_GRAPH_CACHE[cache_key]
 
     graph: dict[str, list[str]] = {}
     for name, p in plugins.items():
-        graph[name] = list(p.manifest.dependencies)
+        manifest = p.manifest if isinstance(p, _PluginRecord) else p.manifest
+        deps = getattr(manifest, 'dependencies', None) or getattr(manifest, 'requires', None) or []
+        graph[name] = list(deps)
 
     sorted_names: list[str] = []
     visited: set[str] = set()
@@ -301,27 +316,49 @@ class PluginRegistry:
     def count(self) -> int:
         return len(self._plugins)
 
-    def register(self, plugin: Plugin) -> None:
-        self._plugins[plugin.manifest.name] = plugin
-        logger.info("[PluginRegistry] Registered: %s v%s", plugin.manifest.name, plugin.manifest.version)
+    def register(self, *args) -> None:
+        if len(args) == 2:
+            manifest, module = args
+            key = getattr(manifest, 'id', manifest.name)
+            self._plugins[key] = _PluginRecord(manifest, module)
+            logger.info("[PluginRegistry] Registered: %s v%s", key, manifest.version)
+        elif len(args) == 1 and isinstance(args[0], Plugin):
+            plugin = args[0]
+            key = plugin.manifest.name
+            self._plugins[key] = _PluginRecord(plugin.manifest, plugin)
+            logger.info("[PluginRegistry] Registered: %s v%s", key, plugin.manifest.version)
+        else:
+            raise TypeError("register() takes a Plugin, or (PluginManifest, module)")
 
-    def unregister(self, name: str) -> Plugin | None:
-        return self._plugins.pop(name, None)
+    def unregister(self, name: str) -> Any:
+        record = self._plugins.pop(name, None)
+        return record.module if record else None
 
-    def get(self, name: str) -> Plugin | None:
-        return self._plugins.get(name)
+    def get(self, name: str) -> Any | None:
+        record = self._plugins.get(name)
+        return record.module if record else None
 
-    def list_by_hook(self, hook: str) -> list[Plugin]:
+    def get_manifest(self, plugin_id: str) -> Any | None:
+        record = self._plugins.get(plugin_id)
+        return record.manifest if record else None
+
+    def list_by_hook(self, hook: str) -> list[Any]:
         return [
-            p for p in self._plugins.values()
-            if p._enabled and hook in p.manifest.hooks
+            record.module for record in self._plugins.values()
+            if record.manifest.enabled and hook in record.manifest.hooks
         ]
 
-    def list_enabled(self) -> list[Plugin]:
-        return [p for p in self._plugins.values() if p._enabled]
+    def list_enabled(self) -> list[Any]:
+        return [record.module for record in self._plugins.values() if record.manifest.enabled]
 
-    def list_disabled(self) -> list[Plugin]:
-        return [p for p in self._plugins.values() if not p._enabled]
+    def list_disabled(self) -> list[Any]:
+        return [record.module for record in self._plugins.values() if not record.manifest.enabled]
+
+    def list(self) -> list[Any]:
+        return [record.module for record in self._plugins.values()]
+
+    def values(self):
+        return self._plugins.values()
 
     async def load_all(self, app_state: dict | None = None) -> None:
         if self._loaded:
@@ -331,85 +368,106 @@ class PluginRegistry:
         order = resolve_load_order(self._plugins)
         loaded_count = 0
         for name in order:
-            plugin = self._plugins.get(name)
-            if not plugin or not plugin._enabled:
+            record = self._plugins.get(name)
+            if not record or not record.manifest.enabled:
                 continue
             try:
-                await plugin.on_load(app_state)
-                self._mount_plugin_routes(name, plugin)
+                if hasattr(record.module, 'on_load'):
+                    await record.module.on_load(app_state)
+                self._mount_plugin_routes(name, record.module)
                 loaded_count += 1
             except Exception as e:
-                plugin._last_error = str(e)
+                if hasattr(record.module, '_last_error'):
+                    record.module._last_error = str(e)
                 logger.exception("[PluginRegistry] Failed to load %s: %s", name, e)
         self._loaded = True
         logger.info("[PluginRegistry] %d/%d plugins loaded", loaded_count, self.count)
 
     async def unload_all(self) -> None:
         for name in reversed(resolve_load_order(self._plugins)):
-            plugin = self._plugins.get(name)
-            if not plugin:
+            record = self._plugins.get(name)
+            if not record:
                 continue
             try:
                 self._unmount_plugin_routes(name)
-                await plugin.on_unload()
+                if hasattr(record.module, 'on_unload'):
+                    await record.module.on_unload()
             except Exception as e:
                 logger.exception("[PluginRegistry] Failed to unload %s: %s", name, e)
         self._loaded = False
         logger.info("[PluginRegistry] All plugins unloaded")
 
     async def enable_plugin(self, name: str, app_state: dict | None = None) -> bool:
-        plugin = self._plugins.get(name)
-        if not plugin:
+        record = self._plugins.get(name)
+        if not record:
             logger.warning("[PluginRegistry] Cannot enable %s: not found", name)
             return False
-        if plugin._enabled:
+        if record.manifest.enabled:
             return True
-        plugin.enable()
+        record.manifest.enabled = True
         try:
-            await plugin.on_load(app_state or self._app_state)
-            self._mount_plugin_routes(name, plugin)
+            if hasattr(record.module, 'on_load'):
+                await record.module.on_load(app_state or self._app_state)
+            self._mount_plugin_routes(name, record.module)
             logger.info("[PluginRegistry] Enabled %s", name)
             return True
         except Exception as e:
-            plugin._last_error = str(e)
-            plugin.disable()
+            record.manifest.enabled = False
             logger.exception("[PluginRegistry] Failed to enable %s: %s", name, e)
             return False
 
     async def disable_plugin(self, name: str) -> bool:
-        plugin = self._plugins.get(name)
-        if not plugin:
+        record = self._plugins.get(name)
+        if not record:
             logger.warning("[PluginRegistry] Cannot disable %s: not found", name)
             return False
-        if not plugin._enabled:
+        if not record.manifest.enabled:
             return True
         self._unmount_plugin_routes(name)
-        await plugin.on_unload()
-        plugin.disable()
+        if hasattr(record.module, 'on_unload'):
+            await record.module.on_unload()
+        record.manifest.enabled = False
         logger.info("[PluginRegistry] Disabled %s", name)
         return True
 
+    def enable(self, plugin_id: str) -> bool:
+        record = self._plugins.get(plugin_id)
+        if not record:
+            return False
+        record.manifest.enabled = True
+        logger.info("Plugin enabled: %s", plugin_id)
+        return True
+
+    def disable(self, plugin_id: str) -> bool:
+        record = self._plugins.get(plugin_id)
+        if not record:
+            return False
+        record.manifest.enabled = False
+        logger.info("Plugin disabled: %s", plugin_id)
+        return True
+
     async def reload_plugin(self, name: str, importlib_reload: bool = True) -> bool:
-        plugin = self._plugins.get(name)
-        if not plugin:
+        record = self._plugins.get(name)
+        if not record:
             logger.warning("[PluginRegistry] Cannot reload %s: not found", name)
             return False
 
         self._unmount_plugin_routes(name)
-        await plugin.on_unload()
+        if hasattr(record.module, 'on_unload'):
+            await record.module.on_unload()
 
         if not importlib_reload:
             try:
-                await plugin.on_load(self._app_state)
-                self._mount_plugin_routes(name, plugin)
+                if hasattr(record.module, 'on_load'):
+                    await record.module.on_load(self._app_state)
+                self._mount_plugin_routes(name, record.module)
                 logger.info("[PluginRegistry] Re-initialized %s", name)
                 return True
             except Exception as e:
-                plugin._last_error = str(e)
                 logger.exception("[PluginRegistry] Failed to re-init %s: %s", name, e)
                 return False
 
-        mod_name = plugin.manifest.name
+        mod_name = record.manifest.name
         mod = sys.modules.get(mod_name) or sys.modules.get(f"plugins.{mod_name}")
         if mod is None:
             logger.warning("[PluginRegistry] Cannot find module for %s", name)
@@ -421,15 +479,16 @@ class PluginRegistry:
             new_class = getattr(mod, "Plugin", None)
             if not new_class or not issubclass(new_class, Plugin):
                 logger.warning("[PluginRegistry] Reloaded module has no Plugin class for %s", name)
-                await plugin.on_load(self._app_state)
-                self._mount_plugin_routes(name, plugin)
+                if hasattr(record.module, 'on_load'):
+                    await record.module.on_load(self._app_state)
+                self._mount_plugin_routes(name, record.module)
                 return False
 
-            new_instance = new_class(plugin.manifest)
+            new_instance = new_class(record.manifest)
             from core.plugins.api import PluginAPI
             new_instance._api = PluginAPI(plugin=new_instance)
-            new_instance._config = dict(plugin._config)
-            self._plugins[name] = new_instance
+            new_instance._config = dict(getattr(record.module, '_config', {}))
+            self._plugins[name] = _PluginRecord(new_instance.manifest, new_instance)
             await new_instance.on_load(self._app_state)
             self._mount_plugin_routes(name, new_instance)
             logger.info("[PluginRegistry] Reloaded %s via importlib.reload", name)
@@ -437,13 +496,15 @@ class PluginRegistry:
         except Exception as e:
             logger.exception("[PluginRegistry] Failed to reload %s: %s", name, e)
             try:
-                await plugin.on_load(self._app_state)
-            except Exception:
-                pass
+                if hasattr(record.module, 'on_load'):
+                    await record.module.on_load(self._app_state)
+            except Exception as _e:
+                logger.debug("plugins base on_load hook failed: %s", _e)
             return False
 
-    def _mount_plugin_routes(self, name: str, plugin: Plugin) -> None:
-        if not plugin.http_routes:
+    def _mount_plugin_routes(self, name: str, module: Any) -> None:
+        http_routes = getattr(module, 'http_routes', None) or getattr(module, '_http_routes', None) or []
+        if not http_routes:
             return
         app = (self._app_state or {}).get("app")
         if not app:
@@ -451,11 +512,11 @@ class PluginRegistry:
             return
         from fastapi import APIRouter
         router = APIRouter(prefix=f"/plugins/{name}")
-        for method, path, handler in plugin.http_routes:
+        for method, path, handler in http_routes:
             getattr(router, method.lower())(path)(handler)
         app.include_router(router)
         self._route_routers[name] = router
-        logger.info("[PluginRegistry] Mounted %d route(s) for %s", len(plugin.http_routes), name)
+        logger.info("[PluginRegistry] Mounted %d route(s) for %s", len(http_routes), name)
 
     def _unmount_plugin_routes(self, name: str) -> None:
         router = self._route_routers.pop(name, None)
@@ -466,32 +527,86 @@ class PluginRegistry:
             app.routes[:] = [r for r in app.routes if getattr(r, "router", None) is not router]
             logger.debug("[PluginRegistry] Unmounted routes for %s", name)
 
+    # ------------------------------------------------------------------ #
+    # Module-plugin API (compatibility with registry.py / loader.py)
+    # ------------------------------------------------------------------ #
+
+    def list_plugins(self) -> list[dict]:
+        return [
+            {
+                "id":      getattr(r.manifest, 'id', r.manifest.name),
+                "name":    r.manifest.name,
+                "version": r.manifest.version,
+                "enabled": r.manifest.enabled,
+                "hooks":   r.manifest.hooks,
+            }
+            for r in self._plugins.values()
+        ]
+
+    def get_settings(self, plugin_id: str) -> dict:
+        from core.plugins.settings_store import get_settings_store
+        return get_settings_store().get_all(plugin_id)
+
+    def update_settings(self, plugin_id: str, settings: dict) -> bool:
+        record = self._plugins.get(plugin_id)
+        if not record:
+            logger.warning("update_settings: unknown plugin %s", plugin_id)
+            return False
+        schema = getattr(record.manifest, 'settings_schema', None) or getattr(record.manifest, 'config_schema', None)
+        if schema:
+            ok, err = _validate_json_schema(settings, schema)
+            if not ok:
+                logger.error("Settings validation failed for %s: %s", plugin_id, err)
+                return False
+        from core.plugins.settings_store import get_settings_store
+        get_settings_store().set_all(plugin_id, settings)
+        return True
+
     async def run_hook(self, hook: str, **kwargs: Any) -> list[tuple[str, Any]]:
         results: list[tuple[str, Any]] = []
-        for plugin in self.list_by_hook(hook):
-            hook_fn = getattr(plugin, hook, None)
+        for record in list(self._plugins.values()):
+            if not record.manifest.enabled or hook not in record.manifest.hooks:
+                continue
+            hook_fn = getattr(record.module, hook, None)
             if hook_fn is None:
                 continue
             try:
-                result = await hook_fn(**kwargs)
-                results.append((plugin.manifest.name, result))
+                if inspect.iscoroutinefunction(hook_fn):
+                    result = await hook_fn(**kwargs)
+                else:
+                    result = hook_fn(**kwargs)
+                rec_id = getattr(record.manifest, 'id', record.manifest.name)
+                results.append((rec_id, result))
             except Exception as e:
-                logger.exception("[PluginRegistry] Hook %s on %s failed: %s", hook, plugin.manifest.name, e)
-                results.append((plugin.manifest.name, _HookFailed(e)))
+                logger.exception("[PluginRegistry] Hook %s on %s failed: %s", hook, record.manifest.name, e)
+                results.append((record.manifest.name, _HookFailed(e)))
+
+        try:
+            from core.plugins.events import PluginEventBus
+            asyncio.ensure_future(PluginEventBus.instance().emit(hook, **kwargs))
+        except Exception as _e:
+            logger.debug("plugins base run_hook event bus failed: %s", _e)
+
         return results
 
     def get_tools(self) -> list[dict]:
         tools = []
-        for plugin in self._plugins.values():
-            if plugin._enabled:
-                tools.extend(plugin.tools.values())
+        for record in self._plugins.values():
+            if record.manifest.enabled:
+                tls = getattr(record.module, 'tools', None) or getattr(record.module, '_tools', None) or {}
+                if callable(tls):
+                    tls = tls()
+                tools.extend(tls.values() if isinstance(tls, dict) else tls)
         return tools
 
     def get_providers(self) -> list[dict]:
         providers = []
-        for plugin in self._plugins.values():
-            if plugin._enabled:
-                providers.extend(plugin.providers)
+        for record in self._plugins.values():
+            if record.manifest.enabled:
+                provs = getattr(record.module, 'providers', None) or getattr(record.module, '_providers', None) or []
+                if callable(provs):
+                    provs = provs()
+                providers.extend(provs)
         return providers
 
     def discover_from_manifest(self, manifest_dir: str | Path) -> None:
@@ -557,6 +672,27 @@ class PluginRegistry:
         except Exception as e:
             logger.exception("[PluginRegistry] Error loading %s from %s: %s", manifest.name, entry_path, e)
         return None
+
+
+# ------------------------------------------------------------------ #
+# JSON Schema mini-validator (no external deps)
+# ------------------------------------------------------------------ #
+
+def _validate_json_schema(data: dict, schema: dict) -> tuple[bool, str]:
+    required = schema.get("required", [])
+    properties = schema.get("properties", {})
+    for field in required:
+        if field not in data:
+            return False, f"Missing required field: {field}"
+    for key, val in data.items():
+        prop_schema = properties.get(key, {})
+        expected_type = prop_schema.get("type")
+        if expected_type:
+            type_map = {"string": str, "integer": int, "number": (int, float), "boolean": bool, "array": list, "object": dict}
+            py_type = type_map.get(expected_type)
+            if py_type and not isinstance(val, py_type):
+                return False, f"Field '{key}' expected {expected_type}, got {type(val).__name__}"
+    return True, ""
 
 
 plugin_registry = PluginRegistry(strict_sandbox=True)

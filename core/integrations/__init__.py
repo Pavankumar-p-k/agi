@@ -1,11 +1,19 @@
 """core/integrations/__init__.py - Real-time API connectors."""
-from .weather import get_weather
-from .news import get_news
-from .stocks import get_stock_price
-from .sports import get_sports_scores
-from .timezone import get_time_info
+import json
+import logging
 
-__all__ = ["get_weather", "get_news", "get_stock_price", "get_sports_scores", "get_time_info", "get_info"]
+from .news import get_news
+from .sports import get_sports_scores
+from .stocks import get_stock_price
+from .timezone import get_time_info
+from .weather import get_weather
+
+logger = logging.getLogger(__name__)
+
+__all__ = [
+    "get_weather", "get_news", "get_stock_price", "get_sports_scores", "get_time_info",
+    "get_info", "get_integrations_prompt", "execute_api_call", "load_integrations",
+]
 
 
 _INTENT_MAP = {
@@ -23,3 +31,58 @@ async def get_info(intent: str, target: str = "") -> str:
     if not handler:
         return f"Unknown info type: {intent}"
     return await handler(target)
+
+
+def get_integrations_prompt() -> str:
+    return (
+        "You have access to live data integrations:\n"
+        "- weather: get current weather for any location\n"
+        "- news: get latest news on any topic\n"
+        "- stocks: get stock prices by symbol\n"
+        "- sports: get sports scores by league\n"
+        "- time: get time info for any location"
+    )
+
+
+async def execute_api_call(content: str) -> dict:
+    try:
+        args = json.loads(content) if isinstance(content, str) else content
+    except (json.JSONDecodeError, TypeError):
+        return {"error": "Invalid JSON", "exit_code": 1}
+    integration = args.get("integration", "")
+    if integration == "weather":
+        from core.integrations import get_weather
+        location = args.get("location", "")
+        result = await get_weather(location)
+        return {"output": result, "exit_code": 0}
+    elif integration == "news":
+        from core.integrations import get_news
+        topic = args.get("topic", "")
+        result = await get_news(topic)
+        return {"output": result, "exit_code": 0}
+    elif integration == "stocks":
+        from core.integrations import get_stock_price
+        symbol = args.get("symbol", "")
+        result = await get_stock_price(symbol)
+        return {"output": result, "exit_code": 0}
+    elif integration == "sports":
+        from core.integrations import get_sports_scores
+        league = args.get("league", "")
+        result = await get_sports_scores(league)
+        return {"output": result, "exit_code": 0}
+    elif integration == "time":
+        from core.integrations import get_time_info
+        location = args.get("location", "")
+        result = await get_time_info(location)
+        return {"output": result, "exit_code": 0}
+    return {"error": f"Unknown integration: {integration}", "exit_code": 1}
+
+
+def load_integrations() -> list[dict]:
+    return [
+        {"name": "weather", "description": "Get weather for a location"},
+        {"name": "news", "description": "Get news for a topic"},
+        {"name": "stocks", "description": "Get stock price for a symbol"},
+        {"name": "sports", "description": "Get sports scores for a league"},
+        {"name": "time", "description": "Get time info for a location"},
+    ]

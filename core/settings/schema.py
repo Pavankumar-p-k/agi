@@ -12,12 +12,15 @@ class LLMSettings(BaseModel):
     coder_model: str = "qwen3:4b"
     lightweight_model: str = "tinyllama:latest"
     max_response_tokens: int = 512
+    vision_model: Optional[str] = None
+    ollama_model: Optional[str] = None
 
 class AGISettings(BaseModel):
     autonomous_enabled: bool = False
     confidence_threshold: float = 0.7
     max_agents: int = 8
     agent_timeout_s: int = 120
+    pause_before_effectful: bool = False
 
 class DNDSettings(BaseModel):
     dnd_mode: bool = False

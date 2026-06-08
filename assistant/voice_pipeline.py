@@ -140,8 +140,8 @@ class VoicePipeline:
         try:
             from core.plugins.events import PluginEventBus
             asyncio.create_task(PluginEventBus.instance().emit("on_voice_command", text=transcribed))
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("[assistant.voice_pipeline] process_voice_command failed: %s", e)
 
         if not transcribed:
             return await self.speak("Sorry, I didn't catch that. Could you please repeat?")

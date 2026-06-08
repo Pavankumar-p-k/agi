@@ -50,7 +50,8 @@ class AIOrchestrator:
         self.model_router = ModelRouter(self.config)
         self.tools       = get_default_tool_registry()
 
-        engine      = PlanningEngine(self.tools, self.model_router) if PlanningEngine else None
+        # PlanningEngine in jarvis_os.core.planner likely only takes tools or is a singleton
+        engine      = PlanningEngine() if PlanningEngine else None
         self.planner = Planner(planner=engine, router=self.model_router,
                                config=self.config, events=self.events)
         self.policy  = PolicyEngine(self.config)

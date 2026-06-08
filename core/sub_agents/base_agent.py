@@ -20,6 +20,7 @@ class AgentResult:
     duration_s: float
     token_estimate: int
     error: Optional[str] = None
+    outcome: Optional[str] = None # ok | error | timeout | killed
     metadata: dict = field(default_factory=dict)
 
     def to_dict(self) -> dict:
@@ -33,6 +34,7 @@ class AgentResult:
             "duration_s": round(self.duration_s, 2),
             "token_estimate": self.token_estimate,
             "error": self.error,
+            "outcome": self.outcome,
             "metadata": self.metadata,
         }
 
@@ -57,7 +59,7 @@ class SubAgent(ABC):
         """Return the system prompt for this agent and mode."""
         ...
 
-    async def run(self, task: str, mode: Optional[str] = None, **kwargs) -> AgentResult:
+    async def run(self, task: str, mode: Optional[str] = None, *, cancel_event: Optional[asyncio.Event] = None, **kwargs) -> AgentResult:
         mode = mode or self.DEFAULT_MODE
         if mode not in self.AVAILABLE_MODES:
             mode = self.DEFAULT_MODE
@@ -65,24 +67,39 @@ class SubAgent(ABC):
         self.status = "running"
         start = time.time()
 
+        if cancel_event and cancel_event.is_set():
+            return self._cancel_result(task, mode, start)
+
         system = self.get_system_prompt(mode)
         user_content = self._build_user_content(task, mode, **kwargs)
 
         try:
             logger.info(f"[{self.NAME}:{self.id}] Starting mode={mode} task={task[:60]}...")
             
+            if cancel_event and cancel_event.is_set():
+                return self._cancel_result(task, mode, start)
+
             # Use the JARVIS LLM Router
             messages = [
                 {"role": "system", "content": system},
                 {"role": "user", "content": user_content}
             ]
             
+            # If cancel_event is provided, we might want to wrap this in a way that
+            # checks the event periodically, but LLM calls are atomic.
+            # Minimal: check before and after.
             res = await complete(self.MODEL_GROUP, messages)
+            
+            if cancel_event and cancel_event.is_set():
+                return self._cancel_result(task, mode, start)
+
             if res.is_err():
                 raise res.unwrap_err()
                 
             output = res.unwrap()
-            tokens = len(output) // 4 # Rough estimate
+            
+            from core.model_context import estimate_tokens
+            tokens = estimate_tokens([{"role": "assistant", "content": output}])
 
             self._result = AgentResult(
                 agent_id=self.id,
@@ -114,6 +131,15 @@ class SubAgent(ABC):
             self.status = "failed"
 
         return self._result
+
+    def _cancel_result(self, task: str, mode: str, start: float) -> AgentResult:
+        self.status = "failed"
+        return AgentResult(
+            agent_id=self.id, agent_name=self.NAME, mode=mode,
+            input=task, output="", success=False,
+            duration_s=time.time() - start, token_estimate=0, error="Cancelled by user",
+            outcome="killed" # type: ignore
+        )
 
     def _build_user_content(self, task: str, mode: str, **kwargs) -> str:
         return task

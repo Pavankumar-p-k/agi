@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -45,6 +46,7 @@ class _HomeScreenState extends State<HomeScreen>
   String _backendMessage = 'Local model status unknown.';
   FeatureSettings _features = FeatureSettings.defaults();
   late final AnimationController _fadeCtrl;
+  Timer? _serverTimer;
 
   static const List<_NavItem> _items = [
     _NavItem(icon: Icons.dashboard_outlined, active: Icons.dashboard, label: 'HOME'),
@@ -62,6 +64,7 @@ class _HomeScreenState extends State<HomeScreen>
       vsync: this,
       duration: const Duration(milliseconds: 360),
     )..forward();
+    _serverTimer = Timer.periodic(const Duration(seconds: 20), (_) => _checkServer());
     _checkServer();
     _loadFeatures();
     _checkLocalModelStatus();
@@ -95,6 +98,7 @@ class _HomeScreenState extends State<HomeScreen>
 
   @override
   void dispose() {
+    _serverTimer?.cancel();
     _fadeCtrl.dispose();
     super.dispose();
   }
@@ -103,11 +107,6 @@ class _HomeScreenState extends State<HomeScreen>
     final online = await ApiService().isOnline();
     if (!mounted) return;
     setState(() => _serverOnline = online);
-    Future.delayed(const Duration(seconds: 20), () {
-      if (mounted) {
-        _checkServer();
-      }
-    });
   }
 
   Future<void> _loadFeatures() async {

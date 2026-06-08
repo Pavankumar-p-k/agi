@@ -3,11 +3,15 @@
 Shared type definitions for hybrid automation system
 Breaks circular dependency between orchestrator and executor modules
 """
+from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, TYPE_CHECKING
 from enum import Enum
 import time
+
+if TYPE_CHECKING:
+    from models.hybrid_models import ModelProvider
 
 
 class ExecutionState(Enum):

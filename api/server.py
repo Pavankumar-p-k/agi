@@ -119,27 +119,24 @@ async def chat_with_image(req: ImageChatRequest):
 @router.get("/memory/{user_id}")
 async def get_memory(user_id: str):
     """Get memory stats for a user."""
-    from memory.mem0_adapter import mem0_memory
-    memories = mem0_memory.get_all(user_id)
+    from memory.memory_facade import memory
+    memories = memory.get_all(user_id)
     return {"user_id": user_id, "memory_count": len(memories), "memories": memories}
 
 
 @router.get("/memory/{user_id}/history")
 async def get_history(user_id: str, limit: int = 20):
     """Get recent conversation history."""
-    # Using tiered_memory as the history source if available
-    try:
-        from memory.tiered_memory import tiered_memory
-        return await tiered_memory.get_recent(user_id, limit)
-    except Exception:
-        return []
+    from memory.memory_facade import memory
+    results = memory.recall("", user_id=user_id, limit=limit)
+    return {"user_id": user_id, "history": results}
 
 
 @router.delete("/memory/{user_id}")
 async def clear_memory(user_id: str):
     """Clear all memory for a user (fresh start)."""
-    from memory.mem0_adapter import mem0_memory
-    success = mem0_memory.delete_all(user_id)
+    from memory.memory_facade import memory
+    success = memory.delete_all(user_id)
     return {"cleared": success, "user_id": user_id}
 
 

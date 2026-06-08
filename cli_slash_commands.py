@@ -46,7 +46,7 @@ def handle_cli_slash_command(text: str, state: CliState) -> str:
                     try:
                         sdata = json.loads(spath.read_text(encoding="utf-8"))
                         name = sdata.get("name", "") or ""
-                    except Exception:
+                    except Exception as e:
                         logger.warning("[cli_slash_commands] execute_slash_command failed: %s", e)
                 print(f"{sid:<40} {created:<28} {count:<6} {name:<20}")
         return "handled"
@@ -467,6 +467,27 @@ def handle_cli_slash_command(text: str, state: CliState) -> str:
     if lowered == "/status":
         from cli_commands import cmd_status
         cmd_status(argparse.Namespace())
+        return "handled"
+
+    if lowered == "/boot":
+        from cli_visuals import render_boot_screen
+        render_boot_screen(animated=True, delay=0.025)
+        return "handled"
+
+    if lowered == "/agents":
+        from cli_visuals import render_agents
+        render_agents()
+        return "handled"
+
+    if lowered == "/design":
+        from cli_visuals import render_design_plan
+        render_design_plan()
+        return "handled"
+
+    if lowered == "/frames" or lowered.startswith("/frames "):
+        from cli_visuals import render_state_frames
+        parts = lowered.split(maxsplit=1)
+        render_state_frames(parts[1] if len(parts) > 1 else "all")
         return "handled"
 
     if lowered in {"/help", "/h", "/?"}:
@@ -944,6 +965,10 @@ Stash:
 
 System:
   /status               Show system status
+  /boot                 Show diamond mascot boot screen
+  /agents               Show the 9-agent terminal overview
+  /design               Show CLI animation/build plan
+  /frames [state]       Print mascot frames (idle/thinking/talking/error/success)
   /help /h /?           Show this help
   /exit                 Save and exit
 

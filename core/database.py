@@ -13,8 +13,14 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-# â”€â”€ Engine & Session â”€â”€
-engine = create_async_engine(DATABASE_URL, echo=False)
+# â”€â”€ Engine & Session (tuned pool: pool_size=10, max_overflow=20, pool_pre_ping=True)
+engine = create_async_engine(
+    DATABASE_URL,
+    echo=False,
+    pool_size=10,
+    max_overflow=20,
+    pool_pre_ping=True,
+)
 AsyncSessionLocal = async_sessionmaker(engine, expire_on_commit=False)
 
 
@@ -24,22 +30,12 @@ async def get_db():
 
 
 async def init_db():
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    # Migrate: add intent column if missing (SQLite)
-    # Columns already exist in the model, so ALTER TABLE is a no-op guard for legacy tables
-    try:
-        async with engine.begin() as conn:
-            from sqlalchemy import text
-            await conn.execute(text("ALTER TABLE chat_history ADD COLUMN intent VARCHAR(50) DEFAULT 'chat'"))
-    except Exception:
-        pass
-    try:
-        async with engine.begin() as conn:
-            await conn.execute(text("ALTER TABLE chat_history ADD COLUMN session_id VARCHAR(36)"))
-    except Exception:
-        pass
-    print("[DB] Database initialized")
+    from alembic.config import Config
+    from alembic import command
+
+    alembic_cfg = Config("alembic.ini")
+    command.upgrade(alembic_cfg, "head")
+    print("[DB] Database initialized (alembic upgrade head)")
 
 
 class Base(DeclarativeBase):
@@ -188,3 +184,23 @@ class ExecutionLog(Base):
     error:       Mapped[Optional[str]] = mapped_column(Text)
     duration_ms: Mapped[Optional[float]] = mapped_column(Float)
     created_at:  Mapped[datetime]  = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class SubagentRun(Base):
+    __tablename__ = "subagent_runs"
+
+    run_id:             Mapped[str]           = mapped_column(String(128), primary_key=True)
+    agent_id:           Mapped[str]           = mapped_column(String(100))
+    parent_session_key: Mapped[Optional[str]] = mapped_column(String(255), index=True)
+    child_session_key:  Mapped[str]           = mapped_column(String(255), index=True)
+    task:               Mapped[str]           = mapped_column(Text)
+    status:             Mapped[str]           = mapped_column(String(20), default="pending") # pending|running|completed|failed|killed
+    depth:              Mapped[int]           = mapped_column(Integer, default=0)
+    created_at:         Mapped[datetime]      = mapped_column(DateTime, default=datetime.utcnow)
+    started_at:         Mapped[Optional[datetime]] = mapped_column(DateTime)
+    ended_at:           Mapped[Optional[datetime]] = mapped_column(DateTime)
+    result_text:        Mapped[Optional[str]] = mapped_column(Text)
+    error:              Mapped[Optional[str]] = mapped_column(Text)
+    outcome:            Mapped[Optional[str]] = mapped_column(String(20)) # ok|error|timeout|killed
+    cleanup:            Mapped[str]           = mapped_column(String(20), default="delete") # delete|keep
+    meta:               Mapped[Optional[dict]] = mapped_column("metadata", JSON, default={})

@@ -5,13 +5,12 @@ from __future__ import annotations
 import json
 import re
 
-from brain.UnifiedBrain import unified_brain
 from brain.epistemic_tagger import epistemic_tagger
+from brain.UnifiedBrain import unified_brain
 from core.format_classifier import FormatClassifier
 from core.prompts import get_prompt
 from core.schemas import COMPLEX_TASK_TYPES, ChatRequest, MultiFormatResponse
 from core.skill_loader import match_skill, run_skill
-
 
 format_classifier = FormatClassifier()
 
@@ -128,6 +127,8 @@ async def chat_handler(req: ChatRequest, endpoint: str = "/api/chat") -> dict:
         tag_label = "RETRIEVED"
     elif tag_label in ("MEMORY", "TOOL_RESULT"):
         tag_label = "VERIFIED"
+    elif tag_label == "INFERENCE":
+        tag_label = "INFERRED"
     else:
         tag_label = "ASSUMED"
 

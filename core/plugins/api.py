@@ -10,6 +10,14 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+# Global CLI command registry populated by PluginAPI.register_cli_command.
+# Maps command_name -> {handler, help_text, category, plugin_name}
+CLI_COMMANDS: dict[str, dict] = {}
+
+
+def get_cli_commands() -> dict[str, dict]:
+    return dict(CLI_COMMANDS)
+
 
 @dataclass
 class PluginAPI:
@@ -67,6 +75,24 @@ class PluginAPI:
     def register_channel(self, channel: Any) -> None:
         self.plugin._channels.append(channel)
         logger.debug("[PluginAPI] %s registered channel: %s", self.plugin.manifest.name, channel.id if hasattr(channel, "id") else "?")
+
+    def register_cli_command(
+        self,
+        name: str,
+        handler: Callable[[str], str],
+        help_text: str = "",
+        category: str = "custom",
+    ) -> None:
+        CLI_COMMANDS[name] = {
+            "handler": handler,
+            "help_text": help_text,
+            "category": category,
+            "plugin_name": self.plugin.manifest.name,
+        }
+        logger.debug(
+            "[PluginAPI] %s registered CLI command /%s (%s)",
+            self.plugin.manifest.name, name, category,
+        )
 
     @property
     def config(self) -> dict:

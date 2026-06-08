@@ -97,6 +97,16 @@ async def lifespan(app: FastAPI):
     print("  JARVIS â€” Starting up...")
     print("=" * 50)
 
+    # Warn if secret key is not set or is a dev default
+    from core.config import SECRET_KEY, DEV_MODE, ALLOWED_ORIGINS
+    if not SECRET_KEY:
+        startup_status["warnings"].append("JARVIS_SECRET_KEY not set — generate one with: python -c 'import os; print(os.urandom(32).hex())'")
+        logger.warning("[SECURITY] JARVIS_SECRET_KEY is empty — set via environment variable")
+    if DEV_MODE:
+        logger.warning("[SECURITY] Running in DEV_MODE — not suitable for production")
+    if not DEV_MODE and ("*" in ALLOWED_ORIGINS or "http://localhost" in ALLOWED_ORIGINS):
+        startup_status["warnings"].append("Production CORS allows localhost — update allowed_origins in config.yaml")
+
     # One-time legacy settings migration
     try:
         await _migrate_legacy_settings_once()

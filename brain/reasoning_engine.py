@@ -26,24 +26,15 @@ REASONING_TEMPLATE = """Goal: {goal}
 Context:
 {context}
 
-Follow these steps — keep each step inside its own <think> block:
-
-Step 1 — Plan: What steps are needed to achieve this goal?
-Step 2 — Think: Work through each step carefully.
-Step 3 — Critique: What could be wrong? What assumptions might be invalid?
-Step 4 — Revise: Provide your final corrected answer.
+Think step by step inside <think> tags, then provide your final answer inside <answer> tags.
 
 <think>Plan:
-{{plan_content}}
 </think>
 <think>Analysis:
-{{analysis_content}}
 </think>
 <think>Critique:
-{{critique_content}}
 </think>
 <answer>
-{{final_answer}}
 </answer>"""
 
 

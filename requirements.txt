@@ -1,20 +1,6 @@
-fastapi>=0.100.0
-uvicorn>=0.23.0
-sqlalchemy>=2.0.0
-aiosqlite>=0.19.0
-pydantic>=2.0.0
-python-dotenv>=1.0.0
-aiohttp>=3.13.4,<3.14
-firebase-admin>=6.0.0
-opencv-python-headless>=4.8.0
-numpy>=1.24.0
-deepface>=0.0.79
-aiofiles>=23.0.0
-pillow>=12.2.0
-websockets>=11.0.0
-httpx>=0.27,<0.28
-anthropic>=0.25.0
-psutil>=5.9.0
-crewai>=0.20.0
-pytest>=8.0.0
-pytest-asyncio>=0.23.0
+# Production install
+# All dependencies are declared in pyproject.toml.
+# Use: pip install -e .          (editable, reads pyproject.toml)
+# Use: pip install -e ".[dev]"   (with dev tools)
+# Use: pip install -e ".[vision]" (with face recognition)
+# Use: pip install -e ".[firebase]" (with Firebase auth)

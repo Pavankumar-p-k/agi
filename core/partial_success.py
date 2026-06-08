@@ -3,6 +3,7 @@ Tracks build progress as a percentage, preserves usable sub-outputs,
 and enables partial completion even when some pages/steps fail.
 """
 import logging
+import re
 from pathlib import Path
 from dataclasses import dataclass, field
 from typing import Optional

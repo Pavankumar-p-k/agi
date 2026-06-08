@@ -584,8 +584,8 @@ class OpenClawExecutor:
         for driver in self.browser_instances.values():
             try:
                 driver.quit()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("[tools.executor] run_analysis failed: %s", e)
         self.browser_instances.clear()
 
 

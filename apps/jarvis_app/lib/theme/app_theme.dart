@@ -26,9 +26,9 @@ class JarvisColors {
 class AppTheme {
   static ThemeData get light {
     return ThemeData(
-      brightness: Brightness.light,
+      brightness: Brightness.dark,
       scaffoldBackgroundColor: JarvisColors.bg,
-      colorScheme: const ColorScheme.light(
+      colorScheme: const ColorScheme.dark(
         primary: JarvisColors.cyan,
         secondary: JarvisColors.blue,
         surface: JarvisColors.bgCard,
@@ -60,8 +60,8 @@ class AppTheme {
         bodySmall: GoogleFonts.shareTech(
           fontSize: 12, color: JarvisColors.textSecondary, letterSpacing: 0.5,
         ),
-        labelSmall: GoogleFonts.orbitron(
-          fontSize: 10, color: JarvisColors.textSecondary, letterSpacing: 1.5,
+        labelSmall: GoogleFonts.shareTech(
+          fontSize: 10, color: JarvisColors.textSecondary, letterSpacing: 0.5,
         ),
       ),
       appBarTheme: AppBarTheme(
@@ -105,8 +105,8 @@ class AppTheme {
         backgroundColor: JarvisColors.bgCard,
         selectedItemColor: JarvisColors.cyan,
         unselectedItemColor: JarvisColors.textSecondary,
-        selectedLabelStyle: GoogleFonts.orbitron(fontSize: 9, letterSpacing: 1),
-        unselectedLabelStyle: GoogleFonts.orbitron(fontSize: 9, letterSpacing: 1),
+        selectedLabelStyle: GoogleFonts.shareTech(fontSize: 9, letterSpacing: 0.5),
+        unselectedLabelStyle: GoogleFonts.shareTech(fontSize: 9, letterSpacing: 0.5),
         type: BottomNavigationBarType.fixed,
         elevation: 0,
       ),
@@ -158,8 +158,8 @@ class AppTheme {
         bodySmall: GoogleFonts.shareTech(
           fontSize: 12, color: JarvisColors.textSecondary, letterSpacing: 0.5,
         ),
-        labelSmall: GoogleFonts.orbitron(
-          fontSize: 10, color: JarvisColors.textSecondary, letterSpacing: 1.5,
+        labelSmall: GoogleFonts.shareTech(
+          fontSize: 10, color: JarvisColors.textSecondary, letterSpacing: 0.5,
         ),
       ),
       appBarTheme: AppBarTheme(
@@ -203,8 +203,8 @@ class AppTheme {
         backgroundColor: JarvisColors.bgCard,
         selectedItemColor: JarvisColors.cyan,
         unselectedItemColor: JarvisColors.textSecondary,
-        selectedLabelStyle: GoogleFonts.orbitron(fontSize: 9, letterSpacing: 1),
-        unselectedLabelStyle: GoogleFonts.orbitron(fontSize: 9, letterSpacing: 1),
+        selectedLabelStyle: GoogleFonts.shareTech(fontSize: 9, letterSpacing: 0.5),
+        unselectedLabelStyle: GoogleFonts.shareTech(fontSize: 9, letterSpacing: 0.5),
         type: BottomNavigationBarType.fixed,
         elevation: 0,
       ),

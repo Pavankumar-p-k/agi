@@ -1,8 +1,10 @@
+import logging
 # deep_check_chat.py
 # Run: python deep_check_chat.py
 # Shows exactly what /api/chat does line by line
 
 import os
+logger = logging.getLogger(__name__)
 
 path = "core/main.py"
 
@@ -97,8 +99,8 @@ for root, dirs, files in os.walk("."):
                     print("webbrowser.open found in: " + fpath)
                 if "execute_action" in content and "def execute_action" in content:
                     print("execute_action DEFINED in: " + fpath)
-            except:
-                pass
+            except Exception as e:
+                logger.warning("[tests.deep_check_chat] verify_chat_response failed: %s", e)
 
 print("\n" + "=" * 70)
 print("VERDICT:")

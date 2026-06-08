@@ -4,9 +4,6 @@ import io
 import logging
 import os
 import tarfile
-import tempfile
-import time
-from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -82,8 +79,44 @@ class DockerSandbox:
         finally:
             try:
                 container.remove(force=True)
-            except Exception:
-                pass
+            except Exception as _e:
+                logger.warning("[ai_os.docker_sandbox] init_client failed: %s", _e)
+
+    async def exec_bash(self, command: str, timeout: int = 60) -> dict[str, Any]:
+        if not self._available:
+            return {"success": False, "error": "Docker not available", "stdout": "", "stderr": "", "exit_code": -1}
+        container = None
+        try:
+            self._ensure_image()
+            cmd = ["/bin/sh", "-c", command]
+            container = self._client.containers.create(
+                image=self._image,
+                command=cmd,
+                network_disabled=True,
+                mem_limit="512m",
+                read_only=True,
+                auto_remove=True,
+            )
+            container.start()
+            exit_code = container.wait(timeout=timeout)
+            logs = container.logs(stdout=True, stderr=True, tail=10000).decode("utf-8", errors="replace")
+            stdout, stderr = self._split_logs(logs)
+            return {
+                "success": exit_code == 0,
+                "stdout": stdout,
+                "stderr": stderr,
+                "exit_code": exit_code,
+                "error": None if exit_code == 0 else f"exit code {exit_code}",
+            }
+        except Exception as e:
+            logger.warning("[DockerSandbox] exec_bash failed: %s", e)
+            return {"success": False, "error": str(e), "stdout": "", "stderr": "", "exit_code": -1}
+        finally:
+            if container is not None:
+                try:
+                    container.remove(force=True)
+                except Exception as _e:
+                    logger.warning("[ai_os.docker_sandbox] exec_python failed: %s", _e)
 
     async def exec_command(self, cmd: list[str], timeout: int = SANDBOX_TIMEOUT,
                            files: dict[str, bytes] | None = None) -> dict[str, Any]:
@@ -123,8 +156,8 @@ class DockerSandbox:
                         f = tar.extractfile(member)
                         if f:
                             result_files[member.name] = f.read()
-            except Exception:
-                pass
+            except Exception as _e:
+                logger.warning("[ai_os.docker_sandbox] exec_bash failed: %s", _e)
 
             return {
                 "success": True,
@@ -138,8 +171,8 @@ class DockerSandbox:
         finally:
             try:
                 container.remove(force=True)
-            except Exception:
-                pass
+            except Exception as _e:
+                logger.warning("[ai_os.docker_sandbox] exec_command failed: %s", _e)
 
     def _split_logs(self, logs: str) -> tuple[str, str]:
         stdout_lines = []

@@ -64,8 +64,8 @@ def scan_hardware() -> Dict[str, Any]:
         result["vram_free_gb"] = round(info.free / (1024**3), 2)
         pynvml.nvmlShutdown()
         return result
-    except Exception:
-        pass
+    except Exception as _e:
+        logger.debug("hardware_advisor nvml scan failed: %s", _e)
 
     # Fallback to torch
     try:
@@ -75,8 +75,8 @@ def scan_hardware() -> Dict[str, Any]:
             result["vram_total_gb"] = round(torch.cuda.get_device_properties(0).total_memory / (1024**3), 2)
             result["vram_free_gb"] = round(torch.cuda.memory_reserved(0) / (1024**3), 2) # Approximation
             return result
-    except Exception:
-        pass
+    except Exception as _e:
+        logger.debug("hardware_advisor torch scan failed: %s", _e)
 
     # Final fallback: Estimation (assume 25% of RAM can be used for integrated VRAM)
     result["vram_total_gb"] = round(result["ram_gb"] * 0.25, 2)

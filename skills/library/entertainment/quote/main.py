@@ -1,14 +1,133 @@
+import random
 from skills.utils import success_response, error_response
 
+QUOTES = [
+    {"quote": "The only way to do great work is to love what you do.", "author": "Steve Jobs", "category": "inspirational"},
+    {"quote": "In the middle of difficulty lies opportunity.", "author": "Albert Einstein", "category": "inspirational"},
+    {"quote": "The purpose of life is not to be happy. It is to be useful, to be honorable, to be compassionate.", "author": "Ralph Waldo Emerson", "category": "philosophy"},
+    {"quote": "Be yourself; everyone else is already taken.", "author": "Oscar Wilde", "category": "wisdom"},
+    {"quote": "Two roads diverged in a wood, and I took the one less traveled by, and that has made all the difference.", "author": "Robert Frost", "category": "inspirational"},
+    {"quote": "The unexamined life is not worth living.", "author": "Socrates", "category": "philosophy"},
+    {"quote": "I think, therefore I am.", "author": "René Descartes", "category": "philosophy"},
+    {"quote": "The only true wisdom is in knowing you know nothing.", "author": "Socrates", "category": "wisdom"},
+    {"quote": "Great minds discuss ideas; average minds discuss events; small minds discuss people.", "author": "Eleanor Roosevelt", "category": "wisdom"},
+    {"quote": "It does not matter how slowly you go as long as you do not stop.", "author": "Confucius", "category": "inspirational"},
+    {"quote": "The journey of a thousand miles begins with a single step.", "author": "Lao Tzu", "category": "inspirational"},
+    {"quote": "Knowing yourself is the beginning of all wisdom.", "author": "Aristotle", "category": "wisdom"},
+    {"quote": "Happiness is not something ready made. It comes from your own actions.", "author": "Dalai Lama", "category": "inspirational"},
+    {"quote": "The greatest glory in living lies not in never falling, but in rising every time we fall.", "author": "Nelson Mandela", "category": "inspirational"},
+    {"quote": "Life is what happens when you're busy making other plans.", "author": "John Lennon", "category": "wisdom"},
+    {"quote": "Try not to become a man of success, but rather try to become a man of value.", "author": "Albert Einstein", "category": "philosophy"},
+    {"quote": "Imagination is more important than knowledge.", "author": "Albert Einstein", "category": "wisdom"},
+    {"quote": "The only thing we have to fear is fear itself.", "author": "Franklin D. Roosevelt", "category": "inspirational"},
+    {"quote": "To be or not to be, that is the question.", "author": "William Shakespeare", "category": "philosophy"},
+    {"quote": "All that glitters is not gold.", "author": "William Shakespeare", "category": "wisdom"},
+    {"quote": "The best and most beautiful things in the world cannot be seen or even touched - they must be felt with the heart.", "author": "Helen Keller", "category": "inspirational"},
+    {"quote": "Success is not final, failure is not fatal: it is the courage to continue that counts.", "author": "Winston Churchill", "category": "inspirational"},
+    {"quote": "The mind is everything. What you think you become.", "author": "Buddha", "category": "philosophy"},
+    {"quote": "An eye for an eye will only make the whole world blind.", "author": "Mahatma Gandhi", "category": "philosophy"},
+    {"quote": "It is better to be hated for what you are than to be loved for what you are not.", "author": "André Gide", "category": "philosophy"},
+    {"quote": "Simplicity is the ultimate sophistication.", "author": "Leonardo da Vinci", "category": "wisdom"},
+    {"quote": "The fool doth think he is wise, but the wise man knows himself to be a fool.", "author": "William Shakespeare", "category": "wisdom"},
+    {"quote": "Whether you think you can or you think you can't, you're right.", "author": "Henry Ford", "category": "inspirational"},
+    {"quote": "The only impossible journey is the one you never begin.", "author": "Tony Robbins", "category": "inspirational"},
+    {"quote": "What lies behind us and what lies before us are tiny matters compared to what lies within us.", "author": "Ralph Waldo Emerson", "category": "inspirational"},
+    {"quote": "He who has a why to live for can bear almost any how.", "author": "Friedrich Nietzsche", "category": "philosophy"},
+    {"quote": "Life isn't about finding yourself. It's about creating yourself.", "author": "George Bernard Shaw", "category": "inspirational"},
+    {"quote": "The only person you are destined to become is the person you decide to be.", "author": "Ralph Waldo Emerson", "category": "inspirational"},
+    {"quote": "What we achieve inwardly will change outer reality.", "author": "Plutarch", "category": "philosophy"},
+    {"quote": "We are what we repeatedly do. Excellence, then, is not an act, but a habit.", "author": "Aristotle", "category": "wisdom"},
+    {"quote": "The best revenge is massive success.", "author": "Frank Sinatra", "category": "inspirational"},
+    {"quote": "I have not failed. I've just found 10,000 ways that won't work.", "author": "Thomas Edison", "category": "inspirational"},
+    {"quote": "The secret of getting ahead is getting started.", "author": "Mark Twain", "category": "inspirational"},
+    {"quote": "If you tell the truth, you don't have to remember anything.", "author": "Mark Twain", "category": "wisdom"},
+    {"quote": "Never regret anything that made you smile.", "author": "Mark Twain", "category": "wisdom"},
+    {"quote": "To live is the rarest thing in the world. Most people exist, that is all.", "author": "Oscar Wilde", "category": "philosophy"},
+    {"quote": "Be the change you wish to see in the world.", "author": "Mahatma Gandhi", "category": "inspirational"},
+    {"quote": "It is never too late to be what you might have been.", "author": "George Eliot", "category": "inspirational"},
+    {"quote": "You miss 100% of the shots you don't take.", "author": "Wayne Gretzky", "category": "inspirational"},
+    {"quote": "Every man is a creature of the age in which he lives.", "author": "Voltaire", "category": "philosophy"},
+    {"quote": "Common sense is not so common.", "author": "Voltaire", "category": "wisdom"},
+    {"quote": "Judge a man by his questions rather than by his answers.", "author": "Voltaire", "category": "wisdom"},
+    {"quote": "Do not dwell in the past, do not dream of the future, concentrate the mind on the present moment.", "author": "Buddha", "category": "wisdom"},
+    {"quote": "The greatest wealth is to live content with little.", "author": "Plato", "category": "philosophy"},
+    {"quote": "Happiness depends upon ourselves.", "author": "Aristotle", "category": "philosophy"},
+    {"quote": "Well begun is half done.", "author": "Aristotle", "category": "wisdom"},
+    {"quote": "A friend to all is a friend to none.", "author": "Aristotle", "category": "philosophy"},
+    {"quote": "Strength does not come from physical capacity. It comes from an indomitable will.", "author": "Mahatma Gandhi", "category": "inspirational"},
+    {"quote": "You must be the change you wish to see in the world.", "author": "Mahatma Gandhi", "category": "inspirational"},
+    {"quote": "Freedom is never voluntarily given by the oppressor; it must be demanded by the oppressed.", "author": "Martin Luther King Jr.", "category": "philosophy"},
+    {"quote": "Darkness cannot drive out darkness; only light can do that. Hate cannot drive out hate; only love can do that.", "author": "Martin Luther King Jr.", "category": "wisdom"},
+    {"quote": "Injustice anywhere is a threat to justice everywhere.", "author": "Martin Luther King Jr.", "category": "philosophy"},
+    {"quote": "Faith is taking the first step even when you don't see the whole staircase.", "author": "Martin Luther King Jr.", "category": "inspirational"},
+    {"quote": "It takes a great deal of bravery to stand up to our enemies, but just as much to stand up to our friends.", "author": "J.K. Rowling", "category": "wisdom"},
+    {"quote": "We are all in the gutter, but some of us are looking at the stars.", "author": "Oscar Wilde", "category": "inspirational"},
+    {"quote": "Experience is simply the name we give our mistakes.", "author": "Oscar Wilde", "category": "wisdom"},
+    {"quote": "A dream written down with a date becomes a goal.", "author": "Brian Tracy", "category": "inspirational"},
+    {"quote": "The way to get started is to quit talking and begin doing.", "author": "Walt Disney", "category": "inspirational"},
+    {"quote": "If you can dream it, you can do it.", "author": "Walt Disney", "category": "inspirational"},
+    {"quote": "What you do today can improve all your tomorrows.", "author": "Ralph Marston", "category": "inspirational"},
+    {"quote": "The only limit to our realization of tomorrow will be our doubts of today.", "author": "Franklin D. Roosevelt", "category": "inspirational"},
+    {"quote": "You can't cross the sea merely by standing and staring at the water.", "author": "Rabindranath Tagore", "category": "wisdom"},
+    {"quote": "If you want something you've never had, you must be willing to do something you've never done.", "author": "Thomas Jefferson", "category": "inspirational"},
+    {"quote": "Wherever you go, go with all your heart.", "author": "Confucius", "category": "inspirational"},
+    {"quote": "Learning never exhausts the mind.", "author": "Leonardo da Vinci", "category": "wisdom"},
+    {"quote": "Nothing is impossible, the word itself says 'I'm possible'!", "author": "Audrey Hepburn", "category": "inspirational"},
+    {"quote": "You are never too old to set another goal or to dream a new dream.", "author": "C.S. Lewis", "category": "inspirational"},
+    {"quote": "Act as if what you do makes a difference. It does.", "author": "William James", "category": "inspirational"},
+    {"quote": "Don't let yesterday take up too much of today.", "author": "Will Rogers", "category": "wisdom"},
+    {"quote": "The best time to plant a tree was 20 years ago. The second best time is now.", "author": "Chinese Proverb", "category": "wisdom"},
+    {"quote": "If you don't stand for something you will fall for anything.", "author": "Malcolm X", "category": "philosophy"},
+    {"quote": "Do what you can, with what you have, where you are.", "author": "Theodore Roosevelt", "category": "inspirational"},
+    {"quote": "The only ones among you who will be really happy are those who have sought and found how to serve.", "author": "Albert Schweitzer", "category": "philosophy"},
+    {"quote": "Man is condemned to be free.", "author": "Jean-Paul Sartre", "category": "philosophy"},
+    {"quote": "Life is a series of natural and spontaneous changes.", "author": "Lao Tzu", "category": "philosophy"},
+    {"quote": "A man is but what he knows.", "author": "Francis Bacon", "category": "philosophy"},
+    {"quote": "Knowledge is power.", "author": "Francis Bacon", "category": "wisdom"},
+    {"quote": "I came, I saw, I conquered.", "author": "Julius Caesar", "category": "inspirational"},
+    {"quote": "Fortune favors the bold.", "author": "Virgil", "category": "wisdom"},
+    {"quote": "Life is not a problem to be solved, but a reality to be experienced.", "author": "Søren Kierkegaard", "category": "philosophy"},
+    {"quote": "The function of prayer is not to influence God, but rather to change the nature of the one who prays.", "author": "Søren Kierkegaard", "category": "philosophy"},
+    {"quote": "Anxiety is the dizziness of freedom.", "author": "Søren Kierkegaard", "category": "philosophy"},
+    {"quote": "God is dead! He remains dead! And we have killed him.", "author": "Friedrich Nietzsche", "category": "philosophy"},
+    {"quote": "That which does not kill us makes us stronger.", "author": "Friedrich Nietzsche", "category": "inspirational"},
+    {"quote": "Without music, life would be a mistake.", "author": "Friedrich Nietzsche", "category": "philosophy"},
+    {"quote": "There is but one truly serious philosophical problem, and that is suicide.", "author": "Albert Camus", "category": "philosophy"},
+    {"quote": "In the depth of winter, I finally learned that within me there lay an invincible summer.", "author": "Albert Camus", "category": "inspirational"},
+    {"quote": "We must imagine Sisyphus happy.", "author": "Albert Camus", "category": "philosophy"},
+    {"quote": "One cannot step twice in the same river.", "author": "Heraclitus", "category": "philosophy"},
+    {"quote": "The only constant in life is change.", "author": "Heraclitus", "category": "wisdom"},
+    {"quote": "Man is the measure of all things.", "author": "Protagoras", "category": "philosophy"},
+    {"quote": "It's not what happens to you, but how you react to it that matters.", "author": "Epictetus", "category": "wisdom"},
+    {"quote": "The greater the difficulty, the more glory in surmounting it.", "author": "Epicurus", "category": "inspirational"},
+    {"quote": "Not what we have but what we enjoy constitutes our abundance.", "author": "Epicurus", "category": "wisdom"},
+    {"quote": "The happiness of your life depends upon the quality of your thoughts.", "author": "Marcus Aurelius", "category": "wisdom"},
+    {"quote": "You have power over your mind - not outside events. Realize this, and you will find strength.", "author": "Marcus Aurelius", "category": "philosophy"},
+    {"quote": "The best revenge is to be unlike him who performed the injury.", "author": "Marcus Aurelius", "category": "wisdom"},
+    {"quote": "Waste no more time arguing about what a good man should be. Be one.", "author": "Marcus Aurelius", "category": "philosophy"},
+    {"quote": "Do every act of your life as if it were your last.", "author": "Marcus Aurelius", "category": "philosophy"},
+    {"quote": "Talk doesn't cook rice.", "author": "Chinese Proverb", "category": "wisdom"},
+    {"quote": "Man who says 'it is impossible' should not interrupt those doing it.", "author": "Chinese Proverb", "category": "wisdom"},
+    {"quote": "Teachers open the door, but you must enter by yourself.", "author": "Chinese Proverb", "category": "wisdom"},
+    {"quote": "Fall seven times, stand up eight.", "author": "Japanese Proverb", "category": "inspirational"},
+    {"quote": "Vision without action is a daydream. Action without vision is a nightmare.", "author": "Japanese Proverb", "category": "wisdom"},
+]
+
 async def quote(params: dict) -> dict:
-    """Execute the quote task."""
-    # TODO: Implement full logic for quote
-    return success_response({"result": f"Executed quote with params: {params}"} )
+    pool = QUOTES
+    author = params.get("author")
+    category = params.get("category", "").lower()
+    if author:
+        pool = [q for q in pool if q["author"].lower() == author.lower()]
+    if category in ("inspirational", "philosophy", "wisdom"):
+        pool = [q for q in pool if q["category"] == category]
+    if not pool:
+        return error_response("No quotes found matching your criteria")
+    chosen = random.choice(pool)
+    return success_response({"quote": chosen["quote"], "author": chosen["author"], "category": chosen["category"]})
 
 class Skill:
     def __init__(self, manifest):
         self.manifest = manifest
-    
     async def on_load(self):
-        # Register the tool with JARVIS
         pass

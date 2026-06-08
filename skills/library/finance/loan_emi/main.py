@@ -1,14 +1,66 @@
 from skills.utils import success_response, error_response
 
 async def loan_emi(params: dict) -> dict:
-    """Execute the loan_emi task."""
-    # TODO: Implement full logic for loan_emi
-    return success_response({"result": f"Executed loan_emi with params: {params}"} )
+    principal = params.get("principal")
+    rate = params.get("rate")
+    tenure = params.get("tenure")
+    tenure_unit = params.get("tenure_unit", "months")
+    action = params.get("action", "calculate")
+    if not all([principal, rate, tenure]):
+        return error_response("principal, rate, and tenure are required")
+    principal = float(principal)
+    annual_rate = float(rate)
+    tenure = int(tenure)
+    if principal <= 0 or annual_rate < 0 or tenure <= 0:
+        return error_response("principal, rate, and tenure must be positive")
+    if tenure_unit == "years":
+        n = tenure * 12
+    else:
+        n = tenure
+    monthly_rate = annual_rate / (12 * 100)
+    if monthly_rate == 0:
+        emi = principal / n
+    else:
+        emi = principal * monthly_rate * ((1 + monthly_rate) ** n) / (((1 + monthly_rate) ** n) - 1)
+    total_payment = emi * n
+    total_interest = total_payment - principal
+    if action == "calculate":
+        return success_response({
+            "principal": principal,
+            "annual_rate": annual_rate,
+            "tenure_months": n,
+            "monthly_emi": round(emi, 2),
+            "total_interest": round(total_interest, 2),
+            "total_payment": round(total_payment, 2),
+            "interest_to_principal_ratio": round(total_interest / principal * 100, 2) if principal else 0
+        })
+    elif action == "amortization":
+        schedule = []
+        remaining = principal
+        for i in range(1, n + 1):
+            interest_part = remaining * monthly_rate
+            principal_part = emi - interest_part
+            remaining -= principal_part
+            schedule.append({
+                "month": i,
+                "emi": round(emi, 2),
+                "principal": round(principal_part, 2),
+                "interest": round(interest_part, 2),
+                "balance": round(max(remaining, 0), 2)
+            })
+        return success_response({
+            "principal": principal,
+            "annual_rate": annual_rate,
+            "tenure_months": n,
+            "monthly_emi": round(emi, 2),
+            "total_interest": round(total_interest, 2),
+            "total_payment": round(total_payment, 2),
+            "schedule": schedule
+        })
+    return error_response(f"Unknown action: {action}")
 
 class Skill:
     def __init__(self, manifest):
         self.manifest = manifest
-    
     async def on_load(self):
-        # Register the tool with JARVIS
         pass
