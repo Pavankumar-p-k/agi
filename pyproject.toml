@@ -7,6 +7,7 @@ name = "jarvis-ai"
 version = "1.1.0"
 description = "Unified JARVIS launcher for CLI, server, GUI, models, and IDE integrations."
 readme = "README.md"
+license = { text = "Apache-2.0" }
 requires-python = ">=3.11"
 authors = [
   { name = "JARVIS" }
