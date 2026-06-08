@@ -1,0 +1,33 @@
+{
+  "name": "jarvis-dot",
+  "version": "1.0.0",
+  "description": "JARVIS floating dot desktop assistant",
+  "author": "JARVIS Team",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder",
+    "build:win": "electron-builder --win"
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^25.0.0"
+  },
+  "dependencies": {
+    "screenshot-desktop": "^1.12.5"
+  },
+  "build": {
+    "appId": "com.jarvis.dot",
+    "productName": "JARVIS",
+    "files": ["main.js", "src/", "icon.png"],
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "mac": { "target": "dmg" },
+    "linux": { "target": "AppImage" }
+  }
+}
