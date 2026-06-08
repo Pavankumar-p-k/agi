@@ -1,0 +1,58 @@
+---
+name: Bug Report
+description: Something isn't working as expected
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report.
+
+  - type: input
+    id: version
+    attributes:
+      label: JARVIS Version
+      description: Output of `python -m jarvis --version` or commit hash
+      placeholder: v1.1.0 / abc1234
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the bug
+      description: What happened? What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Run `python jarvis.py`
+        2. Say "..."
+        3. See error
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs / output
+      description: Run with `LOG_LEVEL=DEBUG` and paste the output
+      render: shell
+
+  - type: input
+    id: os
+    attributes:
+      label: OS / Environment
+      placeholder: Windows 11 / Ubuntu 24.04 / macOS 14
+
+  - type: dropdown
+    id: model
+    attributes:
+      label: Model
+      description: Which LLM backend were you using?
+      options:
+        - Ollama (local)
+        - OpenAI
+        - Anthropic
+        - Gemini
+        - Other

@@ -1,0 +1,41 @@
+---
+name: Feature Request
+description: Suggest an idea for JARVIS
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What's missing or frustrating? What would this enable?
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: How should this work?
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Any workarounds you've tried?
+
+  - type: checkboxes
+    id: area
+    attributes:
+      label: Area
+      description: Which part of JARVIS does this affect?
+      options:
+        - label: Core / Agent loop
+        - label: Tools (shell, edit, search, etc.)
+        - label: Skills (trigger-based)
+        - label: Channels (Discord, Telegram, etc.)
+        - label: Voice pipeline
+        - label: Plugin SDK
+        - label: Docker / Deployment
+        - label: Documentation

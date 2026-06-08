@@ -1,0 +1,32 @@
+# JARVIS RBAC Role Definitions
+
+operator:
+  - "tools:execute:*"
+  - "files:read"
+  - "files:write"
+  - "memory:read"
+  - "memory:write"
+  - "system:status"
+  - "plugins:list"
+
+developer:
+  - "tools:execute:medium"
+  - "tools:execute:low"
+  - "files:read"
+  - "files:write"
+  - "memory:read"
+  - "memory:write"
+  - "system:status"
+  - "plugins:list"
+  - "llm:complete"
+
+analyst:
+  - "tools:execute:low"
+  - "files:read"
+  - "memory:read"
+  - "system:status"
+  - "llm:complete"
+
+guest:
+  - "system:status"
+  - "memory:read"

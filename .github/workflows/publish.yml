@@ -1,0 +1,66 @@
+name: Publish to PyPI
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      pypi_target:
+        description: "PyPI target (pypi / testpypi)"
+        default: "testpypi"
+        type: choice
+        options:
+          - testpypi
+          - pypi
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install build
+        run: pip install build twine
+      - name: Build wheel + sdist
+        run: python -m build
+      - name: Check package
+        run: twine check dist/*
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  test-built:
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install built wheel
+        run: pip install dist/*.whl
+      - name: Smoke test import
+        run: python -c "import jarvis; print('OK')"
+
+  publish:
+    needs: [build, test-built]
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: ${{ github.event.inputs.pypi_target == 'testpypi' && 'https://test.pypi.org/legacy/' || 'https://upload.pypi.org/legacy/' }}
+          skip-existing: true
