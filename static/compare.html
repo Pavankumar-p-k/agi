@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JARVIS vs Competitors</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #e2e8f0; padding: 2rem; }
+  .container { max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 2rem; margin-bottom: 1rem; background: linear-gradient(135deg, #00c6ff, #0072ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  p.subtitle { color: #94a3b8; margin-bottom: 2rem; }
+  table { width: 100%; border-collapse: separate; border-spacing: 0; border-radius: 12px; overflow: hidden; border: 1px solid #334155; }
+  th, td { padding: 0.85rem 1rem; text-align: left; border-bottom: 1px solid #1e293b; }
+  th { background: #1e293b; font-weight: 600; color: #f1f5f9; white-space: nowrap; }
+  td { background: #0f172a; }
+  tr:last-child td { border-bottom: none; }
+  td:first-child { font-weight: 500; color: #e2e8f0; }
+  .check { color: #22c55e; }
+  .cross { color: #ef4444; }
+  .partial { color: #f59e0b; }
+  .na { color: #64748b; }
+  .cost { font-weight: 700; color: #00c6ff; }
+  .highlight { background: rgba(0, 198, 255, 0.08); }
+  .footer { margin-top: 2rem; text-align: center; color: #64748b; font-size: 0.85rem; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>JARVIS vs The Competition</h1>
+  <p class="subtitle">An honest, feature-by-feature comparison. Last updated June 2026.</p>
+
+  <table>
+    <tr>
+      <th>Feature</th>
+      <th>JARVIS</th>
+      <th>OpenClaw</th>
+      <th>Claude Code</th>
+      <th>ChatGPT</th>
+    </tr>
+    <tr>
+      <td>Local-first</td>
+      <td class="check">Default (Ollama)</td>
+      <td class="cross">Cloud-only</td>
+      <td class="cross">Cloud-only</td>
+      <td class="cross">Cloud-only</td>
+    </tr>
+    <tr>
+      <td>Privacy tiers</td>
+      <td class="check">3-tier routing + PII strip</td>
+      <td class="cross">None</td>
+      <td class="cross">None</td>
+      <td class="cross">None</td>
+    </tr>
+    <tr>
+      <td>Persistent shell</td>
+      <td class="check">Stateful, 5-min idle GC</td>
+      <td class="cross">Stateless</td>
+      <td class="check">Stateful</td>
+      <td class="cross">None</td>
+    </tr>
+    <tr>
+      <td>Parallel sub-agents</td>
+      <td class="check">10 agents, free</td>
+      <td class="partial">Limited</td>
+      <td class="partial">Limited</td>
+      <td class="cross">None</td>
+    </tr>
+    <tr>
+      <td>LLM providers</td>
+      <td class="check">126 via LiteLLM</td>
+      <td class="partial">50 plugins</td>
+      <td class="cross">Proprietary</td>
+      <td class="cross">Proprietary</td>
+    </tr>
+    <tr>
+      <td>Voice pipeline</td>
+      <td class="check">Full local (wake → STT → TTS)</td>
+      <td class="cross">None</td>
+      <td class="cross">None</td>
+      <td class="partial">Cloud-only</td>
+    </tr>
+    <tr>
+      <td>Self-healing</td>
+      <td class="check">3-layer auto-recovery</td>
+      <td class="partial">Partial</td>
+      <td class="cross">None</td>
+      <td class="cross">None</td>
+    </tr>
+    <tr>
+      <td>PC control</td>
+      <td class="check">Natural language</td>
+      <td class="cross">None</td>
+      <td class="cross">None</td>
+      <td class="cross">None</td>
+    </tr>
+    <tr>
+      <td>Docker sandbox</td>
+      <td class="check">Isolated, network-disabled</td>
+      <td class="partial">Partial</td>
+      <td class="cross">None</td>
+      <td class="cross">None</td>
+    </tr>
+    <tr>
+      <td>AST code graph</td>
+      <td class="check">Semantic + BM25 + symbols</td>
+      <td class="cross">RAG only</td>
+      <td class="partial">RAG only</td>
+      <td class="cross">None</td>
+    </tr>
+    <tr>
+      <td>Hot-reloadable skills</td>
+      <td class="check">create_skill tool</td>
+      <td class="partial">Manual reload</td>
+      <td class="cross">None</td>
+      <td class="cross">None</td>
+    </tr>
+    <tr>
+      <td>Chat channels</td>
+      <td class="check">Discord, Telegram, Slack, Email, IRC, Matrix</td>
+      <td class="check">Multiple</td>
+      <td class="cross">None</td>
+      <td class="cross">None</td>
+    </tr>
+    <tr>
+      <td>Plugin SDK</td>
+      <td class="check">Python, 5 lines with @hook</td>
+      <td class="check">TypeScript</td>
+      <td class="cross">None</td>
+      <td class="cross">None</td>
+    </tr>
+    <tr class="highlight">
+      <td><strong>Monthly cost</strong></td>
+      <td class="cost"><strong>FREE</strong></td>
+      <td>$20/mo + usage</td>
+      <td>$100/mo</td>
+      <td>$20/mo + usage</td>
+    </tr>
+    <tr>
+      <td>CVEs in plugin system</td>
+      <td class="check">0 (audited pre-launch)</td>
+      <td class="cross">512+ (incl. RCE)</td>
+      <td class="na">N/A</td>
+      <td class="na">N/A</td>
+    </tr>
+  </table>
+
+  <div class="footer">
+    <p>JARVIS is open-source (MIT). Run it forever, no subscriptions, no data leaving your machine.</p>
+  </div>
+</div>
+</body>
+</html>

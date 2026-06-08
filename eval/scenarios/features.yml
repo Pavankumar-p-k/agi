@@ -1,0 +1,130 @@
+scenarios:
+  # ── Human-in-the-loop ────────────────────────────────────────────
+
+  - id: hitl-bash-command
+    name: "HITL: bash command with pause enabled"
+    prompt: "Run 'ls -la' to list files"
+    expected_tools: ["bash"]
+    forbidden_tools: []
+    max_rounds: 3
+    tags: ["hitl", "effectful"]
+    extra_params:
+      pause_before_effectful: true
+
+  - id: hitl-create-document
+    name: "HITL: document creation with pause enabled"
+    prompt: "Create a README.md document with a brief project description"
+    expected_tools: ["create_document"]
+    forbidden_tools: ["bash"]
+    max_rounds: 3
+    tags: ["hitl", "effectful"]
+    extra_params:
+      pause_before_effectful: true
+
+  - id: hitl-skip-non-effectful
+    name: "HITL: non-effectful tools pass through without pause"
+    prompt: "Search the web for 'Python 3.13 features'"
+    expected_tools: ["web_search"]
+    forbidden_tools: ["bash", "python"]
+    max_rounds: 3
+    tags: ["hitl", "skip"]
+    extra_params:
+      pause_before_effectful: true
+
+  - id: hitl-mixed-tools
+    name: "HITL: mixed effectful and non-effectful"
+    prompt: "Search for cat facts, then write the top 5 to cat_facts.txt"
+    expected_tools: ["web_search", "write_file"]
+    max_rounds: 5
+    tags: ["hitl", "mixed"]
+    extra_params:
+      pause_before_effectful: true
+
+  # ── Structured reasoning ─────────────────────────────────────────
+
+  - id: reasoning-step-by-step
+    name: "Reasoning: step-by-step explanation"
+    prompt: "A bat and a ball cost $1.10. The bat costs $1.00 more than the ball. How much does the ball cost? Explain step by step."
+    expected_patterns: ["0\\.05|five cents|5 cents|0.05"]
+    forbidden_tools: ["bash", "python", "web_search"]
+    max_rounds: 3
+    tags: ["reasoning", "math"]
+
+  - id: reasoning-tradeoff
+    name: "Reasoning: compare alternatives"
+    prompt: "Compare the pros and cons of using Python vs JavaScript for a data analysis project. Consider alternatives."
+    expected_patterns: ["Python|JavaScript|data|alternative|instead"]
+    forbidden_tools: ["bash", "python"]
+    max_rounds: 3
+    tags: ["reasoning", "compare"]
+
+  - id: reasoning-confidence
+    name: "Reasoning: express confidence"
+    prompt: "What is the boiling point of water at sea level in Celsius? How confident are you in this answer?"
+    expected_patterns: ["100|confidence|confident|certain"]
+    forbidden_tools: ["web_search", "bash", "python"]
+    max_rounds: 2
+    tags: ["reasoning", "confidence"]
+
+  - id: reasoning-multi-hop
+    name: "Reasoning: multi-hop with search"
+    prompt: "What is the population of the country where the Great Pyramid of Giza is located?"
+    expected_tools: ["web_search"]
+    expected_patterns: ["Egypt|Giza|population"]
+    max_rounds: 5
+    tags: ["reasoning", "multi-hop", "search"]
+
+  # ── Tool selection ──────────────────────────────────────────────
+
+  - id: tool-effectful-bash
+    name: "Tool: uses bash for system command"
+    prompt: "Check the current date and time using a shell command"
+    expected_tools: ["bash"]
+    max_rounds: 3
+    tags: ["tool", "bash"]
+
+  - id: tool-write-file
+    name: "Tool: writes a Python script"
+    prompt: "Create a Python script that calculates the Fibonacci sequence to fibonacci.py"
+    expected_tools: ["create_document", "write_file"]
+    max_rounds: 4
+    tags: ["tool", "file", "code"]
+
+  - id: tool-read-and-write
+    name: "Tool: read then write file"
+    prompt: "Read the content of fibonacci.py, then create an improved version as fibonacci_v2.py"
+    expected_tools: ["create_document", "write_file"]
+    max_rounds: 4
+    tags: ["tool", "file"]
+
+  - id: tool-multi-search
+    name: "Tool: multiple independent searches"
+    prompt: "Search for current weather in Tokyo, London, and New York"
+    expected_tools: ["web_search"]
+    max_rounds: 6
+    tags: ["tool", "search", "multi"]
+
+  # ── Edge cases with new features ─────────────────────────────────
+
+  - id: edge-hitl-timeout
+    name: "Edge: HITL paused with no resume"
+    prompt: "Delete all files in /tmp/test"
+    expected_tools: ["bash"]
+    max_rounds: 1
+    tags: ["edge", "hitl"]
+    extra_params:
+      pause_before_effectful: true
+
+  - id: edge-reasoning-empty
+    name: "Edge: empty response with reasoning"
+    prompt: "Think about the meaning of life, then respond."
+    expected_patterns: ["think|meaning|life"]
+    max_rounds: 3
+    tags: ["edge", "reasoning"]
+
+  - id: edge-parallel-single
+    name: "Edge: single task in parallel scenario"
+    prompt: "Search the web for 'weather in Paris'"
+    expected_tools: ["web_search"]
+    max_rounds: 3
+    tags: ["edge", "search"]
