@@ -1,0 +1,22 @@
+html.theme-arctic {
+  --j-sky: #1d5fa8;
+  --j-sky-rgb: 29,95,168;
+  --j-deep: #3b82f6;
+  --j-navy: #b3cfe0;
+  --j-mid: #6098c0;
+  --j-accent: #38bdf8;
+  --j-glow: rgba(29,95,168,0.12);
+  --j-gold: #b97814;
+  --j-gold-rgb: 185,120,20;
+  --j-dark: #dbe8f0;
+  --j-bg: #f0f4f8;
+  --j-bg-rgb: 240,244,248;
+  --j-surface: #ffffff;
+  --j-surface-rgb: 255,255,255;
+  --j-surface-hover: #dde8f0;
+  --j-border: rgba(29,95,168,0.16);
+  --j-border-bright: rgba(29,95,168,0.32);
+  --j-text: #1e293b;
+  --j-text-dim: rgba(71,85,105,0.72);
+  --j-text-muted: rgba(100,116,139,0.55);
+}

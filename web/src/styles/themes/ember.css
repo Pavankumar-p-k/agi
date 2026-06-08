@@ -1,0 +1,22 @@
+html.theme-ember {
+  --j-sky: #f5c842;
+  --j-sky-rgb: 245,200,66;
+  --j-deep: #ff6b35;
+  --j-navy: #431407;
+  --j-mid: #9A3412;
+  --j-accent: #ffb86b;
+  --j-glow: rgba(245,200,66,0.12);
+  --j-gold: #f5c842;
+  --j-gold-rgb: 245,200,66;
+  --j-dark: #0a0702;
+  --j-bg: #0a0702;
+  --j-bg-rgb: 10,7,2;
+  --j-surface: #1a1008;
+  --j-surface-rgb: 26,16,8;
+  --j-surface-hover: #2e1a08;
+  --j-border: rgba(245,200,66,0.13);
+  --j-border-bright: rgba(245,200,66,0.28);
+  --j-text: #fed7aa;
+  --j-text-dim: rgba(254,215,170,0.68);
+  --j-text-muted: rgba(160,104,58,0.55);
+}
