@@ -481,9 +481,9 @@ if _NEXT_OUT.is_dir():
 
     @app.get("/{path:path}")
     async def web_ui(request: Request, path: str):
-        # Skip API, WS, email, auth routes (handled by other routers)
-        if path.startswith(("api/", "ws/", "email/", "v1/", "assets/", "static/", "_next/", "icons/")):
-            return FileResponse("static/index.html")
+        # API/WS/email/v1 paths that reached here have no matching handler
+        if path.startswith(("api/", "ws/", "email/", "v1/")):
+            return JSONResponse(status_code=404, content={"detail": "Not found"})
 
         # Try exact file
         file_candidate = _NEXT_OUT / path
