@@ -73,31 +73,12 @@ async def chat_stream_websocket(ws: WebSocket):
                 session_id = msg.get('session_id') or str(id(ws))
                 user_id = session_id
 
-                from memory.memory_facade import memory
-                memories = memory.recall(text, user_id=user_id, limit=5)
-                memory_context = memory.format_context(memories)
-
-                from ..session import ConversationManager
-                cm = ConversationManager(session_id=session_id)
-                if cm.path.exists():
-                    cm.load()
-                    history = cm.get_context(last_n=10)
-                    history_str = "\n".join([f"{m['role']}: {m['content']}" for m in history])
-                    history_context = f"## Recent Conversation History:\n{history_str}"
-                else:
-                    history_context = ""
-
-                from tools.ragflow_tool import format_rag_context, ragflow_search
-                rag_result = await ragflow_search(text, top_k=5)
-                rag_context = format_rag_context(rag_result.get("chunks", []))
+                from ..context_builder import build_unified_context
+                history_context = await build_unified_context(text, session_id=session_id)
 
                 system_prompt = "You are JARVIS, your AI assistant. Be concise."
                 if history_context:
                     system_prompt = history_context + "\n\n" + system_prompt
-                if memory_context:
-                    system_prompt = memory_context + "\n\n" + system_prompt
-                if rag_context:
-                    system_prompt = rag_context + "\n\n" + system_prompt
 
                 model, tier, processed_query = route_request(text)
 

@@ -19,6 +19,20 @@ from ..auth import User, verify_token
 
 router = APIRouter(tags=["Utilities & Code"])
 
+@router.get("/api/system/status")
+async def get_system_status():
+    """Canonical system health and model status."""
+    from core.config_registry import config
+    from core.llm_router import health_check
+    ollama_ok = await health_check()
+    return {
+        "status": "online",
+        "ollama": "reachable" if ollama_ok else "unreachable",
+        "model": config.get("llm.chat_model"),
+        "version": "0.1.0",
+    }
+
+
 class CodeReviewRequest(BaseModel):
     code: str
     language: str

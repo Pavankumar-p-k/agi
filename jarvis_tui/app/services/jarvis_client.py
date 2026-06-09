@@ -57,8 +57,8 @@ class JarvisClient:
                         continue
 
     async def get_status(self) -> dict[str, Any]:
-        """Gets status from /ai_os/status."""
-        response = await self.client.get("/ai_os/status")
+        """Gets status from /api/system/status."""
+        response = await self.client.get("/api/system/status")
         response.raise_for_status()
         return response.json()
 

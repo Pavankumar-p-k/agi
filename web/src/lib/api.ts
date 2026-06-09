@@ -28,5 +28,5 @@ export const api = {
   health: () => request<{ status: string }>('/api/health'),
   chat: (text: string) =>
     request<{ response: string }>('/api/chat', { method: 'POST', body: JSON.stringify({ text }) }),
-  status: () => request<Record<string, unknown>>('/api/dot/status'),
+  status: () => request<Record<string, unknown>>('/api/system/status'),
 };

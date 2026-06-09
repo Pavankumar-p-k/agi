@@ -39,35 +39,15 @@ if three_pass_handler:
     @router.post("/api/chat")
     async def chat_route(req: ChatRequest):
         user_id = req.session_id or "default_user"
+        from ..context_builder import build_unified_context
+        combined_context = await build_unified_context(
+            req.message, 
+            session_id=req.session_id, 
+            extra_context=req.context or ""
+        )
 
-        from memory.memory_facade import memory
-        memories = memory.recall(req.message, user_id=user_id, limit=5)
-        memory_context = memory.format_context(memories)
-
-        from ..session import ConversationManager
-        cm = ConversationManager(session_id=req.session_id)
-        if cm.path.exists():
-            cm.load()
-            # Get last 10 messages for linear context
-            history = cm.get_context(last_n=10)
-            history_str = "\n".join([f"{m['role']}: {m['content']}" for m in history])
-            history_context = f"## Recent Conversation History:\n{history_str}"
-        else:
-            history_context = ""
-
-        from tools.ragflow_tool import format_rag_context, ragflow_search
-        rag_result = await ragflow_search(req.message, top_k=5)
-        rag_context = format_rag_context(rag_result.get("chunks", []))
-
-        combined_context = req.context or ""
-        if history_context:
-            combined_context = history_context + "\n\n" + combined_context
-        if memory_context:
-            combined_context = memory_context + "\n\n" + combined_context
-        if rag_context:
-            combined_context = rag_context + "\n\n" + combined_context
-
-        req.context = combined_context.strip()
+        from ..intent_router import extract_intent
+        intent_data = await extract_intent(req.message)
 
         result = await three_pass_handler(req)
 
