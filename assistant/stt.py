@@ -25,10 +25,10 @@ def init_stt_providers():
 def await_deepgram_health(dg) -> bool:
     try:
         import asyncio
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            future = asyncio.run_coroutine_threadsafe(dg.health(), loop)
-            return future.result(timeout=10)
+        loop = asyncio.get_running_loop()
+        future = asyncio.run_coroutine_threadsafe(dg.health(), loop)
+        return future.result(timeout=10)
+    except RuntimeError:
         return asyncio.run(dg.health())
     except Exception as e:
         logger.warning("[STT] Deepgram health check failed: %s", e)

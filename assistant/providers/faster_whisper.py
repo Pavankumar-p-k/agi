@@ -82,7 +82,7 @@ class FasterWhisperProvider(STTProvider):
 
     async def health(self) -> bool:
         try:
-            self._ensure()
+            await self._ensure()
             return self._healthy
         except Exception as e:
             logger.warning("[STT] health check failed: %s", e)

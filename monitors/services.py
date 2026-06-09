@@ -159,14 +159,14 @@ class ServiceHealthChecker:
         for mod in ("stt", "tts", "wake_word"):
             try:
                 if mod == "stt":
-                    from assistant.stt import stt_processor
-                    _ = stt_processor
+                    from assistant.stt import get_stt
+                    _ = get_stt()
                 elif mod == "tts":
-                    from assistant.tts import tts_engine
-                    _ = tts_engine
+                    from assistant.tts import get_tts
+                    _ = get_tts()
                 elif mod == "wake_word":
-                    from assistant.wake_word import wake_word_detector
-                    _ = wake_word_detector
+                    from assistant.wake_word import get_detector
+                    _ = get_detector()
                 results.append(f"{mod}=ok")
             except ImportError:
                 results.append(f"{mod}=not_loaded")

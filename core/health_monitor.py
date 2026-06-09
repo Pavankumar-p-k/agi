@@ -15,8 +15,8 @@ Usage in lifespan():
 from __future__ import annotations
 
 import asyncio
-import time
 import logging
+import time
 
 from core.llm_router import health_check as ollama_health_check
 
@@ -105,14 +105,14 @@ class HealthMonitor:
         """Check voice modules by import (lazy-loaded, may not be imported yet)."""
         try:
             if name == "stt":
-                from assistant.stt import stt_processor
-                _ = stt_processor
+                from assistant.stt import get_stt
+                _ = get_stt()
             elif name == "tts":
-                from assistant.tts import tts_engine
-                _ = tts_engine
+                from assistant.tts import get_tts
+                _ = get_tts()
             elif name == "wake_word":
-                from assistant.wake_word import wake_word_detector
-                _ = wake_word_detector
+                from assistant.wake_word import get_detector
+                _ = get_detector()
             return True, ""
         except ImportError:
             return True, "not_loaded"  # Not an error if not imported yet
@@ -122,7 +122,7 @@ class HealthMonitor:
     def _check_gpu(self) -> tuple[bool, str]:
         """Check GPU memory via pynvml."""
         try:
-            from pynvml import nvmlInit, nvmlDeviceGetHandleByIndex, nvmlDeviceGetMemoryInfo
+            from pynvml import nvmlDeviceGetHandleByIndex, nvmlDeviceGetMemoryInfo, nvmlInit
             nvmlInit()
             handle = nvmlDeviceGetHandleByIndex(0)
             info = nvmlDeviceGetMemoryInfo(handle)
