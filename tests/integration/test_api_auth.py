@@ -1,3 +1,16 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import pytest
 from unittest.mock import patch
 
@@ -46,13 +59,13 @@ class TestHealthEndpoint:
 class TestAuthMiddleware:
     def test_blocked_when_no_token(self, mock_auth_client):
         mock_auth_client.app.state.auth_manager.validate_token.return_value = False
-        resp = mock_auth_client.get("/api/settings/llm.default_model")
+        resp = mock_auth_client.get("/api/admin")
         assert resp.status_code == 401
 
     def test_blocked_when_invalid_cookie(self, mock_auth_client):
         mock_auth_client.app.state.auth_manager.validate_token.return_value = False
         resp = mock_auth_client.get(
-            "/api/settings/llm.default_model",
+            "/api/admin",
             cookies={"session_token": "garbage"},
         )
         assert resp.status_code == 401
@@ -60,7 +73,7 @@ class TestAuthMiddleware:
     def test_passes_with_valid_cookie(self, mock_auth_client):
         mock_auth_client.app.state.auth_manager.validate_token.return_value = True
         resp = mock_auth_client.get(
-            "/api/settings/llm.default_model",
+            "/api/settings/llm.chat_model",
             cookies={"session_token": "valid_token"},
         )
         assert resp.status_code != 401
@@ -68,7 +81,7 @@ class TestAuthMiddleware:
     def test_passes_with_valid_bearer(self, mock_auth_client):
         mock_auth_client.app.state.auth_manager.validate_token.return_value = True
         resp = mock_auth_client.get(
-            "/api/settings/llm.default_model",
+            "/api/settings/llm.chat_model",
             headers={"Authorization": "Bearer valid_token"},
         )
         assert resp.status_code != 401
@@ -81,20 +94,20 @@ class TestAuthMiddleware:
     def test_auth_with_real_manager_valid_token(self, real_auth_client):
         client, token = real_auth_client
         resp = client.get(
-            "/api/settings/llm.default_model",
+            "/api/settings/llm.chat_model",
             cookies={"session_token": token},
         )
         assert resp.status_code == 200
 
     def test_auth_with_real_manager_no_token(self, real_auth_client):
         client, _token = real_auth_client
-        resp = client.get("/api/settings/llm.default_model")
+        resp = client.get("/api/admin")
         assert resp.status_code == 401
 
     def test_auth_with_real_manager_bad_token(self, real_auth_client):
         client, _token = real_auth_client
         resp = client.get(
-            "/api/settings/llm.default_model",
+            "/api/admin",
             cookies={"session_token": "definitely-not-a-real-token"},
         )
         assert resp.status_code == 401

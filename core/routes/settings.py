@@ -47,6 +47,20 @@ if _FASTAPI:
         from core.config_registry import config
         return config.as_api_dict(category=category)
 
+    # ── GET meta/categories (must precede {key:path} to avoid shadowing) ──────
+
+    @router.get("/settings/meta/categories")
+    async def get_categories():
+        from core.config_registry import all_categories, entries_by_category
+        return [
+            {
+                "id": cat,
+                "label": cat.replace("_", " ").title(),
+                "count": len(entries_by_category(cat)),
+            }
+            for cat in all_categories()
+        ]
+
     # ── GET single setting ────────────────────────────────────────────────────
 
     @router.get("/settings/{key:path}")
@@ -200,20 +214,6 @@ if _FASTAPI:
             "reasoning_engine_uses": reasoning_group,
             "effective_reasoning_model": groups.get(reasoning_group, groups["chat"]),
         }
-
-    # ── GET categories ────────────────────────────────────────────────────────
-
-    @router.get("/settings/meta/categories")
-    async def get_categories():
-        from core.config_registry import all_categories, entries_by_category
-        return [
-            {
-                "id": cat,
-                "label": cat.replace("_", " ").title(),
-                "count": len(entries_by_category(cat)),
-            }
-            for cat in all_categories()
-        ]
 
 else:
     class router:

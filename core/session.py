@@ -46,6 +46,7 @@ class ConversationManager:
         self.name = name
         self.messages: list[dict] = []
         self.stash: list[dict] = []
+        self.tasks: dict = {}
         self.token_count = 2  # base overhead
         self._dirty = False
 

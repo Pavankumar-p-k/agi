@@ -216,19 +216,19 @@ async def serve_manifest():
 async def serve_sw():
     return FileResponse("static/sw.js", media_type="application/javascript")
 
-try:
-    from api.os_routes import router as os_router
-    app.include_router(os_router)
-    logger.info("[Router] AI OS routes loaded")
-except Exception as e:
-    logger.warning("[Router] AI OS routes not loaded: %s", e)
+# try:
+#     from api.os_routes import router as os_router
+#     app.include_router(os_router)
+#     logger.info("[Router] AI OS routes loaded")
+# except Exception as e:
+#     logger.warning("[Router] AI OS routes not loaded: %s", e)
 
-try:
-    from api.ai_os_routes import router as ai_os_router
-    app.include_router(ai_os_router)
-    logger.info("[Router] AI OS CUSTOM routes loaded")
-except Exception as e:
-    logger.warning("[Router] AI OS CUSTOM routes not loaded: %s", e)
+# try:
+#     from api.ai_os_routes import router as ai_os_router
+#     app.include_router(ai_os_router)
+#     logger.info("[Router] AI OS CUSTOM routes loaded")
+# except Exception as e:
+#     logger.warning("[Router] AI OS CUSTOM routes not loaded: %s", e)
 
 try:
     from automation.routes import router as automation_router
@@ -249,12 +249,12 @@ try:
 except Exception as e:
     logger.warning("[Router] Call sync routes not loaded: %s", e)
 
-try:
-    from api.hybrid_integration import setup_hybrid_routes
-    setup_hybrid_routes(app)
-    logger.info("[Router] Hybrid Automation routes loaded [OK]")
-except Exception as e:
-    logger.warning("[Router] Hybrid Automation routes not loaded: %s", e)
+# try:
+#     from api.hybrid_integration import setup_hybrid_routes
+#     setup_hybrid_routes(app)
+#     logger.info("[Router] Hybrid Automation routes loaded [OK]")
+# except Exception as e:
+#     logger.warning("[Router] Hybrid Automation routes not loaded: %s", e)
 
 try:
     from routers.screen import router as screen_router
@@ -334,20 +334,20 @@ except Exception as e:
     logger.warning("[Router] Settings routes not loaded: %s", e)
 
 # JARVIS Sub-Agents
-try:
-    from api.agent_routes import router as agent_router
-    app.include_router(agent_router, prefix="/api/v1")
-    logger.info("[Router] JARVIS Sub-Agents routes loaded [OK]")
-except Exception as e:
-    logger.warning("[Router] Sub-Agents routes not loaded: %s", e)
+# try:
+#     from api.agent_routes import router as agent_router
+#     app.include_router(agent_router, prefix="/api/v1")
+#     logger.info("[Router] JARVIS Sub-Agents routes loaded [OK]")
+# except Exception as e:
+#     logger.warning("[Router] Sub-Agents routes not loaded: %s", e)
 
 # AGI routes
-try:
-    from api.agi_routes import router as agi_router
-    app.include_router(agi_router)
-    logger.info("[Router] AGI routes loaded [OK]")
-except Exception as e:
-    logger.warning("[Router] AGI routes not loaded: %s", e)
+# try:
+#     from api.agi_routes import router as agi_router
+#     app.include_router(agi_router)
+#     logger.info("[Router] AGI routes loaded [OK]")
+# except Exception as e:
+#     logger.warning("[Router] AGI routes not loaded: %s", e)
 
 # Website Generator routes
 try:

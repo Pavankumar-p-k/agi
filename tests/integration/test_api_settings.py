@@ -1,3 +1,16 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import pytest
 
 
@@ -9,7 +22,7 @@ class TestSettingsEndpoints:
         assert isinstance(data, list)
 
     def test_get_single_setting(self, api_client):
-        resp = api_client.get("/api/settings/llm.default_model")
+        resp = api_client.get("/api/settings/llm.chat_model")
         assert resp.status_code == 200
         data = resp.json()
         assert "key" in data
@@ -27,12 +40,12 @@ class TestSettingsEndpoints:
 
     def test_update_setting(self, api_client):
         resp = api_client.put(
-            "/api/settings/llm.default_model",
+            "/api/settings/llm.chat_model",
             json={"value": "test-model"},
         )
         if resp.status_code == 200:
             data = resp.json()
-            assert data.get("key") == "llm.default_model"
+            assert data.get("key") == "llm.chat_model"
         elif resp.status_code == 400:
             assert "restart_required" in resp.text.lower() or "invalid" in resp.text.lower()
 
@@ -46,17 +59,17 @@ class TestSettingsEndpoints:
     def test_bulk_update_settings(self, api_client):
         resp = api_client.post(
             "/api/settings/bulk",
-            json={"llm.default_model": "bulk-test-model"},
+            json={"llm.chat_model": "bulk-test-model"},
         )
         assert resp.status_code == 200
         data = resp.json()
         assert "updated" in data
 
     def test_reset_setting(self, api_client):
-        resp = api_client.post("/api/settings/reset/llm.default_model")
+        resp = api_client.post("/api/settings/reset/llm.chat_model")
         assert resp.status_code == 200
         data = resp.json()
-        assert data.get("key") == "llm.default_model"
+        assert data.get("key") == "llm.chat_model"
 
     def test_reset_all_settings(self, api_client):
         resp = api_client.post("/api/settings/reset")
