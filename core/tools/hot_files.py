@@ -1,3 +1,15 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """Track recently accessed files to provide live context to the model.
 
 Every read_file, write_file, edit_file, and batch_edit_file call updates
@@ -7,7 +19,6 @@ context so the model knows what files the user/agent is currently working on.
 
 import time
 from collections import OrderedDict
-from typing import Optional
 
 _HOT_FILES: dict[str, OrderedDict] = {}  # session_id -> OrderedDict[path, timestamp]
 _MAX_HOT_FILES = 10

@@ -1,3 +1,15 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """
 core/database_models.py — Legacy sync SQLite ORM models.
 
@@ -12,7 +24,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from pathlib import Path
 
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text, create_engine
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text, create_engine, event
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 logger = logging.getLogger(__name__)
@@ -21,8 +33,21 @@ _db_executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="db")
 
 DB_PATH = Path(__file__).resolve().parents[1] / "data" / "jarvis.db"
 os.makedirs(str(DB_PATH.parent), exist_ok=True)
-engine = create_engine(f"sqlite:///{DB_PATH.as_posix()}", echo=False)
+engine = create_engine(
+    f"sqlite:///{DB_PATH.as_posix()}",
+    echo=False,
+    connect_args={"check_same_thread": False},
+)
 SessionLocal = sessionmaker(bind=engine)
+
+
+@event.listens_for(engine, "connect")
+def _set_sqlite_pragma(dbapi_connection, connection_record):
+    cursor = dbapi_connection.cursor()
+    cursor.execute("PRAGMA journal_mode=WAL")
+    cursor.execute("PRAGMA synchronous=NORMAL")
+    cursor.execute("PRAGMA busy_timeout=5000")
+    cursor.close()
 
 
 @contextlib.asynccontextmanager

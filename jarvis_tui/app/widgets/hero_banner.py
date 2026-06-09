@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import asyncio
 from datetime import datetime
-from textual.app import ComposeResult
-from textual.widget import Widget
-from textual.reactive import reactive
-from rich.text import Text
-from rich.panel import Panel
+
 from rich.align import Align
+from rich.panel import Panel
+from rich.text import Text
+from textual.reactive import reactive
+from textual.widget import Widget
+
 
 class HeroBanner(Widget):
     """
@@ -17,14 +18,14 @@ class HeroBanner(Widget):
     orb_frame = reactive(0)
     mood = reactive("idle") # idle, thinking, done, error
     scan_pos = reactive(-1)
-    
+
     ORB_CHARS = {
         "idle": ["⣾", "⣽", "⣻", "⢿", "⡿", "⣟", "⣯", "⣷"],
         "thinking": ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"],
         "done": ["⠿", "⠷", "⠦", "⠖", "⠒", "⠐", "⠒", "⠖", "⠦", "⠷"],
         "error": ["⣷", "⣯", "⣟", "⡿", "⢿", "⣻", "⣽", "⣾"]
     }
-    
+
     MOOD_COLORS = {
         "idle": "cyan",
         "thinking": "amber", # rich doesn't have amber, using yellow
@@ -74,15 +75,15 @@ class HeroBanner(Widget):
     def render(self) -> Panel:
         color = self.MOOD_COLORS.get(self.mood, "cyan")
         if color == "amber": color = "bright_yellow"
-        
+
         frames = self.ORB_CHARS.get(self.mood, self.ORB_CHARS["idle"])
         orb = Text(frames[self.orb_frame % len(frames)], style=f"{color} bold")
-        
+
         # Build ASCII art with scanline effect
         content = Text()
         content.append(orb)
         content.append("\n")
-        
+
         for line in self.ASCII_LINES:
             line_text = Text()
             for i, char in enumerate(line):
@@ -93,9 +94,9 @@ class HeroBanner(Widget):
                     line_text.append(char, style="blue bold")
             content.append(line_text)
             content.append("\n")
-        
+
         content.append(f"  {self.status_tagline}", style="italic dim")
-        
+
         return Panel(
             Align.center(content),
             border_style="blue",

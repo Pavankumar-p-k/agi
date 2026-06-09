@@ -1,0 +1,400 @@
+{
+  "audit_metadata": {
+    "project": "jarvis-ai",
+    "version": "1.1.0",
+    "date": "2026-06-09",
+    "auditor": "automated-engineering-audit",
+    "repository": "C:\\Users\\peter\\Desktop\\jarvis"
+  },
+  "summary": {
+    "total_issues": 75,
+    "by_severity": {
+      "critical": 10,
+      "high": 18,
+      "medium": 22,
+      "low": 15,
+      "info": 10
+    },
+    "by_category": {
+      "security": 15,
+      "bug": 10,
+      "performance": 8,
+      "memory": 6,
+      "database": 5,
+      "architecture": 8,
+      "dead_code": 5,
+      "documentation": 10,
+      "open_source": 8
+    }
+  },
+  "scores": {
+    "architecture": 72,
+    "security": 55,
+    "performance": 60,
+    "reliability": 65,
+    "maintainability": 68,
+    "documentation": 70,
+    "open_source_readiness": 62
+  },
+  "release_decision": "BLOCK_RELEASE",
+  "critical_findings": [
+    {
+      "id": "C-01",
+      "title": "Shell tools bypass admin gating",
+      "severity": "critical",
+      "file": "core/tools/security.py",
+      "lines": "15-24",
+      "description": "shell/shell_command NOT in NON_ADMIN_BLOCKED_TOOLS. Any authenticated user can execute arbitrary OS commands.",
+      "fix_available": true,
+      "fix_file": "fixes/patches/C01-shell-tools-auth-bypass.patch"
+    },
+    {
+      "id": "C-02",
+      "title": "edit_file path traversal — no confinement",
+      "severity": "critical",
+      "file": "core/tools/execution.py",
+      "lines": "830-833",
+      "description": "do_edit_file resolves model-supplied paths via Path.resolve() but doesn't use _resolve_tool_path() allowlist.",
+      "fix_available": true,
+      "fix_file": "fixes/patches/C02-edit-file-path-confinement.patch"
+    },
+    {
+      "id": "C-03",
+      "title": "Unified diff path extraction bypasses confinement",
+      "severity": "critical",
+      "file": "core/tools/execution.py",
+      "lines": "819-823",
+      "description": "File path extracted from unified diff header (--- a/...) used directly without allowlist/denylist check.",
+      "fix_available": true,
+      "fix_file": "fixes/patches/C02-edit-file-path-confinement.patch"
+    },
+    {
+      "id": "C-04",
+      "title": "SSRF DNS rebinding and redirect bypass",
+      "severity": "high",
+      "file": "core/ssrf.py",
+      "lines": "75-101",
+      "description": "DNS resolved once at check time, not re-resolved before connection. Redirect targets not validated.",
+      "fix_available": true,
+      "fix_file": "fixes/patches/C04-ssrf-dns-rebinding.patch"
+    },
+    {
+      "id": "C-05",
+      "title": "SSRF hostname checks miss multiple loopback aliases",
+      "severity": "high",
+      "file": "core/ssrf.py",
+      "lines": "81",
+      "description": "Only checks localhost, localhost.localdomain, 0.0.0.0, 0. Misses 127.1, 0x7f000001, decimal forms, IPv4-mapped IPv6.",
+      "fix_available": false
+    },
+    {
+      "id": "C-06",
+      "title": "compile() on model-controlled content",
+      "severity": "high",
+      "file": "core/tools/execution.py",
+      "lines": "935",
+      "description": "compile(new_text, str(path), 'exec') called on LLM-controlled content. One step away from code execution.",
+      "fix_available": false,
+      "recommendation": "Use ast.parse() instead for syntax verification"
+    },
+    {
+      "id": "C-07",
+      "title": "Pickle deserialization RCE vector",
+      "severity": "high",
+      "file": "vision/face_recognition.py",
+      "lines": "47, 52-54",
+      "description": "pickle.loads() with HMAC key stored alongside cache file. Attacker with FS access can forge payloads.",
+      "fix_available": false,
+      "recommendation": "Use JSON/msgpack instead of pickle"
+    },
+    {
+      "id": "C-08",
+      "title": "Background job module missing (broken feature)",
+      "severity": "high",
+      "file": "core/tools/execution.py",
+      "lines": "1597-1598",
+      "description": "from core.tools.bg_jobs import launch will raise ImportError — bg_jobs.py does not exist. Entire #!bg feature is broken.",
+      "fix_available": false,
+      "recommendation": "Implement core/tools/bg_jobs.py or remove #!bg feature"
+    },
+    {
+      "id": "C-09",
+      "title": "Rate limiter exempt-path logic inversion",
+      "severity": "high",
+      "file": "core/main.py",
+      "lines": "112-116",
+      "description": "if not request.url.path.startswith(exempt) rate-limits ONLY exempt paths. Everything else bypasses rate limiting.",
+      "fix_available": true,
+      "fix_file": "fixes/patches/C09-rate-limiter-logic.patch"
+    },
+    {
+      "id": "C-10",
+      "title": "do_api_call missing owner authorization",
+      "severity": "high",
+      "file": "core/tools/execution.py",
+      "lines": "1350",
+      "description": "do_api_call(content) called without owner=owner, unlike every other handler.",
+      "fix_available": true,
+      "fix_file": "fixes/patches/C10-api-call-owner.patch"
+    }
+  ],
+  "high_findings": [
+    {
+      "id": "H-01",
+      "title": "CORS overly permissive",
+      "severity": "high",
+      "file": "core/main.py",
+      "lines": "100-106"
+    },
+    {
+      "id": "H-02",
+      "title": "web_fetch SSRF bypass risk",
+      "severity": "high",
+      "file": "core/tools/execution.py",
+      "lines": "733-738"
+    },
+    {
+      "id": "H-03",
+      "title": "Persistent shell no user isolation",
+      "severity": "high",
+      "file": "core/tools/persistent_shell.py",
+      "lines": "123-127"
+    },
+    {
+      "id": "H-04",
+      "title": "Prompt security only advisory",
+      "severity": "high",
+      "file": "core/prompt_security.py",
+      "lines": "23-43"
+    },
+    {
+      "id": "H-05",
+      "title": "Internal token in env var",
+      "severity": "high",
+      "file": "core/middleware.py",
+      "lines": "14"
+    },
+    {
+      "id": "H-06",
+      "title": "~90% of API routes have NO authentication",
+      "severity": "high",
+      "file": "core/main.py + 30+ router files"
+    },
+    {
+      "id": "H-07",
+      "title": "Rate limiter exempts loopback (effectively disabled locally)",
+      "severity": "high",
+      "file": "core/rate_limiter.py",
+      "lines": "22"
+    },
+    {
+      "id": "H-08",
+      "title": "No unified API response envelope",
+      "severity": "high",
+      "file": "multiple route files"
+    },
+    {
+      "id": "H-09",
+      "title": "Codebase indexer walks workspace on every query",
+      "severity": "high",
+      "file": "core/codebase_indexer.py",
+      "lines": "130-201",
+      "performance_impact": "2-5s per agent round"
+    },
+    {
+      "id": "H-10",
+      "title": "Duplicate memory writes across tiers",
+      "severity": "high",
+      "file": "memory/memory_facade.py + memory/tiered_memory.py",
+      "performance_impact": "50% storage waste"
+    },
+    {
+      "id": "H-11",
+      "title": "No WAL mode on legacy SQLite database",
+      "severity": "high",
+      "file": "core/database_models.py",
+      "lines": "24"
+    },
+    {
+      "id": "H-12",
+      "title": "Verifier subagent passes silently on failure",
+      "severity": "high",
+      "file": "core/agent_helpers.py",
+      "lines": "308-311"
+    },
+    {
+      "id": "H-13",
+      "title": "README says MIT but LICENSE is Apache-2.0",
+      "severity": "high",
+      "file": "README.md",
+      "lines": "368"
+    },
+    {
+      "id": "H-14",
+      "title": "No copyright headers in any source file",
+      "severity": "high",
+      "file": "ALL source files"
+    },
+    {
+      "id": "H-15",
+      "title": "CHANGELOG outdated by 11+ versions",
+      "severity": "high",
+      "file": "CHANGELOG.md"
+    }
+  ],
+  "medium_findings": [
+    {
+      "id": "M-01",
+      "title": "sandbox.py overly permissive write paths",
+      "file": "ai_os/sandbox.py",
+      "lines": "34-38"
+    },
+    {
+      "id": "M-02",
+      "title": "docker_sandbox.py container cleanup leaks",
+      "file": "ai_os/docker_sandbox.py",
+      "lines": "134, 172-175"
+    },
+    {
+      "id": "M-03",
+      "title": "docker_sandbox.py naive log splitting",
+      "file": "ai_os/docker_sandbox.py",
+      "lines": "177-185"
+    },
+    {
+      "id": "M-04",
+      "title": "Web UI catch-all path traversal risk",
+      "file": "core/main.py",
+      "lines": "458-480"
+    },
+    {
+      "id": "M-05",
+      "title": "os.system() in CLI",
+      "file": "cli_slash_commands.py",
+      "lines": "126"
+    },
+    {
+      "id": "M-06",
+      "title": "subprocess.Popen without explicit shell=False",
+      "file": "automation/pc_automation.py",
+      "lines": "362"
+    },
+    {
+      "id": "M-07",
+      "title": "N+1 pattern in mcp_manager.py and agent_helpers.py",
+      "file": "core/mcp_manager.py + core/agent_helpers.py"
+    },
+    {
+      "id": "M-08",
+      "title": "SQLite lock risk in embedding_memory.py",
+      "file": "memory/embedding_memory.py",
+      "lines": "29-40"
+    },
+    {
+      "id": "M-09",
+      "title": "Unbounded hot tier growth (session unbounded)",
+      "file": "memory/tiered_memory.py",
+      "lines": "62, 94-95"
+    },
+    {
+      "id": "M-10",
+      "title": "Orphaned SQLite data in embedding_memory (no cleanup)",
+      "file": "memory/embedding_memory.py",
+      "lines": "23, 77"
+    },
+    {
+      "id": "M-11",
+      "title": "AGI core stubs (6 fake submodules)",
+      "file": "core/agi_core.py",
+      "lines": "45, 59-93"
+    },
+    {
+      "id": "M-12",
+      "title": "40+ silent except blocks with pass",
+      "file": "multiple files"
+    },
+    {
+      "id": "M-13",
+      "title": "11 undocumented environment variables",
+      "file": ".env.example"
+    }
+  ],
+  "bug_findings": [
+    {
+      "id": "B-01",
+      "title": "Background job module missing",
+      "file": "core/tools/execution.py",
+      "lines": "1597-1598"
+    },
+    {
+      "id": "B-02",
+      "title": "logger used before assignment",
+      "file": "core/tools/execution.py",
+      "lines": "99, 204"
+    },
+    {
+      "id": "B-03",
+      "title": "Rate limiter logic inverted",
+      "file": "core/main.py",
+      "lines": "112-116"
+    },
+    {
+      "id": "B-04",
+      "title": "do_api_call missing owner param",
+      "file": "core/tools/execution.py",
+      "lines": "1350"
+    },
+    {
+      "id": "B-05",
+      "title": "Fragile closure captures tool variable by reference",
+      "file": "core/tools/execution.py",
+      "lines": "1442-1444"
+    },
+    {
+      "id": "B-06",
+      "title": "asyncio.create_task reader tasks without exception handling",
+      "file": "core/tools/execution.py",
+      "lines": "259-261, 302-306"
+    },
+    {
+      "id": "B-07",
+      "title": "container.remove after auto_remove=True (double remove)",
+      "file": "ai_os/docker_sandbox.py",
+      "lines": "79-82"
+    },
+    {
+      "id": "B-08",
+      "title": "SSRF IPv6 private IP detection fragile (string prefix)",
+      "file": "core/ssrf.py",
+      "lines": "63-69"
+    },
+    {
+      "id": "B-09",
+      "title": "watch_file start_line parsing silently ignores errors",
+      "file": "core/tools/execution.py",
+      "lines": "1298"
+    },
+    {
+      "id": "B-10",
+      "title": "file_agent.py Unix fallback command injection risk",
+      "file": "core/file_agent.py",
+      "lines": "296-297"
+    }
+  ],
+  "blocking_items_for_release": [
+    "Fix shell/shell_command NOT in NON_ADMIN_BLOCKED_TOOLS (C-01)",
+    "Add path confinement to edit_file and diff parsing (C-02/C-03)",
+    "Fix SSRF DNS rebinding and redirect bypass (C-04)",
+    "Fix rate limiter exempt-path logic inversion (C-09)",
+    "Pass owner parameter to do_api_call (C-10)",
+    "Implement or remove broken #!bg background job feature (C-08)",
+    "Fix README license mismatch (MIT vs Apache-2.0)",
+    "Add copyright headers to all source files",
+    "Fix CHANGELOG (outdated by 11+ versions)",
+    "Replace pickle.loads with safer serialization (C-07)",
+    "Use ast.parse() instead of compile() for syntax checking (C-06)",
+    "Add authentication to all API routes (H-06)",
+    "Fix AGI core stubs (M-11) — remove or implement",
+    "Fix all 40+ silent except: pass blocks"
+  ]
+}

@@ -1,3 +1,15 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 # network/websocket_server.py
 from __future__ import annotations
 
@@ -29,7 +41,8 @@ class ConnectionManager:
         for key, ws in self.active.items():
             try:
                 await ws.send_json(payload)
-            except Exception:
+            except Exception as e:
+                logger.warning("[network.websocket_server] broadcast send failed: %s", e)
                 disconnected.append(key)
         for key in disconnected:
             self.active.pop(key, None)

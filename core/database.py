@@ -1,14 +1,27 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 core/database.py â€” All SQLAlchemy models + async DB engine
 """
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
-from sqlalchemy import String, Text, DateTime, Boolean, Float, Integer, ForeignKey, JSON
-from datetime import datetime
-from typing import Optional, List
-from .config import DATABASE_URL
 import logging
+from datetime import datetime
+
+from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+
+from .config import DATABASE_URL
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +44,7 @@ async def get_db():
 
 async def init_db():
     from alembic.config import Config
+
     from alembic import command
 
     alembic_cfg = Config("alembic.ini")
@@ -52,15 +66,15 @@ class User(Base):
     id:           Mapped[int]           = mapped_column(Integer, primary_key=True)
     uid:          Mapped[str]           = mapped_column(String(128), unique=True, index=True)  # Firebase UID
     email:        Mapped[str]           = mapped_column(String(255), unique=True)
-    display_name: Mapped[Optional[str]] = mapped_column(String(255))
+    display_name: Mapped[str | None] = mapped_column(String(255))
     created_at:   Mapped[datetime]      = mapped_column(DateTime, default=datetime.utcnow)
-    last_seen:    Mapped[Optional[datetime]] = mapped_column(DateTime)
-    preferences:  Mapped[Optional[dict]] = mapped_column(JSON)
+    last_seen:    Mapped[datetime | None] = mapped_column(DateTime)
+    preferences:  Mapped[dict | None] = mapped_column(JSON)
 
-    notes:        Mapped[List["Note"]]      = relationship(back_populates="user")
-    reminders:    Mapped[List["Reminder"]]  = relationship(back_populates="user")
-    activities:   Mapped[List["Activity"]]  = relationship(back_populates="user")
-    faces:        Mapped[List["KnownFace"]] = relationship(back_populates="owner")
+    notes:        Mapped[list["Note"]]      = relationship(back_populates="user")
+    reminders:    Mapped[list["Reminder"]]  = relationship(back_populates="user")
+    activities:   Mapped[list["Activity"]]  = relationship(back_populates="user")
+    faces:        Mapped[list["KnownFace"]] = relationship(back_populates="owner")
 
 
 class Note(Base):
@@ -70,7 +84,7 @@ class Note(Base):
     user_id:    Mapped[int]           = mapped_column(ForeignKey("users.id"))
     title:      Mapped[str]           = mapped_column(String(255))
     content:    Mapped[str]           = mapped_column(Text)
-    tags:       Mapped[Optional[str]] = mapped_column(String(500))   # comma-separated
+    tags:       Mapped[str | None] = mapped_column(String(500))   # comma-separated
     created_at: Mapped[datetime]      = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime]      = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     is_pinned:  Mapped[bool]          = mapped_column(Boolean, default=False)
@@ -84,9 +98,9 @@ class Reminder(Base):
     id:          Mapped[int]           = mapped_column(Integer, primary_key=True)
     user_id:     Mapped[int]           = mapped_column(ForeignKey("users.id"))
     title:       Mapped[str]           = mapped_column(String(255))
-    description: Mapped[Optional[str]] = mapped_column(Text)
+    description: Mapped[str | None] = mapped_column(Text)
     remind_at:   Mapped[datetime]      = mapped_column(DateTime)
-    repeat:      Mapped[Optional[str]] = mapped_column(String(50))   # none|daily|weekly|monthly
+    repeat:      Mapped[str | None] = mapped_column(String(50))   # none|daily|weekly|monthly
     is_done:     Mapped[bool]          = mapped_column(Boolean, default=False)
     created_at:  Mapped[datetime]      = mapped_column(DateTime, default=datetime.utcnow)
 
@@ -100,7 +114,7 @@ class Activity(Base):
     user_id:      Mapped[int]           = mapped_column(ForeignKey("users.id"))
     activity_type: Mapped[str]          = mapped_column(String(100))  # app_opened|message_sent|location|voice_command
     description:  Mapped[str]           = mapped_column(Text)
-    meta:         Mapped[Optional[dict]] = mapped_column("metadata", JSON)  # extra data
+    meta:         Mapped[dict | None] = mapped_column("metadata", JSON)  # extra data
     timestamp:    Mapped[datetime]       = mapped_column(DateTime, default=datetime.utcnow)
 
     user: Mapped["User"] = relationship(back_populates="activities")
@@ -113,9 +127,9 @@ class DailySummary(Base):
     user_id:     Mapped[int]  = mapped_column(ForeignKey("users.id"))
     date:        Mapped[str]  = mapped_column(String(20))   # YYYY-MM-DD
     summary:     Mapped[str]  = mapped_column(Text)
-    mood_score:  Mapped[Optional[float]] = mapped_column(Float)
-    productivity_score: Mapped[Optional[float]] = mapped_column(Float)
-    raw_data:    Mapped[Optional[dict]] = mapped_column(JSON)
+    mood_score:  Mapped[float | None] = mapped_column(Float)
+    productivity_score: Mapped[float | None] = mapped_column(Float)
+    raw_data:    Mapped[dict | None] = mapped_column(JSON)
     created_at:  Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
@@ -125,12 +139,12 @@ class KnownFace(Base):
     id:           Mapped[int]           = mapped_column(Integer, primary_key=True)
     owner_id:     Mapped[int]           = mapped_column(ForeignKey("users.id"))
     person_name:  Mapped[str]           = mapped_column(String(255))
-    relation:     Mapped[Optional[str]] = mapped_column(String(100))   # friend|family|stranger|etc
-    info:         Mapped[Optional[str]] = mapped_column(Text)          # extra stored info
+    relation:     Mapped[str | None] = mapped_column(String(100))   # friend|family|stranger|etc
+    info:         Mapped[str | None] = mapped_column(Text)          # extra stored info
     embedding_path: Mapped[str]         = mapped_column(String(500))   # path to face image/embedding
     image_count:  Mapped[int]           = mapped_column(Integer, default=0)
     first_seen:   Mapped[datetime]      = mapped_column(DateTime, default=datetime.utcnow)
-    last_seen:    Mapped[Optional[datetime]] = mapped_column(DateTime)
+    last_seen:    Mapped[datetime | None] = mapped_column(DateTime)
     access_level: Mapped[str]           = mapped_column(String(50), default="visitor")  # owner|trusted|visitor|blocked
 
     owner: Mapped["User"] = relationship(back_populates="faces")
@@ -143,8 +157,8 @@ class ChatHistory(Base):
     user_id:    Mapped[int]  = mapped_column(ForeignKey("users.id"))
     role:       Mapped[str]  = mapped_column(String(20))   # user|assistant
     message:    Mapped[str]  = mapped_column(Text)
-    intent:     Mapped[Optional[str]] = mapped_column(String(50), default="chat")
-    session_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True, index=True)
+    intent:     Mapped[str | None] = mapped_column(String(50), default="chat")
+    session_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
     timestamp:  Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
@@ -155,8 +169,8 @@ class ConnectedDevice(Base):
     user_id:      Mapped[int]           = mapped_column(ForeignKey("users.id"))
     device_name:  Mapped[str]           = mapped_column(String(255))
     device_type:  Mapped[str]           = mapped_column(String(50))   # android|windows
-    ip_address:   Mapped[Optional[str]] = mapped_column(String(45))
-    last_connected: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    ip_address:   Mapped[str | None] = mapped_column(String(45))
+    last_connected: Mapped[datetime | None] = mapped_column(DateTime)
     is_online:    Mapped[bool]          = mapped_column(Boolean, default=False)
 
 
@@ -165,7 +179,7 @@ class JarvisSkill(Base):
 
     id:          Mapped[int]  = mapped_column(Integer, primary_key=True)
     name:        Mapped[str]  = mapped_column(String(255), unique=True, index=True)
-    description: Mapped[Optional[str]] = mapped_column(Text)
+    description: Mapped[str | None] = mapped_column(Text)
     template:    Mapped[str]  = mapped_column(Text)
     created_at:  Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
@@ -174,15 +188,15 @@ class ExecutionLog(Base):
     __tablename__ = "execution_logs"
 
     id:          Mapped[int]       = mapped_column(Integer, primary_key=True)
-    plan_id:     Mapped[Optional[str]] = mapped_column(String(128), index=True)
-    goal:        Mapped[Optional[str]] = mapped_column(Text)
+    plan_id:     Mapped[str | None] = mapped_column(String(128), index=True)
+    goal:        Mapped[str | None] = mapped_column(Text)
     step_id:     Mapped[int]       = mapped_column(Integer)
     agent:       Mapped[str]       = mapped_column(String(50))
-    command:     Mapped[Optional[str]] = mapped_column(Text)
+    command:     Mapped[str | None] = mapped_column(Text)
     status:      Mapped[str]       = mapped_column(String(20))
-    result:      Mapped[Optional[str]] = mapped_column(Text)
-    error:       Mapped[Optional[str]] = mapped_column(Text)
-    duration_ms: Mapped[Optional[float]] = mapped_column(Float)
+    result:      Mapped[str | None] = mapped_column(Text)
+    error:       Mapped[str | None] = mapped_column(Text)
+    duration_ms: Mapped[float | None] = mapped_column(Float)
     created_at:  Mapped[datetime]  = mapped_column(DateTime, default=datetime.utcnow)
 
 
@@ -191,16 +205,16 @@ class SubagentRun(Base):
 
     run_id:             Mapped[str]           = mapped_column(String(128), primary_key=True)
     agent_id:           Mapped[str]           = mapped_column(String(100))
-    parent_session_key: Mapped[Optional[str]] = mapped_column(String(255), index=True)
+    parent_session_key: Mapped[str | None] = mapped_column(String(255), index=True)
     child_session_key:  Mapped[str]           = mapped_column(String(255), index=True)
     task:               Mapped[str]           = mapped_column(Text)
     status:             Mapped[str]           = mapped_column(String(20), default="pending") # pending|running|completed|failed|killed
     depth:              Mapped[int]           = mapped_column(Integer, default=0)
     created_at:         Mapped[datetime]      = mapped_column(DateTime, default=datetime.utcnow)
-    started_at:         Mapped[Optional[datetime]] = mapped_column(DateTime)
-    ended_at:           Mapped[Optional[datetime]] = mapped_column(DateTime)
-    result_text:        Mapped[Optional[str]] = mapped_column(Text)
-    error:              Mapped[Optional[str]] = mapped_column(Text)
-    outcome:            Mapped[Optional[str]] = mapped_column(String(20)) # ok|error|timeout|killed
+    started_at:         Mapped[datetime | None] = mapped_column(DateTime)
+    ended_at:           Mapped[datetime | None] = mapped_column(DateTime)
+    result_text:        Mapped[str | None] = mapped_column(Text)
+    error:              Mapped[str | None] = mapped_column(Text)
+    outcome:            Mapped[str | None] = mapped_column(String(20)) # ok|error|timeout|killed
     cleanup:            Mapped[str]           = mapped_column(String(20), default="delete") # delete|keep
-    meta:               Mapped[Optional[dict]] = mapped_column("metadata", JSON, default={})
+    meta:               Mapped[dict | None] = mapped_column("metadata", JSON, default={})

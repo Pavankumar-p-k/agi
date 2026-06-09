@@ -1,3 +1,15 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """
 model_context.py
 
@@ -6,8 +18,6 @@ Provides token estimation for context usage tracking.
 """
 
 import logging
-from typing import Dict, List, Optional
-
 from urllib.parse import urlparse
 
 import httpx
@@ -161,7 +171,7 @@ KNOWN_CONTEXT_WINDOWS = {
 # ---------------------------------------------------------------------------
 # Cache
 # ---------------------------------------------------------------------------
-_context_cache: Dict[str, int] = {}
+_context_cache: dict[str, int] = {}
 
 
 def get_context_length(endpoint_url: str, model: str) -> int:
@@ -185,7 +195,7 @@ def get_context_length(endpoint_url: str, model: str) -> int:
     return ctx
 
 
-def _lookup_known(model: str) -> Optional[int]:
+def _lookup_known(model: str) -> int | None:
     """Check known context windows by substring match.
 
     Picks the LONGEST matching key so a short key never shadows a more specific
@@ -195,8 +205,8 @@ def _lookup_known(model: str) -> Optional[int]:
     name = model.lower()
     basename = name.split("/")[-1] if "/" in name else name
     basename = basename.split(":")[0]  # strip :free, :extended etc.
-    best_key: Optional[str] = None
-    best_ctx: Optional[int] = None
+    best_key: str | None = None
+    best_ctx: int | None = None
     for key, ctx in KNOWN_CONTEXT_WINDOWS.items():
         if key in basename or key in name:
             if best_key is None or len(key) > len(best_key):
@@ -299,7 +309,7 @@ def _get_tiktoken_encoder():
     return _tiktoken_enc
 
 
-def estimate_tokens(messages: List[Dict]) -> int:
+def estimate_tokens(messages: list[dict]) -> int:
     """Token estimate for a list of messages.
 
     Uses tiktoken cl100k_base when available (~2x accuracy vs chars*0.3).

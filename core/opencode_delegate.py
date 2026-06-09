@@ -1,17 +1,28 @@
-import os
-import sys
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import asyncio
 import logging
+import os
+import sys
 from pathlib import Path
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
 
 async def delegate_to_opencode(
     task: str,
-    workspace: Optional[str] = None,
-    context: Optional[dict] = None,
+    workspace: str | None = None,
+    context: dict | None = None,
     timeout: int = 300,
 ) -> dict:
     if not _opencode_available():
@@ -48,7 +59,7 @@ async def delegate_to_opencode(
             stdout, stderr = await asyncio.wait_for(
                 proc.communicate(), timeout=timeout
             )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             proc.kill()
             await proc.wait()
             return {
@@ -76,7 +87,7 @@ def _opencode_available() -> bool:
     return _find_opencode_path() is not None
 
 
-def _find_opencode_path() -> Optional[str]:
+def _find_opencode_path() -> str | None:
     # Prefer .cmd on Windows (create_subprocess_exec can't resolve PATHEXT)
     if sys.platform == "win32":
         npm_cmd = Path(os.environ.get("APPDATA", "")) / "npm" / "opencode.cmd"
@@ -110,7 +121,7 @@ def _find_opencode_path() -> Optional[str]:
     return None
 
 
-def _build_task_prompt(task: str, workspace: str, context: Optional[dict] = None) -> str:
+def _build_task_prompt(task: str, workspace: str, context: dict | None = None) -> str:
     parts = []
     parts.append("# Task\n")
     parts.append(task)

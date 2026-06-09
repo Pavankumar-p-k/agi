@@ -1,7 +1,7 @@
 <div align="center">
   <img src="https://capsule-render.vercel.app/api?type=waving&color=0:00c6ff,100:0072ff&height=200&section=header&text=JARVIS&fontSize=80&fontColor=fff&animation=fadeIn" alt="JARVIS">
 
-  <h1>The Privacy-First AI Operating System</h1>
+  <h1>The Privacy-First AI Assistant</h1>
 
   <p>
     <b>Local-first · Voice-enabled · Self-healing · Tool-extensible</b>
@@ -20,14 +20,8 @@
     <a href="https://fastapi.tiangolo.com/">
       <img src="https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white" alt="FastAPI">
     </a>
-    <a href="https://litellm.ai/">
-      <img src="https://img.shields.io/badge/LiteLLM-126%20Providers-8A2BE2?style=flat-square" alt="126+ LLM Providers">
-    </a>
     <a href="https://ollama.com/">
       <img src="https://img.shields.io/badge/Ollama-Local%20First-5B5BD6?style=flat-square&logo=ollama" alt="Ollama Local First">
-    </a>
-    <a href="https://modelcontextprotocol.io/">
-      <img src="https://img.shields.io/badge/MCP-Server-7B68EE?style=flat-square" alt="MCP Server">
     </a>
     <a href="https://www.docker.com/">
       <img src="https://img.shields.io/badge/Docker-Ready-2496ED?style=flat-square&logo=docker" alt="Docker Ready">
@@ -54,7 +48,6 @@
 - [Features](#-features)
 - [Architecture](#-architecture)
 - [Security](#-security)
-- [Model Coverage](#-model-coverage)
 - [Contributing](#-contributing)
 - [License](#-license)
 
@@ -62,30 +55,26 @@
 
 ## 🌟 Why JARVIS?
 
-JARVIS is an all-in-one **AI Operating System** that runs on your machine. Unlike cloud-dependent assistants (Claude Code, ChatGPT, OpenClaw), JARVIS keeps your data **local by default** — no telemetry, no training on your conversations, no forced cloud dependency.
+JARVIS is an all-in-one **AI assistant** that runs on your machine. Unlike cloud-dependent assistants, JARVIS keeps your data **local by default** — no telemetry, no training on your conversations, no forced cloud dependency.
 
-| Capability | JARVIS | Claude Code | OpenClaw | ChatGPT |
-|------------|--------|-------------|----------|---------|
-| **Local-first** | ✅ Default (Ollama) | ❌ Cloud-only | ❌ Cloud-only | ❌ Cloud-only |
-| **Privacy tiers** | ✅ 3-tier (LOCAL/HYBRID/CLOUD) | ❌ None | ❌ None | ❌ None |
-| **Persistent shell sessions** | ✅ Stateful, `cd`/`export` recall | ✅ Stateful | ❌ Stateless | ❌ Stateless |
-| **Parallel sub-agents** | ✅ Free (unlimited) | ❌ Limited | ❌ Limited | ❌ Limited |
-| **LLM providers** | **126** via LiteLLM | ❌ Proprietary | 50 plugins | ❌ Proprietary |
-| **Voice pipeline** | ✅ Full local (wake → STT → TTS) | ❌ None | ❌ None | ✅ Cloud-only |
-| **Self-healing** | ✅ 3-layer auto-recovery | ❌ None | ❌ Partial | ❌ None |
-| **PC control** | ✅ Natural language automation | ❌ None | ❌ None | ❌ None |
-| **Docker sandbox** | ✅ One-command, network-isolated | ❌ None | ✅ Partial | ❌ None |
-| **Tool extensibility** | ✅ Python, 5 lines per tool | ✅ TypeScript | ✅ TypeScript | ❌ Limited |
-| **AST code graph** | ✅ Semantic search + symbol index | ❌ RAG only | ❌ RAG only | ❌ None |
-| **Cost** | **Free** | $100/mo | $20/mo + usage | $20/mo + usage |
-
-**JARVIS vs OpenClaw on security:** OpenClaw's plugin ecosystem has reported **512 CVEs** (including CVE-2026-25253, an RCE in the plugin loader). JARVIS addresses this with a hard audit: **8 security-critical fixes** shipped pre-launch (see [Security](#-security)).
+| Capability | JARVIS | Claude Code | ChatGPT |
+|------------|--------|-------------|---------|
+| **Local-first** | ✅ Default (Ollama) | ❌ Cloud-only | ❌ Cloud-only |
+| **Privacy tiers** | ✅ 3-tier (LOCAL/HYBRID/CLOUD) | ❌ None | ❌ None |
+| **Persistent shell sessions** | ✅ Stateful, `cd`/`export` recall | ✅ Stateful | ❌ Stateless |
+| **Agent chaining** | ✅ Sequential agent execution | ✅ | ❌ |
+| **Voice pipeline** | ✅ Full local (wake → STT → TTS) | ❌ None | ✅ Cloud-only |
+| **Self-healing** | ✅ 3-layer auto-recovery | ❌ None | ❌ None |
+| **PC control** | ✅ Natural language automation | ❌ None | ❌ None |
+| **Docker sandbox** | ✅ One-command, network-isolated | ❌ None | ❌ None |
+| **Tool extensibility** | ✅ Python, 5 lines per tool | ✅ TypeScript | ❌ Limited |
+| **Cost** | **Free** | $100/mo | $20/mo + usage |
 
 ---
 
 ## 🚀 Quick Start
 
-### Docker (Recommended — 1 Command)
+### Docker (Recommended)
 
 ```bash
 git clone https://github.com/Pavankumar-p-k/agi.git
@@ -110,11 +99,10 @@ python jarvis.py         # Launch the interactive CLI
 ### Configuration
 
 ```env
-# Model Selection (any of 126 LiteLLM providers)
+# Model Selection
 CHAT_MODEL=ollama/llama3.1:8b
-CODE_MODEL=openai/gpt-4o
-ANALYSIS_MODEL=anthropic/claude-sonnet-4-20250514
-REASONING_MODEL=gemini/gemini-2.5-flash
+CODE_MODEL=ollama/qwen2.5-coder:3b
+REASONING_MODEL=ollama/deepseek-r1:1.5b
 
 # API Keys (only if using cloud models)
 OPENAI_API_KEY=sk-...
@@ -140,9 +128,10 @@ ANTHROPIC_API_KEY=sk-...
       <h3>🧠 Persistent Tiered Memory</h3>
       <p>Multi-tier recall with vector embeddings:</p>
       <ul>
-        <li><b>Hot</b> — Recent session context (in-memory)</li>
-        <li><b>Warm</b> — Semantic vector search</li>
-        <li><b>Cold</b> — Durable SQLite storage</li>
+        <li><b>Vector</b> — Semantic search (ChromaDB)</li>
+        <li><b>Graph</b> — Knowledge graph relationships</li>
+        <li><b>Conversation</b> — Recent session context</li>
+        <li><b>mem0</b> — Long-term memory integration</li>
       </ul>
     </td>
   </tr>
@@ -151,25 +140,20 @@ ANTHROPIC_API_KEY=sk-...
       <h3>🎙️ Full Voice Pipeline</h3>
       <p>End-to-end local, zero cloud dependency:</p>
       <ul>
-        <li><b>Wake word:</b> Porcupine (local)</li>
+        <li><b>Wake word:</b> Porcupine + Silero VAD (local)</li>
         <li><b>STT:</b> Faster-Whisper (local)</li>
-        <li><b>TTS:</b> Kokoro (local)</li>
+        <li><b>TTS:</b> Edge TTS + pyttsx3 (local)</li>
       </ul>
     </td>
     <td width="50%">
-      <h3>🤖 10 Parallel Sub-Agents</h3>
-      <p>Specialized agents for every task — runs in parallel, not serial:</p>
+      <h3>🤖 Specialized Agents</h3>
+      <p>18 registered agents for different tasks:</p>
       <ul>
-        <li><b>NEXUS</b> — Integration & automation</li>
-        <li><b>FORGE</b> — Code generation & review</li>
-        <li><b>ORACLE</b> — Chain-of-thought planning</li>
-        <li><b>PHANTOM</b> — Analysis & summarization</li>
-        <li><b>CIPHER</b> — Security & governance</li>
-        <li><b>HERALD</b> — Social & communication</li>
-        <li><b>SCRIBE</b> — Quality & grading</li>
-        <li><b>ATLAS</b> — Deep research & multi-hop search</li>
-        <li><b>SENTINEL</b> — Monitoring & alerting</li>
-        <li><b>MAESTRO</b> — Orchestration & planning</li>
+        <li>Manager, Code, Research, Memory</li>
+        <li>Planner, Reasoning, Voice, Skill</li>
+        <li>Tool, Chat, Assistant, Writer</li>
+        <li>Editor, Translator, Analyst, Critic</li>
+        <li>Teacher, Voice</li>
       </ul>
     </td>
   </tr>
@@ -180,7 +164,6 @@ ANTHROPIC_API_KEY=sk-...
       <ul>
         <li>Open/manage applications</li>
         <li>File system operations</li>
-        <li>Browser automation with Playwright</li>
         <li>Keyboard & mouse control</li>
       </ul>
     </td>
@@ -202,7 +185,6 @@ ANTHROPIC_API_KEY=sk-...
         <li>Run any command in sandboxed environment</li>
         <li>Memory-limited, read-only by default</li>
         <li>Automatic container cleanup</li>
-        <li>Prefix any <code>shell</code> command with <code>sandbox:</code></li>
       </ul>
     </td>
     <td width="50%">
@@ -211,7 +193,6 @@ ANTHROPIC_API_KEY=sk-...
       <ul>
         <li><code>create_skill</code> tool generates <code>.md</code> + <code>.py</code> in one call</li>
         <li>Trigger phrases route directly to handler (bypass LLM)</li>
-        <li>Cache invalidated automatically on creation</li>
         <li>No server restart required</li>
       </ul>
     </td>
@@ -224,40 +205,35 @@ ANTHROPIC_API_KEY=sk-...
         <li>Per-conversation shell with 5-min idle GC</li>
         <li>Works on Windows (cmd.exe) and Unix (/bin/sh)</li>
         <li>Docker sandbox escape hatch for unsafe commands</li>
-        <li>Essential for interactive CLI workflows</li>
       </ul>
     </td>
     <td width="50%">
-      <h3>📊 AST Code Graph</h3>
-      <p>Semantic code search with hybrid BM25 + vector + symbol regex:</p>
+      <h3>🔌 MCP Server Support</h3>
+      <p>Model Context Protocol for AI tool interoperability:</p>
       <ul>
-        <li><code>semantic_search</code> tool for natural-language queries</li>
-        <li><code>refactor</code> tool for multi-file transformations</li>
-        <li>Symbol-level indexing for fast navigation</li>
-        <li>Understands Python, JS, TS, Rust, Go, and more</li>
+        <li>Built-in MCP server at <code>mcp/server.py</code></li>
+        <li>Connect external MCP servers</li>
+        <li>Bridge external tools into the agent loop</li>
       </ul>
     </td>
   </tr>
   <tr>
     <td width="50%">
-      <h3>🔌 MCP Server Support</h3>
-      <p>Model Context Protocol — the 2026 standard for AI tool interoperability:</p>
+      <h3>📱 Multi-Channel</h3>
+      <p>Connect JARVIS to your communication platforms:</p>
       <ul>
-        <li>Built-in MCP server at <code>mcp/server.py</code> with tool/resource registration</li>
-        <li>Connect any <code>mcp_server.json</code> from the ecosystem</li>
-        <li>Email MCP server for IMAP/SMTP integration</li>
-        <li>Bridge to external MCP hosts via <code>manage_mcp</code> tool</li>
-        <li>Event bridge channels MCP notifications into agent loop</li>
+        <li>Discord, Telegram, Slack</li>
+        <li>Email (IMAP/SMTP), IRC, Matrix</li>
       </ul>
     </td>
     <td width="50%">
-      <h3>📊 AST Code Graph</h3>
-      <p>Semantic code search with hybrid BM25 + vector + symbol regex:</p>
+      <h3>⚙️ Configurable Settings</h3>
+      <p>Live-editable configuration from Web UI:</p>
       <ul>
-        <li><code>semantic_search</code> tool for natural-language queries</li>
-        <li><code>refactor</code> tool for multi-file transformations</li>
-        <li>Symbol-level indexing for fast navigation</li>
-        <li>Understands Python, JS, TS, Rust, Go, and more</li>
+        <li>62 settings across all subsystems</li>
+        <li>Model selection and groups</li>
+        <li>Voice, memory, tool configuration</li>
+        <li>Persisted to <code>data/settings.json</code></li>
       </ul>
     </td>
   </tr>
@@ -269,30 +245,36 @@ ANTHROPIC_API_KEY=sk-...
 
 ```
 jarvis/
-├── core/                   # FastAPI brain, config, auth, diagnostics
+├── core/                   # FastAPI app, agent loop, tools, config, security
 │   ├── agent_loop.py       # Main LLM orchestration loop
-│   ├── tools/              # All tools (edit, shell, search, skills, etc.)
-│   │   ├── execution.py    # Tool dispatcher + MCP bridge
+│   ├── tools/              # All tools (shell, skills, settings, etc.)
+│   │   ├── execution.py    # Tool dispatcher
 │   │   ├── persistent_shell.py  # Stateful shell sessions
-│   │   ├── skill_tools.py  # Skill management + create_skill
+│   │   ├── skill_tools.py  # Skill management
 │   │   ├── settings_tools.py    # Runtime settings
-│   │   ├── admin_tools.py       # Endpoints, MCP, webhooks
-│   │   └── cookbook_tools.py    # Model serving, image gen, research
-│   ├── config_schema.py    # Pydantic-validated config
+│   │   └── admin_tools.py       # Endpoints, MCP, webhooks
+│   ├── config_registry.py  # 62-entry config system with live editing
+│   ├── routes/             # API routes (chat, voice, settings, agents, etc.)
 │   ├── prompt_security.py  # Content integrity verification
 │   ├── api_key_vault.py    # Encrypted key storage
 │   ├── ssrf.py             # DNS-based SSRF protection
+│   ├── self_healing.py     # Auto-recovery monitors
 │   └── diagnostics.py      # Health checks (disk/port/docker/git)
-├── brain/                  # Cognitive patterns, reasoning
-├── memory/                 # Tiered memory, vector storage
-├── ai_os/                  # Docker sandbox, planner stubs
-├── channels/               # Discord, Telegram, Slack, Email, IRC
+├── brain/                  # Reasoning engine, planning, execution context
+├── memory/                 # Vector memory, graph memory, mem0 adapter
 ├── assistant/              # Voice pipeline (wake → STT → TTS)
+│   └── providers/          # STT/TTS provider implementations
+├── ai_os/                  # Docker sandbox, file operations, process management
+├── api/                    # Additional API routes (OS, memory, settings, etc.)
+├── channels/               # Multi-channel (Discord, Telegram, Slack, Email, IRC, Matrix)
 ├── pc_agent/               # Computer control & automation
-├── governance/             # Security, privacy, validation
+├── governance/             # Security validation, runtime governance
+├── mcp/                    # MCP server implementation
 ├── skills/                 # Hot-reloadable trigger skills (.md + .py)
-├── media/                  # Media player with subprocess fallback
-├── tests/                  # Unit + integration tests (no external deps)
+├── static/                 # Web UI (chat, settings)
+├── tests/                  # Unit + integration tests
+├── data/                   # Runtime data (settings.json, etc.)
+├── media/                  # Media player
 ├── docker-compose.yml      # Docker stack definition
 └── Dockerfile              # Production container
 ```
@@ -300,52 +282,30 @@ jarvis/
 | Directory | Purpose |
 |-----------|---------|
 | `core/` | Everything you need to understand JARVIS: agent loop, tools, config, security, diagnostics |
-| `core/tools/` | All AI-callable tools: edit files, run shell, search code, manage skills |
+| `core/tools/` | All AI-callable tools: edit files, run shell, manage skills |
+| `core/routes/` | API route handlers (chat, voice, settings, agents, WebSocket) |
 | `skills/` | User-created trigger skills — created dynamically via `create_skill` tool |
 | `channels/` | Communication channels (Discord, Telegram, Slack, Email, IRC, Matrix) |
+| `ai_os/` | Docker sandbox, file ops, process management |
 | `tests/` | Tests that mock external services — run without network |
 
 ---
 
 ## 🔒 Security
 
-Pre-launch security audit — **8 critical fixes** shipped before v1.0:
+Pre-launch security audit — **critical fixes shipped before v1.0**:
 
 | Issue | Fix | File |
 |-------|-----|------|
-| Hardcoded API keys in source | Replaced with `YOUR_*` placeholders | `google-services.json` (3 locations) |
-| `shell=True` subprocess calls | Converted to `shell=False` with list args | `pc_automation.py`, `computer_agent.py`, `spotify/main.py` |
-| `os.system()` command injection | Migrated to `subprocess.run()` | `daemon/jarvis_service.py` |
-| 82 silent `except: pass` blocks | Changed to `logger.warning()` with exception context | 30 files across `core/`, `daemon/`, `media/` |
+| `shell=True` subprocess calls | Converted to `shell=False` with list args | Multiple files |
+| `os.system()` command injection | Migrated to `subprocess.run()` | Multiple files |
+| Silent `except: pass` blocks | Changed to `logger.warning()` with exception context | 30+ files |
 | SSRF via DNS rebinding | `resolve_and_check()` prevents internal network attacks | `core/ssrf.py` |
-| Prompt injection detection | `PromptSecurity` classifier identifies 5 attack types | `core/prompt_security.py` |
+| Prompt injection detection | Classifier identifies 5 attack types | `core/prompt_security.py` |
 | API key vault with audit | Key rotation + usage tracking + encrypted storage | `core/api_key_vault.py` |
-| Docker sandbox isolation | `network_disabled=True`, `read_only=True`, 256m mem limit | `ai_os/docker_sandbox.py` |
+| Docker sandbox isolation | `network_disabled=True`, `read_only=True`, mem limit | `ai_os/docker_sandbox.py` |
 
 **No hardcoded secrets** in any source file. All API keys come from environment variables or the key vault.
-
----
-
-## 📊 Model Coverage
-
-JARVIS supports **126+ LLM providers** through LiteLLM — more than double OpenClaw's 50.
-
-| Feature | JARVIS | OpenClaw |
-|---------|--------|----------|
-| **Provider count** | **126** | 50 |
-| **Add a provider** | 1 line in `.env` | TypeScript plugin (200+ LOC) |
-| **Use any model ID** | `CHAT_MODEL=claude-4-opus` | Must edit TypeScript |
-| **Maintenance** | Zero (LiteLLM handles all) | Must maintain 50 extensions |
-
-Just set a `*_API_KEY` in `.env` and any of 126 providers work:
-
-```env
-CHAT_MODEL=openai/gpt-4o
-CODE_MODEL=anthropic/claude-sonnet-4-20250514
-ANALYSIS_MODEL=gemini/gemini-2.5-flash
-REASONING_MODEL=deepseek/deepseek-reasoner
-VISION_MODEL=openai/gpt-4o
-```
 
 ---
 
@@ -365,7 +325,7 @@ See our [issues page](https://github.com/Pavankumar-p-k/agi/issues) for good fir
 
 ## 📄 License
 
-[MIT](LICENSE) — free for personal and commercial use.
+[Apache 2.0](LICENSE) — free for personal and commercial use.
 
 ---
 

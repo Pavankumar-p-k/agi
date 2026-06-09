@@ -1,13 +1,13 @@
 from __future__ import annotations
 
+import difflib
+
+from rich.text import Text
 from textual.app import ComposeResult
+from textual.containers import Horizontal, Vertical
 from textual.widget import Widget
 from textual.widgets import Static
-from textual.containers import Horizontal, Vertical
-from rich.text import Text
-from rich.panel import Panel
 
-import difflib
 
 class DiffPane(Widget):
     """
@@ -31,9 +31,9 @@ class DiffPane(Widget):
     def render_diff(self) -> None:
         old_side = self.query_one("#diff-old", Vertical)
         new_side = self.query_one("#diff-new", Vertical)
-        
+
         diff = list(difflib.ndiff(self.old_content.splitlines(), self.new_content.splitlines()))
-        
+
         for line in diff:
             if line.startswith("- "):
                 old_side.mount(Static(Text(line[2:], style="red")))

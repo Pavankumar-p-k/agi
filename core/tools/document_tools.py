@@ -1,10 +1,20 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import asyncio
-import json
 import logging
 import re
 from contextvars import ContextVar
 from pathlib import Path
-from typing import Any, Dict, List, Optional
 
 # Try to import py_compile for edit verification
 try:
@@ -12,7 +22,9 @@ try:
 except ImportError:
     py_compile = None
 
-from core.tools._tool_utils import MAX_OUTPUT_CHARS, MAX_READ_CHARS, _parse_tool_args, get_mcp_manager
+from datetime import UTC
+
+from core.tools._tool_utils import MAX_READ_CHARS, _parse_tool_args
 
 _DIFF_HUNK_RE = re.compile(
     r"^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@.*?(?:\n|$)",
@@ -24,15 +36,15 @@ logger = logging.getLogger(__name__)
 
 # Active document state — use ContextVar for async/thread safety
 
-_active_document_id: ContextVar[Optional[str]] = ContextVar("_active_document_id", default=None)
-_active_model: ContextVar[Optional[str]] = ContextVar("_active_model", default=None)
+_active_document_id: ContextVar[str | None] = ContextVar("_active_document_id", default=None)
+_active_model: ContextVar[str | None] = ContextVar("_active_model", default=None)
 
 
-def set_active_document(doc_id: Optional[str]):
+def set_active_document(doc_id: str | None):
     _active_document_id.set(doc_id)
 
 
-def set_active_model(model: Optional[str]):
+def set_active_model(model: str | None):
     _active_model.set(model)
 
 
@@ -40,7 +52,7 @@ def get_active_document():
     return _active_document_id.get().get()
 
 
-def clear_active_document(doc_id: Optional[str] = None) -> bool:
+def clear_active_document(doc_id: str | None = None) -> bool:
     current = _active_document_id.get()
     if doc_id is None or current == doc_id:
         _active_document_id.set(None)
@@ -48,14 +60,14 @@ def clear_active_document(doc_id: Optional[str] = None) -> bool:
     return False
 
 
-def _owned_document_query(query, Document, owner: Optional[str]):
+def _owned_document_query(query, Document, owner: str | None):
     if owner is None:
         from sqlalchemy import false
         return query.filter(false())
     return query.filter(Document.owner == owner)
 
 
-def _get_owned_document(db, Document, doc_id: str, owner: Optional[str], active_only: bool = False):
+def _get_owned_document(db, Document, doc_id: str, owner: str | None, active_only: bool = False):
     q = db.query(Document).filter(Document.id == doc_id)
     if active_only:
         q = q.filter(Document.is_active == True)
@@ -63,7 +75,7 @@ def _get_owned_document(db, Document, doc_id: str, owner: Optional[str], active_
     return q.first()
 
 
-def _most_recent_owned_document(db, Document, owner: Optional[str], active_only: bool = False):
+def _most_recent_owned_document(db, Document, owner: str | None, active_only: bool = False):
     q = db.query(Document)
     if active_only:
         q = q.filter(Document.is_active == True)
@@ -74,7 +86,8 @@ def _most_recent_owned_document(db, Document, owner: Optional[str], active_only:
 # Document helpers
 
 def _sniff_doc_language(text: str) -> str:
-    import json as _json, re as _re2
+    import json as _json
+    import re as _re2
     s = (text or "").strip()
     if not s:
         return "markdown"
@@ -145,9 +158,12 @@ def _coerce_email_document_content(existing: str, incoming: str) -> str:
 
 # Create document
 
-def _do_create_document_sync(content_block: str, session_id: Optional[str] = None, owner: Optional[str] = None) -> Dict:
-    import uuid, re as _re
-    from core.database_models import SessionLocal, Document, DocumentVersion, Session as DbSession
+def _do_create_document_sync(content_block: str, session_id: str | None = None, owner: str | None = None) -> dict:
+    import re as _re
+    import uuid
+
+    from core.database_models import Document, DocumentVersion, SessionLocal
+    from core.database_models import Session as DbSession
 
     raw = content_block or ""
     _KNOWN_LANGS = {
@@ -248,7 +264,7 @@ def _do_create_document_sync(content_block: str, session_id: Optional[str] = Non
         db.close()
 
 
-async def do_create_document(content_block: str, session_id: Optional[str] = None, owner: Optional[str] = None) -> Dict:
+async def do_create_document(content_block: str, session_id: str | None = None, owner: str | None = None) -> dict:
     return await asyncio.to_thread(_do_create_document_sync, content_block, session_id, owner)
 
 
@@ -271,10 +287,11 @@ def parse_suggest_blocks(text: str) -> list[dict]:
 
 # Update document
 
-def _do_update_document_sync(content: str, doc_id: Optional[str] = None, owner: Optional[str] = None) -> Dict:
-    from datetime import datetime
+def _do_update_document_sync(content: str, doc_id: str | None = None, owner: str | None = None) -> dict:
     import uuid
-    from core.database_models import SessionLocal, Document, DocumentVersion
+    from datetime import datetime
+
+    from core.database_models import Document, DocumentVersion, SessionLocal
 
     target_id = doc_id or _active_document_id.get()
     if not target_id:
@@ -316,14 +333,14 @@ def _do_update_document_sync(content: str, doc_id: Optional[str] = None, owner: 
         db.close()
 
 
-async def do_update_document(content: str, doc_id: Optional[str] = None, owner: Optional[str] = None) -> Dict:
+async def do_update_document(content: str, doc_id: str | None = None, owner: str | None = None) -> dict:
     return await asyncio.to_thread(_do_update_document_sync, content, doc_id, owner)
 
 
 # Suggest document
 
-def _do_suggest_document_sync(content: str, doc_id: Optional[str] = None, owner: Optional[str] = None) -> Dict:
-    from core.database_models import SessionLocal, Document
+def _do_suggest_document_sync(content: str, doc_id: str | None = None, owner: str | None = None) -> dict:
+    from core.database_models import Document, SessionLocal
 
     target_id = doc_id or _active_document_id.get()
     if not target_id:
@@ -359,7 +376,7 @@ def _do_suggest_document_sync(content: str, doc_id: Optional[str] = None, owner:
         db.close()
 
 
-async def do_suggest_document(content: str, doc_id: Optional[str] = None, owner: Optional[str] = None) -> Dict:
+async def do_suggest_document(content: str, doc_id: str | None = None, owner: str | None = None) -> dict:
     return await asyncio.to_thread(_do_suggest_document_sync, content, doc_id, owner)
 
 
@@ -371,7 +388,7 @@ _DIFF_HUNK_RE = re.compile(
 )
 
 
-def _apply_unified_diff(current: str, diff_text: str) -> tuple[Optional[str], str]:
+def _apply_unified_diff(current: str, diff_text: str) -> tuple[str | None, str]:
     """Apply a unified diff to ``current`` text.
 
     Parses hunk lines maintaining interleaving order of context / removed / added.
@@ -634,10 +651,11 @@ def _verify_document_content(title: str, content: str) -> str:
     return ""
 
 
-def _do_edit_document_sync(content: str, doc_id: Optional[str] = None, owner: Optional[str] = None) -> Dict:
-    from core.database_models import SessionLocal, Document, DocumentVersion
-    from datetime import datetime
+def _do_edit_document_sync(content: str, doc_id: str | None = None, owner: str | None = None) -> dict:
     import uuid
+    from datetime import datetime
+
+    from core.database_models import Document, DocumentVersion, SessionLocal
 
     # Detect unified diff format (--- a/file +++ b/file)
     stripped = content.strip()
@@ -790,15 +808,16 @@ def _do_edit_document_sync(content: str, doc_id: Optional[str] = None, owner: Op
         db.close()
 
 
-async def do_edit_document(content: str, doc_id: Optional[str] = None, owner: Optional[str] = None) -> Dict:
+async def do_edit_document(content: str, doc_id: str | None = None, owner: str | None = None) -> dict:
     return await asyncio.to_thread(_do_edit_document_sync, content, doc_id, owner)
 
 
 # Manage documents (list, read, delete, tidy)
 
-async def do_manage_documents(content: str, owner: Optional[str] = None) -> Dict:
-    from core.database_models import SessionLocal, Document
-    from datetime import datetime, timezone
+async def do_manage_documents(content: str, owner: str | None = None) -> dict:
+    from datetime import datetime
+
+    from core.database_models import Document, SessionLocal
 
     try:
         args = _parse_tool_args(content)
@@ -812,7 +831,7 @@ async def do_manage_documents(content: str, owner: Optional[str] = None) -> Dict
         if not ts:
             return 'never'
         try:
-            now = datetime.now(timezone.utc) if ts.tzinfo is not None else datetime.utcnow()
+            now = datetime.now(UTC) if ts.tzinfo is not None else datetime.utcnow()
             diff = (now - ts).total_seconds()
         except Exception as _e:
             logger.debug("_format_last_seen ts diff failed: %s", _e)

@@ -1,16 +1,24 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 from __future__ import annotations
 
-import hashlib
-import json
 import logging
 import os
 import tempfile
 import zipfile
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any
 
-from .errors import PluginNetworkError, PluginDependencyError
-from .manifest import PluginManifest
 from .verification import ManifestVerifier
 
 logger = logging.getLogger("jarvis.plugins.marketplace")
@@ -39,7 +47,7 @@ class PluginMarketplace:
         self,
         url: str = "https://plugins.jarvis.ai/v1",
         timeout: float = 10.0,
-        cache_dir: Optional[str] = None,
+        cache_dir: str | None = None,
     ):
         self._url = url.rstrip("/")
         self._timeout = timeout
@@ -47,7 +55,7 @@ class PluginMarketplace:
             tempfile.gettempdir(), "jarvis_plugin_marketplace"
         )
         self._index: MarketplaceIndex = MarketplaceIndex()
-        self._http_client: Optional[httpx.AsyncClient] = None
+        self._http_client: httpx.AsyncClient | None = None
 
     async def _ensure_client(self):
         if self._http_client is None:
@@ -137,7 +145,7 @@ class PluginMarketplace:
 
     async def download(
         self, plugin_id: str, version: str, target_dir: str,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Download and extract a plugin package.
 
         Returns the path to the extracted plugin directory, or None on failure.

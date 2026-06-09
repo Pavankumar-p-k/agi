@@ -1,3 +1,15 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 # api/server.py
 #
 # JARVIS BRAIN API SERVER
@@ -17,12 +29,10 @@
 #   from api.server import router as brain_router
 #   app.include_router(brain_router)
 
-import base64
 import time
+
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from typing import Optional, List
 
 from brain.UnifiedBrain import unified_brain
 
@@ -93,7 +103,7 @@ async def chat_with_image(req: ImageChatRequest):
         raise HTTPException(400, "image_b64 required")
 
     start = time.time()
-    # Mocking vision logic since UnifiedBrain doesn't have direct vision yet, 
+    # Mocking vision logic since UnifiedBrain doesn't have direct vision yet,
     # but we can use the complete_vision tool from llm_router.
     from core.llm_router import complete_vision
     messages = [{"role": "user", "content": [

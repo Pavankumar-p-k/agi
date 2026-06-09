@@ -2,10 +2,8 @@ from __future__ import annotations
 
 from textual.app import ComposeResult
 from textual.widget import Widget
-from textual.widgets import Static, Label
-from textual.containers import Vertical
-from textual.reactive import reactive
-from textual.timer import Timer
+from textual.widgets import Label, Static
+
 
 class Toast(Static):
     """
@@ -22,7 +20,7 @@ class Toast(Static):
         if self.severity == "success": icon = "✓"
         elif self.severity == "warning": icon = "⚠"
         elif self.severity == "error": icon = "✕"
-        
+
         yield Label(f"{icon} {self.message}")
 
     def on_mount(self) -> None:

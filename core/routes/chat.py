@@ -1,17 +1,26 @@
-import time
-import json
-import os
-import uuid
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import logging
+import os
+import time
+import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
-from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..auth import verify_token
-from ..database import get_db, User
+from ..database import User, get_db
 
 logger = logging.getLogger("jarvis")
 
@@ -19,12 +28,12 @@ router = APIRouter(tags=["Chat"])
 
 try:
     from routers.chat import chat_handler as three_pass_handler
-except Exception:
+except Exception as e:
+    logger.warning("[core.routes.chat] three-pass handler import failed: %s", e)
     three_pass_handler = None
 
 
 from ..schemas import ChatRequest
-
 
 if three_pass_handler:
     @router.post("/api/chat")
@@ -35,11 +44,24 @@ if three_pass_handler:
         memories = memory.recall(req.message, user_id=user_id, limit=5)
         memory_context = memory.format_context(memories)
 
-        from tools.ragflow_tool import ragflow_search, format_rag_context
+        from ..session import ConversationManager
+        cm = ConversationManager(session_id=req.session_id)
+        if cm.path.exists():
+            cm.load()
+            # Get last 10 messages for linear context
+            history = cm.get_context(last_n=10)
+            history_str = "\n".join([f"{m['role']}: {m['content']}" for m in history])
+            history_context = f"## Recent Conversation History:\n{history_str}"
+        else:
+            history_context = ""
+
+        from tools.ragflow_tool import format_rag_context, ragflow_search
         rag_result = await ragflow_search(req.message, top_k=5)
         rag_context = format_rag_context(rag_result.get("chunks", []))
 
         combined_context = req.context or ""
+        if history_context:
+            combined_context = history_context + "\n\n" + combined_context
         if memory_context:
             combined_context = memory_context + "\n\n" + combined_context
         if rag_context:
@@ -60,11 +82,11 @@ if three_pass_handler:
 
 @router.post("/api/agent/stream")
 async def agent_stream(req: ChatRequest):
-    from core.config import OLLAMA_URL, OLLAMA_MODEL
     from core.agent_loop import stream_agent_loop
+    from core.config_registry import config as _c
 
-    endpoint_url = OLLAMA_URL
-    model = OLLAMA_MODEL or os.getenv("CHAT_MODEL", "qwen3:4b")
+    endpoint_url = _c.get("ollama.base_url")
+    model = os.getenv("CHAT_MODEL") or _c.get("llm.chat_model")
 
     messages: list[dict] = []
     if req.context:
@@ -142,9 +164,10 @@ async def get_chat_history(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(verify_token),
     limit: int = 50,
-    session_id: Optional[str] = Query(None),
+    session_id: str | None = Query(None),
 ):
     from sqlalchemy import select
+
     from core.database import ChatHistory
     q = select(ChatHistory).where(ChatHistory.user_id == user.id)
     if session_id:
@@ -161,7 +184,8 @@ async def list_sessions(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(verify_token),
 ):
-    from sqlalchemy import select, func
+    from sqlalchemy import func, select
+
     from core.database import ChatHistory
     result = await db.execute(
         select(ChatHistory.session_id, func.count(ChatHistory.id), func.min(ChatHistory.timestamp), func.max(ChatHistory.timestamp))
@@ -182,8 +206,8 @@ async def agent_resume(run_id: str, req: dict):
     if action not in ("approve", "reject"):
         raise HTTPException(400, "action must be 'approve' or 'reject'")
 
+    from core.graph import build_default_graph
     from core.persistence.store import checkpoint_store
-    from core.graph import build_default_graph, AgentState
 
     state = checkpoint_store.load_agent_state(run_id)
     if not state:

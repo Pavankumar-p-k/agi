@@ -1,3 +1,15 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """core/governance/work_queue.py
 WorkQueue — asyncio priority queue with disk persistence.
 
@@ -13,7 +25,7 @@ import json
 import logging
 import time
 import uuid
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from enum import Enum
 from pathlib import Path
 from typing import Any
@@ -50,7 +62,7 @@ class TaskRecord:
     error:      str | None   = None
 
     # ── compare by priority then creation time (for heap) ──────────────────
-    def __lt__(self, other: "TaskRecord") -> bool:
+    def __lt__(self, other: TaskRecord) -> bool:
         if self.priority != other.priority:
             return self.priority < other.priority  # lower number = higher urgency
         return self.created_at < other.created_at
@@ -61,7 +73,7 @@ class TaskRecord:
         return d
 
     @classmethod
-    def from_dict(cls, d: dict) -> "TaskRecord":
+    def from_dict(cls, d: dict) -> TaskRecord:
         d = dict(d)
         d["status"] = TaskStatus(d.get("status", "pending"))
         return cls(**d)
@@ -82,7 +94,7 @@ class WorkQueue:
 
     def __init__(self, resource_monitor=None, task_router=None):
         from core.governance.resource_monitor import resource_monitor as _rm
-        from core.governance.task_router     import task_router     as _tr
+        from core.governance.task_router import task_router as _tr
         self._rm      = resource_monitor or _rm
         self._router  = task_router      or _tr
 

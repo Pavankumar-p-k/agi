@@ -1,3 +1,15 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """core/self_healing.py
 Self-healing framework + continuous learning loop for JARVIS.
@@ -5,13 +17,11 @@ Self-healing framework + continuous learning loop for JARVIS.
 Continuous learning: accept/reject feedback -> auto-improve prompts.
 """
 
-import os
 import json
-import time
 import logging
-import asyncio
-from datetime import datetime, timezone
-from typing import List, Dict, Optional, Any
+import os
+import time
+from datetime import UTC, datetime
 
 logger = logging.getLogger("self_healing")
 
@@ -24,12 +34,12 @@ _FEEDBACK_FILE = os.path.join(os.path.dirname(__file__), "..", "data", "feedback
 
 class HealthRecord:
     def __init__(self):
-        self.checks: Dict[str, Dict] = {}
-        self.failures: List[Dict] = []
-        self.recoveries: List[Dict] = []
+        self.checks: dict[str, dict] = {}
+        self.failures: list[dict] = []
+        self.recoveries: list[dict] = []
         self.last_check_time: float = 0
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         return {
             "checks": self.checks,
             "failures": self.failures[-20:],
@@ -38,7 +48,7 @@ class HealthRecord:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict) -> "HealthRecord":
+    def from_dict(cls, data: dict) -> "HealthRecord":
         r = cls()
         r.checks = data.get("checks", {})
         r.failures = data.get("failures", [])
@@ -53,7 +63,7 @@ class SelfHealing:
     def __init__(self):
         self.record = HealthRecord()
         self._load()
-        self._recovery_handlers: Dict[str, callable] = {}
+        self._recovery_handlers: dict[str, callable] = {}
 
     def register_recovery(self, component: str, handler: callable):
         self._recovery_handlers[component] = handler
@@ -69,7 +79,7 @@ class SelfHealing:
             "healthy": healthy,
             "detail": detail,
             "checked_at": now,
-            "checked_at_iso": datetime.now(timezone.utc).isoformat(),
+            "checked_at_iso": datetime.now(UTC).isoformat(),
         }
 
         if not healthy and prev_healthy:
@@ -77,7 +87,7 @@ class SelfHealing:
                 "component": component,
                 "detail": detail,
                 "detected_at": now,
-                "detected_at_iso": datetime.now(timezone.utc).isoformat(),
+                "detected_at_iso": datetime.now(UTC).isoformat(),
             }
             self.record.failures.append(failure)
             logger.warning(f"[SELF-HEAL] Detection: {component} failed â€” {detail}")
@@ -90,7 +100,7 @@ class SelfHealing:
                 "component": component,
                 "detail": "auto-recovered",
                 "recovered_at": now,
-                "recovered_at_iso": datetime.now(timezone.utc).isoformat(),
+                "recovered_at_iso": datetime.now(UTC).isoformat(),
             })
             logger.info(f"[SELF-HEAL] {component} recovered")
         return healthy
@@ -107,13 +117,13 @@ class SelfHealing:
                         "healthy": True,
                         "detail": f"recovered: {result}",
                         "checked_at": time.time(),
-                        "checked_at_iso": datetime.now(timezone.utc).isoformat(),
+                        "checked_at_iso": datetime.now(UTC).isoformat(),
                     }
                     self.record.recoveries.append({
                         "component": component,
                         "detail": result,
                         "recovered_at": time.time(),
-                        "recovered_at_iso": datetime.now(timezone.utc).isoformat(),
+                        "recovered_at_iso": datetime.now(UTC).isoformat(),
                     })
                     logger.info(f"[SELF-HEAL] Recovery: {component} â€” {result}")
             except Exception as e:
@@ -133,7 +143,7 @@ class SelfHealing:
             return "missing_dependency"
         return "unknown_error"
 
-    def get_status(self) -> Dict:
+    def get_status(self) -> dict:
         return {
             "healthy": all(c.get("healthy", True) for c in self.record.checks.values()),
             "checks": self.record.checks,
@@ -170,9 +180,9 @@ class LearningLoop:
     """Records accepts/rejects from user feedback to auto-improve prompts and examples."""
 
     def __init__(self):
-        self.learnings: List[Dict] = []
-        self.rules: List[str] = []
-        self.examples: List[Dict] = []
+        self.learnings: list[dict] = []
+        self.rules: list[str] = []
+        self.examples: list[dict] = []
         self._load()
 
     def record_feedback(self, message: str, response: str, accepted: bool, reason: str = ""):
@@ -181,7 +191,7 @@ class LearningLoop:
             "response": response,
             "accepted": accepted,
             "reason": reason,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
         self.learnings.append(entry)
         self._extract_rule(entry)
@@ -189,7 +199,7 @@ class LearningLoop:
         self.save()
         logger.info(f"[LEARN] Feedback recorded: {'accepted' if accepted else 'rejected'} â€” {reason[:50]}")
 
-    def _extract_rule(self, entry: Dict):
+    def _extract_rule(self, entry: dict):
         if not entry["accepted"] and entry["reason"]:
             reason = entry["reason"].lower()
             if "too formal" in reason or "wrong tone" in reason:
@@ -209,7 +219,7 @@ class LearningLoop:
                 if rule not in self.rules:
                     self.rules.append(rule)
 
-    def _update_examples(self, entry: Dict):
+    def _update_examples(self, entry: dict):
         if entry["accepted"]:
             self.examples.append({
                 "input": entry["message"],
@@ -268,9 +278,11 @@ class LearningLoop:
 async def heal_ollama(diagnosis: str) -> str:
     """Recovery handler for Ollama failures."""
     import httpx
+    from core.config_registry import config as _c
+    _ollama = _c.get("ollama.base_url")
     try:
         async with httpx.AsyncClient(timeout=5) as client:
-            r = await client.get("http://localhost:11434/api/tags")
+            r = await client.get(f"{_ollama}/api/tags")
             if r.status_code == 200:
                 return "ollama_is_running"
     except Exception as e:

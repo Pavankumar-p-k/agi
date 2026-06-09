@@ -1,3 +1,15 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """core/system_governor.py
 Phase 4 (D1): System Governor — now with real governance.
 
@@ -14,7 +26,6 @@ from __future__ import annotations
 import asyncio
 import logging
 from dataclasses import dataclass
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -120,9 +131,9 @@ class SystemGovernor:
         retries: int,
         max_retries: int,
         budget_remaining: float,
-        quality_score: Optional[float] = None,
+        quality_score: float | None = None,
         score_trend: str = "stable",
-        partial_progress: Optional[dict] = None,
+        partial_progress: dict | None = None,
         has_usable_outputs: bool = False,
     ) -> GovernorDecision:
         self.history.setdefault(project, [])

@@ -6,6 +6,7 @@ import logging
 import os
 import tempfile
 
+from core.config_registry import config as _jarvis_config
 from ..stt_protocol import STTProvider
 
 logger = logging.getLogger(__name__)
@@ -19,7 +20,7 @@ class FasterWhisperProvider(STTProvider):
         return "faster-whisper"
 
     def __init__(self, model_size: str | None = None):
-        self._model_size = model_size or os.getenv("STT_MODEL", "base")
+        self._model_size = model_size or os.getenv("STT_MODEL") or _jarvis_config.get("voice.stt_model")
         self._model = None
         self._healthy = False
         self._init_lock = asyncio.Lock()

@@ -1,3 +1,15 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 # backend/orchestrator/hybrid_orchestrator.py
 """
 Hybrid Orchestrator - Research-Grade Automation System
@@ -6,25 +18,32 @@ Combines: Claude (Planner) + AutoGPT (Autonomous) + OpenClaw (Executor) + Perple
 
 import asyncio
 import json
+import logging
 import time
 from typing import Dict, List, Optional, Any, Callable, Awaitable
 import re
 
+logger = logging.getLogger(__name__)
+
 try:
     from core.types import ExecutionState, Task, ExecutionContext
-except Exception:
+except Exception as e:
+    logger.warning("[orchestrator.hybrid_orchestrator] core.types import failed: %s", e)
     ExecutionState = Task = ExecutionContext = None
 try:
     from models.hybrid_models import hybrid_manager, TaskType, ModelResult
-except Exception:
+except Exception as e:
+    logger.warning("[orchestrator.hybrid_orchestrator] hybrid_models import failed: %s", e)
     hybrid_manager = TaskType = ModelResult = None
 try:
     from tools.executor import OpenClawExecutor
-except Exception:
+except Exception as e:
+    logger.warning("[orchestrator.hybrid_orchestrator] tools.executor import failed: %s", e)
     OpenClawExecutor = None
 try:
     from core.config import HYBRID_MAX_RETRIES
-except Exception:
+except Exception as e:
+    logger.warning("[orchestrator.hybrid_orchestrator] core.config HYBRID_MAX_RETRIES failed: %s", e)
     HYBRID_MAX_RETRIES = 3
 
 
@@ -45,7 +64,8 @@ class HybridOrchestrator:
             MemoryManager = None
         try:
             from tools.executor import OpenClawExecutor
-        except Exception:
+        except Exception as e:
+            logger.warning("[orchestrator.hybrid_orchestrator] OpenClawExecutor init import failed: %s", e)
             OpenClawExecutor = None
 
         from dataclasses import dataclass

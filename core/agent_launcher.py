@@ -1,21 +1,37 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """core/agent_launcher.py
 Subprocess manager for CLI coding agents.
 Launches agents in project directory, pipes I/O, handles auto-approval,
 and API key rotation on 429 rate limits.
 """
 import asyncio
-import os, sys, re, logging, json, shutil, shlex
-from pathlib import Path
-from typing import Optional, Callable
+import logging
+import os
+import re
+import shutil
+import sys
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
+from pathlib import Path
 
 from core.api_key_vault import vault
 
 logger = logging.getLogger("agent_launcher")
 
 # Map agent name → vault service name for key rotation
-AGENT_SERVICE_MAP: dict[str, Optional[str]] = {
+AGENT_SERVICE_MAP: dict[str, str | None] = {
     "codex": "openai",
     "aider": "openai",
     "gemini": "gemini",
@@ -27,7 +43,7 @@ AGENT_SERVICE_MAP: dict[str, Optional[str]] = {
 }
 
 # Map agent name → env var to set before launch
-AGENT_ENV_VAR_MAP: dict[str, Optional[str]] = {
+AGENT_ENV_VAR_MAP: dict[str, str | None] = {
     "codex": "OPENAI_API_KEY",
     "aider": "OPENAI_API_KEY",
     "gemini": "GEMINI_API_KEY",
@@ -112,7 +128,7 @@ class AgentLauncher:
             masked = key[:8] + "..." if len(key) > 8 else "****"
             logger.info(f"[LAUNCHER] Injected {env_var}={masked} for {agent}")
 
-    def _check_rate_limit(self, line: bytes) -> Optional[str]:
+    def _check_rate_limit(self, line: bytes) -> str | None:
         """Check if line contains a rate limit indicator. Returns service name or None."""
         for pattern in RATE_LIMIT_PATTERNS:
             if re.search(pattern, line):
@@ -175,7 +191,7 @@ class AgentLauncher:
         agent: str,
         task: str,
         timeout: int = 300,
-        progress_callback: Optional[Callable] = None,
+        progress_callback: Callable | None = None,
     ) -> AgentResult:
         if not self.is_available(agent) and agent != "shell":
             return AgentResult(agent=agent, exit_code=-1, stdout="", stderr=f"{agent} not installed",
@@ -255,7 +271,7 @@ class AgentLauncher:
                     ),
                     timeout=timeout,
                 )
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 proc.kill()
                 duration = (datetime.now() - start).total_seconds()
                 del self.active_sessions[session_id]
@@ -300,7 +316,7 @@ class AgentLauncher:
                 return
         for pattern in INTERACTIVE_PATTERNS:
             if re.search(pattern, line):
-                logger.warning(f"[LAUNCHER] Agent asked for sensitive input — skipping")
+                logger.warning("[LAUNCHER] Agent asked for sensitive input — skipping")
                 if proc.stdin and not proc.stdin.is_closing():
                     try:
                         proc.stdin.write(b"\n")

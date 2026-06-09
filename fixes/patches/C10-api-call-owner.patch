@@ -1,0 +1,19 @@
+From: JARVIS Audit Bot
+Date: 2026-06-09
+Subject: [PATCH C-10] Pass owner parameter to do_api_call
+
+High: do_api_call missing owner authorization parameter.
+
+File: core/tools/execution.py
+
+--- a/core/tools/execution.py
++++ b/core/tools/execution.py
+@@ -1346,7 +1346,7 @@
+             fl = " [fallback from sessions_spawn]"
+             content = _unwrap_fences(content)
+         else:
+-            return f"api_call: {fl}", await do_api_call(content)
++            return f"api_call: {fl}", await do_api_call(content, owner=owner)
+
+     async def _hdl_manage_settings(content: str, owner: str, **kw: Any) -> tuple[str, str]:
+         return "manage_settings", await do_manage_settings(content, owner=owner)

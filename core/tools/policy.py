@@ -1,8 +1,20 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger("jarvis.tools.policy")
 
@@ -15,7 +27,7 @@ class Requirement:
         self.value = value
         self.exists = exists
 
-    def check(self, context: Dict[str, Any]) -> bool:
+    def check(self, context: dict[str, Any]) -> bool:
         if self.key not in context:
             return False
         if self.exists and self.value is None:
@@ -30,11 +42,11 @@ class ToolPolicy:
     id: str
     name: str
     description: str = ""
-    requirements: List[Requirement] = field(default_factory=list)
+    requirements: list[Requirement] = field(default_factory=list)
     risk_level: str = "low"
     needs_confirmation: bool = False
-    required_scope: Optional[str] = None
-    rate_limit: Optional[int] = None
+    required_scope: str | None = None
+    rate_limit: int | None = None
     privacy_tier: str = "LOCAL"
 
 
@@ -42,8 +54,8 @@ class PolicyEngine:
     """Evaluates tool availability against current context."""
 
     def __init__(self):
-        self._policies: Dict[str, ToolPolicy] = {}
-        self._global_reqs: List[Requirement] = []
+        self._policies: dict[str, ToolPolicy] = {}
+        self._global_reqs: list[Requirement] = []
 
     def register(self, policy: ToolPolicy):
         self._policies[policy.id] = policy
@@ -52,7 +64,7 @@ class PolicyEngine:
     def add_global_requirement(self, req: Requirement):
         self._global_reqs.append(req)
 
-    def is_available(self, tool_id: str, context: Dict[str, Any]) -> bool:
+    def is_available(self, tool_id: str, context: dict[str, Any]) -> bool:
         for req in self._global_reqs:
             if not req.check(context):
                 return False
@@ -64,7 +76,7 @@ class PolicyEngine:
                 return False
         return True
 
-    def get_policy(self, tool_id: str) -> Optional[ToolPolicy]:
+    def get_policy(self, tool_id: str) -> ToolPolicy | None:
         return self._policies.get(tool_id)
 
 

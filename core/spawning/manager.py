@@ -1,15 +1,28 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 from __future__ import annotations
+
 import asyncio
 import logging
 import uuid
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict, List, Literal, Optional
+from typing import Literal
 
-from core.session import session_manager, HierarchicalSession
+from core.session import session_manager
 from core.spawning.store import SubagentStore
-from core.sub_agents.registry import agent_registry
 from core.sub_agents.base_agent import AgentResult
+from core.sub_agents.registry import agent_registry
 
 logger = logging.getLogger("jarvis.spawning.manager")
 
@@ -32,13 +45,14 @@ class SpawnResult:
 
 from core.config_schema import jarvis_config
 
+
 class SubagentManager:
-    def __init__(self, max_depth: Optional[int] = None, max_children: Optional[int] = None):
+    def __init__(self, max_depth: int | None = None, max_children: int | None = None):
         self.store = SubagentStore()
         self.max_depth = max_depth or getattr(jarvis_config.build, "max_spawn_depth", 5)
         self.max_children = max_children or getattr(jarvis_config.build, "max_child_agents", 10)
-        self._tasks: Dict[str, asyncio.Task] = {}
-        self._cancel_events: Dict[str, asyncio.Event] = {}
+        self._tasks: dict[str, asyncio.Task] = {}
+        self._cancel_events: dict[str, asyncio.Event] = {}
 
     async def spawn(
         self,
@@ -52,7 +66,7 @@ class SubagentManager:
             # 1. Resolve parent
             if not parent_session_key:
                 parent_session_key = "root:default"
-            
+
             parent = session_manager.get_session(parent_session_key)
             if not parent:
                 parent = session_manager.create_session(parent_session_key)
@@ -97,29 +111,29 @@ class SubagentManager:
         try:
             # 1. Mark as running
             await self.store.update_status(run_id, "running", started_at=datetime.utcnow())
-            
+
             # 2. Lookup agent
             agent_cls = agent_registry.get(agent_id)
             if not agent_cls:
                 raise ValueError(f"Unknown agent: {agent_id}")
-            
+
             agent = agent_cls()
-            
+
             # 3. Call agent.run
             result: AgentResult = await agent.run(task, cancel_event=cancel_event, _session_key=child_key)
 
             # 4. Success / Failure
             if result.success:
                 await self.store.update_status(
-                    run_id, "completed", 
-                    ended_at=datetime.utcnow(), 
+                    run_id, "completed",
+                    ended_at=datetime.utcnow(),
                     result_text=result.output,
                     outcome="ok"
                 )
             else:
                 await self.store.update_status(
-                    run_id, "failed", 
-                    ended_at=datetime.utcnow(), 
+                    run_id, "failed",
+                    ended_at=datetime.utcnow(),
                     error=result.error,
                     outcome="error"
                 )
@@ -133,7 +147,7 @@ class SubagentManager:
         finally:
             self._tasks.pop(run_id, None)
             self._cancel_events.pop(run_id, None)
-            
+
             # Cleanup session if requested
             run_data = await self.store.get_run(run_id)
             if run_data and run_data.get("cleanup") == "delete":
@@ -144,7 +158,7 @@ class SubagentManager:
         event = self._cancel_events.get(run_id)
         if event:
             event.set()
-        
+
         task = self._tasks.get(run_id)
         if task:
             task.cancel()
@@ -154,7 +168,7 @@ class SubagentManager:
     async def steer(self, run_id: str, message: str) -> bool:
         run = await self.store.get_run(run_id)
         if not run: return False
-        
+
         child_key = run["child_session_key"]
         # Injected into the conversation for the agent to pick up
         # ConversationManager expects session_id as used in file names (colons replaced)

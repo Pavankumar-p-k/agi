@@ -1,3 +1,15 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 from __future__ import annotations
 
 import asyncio
@@ -6,7 +18,6 @@ import logging
 import sqlite3
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, Optional
 
 try:
     from croniter import croniter
@@ -24,7 +35,7 @@ class Scheduler:
 
     def __init__(self):
         self._init_db()
-        self._task: Optional[asyncio.Task] = None
+        self._task: asyncio.Task | None = None
         self._running = False
 
     def _init_db(self):
@@ -45,7 +56,7 @@ class Scheduler:
             conn.commit()
 
     def add(self, job_id: str, schedule: str, action: str,
-            params: Optional[Dict] = None, enabled: bool = True) -> Dict:
+            params: dict | None = None, enabled: bool = True) -> dict:
         now = datetime.now()
         next_run = self._next_run(schedule, now)
         with sqlite3.connect(DB_PATH) as conn:
@@ -63,7 +74,7 @@ class Scheduler:
         logger.info("Scheduled job '%s': %s", job_id, schedule)
         return {"id": job_id, "next_run": next_run.isoformat() if next_run else None}
 
-    def _next_run(self, schedule: str, after: datetime) -> Optional[datetime]:
+    def _next_run(self, schedule: str, after: datetime) -> datetime | None:
         s = schedule.strip().lower()
         try:
             if s.endswith("s"):
@@ -84,7 +95,7 @@ class Scheduler:
         logger.warning("Cannot parse schedule: %s", schedule)
         return None
 
-    async def _execute(self, job_id: str, action: str, params: Dict):
+    async def _execute(self, job_id: str, action: str, params: dict):
         logger.info("Executing job '%s': %s", job_id, action)
         try:
             if action == "backup":

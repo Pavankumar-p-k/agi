@@ -1,3 +1,15 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """
 memory/mem0_adapter.py
 Wraps mem0 (Apache 2.0 — mem0ai/mem0) to give Jarvis persistent
@@ -20,12 +32,14 @@ except ImportError:
 
 def _get_mem0_config() -> dict:
     """Build mem0 config using existing Ollama LLM router."""
+    from core.config_registry import config as _c
+    _ollama = _c.get("ollama.base_url")
     return {
         "llm": {
             "provider": "ollama",
             "config": {
-                "model": "llama3.1:8b",
-                "ollama_base_url": os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
+                "model": _c.get("llm.chat_model"),
+                "ollama_base_url": _ollama,
                 "temperature": 0.1,
                 "max_tokens": 2000,
             }
@@ -33,8 +47,8 @@ def _get_mem0_config() -> dict:
         "embedder": {
             "provider": "ollama",
             "config": {
-                "model": "nomic-embed-text",
-                "ollama_base_url": os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
+                "model": _c.get("llm.embedding_model"),
+                "ollama_base_url": _ollama,
             }
         },
         "vector_store": {
@@ -83,7 +97,7 @@ class Mem0Adapter:
         if not self._memory:
             return []
         try:
-            results = self._memory.search(query, user_id=user_id, limit=limit)
+            results = self._memory.search(query, filters={'user_id': user_id}, limit=limit)
             return results.get("results", []) if isinstance(results, dict) else results or []
         except Exception as e:
             logger.error(f"mem0.search failed: {e}")

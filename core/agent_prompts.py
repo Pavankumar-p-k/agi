@@ -1,3 +1,15 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """
 agent_prompts.py — compact system prompt assembly.
 """
@@ -477,7 +489,7 @@ def _build_system_prompt(
 
     # ── Live file context (hot files) ─────────────────────────────────
     try:
-        from core.tools.hot_files import format_hot_files, format_file_changes
+        from core.tools.hot_files import format_file_changes, format_hot_files
         hot_context = format_hot_files()
         changes_context = format_file_changes()
         if hot_context:
@@ -505,9 +517,9 @@ def _build_system_prompt(
             logger.debug("skill prefs load failed: %s", _e)
         if last_user and _skills_on:
             from core.constants import DATA_DIR
+            from core.prompt_security import untrusted_context_message
             from core.settings_legacy import get_setting
             from services.memory.skills import SkillsManager
-            from core.prompt_security import untrusted_context_message
 
             sm = SkillsManager(DATA_DIR)
             if not _prefs.get("auto_approve_skills", True):

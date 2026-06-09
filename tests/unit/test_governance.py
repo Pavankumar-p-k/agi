@@ -8,7 +8,6 @@ Run:
 """
 from __future__ import annotations
 
-import asyncio
 import json
 import time
 import uuid
@@ -16,15 +15,6 @@ from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
-
-# ════════════════════════════════════════════════════════════════════════════
-# Helpers
-# ════════════════════════════════════════════════════════════════════════════
-
-def run(coro):
-    """Run an async coroutine synchronously in tests."""
-    return asyncio.get_event_loop().run_until_complete(coro)
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -37,42 +27,49 @@ class TestTaskRouter:
         from core.governance.task_router import TaskRouter
         self.router = TaskRouter()
 
-    def test_research_routing(self):
-        decision = run(self.router.route("search for latest AI news"))
+    @pytest.mark.asyncio
+    async def test_research_routing(self):
+        decision = await self.router.route("search for latest AI news")
         assert decision.handler == "sub_agent"
         assert decision.target  == "researcher"
         assert decision.confidence > 0.4
 
-    def test_coder_routing(self):
-        decision = run(self.router.route("write a Python function to sort a list"))
+    @pytest.mark.asyncio
+    async def test_coder_routing(self):
+        decision = await self.router.route("write a Python function to sort a list")
         assert decision.handler == "sub_agent"
         assert decision.target  == "coder"
         assert decision.confidence > 0.4
 
-    def test_planner_routing(self):
-        decision = run(self.router.route("plan a roadmap for building a web app"))
+    @pytest.mark.asyncio
+    async def test_planner_routing(self):
+        decision = await self.router.route("plan a roadmap for building a web app")
         assert decision.handler == "sub_agent"
         assert decision.target  in ("planner", "coder")  # both are valid for this task
         assert decision.confidence > 0.3
 
-    def test_conversational_routing(self):
-        decision = run(self.router.route("hello how are you"))
+    @pytest.mark.asyncio
+    async def test_conversational_routing(self):
+        decision = await self.router.route("hello how are you")
         assert decision.handler == "llm_direct"
 
-    def test_skill_routing(self):
+    @pytest.mark.asyncio
+    async def test_skill_routing(self):
         self.router.add_skill("weather", ["weather", "temperature", "forecast", "rain"])
-        decision = run(self.router.route("what is the weather today"))
+        decision = await self.router.route("what is the weather today")
         assert decision.handler == "skill"
         assert decision.target  == "weather"
 
-    def test_low_confidence_flags_clarification(self):
-        decision = run(self.router.route("xyzzy"))
+    @pytest.mark.asyncio
+    async def test_low_confidence_flags_clarification(self):
+        decision = await self.router.route("xyzzy")
         # should still return a decision, possibly with low confidence
         assert hasattr(decision, "confidence")
         assert 0.0 <= decision.confidence <= 1.0
 
-    def test_route_decision_to_dict(self):
-        decision = run(self.router.route("search for python tutorials"))
+    @pytest.mark.asyncio
+    async def test_route_decision_to_dict(self):
+        decision = await self.router.route("search for python tutorials")
         d = decision.to_dict()
         assert "handler" in d
         assert "target"  in d
@@ -98,13 +95,15 @@ class TestTaskRouter:
         )
         assert d.needs_clarification() is False
 
-    def test_add_skill_manually(self):
+    @pytest.mark.asyncio
+    async def test_add_skill_manually(self):
         self.router.add_skill("spotify", ["play", "music", "song", "spotify"])
-        decision = run(self.router.route("play some relaxing music"))
+        decision = await self.router.route("play some relaxing music")
         assert decision.handler == "skill"
         assert decision.target  == "spotify"
 
-    def test_multiple_tasks(self):
+    @pytest.mark.asyncio
+    async def test_multiple_tasks(self):
         tasks = [
             "search for news",
             "write a script",
@@ -113,7 +112,7 @@ class TestTaskRouter:
         ]
         expected_targets = ["researcher", "coder", "planner", "llm_direct"]
         for task, expected in zip(tasks, expected_targets):
-            d = run(self.router.route(task))
+            d = await self.router.route(task)
             # We accept either the expected target or adjacent ones
             assert d.target in (expected, "llm_direct", "coder", "researcher", "planner"), \
                 f"Task '{task}' routed to unexpected target '{d.target}'"
@@ -247,27 +246,31 @@ class TestWorkQueue:
         if self.tmp_queue.exists():
             self.tmp_queue.unlink()
 
-    def test_enqueue_returns_task_id(self):
-        task_id = run(self.wq.enqueue("test task"))
+    @pytest.mark.asyncio
+    async def test_enqueue_returns_task_id(self):
+        task_id = await self.wq.enqueue("test task")
         assert isinstance(task_id, str)
         assert len(task_id) == 36  # UUID4
 
-    def test_get_task_after_enqueue(self):
-        task_id = run(self.wq.enqueue("hello world"))
+    @pytest.mark.asyncio
+    async def test_get_task_after_enqueue(self):
+        task_id = await self.wq.enqueue("hello world")
         record  = self.wq.get_task(task_id)
         assert record is not None
         assert record.task == "hello world"
 
-    def test_status_counts(self):
-        run(self.wq.enqueue("task 1"))
-        run(self.wq.enqueue("task 2"))
+    @pytest.mark.asyncio
+    async def test_status_counts(self):
+        await self.wq.enqueue("task 1")
+        await self.wq.enqueue("task 2")
         status = self.wq.get_status()
         assert status["pending"] == 2
         assert status["running"] == 0
         assert status["done"]    == 0
 
-    def test_cancel_pending_task(self):
-        task_id  = run(self.wq.enqueue("cancel me", priority=5))
+    @pytest.mark.asyncio
+    async def test_cancel_pending_task(self):
+        task_id  = await self.wq.enqueue("cancel me", priority=5)
         result   = self.wq.cancel(task_id)
         assert result is True
         record = self.wq.get_task(task_id)
@@ -277,20 +280,22 @@ class TestWorkQueue:
         result = self.wq.cancel("nonexistent-id")
         assert result is False
 
-    def test_list_tasks(self):
-        run(self.wq.enqueue("task a"))
-        run(self.wq.enqueue("task b"))
+    @pytest.mark.asyncio
+    async def test_list_tasks(self):
+        await self.wq.enqueue("task a")
+        await self.wq.enqueue("task b")
         tasks = self.wq.list_tasks()
         assert len(tasks) == 2
         task_texts = [t["task"] for t in tasks]
         assert "task a" in task_texts
         assert "task b" in task_texts
 
-    def test_priority_ordering(self):
+    @pytest.mark.asyncio
+    async def test_priority_ordering(self):
         from core.governance.work_queue import TaskRecord, TaskStatus
-        run(self.wq.enqueue("low",    priority=10))
-        run(self.wq.enqueue("urgent", priority=1))
-        run(self.wq.enqueue("normal", priority=5))
+        await self.wq.enqueue("low",    priority=10)
+        await self.wq.enqueue("urgent", priority=1)
+        await self.wq.enqueue("normal", priority=5)
 
         # Pull all from queue and verify ordering
         records = []
@@ -301,13 +306,15 @@ class TestWorkQueue:
         priorities = [p for p, _ in records]
         assert priorities == sorted(priorities), "Tasks not in priority order"
 
-    def test_reject_when_system_overloaded(self):
+    @pytest.mark.asyncio
+    async def test_reject_when_system_overloaded(self):
         self.mock_monitor.should_reject.return_value = True
         with pytest.raises(RuntimeError, match="critically overloaded"):
-            run(self.wq.enqueue("should be rejected"))
+            await self.wq.enqueue("should be rejected")
 
-    def test_task_record_to_dict(self):
-        task_id = run(self.wq.enqueue("convert me"))
+    @pytest.mark.asyncio
+    async def test_task_record_to_dict(self):
+        task_id = await self.wq.enqueue("convert me")
         record  = self.wq.get_task(task_id)
         d       = record.to_dict()
         assert d["task_id"] == task_id
@@ -315,14 +322,15 @@ class TestWorkQueue:
         assert "status"     in d
         assert "priority"   in d
 
-    def test_persistence_file_created(self):
+    @pytest.mark.asyncio
+    async def test_persistence_file_created(self):
         with patch("core.governance.work_queue.QUEUE_FILE", self.tmp_queue):
             from core.governance.work_queue import WorkQueue
             wq = WorkQueue(
                 resource_monitor=self.mock_monitor,
                 task_router=self.mock_router,
             )
-            run(wq.enqueue("persist me"))
+            await wq.enqueue("persist me")
         assert self.tmp_queue.exists()
         data = json.loads(self.tmp_queue.read_text())
         assert len(data) >= 1

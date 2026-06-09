@@ -1,10 +1,21 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """core/plan_evolution.py
 Phase 4 (D2): Plan Evolution.
 Dynamic DAG mutation mid-run: switch templates, insert/remove steps, change tools.
 """
-import logging, copy
-from dataclasses import dataclass, field
-from typing import Optional
+import logging
+from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +24,7 @@ logger = logging.getLogger(__name__)
 class PlanMutation:
     mutation_type: str  # "insert", "remove", "replace", "reorder", "switch_template"
     target_task_id: str = ""
-    new_task: Optional[dict] = None
+    new_task: dict | None = None
     reason: str = ""
     applied_at_retry: int = 0
 

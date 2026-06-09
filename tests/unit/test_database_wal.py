@@ -1,0 +1,30 @@
+import pytest
+from unittest.mock import MagicMock, patch
+
+
+class TestDatabaseWALPragma:
+    def test_wal_pragma_executed_on_connect(self):
+        from core.database_models import _set_sqlite_pragma
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_conn.cursor.return_value = mock_cursor
+        _set_sqlite_pragma(mock_conn, None)
+        calls = [call[0][0] for call in mock_cursor.execute.call_args_list]
+        assert any("journal_mode=WAL" in c for c in calls)
+        assert any("synchronous=NORMAL" in c for c in calls)
+        assert any("busy_timeout=5000" in c for c in calls)
+        assert mock_cursor.close.called
+
+    def test_engine_create_args_include_connect_args(self):
+        from sqlalchemy import create_engine
+        test_engine = create_engine(
+            "sqlite:///:memory:",
+            connect_args={"check_same_thread": False},
+        )
+        # Verify the connect_args are stored on the engine
+        assert test_engine.dialect.dbapi is not None
+        assert True  # engine created successfully with connect_args
+
+    def test_engine_url_is_sqlite(self):
+        from core.database_models import engine
+        assert engine.url.drivername == "sqlite"

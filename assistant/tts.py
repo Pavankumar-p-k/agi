@@ -4,6 +4,8 @@ import time
 import threading
 import logging
 
+from core.config_registry import config as _jarvis_config
+
 logger = logging.getLogger(__name__)
 
 _tts_instance = None
@@ -13,7 +15,7 @@ class JarvisTTS:
     """
     Kokoro-TTS integration for JARVIS.
     """
-    def __init__(self, voice: str = "af_heart", max_cache: int = 128):
+    def __init__(self, voice: str | None = None, max_cache: int = 128):
         self.voice = voice
         self.pipeline = None
         self.cache: dict[str, bytes] = {}
@@ -71,5 +73,5 @@ def get_tts():
     if _tts_instance is None:
         with _tts_lock:
             if _tts_instance is None:
-                _tts_instance = JarvisTTS(voice=os.getenv("TTS_VOICE", "af_heart"))
+                _tts_instance = JarvisTTS(voice=os.getenv("TTS_VOICE") or _jarvis_config.get("voice.tts_voice"))
     return _tts_instance

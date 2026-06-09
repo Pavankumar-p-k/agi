@@ -1,3 +1,15 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """
 routers/setup.py
 ----------------
@@ -315,7 +327,8 @@ async def _ollama_running() -> bool:
         async with httpx.AsyncClient(timeout=3) as c:
             r = await c.get(f"{OLLAMA_BASE}/api/tags")
             return r.status_code == 200
-    except Exception:
+    except Exception as e:
+        logger.warning("[routers.setup] ollama running check failed: %s", e)
         return False
 
 
@@ -325,7 +338,8 @@ async def _installed_models() -> list[str]:
             r = await c.get(f"{OLLAMA_BASE}/api/tags")
             data = r.json()
             return [m["name"] for m in data.get("models", [])]
-    except Exception:
+    except Exception as e:
+        logger.warning("[routers.setup] installed models check failed: %s", e)
         return []
 
 

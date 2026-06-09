@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 from datetime import datetime
+
 from textual.app import ComposeResult
-from textual.widget import Widget
-from textual.widgets import Label
 from textual.containers import Horizontal
 from textual.reactive import reactive
+from textual.widget import Widget
+from textual.widgets import Label
+
 
 class StatusBar(Widget):
     """
@@ -18,7 +20,7 @@ class StatusBar(Widget):
     git_branch = reactive("...")
     alert_msg = reactive("")
     connected = reactive(False)
-    
+
     def compose(self) -> ComposeResult:
         with Horizontal():
             yield Label(" session:-- ", id="status-session")
@@ -52,7 +54,7 @@ class StatusBar(Widget):
 
     def update_time(self) -> None:
         self.query_one("#status-time", Label).update(datetime.now().strftime("%H:%M:%S"))
-        
+
     def show_alert(self, message: str, timeout: float = 5.0) -> None:
         self.alert_msg = message
         self.set_timer(timeout, self.clear_alert)

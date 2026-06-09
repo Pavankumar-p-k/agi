@@ -1,3 +1,15 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """
 tool_schemas.py
 
@@ -10,20 +22,18 @@ tool parsing / execution logic.
 
 import json
 import logging
-from typing import Optional
 
-from core.tools._constants import ToolBlock, TOOL_TAGS
+from core.tools._constants import TOOL_TAGS, ToolBlock
 from core.tools.parsing import _TOOL_NAME_MAP
-from core.tools.validation import validate_tool_call
-
-from core.tools.schemas_shell_web import FUNCTION_TOOL_SCHEMAS as _SHELL_WEB
-from core.tools.schemas_document import FUNCTION_TOOL_SCHEMAS as _DOCUMENT
-from core.tools.schemas_chat import FUNCTION_TOOL_SCHEMAS as _CHAT
 from core.tools.schemas_admin import FUNCTION_TOOL_SCHEMAS as _ADMIN
 from core.tools.schemas_calendar import FUNCTION_TOOL_SCHEMAS as _CALENDAR
+from core.tools.schemas_chat import FUNCTION_TOOL_SCHEMAS as _CHAT
+from core.tools.schemas_document import FUNCTION_TOOL_SCHEMAS as _DOCUMENT
+from core.tools.schemas_email import FUNCTION_TOOL_SCHEMAS as _EMAIL
 from core.tools.schemas_model import FUNCTION_TOOL_SCHEMAS as _MODEL
 from core.tools.schemas_research import FUNCTION_TOOL_SCHEMAS as _RESEARCH
-from core.tools.schemas_email import FUNCTION_TOOL_SCHEMAS as _EMAIL
+from core.tools.schemas_shell_web import FUNCTION_TOOL_SCHEMAS as _SHELL_WEB
+from core.tools.validation import validate_tool_call
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +42,7 @@ FUNCTION_TOOL_SCHEMAS = (
 )
 
 
-def function_call_to_tool_block(name: str, arguments: str) -> Optional[ToolBlock]:
+def function_call_to_tool_block(name: str, arguments: str) -> ToolBlock | None:
     """Convert a native function call into a ToolBlock for the existing execution pipeline."""
     try:
         if not arguments or (isinstance(arguments, str) and not arguments.strip()):

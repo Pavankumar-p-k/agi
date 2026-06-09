@@ -1,3 +1,15 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """core/scheduler.py
 Recurring automated tasks — like Cowork's scheduled tasks.
 Supports daily@HH:MM, weekly@day@HH:MM, hourly schedules.
@@ -7,8 +19,8 @@ import asyncio
 import json
 import logging
 import os
-from datetime import datetime, timedelta
-from typing import Optional, Callable
+from collections.abc import Callable
+from datetime import datetime
 
 logger = logging.getLogger("scheduler")
 
@@ -21,7 +33,7 @@ class JarvisScheduler:
     def __init__(self):
         self.tasks: dict[str, dict] = {}
         self._handlers: dict[str, Callable] = {}
-        self._loop_task: Optional[asyncio.Task] = None
+        self._loop_task: asyncio.Task | None = None
         self._load_tasks()
 
     def register_handler(self, task_type: str, handler: Callable):
@@ -137,7 +149,7 @@ class JarvisScheduler:
     def _load_tasks(self):
         try:
             if os.path.exists(TASKS_DB):
-                with open(TASKS_DB, "r") as f:
+                with open(TASKS_DB) as f:
                     self.tasks = json.load(f)
         except Exception as e:
             logger.warning(f"[SCHEDULER] Load failed: {e}")

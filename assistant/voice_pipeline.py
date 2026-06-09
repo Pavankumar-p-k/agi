@@ -16,18 +16,19 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from assistant.stt import get_stt
 from assistant.tts import get_tts
+from core.config_registry import config as _jarvis_config
 from core.llm_router import complete as llm_complete
 from core.settings.store import get_settings_store
 
 
-SYSTEM_PROMPT = (
+SYSTEM_PROMPT = _jarvis_config.get("voice.system_prompt") or (
     "You are JARVIS, a personal AI assistant. "
     "Be concise and direct. Answer in 1-3 sentences. "
     "Tell the user what you actually did — do NOT invent details that didn't happen."
 )
 
-RECORD_SECONDS = 5
-SAMPLE_RATE = 16000
+RECORD_SECONDS = _jarvis_config.get("voice.record_seconds", 5)
+SAMPLE_RATE = _jarvis_config.get("voice.sample_rate", 16000)
 
 
 def _record_audio(duration: int = RECORD_SECONDS, sr: int = SAMPLE_RATE) -> bytes:
@@ -93,7 +94,7 @@ class VoicePipeline:
                     {"role": "system", "content": system},
                     {"role": "user", "content": text},
                 ],
-                timeout=10,
+                timeout=_jarvis_config.get("voice.think_timeout", 10),
             )).unwrap_or("")
             return reply
         except Exception:
@@ -105,7 +106,7 @@ class VoicePipeline:
                     {"role": "system", "content": system},
                     {"role": "user", "content": text},
                 ],
-                timeout=15,
+                timeout=_jarvis_config.get("voice.think_timeout_fallback", 15),
             )).unwrap_or("")
             return reply
         except Exception as e:

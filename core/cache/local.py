@@ -1,8 +1,21 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 from __future__ import annotations
 
 import asyncio
 import time
-from typing import Any, Callable, Generic, Optional, TypeVar
+from collections.abc import Callable
+from typing import Generic, TypeVar
 
 T = TypeVar("T")
 
@@ -14,14 +27,14 @@ class LRUCache(Generic[T]):
     Optionally calls an eviction listener callback on each eviction.
     """
 
-    def __init__(self, maxsize: int = 256, eviction_listener: Optional[Callable[[str, T], None]] = None):
+    def __init__(self, maxsize: int = 256, eviction_listener: Callable[[str, T], None] | None = None):
         self._maxsize = maxsize
         self._eviction_listener = eviction_listener
         self._store: dict[str, T] = {}
         self._order: list[str] = []
         self._lock = asyncio.Lock()
 
-    async def get(self, key: str) -> Optional[T]:
+    async def get(self, key: str) -> T | None:
         async with self._lock:
             if key not in self._store:
                 return None
@@ -84,14 +97,14 @@ class TTLCache(LRUCache[T]):
         maxsize: int = 256,
         default_ttl: float = 3600.0,
         refresh_on_access: bool = False,
-        eviction_listener: Optional[Callable[[str, T], None]] = None,
+        eviction_listener: Callable[[str, T], None] | None = None,
     ):
         super().__init__(maxsize=maxsize, eviction_listener=eviction_listener)
         self._default_ttl = default_ttl
         self._refresh_on_access = refresh_on_access
         self._expires: dict[str, float] = {}
 
-    async def get(self, key: str) -> Optional[T]:
+    async def get(self, key: str) -> T | None:
         async with self._lock:
             if key not in self._store:
                 return None
@@ -104,7 +117,7 @@ class TTLCache(LRUCache[T]):
                 self._expires[key] = time.monotonic() + self._default_ttl
             return self._store[key]
 
-    async def set(self, key: str, value: T, ttl: Optional[float] = None) -> None:
+    async def set(self, key: str, value: T, ttl: float | None = None) -> None:
         async with self._lock:
             if key in self._store:
                 self._order.remove(key)
@@ -132,7 +145,7 @@ class TTLCache(LRUCache[T]):
             self._evict_expired()
             return len(self._store)
 
-    async def ttl(self, key: str) -> Optional[float]:
+    async def ttl(self, key: str) -> float | None:
         """Return seconds until *key* expires, or None if missing."""
         async with self._lock:
             if key not in self._expires:

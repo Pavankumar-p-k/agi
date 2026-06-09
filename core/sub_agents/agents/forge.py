@@ -1,7 +1,19 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import logging
 import time
-from typing import Optional
-from core.sub_agents.base_agent import SubAgent, AgentResult
+
+from core.sub_agents.base_agent import AgentResult, SubAgent
 
 logger = logging.getLogger("jarvis.agents.forge")
 
@@ -15,8 +27,8 @@ except ImportError:
 def _forge_prompt(mode: str, lang: str = "auto") -> str:
     lang_str = "auto-detect from context" if lang == "auto" else lang
     base = (
-        f"You are FORGE, a production code generation sub-agent inside Jarvis — "
-        f"Pavan's personal AI OS built on FastAPI + Ollama + RTX 4050 local inference. "
+        "You are FORGE, a production code generation sub-agent inside Jarvis — "
+        "Pavan's personal AI OS built on FastAPI + Ollama + RTX 4050 local inference. "
     )
     modes = {
         "generate": (
@@ -55,36 +67,36 @@ class ForgeAgent(SubAgent):
     def get_system_prompt(self, mode: str) -> str:
         return _forge_prompt(mode, getattr(self, "_lang", "auto"))
 
-    async def run(self, task: str, mode: Optional[str] = None, **kwargs) -> AgentResult:
+    async def run(self, task: str, mode: str | None = None, **kwargs) -> AgentResult:
         mode = mode or self.DEFAULT_MODE
         self._lang = kwargs.get("lang", "auto")
-        
+
         # 1. Integration: smolagents CodeAgent loop
         if _SMOLAGENTS_AVAILABLE and mode in ("generate", "debug"):
             self.status = "running"
             start_time = time.time()
-            
+
             try:
                 # Use smolagents for bulletproof code execution/generation
                 from core.model_router import get_router_model
                 model_name = get_router_model("code") # Usually qwen2.5-coder
-                
+
                 # Build smolagents compatible model
                 # Note: smolagents LiteLLMModel works with Ollama prefixes
                 smol_model = LiteLLMModel(model_id=f"ollama/{model_name}")
-                
+
                 agent = CodeAgent(
                     tools=[], # Can add more tools here later
                     model=smol_model,
                     add_base_tools=True,
                     max_steps=5
                 )
-                
+
                 logger.info(f"[{self.NAME}:{self.id}] Running smolagents loop for {mode}...")
                 # CodeAgent.run is synchronous in some versions, check if it needs thread offloading
                 # For this implementation, we assume a modern async-friendly version or wrap it
                 result_content = agent.run(f"{_forge_prompt(mode, self._lang)}\n\nTask: {task}")
-                
+
                 self._result = AgentResult(
                     agent_id=self.id,
                     agent_name=self.NAME,
@@ -100,7 +112,7 @@ class ForgeAgent(SubAgent):
             except Exception as e:
                 logger.error(f"[{self.NAME}:{self.id}] smolagents loop failed: {e}")
                 # Fall back to standard generation
-        
+
         # 2. Fallback: Standard generation via SubAgent.run
         return await super().run(task, mode=mode, **kwargs)
 

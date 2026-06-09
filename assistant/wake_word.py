@@ -11,11 +11,13 @@ import threading
 import time
 import webrtcvad
 
+from core.config_registry import config as _jarvis_config
 
-SAMPLE_RATE = 16000
-VAD_MODE = 3
-ENERGY_THRESHOLD = 0.008
-REQUIRE_SPEECH_SECONDS = 1.2
+
+SAMPLE_RATE = _jarvis_config.get("voice.sample_rate", 16000)
+VAD_MODE = _jarvis_config.get("voice.vad_mode", 3)
+ENERGY_THRESHOLD = _jarvis_config.get("voice.energy_threshold", 0.008)
+REQUIRE_SPEECH_SECONDS = _jarvis_config.get("voice.require_speech_seconds", 1.2)
 
 
 class RingBuffer:
@@ -77,8 +79,8 @@ class WakeWordDetector:
     Whisper confirmation runs in a worker thread (slow, but doesn't block audio).
     """
 
-    COOLDOWN_ON_TRIGGER = 5.0
-    COOLDOWN_ON_SKIP = 3.0
+    COOLDOWN_ON_TRIGGER = _jarvis_config.get("voice.wake_cooldown_trigger", 5.0)
+    COOLDOWN_ON_SKIP = _jarvis_config.get("voice.wake_cooldown_skip", 3.0)
 
     def __init__(self, sensitivity: float = 0.5):
         self.vad = webrtcvad.Vad(VAD_MODE)
@@ -88,7 +90,7 @@ class WakeWordDetector:
         self.on_wake_word_callback = None
         self._state_lock = threading.Lock()
         self._cooldown_until = 0.0
-        self._ring = RingBuffer(max_seconds=4.0)
+        self._ring = RingBuffer(max_seconds=_jarvis_config.get("voice.ring_buffer_seconds", 4.0))
         self._pending_confirm = False
         self._speech_streak = 0
         self._async_loop = None

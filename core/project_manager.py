@@ -1,17 +1,31 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """core/project_manager.py
 Manages multiple concurrent JARVIS projects — queue, priorities,
 checkpoint/resume, workers.
 """
-import asyncio, os, re, json, logging
-from pathlib import Path
-from typing import Optional, Callable
+import asyncio
+import json
+import logging
+import re
+from dataclasses import dataclass
 from datetime import datetime
-from dataclasses import dataclass, field
+from pathlib import Path
 
 logger = logging.getLogger("project_manager")
 
-from core.project_state import ProjectState, list_projects
 from core.control_loop import control_loop as shared_control_loop
+from core.project_state import ProjectState, list_projects
 
 
 @dataclass
@@ -23,7 +37,7 @@ class ProjectEntry:
     created_at: str = ""
     stopped_at: str = ""
     error: str = ""
-    task: Optional[asyncio.Task] = None
+    task: asyncio.Task | None = None
 
 
 MANAGER_STATE_PATH = Path.home() / ".jarvis" / "manager_state.json"
@@ -191,7 +205,7 @@ class ProjectManager:
         self._save_state()
         return True
 
-    def get_status(self, name: str) -> Optional[dict]:
+    def get_status(self, name: str) -> dict | None:
         """Get detailed status of a project."""
         entry = self._projects.get(name)
         if not entry:

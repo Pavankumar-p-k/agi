@@ -1,3 +1,15 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 from __future__ import annotations
 
 import json
@@ -5,7 +17,6 @@ import logging
 import os
 from dataclasses import dataclass, field, fields
 from pathlib import Path
-from typing import Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +35,7 @@ class ServerConfig:
     port: int = 8000
     secret_key: str = ""
     dev_mode: bool = True
-    allowed_origins: List[str] = field(default_factory=lambda: ["http://localhost:5173", "http://127.0.0.1:8000"])
+    allowed_origins: list[str] = field(default_factory=lambda: ["http://localhost:5173", "http://127.0.0.1:8000"])
     firebase_credentials: str = ""
 
 
@@ -37,7 +48,7 @@ class DatabaseConfig:
 class OllamaConfig:
     url: str = "http://localhost:11434"
     default_model: str = "llama3"
-    ports: Dict[str, int] = field(default_factory=lambda: {
+    ports: dict[str, int] = field(default_factory=lambda: {
         "tinyllama": 11434,
         "deepseek-r1:1.5b": 11434,
         "qwen2.5-coder:3b": 11434,
@@ -54,7 +65,7 @@ class OllamaConfig:
 class PluginConfig:
     hot_reload_enabled: bool = True
     poll_interval: float = 2.0
-    directories: List[str] = field(default_factory=lambda: ["plugins/", "core/plugins/", "skills/library/"])
+    directories: list[str] = field(default_factory=lambda: ["plugins/", "core/plugins/", "skills/library/"])
     config_dir: str = "data/plugin_configs"
 
 
@@ -76,7 +87,7 @@ class BuildSystemConfig:
     max_parallel_builds: int = 2
     projects_dir: str = str(Path.home() / ".jarvis" / "projects")
     codex_cli_path: str = str(BASE_DIR / "tools" / "codex-cli")
-    
+
     # Subagent spawning limits
     max_spawn_depth: int = 5
     max_child_agents: int = 10
@@ -99,17 +110,17 @@ class LLMConfig:
 
     default_endpoint_id: str = "ollama"
     default_model: str = "llama3.1:8b"
-    default_model_fallbacks: List[LLMFallback] = field(default_factory=list)
+    default_model_fallbacks: list[LLMFallback] = field(default_factory=list)
 
     utility_endpoint_id: str = "ollama"
     utility_model: str = "llama3"
-    utility_model_fallbacks: List[LLMFallback] = field(default_factory=list)
+    utility_model_fallbacks: list[LLMFallback] = field(default_factory=list)
 
     research_endpoint_id: str = "openai"
     research_model: str = "gpt-4o"
 
     vision_enabled: bool = True
-    vision_model_fallbacks: List[str] = field(default_factory=list)
+    vision_model_fallbacks: list[str] = field(default_factory=list)
 
     agent_max_tool_calls: int = 0
     agent_input_token_budget: int = 6000
@@ -123,16 +134,16 @@ class LLMConfig:
 @dataclass
 class SearchConfig:
     provider: str = "searxng"
-    fallback_chain: List[str] = field(default_factory=lambda: ["duckduckgo"])
+    fallback_chain: list[str] = field(default_factory=lambda: ["duckduckgo"])
     url: str = ""
     result_count: int = 5
     safesearch: str = "strict"
 
-    brave_api_key: Optional[str] = None
-    google_pse_key: Optional[str] = None
-    google_pse_cx: Optional[str] = None
-    tavily_api_key: Optional[str] = None
-    serper_api_key: Optional[str] = None
+    brave_api_key: str | None = None
+    google_pse_key: str | None = None
+    google_pse_cx: str | None = None
+    tavily_api_key: str | None = None
+    serper_api_key: str | None = None
 
 
 @dataclass
@@ -171,8 +182,8 @@ class VoiceConfig:
 
 @dataclass
 class SandboxPolicy:
-    allow_tools: List[str] = field(default_factory=lambda: ["*"])
-    deny_tools: List[str] = field(default_factory=list)
+    allow_tools: list[str] = field(default_factory=lambda: ["*"])
+    deny_tools: list[str] = field(default_factory=list)
     allow_network: bool = False
     allow_bind_mounts: bool = False
     max_memory: str = "512m"
@@ -203,7 +214,7 @@ class AuthProfile:
 @dataclass
 class FailoverConfig:
     enabled: bool = False
-    profiles: List[AuthProfile] = field(default_factory=list)
+    profiles: list[AuthProfile] = field(default_factory=list)
     max_retries_per_profile: int = 2
     retry_delay_seconds: float = 1.0
     auto_discovery: bool = True
@@ -291,13 +302,13 @@ class JarvisConfig:
       4. Programmatic overrides
     """
 
-    def __init__(self, overrides: Optional[dict] = None):
+    def __init__(self, overrides: dict | None = None):
         merged = self._load_all()
         if overrides:
             _deep_merge(merged, overrides)
         for name, cls in _SUB_CONFIGS.items():
             setattr(self, name, _dataclass_from_dict(cls, merged.get(name, {})))
-            
+
         # Top-level attributes for backward compat and easy access
         self.claude_api_key = self.get_api_key("CLAUDE_API_KEY")
         self.openai_api_key = self.get_api_key("OPENAI_API_KEY")
@@ -313,7 +324,7 @@ class JarvisConfig:
         if yaml_path.exists():
             try:
                 import yaml
-                with open(yaml_path, "r") as f:
+                with open(yaml_path) as f:
                     ydata = yaml.safe_load(f)
                     if ydata:
                         _deep_merge(merged, ydata)
@@ -323,7 +334,7 @@ class JarvisConfig:
         settings_path = DATA_DIR / "settings.json"
         if settings_path.exists():
             try:
-                with open(settings_path, "r") as f:
+                with open(settings_path) as f:
                     sdata = json.load(f)
                     if sdata:
                         _deep_merge(merged, _map_flat_settings(sdata))
@@ -333,7 +344,7 @@ class JarvisConfig:
         features_path = DATA_DIR / "features.json"
         if features_path.exists():
             try:
-                with open(features_path, "r") as f:
+                with open(features_path) as f:
                     fdata = json.load(f)
                     if fdata:
                         _deep_merge(merged, {"features": fdata})
@@ -360,10 +371,10 @@ class JarvisConfig:
             target[parts[0]] = val
 
     @classmethod
-    def load(cls, overrides: Optional[dict] = None) -> "JarvisConfig":
+    def load(cls, overrides: dict | None = None) -> JarvisConfig:
         return cls(overrides)
 
-    def get_api_key(self, name: str) -> Optional[str]:
+    def get_api_key(self, name: str) -> str | None:
         return os.getenv(name.upper()) or os.getenv(f"JARVIS_{name.upper()}")
 
 

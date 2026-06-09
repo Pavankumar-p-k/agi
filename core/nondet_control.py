@@ -1,12 +1,25 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """core/nondet_control.py
 Phase 3 (C2): Non-Determinism Control.
 Seed-based execution, fixed decision logs, replayable runs.
 """
-import os, json, logging, hashlib
-from pathlib import Path
+import hashlib
+import json
+import logging
+from dataclasses import dataclass
 from datetime import datetime
-from dataclasses import dataclass, field
-from typing import Optional
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +56,7 @@ class DecisionLogger:
     def __init__(self):
         self._log: dict[str, list[DecisionEntry]] = {}
 
-    def init_project(self, project: str, seed: Optional[int] = None):
+    def init_project(self, project: str, seed: int | None = None):
         self._log[project] = []
         path = DECISION_LOG_DIR / project
         path.mkdir(parents=True, exist_ok=True)
@@ -60,7 +73,7 @@ class DecisionLogger:
     def get_log(self, project: str) -> list[DecisionEntry]:
         return self._log.get(project, [])
 
-    def get_seed(self, project: str) -> Optional[int]:
+    def get_seed(self, project: str) -> int | None:
         path = DECISION_LOG_DIR / project / "seed.txt"
         if path.exists():
             try:

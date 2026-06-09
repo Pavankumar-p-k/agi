@@ -1,3 +1,15 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """
 memory_vector.py
 
@@ -7,7 +19,6 @@ Stores pre-computed embeddings (ChromaDB does not manage embedding).
 """
 
 import logging
-from typing import List, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +63,7 @@ class MemoryVectorStore:
     def healthy(self) -> bool:
         return self._healthy
 
-    def _embed(self, texts: List[str]) -> List[List[float]]:
+    def _embed(self, texts: list[str]) -> list[list[float]]:
         vecs = self._model.encode(texts, normalize_embeddings=True)
         return vecs.tolist()
 
@@ -87,7 +98,7 @@ class MemoryVectorStore:
         except Exception as e:
             logger.warning(f"memory remove {memory_id}: {e}")
 
-    def search(self, query: str, k: int = 8) -> List[Dict]:
+    def search(self, query: str, k: int = 8) -> list[dict]:
         """Search for the most relevant memory IDs by semantic similarity.
         Returns list of {"memory_id": str, "score": float}.
 
@@ -113,7 +124,7 @@ class MemoryVectorStore:
             })
         return out
 
-    def find_similar(self, text: str, threshold: float = 0.92) -> Optional[str]:
+    def find_similar(self, text: str, threshold: float = 0.92) -> str | None:
         """Check if a near-duplicate exists. Returns memory_id if found, else None."""
         if not self._healthy or self._collection.count() == 0:
             return None
@@ -131,7 +142,7 @@ class MemoryVectorStore:
                 return results["ids"][0][0]
         return None
 
-    def rebuild(self, memories: List[Dict]):
+    def rebuild(self, memories: list[dict]):
         """Rebuild the entire index from a list of memory entries.
         Each entry must have 'id' and 'text' keys."""
         if not self._healthy:

@@ -71,7 +71,8 @@ def is_server_reachable(base_url: str, timeout: float = 1.0) -> bool:
                     return True
         except (urllib.error.URLError, TimeoutError, OSError):
             continue
-        except Exception:
+        except Exception as e:
+            logger.warning("[cli_server] server reachability check failed: %s", e)
             continue
     return False
 

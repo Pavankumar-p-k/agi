@@ -1,3 +1,15 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """core/llm_calls.py — LLM call functions (sync and async) with fallback.
 
 Includes `llm_call`, `llm_call_async`, their fallback wrappers,
@@ -9,30 +21,47 @@ import asyncio
 import json
 import logging
 import time
-from typing import Dict, List, Optional
 
 import httpx
 from fastapi import HTTPException
 
 from core.model_context import get_context_length
-from .llm_state import (
-    LLMConfig, _get_cache_key, _get_cached_response, _set_cached_response,
-    _is_host_dead, _mark_host_dead, _clear_host_dead, DEAD_HOST_COOLDOWN,
-    _get_http_client, note_model_activity, _host_key,
-)
-from .llm_providers import (
-    _detect_provider, _provider_headers, _normalize_ollama_url, _normalize_anthropic_url,
-    _build_ollama_payload, _build_anthropic_payload, _build_anthropic_headers,
-    _parse_ollama_response, _parse_anthropic_response,
-    _restricts_temperature, _uses_max_completion_tokens, _format_upstream_error,
-    ANTHROPIC_MODELS, _ollama_api_root,
-)
+
 from .llm_messages import _sanitize_llm_messages
+from .llm_providers import (
+    ANTHROPIC_MODELS,
+    _build_anthropic_headers,
+    _build_anthropic_payload,
+    _build_ollama_payload,
+    _detect_provider,
+    _format_upstream_error,
+    _normalize_anthropic_url,
+    _normalize_ollama_url,
+    _ollama_api_root,
+    _parse_anthropic_response,
+    _parse_ollama_response,
+    _provider_headers,
+    _restricts_temperature,
+    _uses_max_completion_tokens,
+)
+from .llm_state import (
+    DEAD_HOST_COOLDOWN,
+    LLMConfig,
+    _clear_host_dead,
+    _get_cache_key,
+    _get_cached_response,
+    _get_http_client,
+    _host_key,
+    _is_host_dead,
+    _mark_host_dead,
+    _set_cached_response,
+    note_model_activity,
+)
 
 logger = logging.getLogger(__name__)
 
 
-def list_model_ids(base_chat_url: str, timeout: int = LLMConfig.DEFAULT_TIMEOUT, headers: Optional[Dict] = None) -> List[str]:
+def list_model_ids(base_chat_url: str, timeout: int = LLMConfig.DEFAULT_TIMEOUT, headers: dict | None = None) -> list[str]:
     provider = _detect_provider(base_chat_url)
     if provider == "anthropic":
         return list(ANTHROPIC_MODELS)
@@ -68,7 +97,7 @@ def list_model_ids(base_chat_url: str, timeout: int = LLMConfig.DEFAULT_TIMEOUT,
         return []
 
 
-def normalize_model_id(endpoint_url: str, requested: str, timeout: int = LLMConfig.DEFAULT_TIMEOUT) -> Optional[str]:
+def normalize_model_id(endpoint_url: str, requested: str, timeout: int = LLMConfig.DEFAULT_TIMEOUT) -> str | None:
     avail = list_model_ids(endpoint_url, timeout)
     if not avail:
         return None
@@ -96,11 +125,11 @@ def _dedupe_candidates(candidates):
     return out
 
 
-def llm_call(url: str, model: str, messages: List[Dict], temperature: float = LLMConfig.DEFAULT_TEMPERATURE,
-             max_tokens: int = LLMConfig.DEFAULT_MAX_TOKENS, headers: Optional[Dict] = None,
-             timeout: int = LLMConfig.DEFAULT_TIMEOUT, prompt_type: Optional[str] = None,
-             response_format: Optional[Dict] = None,
-             structured_output_model: Optional[type] = None) -> str:
+def llm_call(url: str, model: str, messages: list[dict], temperature: float = LLMConfig.DEFAULT_TEMPERATURE,
+             max_tokens: int = LLMConfig.DEFAULT_MAX_TOKENS, headers: dict | None = None,
+             timeout: int = LLMConfig.DEFAULT_TIMEOUT, prompt_type: str | None = None,
+             response_format: dict | None = None,
+             structured_output_model: type | None = None) -> str:
     h = _provider_headers(_detect_provider(url))
     if isinstance(headers, str):
         try:
@@ -228,15 +257,15 @@ async def llm_call_async_with_fallback(candidates, messages, **kwargs) -> str:
 async def llm_call_async(
     url: str,
     model: str,
-    messages: List[Dict],
+    messages: list[dict],
     temperature: float = LLMConfig.DEFAULT_TEMPERATURE,
     max_tokens: int = LLMConfig.DEFAULT_MAX_TOKENS,
-    headers: Optional[Dict] = None,
+    headers: dict | None = None,
     timeout: int = LLMConfig.STREAM_TIMEOUT,
     max_retries: int = LLMConfig.MAX_RETRIES,
-    prompt_type: Optional[str] = None,
-    response_format: Optional[Dict] = None,
-    structured_output_model: Optional[type] = None,
+    prompt_type: str | None = None,
+    response_format: dict | None = None,
+    structured_output_model: type | None = None,
 ) -> str:
     provider = _detect_provider(url)
     messages_copy = _sanitize_llm_messages(messages)

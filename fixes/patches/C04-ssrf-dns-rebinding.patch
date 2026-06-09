@@ -1,0 +1,48 @@
+From: JARVIS Audit Bot
+Date: 2026-06-09
+Subject: [PATCH C-04] Add SSRF redirect validation and DNS re-resolution
+
+High: SSRF resolve_and_check() doesn't re-resolve DNS before
+connection, allowing DNS rebinding attacks. Redirect targets
+are not validated.
+
+File: core/ssrf.py
+
+--- a/core/ssrf.py
++++ b/core/ssrf.py
+@@ -1,5 +1,6 @@
+ from __future__ import annotations
+
++import asyncio
+ import ipaddress
+ import logging
+ import socket
+@@ -97,6 +98,30 @@
+     return True
+
+
++def resolve_and_check_redirect(url: str, max_redirects: int = 5) -> bool:
++    """Validate the final destination URL through SSRF checks,
++    following redirects and re-resolving DNS at each hop."""
++    import httpx
++    try:
++        with httpx.Client(follow_redirects=True, max_redirects=max_redirects) as client:
++            resp = client.head(url, timeout=5)
++            final_url = str(resp.url)
++            if not resolve_and_check(final_url):
++                logger.warning("[SSRF] Redirect target blocked: %s", final_url)
++                return False
++    except httpx.TimeoutException:
++        logger.warning("[SSRF] Timeout checking redirect for %s", url)
++        return False
++    except Exception as e:
++        logger.warning("[SSRF] Redirect check failed for %s: %s", url, e)
++        return False
++    return True
++
++
+ def assert_safe_url(url: str) -> None:
+     if not resolve_and_check(url):
+         raise ValueError(f"SSRF blocked: {url}")
++    if not resolve_and_check_redirect(url):
++        raise ValueError(f"SSRF blocked (redirect target): {url}")

@@ -1,13 +1,29 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """core/environment_monitor.py
 Phase 5 (E1): Environment Monitor.
 Tracks API health, disk space, network connectivity, Ollama status.
 Provides real-time health data for proactive decisions.
 """
-import os, json, logging, time, socket, shutil, subprocess
-from pathlib import Path
+import json
+import logging
+import shutil
+import socket
+import subprocess
+import time
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -62,8 +78,9 @@ class EnvironmentSnapshot:
 class EnvironmentMonitor:
     def __init__(self):
         self._history: list[EnvironmentSnapshot] = []
-        self._ollama_url = "http://localhost:11434"
-        self._check_interval = 60
+        from core.config_registry import config as _c
+        self._ollama_url = _c.get("ollama.base_url")
+        self._check_interval = _c.get("monitor.check_interval", 60)
         self._last_check = 0.0
 
     def check(self, force: bool = False) -> EnvironmentSnapshot:
@@ -120,7 +137,6 @@ class EnvironmentMonitor:
     def _check_ollama(self) -> tuple[bool, float]:
         try:
             import urllib.request
-            import json as j
             start = time.time()
             req = urllib.request.Request(f"{self._ollama_url}/api/tags", method="GET")
             resp = urllib.request.urlopen(req, timeout=3)
@@ -174,7 +190,7 @@ class EnvironmentMonitor:
     def get_history(self, n: int = 10) -> list[EnvironmentSnapshot]:
         return self._history[-n:] if self._history else []
 
-    def latest(self) -> Optional[EnvironmentSnapshot]:
+    def latest(self) -> EnvironmentSnapshot | None:
         return self._history[-1] if self._history else None
 
     def summary(self) -> str:

@@ -1,3 +1,15 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 # backend/call_server/call_sync_server.py
 #
 # JARVIS Windows Call Sync Server
@@ -6,20 +18,26 @@
 # Saves to local DB, displays desktop notification,
 # optionally plays TTS summary
 
-import socket, json, threading, sqlite3, time, os
+import socket, json, threading, sqlite3, time, os, logging
 from datetime import datetime
 from pathlib import Path
 
+logger = logging.getLogger(__name__)
+
 try:
     import plyer; _has_notif = True
-except Exception: _has_notif = False
+except Exception as e:
+    logger.warning("[automation.call_sync_server] plyer import failed: %s", e)
+    _has_notif = False
 
 try:
     import pyttsx3
     _tts = pyttsx3.init()
     _tts.setProperty('rate', 160)
     _has_tts = True
-except Exception: _has_tts = False
+except Exception as e:
+    logger.warning("[automation.call_sync_server] pyttsx3 init failed: %s", e)
+    _has_tts = False
 
 
 PORT     = 9001

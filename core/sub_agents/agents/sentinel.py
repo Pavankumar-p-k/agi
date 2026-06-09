@@ -1,9 +1,22 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """SENTINEL — System monitoring, health analysis, and alerting sub-agent."""
 from __future__ import annotations
+
 import json
-from core.sub_agents.base_agent import SubAgent, AgentResult
-import time, asyncio
-from typing import Optional
+import time
+
+from core.sub_agents.base_agent import AgentResult, SubAgent
 
 try:
     import psutil
@@ -52,7 +65,7 @@ class SentinelAgent(SubAgent):
     def get_system_prompt(self, mode: str) -> str:
         return SENTINEL_PROMPTS.get(mode, SENTINEL_PROMPTS["diagnose"])
 
-    async def run(self, task: str = "check system", mode: Optional[str] = None, **kwargs) -> AgentResult:
+    async def run(self, task: str = "check system", mode: str | None = None, **kwargs) -> AgentResult:
         """Override: auto-collect system metrics and prepend to task."""
         metrics = await self._collect_metrics()
         enriched_task = f"CURRENT SYSTEM METRICS:\n{json.dumps(metrics, indent=2)}\n\nUSER QUERY: {task}"

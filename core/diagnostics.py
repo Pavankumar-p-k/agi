@@ -1,3 +1,15 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """Runtime and source diagnostics for JARVIS.
 
 This module is intentionally dependency-light. It powers a doctor-style report
@@ -13,9 +25,9 @@ import logging
 import os
 import subprocess
 import sys
+from collections.abc import Iterable
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Iterable
 
 logger = logging.getLogger(__name__)
 
@@ -275,7 +287,8 @@ def _check_docker(report: DiagnosticReport) -> None:
         docker_ok = False
     except subprocess.TimeoutExpired:
         docker_ok = False
-    except Exception:
+    except Exception as e:
+        logger.warning("[core.diagnostics] docker check failed: %s", e)
         docker_ok = False
     report.runtime_flags["docker_available"] = docker_ok
     if not docker_ok:

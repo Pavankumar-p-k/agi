@@ -1,11 +1,22 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """Server-side tool safety policy driven by RBAC."""
 
 from __future__ import annotations
 
 import logging
-from typing import Optional, Set
 
-from core.authz import AuthContext, Scope, Role
+from core.authz import AuthContext, Role, Scope
 from core.authz.engine import authz_engine
 from core.tools.policy import policy_engine
 
@@ -14,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 # Legacy blocklist for backward compatibility and fast-fail
 NON_ADMIN_BLOCKED_TOOLS = {
-    "bash", "python", "read_file", "write_file", "search_chats",
+    "bash", "python", "shell", "shell_command", "read_file", "write_file", "search_chats",
     "manage_memory", "manage_skills", "manage_tasks", "manage_endpoints",
     "manage_mcp", "manage_webhooks", "manage_tokens", "manage_documents",
     "manage_settings", "api_call", "app_api", "send_email", "reply_to_email",
@@ -32,26 +43,26 @@ def is_authorized_to_execute(tool_name: str, ctx: AuthContext) -> bool:
     """
     if not tool_name:
         return True
-        
+
     # 1. Admin escape hatch
     if ctx and Role.ADMIN in ctx.roles:
         return True
-        
+
     # 2. Get tool policy and required scope
     policy = policy_engine.get_policy(tool_name)
     required_scope = str(Scope.TOOLS_EXECUTE_LOW) # Default for search etc.
-    
+
     if policy and policy.required_scope:
         required_scope = policy.required_scope
     elif tool_name in NON_ADMIN_BLOCKED_TOOLS or tool_name.startswith("mcp__"):
         # Legacy fallback: if in blocklist but no scope defined, require HIGH
         required_scope = str(Scope.TOOLS_EXECUTE_HIGH)
-        
+
     # 3. Evaluate via RBAC engine
     return authz_engine.evaluate(ctx, required_scope, resource=f"tool:{tool_name}")
 
 
-def is_public_blocked_tool(tool_name: Optional[str]) -> bool:
+def is_public_blocked_tool(tool_name: str | None) -> bool:
     """
     LEGACY: Return True when a non-admin user must not execute this tool.
     Used by code that doesn't yet have an AuthContext.
@@ -63,7 +74,7 @@ def is_public_blocked_tool(tool_name: Optional[str]) -> bool:
     return tool_name in NON_ADMIN_BLOCKED_TOOLS or tool_name.startswith("mcp__")
 
 
-def owner_is_admin_or_single_user(owner: Optional[str]) -> bool:
+def owner_is_admin_or_single_user(owner: str | None) -> bool:
     """Return True for admins, or when auth is not configured yet."""
     try:
         from core.auth import get_auth_manager
@@ -76,7 +87,7 @@ def owner_is_admin_or_single_user(owner: Optional[str]) -> bool:
         return False
 
 
-def blocked_tools_for_owner(owner: Optional[str]) -> Set[str]:
+def blocked_tools_for_owner(owner: str | None) -> set[str]:
     """Tools to hide/disable for this owner under public-user policy."""
     if owner_is_admin_or_single_user(owner):
         return set()

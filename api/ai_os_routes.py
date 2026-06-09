@@ -1,9 +1,26 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+import asyncio
+import json
+import logging
+from collections.abc import AsyncGenerator
+from typing import Any, Optional
+
 from fastapi import APIRouter, HTTPException
+
+logger = logging.getLogger(__name__)
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
-from typing import Any, AsyncGenerator, Optional
-import json
-import asyncio
 
 router = APIRouter(prefix="/ai_os", tags=["ai_os"])
 
@@ -15,10 +32,11 @@ def _get_orchestrator():
     if _orchestrator is not None:
         return _orchestrator
     try:
-        from ai_os.orchestrator import AIOrchestrator
         from ai_os.config import AIOSConfig
+        from ai_os.orchestrator import AIOrchestrator
         _orchestrator = AIOrchestrator(AIOSConfig())
-    except Exception:
+    except Exception as e:
+        logger.warning("[api.ai_os_routes] orchestrator init failed: %s", e)
         _orchestrator = None
     return _orchestrator
 
@@ -44,9 +62,10 @@ async def event_stream_generator() -> AsyncGenerator[str, None]:
             try:
                 event = await asyncio.wait_for(queue.get(), timeout=30.0)
                 yield f"data: {json.dumps(event)}\n\n"
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 yield f"data: {json.dumps({'type': 'heartbeat'})}\n\n"
-            except Exception:
+            except Exception as e:
+                logger.warning("[api.ai_os_routes] event stream error: %s", e)
                 break
     finally:
         o.event_bus.unsubscribe_stream(queue)

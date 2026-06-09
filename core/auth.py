@@ -1,16 +1,28 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 # core/auth.py
 from __future__ import annotations
 
 import hmac
 import json
+import logging
 import os
 import secrets
 import threading
 import time
-import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Dict, Any, List
+from typing import Any
 
 import bcrypt
 import pyotp
@@ -19,11 +31,11 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .atomic_io import atomic_write_json as _atomic_write_json
-from .config import DEV_MODE, FIREBASE_CREDENTIALS
-from .database import get_db, User
-from .rate_limiter import api_rate_limiter, auth_rate_limiter
-from .authz import Role, Scope, AuthContext, Permission
+from .authz import AuthContext, Role
 from .authz.engine import authz_engine as policy_engine
+from .config import DEV_MODE, FIREBASE_CREDENTIALS
+from .database import User, get_db
+from .rate_limiter import api_rate_limiter
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +76,7 @@ def _safe_compare(a: str, b: str) -> bool:
     return hmac.compare_digest(a.encode(), b.encode())
 
 
-def _resolve_api_token() -> Optional[str]:
+def _resolve_api_token() -> str | None:
     return os.getenv("JARVIS_API_TOKEN") or os.getenv("API_TOKEN") or None
 
 
@@ -116,8 +128,8 @@ def init_firebase() -> None:
 async def _get_or_create_user(
     db: AsyncSession,
     uid: str,
-    email: Optional[str] = None,
-    display_name: Optional[str] = None,
+    email: str | None = None,
+    display_name: str | None = None,
 ) -> User:
     result = await db.execute(select(User).where(User.uid == uid))
     user = result.scalar_one_or_none()
@@ -142,8 +154,8 @@ class AuthManager:
     def __init__(self, auth_path: str = DEFAULT_AUTH_PATH):
         self.auth_path = auth_path
         self._sessions_path = os.path.join(os.path.dirname(auth_path), "sessions.json")
-        self._config: Dict[str, Any] = {}
-        self._sessions: Dict[str, Dict[str, Any]] = {}
+        self._config: dict[str, Any] = {}
+        self._sessions: dict[str, dict[str, Any]] = {}
         self._sessions_lock = threading.RLock()
         self._setup_lock = threading.Lock()
         self._load()
@@ -154,7 +166,7 @@ class AuthManager:
     def _load(self):
         try:
             if os.path.exists(self.auth_path):
-                with open(self.auth_path, "r", encoding="utf-8") as f:
+                with open(self.auth_path, encoding="utf-8") as f:
                     self._config = json.load(f)
                 if "users" in self._config:
                     self._config["users"] = {
@@ -172,7 +184,7 @@ class AuthManager:
     def _load_sessions(self):
         try:
             if os.path.exists(self._sessions_path):
-                with open(self._sessions_path, "r", encoding="utf-8") as f:
+                with open(self._sessions_path, encoding="utf-8") as f:
                     data = json.load(f)
                 now = time.time()
                 self._sessions = {k: v for k, v in data.items() if v.get("expiry", 0) > now}
@@ -222,7 +234,7 @@ class AuthManager:
         _atomic_write_json(self.auth_path, self._config, indent=2)
 
     @property
-    def users(self) -> Dict[str, Any]:
+    def users(self) -> dict[str, Any]:
         return self._config.get("users", {})
 
     @property
@@ -319,20 +331,20 @@ class AuthManager:
     def is_admin(self, username: str) -> bool:
         return self.users.get(username, {}).get("is_admin", False)
 
-    def list_users(self) -> List[Dict[str, Any]]:
+    def list_users(self) -> list[dict[str, Any]]:
         return [
             {"username": u, "is_admin": d.get("is_admin", False), "privileges": self.get_privileges(u)}
             for u, d in self.users.items()
         ]
 
-    def get_privileges(self, username: str) -> Dict[str, Any]:
+    def get_privileges(self, username: str) -> dict[str, Any]:
         user = self.users.get(username, {})
         if user.get("is_admin"):
             return dict(ADMIN_PRIVILEGES)
         stored = user.get("privileges", {})
         return {**DEFAULT_PRIVILEGES, **stored}
 
-    def set_privileges(self, username: str, privileges: Dict[str, Any]) -> bool:
+    def set_privileges(self, username: str, privileges: dict[str, Any]) -> bool:
         username = username.strip().lower()
         if username not in self.users:
             return False
@@ -361,7 +373,7 @@ class AuthManager:
         user = self.users.get(username.strip().lower(), {})
         return bool(user.get("totp_enabled"))
 
-    def totp_generate_secret(self, username: str) -> Optional[str]:
+    def totp_generate_secret(self, username: str) -> str | None:
         username = username.strip().lower()
         if username not in self.users:
             return None
@@ -426,7 +438,7 @@ class AuthManager:
             return False
         return _verify_password(password, self.users[username]["password_hash"])
 
-    def create_session(self, username: str, password: str) -> Optional[str]:
+    def create_session(self, username: str, password: str) -> str | None:
         username = username.strip().lower()
         if not self.verify_password(username, password):
             return None
@@ -439,7 +451,7 @@ class AuthManager:
         self._save_sessions()
         return token
 
-    def validate_token(self, token: Optional[str]) -> bool:
+    def validate_token(self, token: str | None) -> bool:
         if not token:
             return False
         expired = False
@@ -460,7 +472,7 @@ class AuthManager:
             return False
         return True
 
-    def get_username_for_token(self, token: Optional[str]) -> Optional[str]:
+    def get_username_for_token(self, token: str | None) -> str | None:
         if not token:
             return None
         expired = False
@@ -488,7 +500,7 @@ class AuthManager:
             self._sessions.pop(token, None)
         self._save_sessions()
 
-    def revoke_user_sessions(self, username: str, except_token: Optional[str] = None) -> int:
+    def revoke_user_sessions(self, username: str, except_token: str | None = None) -> int:
         username = username.strip().lower()
         revoked = 0
         with self._sessions_lock:
@@ -503,7 +515,7 @@ class AuthManager:
                 self._save_sessions()
         return revoked
 
-    def status(self, token: Optional[str]) -> Dict[str, Any]:
+    def status(self, token: str | None) -> dict[str, Any]:
         username = self.get_username_for_token(token)
         authenticated = username is not None
         result = {
@@ -552,7 +564,7 @@ def get_auth_manager() -> AuthManager:
 # ---------------------------------------------------------------------------
 
 async def verify_token(
-    authorization: Optional[str] = Header(None),
+    authorization: str | None = Header(None),
     request: Request = None,
     db: AsyncSession = Depends(get_db),
 ) -> User:
@@ -560,7 +572,7 @@ async def verify_token(
 
     if not authorization:
         # Try session cookie (AuthManager)
-        auth_mgr: Optional[AuthManager] = getattr(request.app.state, "auth_manager", None) if request else None
+        auth_mgr: AuthManager | None = getattr(request.app.state, "auth_manager", None) if request else None
         if auth_mgr:
             session_token = request.cookies.get("session_token") if request else None
             if session_token and auth_mgr.validate_token(session_token):
@@ -579,7 +591,7 @@ async def get_auth_context(
     request: Request = None,
 ) -> AuthContext:
     """Resolve the AuthContext for the currently logged in user."""
-    auth_mgr: Optional[AuthManager] = getattr(request.app.state, "auth_manager", None) if request else None
+    auth_mgr: AuthManager | None = getattr(request.app.state, "auth_manager", None) if request else None
     roles = {Role.GUEST}
     scopes = set()
 

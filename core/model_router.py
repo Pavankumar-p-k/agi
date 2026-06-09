@@ -1,3 +1,15 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """core/model_router.py
 Central model registry + routing helpers.
@@ -8,27 +20,31 @@ from __future__ import annotations
 
 import os
 import re
-from typing import Dict, List
 
-from core.config import OLLAMA_URL
-from core.privacy_classifier import privacy_classifier, PrivacyTier
+from core.config_registry import config as _jarvis_config
+from core.privacy_classifier import PrivacyTier, privacy_classifier
 
 
-DEFAULT_MODEL_ENDPOINTS: Dict[str, str] = {
-    "tinyllama": "http://localhost:11434",
-    "deepseek-r1:1.5b": "http://localhost:11434",
-    "qwen2.5-coder:3b": "http://localhost:11434",
-    "qwen3:4b": "http://localhost:11434",
-    "qwen2.5:7b": "http://localhost:11434",
-    "mistral:7b": "http://localhost:11434",
-    "llama3.1:8b": "http://localhost:11434",
-    "phi3:mini": "http://localhost:11434",
-    "moondream": "http://localhost:11434",
-    "gemma4:e4b": "http://localhost:11434",
+def _ollama_url() -> str:
+    """Get Ollama base URL from config (with env var override for backward compat)."""
+    return os.getenv("OLLAMA_URL") or _jarvis_config.get("ollama.base_url")
+
+
+DEFAULT_MODEL_ENDPOINTS: dict[str, str] = {
+    "tinyllama": _ollama_url(),
+    "deepseek-r1:1.5b": _ollama_url(),
+    "qwen2.5-coder:3b": _ollama_url(),
+    "qwen3:4b": _ollama_url(),
+    "qwen2.5:7b": _ollama_url(),
+    "mistral:7b": _ollama_url(),
+    "llama3.1:8b": _ollama_url(),
+    "phi3:mini": _ollama_url(),
+    "moondream": _ollama_url(),
+    "gemma4:e4b": _ollama_url(),
 }
 
 
-MODEL_ALIASES: Dict[str, str] = {
+MODEL_ALIASES: dict[str, str] = {
     "llama3.1:latest": "llama3.1:8b",
     "llama3.1": "llama3.1:8b",
     "llama3": "llama3.1:8b",
@@ -44,7 +60,7 @@ MODEL_ALIASES: Dict[str, str] = {
 
 
 # Role â†’ llm_router model group mapping (single source of truth).
-ROLE_TO_GROUP: Dict[str, str] = {
+ROLE_TO_GROUP: dict[str, str] = {
     "chat": "chat",
     "analysis": "analysis",
     "reasoning": "reasoning",
@@ -66,7 +82,7 @@ ROLE_TO_GROUP: Dict[str, str] = {
 ROLE_TO_ROUTER_GROUP = ROLE_TO_GROUP
 
 # Role â†’ actual Ollama model name (for direct API callers, not llm_router).
-ROLE_MODELS: Dict[str, str] = {
+ROLE_MODELS: dict[str, str] = {
     "chat": "llama3.1:8b",
     "analysis": "qwen2.5:7b",
     "reasoning": "deepseek-r1:1.5b",
@@ -83,7 +99,7 @@ ROLE_MODELS: Dict[str, str] = {
 }
 
 
-_CACHED_ENDPOINTS: Dict[str, str] | None = None
+_CACHED_ENDPOINTS: dict[str, str] | None = None
 
 
 def resolve_model(name: str) -> str:
@@ -93,8 +109,8 @@ def resolve_model(name: str) -> str:
     return MODEL_ALIASES.get(key, key)
 
 
-def _parse_model_endpoints(raw: str) -> Dict[str, str]:
-    endpoints: Dict[str, str] = {}
+def _parse_model_endpoints(raw: str) -> dict[str, str]:
+    endpoints: dict[str, str] = {}
     for item in re.split(r"[;\n,]+", raw or ""):
         item = item.strip()
         if not item or "=" not in item:
@@ -109,7 +125,7 @@ def _parse_model_endpoints(raw: str) -> Dict[str, str]:
     return endpoints
 
 
-def _load_endpoints() -> Dict[str, str]:
+def _load_endpoints() -> dict[str, str]:
     raw = os.getenv("OLLAMA_MODEL_ENDPOINTS", "").strip()
     multi = os.getenv("OLLAMA_MULTI_INSTANCE", "").lower() in {"1", "true", "yes", "on"}
     if raw:
@@ -119,7 +135,7 @@ def _load_endpoints() -> Dict[str, str]:
     return {}
 
 
-def model_endpoints() -> Dict[str, str]:
+def model_endpoints() -> dict[str, str]:
     global _CACHED_ENDPOINTS
     if _CACHED_ENDPOINTS is None:
         _CACHED_ENDPOINTS = _load_endpoints()
@@ -132,10 +148,11 @@ def is_multi_instance() -> bool:
 
 def get_ollama_url(model: str | None = None) -> str:
     endpoints = model_endpoints()
+    default_url = _ollama_url()
     if not endpoints or not model:
-        return OLLAMA_URL
+        return default_url
     model = resolve_model(model)
-    return endpoints.get(model, OLLAMA_URL)
+    return endpoints.get(model, default_url)
 
 
 def group_for_role(role: str) -> str:
@@ -144,13 +161,25 @@ def group_for_role(role: str) -> str:
 
 
 def model_for_role(role: str) -> str:
-    """Return the actual model name for a role (for direct Ollama API calls)."""
+    """Return the actual model name for a role (for direct Ollama API calls).
+    Reads from config_registry first, falls back to ROLE_MODELS dict."""
     model = os.getenv(f"{role.upper()}_MODEL", "")
     if not model:
-        model = ROLE_MODELS.get(role, "llama3.1:8b")
-    
+        config_key = {
+            "chat": "llm.chat_model",
+            "code": "llm.code_model",
+            "analysis": "llm.analysis_model",
+            "reasoning": "llm.reasoning_model",
+            "vision": "llm.vision_model",
+            "embedding": "llm.embedding_model",
+            "grader": "llm.grader_model",
+        }.get(role)
+        if config_key:
+            model = _jarvis_config.get(config_key)
+        if not model:
+            model = ROLE_MODELS.get(role, "llama3.1:8b")
+
     # Strip provider prefix if present for direct Ollama calls
-    # e.g. 'ollama/llama3.1:8b' -> 'llama3.1:8b'
     if "/" in model:
         model = model.split("/", 1)[1]
     return model
@@ -159,7 +188,7 @@ def model_for_role(role: str) -> str:
 get_router_model = group_for_role  # backward-compatible alias
 
 # Fallback chain per model (for GPU pool / legacy callers).
-MODEL_FALLBACKS: Dict[str, List[str]] = {
+MODEL_FALLBACKS: dict[str, list[str]] = {
     "llama3.1:8b": ["qwen2.5:7b", "qwen2.5-coder:3b"],
     "qwen2.5:7b": ["llama3.1:8b", "qwen2.5-coder:3b"],
     "qwen2.5-coder:3b": ["qwen2.5:7b", "llama3.1:8b"],
@@ -172,7 +201,7 @@ MODEL_FALLBACKS: Dict[str, List[str]] = {
     "qwen3:4b": ["tinyllama"],
 }
 
-def get_fallbacks(model: str) -> List[str]:
+def get_fallbacks(model: str) -> list[str]:
     model = resolve_model(model)
     return [resolve_model(m) for m in MODEL_FALLBACKS.get(model, [])]
 

@@ -1,3 +1,15 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import asyncio
 import logging
 
@@ -61,10 +73,11 @@ async def text_to_speech(req: dict, user: User = Depends(verify_token)):
 @router.post("/api/tts/chatterbox")
 async def tts_chatterbox(req: dict):
     from assistant.edge_tts_module import EdgeTTS
+    from core.config_registry import config as _c
     text = req.get("text", "")
     if not text:
         raise HTTPException(400, "Text is required")
-    tts = EdgeTTS(voice="en-US-ChristopherNeural")
+    tts = EdgeTTS(voice=_c.get("voice.tts_voice"))
     loop = asyncio.get_running_loop()
     audio_bytes = await tts.synthesize(text)
     if not audio_bytes:
@@ -81,7 +94,8 @@ async def voice_test():
 
     from assistant.stt import get_stt
     from assistant.tts import get_tts
-    sr = 16000
+    from core.config_registry import config as _c
+    sr = _c.get("voice.sample_rate", 16000)
     loop = asyncio.get_running_loop()
 
     async def _run():

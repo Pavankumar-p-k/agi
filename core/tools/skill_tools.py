@@ -1,17 +1,29 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import asyncio
-import json
 import logging
-from typing import Any, Dict, List, Optional
 
-from core.tools._tool_utils import MAX_OUTPUT_CHARS, MAX_READ_CHARS, _parse_tool_args, get_mcp_manager
+from core.tools._tool_utils import _parse_tool_args
 
 logger = logging.getLogger(__name__)
 
 
 # Search chats
 
-def _do_search_chats_sync(query: str, limit: int = 20, owner: str | None = None) -> Dict:
-    from core.database_models import SessionLocal, ChatMessage as DBChatMessage, Session as DBSession
+def _do_search_chats_sync(query: str, limit: int = 20, owner: str | None = None) -> dict:
+    from core.database_models import ChatMessage as DBChatMessage
+    from core.database_models import Session as DBSession
+    from core.database_models import SessionLocal
     safe_q = query.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
     db = SessionLocal()
     try:
@@ -65,14 +77,14 @@ def _do_search_chats_sync(query: str, limit: int = 20, owner: str | None = None)
         db.close()
 
 
-async def do_search_chats(query: str, limit: int = 20, owner: str | None = None) -> Dict:
+async def do_search_chats(query: str, limit: int = 20, owner: str | None = None) -> dict:
     return await asyncio.to_thread(_do_search_chats_sync, query, limit, owner)
 
 
 # Skills management
 
 
-async def do_create_skill(content: str, owner: Optional[str] = None) -> Dict:
+async def do_create_skill(content: str, owner: str | None = None) -> dict:
     """Create a hot-reloadable skill with SKILL.md + handler .py.
     Args (JSON): {
       "name": "kebab-case-name",
@@ -152,16 +164,16 @@ async def do_create_skill(content: str, owner: Optional[str] = None) -> Dict:
     }
 
 
-async def do_manage_skills(content: str, owner: Optional[str] = None) -> Dict:
+async def do_manage_skills(content: str, owner: str | None = None) -> dict:
     try:
         args = _parse_tool_args(content)
     except ValueError:
         return {"error": "Invalid JSON arguments", "exit_code": 1}
 
     action = (args.get("action") or "").lower()
-    from services.memory.skills import SkillsManager
-    from services.memory.skill_format import Skill, slugify
     from core.constants import DATA_DIR
+    from services.memory.skill_format import Skill, slugify
+    from services.memory.skills import SkillsManager
     sm = SkillsManager(DATA_DIR)
 
     name = (args.get("name") or args.get("skill_id") or "").strip()
@@ -341,7 +353,7 @@ async def do_manage_skills(content: str, owner: Optional[str] = None) -> Dict:
     }
 
 
-def _skill_dump(sk) -> Dict:
+def _skill_dump(sk) -> dict:
     return {
         "name": sk.name,
         "description": sk.description,
@@ -366,9 +378,11 @@ def _skill_dump(sk) -> Dict:
 
 # Task management
 
-async def do_manage_tasks(content: str, owner: Optional[str] = None) -> Dict:
+async def do_manage_tasks(content: str, owner: str | None = None) -> dict:
     import uuid as _uuid
-    from core.database_models import SessionLocal, ScheduledTask as ScheduledTask
+
+    from core.database_models import ScheduledTask as ScheduledTask
+    from core.database_models import SessionLocal
     from core.task_scheduler import compute_next_run
 
     try:

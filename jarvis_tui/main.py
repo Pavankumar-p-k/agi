@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import sys
 import asyncio
+import sys
 from pathlib import Path
 
 # Add project root to sys.path
@@ -10,9 +10,11 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from textual.app import App
+
 from jarvis_tui.app.screens.main_screen import MainScreen
 from jarvis_tui.app.services.jarvis_client import JarvisClient
 from jarvis_tui.app.services.theme_manager import ThemeManager
+
 
 class JarvisApp(App):
     CSS = """
@@ -233,7 +235,7 @@ class JarvisApp(App):
                 models = status.get("model_router", {}).get("models", [])
                 if models:
                     sidebar.model_name = models[0]
-                
+
                 # Map real memory/token usage
                 mem = status.get("memory", {})
                 # ... update context pct based on real data if available
@@ -276,19 +278,19 @@ class JarvisApp(App):
             return
 
         etype = event.get("type")
-        
+
         if etype == "planning":
             banner.mood = "thinking"
             goal = event.get("goal", "task")
             chat.add_message("ORACLE", f"Planning execution for goal: [bold]{goal}[/bold]", msg_type="thinking")
-            
+
         elif etype == "executing":
             banner.mood = "thinking"
             step = event.get("step", {})
             tool = step.get("tool", "unknown")
             args = step.get("args", {})
             chat.add_message("SCOUT", f"{tool}({args})", msg_type="tool_call")
-            
+
         elif etype == "executed":
             banner.mood = "done"
             result = event.get("result", {})
@@ -296,19 +298,19 @@ class JarvisApp(App):
                 chat.add_message("SYSTEM", str(result.get("output", "Success")), msg_type="tool_result")
             else:
                 chat.add_message("SYSTEM", f"Error: {result.get('error')}", msg_type="error")
-                
+
         elif etype == "completed":
             banner.mood = "done"
             res = event.get("success", False)
             msg = "Task completed successfully." if res else "Task finished with errors."
             chat.add_message("NEXUS", msg)
-            
+
         elif etype == "error":
             banner.mood = "error"
             err = event.get("error") or event.get("reason") or "Unknown error"
             chat.add_message("SYSTEM", f"ERROR: {err}", msg_type="error")
             status.show_alert(f"⚠ ERROR: {err[:20]}...")
-            
+
         elif etype == "status_update":
             # Map system stats if provided
             sidebar.context_pct = event.get("context_pct", sidebar.context_pct)

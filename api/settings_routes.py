@@ -1,7 +1,20 @@
-from fastapi import APIRouter, HTTPException, Body
-from typing import Any, Optional
-from core.settings.store import get_settings_store
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+from fastapi import APIRouter, Body, HTTPException
 from pydantic import ValidationError
+
+from core.settings.store import get_settings_store
 
 router = APIRouter(prefix="/settings", tags=["Settings"])
 store = get_settings_store()
@@ -24,7 +37,7 @@ async def update_setting(key: str, payload: dict = Body(...)):
     """Update a specific setting."""
     if "value" not in payload:
         raise HTTPException(status_code=400, detail="Missing 'value' in request body")
-    
+
     try:
         if store.set(key, payload["value"]):
             return {"status": "success", "key": key, "new_value": payload["value"]}
@@ -38,7 +51,7 @@ async def update_setting(key: str, payload: dict = Body(...)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/reset")
-async def reset_settings(payload: Optional[dict] = Body(None)):
+async def reset_settings(payload: dict | None = Body(None)):
     """Reset settings to defaults."""
     key = payload.get("key") if payload else None
     try:

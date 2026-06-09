@@ -1,22 +1,35 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """Central registry for all JARVIS sub-agents."""
 from __future__ import annotations
-import asyncio
-from typing import Type, Optional
-from core.sub_agents.base_agent import SubAgent, AgentResult
 
-# Import all agents
-from core.sub_agents.agents.nexus   import NexusAgent
-from core.sub_agents.agents.forge   import ForgeAgent
-from core.sub_agents.agents.oracle  import OracleAgent
-from core.sub_agents.agents.phantom import PhantomAgent
-from core.sub_agents.agents.cipher  import CipherAgent
-from core.sub_agents.agents.herald  import HeraldAgent
-from core.sub_agents.agents.scribe  import ScribeAgent
-from core.sub_agents.agents.atlas   import AtlasAgent
-from core.sub_agents.agents.sentinel import SentinelAgent
+import asyncio
+
+from core.sub_agents.agents.atlas import AtlasAgent
+from core.sub_agents.agents.cipher import CipherAgent
+from core.sub_agents.agents.forge import ForgeAgent
+from core.sub_agents.agents.herald import HeraldAgent
 from core.sub_agents.agents.maestro import MaestroAgent
 
-_REGISTRY: dict[str, Type[SubAgent]] = {
+# Import all agents
+from core.sub_agents.agents.nexus import NexusAgent
+from core.sub_agents.agents.oracle import OracleAgent
+from core.sub_agents.agents.phantom import PhantomAgent
+from core.sub_agents.agents.scribe import ScribeAgent
+from core.sub_agents.agents.sentinel import SentinelAgent
+from core.sub_agents.base_agent import AgentResult, SubAgent
+
+_REGISTRY: dict[str, type[SubAgent]] = {
     "NEXUS":    NexusAgent,
     "FORGE":    ForgeAgent,
     "ORACLE":   OracleAgent,
@@ -30,7 +43,7 @@ _REGISTRY: dict[str, Type[SubAgent]] = {
 }
 
 class AgentRegistry:
-    def get(self, name: str) -> Optional[Type[SubAgent]]:
+    def get(self, name: str) -> type[SubAgent] | None:
         return _REGISTRY.get(name.upper())
 
     def list_agents(self) -> list[dict]:

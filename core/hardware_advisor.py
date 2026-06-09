@@ -1,9 +1,22 @@
-import os
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+import logging
 import platform
 import subprocess
-import logging
+from collections.abc import AsyncGenerator
+from typing import Any
+
 import psutil
-from typing import Dict, List, Any, AsyncGenerator
 
 logger = logging.getLogger("jarvis.hardware_advisor")
 
@@ -40,7 +53,7 @@ MODEL_CATALOG = [
     {"name": "falcon:7b", "vram_gb": 4.5, "description": "Falcon 7B", "ollama_tag": "falcon:7b", "quant": "4-bit", "recommended_for": "General chat"},
 ]
 
-def scan_hardware() -> Dict[str, Any]:
+def scan_hardware() -> dict[str, Any]:
     """Detect GPU VRAM, RAM, and CPU info."""
     result = {
         "gpu_name": "Generic CPU / Integrated Graphics",
@@ -83,7 +96,7 @@ def scan_hardware() -> Dict[str, Any]:
     result["vram_free_gb"] = round(psutil.virtual_memory().available / (1024**3) * 0.25, 2)
     return result
 
-def get_recommended_models(vram_gb: float) -> List[Dict[str, Any]]:
+def get_recommended_models(vram_gb: float) -> list[dict[str, Any]]:
     """Return models that fit in VRAM, sorted by fit and headroom."""
     recommendations = []
     for model in MODEL_CATALOG:
@@ -110,7 +123,7 @@ async def pull_model_ollama(model_name: str) -> AsyncGenerator[str, None]:
             if not line:
                 break
             yield line.strip()
-        
+
         await process.wait()
         if process.returncode != 0:
             raise RuntimeError(f"Ollama pull failed for {model_name}")
@@ -119,14 +132,14 @@ async def pull_model_ollama(model_name: str) -> AsyncGenerator[str, None]:
     except Exception as e:
         yield f"Error pulling model: {str(e)}"
 
-def list_installed_models() -> List[str]:
+def list_installed_models() -> list[str]:
     """Return list of models currently in Ollama."""
     try:
         output = subprocess.check_output(["ollama", "list"], text=True, stderr=subprocess.STDOUT)
         lines = output.strip().split("\n")
         if len(lines) <= 1:
             return []
-        
+
         models = []
         for line in lines[1:]: # Skip header
             parts = line.split()

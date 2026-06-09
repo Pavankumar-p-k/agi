@@ -1,12 +1,23 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """core/partial_success.py
 Tracks build progress as a percentage, preserves usable sub-outputs,
 and enables partial completion even when some pages/steps fail.
 """
 import logging
 import re
-from pathlib import Path
 from dataclasses import dataclass, field
-from typing import Optional
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -99,7 +110,7 @@ class PartialSuccessTracker:
                 pr.add_page(p, "pending")
         self.results[project] = pr
 
-    def get(self, project: str) -> Optional[PartialResult]:
+    def get(self, project: str) -> PartialResult | None:
         return self.results.get(project)
 
     def mark_page(self, project: str, page: str, status: str, file_path: str = ""):
@@ -125,7 +136,7 @@ class PartialSuccessTracker:
         pr = self.results.setdefault(project, PartialResult())
         pr.add_step_result(step_id, success, output)
 
-    def snapshot(self, project: str) -> Optional[ProgressSnapshot]:
+    def snapshot(self, project: str) -> ProgressSnapshot | None:
         pr = self.results.get(project)
         return pr.progress if pr else None
 

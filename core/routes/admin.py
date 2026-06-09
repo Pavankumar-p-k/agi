@@ -1,14 +1,24 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import asyncio
 from pathlib import Path
-from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, UploadFile, File
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.auth import verify_token
-from core.database import get_db, User
+from core.database import User
 from core.schemas import HorizonGoalRequest, QualityGradeRequest
 
 router = APIRouter(tags=["admin"])
@@ -21,8 +31,8 @@ async def quality_grade(
     req: QualityGradeRequest,
     user: User = Depends(verify_token),
 ):
-    from core.llm_router import complete as llm_complete, health_check
     import core.llm_router
+    from core.llm_router import health_check
     from core.quality_grader import QualityGrader
 
     if not await health_check():
@@ -65,7 +75,7 @@ async def create_horizon_goal(req: HorizonGoalRequest, user: User = Depends(veri
 
 
 @router.get("/api/horizon/goals")
-async def list_horizon_goals(domain: Optional[str] = None, user: User = Depends(verify_token)):
+async def list_horizon_goals(domain: str | None = None, user: User = Depends(verify_token)):
     from core.horizon_planner import HorizonPlanner
     planner = HorizonPlanner()
     goals = planner.list(domain)
@@ -131,8 +141,9 @@ async def chat_upload(file: UploadFile = File(...), user: User = Depends(verify_
 @router.post("/api/audio/analyze-emotion")
 async def analyze_audio_emotion(file: UploadFile = File(...), user: User = Depends(verify_token)):
     import tempfile
-    from core.audio_emotion import emotion_detector
     from dataclasses import asdict
+
+    from core.audio_emotion import emotion_detector
     suffix = Path(file.filename).suffix if file.filename else ".wav"
     with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
         tmp.write(await file.read())
@@ -155,8 +166,8 @@ class SceneRequest(BaseModel):
 
 @router.post("/api/scene/generate")
 async def generate_3d_scene(request: SceneRequest, user: User = Depends(verify_token)):
-    from tools.scene_generator import scene_generator
     from brain.UnifiedBrain import unified_brain
+    from tools.scene_generator import scene_generator
     result = await scene_generator.generate(
         description=request.description,
         brain=unified_brain,
@@ -176,7 +187,7 @@ async def generate_3d_scene(request: SceneRequest, user: User = Depends(verify_t
 # ── PROMPT OPTIMIZATION ────────────────────────────────────────────
 
 @router.post("/api/system/prompt-optimize")
-async def system_prompt_optimize(request: Request, agent: Optional[str] = Query(None), user: User = Depends(verify_token)):
+async def system_prompt_optimize(request: Request, agent: str | None = Query(None), user: User = Depends(verify_token)):
     opt = getattr(request.app.state, "prompt_optimizer", None)
     if not opt:
         raise HTTPException(status_code=503, detail="PromptOptimizer not initialized")
@@ -191,7 +202,7 @@ async def system_prompt_optimize(request: Request, agent: Optional[str] = Query(
 
 
 @router.get("/api/system/prompt-versions")
-async def system_prompt_versions(agent: Optional[str] = Query(None), user: User = Depends(verify_token)):
+async def system_prompt_versions(agent: str | None = Query(None), user: User = Depends(verify_token)):
     from brain.prompt_optimizer import PromptStore
     store = PromptStore()
     if agent:

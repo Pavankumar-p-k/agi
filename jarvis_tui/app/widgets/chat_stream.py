@@ -1,18 +1,18 @@
 from __future__ import annotations
 
+import re
+
+from rich.align import Align
+from rich.box import SQUARE
+from rich.console import RenderableType
+from rich.panel import Panel
+from rich.text import Text
 from textual import events
 from textual.app import ComposeResult
+from textual.reactive import reactive
 from textual.widget import Widget
 from textual.widgets import Static
-from textual.reactive import reactive
-from rich.text import Text
-from rich.panel import Panel
-from rich.console import RenderableType
-from rich.align import Align
 
-from rich.box import SQUARE
-
-import re
 
 class MessageWidget(Static):
     """

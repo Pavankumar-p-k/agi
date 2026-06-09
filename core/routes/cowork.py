@@ -1,4 +1,16 @@
-from typing import Optional
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
@@ -27,7 +39,7 @@ async def cowork_file_organize(folder: str = "", instruction: str = ""):
 
 
 @router.post("/files/generate")
-async def cowork_file_generate(template: str = "", data: Optional[dict] = None, output_path: str = ""):
+async def cowork_file_generate(template: str = "", data: dict | None = None, output_path: str = ""):
     data = data or {}
     from ..file_agent import file_agent
     await file_agent.generate_document(template, data, output_path)
@@ -43,8 +55,9 @@ async def cowork_file_list(folder: str = "", pattern: str = ""):
 
 @router.post("/skills/create")
 async def cowork_skill_create(name: str = "", description: str = "", template: str = ""):
-    from ..database import AsyncSessionLocal, JarvisSkill
     from sqlalchemy import select
+
+    from ..database import AsyncSessionLocal, JarvisSkill
     async with AsyncSessionLocal() as session:
         existing = await session.execute(select(JarvisSkill).where(JarvisSkill.name == name))
         if existing.scalar_one_or_none():
@@ -58,8 +71,9 @@ async def cowork_skill_create(name: str = "", description: str = "", template: s
 
 @router.get("/skills/list")
 async def cowork_skills_list():
-    from ..database import AsyncSessionLocal, JarvisSkill
     from sqlalchemy import select
+
+    from ..database import AsyncSessionLocal, JarvisSkill
     async with AsyncSessionLocal() as session:
         result = await session.execute(select(JarvisSkill).order_by(JarvisSkill.name))
         skills = result.scalars().all()
@@ -72,9 +86,10 @@ class SkillRunRequest(BaseModel):
 
 @router.post("/skills/run/{skill_name}")
 async def cowork_skill_run(skill_name: str, req: SkillRunRequest):
+    from sqlalchemy import select
+
     from ..database import AsyncSessionLocal, JarvisSkill
     from ..llm_router import complete as llm_complete
-    from sqlalchemy import select
     async with AsyncSessionLocal() as session:
         result = await session.execute(select(JarvisSkill).where(JarvisSkill.name == skill_name))
         skill = result.scalar_one_or_none()
@@ -94,8 +109,9 @@ class BuildRequest(BaseModel):
 
 @router.post("/build/overnight")
 async def cowork_overnight_build(req: BuildRequest):
-    from ..agent_executor import run_overnight_build
     import asyncio
+
+    from ..agent_executor import run_overnight_build
     task = asyncio.create_task(run_overnight_build(req.goal, req.output_dir))
     return {"status": "started", "goal": req.goal, "output_dir": req.output_dir, "message": "Overnight build running in background"}
 

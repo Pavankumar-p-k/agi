@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+from textual import events
 from textual.app import ComposeResult
-from textual.widget import Widget
-from textual.widgets import Input, Label
+from textual.binding import Binding
 from textual.containers import Horizontal
 from textual.reactive import reactive
-from textual.binding import Binding
-from textual import events
+from textual.widget import Widget
+from textual.widgets import Input, Label
+
 
 class InputBar(Widget):
     """
@@ -46,7 +47,7 @@ class InputBar(Widget):
         badge = self.query_one("#code-badge", Label)
         badge.update(" [code block] " if is_code else "")
         badge.styles.display = "block" if is_code else "none"
-        
+
         inp = self.query_one("#chat-input", Input)
         if is_code:
             inp.styles.text_style = "bold italic" # Mono-like hint
@@ -62,7 +63,7 @@ class InputBar(Widget):
             self.app.focus_next()
 
     SUGGESTIONS = [
-        "/research", "/codegen", "/model", "/theme", "/agent", "/vault", 
+        "/research", "/codegen", "/model", "/theme", "/agent", "/vault",
         "/export", "/clear", "/exit", "/replay", "/confirm", "/diff", "/session",
         "@nexus", "@forge", "@scout", "@oracle",
         "!web_search", "!read_file", "!write_file", "!ls",
@@ -77,7 +78,7 @@ class InputBar(Widget):
         # Dynamic ghost-text logic
         val = event.value.lower()
         self.ghost_text = ""
-        
+
         if val.strip():
             # Find all matching suggestions, pick the best (shortest matching)
             matches = [s for s in self.SUGGESTIONS if s.lower().startswith(val)]
@@ -86,7 +87,7 @@ class InputBar(Widget):
                 matches.sort(key=len)
                 best_match = matches[0]
                 self.ghost_text = best_match[len(val):]
-        
+
         try:
             label = self.query_one("#ghost-label", Label)
             label.update(self.ghost_text)
@@ -104,14 +105,14 @@ class InputBar(Widget):
             msg = event.value
             if self.is_code:
                 msg = f"```python\n{msg}\n```"
-            
+
             try:
                 chat = self.screen.query_one("#chat-stream")
                 chat.add_message("YOU", msg, msg_type="user")
                 self.run_worker(self.send_to_backend(msg))
             except Exception:
                 pass
-            
+
             inp = self.query_one("#chat-input", Input)
             inp.value = ""
             self.is_code = False

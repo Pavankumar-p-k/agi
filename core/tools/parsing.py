@@ -1,3 +1,15 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """
 tool_parsing.py
 
@@ -5,12 +17,11 @@ Regex-based parsing of tool invocations from LLM response text.
 Supports fenced code blocks, [TOOL_CALL] blocks, and XML-style <invoke> blocks.
 """
 
-import re
 import json
 import logging
-from typing import List, Optional
+import re
 
-from core.tools._constants import ToolBlock, TOOL_TAGS
+from core.tools._constants import TOOL_TAGS, ToolBlock
 
 logger = logging.getLogger(__name__)
 
@@ -203,7 +214,7 @@ _TOOL_NAME_MAP = {
 # Parsing functions
 # ---------------------------------------------------------------------------
 
-def _parse_tool_call_block(raw: str) -> Optional[ToolBlock]:
+def _parse_tool_call_block(raw: str) -> ToolBlock | None:
     """Parse a [TOOL_CALL] block into a ToolBlock.
 
     Handles formats like:
@@ -268,7 +279,7 @@ def _parse_tool_call_block(raw: str) -> Optional[ToolBlock]:
     return None
 
 
-def _parse_xml_invoke(inv_match) -> Optional[ToolBlock]:
+def _parse_xml_invoke(inv_match) -> ToolBlock | None:
     """Parse an <invoke name="tool"><parameter ...>...</parameter></invoke> match.
 
     Delegates content-shaping to function_call_to_tool_block — the SAME
@@ -294,7 +305,7 @@ def _parse_xml_invoke(inv_match) -> Optional[ToolBlock]:
     return function_call_to_tool_block(tool_name, json.dumps(params))
 
 
-def _parse_tool_code_block(raw: str) -> Optional[ToolBlock]:
+def _parse_tool_code_block(raw: str) -> ToolBlock | None:
     """Parse a <tool_code>{tool => 'name', args => '...'}</tool_code> block (MiniMax style)."""
     # Extract tool name
     tool_match = re.search(r"tool\s*=>\s*['\"](\S+?)['\"]", raw)
@@ -351,7 +362,7 @@ def _parse_tool_code_block(raw: str) -> Optional[ToolBlock]:
     return None
 
 
-def parse_tool_blocks(text: str) -> List[ToolBlock]:
+def parse_tool_blocks(text: str) -> list[ToolBlock]:
     """Extract executable tool blocks from LLM response text.
 
     Supports multiple formats:

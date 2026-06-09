@@ -1,38 +1,52 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """core/control_loop.py
 The heart of JARVIS autonomy.
 Interpret → Plan → Build → Validate → Check → Fix/Retry → Done.
 Every cycle uses real validation, not LLM opinions.
 """
-import asyncio, os, re, json, logging, shlex
-from pathlib import Path
-from typing import Optional, Callable
+import asyncio
+import json
+import logging
+import re
+import shlex
+from collections.abc import Callable
 from datetime import datetime
+from pathlib import Path
 
 logger = logging.getLogger("control_loop")
 
-from core.project_state import ProjectState, ValidationResult, list_projects, PROJECTS_DIR
-from core.goal_interpreter import interpret_goal
-from core.success_criteria import is_done, get_summary
-from core.real_validator import RealValidator
 from core.agent_launcher import AgentLauncher
-from core.site_planner import plan_site
-from core.shared_context import SharedContext
 from core.budget_controller import budget_controller
-from core.failure_classifier import classify, FailureCategory
-from core.conflict_resolver import lock_manager
-from core.self_diagnosis import self_diagnosis
-from core.quality_scorer import QualityScorer
-from core.partial_success import PartialSuccessTracker, ProgressSnapshot
-from core.interrupt_override import interrupt_manager
-from core.nondet_control import decision_logger, DecisionEntry
 from core.checkpoint_manager import checkpoint_manager
-from core.system_governor import system_governor, GovernorDecision
-from core.plan_evolution import plan_evolution
+from core.conflict_resolver import lock_manager
+from core.failure_classifier import classify
+from core.goal_interpreter import interpret_goal
+from core.interrupt_override import interrupt_manager
 from core.memory_driven_decisions import memory_router
-from core.template_intelligence import template_analyzer
-from core.system_identity import system_identity
-from core.environment_monitor import environment_monitor
+from core.nondet_control import DecisionEntry, decision_logger
+from core.partial_success import PartialSuccessTracker
+from core.plan_evolution import plan_evolution
 from core.proactive_adaptation import adaptation_engine
+from core.project_state import PROJECTS_DIR, ProjectState, list_projects
+from core.quality_scorer import QualityScorer
+from core.real_validator import RealValidator
+from core.self_diagnosis import self_diagnosis
+from core.shared_context import SharedContext
+from core.site_planner import plan_site
+from core.success_criteria import get_summary, is_done
+from core.system_governor import system_governor
+from core.template_intelligence import template_analyzer
 from notifications.notifier import notifier
 
 MAX_PARALLEL = 2
@@ -125,7 +139,7 @@ TASK_TYPE_ORDER = {
 class ControlLoop:
     """The main autonomous build loop. Build → Validate → Fix → Repeat."""
 
-    def __init__(self, auto_approve: bool = True, autonomous: bool = False, notify_callback: Optional[Callable] = None):
+    def __init__(self, auto_approve: bool = True, autonomous: bool = False, notify_callback: Callable | None = None):
         self.auto_approve = auto_approve
         self.autonomous = autonomous
         self.notify_callback = notify_callback
@@ -245,7 +259,7 @@ class ControlLoop:
         # ── STEPS 2-6: CONTROL LOOP ──
         return await self._execute_loop(state, ws, ctx)
 
-    async def resume_build(self, project_name: str) -> Optional[ProjectState]:
+    async def resume_build(self, project_name: str) -> ProjectState | None:
         """Resume an interrupted or queued build from its saved state."""
         state = ProjectState.load(project_name)
         if not state:
@@ -434,7 +448,7 @@ class ControlLoop:
                             logger.info(f"[CONTROL] Deployed to {deploy_url}")
                             await self._notify(safe_name, "deployed", {"url": deploy_url})
                         else:
-                            logger.warning(f"[CONTROL] Deploy returned no URL")
+                            logger.warning("[CONTROL] Deploy returned no URL")
                     except Exception as e:
                         logger.warning(f"[CONTROL] Deploy failed: {e}")
 
@@ -501,36 +515,36 @@ class ControlLoop:
             if gov_decision.action == "abort":
                 if self.autonomous:
                     self._log_autonomous_failure(safe_name, "abort", gov_decision.reason, failures)
-                    logger.warning(f"[CONTROL] Autonomous mode: overriding governor abort — continuing")
+                    logger.warning("[CONTROL] Autonomous mode: overriding governor abort — continuing")
                     state.plan = self._generate_fix_tasks(failures, interpreted)
                     state.outputs["autonomous_override"] = f"abort→continue: {gov_decision.reason}"
                 else:
-                    logger.info(f"[CONTROL] Governor: aborting build")
+                    logger.info("[CONTROL] Governor: aborting build")
                     state.log_event("governor_abort", {"reason": gov_decision.reason})
                     state.status = "failed"
                     return state
             elif gov_decision.action == "pause":
                 if self.autonomous:
                     self._log_autonomous_failure(safe_name, "pause", gov_decision.reason, failures)
-                    logger.warning(f"[CONTROL] Autonomous mode: overriding governor pause — continuing")
+                    logger.warning("[CONTROL] Autonomous mode: overriding governor pause — continuing")
                     state.plan = self._generate_fix_tasks(failures, interpreted)
                     state.outputs["autonomous_override"] = f"pause→continue: {gov_decision.reason}"
                 else:
-                    logger.info(f"[CONTROL] Governor: pausing build")
+                    logger.info("[CONTROL] Governor: pausing build")
                     state.status = "paused"
                     state.save()
                     return state
             elif gov_decision.action == "replan":
-                logger.info(f"[CONTROL] Governor: replanning from goal")
+                logger.info("[CONTROL] Governor: replanning from goal")
                 state.log_event("replan", {"reason": failure_text[:200]})
                 new_interpreted = await interpret_goal(state.goal)
                 state.interpreted_goal = new_interpreted
                 state.plan = self._create_plan(new_interpreted)
             elif gov_decision.action == "switch_tool":
-                logger.info(f"[CONTROL] Governor: switching tool")
+                logger.info("[CONTROL] Governor: switching tool")
                 state.plan = self._generate_fix_tasks(failures, interpreted)
             elif gov_decision.action == "escalate":
-                logger.info(f"[CONTROL] Governor: escalating — usable outputs exist despite declining quality")
+                logger.info("[CONTROL] Governor: escalating — usable outputs exist despite declining quality")
                 state.plan = self._generate_fix_tasks(failures, interpreted)
                 state.outputs["governor_note"] = gov_decision.reason
             else:
@@ -612,9 +626,9 @@ class ControlLoop:
             add_task("frontend", f"Goal: {goal_ctx}. Build {project_type} with pages: {page_list}. Tech: {', '.join(tech)}{pages_marker}",
                      deps=["task_1"])
             if "tailwind" in tech or "bootstrap" in tech or len(pages) > 2:
-                add_task("styling", f"Apply consistent styling across all pages", deps=[f"task_{task_id}"])
+                add_task("styling", "Apply consistent styling across all pages", deps=[f"task_{task_id}"])
             if "contact" in pages:
-                add_task("form", f"Build contact form with validation", deps=[f"task_{task_id}"])
+                add_task("form", "Build contact form with validation", deps=[f"task_{task_id}"])
 
         elif project_type == "webapp":
             add_task("scaffold", f"Set up {project_type} project. Tech: {', '.join(tech)}")
@@ -629,7 +643,7 @@ class ControlLoop:
 
         elif project_type == "api":
             add_task("scaffold", f"Scaffold API project. Tech: {', '.join(tech)}")
-            add_task("backend", f"Build API endpoints and business logic",
+            add_task("backend", "Build API endpoints and business logic",
                      deps=["task_1"])
             if any(k in interpreted.get("original_goal", "").lower() for k in ("db", "database", "sql", "postgres")):
                 add_task("database", "Set up database models and migrations",
@@ -895,7 +909,7 @@ class ControlLoop:
         except Exception as e:
             logger.warning(f"[CONTROL] Failed to write autonomous failure log: {e}")
 
-    def get_status(self, project_name: str) -> Optional[dict]:
+    def get_status(self, project_name: str) -> dict | None:
         state = ProjectState.load(project_name)
         if state:
             return {

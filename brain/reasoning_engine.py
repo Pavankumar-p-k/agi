@@ -10,6 +10,7 @@ from typing import Callable
 
 import httpx
 
+from core.config_registry import config as _jarvis_config
 from core.llm_router import complete
 from core.schemas import ReasonResult
 
@@ -41,10 +42,19 @@ Think step by step inside <think> tags, then provide your final answer inside <a
 class ReasoningEngine:
     def __init__(self):
         self._warmed = False
-        self._fallback_group = "analysis"
         self._trace_listeners: list[Callable] = []
         self._http = httpx.AsyncClient(timeout=3)
-        self._ollama_url = os.getenv("OLLAMA_HOST", "http://localhost:11434")
+
+    @property
+    def _fallback_group(self) -> str:
+        return _jarvis_config.get("model_groups.reasoning_group", "chat")
+
+    @property
+    def _ollama_url(self) -> str:
+        return _jarvis_config.get("ollama.base_url", os.getenv("OLLAMA_HOST", "http://localhost:11434"))
+
+    def _get_timeout(self, default: int = 60) -> int:
+        return _jarvis_config.get("brain.reasoning_timeout", default)
 
     # ---- Trace emission (for dashboard) ----
 
@@ -106,7 +116,7 @@ class ReasoningEngine:
 
         system = system_override or REASONING_SYSTEM
         prompt = REASONING_TEMPLATE.replace("{goal}", goal).replace("{context}", context)
-        model_group = "reasoning" if self._warmed else self._fallback_group
+        model_group = self._fallback_group
 
         try:
             raw_r = await complete(
@@ -115,7 +125,7 @@ class ReasoningEngine:
                     {"role": "system", "content": system},
                     {"role": "user", "content": prompt},
                 ],
-                timeout=60,
+                timeout=self._get_timeout(60),
             )
             raw = raw_r.unwrap_or("")
         except Exception as e:
@@ -129,7 +139,7 @@ class ReasoningEngine:
                             {"role": "system", "content": system},
                             {"role": "user", "content": prompt},
                         ],
-                        timeout=120,
+                        timeout=self._get_timeout(120),
                     )
                     raw = raw_r.unwrap_or("")
                 except Exception as e:

@@ -4,9 +4,7 @@ vision/face_recognition.py — Facial recognition: detect, identify, store, acce
 import cv2
 import numpy as np
 import os
-import pickle
 import json
-import hmac
 import logging
 
 logger = logging.getLogger(__name__)
@@ -30,31 +28,27 @@ class FaceRecognizer:
         self.face_db_path.mkdir(parents=True, exist_ok=True)
         self._load_cache()
 
-    def _cache_key(self) -> bytes:
-        return (FACES_DIR / "cache_hmac.key").read_bytes() if (FACES_DIR / "cache_hmac.key").exists() else b""
-
     def _load_cache(self):
-        cache_file = self.face_db_path / "embeddings_cache.pkl"
+        cache_file = self.face_db_path / "embeddings_cache.json"
         if cache_file.exists():
-            with open(cache_file, "rb") as f:
-                data = f.read()
-            sig = data[:32]
-            payload = data[32:]
-            key = self._cache_key()
-            if key and hmac.new(key, payload, "sha256").digest() != sig:
-                logger.warning("[FaceRec] Cache integrity check failed — ignoring cache")
-                return
-            self.embeddings_cache = pickle.loads(payload)
-            logger.info("[FaceRec] Loaded %d known faces with integrity check ✓", len(self.embeddings_cache))
+            try:
+                raw = json.loads(cache_file.read_text(encoding="utf-8"))
+                self.embeddings_cache = {
+                    k: [np.array(v) for v in vecs]
+                    for k, vecs in raw.items()
+                }
+                logger.info("[FaceRec] Loaded %d known faces from JSON cache ✓", len(self.embeddings_cache))
+            except Exception as e:
+                logger.warning("[FaceRec] Cache load failed: %s", e)
+                self.embeddings_cache = {}
 
     def _save_cache(self):
-        cache_file = self.face_db_path / "embeddings_cache.pkl"
-        payload = pickle.dumps(self.embeddings_cache)
-        key = os.urandom(32)
-        (FACES_DIR / "cache_hmac.key").write_bytes(key)
-        sig = hmac.new(key, payload, "sha256").digest()
-        with open(cache_file, "wb") as f:
-            f.write(sig + payload)
+        cache_file = self.face_db_path / "embeddings_cache.json"
+        serializable = {
+            k: [v.tolist() if isinstance(v, np.ndarray) else v for v in vecs]
+            for k, vecs in self.embeddings_cache.items()
+        }
+        cache_file.write_text(json.dumps(serializable, indent=2), encoding="utf-8")
 
     def get_embedding(self, image: np.ndarray) -> Optional[np.ndarray]:
         """Get face embedding from image."""

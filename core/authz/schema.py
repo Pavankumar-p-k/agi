@@ -1,8 +1,20 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 from __future__ import annotations
 
 import enum
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Set
+from typing import Any
 
 
 class Role(enum.StrEnum):
@@ -19,32 +31,32 @@ class Scope(enum.StrEnum):
     TOOLS_EXECUTE_LOW = "tools:execute:low"      # safe search, status
     TOOLS_EXECUTE_MEDIUM = "tools:execute:medium" # browser, write_file
     TOOLS_EXECUTE_HIGH = "tools:execute:high"    # bash, python, delete_email
-    
+
     # --- File System ---
     FILES_READ = "files:read"
     FILES_WRITE = "files:write"
     FILES_DELETE = "files:delete"
     FILES_ADMIN = "files:admin" # Manage root, external mounts
-    
+
     # --- Memory ---
     MEMORY_READ = "memory:read"
     MEMORY_WRITE = "memory:write"
     MEMORY_DELETE = "memory:delete"
-    
+
     # --- System ---
     SYSTEM_STATUS = "system:status"
     SYSTEM_CONFIG = "system:config"
     SYSTEM_RESTART = "system:restart"
     SYSTEM_LOGS = "system:logs"
-    
+
     # --- Governance ---
     GOVERNANCE_READ = "governance:read"
     GOVERNANCE_WRITE = "governance:write"
-    
+
     # --- Plugins ---
     PLUGINS_LIST = "plugins:list"
     PLUGINS_MANAGE = "plugins:manage" # install/unload
-    
+
     # --- Auth & Users ---
     AUTH_USERS_MANAGE = "auth:users:manage"
     AUTH_ROLES_MANAGE = "auth:roles:manage"
@@ -57,17 +69,17 @@ class Scope(enum.StrEnum):
 @dataclass(frozen=True)
 class Permission:
     scope: Scope
-    constraints: Dict[str, Any] = field(default_factory=dict) # e.g. path matches, tool name in list
+    constraints: dict[str, Any] = field(default_factory=dict) # e.g. path matches, tool name in list
 
 
 @dataclass
 class AuthContext:
     user_id: str
-    roles: Set[Role]
-    scopes: Set[Scope]
-    ip_address: Optional[str] = None
-    session_id: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    roles: set[Role]
+    scopes: set[Scope]
+    ip_address: str | None = None
+    session_id: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     @property
     def is_admin(self) -> bool:

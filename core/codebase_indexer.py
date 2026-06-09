@@ -1,18 +1,28 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 from __future__ import annotations
 
 import logging
 import re
-import os
 from collections import Counter
 from pathlib import Path
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
 _INDEXED_PATHS: set[str] = set()
 
 
-def index_workspace(workspace_root: str | Path, owner: Optional[str] = None) -> dict:
+def index_workspace(workspace_root: str | Path, owner: str | None = None) -> dict:
     workspace_root = str(Path(workspace_root).resolve())
     try:
         from core.rag_vector import VectorRAG
@@ -30,7 +40,7 @@ def index_workspace(workspace_root: str | Path, owner: Optional[str] = None) -> 
         return {"success": False, "message": str(e)}
 
 
-def search_codebase(query: str, k: int = 5, owner: Optional[str] = None) -> str:
+def search_codebase(query: str, k: int = 5, owner: str | None = None) -> str:
     if not query:
         return ""
     all_results: list[dict] = []
@@ -88,7 +98,7 @@ def search_codebase(query: str, k: int = 5, owner: Optional[str] = None) -> str:
     return "\n".join(lines)
 
 
-def find_code(query: str, k: int = 5, owner: Optional[str] = None) -> list[dict]:
+def find_code(query: str, k: int = 5, owner: str | None = None) -> list[dict]:
     """Return structured code search results with file paths, line numbers, and snippets.
 
     Use this for programmatic access to code search results. Returns a list of
@@ -136,7 +146,8 @@ def _symbol_search(query: str) -> list[dict]:
             continue
         try:
             text = f.read_text("utf-8", errors="replace")
-        except Exception:
+        except Exception as e:
+            logger.warning("[core.codebase_indexer] symbol search read failed: %s", e)
             continue
         rel = str(f.relative_to(root))
         for pat in def_patterns:
@@ -180,7 +191,8 @@ def _bm25_search(query: str, k: int = 10) -> list[dict]:
             continue
         try:
             text = f.read_text("utf-8", errors="replace")
-        except Exception:
+        except Exception as e:
+            logger.warning("[core.codebase_indexer] BM25 search read failed: %s", e)
             continue
         rel = str(f.relative_to(root))
         text_lower = text.lower()

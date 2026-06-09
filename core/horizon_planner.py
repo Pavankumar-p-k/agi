@@ -1,15 +1,27 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """core/horizon_planner.py
 HorizonPlanner — long-term goal planning with milestone tracking.
 Goals stored as JSON files under ~/.jarvis/horizon_goals/.
 """
 
 from __future__ import annotations
+
 import json
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
 BASE_DIR = Path.home() / ".jarvis" / "horizon_goals"
 
@@ -82,7 +94,7 @@ class HorizonPlanner:
                            for m in goal.milestones],
         }, indent=2, default=str))
 
-    def load(self, goal_id: str) -> Optional[HorizonGoal]:
+    def load(self, goal_id: str) -> HorizonGoal | None:
         if goal_id in self._cache:
             return self._cache[goal_id]
         path = self._path(goal_id)
@@ -107,7 +119,7 @@ class HorizonPlanner:
             logger.warning("[HORIZON] Corrupted goal file %s: %s", goal_id, e)
             return None
 
-    def list(self, domain: Optional[str] = None) -> list[HorizonGoal]:
+    def list(self, domain: str | None = None) -> list[HorizonGoal]:
         goals = []
         for path in sorted(BASE_DIR.glob("*.json")):
             gid = path.stem
@@ -124,7 +136,7 @@ class HorizonPlanner:
             return True
         return False
 
-    def advance(self, goal_id: str) -> Optional[HorizonGoal]:
+    def advance(self, goal_id: str) -> HorizonGoal | None:
         goal = self.load(goal_id)
         if goal is None:
             return None
@@ -151,6 +163,7 @@ class HorizonPlanner:
 
 
 import logging
+
 logger = logging.getLogger("horizon")
 
 horizon_planner: HorizonPlanner | None = None

@@ -1,14 +1,27 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """Stock price - free Yahoo Finance scraping (no API key)."""
 import logging
-import httpx
 import re
+
+import httpx
 
 logger = logging.getLogger(__name__)
 
 async def get_stock_price(symbol: str) -> str:
     """Get current stock price for a ticker from Yahoo Finance (free)."""
     symbol = symbol.upper().strip()
-    
+
     try:
         async with httpx.AsyncClient(timeout=10) as client:
             r = await client.get(
@@ -39,7 +52,7 @@ async def get_stock_price(symbol: str) -> str:
                     )
     except Exception as e:
         logger.exception("[stocks] Yahoo Finance API: %s", e)
-    
+
     # Fallback: scrape Yahoo Finance page
     try:
         async with httpx.AsyncClient(timeout=10) as client:
@@ -55,7 +68,7 @@ async def get_stock_price(symbol: str) -> str:
                 return f"{name} ({symbol}): ${price}"
     except Exception as e:
         logger.exception("[stocks] Yahoo Finance scrape: %s", e)
-    
+
     # Last resort: web search
     try:
         from tools.search_tool import search_engine

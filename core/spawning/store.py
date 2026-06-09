@@ -1,14 +1,28 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 from __future__ import annotations
+
 import logging
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
-from sqlalchemy import select, update, delete, func
+
+from sqlalchemy import delete, func, select, update
+
 from core.database import AsyncSessionLocal, SubagentRun
 
 logger = logging.getLogger("jarvis.spawning.store")
 
 class SubagentStore:
-    async def create_run(self, run_id: str, agent_id: str, parent_session_key: Optional[str],
+    async def create_run(self, run_id: str, agent_id: str, parent_session_key: str | None,
                          child_session_key: str, task: str, depth: int, cleanup: str = "delete") -> dict:
         async with AsyncSessionLocal() as session:
             run = SubagentRun(
@@ -27,13 +41,13 @@ class SubagentStore:
             await session.refresh(run)
             return self._to_dict(run)
 
-    async def get_run(self, run_id: str) -> Optional[dict]:
+    async def get_run(self, run_id: str) -> dict | None:
         async with AsyncSessionLocal() as session:
             result = await session.execute(select(SubagentRun).where(SubagentRun.run_id == run_id))
             run = result.scalar_one_or_none()
             return self._to_dict(run) if run else None
 
-    async def get_run_by_child_key(self, child_key: str) -> Optional[dict]:
+    async def get_run_by_child_key(self, child_key: str) -> dict | None:
         async with AsyncSessionLocal() as session:
             result = await session.execute(select(SubagentRun).where(SubagentRun.child_session_key == child_key))
             run = result.scalar_one_or_none()
@@ -45,13 +59,13 @@ class SubagentStore:
             await session.execute(stmt)
             await session.commit()
 
-    async def list_active(self) -> List[dict]:
+    async def list_active(self) -> list[dict]:
         async with AsyncSessionLocal() as session:
             result = await session.execute(select(SubagentRun).where(SubagentRun.status.in_(["pending", "running"])))
             runs = result.scalars().all()
             return [self._to_dict(r) for r in runs]
 
-    async def list_by_parent(self, parent_key: str) -> List[dict]:
+    async def list_by_parent(self, parent_key: str) -> list[dict]:
         async with AsyncSessionLocal() as session:
             result = await session.execute(select(SubagentRun).where(SubagentRun.parent_session_key == parent_key))
             runs = result.scalars().all()
@@ -67,7 +81,7 @@ class SubagentStore:
             )
             return result.scalar() or 0
 
-    async def list_orphans(self, grace_period_s: int = 300) -> List[dict]:
+    async def list_orphans(self, grace_period_s: int = 300) -> list[dict]:
         """Runs that are stuck in 'running' or 'pending' for too long."""
         cutoff = datetime.utcnow() - timedelta(seconds=grace_period_s)
         async with AsyncSessionLocal() as session:

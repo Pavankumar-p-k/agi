@@ -1,11 +1,24 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 core/main.py — JARVIS FastAPI server: routes + WebSocket + startup
 """
-import os
-import sys
 import io
 import logging
+import os
+import sys
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
 sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
@@ -33,26 +46,24 @@ if not logger.handlers:
     fh.setFormatter(fmt)
     logger.addHandler(fh)
 
+# Initialize config registry before any jarvis imports
+from core.config_init import init_config
+init_config()
+
 import asyncio
+
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 import time
-from datetime import datetime
-from typing import Optional, List, Literal
 
-from fastapi import FastAPI, Depends, HTTPException, Request, WebSocket, WebSocketDisconnect, UploadFile, File, Form, Query
+from fastapi import (
+    FastAPI,
+    Request,
+)
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
-from sqlalchemy.ext.asyncio import AsyncSession
-import base64
-import httpx
-import webbrowser
-import subprocess
-import json
-import re
-import urllib.parse
+
 try:
     import numpy as np
 except ImportError:
@@ -70,7 +81,7 @@ try:
 except ImportError:
     OpenAI = None
 try:
-    from smolagents import ToolCallingAgent, tool, LiteLLMModel
+    from smolagents import LiteLLMModel, ToolCallingAgent, tool
 except ImportError:
     tool = lambda f: f
     ToolCallingAgent = None
@@ -79,18 +90,12 @@ except ImportError:
 # COMPOSIO_TOOLS loaded lazily in _get_action_agent()
 _COMPOSIO_TOOLS_CACHE = None
 
-from brain.epistemic_tagger import epistemic_tagger
-from .config import HOST, PORT, ALLOWED_ORIGINS
-from .database import get_db, init_db, User
-from .auth import verify_token, init_firebase, require_scope
-from .authz import Scope
-from .config import SUPABASE_URL, SUPABASE_SERVICE_KEY
-from .observability.metrics import MetricsMiddleware, collect_metrics
-
-from .lifespan import lifespan, startup_status
-from .request_id import RequestIDMiddleware
+from .config import ALLOWED_ORIGINS, HOST, PORT
+from .lifespan import lifespan
 from .middleware import SecurityHeadersMiddleware
+from .observability.metrics import MetricsMiddleware
 from .rate_limiter import api_rate_limiter
+from .request_id import RequestIDMiddleware
 
 _start_time = time.monotonic()
 app = FastAPI(
@@ -99,6 +104,10 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
 )
+
+# Mount settings REST API
+from core.routes.settings import router as _settings_router
+app.include_router(_settings_router, prefix="/api")
 
 app.add_middleware(
     CORSMiddleware,
@@ -113,21 +122,33 @@ app.add_middleware(SecurityHeadersMiddleware)
 @app.middleware("http")
 async def rate_limit_middleware(request, call_next):
     exempt = ("/health", "/docs", "/openapi.json", "/redoc", "/static")
-    if not request.url.path.startswith(exempt):
+    exempt_path = any(request.url.path.startswith(e) for e in exempt)
+    if not exempt_path:
         ip = request.client.host if request.client else "unknown"
         if not api_rate_limiter.check("api", ip):
             return JSONResponse(status_code=429, content={"detail": "rate_limit_exceeded"})
     return await call_next(request)
 
+AUTH_EXEMPT_PREFIXES = (
+    "/health", "/docs", "/openapi.json", "/redoc", "/static",
+    "/assets", "/manifest.json", "/sw.js", "/api/auth", "/api/setup",
+    "/icons", "/_next",
+)
+AUTH_EXEMPT_PATHS = {"/"}
+
 @app.middleware("http")
 async def session_auth_middleware(request, call_next):
     auth_mgr = getattr(request.app.state, "auth_manager", None)
     if auth_mgr and auth_mgr.is_configured:
-        session_token = request.cookies.get("session_token")
-        if session_token and auth_mgr.validate_token(session_token):
-            username = auth_mgr.get_username_for_token(session_token)
-            if username:
-                request.state.current_user = username
+        path = request.url.path
+        if path in AUTH_EXEMPT_PATHS or any(path.startswith(e) for e in AUTH_EXEMPT_PREFIXES):
+            return await call_next(request)
+        session_token = request.cookies.get("session_token") or request.headers.get("Authorization", "").removeprefix("Bearer ")
+        if not session_token or not auth_mgr.validate_token(session_token):
+            return JSONResponse(status_code=401, content={"detail": "unauthorized"})
+        username = auth_mgr.get_username_for_token(session_token)
+        if username:
+            request.state.current_user = username
     return await call_next(request)
 
 @app.middleware("http")
@@ -387,10 +408,6 @@ except Exception as e:
     traceback.print_exc()
 
 # Pydantic schemas — extracted to core/schemas.py
-from .schemas import (
-    ChatRequest, BrowserActionRequest, ReminderCreate, NoteCreate, NoteUpdate,
-    MessageRequest, FaceRegisterRequest, IntentResult, CodeReviewRequest, QualityGradeRequest,
-)
 
 # ── Extracted route modules ──
 
@@ -503,10 +520,20 @@ except Exception as e:
 
 # ── Action Executor ──
 
-async def execute_action(intent_data: dict, message: str = "") -> dict:
+async def execute_action(intent_data: dict, message: str = "", session_id: str = "") -> dict:
     intent = intent_data.get("intent", "chat")
     target = intent_data.get("target", message)
     params = intent_data.get("parameters", {})
+    
+    from .session import ConversationManager
+    cm = ConversationManager(session_id=session_id)
+    if cm.path.exists():
+        cm.load()
+    
+    task_id = f"task_{int(time.time())}"
+    cm.update_task(task_id, "running", {"intent": intent, "target": target})
+    cm.save()
+
     try:
         if intent == "open_url":
             url = params.get("url", target)
@@ -514,10 +541,14 @@ async def execute_action(intent_data: dict, message: str = "") -> dict:
                 url = "https://" + url
             import webbrowser
             webbrowser.open(url)
+            cm.update_task(task_id, "completed", {"action": f"Opened {url}"})
+            cm.save()
             return {"executed": True, "action": f"Opened {url}", "result": {}}
         elif intent == "play_media":
             from media.player import media_player
             await media_player.play(target)
+            cm.update_task(task_id, "completed", {"action": f"Playing {target}"})
+            cm.save()
             return {"executed": True, "action": f"Playing {target}", "result": {}}
         elif intent == "web_search":
             from tools.search_tool import search
@@ -527,7 +558,7 @@ async def execute_action(intent_data: dict, message: str = "") -> dict:
             from core.scheduler import JarvisScheduler
             scheduler = JarvisScheduler()
             scheduler.add_task("reminder", params)
-            return {"executed": True, "action": f"Reminder set", "result": {}}
+            return {"executed": True, "action": "Reminder set", "result": {}}
         elif intent in ("weather", "news", "stocks", "sports", "time"):
             from core.integrations import get_info
             result = await get_info(intent, target)
@@ -572,6 +603,7 @@ except Exception as e:
 # ── Global error handlers ──
 
 from core.errors import AppError
+
 
 @app.exception_handler(AppError)
 async def app_error_handler(request, exc: AppError):

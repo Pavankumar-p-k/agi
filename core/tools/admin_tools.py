@@ -1,17 +1,28 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import asyncio
 import json
 import logging
-from typing import Any, Dict, List, Optional
 
-from core.tools._tool_utils import MAX_OUTPUT_CHARS, MAX_READ_CHARS, _parse_tool_args, get_mcp_manager
+from core.tools._tool_utils import _parse_tool_args, get_mcp_manager
 
 logger = logging.getLogger(__name__)
 
 
 # Endpoint management
 
-def _do_manage_endpoints_sync(content: str, owner: Optional[str] = None) -> Dict:
-    from core.database_models import SessionLocal, ModelEndpoint
+def _do_manage_endpoints_sync(content: str, owner: str | None = None) -> dict:
+    from core.database_models import ModelEndpoint, SessionLocal
     try:
         args = _parse_tool_args(content)
     except ValueError:
@@ -70,13 +81,13 @@ def _do_manage_endpoints_sync(content: str, owner: Optional[str] = None) -> Dict
         db.close()
 
 
-async def do_manage_endpoints(content: str, owner: Optional[str] = None) -> Dict:
+async def do_manage_endpoints(content: str, owner: str | None = None) -> dict:
     return await asyncio.to_thread(_do_manage_endpoints_sync, content, owner)
 
 
 # MCP server management
 
-async def do_manage_mcp(content: str, owner: Optional[str] = None) -> Dict:
+async def do_manage_mcp(content: str, owner: str | None = None) -> dict:
     try:
         args = _parse_tool_args(content)
     except ValueError:
@@ -88,7 +99,7 @@ async def do_manage_mcp(content: str, owner: Optional[str] = None) -> Dict:
         mcp = get_mcp_manager()
         if not mcp:
             return {"response": "No MCP manager available", "servers": [], "exit_code": 0}
-        from core.database_models import SessionLocal, McpServer
+        from core.database_models import McpServer, SessionLocal
         db = SessionLocal()
         try:
             servers = db.query(McpServer).all()
@@ -105,9 +116,10 @@ async def do_manage_mcp(content: str, owner: Optional[str] = None) -> Dict:
             db.close()
 
     elif action == "add":
-        from core.database_models import SessionLocal, McpServer
         import uuid as _uuid
         from datetime import datetime
+
+        from core.database_models import McpServer, SessionLocal
         name = args.get("name", "")
         command = args.get("command", "")
         cmd_args = args.get("args", [])
@@ -142,7 +154,7 @@ async def do_manage_mcp(content: str, owner: Optional[str] = None) -> Dict:
 
     elif action == "delete":
         sid = args.get("server_id", "")
-        from core.database_models import SessionLocal, McpServer
+        from core.database_models import McpServer, SessionLocal
         db = SessionLocal()
         try:
             srv = db.query(McpServer).filter(McpServer.id == sid).first()
@@ -168,7 +180,7 @@ async def do_manage_mcp(content: str, owner: Optional[str] = None) -> Dict:
             return {"error": "MCP manager not available", "exit_code": 1}
         try:
             await mcp.disconnect_server(sid)
-            from core.database_models import SessionLocal, McpServer
+            from core.database_models import McpServer, SessionLocal
             db2 = SessionLocal()
             try:
                 srv = db2.query(McpServer).filter(McpServer.id == sid).first()
@@ -194,7 +206,7 @@ async def do_manage_mcp(content: str, owner: Optional[str] = None) -> Dict:
 
     elif action in ("enable", "disable"):
         sid = args.get("server_id", "")
-        from core.database_models import SessionLocal, McpServer
+        from core.database_models import McpServer, SessionLocal
         db = SessionLocal()
         try:
             srv = db.query(McpServer).filter(McpServer.id == sid).first()
@@ -221,7 +233,7 @@ async def do_manage_mcp(content: str, owner: Optional[str] = None) -> Dict:
 
 # Webhook management
 
-def _do_manage_webhooks_sync(content: str, owner: Optional[str] = None) -> Dict:
+def _do_manage_webhooks_sync(content: str, owner: str | None = None) -> dict:
     from core.database_models import SessionLocal
     try:
         args = _parse_tool_args(content)
@@ -241,6 +253,7 @@ def _do_manage_webhooks_sync(content: str, owner: Optional[str] = None) -> Dict:
         elif action == "add":
             import uuid as _uuid
             from datetime import datetime
+
             from core.webhook_manager import validate_events, validate_webhook_url
             name = args.get("name", "")
             url = args.get("url", "")
@@ -288,14 +301,14 @@ def _do_manage_webhooks_sync(content: str, owner: Optional[str] = None) -> Dict:
         db.close()
 
 
-async def do_manage_webhooks(content: str, owner: Optional[str] = None) -> Dict:
+async def do_manage_webhooks(content: str, owner: str | None = None) -> dict:
     return await asyncio.to_thread(_do_manage_webhooks_sync, content, owner)
 
 
 # API token management
 
-def _do_manage_tokens_sync(content: str, owner: Optional[str] = None) -> Dict:
-    from core.database_models import SessionLocal, ApiToken
+def _do_manage_tokens_sync(content: str, owner: str | None = None) -> dict:
+    from core.database_models import ApiToken, SessionLocal
     try:
         args = _parse_tool_args(content)
     except ValueError:
@@ -311,8 +324,11 @@ def _do_manage_tokens_sync(content: str, owner: Optional[str] = None) -> Dict:
             return {"response": f"{len(items)} API tokens", "tokens": items, "exit_code": 0}
 
         elif action == "create":
-            import uuid as _uuid, secrets, bcrypt
+            import secrets
+            import uuid as _uuid
             from datetime import datetime
+
+            import bcrypt
             name = args.get("name", "API Token")
             raw_token = secrets.token_urlsafe(32)
             token_hash = bcrypt.hashpw(raw_token.encode(), bcrypt.gensalt()).decode()
@@ -343,5 +359,5 @@ def _do_manage_tokens_sync(content: str, owner: Optional[str] = None) -> Dict:
         db.close()
 
 
-async def do_manage_tokens(content: str, owner: Optional[str] = None) -> Dict:
+async def do_manage_tokens(content: str, owner: str | None = None) -> dict:
     return await asyncio.to_thread(_do_manage_tokens_sync, content, owner)

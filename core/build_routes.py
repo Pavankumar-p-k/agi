@@ -1,23 +1,35 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """core/build_routes.py
 FastAPI routes for the new JARVIS autonomous build system.
 Control loop, project management, daemon control.
 """
-import asyncio
 import logging
-from typing import Optional
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from core.control_loop import control_loop
-from core.project_manager import project_manager
-from core.project_state import ProjectState, list_projects, delete_project
-from core.interrupt_override import interrupt_manager
+
 from core.checkpoint_manager import checkpoint_manager
-from core.nondet_control import decision_logger
-from core.system_identity import system_identity
-from core.system_governor import system_governor
-from core.plan_evolution import plan_evolution
+from core.control_loop import control_loop
 from core.environment_monitor import environment_monitor
+from core.interrupt_override import interrupt_manager
+from core.nondet_control import decision_logger
+from core.plan_evolution import plan_evolution
 from core.proactive_adaptation import adaptation_engine
+from core.project_manager import project_manager
+from core.project_state import ProjectState, delete_project, list_projects
+from core.system_governor import system_governor
+from core.system_identity import system_identity
 
 logger = logging.getLogger("build_routes")
 router = APIRouter(prefix="/api/build", tags=["Build"])
@@ -25,7 +37,7 @@ router = APIRouter(prefix="/api/build", tags=["Build"])
 
 class BuildStartRequest(BaseModel):
     goal: str
-    workspace: Optional[str] = None
+    workspace: str | None = None
     auto_approve: bool = True
 
 

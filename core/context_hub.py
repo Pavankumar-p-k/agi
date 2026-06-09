@@ -1,17 +1,27 @@
-import os
-import sys
-import json
-import subprocess
-from pathlib import Path
-from datetime import datetime, timezone
-from typing import Optional
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import logging
+import os
+import subprocess
+import sys
+from datetime import UTC, datetime
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
 
 class ContextHub:
-    def __init__(self, workspace_root: Optional[str] = None):
+    def __init__(self, workspace_root: str | None = None):
         self.workspace_root = Path(workspace_root).resolve() if workspace_root else Path.cwd().resolve()
 
     async def gather(self, task_type: str = "auto", prompt: str = "") -> dict:
@@ -21,7 +31,7 @@ class ContextHub:
             "system": self._system_context(),
             "task_type": task_type,
             "prompt": prompt,
-            "gathered_at": datetime.now(timezone.utc).isoformat(),
+            "gathered_at": datetime.now(UTC).isoformat(),
         }
         if "test" in prompt.lower() or task_type == "test":
             context["test_framework"] = await self._detect_test_framework()
@@ -117,7 +127,7 @@ class ContextHub:
             deps = [l.strip() for l in req.read_text().strip().split("\n") if l.strip() and not l.startswith("#")]
         return deps
 
-    async def _detect_test_framework(self) -> Optional[str]:
+    async def _detect_test_framework(self) -> str | None:
         root = self.workspace_root
         if (root / "pytest.ini").exists() or (root / "pyproject.toml").exists():
             try:

@@ -1,10 +1,22 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import asyncio
 import json
 import logging
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-from core.tools._tool_utils import MAX_OUTPUT_CHARS, MAX_READ_CHARS, _parse_tool_args, get_mcp_manager
+from core.tools._tool_utils import _parse_tool_args
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +24,7 @@ logger = logging.getLogger(__name__)
 _COOKBOOK_BASE = "http://localhost:7000"
 
 
-def _internal_headers(owner: Optional[str] = None) -> Dict[str, str]:
+def _internal_headers(owner: str | None = None) -> dict[str, str]:
     from core.middleware import INTERNAL_TOOL_HEADER, INTERNAL_TOOL_TOKEN
     headers = {INTERNAL_TOOL_HEADER: INTERNAL_TOOL_TOKEN}
     if owner:
@@ -20,7 +32,7 @@ def _internal_headers(owner: Optional[str] = None) -> Dict[str, str]:
     return headers
 
 
-async def _cookbook_servers() -> Dict[str, Any]:
+async def _cookbook_servers() -> dict[str, Any]:
     import httpx
     try:
         async with httpx.AsyncClient(timeout=10) as client:
@@ -66,10 +78,10 @@ async def _resolve_cookbook_host(name_or_host: str) -> str:
     return val
 
 
-async def _cookbook_env_for_host(host: str) -> Dict[str, Any]:
+async def _cookbook_env_for_host(host: str) -> dict[str, Any]:
     import httpx
     headers = _internal_headers()
-    state: Dict[str, Any] = {}
+    state: dict[str, Any] = {}
     try:
         async with httpx.AsyncClient(timeout=10) as client:
             r = await client.get(f"{_COOKBOOK_BASE}/api/cookbook/state", headers=headers)
@@ -83,7 +95,7 @@ async def _cookbook_env_for_host(host: str) -> Dict[str, Any]:
     if not isinstance(env_root, dict):
         return {}
 
-    per_host: Dict[str, Any] = {}
+    per_host: dict[str, Any] = {}
     for s in (env_root.get("servers") or []):
         if isinstance(s, dict) and (s.get("host") or "") == (host or ""):
             per_host = s
@@ -119,8 +131,9 @@ async def _cookbook_env_for_host(host: str) -> Dict[str, Any]:
 
 async def _cookbook_register_task(session_id: str, model: str, host: str,
                                   cmd: str, task_type: str = "serve") -> bool:
-    import httpx
     import time as _time
+
+    import httpx
     headers = _internal_headers()
     try:
         async with httpx.AsyncClient(timeout=10) as client:
@@ -193,7 +206,7 @@ _APP_API_BLOCKLIST_METHOD_PATH = (
 )
 
 
-async def do_app_api(content: str, owner: Optional[str] = None) -> Dict:
+async def do_app_api(content: str, owner: str | None = None) -> dict:
     import httpx
     try:
         args = _parse_tool_args(content) if content.strip() else {}
@@ -212,7 +225,7 @@ async def do_app_api(content: str, owner: Optional[str] = None) -> Dict:
                 data = resp.json()
         except Exception as e:
             return {"error": f"OpenAPI fetch failed: {e}", "exit_code": 1}
-        rows: List[Dict[str, Any]] = []
+        rows: list[dict[str, Any]] = []
         for path, methods in (data.get("paths") or {}).items():
             if not isinstance(methods, dict):
                 continue
@@ -324,7 +337,7 @@ _MODEL_PROCESS_PATTERNS = [
 ]
 
 
-def _cookbook_apply_retry_suggestion(cmd: str, suggestion: Dict[str, Any]) -> str:
+def _cookbook_apply_retry_suggestion(cmd: str, suggestion: dict[str, Any]) -> str:
     if not cmd or not suggestion:
         return cmd
     op = suggestion.get("op")
@@ -350,11 +363,11 @@ def _cookbook_apply_retry_suggestion(cmd: str, suggestion: Dict[str, Any]) -> st
     return cmd
 
 
-def _scan_running_model_processes() -> List[Dict[str, Any]]:
+def _scan_running_model_processes() -> list[dict[str, Any]]:
     import os
     if not os.path.isdir("/proc"):
         return []
-    out: List[Dict[str, Any]] = []
+    out: list[dict[str, Any]] = []
     seen_keys = set()
     try:
         for pid_dir in os.listdir("/proc"):
@@ -401,7 +414,7 @@ def _scan_running_model_processes() -> List[Dict[str, Any]]:
     return out
 
 
-async def do_download_model(content: str, owner: Optional[str] = None) -> Dict:
+async def do_download_model(content: str, owner: str | None = None) -> dict:
     import httpx
     try:
         args = _parse_tool_args(content)
@@ -449,7 +462,7 @@ async def do_download_model(content: str, owner: Optional[str] = None) -> Dict:
         return {"error": str(e), "exit_code": 1}
 
 
-async def do_serve_model(content: str, owner: Optional[str] = None) -> Dict:
+async def do_serve_model(content: str, owner: str | None = None) -> dict:
     import httpx
     try:
         args = _parse_tool_args(content)
@@ -493,10 +506,10 @@ async def do_serve_model(content: str, owner: Optional[str] = None) -> Dict:
         return {"error": str(e), "exit_code": 1}
 
 
-async def do_list_served_models(content: str, owner: Optional[str] = None) -> Dict:
+async def do_list_served_models(content: str, owner: str | None = None) -> dict:
     import httpx
 
-    cookbook_tasks: List[Dict[str, Any]] = []
+    cookbook_tasks: list[dict[str, Any]] = []
     try:
         async with httpx.AsyncClient(timeout=15) as client:
             resp = await client.get(f"{_COOKBOOK_BASE}/api/cookbook/tasks/status",
@@ -507,7 +520,7 @@ async def do_list_served_models(content: str, owner: Optional[str] = None) -> Di
 
     external = await asyncio.to_thread(_scan_running_model_processes)
 
-    merged: List[Dict[str, Any]] = []
+    merged: list[dict[str, Any]] = []
     merged.extend(cookbook_tasks)
     cookbook_pids = set()
     for t in cookbook_tasks:
@@ -565,14 +578,15 @@ async def do_list_served_models(content: str, owner: Optional[str] = None) -> Di
 
 
 async def _cookbook_kill_session(session_id: str, *, remote_host: str = "",
-                                 ssh_port: str = "", verb: str = "Stopped") -> Dict:
-    import httpx
+                                 ssh_port: str = "", verb: str = "Stopped") -> dict:
     import shlex
+
+    import httpx
     headers = _internal_headers()
     remote = remote_host or ""
     sport = ssh_port or ""
 
-    state: Dict[str, Any] = {}
+    state: dict[str, Any] = {}
     try:
         async with httpx.AsyncClient(timeout=10) as client:
             resp = await client.get(f"{_COOKBOOK_BASE}/api/cookbook/state", headers=headers)
@@ -634,7 +648,7 @@ async def _cookbook_kill_session(session_id: str, *, remote_host: str = "",
         return {"error": str(e), "exit_code": 1}
 
 
-async def do_stop_served_model(content: str, owner: Optional[str] = None) -> Dict:
+async def do_stop_served_model(content: str, owner: str | None = None) -> dict:
     try:
         args = _parse_tool_args(content)
     except ValueError:
@@ -650,7 +664,7 @@ async def do_stop_served_model(content: str, owner: Optional[str] = None) -> Dic
     )
 
 
-async def do_list_downloads(content: str, owner: Optional[str] = None) -> Dict:
+async def do_list_downloads(content: str, owner: str | None = None) -> dict:
     import httpx
     try:
         async with httpx.AsyncClient(timeout=15) as client:
@@ -672,7 +686,7 @@ async def do_list_downloads(content: str, owner: Optional[str] = None) -> Dict:
         return {"error": str(e), "exit_code": 1}
 
 
-async def do_cancel_download(content: str, owner: Optional[str] = None) -> Dict:
+async def do_cancel_download(content: str, owner: str | None = None) -> dict:
     try:
         args = _parse_tool_args(content)
     except ValueError:
@@ -688,7 +702,7 @@ async def do_cancel_download(content: str, owner: Optional[str] = None) -> Dict:
     )
 
 
-async def do_search_hf_models(content: str, owner: Optional[str] = None) -> Dict:
+async def do_search_hf_models(content: str, owner: str | None = None) -> dict:
     import httpx
     try:
         args = _parse_tool_args(content)
@@ -696,7 +710,7 @@ async def do_search_hf_models(content: str, owner: Optional[str] = None) -> Dict
         return {"error": "Invalid JSON arguments", "exit_code": 1}
     query = args.get("query", "") or args.get("search", "")
     limit = args.get("limit", 10)
-    params: Dict[str, str] = {}
+    params: dict[str, str] = {}
     if query:
         params["search"] = query
     if limit:
@@ -729,9 +743,10 @@ async def do_search_hf_models(content: str, owner: Optional[str] = None) -> Dict
         return {"error": str(e), "exit_code": 1}
 
 
-async def do_adopt_served_model(content: str, owner: Optional[str] = None) -> Dict:
-    import httpx
+async def do_adopt_served_model(content: str, owner: str | None = None) -> dict:
     import shlex
+
+    import httpx
     try:
         args = _parse_tool_args(content)
     except ValueError:
@@ -858,7 +873,7 @@ async def do_adopt_served_model(content: str, owner: Optional[str] = None) -> Di
     }
 
 
-async def do_list_cookbook_servers(content: str, owner: Optional[str] = None) -> Dict:
+async def do_list_cookbook_servers(content: str, owner: str | None = None) -> dict:
     servers = await _cookbook_servers()
     hosts = servers.get("hosts") or []
     default = servers.get("default_host") or ""
@@ -877,7 +892,7 @@ async def do_list_cookbook_servers(content: str, owner: Optional[str] = None) ->
     return {"output": "\n".join(lines), "servers": hosts, "default_host": default, "exit_code": 0}
 
 
-async def do_list_serve_presets(content: str, owner: Optional[str] = None) -> Dict:
+async def do_list_serve_presets(content: str, owner: str | None = None) -> dict:
     import httpx
     try:
         async with httpx.AsyncClient(timeout=10) as client:
@@ -913,7 +928,7 @@ async def do_list_serve_presets(content: str, owner: Optional[str] = None) -> Di
     return {"output": "\n".join(lines), "presets": presets, "exit_code": 0}
 
 
-async def do_serve_preset(content: str, owner: Optional[str] = None) -> Dict:
+async def do_serve_preset(content: str, owner: str | None = None) -> dict:
     import httpx
     try:
         args = _parse_tool_args(content)
@@ -953,7 +968,7 @@ async def do_serve_preset(content: str, owner: Optional[str] = None) -> Dict:
     if not repo_id or not cmd:
         return {"error": f"Preset {chosen.get('name')!r} is missing model or cmd — can't launch.", "exit_code": 1}
 
-    payload: Dict[str, Any] = {"repo_id": repo_id, "cmd": cmd}
+    payload: dict[str, Any] = {"repo_id": repo_id, "cmd": cmd}
     if host:
         payload["remote_host"] = host
     env_cfg = await _cookbook_env_for_host(host)
@@ -981,13 +996,13 @@ async def do_serve_preset(content: str, owner: Optional[str] = None) -> Dict:
         return {"error": str(e), "exit_code": 1}
 
 
-async def do_list_cached_models(content: str, owner: Optional[str] = None) -> Dict:
+async def do_list_cached_models(content: str, owner: str | None = None) -> dict:
     import httpx
     try:
         args = _parse_tool_args(content) if content.strip() else {}
     except ValueError:
         return {"error": "Invalid JSON arguments", "exit_code": 1}
-    params: Dict[str, str] = {}
+    params: dict[str, str] = {}
     raw_host = (args.get("host") or "").strip()
     host = await _resolve_cookbook_host(raw_host) if raw_host else ""
     if host:
@@ -1043,7 +1058,7 @@ async def do_list_cached_models(content: str, owner: Optional[str] = None) -> Di
         return {"error": str(e), "exit_code": 1}
 
 
-async def do_edit_image(content: str, owner: Optional[str] = None) -> Dict:
+async def do_edit_image(content: str, owner: str | None = None) -> dict:
     import httpx
     try:
         args = _parse_tool_args(content)
@@ -1069,7 +1084,7 @@ async def do_edit_image(content: str, owner: Optional[str] = None) -> Dict:
         return {"error": str(e), "exit_code": 1}
 
 
-async def do_manage_research(content: str, owner: Optional[str] = None) -> Dict:
+async def do_manage_research(content: str, owner: str | None = None) -> dict:
     import json as _json
     from pathlib import Path as _Path
     try:
@@ -1139,7 +1154,7 @@ async def do_manage_research(content: str, owner: Optional[str] = None) -> Dict:
     return {"output": f"Research library ({len(items)} item{'s' if len(items) != 1 else ''}):\n{rows}", "exit_code": 0}
 
 
-async def do_trigger_research(content: str, owner: Optional[str] = None) -> Dict:
+async def do_trigger_research(content: str, owner: str | None = None) -> dict:
     import httpx
     try:
         args = _parse_tool_args(content)
@@ -1148,7 +1163,7 @@ async def do_trigger_research(content: str, owner: Optional[str] = None) -> Dict
     topic = args.get("topic", "") or args.get("query", "")
     if not topic:
         return {"error": "topic (or query) is required", "exit_code": 1}
-    payload: Dict[str, Any] = {"query": topic}
+    payload: dict[str, Any] = {"query": topic}
     if args.get("max_rounds") is not None:
         try: payload["max_rounds"] = int(args["max_rounds"])
         except (ValueError, TypeError) as _e:
@@ -1184,7 +1199,7 @@ async def do_trigger_research(content: str, owner: Optional[str] = None) -> Dict
         return {"error": str(e), "exit_code": 1}
 
 
-async def do_resolve_contact(content: str, owner: Optional[str] = None) -> Dict:
+async def do_resolve_contact(content: str, owner: str | None = None) -> dict:
     import httpx
     try:
         args = _parse_tool_args(content)
@@ -1232,7 +1247,7 @@ async def do_resolve_contact(content: str, owner: Optional[str] = None) -> Dict:
     return {"output": "\n".join(lines), "exit_code": 0}
 
 
-async def do_manage_contact(content: str, owner: Optional[str] = None) -> Dict:
+async def do_manage_contact(content: str, owner: str | None = None) -> dict:
     try:
         args = _parse_tool_args(content)
     except ValueError:
@@ -1294,7 +1309,7 @@ async def do_manage_contact(content: str, owner: Optional[str] = None) -> Dict:
         return {"error": f"Contact operation failed: {e}", "exit_code": 1}
 
 
-def _load_vault_config() -> Dict:
+def _load_vault_config() -> dict:
     from pathlib import Path
     p = Path("data/vault.json")
     if p.exists():
@@ -1305,7 +1320,7 @@ def _load_vault_config() -> Dict:
     return {}
 
 
-async def _run_bw(args: list, session: Optional[str] = None, input_text: Optional[str] = None) -> tuple:
+async def _run_bw(args: list, session: str | None = None, input_text: str | None = None) -> tuple:
     env = {}
     import os as _os
     env.update(_os.environ)
@@ -1323,7 +1338,7 @@ async def _run_bw(args: list, session: Optional[str] = None, input_text: Optiona
     return stdout.decode(errors="replace").strip(), stderr.decode(errors="replace").strip(), proc.returncode
 
 
-async def do_vault_search(content: str, owner: Optional[str] = None) -> Dict:
+async def do_vault_search(content: str, owner: str | None = None) -> dict:
     try:
         args = _parse_tool_args(content)
     except ValueError:
@@ -1367,7 +1382,7 @@ async def do_vault_search(content: str, owner: Optional[str] = None) -> Dict:
     return {"output": "\n".join(lines), "exit_code": 0}
 
 
-async def do_vault_get(content: str, owner: Optional[str] = None) -> Dict:
+async def do_vault_get(content: str, owner: str | None = None) -> dict:
     try:
         args = _parse_tool_args(content)
     except ValueError:
@@ -1423,7 +1438,7 @@ async def do_vault_get(content: str, owner: Optional[str] = None) -> Dict:
     return {"output": "\n".join(output), "exit_code": 0}
 
 
-async def do_vault_unlock(content: str, owner: Optional[str] = None) -> Dict:
+async def do_vault_unlock(content: str, owner: str | None = None) -> dict:
     try:
         args = _parse_tool_args(content)
     except ValueError:

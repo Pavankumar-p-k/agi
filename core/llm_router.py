@@ -1,3 +1,15 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """core/llm_router.py
 LiteLLM Router — 6 model groups, all 126+ LiteLLM providers:
@@ -13,6 +25,7 @@ import time
 
 from litellm import Router
 
+from core.config_registry import config as _jarvis_config
 from core.errors import LLMError
 from core.observability.metrics import observe_llm_latency
 from core.result import Err, Ok, Result
@@ -41,7 +54,7 @@ def _model_config(env_var: str, default: str) -> dict:
 
     # Special cases for Ollama / Local
     if provider == "ollama":
-        api_base = api_base or os.getenv("OLLAMA_URL", "http://localhost:11434")
+        api_base = api_base or os.getenv("OLLAMA_URL") or _jarvis_config.get("ollama.base_url")
         api_key = api_key or "not-needed"
 
     params = {
@@ -61,19 +74,21 @@ _router_lock = threading.Lock()
 
 
 def _build_model_list() -> list:
-    """Lazily build the model list from current env var values."""
+    """Lazily build the model list from current env var values (with config fallbacks)."""
     model_list = [
-        {"model_name": "chat",      "litellm_params": _model_config("CHAT_MODEL",      "ollama/llama3.1:8b")},
-        {"model_name": "code",      "litellm_params": _model_config("CODE_MODEL",      "ollama/qwen2.5-coder:3b")},
-        {"model_name": "analysis",  "litellm_params": _model_config("ANALYSIS_MODEL",  "ollama/qwen2.5:7b")},
-        {"model_name": "reasoning", "litellm_params": _model_config("REASONING_MODEL", "ollama/deepseek-r1:1.5b")},
-        {"model_name": "vision",    "litellm_params": _model_config("VISION_MODEL",    "ollama/moondream:latest")},
-        {"model_name": "grader",    "litellm_params": _model_config("GRADER_MODEL",    "ollama/phi3:mini")},
+        {"model_name": "chat",      "litellm_params": _model_config("CHAT_MODEL",      _jarvis_config.get("llm.chat_model"))},
+        {"model_name": "code",      "litellm_params": _model_config("CODE_MODEL",      _jarvis_config.get("llm.code_model"))},
+        {"model_name": "analysis",  "litellm_params": _model_config("ANALYSIS_MODEL",  _jarvis_config.get("llm.analysis_model"))},
+        {"model_name": "reasoning", "litellm_params": _model_config("REASONING_MODEL", _jarvis_config.get("llm.reasoning_model"))},
+        {"model_name": "vision",    "litellm_params": _model_config("VISION_MODEL",    _jarvis_config.get("llm.vision_model"))},
+        {"model_name": "grader",    "litellm_params": _model_config("GRADER_MODEL",    _jarvis_config.get("llm.grader_model"))},
     ]
 
-    if os.getenv("ANTHROPIC_API_KEY"):
+    if _jarvis_config.get("llm.cloud_model"):
+        model_list.append({"model_name": "cloud", "litellm_params": {"model": _jarvis_config.get("llm.cloud_model")}})
+    elif os.getenv("ANTHROPIC_API_KEY"):
         model_list.append({"model_name": "cloud", "litellm_params": {"model": "claude-sonnet-4-20250514", "api_key": os.getenv("ANTHROPIC_API_KEY")}})
-    if os.getenv("OPENAI_API_KEY"):
+    elif os.getenv("OPENAI_API_KEY"):
         model_list.append({"model_name": "cloud", "litellm_params": {"model": "gpt-4o", "api_key": os.getenv("OPENAI_API_KEY")}})
 
     return model_list
@@ -190,10 +205,12 @@ async def complete_vision(messages: list, timeout: int = 120) -> Result[str, LLM
 
     import httpx
     prompt_text = last if isinstance(last, str) else ""
+    _ollama = _jarvis_config.get("ollama.base_url")
+    _vision_model = _jarvis_config.get("llm.vision_model")
     try:
         async with httpx.AsyncClient(timeout=30) as client:
-            r = await client.post("http://localhost:11434/api/generate", json={
-                "model": "moondream:latest", "prompt": prompt_text,
+            r = await client.post(f"{_ollama}/api/generate", json={
+                "model": _vision_model, "prompt": prompt_text,
                 "stream": False,
                 "options": {"num_predict": 256, "temperature": 0.3, "num_gpu": 99}})
             if r.status_code == 200 and r.json().get("response", "").strip():
@@ -201,7 +218,7 @@ async def complete_vision(messages: list, timeout: int = 120) -> Result[str, LLM
     except Exception as e:
         logger.debug("[Vision] Direct Ollama fallback failed: %s", e)
 
-    for model_attempt in ["vision", "ollama/moondream"]:
+    for model_attempt in ["vision", _vision_model]:
         try:
             resp = await get_router().acompletion(
                 model=model_attempt, messages=messages, timeout=15)
@@ -217,12 +234,13 @@ async def complete_vision(messages: list, timeout: int = 120) -> Result[str, LLM
 
 
 async def health_check() -> bool:
-    """Check if LLM is available (Ollama + model).
-    Uses tinyllama for ping (fits 6GB VRAM), falls back to direct Ollama check."""
+    """Check if LLM is available (Ollama + model)."""
     import httpx
+    _ollama = _jarvis_config.get("ollama.base_url")
+    _ping_model = _jarvis_config.get("llm.ping_model")
     async with httpx.AsyncClient(timeout=3) as client:
         try:
-            r = await client.get("http://localhost:11434/api/tags")
+            r = await client.get(f"{_ollama}/api/tags")
             if r.status_code != 200:
                 logger.warning("[LLM] Ollama /api/tags returned %s", r.status_code)
                 return False
@@ -242,10 +260,81 @@ async def health_check() -> bool:
     # Fallback: direct Ollama completion on tinyllama
     try:
         async with httpx.AsyncClient(timeout=10) as client:
-            r = await client.post("http://localhost:11434/api/generate", json={
-                "model": "tinyllama", "prompt": "ping", "stream": False,
+            r = await client.post(f"{_ollama}/api/generate", json={
+                "model": _ping_model, "prompt": "ping", "stream": False,
                 "options": {"num_predict": 10, "num_gpu": 99}})
             return r.status_code == 200 and bool(r.json().get("response", ""))
     except Exception as e:
-        logger.warning("[LLM] Ollama tinyllama ping failed: %s", e)
+        logger.warning("[LLM] Ollama ping failed: %s", e)
         return False
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# NEW: Config-driven model name resolver (added by config migration)
+# Import: from core.llm_router import get_model_for_group, get_config_router
+# ══════════════════════════════════════════════════════════════════════════════
+
+from typing import Optional as _Optional
+
+GROUP_CONFIG_KEYS = {
+    "chat":         "llm.chat_model",
+    "code":         "llm.code_model",
+    "analysis":     "llm.analysis_model",
+    "reasoning":    "llm.reasoning_model",
+    "vision":       "llm.vision_model",
+    "embedding":    "llm.embedding_model",
+    "grader":       "llm.grader_model",
+    "orchestrator": "llm.orchestrator_model",
+    "fallback":     "llm.fallback_model",
+}
+
+
+def get_model_for_group(group: str, fallback: _Optional[str] = None) -> str:
+    """Return configured model name for the given group from config."""
+    from core.config_registry import config
+
+    config_key = GROUP_CONFIG_KEYS.get(group)
+    if not config_key:
+        logger.warning(f"Unknown model group: '{group}', using fallback")
+        return fallback or config.get("llm.fallback_model")
+
+    model = config.get(config_key)
+    if not model:
+        logger.warning(f"Model for group '{group}' is empty, using fallback")
+        return fallback or config.get("llm.fallback_model")
+
+    return model
+
+
+class LLMRouter:
+    """Central model-name router — reads all names from config registry."""
+
+    def get(self, group: str) -> str:
+        return get_model_for_group(group)
+
+    def get_for_role(self, role: str) -> str:
+        from core.config_registry import config
+        role_key = f"role_models.{role}"
+        try:
+            model = config.get(role_key)
+            if model:
+                return model
+        except KeyError:
+            pass
+        return config.get("role_models.default") or config.get("llm.fallback_model")
+
+    def get_ollama_base_url(self) -> str:
+        from core.config_registry import config
+        return config.get("ollama.base_url")
+
+    def get_all_models(self) -> dict:
+        from core.config_registry import config
+        return {group: config.get(key) for group, key in GROUP_CONFIG_KEYS.items()}
+
+
+_config_router = LLMRouter()
+
+
+def get_config_router() -> LLMRouter:
+    """Return the config-driven LLMRouter singleton (new API)."""
+    return _config_router

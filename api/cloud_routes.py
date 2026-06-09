@@ -1,17 +1,32 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 # api/cloud_routes.py
 # REST API for cloud/Supabase status, sync, and project management.
 # Register in your main app:
 #   from api.cloud_routes import router as cloud_router
 #   app.include_router(cloud_router)
 
-import asyncio
+
+import logging
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import Optional
 
-from core.cloud.supabase_client import is_connected, get_client
+logger = logging.getLogger(__name__)
+
 from core.cloud.cloud_memory import CloudMemory
-from core.cloud.project_manager import ProjectManager, Project
+from core.cloud.project_manager import ProjectManager
+from core.cloud.supabase_client import get_client, is_connected
 
 router = APIRouter(tags=["cloud"])
 
@@ -29,10 +44,10 @@ class ProjectCreate(BaseModel):
     goal:        str = ""
 
 class ProjectPatch(BaseModel):
-    name:        Optional[str] = None
-    description: Optional[str] = None
-    goal:        Optional[str] = None
-    status:      Optional[str] = None
+    name:        str | None = None
+    description: str | None = None
+    goal:        str | None = None
+    status:      str | None = None
 
 class StepCreate(BaseModel):
     description: str
@@ -52,7 +67,8 @@ async def cloud_status():
             for table in ["jarvis_memories", "jarvis_conversations", "jarvis_goals", "jarvis_plugins_settings"]:
                 res = client.table(table).select("id", count="exact").execute()
                 counts[table] = res.count or 0
-        except Exception:
+        except Exception as e:
+            logger.warning("[api.cloud_routes] cloud status row count failed: %s", e)
             counts = {"error": "Could not fetch row counts"}
     return {"connected": connected, "row_counts": counts}
 
@@ -76,7 +92,7 @@ async def cloud_pull():
 # ------------------------------------------------------------------ #
 
 @router.get("/projects")
-async def list_projects(status: Optional[str] = None):
+async def list_projects(status: str | None = None):
     projects = await _pm.list_projects(status=status)
     return {"projects": [p.to_dict() for p in projects]}
 

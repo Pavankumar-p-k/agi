@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 from textual.app import ComposeResult
-from textual.widget import Widget
-from textual.widgets import Static, Label, ProgressBar
-from textual.containers import Vertical, Horizontal
+from textual.containers import Vertical
 from textual.reactive import reactive
+from textual.widget import Widget
+from textual.widgets import Label, ProgressBar, Static
 
 from jarvis_tui.app.widgets.todo_queue import TodoQueue
+
 
 class Sidebar(Widget):
     """
@@ -18,24 +19,24 @@ class Sidebar(Widget):
     ram_usage = reactive(0)
     vram_usage = reactive(0)
     agents = reactive([]) # List of {"name": str, "status": str}
-    
+
     def compose(self) -> ComposeResult:
         with Vertical(id="sidebar-container"):
             yield Label("MODEL")
             yield Static(f" {self.model_name} ▾", id="model-selector", classes="selector")
-            
+
             yield Label("ACTIVE AGENTS")
             yield Vertical(id="agent-list")
-            
+
             yield Label("TOOL CALLS")
             yield Vertical(id="tool-calls")
-            
+
             yield TodoQueue(id="todo-queue")
-            
+
             yield Label("CONTEXT WINDOW")
             yield Static(f"{self.context_pct}% [0 / 128k]", id="ctx-label")
             yield ProgressBar(total=100, show_bar=True, show_percentage=False, id="ctx-progress")
-            
+
             yield Label("SYSTEM")
             yield Static("CPU [dim]...[/dim]", id="cpu-stat")
             yield Static("RAM [dim]...[/dim]", id="ram-stat")

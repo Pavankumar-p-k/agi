@@ -1,11 +1,22 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """core/image_pipeline.py
 Fetches real images for website builds. Pexels API primary, gradient fallback.
 """
-import os
 import hashlib
 import logging
+import os
 from pathlib import Path
-from typing import Optional
 
 logger = logging.getLogger("image_pipeline")
 
@@ -79,7 +90,7 @@ def _get_image_cache_path(url: str) -> Path:
 
 
 async def fetch_image(context: str, business_type: str = "general",
-                      width: int = 1200, height: int = 800) -> Optional[str]:
+                      width: int = 1200, height: int = 800) -> str | None:
     """Fetch an image matching context+business_type. Returns local path or None."""
     _ = width  # width parameter reserved for future resizing; mark as used to satisfy linters
     query = _resolve_query(context, business_type)

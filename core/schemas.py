@@ -1,10 +1,23 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """core/schemas.py — Pydantic + dataclass models for JARVIS"""
 from __future__ import annotations
+
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional, List, Literal, Any
-from pydantic import BaseModel
+from typing import Any, Literal
 
+from pydantic import BaseModel
 
 # ---- Brain dataclasses (Phase 1) ----
 
@@ -67,37 +80,37 @@ COMPLEX_TASK_TYPES = {"website", "code", "email", "report", "analysis", "researc
 
 class ChatRequest(BaseModel):
     message: str
-    context: Optional[str] = ""
-    tier: Optional[str] = None
-    session_id: Optional[str] = None
-    task_type: Optional[str] = None
-    platform: Optional[str] = None
+    context: str | None = ""
+    tier: str | None = None
+    session_id: str | None = None
+    task_type: str | None = None
+    platform: str | None = None
 
 
 class BrowserActionRequest(BaseModel):
     action: str
-    url: Optional[str] = None
-    selector: Optional[str] = None
-    value: Optional[str] = None
-    script: Optional[str] = None
+    url: str | None = None
+    selector: str | None = None
+    value: str | None = None
+    script: str | None = None
 
 
 class ReminderCreate(BaseModel):
     title: str
     remind_at: datetime
-    description: Optional[str] = ""
-    repeat: Optional[str] = "none"
+    description: str | None = ""
+    repeat: str | None = "none"
 
 
 class NoteCreate(BaseModel):
     title: str
     content: str
-    tags: Optional[str] = ""
+    tags: str | None = ""
 
 
 class NoteUpdate(BaseModel):
-    title: Optional[str] = None
-    content: Optional[str] = None
+    title: str | None = None
+    content: str | None = None
 
 
 class MessageRequest(BaseModel):
@@ -108,9 +121,9 @@ class MessageRequest(BaseModel):
 
 class FaceRegisterRequest(BaseModel):
     person_name: str
-    relation: Optional[str] = "unknown"
-    info: Optional[str] = ""
-    access_level: Optional[str] = "visitor"
+    relation: str | None = "unknown"
+    info: str | None = ""
+    access_level: str | None = "visitor"
 
 
 class IntentResult(BaseModel):
@@ -142,8 +155,8 @@ class TaskAddRequest(BaseModel):
 
 class CodeReviewRequest(BaseModel):
     code: str
-    language: Optional[str] = "python"
-    context: Optional[str] = ""
+    language: str | None = "python"
+    context: str | None = ""
 
 
 class HorizonGoalRequest(BaseModel):
@@ -163,8 +176,8 @@ class QualityGradeRequest(BaseModel):
 @dataclass
 class MultiFormatResponse:
     prose: str
-    json_data: Optional[dict] = None
-    html: Optional[str] = None
-    artifact_type: Optional[str] = None
-    artifact_code: Optional[str] = None
+    json_data: dict | None = None
+    html: str | None = None
+    artifact_type: str | None = None
+    artifact_code: str | None = None
     format_used: str = "prose"

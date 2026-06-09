@@ -1,22 +1,21 @@
 from __future__ import annotations
 
 from textual.app import ComposeResult
-from textual.screen import Screen
-from textual.widgets import Header, Footer
+from textual.binding import Binding
 from textual.containers import Horizontal, Vertical
+from textual.screen import Screen
 
-from jarvis_tui.app.widgets.hero_banner import HeroBanner
-from jarvis_tui.app.widgets.sidebar import Sidebar
 from jarvis_tui.app.widgets.chat_stream import ChatStream
-from jarvis_tui.app.widgets.input_bar import InputBar
-from jarvis_tui.app.widgets.status_bar import StatusBar
 from jarvis_tui.app.widgets.cmd_palette import CommandPalette
 from jarvis_tui.app.widgets.confirm_gate import ConfirmGate
+from jarvis_tui.app.widgets.diff_pane import DiffPane
+from jarvis_tui.app.widgets.hero_banner import HeroBanner
+from jarvis_tui.app.widgets.input_bar import InputBar
+from jarvis_tui.app.widgets.sidebar import Sidebar
+from jarvis_tui.app.widgets.status_bar import StatusBar
 from jarvis_tui.app.widgets.toast import ToastRack
 from jarvis_tui.app.widgets.whisper_channel import WhisperChannel
-from jarvis_tui.app.widgets.diff_pane import DiffPane
 
-from textual.binding import Binding
 
 class MainScreen(Screen):
     BINDINGS = [

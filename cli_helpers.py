@@ -68,7 +68,8 @@ def workspace_snapshot(root: Path) -> str:
     if readme.exists():
         try:
             readme_excerpt = readme.read_text(encoding="utf-8", errors="replace")[:400].replace("\n", " ").strip()
-        except Exception:
+        except Exception as e:
+            logger.warning("[cli_helpers] readme read failed: %s", e)
             readme_excerpt = ""
     return (
         f"Workspace root: {root}. "

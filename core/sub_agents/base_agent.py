@@ -1,9 +1,25 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """core/sub_agents/base_agent.py — Base class for all JARVIS sub-agents."""
 from __future__ import annotations
-import asyncio, time, uuid, logging
+
+import asyncio
+import logging
+import time
+import uuid
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, AsyncIterator, Literal, Optional
+from typing import Literal
 
 from core.llm_router import complete
 
@@ -19,8 +35,8 @@ class AgentResult:
     success: bool
     duration_s: float
     token_estimate: int
-    error: Optional[str] = None
-    outcome: Optional[str] = None # ok | error | timeout | killed
+    error: str | None = None
+    outcome: str | None = None # ok | error | timeout | killed
     metadata: dict = field(default_factory=dict)
 
     def to_dict(self) -> dict:
@@ -46,20 +62,20 @@ class SubAgent(ABC):
     DESCRIPTION: str = ""
     DEFAULT_MODE: str = "default"
     AVAILABLE_MODES: list[str] = ["default"]
-    MODEL_GROUP: str = "chat" 
+    MODEL_GROUP: str = "chat"
     MAX_TOKENS: int = 2000
 
     def __init__(self):
         self.id = str(uuid.uuid4())[:8]
         self.status: Literal["idle", "running", "done", "failed"] = "idle"
-        self._result: Optional[AgentResult] = None
+        self._result: AgentResult | None = None
 
     @abstractmethod
     def get_system_prompt(self, mode: str) -> str:
         """Return the system prompt for this agent and mode."""
         ...
 
-    async def run(self, task: str, mode: Optional[str] = None, *, cancel_event: Optional[asyncio.Event] = None, **kwargs) -> AgentResult:
+    async def run(self, task: str, mode: str | None = None, *, cancel_event: asyncio.Event | None = None, **kwargs) -> AgentResult:
         mode = mode or self.DEFAULT_MODE
         if mode not in self.AVAILABLE_MODES:
             mode = self.DEFAULT_MODE
@@ -75,7 +91,7 @@ class SubAgent(ABC):
 
         try:
             logger.info(f"[{self.NAME}:{self.id}] Starting mode={mode} task={task[:60]}...")
-            
+
             if cancel_event and cancel_event.is_set():
                 return self._cancel_result(task, mode, start)
 
@@ -84,20 +100,20 @@ class SubAgent(ABC):
                 {"role": "system", "content": system},
                 {"role": "user", "content": user_content}
             ]
-            
+
             # If cancel_event is provided, we might want to wrap this in a way that
             # checks the event periodically, but LLM calls are atomic.
             # Minimal: check before and after.
             res = await complete(self.MODEL_GROUP, messages)
-            
+
             if cancel_event and cancel_event.is_set():
                 return self._cancel_result(task, mode, start)
 
             if res.is_err():
                 raise res.unwrap_err()
-                
+
             output = res.unwrap()
-            
+
             from core.model_context import estimate_tokens
             tokens = estimate_tokens([{"role": "assistant", "content": output}])
 
@@ -145,7 +161,7 @@ class SubAgent(ABC):
         return task
 
     @property
-    def result(self) -> Optional[AgentResult]:
+    def result(self) -> AgentResult | None:
         return self._result
 
     def info(self) -> dict:

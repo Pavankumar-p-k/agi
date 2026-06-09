@@ -1,17 +1,28 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """core/agent_registry.py
 Defines all 6 CLI coding agents — capabilities, invocation,
 auto-install, and API key configuration.
 """
 
+import asyncio
+import logging
+import os
 import shutil
 import subprocess
-import asyncio
-import os
-import sys
-import logging
 from dataclasses import dataclass, field
-from typing import Optional
 from pathlib import Path
+
 from dotenv import load_dotenv
 
 # Load .env so API key checks work
@@ -24,7 +35,7 @@ logger = logging.getLogger("agent_registry")
 @dataclass
 class Agent:
     name: str
-    cmd: Optional[str]
+    cmd: str | None
     label: str
     capabilities: list[str] = field(default_factory=list)
     install_cmd: str = ""
@@ -47,10 +58,10 @@ class Agent:
             return True
         logger.info(f"[AGENTS] Installing {self.label} via: {self.install_cmd}")
         try:
-            import shlex
-            install_args = shlex.split(self.install_cmd)
-            proc = await asyncio.create_subprocess_exec(
-                *install_args,
+            # Use create_subprocess_shell for better compatibility with npm on Windows
+            # and to handle command strings directly without complex splitting.
+            proc = await asyncio.create_subprocess_shell(
+                self.install_cmd,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
             )
@@ -59,9 +70,10 @@ class Agent:
                 logger.info(f"[AGENTS] {self.label} installed successfully")
                 return True
             else:
-                logger.warning(f"[AGENTS] {self.label} install failed (exit {proc.returncode}): {stderr.decode()[:200]}")
+                err_msg = stderr.decode(errors="replace")[:200]
+                logger.warning(f"[AGENTS] {self.label} install failed (exit {proc.returncode}): {err_msg}")
                 return False
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.warning(f"[AGENTS] {self.label} install timed out")
             return False
         except Exception as e:
@@ -74,15 +86,15 @@ class Agent:
             logger.debug("[AGENTS] config_instructions: no missing keys for %s", self.name)
             return None
         if self.name == "codex":
-            return f"Set OPENAI_API_KEY in .env (get from https://platform.openai.com/api-keys)"
+            return "Set OPENAI_API_KEY in .env (get from https://platform.openai.com/api-keys)"
         if self.name == "gemini":
             return f"Set GEMINI_API_KEY in .env (currently {'set' if os.getenv('GEMINI_API_KEY') else 'MISSING'})"
         if self.name == "copilot":
-            return f"Set GITHUB_TOKEN in .env with 'read:user' + 'repo' scopes"
+            return "Set GITHUB_TOKEN in .env with 'read:user' + 'repo' scopes"
         if self.name == "aider":
-            return f"Aider needs an API key. Set OPENAI_API_KEY or ANTHROPIC_API_KEY in .env"
+            return "Aider needs an API key. Set OPENAI_API_KEY or ANTHROPIC_API_KEY in .env"
         if self.name == "jules":
-            return f"Set ANTHROPIC_API_KEY in .env for Jules CLI"
+            return "Set ANTHROPIC_API_KEY in .env for Jules CLI"
         return f"Configure {self.label}: missing {', '.join(missing)}"
 
 
@@ -154,7 +166,7 @@ AGENTS: dict[str, Agent] = {
 }
 
 
-def get_agent(name: str) -> Optional[Agent]:
+def get_agent(name: str) -> Agent | None:
     return AGENTS.get(name)
 
 
@@ -241,7 +253,7 @@ async def auto_install_missing() -> list[str]:
     return installed
 
 
-def write_env_file(missing_vars: list[str], env_path: Optional[str] = None) -> str:
+def write_env_file(missing_vars: list[str], env_path: str | None = None) -> str:
     """Return instructions for the user on what to add to .env.
 
     If env_path is provided, append the instructions to that file and return the

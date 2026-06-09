@@ -1,27 +1,43 @@
-import os
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import logging
+import os
 from datetime import datetime
-from typing import Optional, List
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, File, Form, Query
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..auth import verify_token
-from ..database import get_db, User
-from ..schemas import ReminderCreate, NoteCreate, NoteUpdate, MessageRequest, BrowserActionRequest
+from ..database import User, get_db
+from ..schemas import BrowserActionRequest, MessageRequest, NoteCreate, NoteUpdate, ReminderCreate
 
 logger = logging.getLogger("jarvis")
 
 router = APIRouter(tags=["Operations"])
 
 
+def _get_config(key: str) -> str:
+    from core.config_registry import config as _c
+    return _c.get(key)
+
+
 @router.get("/health")
 async def health(request: Request):
-    from ..database import AsyncSessionLocal
     from sqlalchemy import text
+
+    from ..database import AsyncSessionLocal
     db_connected = False
     try:
         async with AsyncSessionLocal() as session:
@@ -54,10 +70,9 @@ async def health(request: Request):
 
 @router.post("/api/chat")
 async def chat_endpoint(body: dict = {}):
-    from core.plugins import plugin_registry
-    from core.model_router import route_request
-    from core.llm_router import get_router
     from core.intent_router import extract_intent
+    from core.llm_router import get_router
+    from core.model_router import route_request
 
     text = body.get("text") or body.get("message", "")
     if not text:
@@ -68,7 +83,6 @@ async def chat_endpoint(body: dict = {}):
     current_intent = intent_data.get("intent", "chat")
     model_group = "cloud" if model == "cloud" else "local"
 
-    import json
     try:
         resp = await get_router().acompletion(
             model=model_group,
@@ -111,8 +125,8 @@ async def system_stats():
 
 @router.get("/api/stt/providers")
 async def stt_list_providers():
-    from assistant.stt_protocol import stt_registry
     from assistant.stt import init_stt_providers
+    from assistant.stt_protocol import stt_registry
     if not stt_registry.list():
         init_stt_providers()
     return {"providers": stt_registry.list(), "default": stt_registry.default}
@@ -129,7 +143,8 @@ async def list_plugins(request: Request):
     for name, plugin in registry.plugins.items():
         try:
             health = await plugin.health_check()
-        except Exception:
+        except Exception as e:
+            logger.warning("[core.routes.operations] plugin health check failed: %s", e)
             health = {"healthy": False}
         plugins.append({
             "name": name,
@@ -404,7 +419,7 @@ async def media_status():
 
 
 @router.post("/api/media/play")
-async def media_play(track_index: Optional[int] = None, query: Optional[str] = None):
+async def media_play(track_index: int | None = None, query: str | None = None):
     from media.player import media_player
     if query:
         found = media_player.play_by_name(query)
@@ -452,7 +467,7 @@ async def get_playlist():
 
 @router.get("/api/media/suggest/{mood}")
 async def suggest_music(mood: str):
-    from media.player import music_suggester, media_player
+    from media.player import media_player, music_suggester
     status = media_player.get_status()
     if mood == "similar" and status.get("track"):
         return music_suggester.suggest_similar(status["track"])
@@ -461,15 +476,15 @@ async def suggest_music(mood: str):
 
 # ── Showcase & Highlights ─────────────────────────────────────────
 
-import calendar as _cal
 
 @router.get("/api/monthly-highlights")
 async def monthly_highlights():
     now = datetime.now()
     month_name = now.strftime("%B %Y")
-    from core.database import get_db, ChatHistory, ExecutionLog
-    from sqlalchemy import select, func, and_
-    from datetime import datetime, timedelta
+
+    from sqlalchemy import and_, func, select
+
+    from core.database import ChatHistory, ExecutionLog, get_db
 
     start_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
@@ -480,8 +495,9 @@ async def monthly_highlights():
 
     try:
         async for session in get_db():
+            from sqlalchemy import and_, func, select
+
             from core.database import ChatHistory, ExecutionLog
-            from sqlalchemy import select, func, and_
             q_conv = select(func.count(func.distinct(ChatHistory.session_id))).where(ChatHistory.timestamp >= start_of_month)
             conversations = (await session.execute(q_conv)).scalar() or 0
 
@@ -506,9 +522,9 @@ async def monthly_highlights():
         "searches": searches,
         "reminders": reminders,
         "top_models": [
-            os.getenv("CHAT_MODEL", "qwen3:4b"),
-            os.getenv("CODE_MODEL", "qwen2.5-coder:3b"),
-            os.getenv("VISION_MODEL", "moondream"),
+            os.getenv("CHAT_MODEL") or _get_config("llm.chat_model"),
+            os.getenv("CODE_MODEL") or _get_config("llm.code_model"),
+            os.getenv("VISION_MODEL") or _get_config("llm.vision_model"),
         ],
         "highlights": [
             "13 AI models running across 9 Ollama ports",
@@ -681,9 +697,9 @@ async def dashboard_stats():
         "reminders": reminders_count,
         "notes": 0,
         "active_models": {
-            "chat": os.getenv("CHAT_MODEL", "qwen3:4b"),
-            "code": os.getenv("CODE_MODEL", "qwen2.5-coder:3b"),
-            "vision": os.getenv("VISION_MODEL", "moondream"),
+            "chat": os.getenv("CHAT_MODEL") or _get_config("llm.chat_model"),
+            "code": os.getenv("CODE_MODEL") or _get_config("llm.code_model"),
+            "vision": os.getenv("VISION_MODEL") or _get_config("llm.vision_model"),
         },
     }
 
@@ -712,6 +728,7 @@ def _get_gpu_stats() -> tuple[str, int]:
 @router.get("/api/faces")
 async def list_faces(db: AsyncSession = Depends(get_db), user: User = Depends(verify_token)):
     from sqlalchemy import select
+
     from core.database import KnownFace
     result = await db.execute(select(KnownFace).where(KnownFace.owner_id == user.id))
     faces = result.scalars().all()
@@ -724,13 +741,13 @@ async def register_face(
     relation: str = Form("unknown"),
     info: str = Form(""),
     access_level: str = Form("visitor"),
-    images: List[UploadFile] = File(...),
+    images: list[UploadFile] = File(...),
     db: AsyncSession = Depends(get_db),
     user: User = Depends(verify_token),
 ):
     try:
-        import numpy as np
         import cv2
+        import numpy as np
     except ImportError:
         raise HTTPException(503, "numpy or opencv not installed (pip install numpy opencv-python)")
     from vision.face_recognition import face_recognizer
@@ -756,8 +773,8 @@ async def identify_face(
     user: User = Depends(verify_token),
 ):
     try:
-        import numpy as np
         import cv2
+        import numpy as np
     except ImportError:
         raise HTTPException(503, "numpy or opencv not installed (pip install numpy opencv-python)")
     from vision.face_recognition import face_recognizer

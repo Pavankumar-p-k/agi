@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import itertools
+import logging
 import os
 import shutil
 import subprocess
 import sys
 import time
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 from prompt_toolkit.styles import Style
 
@@ -34,7 +37,8 @@ def syntax_highlight(text, filename=None):
         from pygments.formatters import TerminalFormatter
         lexer = guess_lexer_for_filename(filename or "_.py", text) if filename else PythonLexer()
         return highlight(text, lexer, TerminalFormatter())
-    except Exception:
+    except Exception as e:
+        logger.warning("[cli_utils] syntax highlight failed: %s", e)
         return text
 
 

@@ -1,3 +1,15 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """Outbound URL safety checks (SSRF hardening).
 
 Run before the server makes a request to a *user-supplied* URL — e.g. the custom
@@ -20,18 +32,18 @@ additionally reject all private and loopback targets (full SSRF lockdown).
 
 import ipaddress
 import socket
-from typing import Callable, List, Optional, Tuple
+from collections.abc import Callable
 from urllib.parse import urlparse
 
 ALLOWED_SCHEMES = ("http", "https")
 
 
-def _default_resolver(host: str) -> List[str]:
+def _default_resolver(host: str) -> list[str]:
     """Resolve a hostname to the list of IP strings it maps to (A + AAAA)."""
     return [info[4][0] for info in socket.getaddrinfo(host, None)]
 
 
-def _classify(ip: ipaddress._BaseAddress, *, block_private: bool) -> Optional[str]:
+def _classify(ip: ipaddress._BaseAddress, *, block_private: bool) -> str | None:
     """Return a rejection reason for an IP, or None if it is allowed."""
     # IPv4-mapped IPv6 (e.g. ::ffff:169.254.169.254) — judge the embedded v4.
     if isinstance(ip, ipaddress.IPv6Address) and ip.ipv4_mapped is not None:
@@ -49,8 +61,8 @@ def check_outbound_url(
     url: str,
     *,
     block_private: bool = False,
-    resolver: Optional[Callable[[str], List[str]]] = None,
-) -> Tuple[bool, str]:
+    resolver: Callable[[str], list[str]] | None = None,
+) -> tuple[bool, str]:
     """Validate a user-supplied outbound URL.
 
     Returns ``(ok, reason)``. ``ok`` is True only when the URL is safe to fetch.

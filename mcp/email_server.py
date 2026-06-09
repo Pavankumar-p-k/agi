@@ -1,3 +1,15 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import logging
 """
 email_server.py
@@ -85,7 +97,8 @@ def _list_accounts_raw() -> list:
         return [dict(r) for r in rows]
     except sqlite3.OperationalError:
         return []
-    except Exception:
+    except Exception as ex:
+        logger.warning("[mcp.email_server] list accounts raw failed: %s", ex)
         return []
 
 
@@ -185,7 +198,8 @@ def _load_config(account: str | None = None) -> dict:
         # ciphertext is what produced AUTHENTICATIONFAILED previously.
         try:
             from src.secret_storage import decrypt as _decrypt
-        except Exception:
+        except Exception as exc:
+            logger.warning("[mcp.email_server] decrypt import failed: %s", exc)
             _decrypt = lambda v: v  # noqa: E731
         cfg["imap_password"] = _decrypt(row["imap_password"]) if row["imap_password"] else cfg["imap_password"]
         cfg["imap_starttls"] = bool(row["imap_starttls"])
@@ -289,7 +303,8 @@ def _list_folder_lines(conn) -> list:
         if status != "OK" or not folders:
             return []
         return folders
-    except Exception:
+    except Exception as exc:
+        logger.warning("[mcp.email_server] list folder lines failed: %s", exc)
         return []
 
 
@@ -346,7 +361,8 @@ def _decode_header(raw):
         # dropped. The old " ".join produced "Re:  Jose" style double spaces
         # on every non-ASCII subject or sender.
         return str(email.header.make_header(email.header.decode_header(raw)))
-    except Exception:
+    except Exception as ex:
+        logger.warning("[mcp.email_server] header decode failed: %s", ex)
         # Malformed header or unknown charset: lossy per-part decode
         decoded = []
         for data, charset in email.header.decode_header(raw):
@@ -406,7 +422,8 @@ def _get_cached_summaries():
         for subj, sender, summary, reply in rows:
             result[subj] = {"sender": sender, "summary": summary, "reply": reply}
         return result
-    except Exception:
+    except Exception as exc:
+        logger.warning("[mcp.email_server] cached summaries read failed: %s", exc)
         return {}
 
 
@@ -477,7 +494,8 @@ def _list_emails(folder="INBOX", max_results=20, unresponded_only=False,
                 "date": date_str,
                 "summary": summary,
             })
-        except Exception:
+        except Exception as exc:
+            logger.warning("[mcp.email_server] list emails fetch UID failed: %s", exc)
             continue
 
     conn.logout()
@@ -579,13 +597,16 @@ def _search_emails(query, folders=None, max_results=20, account=None):
                             "_folder": folder,
                             "summary": cached.get("summary", ""),
                         })
-                    except Exception:
+                    except Exception as exc:
+                        logger.warning("[mcp.email_server] search emails fetch UID failed: %s", exc)
                         continue
-            except Exception:
+            except Exception as exc:
+                logger.warning("[mcp.email_server] search emails folder scan failed: %s", exc)
                 continue
     finally:
         try: conn.logout()
-        except Exception: pass
+        except Exception as exc:
+            logger.warning("[mcp.email_server] conn logout failed: %s", exc)
     # Cap total across folders.
     return out[: max_results * len(folders)]
 
@@ -836,10 +857,10 @@ def _send_email(to, subject, body, in_reply_to=None, references=None, cc=None, b
                     sent_uid = m.group(1).decode("ascii", errors="ignore")
         finally:
             imap.logout()
-    except Exception:
+    except Exception as exc:
+        logger.warning("[mcp.email_server] sent copy to folder failed: %s", exc)
         # Delivery already succeeded; Sent-copy failure should not turn a sent
         # message into a hard failure for the user.
-        pass
 
     return {
         "sent": True,
@@ -905,7 +926,8 @@ def _set_flag(uid, folder, flag, add=True, account=None):
         if add and flag == "\\Deleted":
             conn.expunge()
         return status == "OK" and bool(data and data[0])
-    except Exception:
+    except Exception as exc:
+        logger.warning("[mcp.email_server] set flag failed: %s", exc)
         return False
     finally:
         conn.logout()
@@ -925,7 +947,8 @@ def _bulk_set_flag(uids, folder, flag, add=True, account=None):
         msg_set = ",".join(str(u) for u in uids)
         try:
             status, data = conn.uid("FETCH", _b(msg_set), "(UID)")
-        except Exception:
+        except Exception as exc:
+            logger.warning("[mcp.email_server] bulk set flag FETCH failed: %s", exc)
             return 0
         touched = _uid_fetch_rows(data)
         if status != "OK" or not touched:
@@ -952,7 +975,8 @@ def _bulk_move(uids, source_folder, dest_folder, account=None, role: str = ""):
         msg_set = ",".join(str(u) for u in uids)
         try:
             status, data = conn.uid("FETCH", _b(msg_set), "(UID)")
-        except Exception:
+        except Exception as exc:
+            logger.warning("[mcp.email_server] bulk move FETCH failed: %s", exc)
             return 0
         existing = _uid_fetch_rows(data)
         if not existing:
@@ -995,7 +1019,8 @@ def _move_message(uid, source_folder, dest_folder, account=None, role: str = "")
         dest_folder = _resolve_folder(conn, dest_folder, role or _folder_role_from_name(dest_folder))
         try:
             status, data = conn.uid("FETCH", _b(uid), "(UID)")
-        except Exception:
+        except Exception as exc:
+            logger.warning("[mcp.email_server] move message FETCH failed: %s", exc)
             return False
         existing = _uid_fetch_rows(data)
         if status != "OK" or not existing:

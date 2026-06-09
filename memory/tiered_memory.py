@@ -1,3 +1,15 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import time
 import os
 import logging
@@ -13,7 +25,8 @@ except ImportError:
 try:
     from memory.embedding_memory import get_embedding_memory
     _get_embedding = get_embedding_memory
-except Exception:
+except Exception as e:
+    logger.warning("[memory.tiered_memory] embedding memory import failed: %s", e)
     _get_embedding = lambda: None
 
 
@@ -122,17 +135,18 @@ class TieredMemory:
                     m["_score"] = overlap
                     results.append(m)
 
-        # Phase 3: Emit hook
+        # Phase 3: Emit hook (fire-and-forget — recall is synchronous)
         try:
+            import asyncio
             from core.plugins.events import PluginEventBus
-            PluginEventBus.instance().emit("on_memory_recall", query=query, results=results)
+            asyncio.create_task(PluginEventBus.instance().emit("on_memory_recall", query=query, results=results))
         except Exception as exc:
             logger.debug("PluginEventBus.on_memory_recall failed: %s", exc)
 
         # 2. Search Warm/Cold tier via Mem0
         if self.mem0:
             try:
-                mem0_results = self.mem0.search(query, user_id=self.user_id, limit=limit)
+                mem0_results = self.mem0.search(query, filters={'user_id': self.user_id}, limit=limit)
                 results.extend(mem0_results)
             except Exception as e:
                 print(f"[WARN] Mem0 search failed: {e}")

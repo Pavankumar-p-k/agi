@@ -1,9 +1,21 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """core/goal_interpreter.py
 Takes a vague goal string and returns a structured interpretation.
 Uses LLM only — no keyword heuristic fallback.
 """
-import re, json, logging
-from typing import Optional
+import json
+import logging
 
 logger = logging.getLogger("goal_interpreter")
 
@@ -51,7 +63,8 @@ async def interpret_goal(goal: str) -> dict:
     }
 
     try:
-        from core.llm_router import health_check, complete as llm_complete
+        from core.llm_router import complete as llm_complete
+        from core.llm_router import health_check
         if not await health_check():
             logger.warning("[GOAL] LLM not available, using defaults")
             result["reasoning"].append("llm_unavailable")

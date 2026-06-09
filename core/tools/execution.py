@@ -1,3 +1,15 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """
 tool_execution.py
 
@@ -15,12 +27,13 @@ import os
 import re
 import sys
 import time
+from collections.abc import Awaitable, Callable
 from pathlib import Path
-from typing import Any, Awaitable, Callable, Dict, Optional, Tuple
+from typing import Any
 
-from core.tools.security import owner_is_admin_or_single_user
-from core.config_schema import jarvis_config
 from ai_os.docker_sandbox import docker_sandbox as _docker_sandbox
+from core.config_schema import jarvis_config
+from core.tools.security import owner_is_admin_or_single_user
 
 MAX_OUTPUT_CHARS = 10_000
 MAX_READ_CHARS = 20_000
@@ -207,8 +220,8 @@ async def _run_subprocess_streaming(
     proc: asyncio.subprocess.Process,
     *,
     timeout: float,
-    progress_cb: Optional[Callable[[Dict], Awaitable[None]]] = None,
-) -> Tuple[str, str, Optional[int], bool]:
+    progress_cb: Callable[[dict], Awaitable[None]] | None = None,
+) -> tuple[str, str, int | None, bool]:
     """Run a subprocess to completion, streaming progress.
 
     Reads stdout + stderr line-by-line into ring buffers so a
@@ -262,7 +275,7 @@ async def _run_subprocess_streaming(
     timed_out = False
     try:
         await asyncio.wait_for(proc.wait(), timeout=timeout)
-    except asyncio.TimeoutError:
+    except TimeoutError:
         timed_out = True
         try:
             proc.kill()
@@ -326,7 +339,7 @@ _ADMIN_TOOLS = {
 }
 
 
-def _owner_is_admin(owner: Optional[str]) -> bool:
+def _owner_is_admin(owner: str | None) -> bool:
     """Mirror route-level admin behavior for agent tool execution."""
     return owner_is_admin_or_single_user(owner)
 
@@ -346,7 +359,7 @@ _MCP_TOOL_MAP = {
 }
 
 
-def _parse_generate_image(content: str) -> Dict:
+def _parse_generate_image(content: str) -> dict:
     lines = content.strip().split("\n")
     args = {"prompt": lines[0].strip() if lines else ""}
     for i, key in enumerate(["model", "size", "quality"], 1):
@@ -355,7 +368,7 @@ def _parse_generate_image(content: str) -> Dict:
     return args
 
 
-def _parse_manage_memory(content: str) -> Dict:
+def _parse_manage_memory(content: str) -> dict:
     lines = content.strip().split("\n")
     action = lines[0].strip().lower() if lines else ""
     args = {"action": action}
@@ -376,12 +389,12 @@ def _parse_manage_memory(content: str) -> Dict:
     return args
 
 
-def _parse_write_file(content: str) -> Dict:
+def _parse_write_file(content: str) -> dict:
     lines = content.split("\n", 1)
     return {"path": lines[0].strip(), "content": lines[1] if len(lines) > 1 else ""}
 
 
-_MCP_ARG_PARSERS: Dict[str, callable] = {
+_MCP_ARG_PARSERS: dict[str, callable] = {
     "bash":           lambda c: {"command": c},
     "python":         lambda c: {"code": c},
     "web_search":     lambda c: {"query": c.split("\n")[0].strip()},
@@ -393,7 +406,7 @@ _MCP_ARG_PARSERS: Dict[str, callable] = {
 }
 
 
-def _build_mcp_args(tool: str, content: str) -> Dict:
+def _build_mcp_args(tool: str, content: str) -> dict:
     """Convert fenced-block text content to structured MCP arguments."""
     parser = _MCP_ARG_PARSERS.get(tool)
     return parser(content) if parser else {}
@@ -402,9 +415,9 @@ def _build_mcp_args(tool: str, content: str) -> Dict:
 async def _call_mcp_tool(
     tool: str,
     content: str,
-    progress_cb: Optional[Callable[[Dict], Awaitable[None]]] = None,
-    session_id: Optional[str] = None,
-) -> Dict:
+    progress_cb: Callable[[dict], Awaitable[None]] | None = None,
+    session_id: str | None = None,
+) -> dict:
     """Route a legacy tool call through the MCP manager, with direct fallbacks."""
     mcp = get_mcp_manager()
     if not mcp:
@@ -443,9 +456,9 @@ def _split_bg_marker(content: str):
 async def _direct_fallback(
     tool: str,
     content: str,
-    progress_cb: Optional[Callable[[Dict], Awaitable[None]]] = None,
-    session_id: Optional[str] = None,
-) -> Optional[Dict]:
+    progress_cb: Callable[[dict], Awaitable[None]] | None = None,
+    session_id: str | None = None,
+) -> dict | None:
     """In-process execution path for the eight tools that used to live as
     stdio MCP servers under mcp_servers/. Those servers were deleted in
     favor of native execution; this function is now the canonical path,
@@ -589,7 +602,7 @@ async def _direct_fallback(
                 return {"error": f"read_file: {e}", "exit_code": 1}
             try:
                 def _read():
-                    with open(path, "r", encoding="utf-8", errors="replace") as f:
+                    with open(path, encoding="utf-8", errors="replace") as f:
                         return f.read(MAX_READ_CHARS + 1)
                 data = await asyncio.to_thread(_read)
             except FileNotFoundError:
@@ -741,7 +754,7 @@ async def _direct_fallback(
                     loop.run_in_executor(None, lambda: fetch_webpage_content(url, timeout=10)),
                     timeout=30,
                 )
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 return {"error": f"web_fetch: timed out fetching {url}", "exit_code": 1}
             except Exception as e:
                 # Direct URL fetches can hit bot protection / auth walls
@@ -792,7 +805,7 @@ def _get_backup_dir() -> str:
     return _BACKUP_DIR
 
 
-async def do_edit_file(content: str, owner: Optional[str] = None) -> Dict:
+async def do_edit_file(content: str, owner: str | None = None) -> dict:
     """Edit a file on the filesystem directly.
 
     Content format:
@@ -802,10 +815,14 @@ async def do_edit_file(content: str, owner: Optional[str] = None) -> Dict:
     Creates a backup before editing. Verifies Python files with compile().
     Auto-formats Python/JS/TS files. Generates a diff preview. Suggests tests.
     """
-    from core.tools.document_tools import (
-        _apply_unified_diff, parse_edit_blocks, _apply_edit_to_text, _normalize_text,
-    )
     import difflib
+
+    from core.tools.document_tools import (
+        _apply_edit_to_text,
+        _apply_unified_diff,
+        _normalize_text,
+        parse_edit_blocks,
+    )
 
     lines = content.split("\n", 1)
     first_line = lines[0].strip()
@@ -813,19 +830,24 @@ async def do_edit_file(content: str, owner: Optional[str] = None) -> Dict:
     if first_line.startswith("--- "):
         edit_content = content
         diff_match = re.search(r"--- a/(.+)", edit_content)
-        file_path = diff_match.group(1).split("\t")[0] if diff_match else None
-        if not file_path:
+        raw_path = diff_match.group(1).split("\t")[0] if diff_match else None
+        if not raw_path:
             return {"error": "Cannot determine file path from unified diff", "exit_code": 1}
+        try:
+            file_path = _resolve_tool_path(raw_path)
+        except ValueError as e:
+            return {"error": str(e), "exit_code": 1}
     else:
         file_path = first_line
         if not file_path:
             return {"error": "No file path provided", "exit_code": 1}
         edit_content = lines[1] if len(lines) > 1 else ""
 
-    path = Path(file_path)
-    if not path.is_absolute():
-        path = Path.cwd() / path
-    path = path.resolve()
+    try:
+        resolved = _resolve_tool_path(file_path)
+    except ValueError as e:
+        return {"error": str(e), "exit_code": 1}
+    path = Path(resolved)
 
     if not path.exists():
         return {"error": f"File not found: {path}", "exit_code": 1}
@@ -923,11 +945,12 @@ async def do_edit_file(content: str, owner: Optional[str] = None) -> Dict:
     except Exception as e:
         logger.debug("auto-format skipped: %s", e)
 
-    # Verify (compile .py files)
+    # Verify (parse .py files with ast for safety)
     verify_note = ""
     if path.suffix == ".py":
         try:
-            compile(new_text, str(path), "exec")
+            import ast
+            ast.parse(new_text, filename=str(path))
         except SyntaxError as se:
             verify_note = f"⚠ SyntaxError: {se}"
             details.append({"status": "verify", "note": verify_note})
@@ -972,7 +995,7 @@ async def do_edit_file(content: str, owner: Optional[str] = None) -> Dict:
     }
 
 
-async def do_refactor(content: str, owner: Optional[str] = None) -> Dict:
+async def do_refactor(content: str, owner: str | None = None) -> dict:
     """Decompose a high-level refactoring goal into steps and execute them.
 
     Content format:
@@ -997,7 +1020,7 @@ async def do_refactor(content: str, owner: Optional[str] = None) -> Dict:
 
     # If the model provided specific edits, apply them directly
     if edit_blocks.strip():
-        from core.tools.document_tools import parse_edit_blocks, _apply_edit_to_text, _normalize_text
+        from core.tools.document_tools import _apply_edit_to_text, _normalize_text, parse_edit_blocks
         edits = parse_edit_blocks(edit_blocks)
         if edits and file_list:
             results = []
@@ -1059,7 +1082,7 @@ def _generate_refactor_plan(goal: str, files: list[str]) -> list[dict]:
     return plan
 
 
-async def do_undo_edit_file(path_str: str) -> Dict:
+async def do_undo_edit_file(path_str: str) -> dict:
     """Restore the most recent backup of a file."""
     path = Path(path_str)
     if not path.is_absolute():
@@ -1079,7 +1102,7 @@ async def do_undo_edit_file(path_str: str) -> Dict:
 
     latest = os.path.join(backup_dir, backups[0])
     try:
-        with open(latest, "r", encoding="utf-8") as fh:
+        with open(latest, encoding="utf-8") as fh:
             restored = fh.read()
         path.write_text(restored, encoding="utf-8")
         rel = str(path.relative_to(Path.cwd())) if path.is_relative_to(Path.cwd()) else str(path)
@@ -1088,14 +1111,14 @@ async def do_undo_edit_file(path_str: str) -> Dict:
         return {"error": f"Undo failed: {e}", "exit_code": 1}
 
 
-async def do_batch_edit_file(content: str) -> Dict:
+async def do_batch_edit_file(content: str) -> dict:
     """Edit multiple files matching a glob pattern.
 
     Content format:
         Line 1: glob pattern
         Then: FIND/REPLACE blocks
     """
-    from core.tools.document_tools import parse_edit_blocks, _apply_edit_to_text, _normalize_text
+    from core.tools.document_tools import _apply_edit_to_text, _normalize_text, parse_edit_blocks
 
     lines = content.split("\n", 1)
     pattern = lines[0].strip()
@@ -1162,35 +1185,59 @@ async def do_batch_edit_file(content: str) -> Dict:
 
 async def execute_tool_block(
     block: Any,
-    session_id: Optional[str] = None,
-    disabled_tools: Optional[set] = None,
-    owner: Optional[str] = None,
-    progress_cb: Optional[Callable[[Dict], Awaitable[None]]] = None,
-) -> Tuple[str, Dict]:
+    session_id: str | None = None,
+    disabled_tools: set | None = None,
+    owner: str | None = None,
+    progress_cb: Callable[[dict], Awaitable[None]] | None = None,
+) -> tuple[str, dict]:
     """Execute a single tool block. Returns (description, result_dict).
 
     `progress_cb` is forwarded to long-running subprocess tools
     (bash, python) so the agent loop can emit `tool_progress` SSE
     events while the command is in flight. Ignored by other tools.
     """
-    from core.tools.implementations import (
-        do_create_document, do_update_document, do_edit_document,
-        do_suggest_document, do_search_chats, do_create_skill, do_manage_tasks,
-        do_manage_skills, do_api_call, do_manage_endpoints,
-        do_manage_mcp, do_manage_webhooks, do_manage_tokens,
-        do_manage_documents, do_manage_settings, do_manage_notes,
-        do_manage_calendar,
-        do_download_model, do_serve_model, do_list_served_models, do_stop_served_model,
-        do_list_downloads, do_cancel_download, do_search_hf_models, do_list_cached_models,
-        do_list_serve_presets, do_serve_preset, do_adopt_served_model,
-        do_list_cookbook_servers,
-        do_edit_image, do_trigger_research, do_manage_research, do_resolve_contact,
-        do_manage_contact,
-        do_vault_search, do_vault_get, do_vault_unlock,
-        do_app_api,
-    )
-    from core.sub_agents.tool import do_sessions_spawn
     from core.ai_interaction import dispatch_ai_tool
+    from core.sub_agents.tool import do_sessions_spawn
+    from core.tools.implementations import (
+        do_adopt_served_model,
+        do_api_call,
+        do_app_api,
+        do_cancel_download,
+        do_create_document,
+        do_create_skill,
+        do_download_model,
+        do_edit_document,
+        do_edit_image,
+        do_list_cached_models,
+        do_list_cookbook_servers,
+        do_list_downloads,
+        do_list_serve_presets,
+        do_list_served_models,
+        do_manage_calendar,
+        do_manage_contact,
+        do_manage_documents,
+        do_manage_endpoints,
+        do_manage_mcp,
+        do_manage_notes,
+        do_manage_research,
+        do_manage_settings,
+        do_manage_skills,
+        do_manage_tasks,
+        do_manage_tokens,
+        do_manage_webhooks,
+        do_resolve_contact,
+        do_search_chats,
+        do_search_hf_models,
+        do_serve_model,
+        do_serve_preset,
+        do_stop_served_model,
+        do_suggest_document,
+        do_trigger_research,
+        do_update_document,
+        do_vault_get,
+        do_vault_search,
+        do_vault_unlock,
+    )
 
     _CHR = chr(10)
 
@@ -1275,11 +1322,11 @@ async def execute_tool_block(
         # Read file, return lines after start_line
         try:
             def _read():
-                with open(rpath, "r", encoding="utf-8", errors="replace") as f:
+                with open(rpath, encoding="utf-8", errors="replace") as f:
                     return f.read(MAX_READ_CHARS + 1)
             data = await asyncio.to_thread(_read)
         except FileNotFoundError:
-            return f"watch_file: not found", {"error": f"File not found: {rpath}", "exit_code": 1}
+            return "watch_file: not found", {"error": f"File not found: {rpath}", "exit_code": 1}
         except OSError as e:
             return f"watch_file: {e}", {"error": str(e), "exit_code": 1}
 
@@ -1291,7 +1338,7 @@ async def execute_tool_block(
         new_text = "\n".join(new_lines)
         truncated = len(data) > MAX_READ_CHARS
         if truncated:
-            new_text = new_text[:MAX_READ_CHARS] + f"\n... [truncated]"
+            new_text = new_text[:MAX_READ_CHARS] + "\n... [truncated]"
 
         return f"watch_file: {path_str} ({len(new_lines)} new lines)", {
             "output": new_text,
@@ -1318,7 +1365,7 @@ async def execute_tool_block(
 
     async def _hdl_api_call(content, session_id=None, owner=None, **kw):
         fl = content.split("\n")[0].strip()[:60]
-        return f"api_call: {fl}", await do_api_call(content)
+        return f"api_call: {fl}", await do_api_call(content, owner=owner)
 
     async def _hdl_manage_endpoints(content, session_id=None, owner=None, **kw):
         return "manage_endpoints", await do_manage_endpoints(content, owner=owner)
@@ -1513,11 +1560,11 @@ async def execute_tool_block(
         return desc, result
 
     # Phase 1e: RBAC Authorization Gate
-    from core.tools.security import is_authorized_to_execute
     from core.auth import get_auth_manager
-    
+    from core.tools.security import is_authorized_to_execute
+
     ctx = get_auth_manager().resolve_context(owner or "guest")
-    
+
     if not is_authorized_to_execute(tool, ctx):
         desc = f"{tool}: UNAUTHORIZED"
         result = {
@@ -1649,7 +1696,7 @@ def _detect_errors(text: str) -> list[str]:
     return found
 
 
-def format_tool_result(description: str, result: Dict) -> str:
+def format_tool_result(description: str, result: dict) -> str:
     """Format a tool result into text for feeding back to the LLM."""
     parts = [f"### {description}"]
 

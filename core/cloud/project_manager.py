@@ -1,12 +1,25 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 # core/cloud/project_manager.py
 # ProjectManager — creates and manages long-running projects/goals in Supabase.
 from __future__ import annotations
+
 import asyncio
 import logging
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 from .supabase_client import get_client, is_connected
 
@@ -29,7 +42,7 @@ class Step:
     created_at: str = ""
 
     @classmethod
-    def from_dict(cls, d: dict) -> "Step":
+    def from_dict(cls, d: dict) -> Step:
         return cls(
             id          = d.get("id", str(uuid.uuid4())),
             project_id  = d.get("project_id", ""),
@@ -59,7 +72,7 @@ class Project:
     metadata: dict = field(default_factory=dict)
 
     @classmethod
-    def from_dict(cls, d: dict) -> "Project":
+    def from_dict(cls, d: dict) -> Project:
         steps_raw = d.get("steps") or []
         steps = [Step.from_dict(s) if isinstance(s, dict) else s for s in steps_raw]
         return cls(
@@ -113,7 +126,7 @@ class ProjectManager:
         self._local[project.id] = project
         return project
 
-    async def list_projects(self, status: Optional[str] = None) -> list[Project]:
+    async def list_projects(self, status: str | None = None) -> list[Project]:
         if is_connected():
             try:
                 return await asyncio.to_thread(self._sb_list, status)
@@ -124,7 +137,7 @@ class ProjectManager:
             projects = [p for p in projects if p.status == status]
         return projects
 
-    async def get_project(self, project_id: str) -> Optional[Project]:
+    async def get_project(self, project_id: str) -> Project | None:
         if is_connected():
             try:
                 return await asyncio.to_thread(self._sb_get, project_id)
@@ -161,7 +174,7 @@ class ProjectManager:
     # CRUD – steps
     # ------------------------------------------------------------------ #
 
-    async def add_step(self, project_id: str, step_description: str) -> Optional[Step]:
+    async def add_step(self, project_id: str, step_description: str) -> Step | None:
         project = await self.get_project(project_id)
         if not project:
             return None
@@ -202,7 +215,7 @@ class ProjectManager:
         d["steps"] = [s.to_dict() for s in project.steps]
         get_client().table("jarvis_goals").upsert(d, on_conflict="id").execute()
 
-    def _sb_get(self, project_id: str) -> Optional[Project]:
+    def _sb_get(self, project_id: str) -> Project | None:
         res = (
             get_client().table("jarvis_goals")
             .select("*")
@@ -215,7 +228,7 @@ class ProjectManager:
             return Project.from_dict(res.data)
         return None
 
-    def _sb_list(self, status: Optional[str]) -> list[Project]:
+    def _sb_list(self, status: str | None) -> list[Project]:
         q = (
             get_client().table("jarvis_goals")
             .select("*")

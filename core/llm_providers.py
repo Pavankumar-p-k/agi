@@ -1,3 +1,15 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """core/llm_providers.py — Provider detection, payload builders, response parsers.
 
 Anthropic, Ollama, and OpenAI-compatible provider adapters.
@@ -6,10 +18,7 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Optional, Dict, List
 from urllib.parse import urlparse
-
-import httpx
 
 from core.model_context import DEFAULT_CONTEXT
 
@@ -28,7 +37,8 @@ def _host_match(url: str, *domains: str) -> bool:
         return False
     try:
         host = (urlparse(url).hostname or "").lower().rstrip(".")
-    except Exception:
+    except Exception as e:
+        logger.warning("[core.llm_providers] host_match urlparse failed: %s", e)
         return False
     if not host:
         return False
@@ -38,7 +48,8 @@ def _host_match(url: str, *domains: str) -> bool:
 def _is_ollama_native_url(url: str) -> bool:
     try:
         parsed = urlparse(url or "")
-    except Exception:
+    except Exception as e:
+        logger.warning("[core.llm_providers] ollama URL urlparse failed: %s", e)
         return False
     host = parsed.hostname or ""
     path = (parsed.path or "").rstrip("/")
@@ -71,8 +82,8 @@ def _normalize_ollama_url(url: str) -> str:
     return base.rstrip("/") + "/chat"
 
 
-def _ollama_normalize_tool_messages(messages: List[Dict]) -> List[Dict]:
-    out: List[Dict] = []
+def _ollama_normalize_tool_messages(messages: list[dict]) -> list[dict]:
+    out: list[dict] = []
     for m in messages or []:
         tcs = m.get("tool_calls") if isinstance(m, dict) else None
         if not tcs:
@@ -87,7 +98,7 @@ def _ollama_normalize_tool_messages(messages: List[Dict]) -> List[Dict]:
                     args = json.loads(args) if args.strip() else {}
                 except (json.JSONDecodeError, TypeError):
                     args = {}
-            call: Dict = {"function": {"name": fn.get("name", ""), "arguments": args or {}}}
+            call: dict = {"function": {"name": fn.get("name", ""), "arguments": args or {}}}
             if tc.get("id"):
                 call["id"] = tc["id"]
             new_calls.append(call)
@@ -99,19 +110,19 @@ def _ollama_normalize_tool_messages(messages: List[Dict]) -> List[Dict]:
 
 def _build_ollama_payload(
     model: str,
-    messages: List[Dict],
+    messages: list[dict],
     temperature: float,
     max_tokens: int,
     stream: bool = False,
-    tools: Optional[List[Dict]] = None,
-    num_ctx: Optional[int] = None,
-) -> Dict:
-    payload: Dict = {
+    tools: list[dict] | None = None,
+    num_ctx: int | None = None,
+) -> dict:
+    payload: dict = {
         "model": model,
         "messages": _ollama_normalize_tool_messages(messages),
         "stream": stream,
     }
-    options: Dict = {}
+    options: dict = {}
     if temperature is not None:
         options["temperature"] = temperature
     if max_tokens and max_tokens > 0:
@@ -142,7 +153,7 @@ def _detect_provider(url: str) -> str:
     return "openai"
 
 
-def _provider_headers(provider: str, headers: Optional[Dict] = None) -> Dict[str, str]:
+def _provider_headers(provider: str, headers: dict | None = None) -> dict[str, str]:
     h = {"Content-Type": "application/json"}
     if isinstance(headers, dict):
         h.update(headers)
@@ -169,7 +180,8 @@ def _provider_label(url: str) -> str:
     if _is_ollama_native_url(url): return "Ollama"
     try:
         host = (urlparse(url).hostname or "").lower()
-    except Exception:
+    except Exception as e:
+        logger.warning("[core.llm_providers] provider_label urlparse failed: %s", e)
         return "provider"
     if host in {"localhost", "127.0.0.1", "::1", "0.0.0.0"}:
         return "local endpoint"
@@ -180,7 +192,8 @@ def _format_upstream_error(status: int, body: bytes | str, url: str) -> str:
     if isinstance(body, bytes):
         try:
             body = body.decode("utf-8", errors="replace")
-        except Exception:
+        except Exception as e:
+            logger.warning("[core.llm_providers] upstream error body decode failed: %s", e)
             body = str(body)
     provider = _provider_label(url)
     detail = ""
@@ -192,7 +205,8 @@ def _format_upstream_error(status: int, body: bytes | str, url: str) -> str:
                 detail = (err.get("message") or err.get("detail") or "").strip()
             elif isinstance(err, str):
                 detail = err.strip()
-    except Exception:
+    except Exception as e:
+        logger.warning("[core.llm_providers] upstream error JSON parse failed: %s", e)
         detail = (body or "").strip()[:240]
 
     if status in (401, 403):
@@ -201,7 +215,7 @@ def _format_upstream_error(status: int, body: bytes | str, url: str) -> str:
             msg = f"{provider} denied access (403)"
         if detail:
             msg += f" — {detail}"
-        msg += ". Check Model Endpoints → {} and re-paste the key.".format(provider)
+        msg += f". Check Model Endpoints → {provider} and re-paste the key."
         return msg
     if status == 404:
         return f"{provider} returned 404 — check the base URL and model name." + (f" ({detail})" if detail else "")

@@ -1,16 +1,28 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """core/agi_core.py — AGI Core that powers the /agi/* REST endpoints.
 Wraps the sub-agent registry and provides the interface api/agi_routes.py expects.
 """
 from __future__ import annotations
-import asyncio
-import time
-import logging
-import uuid
-from dataclasses import dataclass, field
-from typing import Optional, Any
 
-from core.sub_agents.registry import agent_registry
+import asyncio
+import logging
+import time
+import uuid
+from dataclasses import dataclass
+
 from core.settings.store import get_settings_store
+from core.sub_agents.registry import agent_registry
 
 logger = logging.getLogger("jarvis.agi")
 
@@ -33,18 +45,6 @@ class _ObserveState:
     is_weekend: bool = False
 
 
-class _StubAttr:
-    """
-    Stub that raises NotImplementedError on access.
-    Every attribute access here means a real module is not wired up yet.
-    """
-    def __init__(self, name: str = "unknown"):
-        self._name = name
-
-    def __getattr__(self, name: str):
-        raise NotImplementedError(f"[STUB] {self._name}.{name} is not implemented yet.")
-
-
 class AGICore:
     """Central AGI controller. Wires sub-agents into a unified interface."""
 
@@ -55,42 +55,12 @@ class AGICore:
         self._settings = get_settings_store()
         self._started = False
 
-        # Stubs for unimplemented modules — wire these to real classes in future
-        try:
-            self.memory = _StubAttr("memory_engine")
-        except Exception as _e:
-            logger.debug("AGI stub memory failed: %s", _e)
-            self.memory = None
-
-        try:
-            self.reflector = _StubAttr("reflector")
-        except Exception as _e:
-            logger.debug("AGI stub reflector failed: %s", _e)
-            self.reflector = None
-
-        try:
-            self.predictor = _StubAttr("predictor")
-        except Exception as _e:
-            logger.debug("AGI stub predictor failed: %s", _e)
-            self.predictor = None
-
-        try:
-            self.patterns = _StubAttr("pattern_engine")
-        except Exception as _e:
-            logger.debug("AGI stub patterns failed: %s", _e)
-            self.patterns = None
-
-        try:
-            self.habits = _StubAttr("habit_engine")
-        except Exception as _e:
-            logger.debug("AGI stub habits failed: %s", _e)
-            self.habits = None
-
-        try:
-            self.goal_planner = _StubAttr("goal_planner")
-        except Exception as _e:
-            logger.debug("AGI stub goal_planner failed: %s", _e)
-            self.goal_planner = None
+        self.memory = None
+        self.reflector = None
+        self.predictor = None
+        self.patterns = None
+        self.habits = None
+        self.goal_planner = None
 
         # Real sub-agent registry
         self.agent_pool = agent_registry
@@ -136,7 +106,6 @@ class AGICore:
             "status": "running",
             "created_at": time.time(),
         })
-        from core.sub_agents.registry import agent_registry
         try:
             asyncio.create_task(self._run_goal(goal_id, description, context or {}))
         except RuntimeError:

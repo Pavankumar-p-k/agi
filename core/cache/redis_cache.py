@@ -1,8 +1,20 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 from __future__ import annotations
 
 import json
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from .local import LRUCache
 
@@ -30,7 +42,7 @@ class RedisCache:
 
     def __init__(
         self,
-        url: Optional[str] = None,
+        url: str | None = None,
         prefix: str = "jarvis:cache:",
         socket_timeout: float = 2.0,
         local_fallback_maxsize: int = 256,
@@ -38,7 +50,7 @@ class RedisCache:
         self._url = url
         self._prefix = prefix
         self._socket_timeout = socket_timeout
-        self._redis: Optional[aioredis.Redis] = None
+        self._redis: aioredis.Redis | None = None
         self._local: LRUCache[Any] = LRUCache(maxsize=local_fallback_maxsize)
         self._connected = False
 
@@ -76,7 +88,7 @@ class RedisCache:
             self._redis = None
             self._connected = False
 
-    async def get(self, key: str) -> Optional[Any]:
+    async def get(self, key: str) -> Any | None:
         if self._connected and self._redis:
             try:
                 val = await self._redis.get(self._prefix + key)
@@ -88,7 +100,7 @@ class RedisCache:
                 self._connected = False
         return await self._local.get(key)
 
-    async def set(self, key: str, value: Any, ttl: Optional[float] = None) -> None:
+    async def set(self, key: str, value: Any, ttl: float | None = None) -> None:
         if self._connected and self._redis:
             try:
                 await self._redis.set(
@@ -145,7 +157,7 @@ class RedisCache:
                 logger.debug("redis_cache size failed: %s", _e)
         return await self._local.size()
 
-    async def ttl(self, key: str) -> Optional[float]:
+    async def ttl(self, key: str) -> float | None:
         if self._connected and self._redis:
             try:
                 remaining = await self._redis.ttl(self._prefix + key)

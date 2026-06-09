@@ -1,3 +1,15 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """Build a compact structural map of the codebase for injection into agent prompts.
 
 Aider's key differentiator: the model gets a bird's-eye view of every file,
@@ -10,7 +22,6 @@ import ast
 import logging
 import re
 from pathlib import Path
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -105,9 +116,10 @@ def build_repomap(workspace_root: str | Path, max_files: int = 80) -> str:
         if file_count >= max_files:
             break
         try:
-            with open(fpath, "r", encoding="utf-8", errors="replace") as _fh:
+            with open(fpath, encoding="utf-8", errors="replace") as _fh:
                 text = _fh.read()
-        except Exception:
+        except Exception as e:
+            logger.warning("[core.repomap] failed to read %s: %s", fpath, e)
             continue
         rel = os.path.relpath(fpath, str(root))
         ext = os.path.splitext(fpath)[1]

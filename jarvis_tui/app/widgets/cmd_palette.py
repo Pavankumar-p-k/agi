@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 from textual.app import ComposeResult
-from textual.widget import Widget
-from textual.widgets import Input, ListView, ListItem, Label, Static
 from textual.containers import Vertical
-from textual.reactive import reactive
+from textual.widget import Widget
+from textual.widgets import Input, Label, ListItem, ListView, Static
+
 
 class CommandPalette(Widget):
     """
@@ -22,16 +22,16 @@ class CommandPalette(Widget):
         "/exit       → terminate session",
         "/replay     → temporal replay mode",
     ]
-    
+
     THEMES = ["anthropic", "midnight", "solarized"]
-    
+
     AGENTS = [
         "@nexus      → research and retrieval specialist",
         "@forge      → code generation and refactoring",
         "@scout      → background monitor and web search",
         "@oracle     → planning and orchestration",
     ]
-    
+
     TOOLS = [
         "!web_search  → search the internet",
         "!read_file   → read file contents",
@@ -60,12 +60,12 @@ class CommandPalette(Widget):
     def update_list(self, filter_text: str) -> None:
         lst = self.query_one("#palette-list", ListView)
         lst.clear()
-        
+
         source = self.COMMANDS
         if filter_text.startswith("@"): source = self.AGENTS
         elif filter_text.startswith("!"): source = self.TOOLS
         elif filter_text.startswith("#"): source = ["#bookmark → tag current message"]
-        
+
         for item in source:
             if filter_text.lower() in item.lower():
                 lst.append(ListItem(Label(item)))
@@ -79,7 +79,7 @@ class CommandPalette(Widget):
             toast_rack = self.screen.query_one("#toast-rack")
         except Exception:
             toast_rack = None
-        
+
         if "/theme" in cmd_text:
             idx = getattr(self.app, "_theme_idx", 0)
             next_idx = (idx + 1) % len(self.THEMES)
@@ -96,5 +96,5 @@ class CommandPalette(Widget):
         elif cmd_text.startswith("!"):
             if toast_rack:
                 toast_rack.show_toast(f"Executing tool {cmd_text.split()[0]}", severity="success")
-        
+
         self.toggle()

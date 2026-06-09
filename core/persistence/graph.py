@@ -1,10 +1,22 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Any, Optional
+from typing import Any
 
 
 class NodeStatus(StrEnum):
@@ -69,14 +81,14 @@ class ExecutionGraph:
     def __init__(self, session_key: str = ""):
         self.session_key = session_key
         self.nodes: dict[str, GraphNode] = {}
-        self.created_at = datetime.now(timezone.utc).isoformat()
+        self.created_at = datetime.now(UTC).isoformat()
         self.updated_at = self.created_at
 
     def add_node(self, node: GraphNode) -> None:
         self.nodes[node.id] = node
-        self.updated_at = datetime.now(timezone.utc).isoformat()
+        self.updated_at = datetime.now(UTC).isoformat()
 
-    def get_node(self, node_id: str) -> Optional[GraphNode]:
+    def get_node(self, node_id: str) -> GraphNode | None:
         return self.nodes.get(node_id)
 
     def update_status(self, node_id: str, status: NodeStatus, **extra) -> None:
@@ -86,7 +98,7 @@ class ExecutionGraph:
             for k, v in extra.items():
                 if hasattr(node, k):
                     setattr(node, k, v)
-            self.updated_at = datetime.now(timezone.utc).isoformat()
+            self.updated_at = datetime.now(UTC).isoformat()
 
     def ready_nodes(self) -> list[GraphNode]:
         """Return all pending nodes whose dependencies are completed."""

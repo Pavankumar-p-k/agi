@@ -1,18 +1,33 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """core/supervisor_agent.py
 JARVIS Supervisor — autonomous multi-agent build orchestrator.
 Accepts a high-level goal, decomposes it, launches CLI agents,
 monitors progress, handles failures, and delivers the complete project.
 """
-import asyncio, os, sys, re, json, logging, shutil
-from pathlib import Path
-from typing import Optional, Callable
+import asyncio
+import json
+import logging
+import re
+from collections.abc import Callable
 from datetime import datetime
+from pathlib import Path
 
 logger = logging.getLogger("supervisor")
 
-from core.shared_context import SharedContext
 from core.agent_launcher import AgentLauncher, AgentResult
 from core.llm_router import health_check
+from core.shared_context import SharedContext
 
 TASK_TEMPLATES = {
     "scaffold": "Create the project scaffold: {description}. Use standard project structure.",
@@ -73,8 +88,8 @@ class SupervisorAgent:
             except Exception as e:
                 logger.warning(f"[SUPERVISOR] Notify error: {e}")
 
-    async def start_build(self, goal: str, workspace: Optional[str] = None,
-                          progress_callback: Optional[Callable] = None) -> dict:
+    async def start_build(self, goal: str, workspace: str | None = None,
+                          progress_callback: Callable | None = None) -> dict:
         build_id = f"build_{int(datetime.now().timestamp())}"
         safe_name = re.sub(r'[^a-zA-Z0-9_-]+', '_', goal)[:40].strip("_").lower() or "project"
         project_dir = workspace or str(Path.cwd() / safe_name)
@@ -184,7 +199,7 @@ class SupervisorAgent:
         return "shell"
 
     async def _execute_plan(self, build: dict, ctx: SharedContext,
-                            progress_callback: Optional[Callable] = None):
+                            progress_callback: Callable | None = None):
         tasks = build["tasks"]
         project_dir = build["workspace"]
         launcher = AgentLauncher(workspace=project_dir, auto_approve=self.auto_approve)
@@ -295,7 +310,7 @@ class SupervisorAgent:
             "failed": len(failed_ids), "approvals": launcher.get_approval_count()
         })
 
-    def get_status(self, build_id: str) -> Optional[dict]:
+    def get_status(self, build_id: str) -> dict | None:
         return self.active_builds.get(build_id)
 
     def list_builds(self) -> list[dict]:

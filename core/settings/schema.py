@@ -1,7 +1,22 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 from __future__ import annotations
-from typing import Literal, Optional, Any
-from pydantic import BaseModel, Field, HttpUrl
+
 import os
+from typing import Literal
+
+from pydantic import BaseModel, Field
+
 
 class LLMSettings(BaseModel):
     default_model: str = "claude-sonnet-4-20250514"
@@ -12,8 +27,8 @@ class LLMSettings(BaseModel):
     coder_model: str = "qwen3:4b"
     lightweight_model: str = "tinyllama:latest"
     max_response_tokens: int = 512
-    vision_model: Optional[str] = None
-    ollama_model: Optional[str] = None
+    vision_model: str | None = None
+    ollama_model: str | None = None
 
 class AGISettings(BaseModel):
     autonomous_enabled: bool = False
@@ -66,22 +81,22 @@ class JarvisSettings(BaseModel):
     server: ServerSettings = Field(default_factory=ServerSettings)
     logging: LoggingSettings = Field(default_factory=LoggingSettings)
     ui: UISettings = Field(default_factory=UISettings)
-    
+
     # Skills
     enabled_skills: list[str] = []   # empty = all enabled
     disabled_skills: list[str] = []
 
     # API Keys (Stored as strings, masked in output)
-    news_api_key: Optional[str] = None
-    openweather_api_key: Optional[str] = None
-    alpha_vantage_key: Optional[str] = None
-    composio_api_key: Optional[str] = None
-    groq_api_key: Optional[str] = None
-    gemini_api_key: Optional[str] = None
-    openai_api_key: Optional[str] = None
-    github_token: Optional[str] = None
-    telegram_bot_token: Optional[str] = None
-    pexels_api_key: Optional[str] = None
-    nvidia_api_key: Optional[str] = None
-    meta_whatsapp_token: Optional[str] = None
-    meta_whatsapp_phone_id: Optional[str] = None
+    news_api_key: str | None = None
+    openweather_api_key: str | None = None
+    alpha_vantage_key: str | None = None
+    composio_api_key: str | None = None
+    groq_api_key: str | None = None
+    gemini_api_key: str | None = None
+    openai_api_key: str | None = None
+    github_token: str | None = None
+    telegram_bot_token: str | None = None
+    pexels_api_key: str | None = None
+    nvidia_api_key: str | None = None
+    meta_whatsapp_token: str | None = None
+    meta_whatsapp_phone_id: str | None = None

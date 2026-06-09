@@ -1,3 +1,15 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 # core/vision_agent.py
 """
 ╔══════════════════════════════════════════════════════════════════╗
@@ -17,11 +29,22 @@
 ╚══════════════════════════════════════════════════════════════════╝
 """
 
-import asyncio, base64, io, json, re, shlex, time, logging, os
+import asyncio
+import base64
+import io
+import json
+import logging
+import os
+import re
+import shlex
+import time
 from dataclasses import dataclass, field
-from typing import Optional
-import httpx, pyautogui, mss
+
+import httpx
+import mss
+import pyautogui
 from PIL import Image
+
 from core.model_router import get_ollama_url, model_for_role
 
 logger = logging.getLogger(__name__)
@@ -201,7 +224,7 @@ class VisionAgent:
         r = await self._llava(SCREEN_SYS, "Describe this screen:", s.b64, 80)
         return r or "Desktop"
 
-    async def _find(self, target: str, s: ScreenState) -> Optional[tuple]:
+    async def _find(self, target: str, s: ScreenState) -> tuple | None:
         prompt = f"Find '{target}' on this screen. Return its center pixel coordinates."
         raw = await self._llava(FIND_SYS, prompt, s.b64, 40)
         try:
@@ -255,7 +278,8 @@ class VisionAgent:
     async def _exec(self, action: str, p: dict) -> str:
         if action == "open_app":
             app = p.get("app","").lower()
-            import shutil, subprocess
+            import shutil
+            import subprocess
             CMDS = {
                 "chrome": shutil.which("chrome") or "start chrome",
                 "firefox": shutil.which("firefox") or "start firefox",
@@ -363,7 +387,7 @@ class VisionAgent:
 
     # ═══ SELF-CORRECTION ════════════════════════════════════
 
-    async def _correct(self, step: dict, error: str) -> Optional[dict]:
+    async def _correct(self, step: dict, error: str) -> dict | None:
         prompt = f"Step '{step.get('desc','')}' with action '{step.get('action','')}' failed: {error}. Alternative?"
         raw = await self._llm(CORRECT_SYS, prompt, QUALITY_MODEL, 120)
         try:

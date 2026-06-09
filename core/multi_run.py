@@ -1,12 +1,25 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """core/multi_run.py
 Multi-run / Best-of-N executor.
 Runs multiple strategies in parallel, scores each, picks the best result.
 """
-import asyncio, logging, copy
-from pathlib import Path
-from dataclasses import dataclass, field
-from typing import Optional, Callable
+import asyncio
+import logging
+from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import datetime
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -18,9 +31,9 @@ from core.quality_scorer import QualityScorer, ScoreBreakdown
 class StrategyVariant:
     name: str
     goal_modifier: str
-    template_preference: Optional[str] = None
-    style: Optional[str] = None
-    tech_override: Optional[list[str]] = None
+    template_preference: str | None = None
+    style: str | None = None
+    tech_override: list[str] | None = None
 
 
 DEFAULT_STRATEGIES = [
@@ -35,7 +48,7 @@ class RunResult:
     strategy: str
     project_name: str
     state: dict
-    score: Optional[ScoreBreakdown] = None
+    score: ScoreBreakdown | None = None
     duration: float = 0.0
     success: bool = False
     deploy_url: str = ""
@@ -51,7 +64,7 @@ class MultiRunExecutor:
         goal: str,
         strategies: list[StrategyVariant] = None,
         workspace_base: str = "",
-        progress_callback: Optional[Callable] = None,
+        progress_callback: Callable | None = None,
     ) -> RunResult:
         strategies = strategies or DEFAULT_STRATEGIES
         active = min(len(strategies), self.max_parallel)
@@ -108,7 +121,7 @@ class MultiRunExecutor:
         logger.info(f"[MULTIRUN] Best: {best.strategy} (score={best.score.average:.1f})" if best.score else f"[MULTIRUN] Best: {best.strategy} (no score)")
         return best
 
-    def pick_best(self) -> Optional[RunResult]:
+    def pick_best(self) -> RunResult | None:
         scored = [r for r in self.results if r.score and r.success]
         if not scored:
             if self.results:

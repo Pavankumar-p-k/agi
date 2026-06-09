@@ -1,6 +1,18 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import json
-import os
 import logging
+import os
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
@@ -11,8 +23,9 @@ router = APIRouter(tags=["WebSocket"])
 
 @router.websocket("/ws/{device_id}/{user_id}")
 async def websocket_endpoint(ws: WebSocket, device_id: str, user_id: int):
-    from network.websocket_server import connection_manager, handle_message
     from datetime import datetime
+
+    from network.websocket_server import connection_manager, handle_message
 
     await connection_manager.connect(ws, device_id, user_id)
     try:
@@ -39,9 +52,9 @@ async def mcp_bridge_websocket(websocket: WebSocket):
 
 @router.websocket("/ws/chat_stream")
 async def chat_stream_websocket(ws: WebSocket):
-    from core.model_router import route_request, get_router_model
-    from core.llm_router import get_router
     from core.intent_router import extract_intent
+    from core.llm_router import get_router
+    from core.model_router import get_router_model, route_request
     from core.plugins import plugin_registry
 
     await ws.accept()
@@ -57,40 +70,30 @@ async def chat_stream_websocket(ws: WebSocket):
             # and CLI format: {"message":"...", "tier":"...", "session_id":"..."}
             if msg_type == 'chat' or (msg_type is None and 'message' in msg):
                 text = msg.get('text') or msg.get('message', '')
-                msg_data = {"id": session_id, "text": text, "type": "chat"}
-                for _, result in await plugin_registry.run_hook("message_received", message=msg_data):
-                    if isinstance(result, dict) and result.get("text"):
-                        text = result["text"]
-
-                for _, result in await plugin_registry.run_hook("before_dispatch", message=msg_data):
-                    if result is None:
-                        continue
-
-                if not hasattr(ws, 'last_user_message'):
-                    ws.last_user_message = None
-                if text.strip() and text.strip() == ws.last_user_message:
-                    await ws.send_json({
-                        'type': 'stream_token',
-                        'token': 'Already processed.',
-                        'complete': True,
-                        'privacy_tier': 'LOCAL',
-                        'model': 'unknown',
-                        'intent': 'chat',
-                    })
-                    continue
-                ws.last_user_message = text.strip()
-
+                session_id = msg.get('session_id') or str(id(ws))
                 user_id = session_id
 
                 from memory.memory_facade import memory
                 memories = memory.recall(text, user_id=user_id, limit=5)
                 memory_context = memory.format_context(memories)
 
-                from tools.ragflow_tool import ragflow_search, format_rag_context
+                from ..session import ConversationManager
+                cm = ConversationManager(session_id=session_id)
+                if cm.path.exists():
+                    cm.load()
+                    history = cm.get_context(last_n=10)
+                    history_str = "\n".join([f"{m['role']}: {m['content']}" for m in history])
+                    history_context = f"## Recent Conversation History:\n{history_str}"
+                else:
+                    history_context = ""
+
+                from tools.ragflow_tool import format_rag_context, ragflow_search
                 rag_result = await ragflow_search(text, top_k=5)
                 rag_context = format_rag_context(rag_result.get("chunks", []))
 
                 system_prompt = "You are JARVIS, your AI assistant. Be concise."
+                if history_context:
+                    system_prompt = history_context + "\n\n" + system_prompt
                 if memory_context:
                     system_prompt = memory_context + "\n\n" + system_prompt
                 if rag_context:
@@ -100,7 +103,7 @@ async def chat_stream_websocket(ws: WebSocket):
 
                 intent_data = await extract_intent(processed_query)
                 from ..main import execute_action
-                action_result = await execute_action(intent_data, message=text)
+                action_result = await execute_action(intent_data, message=text, session_id=session_id)
                 current_intent = intent_data.get("intent", "chat")
 
                 non_chat_intents = ("build", "pc_control", "open_url", "play_media",
@@ -145,7 +148,7 @@ async def chat_stream_websocket(ws: WebSocket):
                                 response_text = epistemic_tagger.tag_response(resp.choices[0].message.content, ws_provenance)
                             except Exception as e:
                                 logger.exception("[WS] LiteLLM fallback to Ollama: %s", e)
-                                from core.model_router import model_for_role, get_ollama_url
+                                from core.model_router import get_ollama_url, model_for_role
                                 model_obj = model_for_role(current_intent)
                                 direct_url = get_ollama_url(model_obj)
                                 import httpx
@@ -239,7 +242,7 @@ async def log_stream_websocket(ws: WebSocket):
             try:
                 cur = file.stat().st_size
                 if cur > size:
-                    with open(file, "r", encoding="utf-8", errors="replace") as f:
+                    with open(file, encoding="utf-8", errors="replace") as f:
                         f.seek(size)
                         for line in f:
                             yield line
@@ -274,9 +277,9 @@ async def log_stream_websocket(ws: WebSocket):
 
 @router.websocket("/ws/agent_stream")
 async def agent_stream_websocket(ws: WebSocket):
-    from core.plugins import plugin_registry
-    from core.config import OLLAMA_URL, OLLAMA_MODEL
     from core.agent_loop import stream_agent_loop
+    from core.config import OLLAMA_MODEL, OLLAMA_URL
+    from core.plugins import plugin_registry
     from core.settings_legacy import get_setting as _gs
 
     await ws.accept()
@@ -295,10 +298,19 @@ async def agent_stream_websocket(ws: WebSocket):
 
                 pause_enabled = bool(_gs("pause_before_effectful", False))
 
-                endpoint_url = OLLAMA_URL
-                model = OLLAMA_MODEL or os.getenv("CHAT_MODEL", "qwen3:4b")
+                from core.config_registry import config as _c
+                endpoint_url = _c.get("ollama.base_url")
+                model = os.getenv("CHAT_MODEL") or _c.get("llm.chat_model")
 
-                messages = [{"role": "user", "content": text}]
+                session_id = msg.get("session_id") or str(id(ws))
+                from ..session import ConversationManager
+                cm = ConversationManager(session_id=session_id)
+                messages = []
+                if cm.path.exists():
+                    cm.load()
+                    messages = cm.get_context(last_n=10)
+                
+                messages.append({"role": "user", "content": text})
 
                 async for sse_event in stream_agent_loop(
                     endpoint_url=endpoint_url,

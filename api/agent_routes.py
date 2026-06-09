@@ -1,18 +1,32 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """api/agent_routes.py — REST API for all JARVIS sub-agents."""
+from typing import Any
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import Optional, Any
+
 from core.sub_agents.registry import agent_registry
 
 router = APIRouter(prefix="/agents", tags=["agents"])
 
 class RunRequest(BaseModel):
     task: str
-    mode: Optional[str] = None
-    lang: Optional[str] = "auto"    # for FORGE
-    url: Optional[str] = None       # for PHANTOM
+    mode: str | None = None
+    lang: str | None = "auto"    # for FORGE
+    url: str | None = None       # for PHANTOM
     execute: bool = False            # for MAESTRO
-    kwargs: Optional[dict[str, Any]] = None
+    kwargs: dict[str, Any] | None = None
 
 @router.get("/")
 async def list_agents():

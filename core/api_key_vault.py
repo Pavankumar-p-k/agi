@@ -1,11 +1,23 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """core/api_key_vault.py
 API key management for JARVIS agents.
 Reads keys from ~/.jarvis/api_keys.json, rotates on 429, tracks usage.
 """
-import os, json, logging, random
+import json
+import logging
+import os
 from pathlib import Path
-from typing import Optional
-from datetime import datetime
 
 logger = logging.getLogger("api_key_vault")
 
@@ -53,7 +65,7 @@ class APIKeyVault:
         USAGE_PATH.parent.mkdir(parents=True, exist_ok=True)
         USAGE_PATH.write_text(json.dumps(self._usage, indent=2), encoding="utf-8")
 
-    def get(self, service: str) -> Optional[str]:
+    def get(self, service: str) -> str | None:
         """Return current key for service, or None if not available."""
         keys = self._keys.get(service, [])
         if not keys:
@@ -63,7 +75,7 @@ class APIKeyVault:
         self._track_usage(service, key)
         return key
 
-    def rotate(self, service: str) -> Optional[str]:
+    def rotate(self, service: str) -> str | None:
         """Rotate to next key for service. Returns new key."""
         keys = self._keys.get(service, [])
         if not keys:
@@ -80,7 +92,7 @@ class APIKeyVault:
         logger.warning(f"[VAULT] Rate limited on {service} — rotating")
         return self.rotate(service)
 
-    def _get_current(self, service: str) -> Optional[str]:
+    def _get_current(self, service: str) -> str | None:
         keys = self._keys.get(service, [])
         if not keys:
             return None

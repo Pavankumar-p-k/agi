@@ -1,3 +1,15 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 from __future__ import annotations
 
 import json
@@ -5,11 +17,11 @@ import logging
 import os
 import sqlite3
 import threading
-from datetime import datetime, timedelta, timezone
-from typing import Any, Optional
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
-from .schema import AgentCheckpoint
 from .graph import ExecutionGraph
+from .schema import AgentCheckpoint
 
 logger = logging.getLogger("jarvis.persistence.store")
 
@@ -74,7 +86,7 @@ class CheckpointStore:
     def save(
         self,
         checkpoint: AgentCheckpoint,
-        graph: Optional[ExecutionGraph] = None,
+        graph: ExecutionGraph | None = None,
     ) -> int:
         """Persist a checkpoint. Returns the row id."""
         with self._lock:
@@ -101,7 +113,7 @@ class CheckpointStore:
             logger.debug("[PERSIST] Saved checkpoint %d for %s", row_id, checkpoint.session_key)
             return row_id
 
-    def load_latest(self, session_key: str) -> Optional[tuple[AgentCheckpoint, Optional[ExecutionGraph]]]:
+    def load_latest(self, session_key: str) -> tuple[AgentCheckpoint, ExecutionGraph | None] | None:
         """Load the most recent checkpoint for a session."""
         with self._lock:
             conn = sqlite3.connect(self._db_path)
@@ -118,12 +130,12 @@ class CheckpointStore:
             return None
 
         checkpoint = AgentCheckpoint.from_dict(json.loads(row["checkpoint_data"]))
-        graph: Optional[ExecutionGraph] = None
+        graph: ExecutionGraph | None = None
         if row["graph_data"]:
             graph = ExecutionGraph.from_dict(json.loads(row["graph_data"]))
         return (checkpoint, graph)
 
-    def load_by_id(self, checkpoint_id: int) -> Optional[tuple[AgentCheckpoint, Optional[ExecutionGraph]]]:
+    def load_by_id(self, checkpoint_id: int) -> tuple[AgentCheckpoint, ExecutionGraph | None] | None:
         """Load a specific checkpoint by id."""
         with self._lock:
             conn = sqlite3.connect(self._db_path)
@@ -137,7 +149,7 @@ class CheckpointStore:
             return None
 
         checkpoint = AgentCheckpoint.from_dict(json.loads(row["checkpoint_data"]))
-        graph: Optional[ExecutionGraph] = None
+        graph: ExecutionGraph | None = None
         if row["graph_data"]:
             graph = ExecutionGraph.from_dict(json.loads(row["graph_data"]))
         return (checkpoint, graph)
@@ -160,7 +172,7 @@ class CheckpointStore:
 
     def delete_old(self, days: int = 7) -> int:
         """Delete checkpoints older than *days*. Returns count removed."""
-        cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+        cutoff = (datetime.now(UTC) - timedelta(days=days)).isoformat()
         with self._lock:
             conn = sqlite3.connect(self._db_path)
             cur = conn.execute(
@@ -225,7 +237,7 @@ class CheckpointStore:
             raise TypeError("Expected AgentState instance")
         run_id = state.run_id
         data = json.dumps(state.to_dict(), default=str)
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         with self._lock:
             conn = sqlite3.connect(self._db_path)
             conn.execute(
@@ -277,7 +289,7 @@ class CheckpointStore:
                               session_key: str = "default", metadata: dict | None = None) -> int:
         """Save a lightweight checkpoint at each node boundary."""
         import time as _time
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         data = json.dumps({
             "run_id": run_id,
             "node": node_name,

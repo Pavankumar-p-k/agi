@@ -1,10 +1,22 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """Adversarial self-testing. Run nightly via DreamingLoop."""
 
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -29,7 +41,7 @@ class AdversarialTester:
     ]
 
     async def test(self, output: str, output_type: str,
-                   brain: "UnifiedBrain") -> AdversarialResult:
+                   brain: UnifiedBrain) -> AdversarialResult:
         findings = []
         for attack_template in self.ATTACK_PROMPTS:
             prompt = attack_template.format(output=output[:2000])
@@ -51,7 +63,7 @@ class AdversarialTester:
         if self.FINDINGS_PATH.exists():
             existing = json.loads(self.FINDINGS_PATH.read_text())
         existing.append({
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "output_type": output_type,
             "findings": findings
         })

@@ -103,7 +103,8 @@ class GovernanceValidator:
             )
             answer = r.choices[0].message.content.strip().upper()
             return "SAFE" in answer and "UNSAFE" not in answer
-        except Exception:
+        except Exception as e:
+            logging.getLogger("jarvis").warning("[governance.GovernanceValidator] semantic check failed: %s", e)
             return True
 
 

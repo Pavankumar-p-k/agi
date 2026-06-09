@@ -1,3 +1,15 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """api/website_routes.py
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 JARVIS Website Generator — REST API Routes
@@ -22,7 +34,6 @@ import asyncio
 import logging
 import uuid
 from datetime import datetime
-from typing import Dict, List, Optional
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException
 from pydantic import BaseModel, Field
@@ -33,16 +44,16 @@ router = APIRouter(prefix="/website", tags=["website-generator"])
 
 # ─── In-memory job store ──────────────────────────────────────────────────────
 # {job_id: {status, progress, result, error, created_at, topic, pages, style}}
-_jobs: Dict[str, Dict] = {}
+_jobs: dict[str, dict] = {}
 
 
 # ─── Request / Response models ────────────────────────────────────────────────
 class GenerateRequest(BaseModel):
     topic:      str            = Field(...,  example="Coffee Shop")
-    pages:      List[str]      = Field(default=["index","about","services","contact"])
+    pages:      list[str]      = Field(default=["index","about","services","contact"])
     style:      str            = Field(default="modern",
                                        description="modern|corporate|creative|dark|elegant|tech|warm|minimal")
-    output_dir: Optional[str]  = Field(default=None, description="Optional output path")
+    output_dir: str | None  = Field(default=None, description="Optional output path")
 
 
 class PreviewRequest(BaseModel):
@@ -50,12 +61,12 @@ class PreviewRequest(BaseModel):
 
 
 class StopRequest(BaseModel):
-    port: Optional[int] = Field(default=None, description="Port to stop; omit to stop all")
+    port: int | None = Field(default=None, description="Port to stop; omit to stop all")
 
 
 # ─── Background worker ────────────────────────────────────────────────────────
-async def _run_generation(job_id: str, topic: str, pages: List[str],
-                           style: str, output_dir: Optional[str]) -> None:
+async def _run_generation(job_id: str, topic: str, pages: list[str],
+                           style: str, output_dir: str | None) -> None:
     job = _jobs[job_id]
     job["status"]   = "running"
     job["progress"] = 5

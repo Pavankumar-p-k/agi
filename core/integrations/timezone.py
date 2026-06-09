@@ -1,5 +1,18 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """Timezone / world clock - free WorldTimeAPI (no key)."""
 import logging
+
 import httpx
 
 logger = logging.getLogger(__name__)
@@ -12,7 +25,7 @@ async def get_time_info(location: str = "") -> str:
     if not location:
         now = datetime.now()
         return f"Local time: {now.strftime('%Y-%m-%d %H:%M:%S')}"
-    
+
     async with httpx.AsyncClient(timeout=10) as client:
         try:
             r = await client.get(f"{WORLD_TIME_API}/timezone")
@@ -32,5 +45,5 @@ async def get_time_info(location: str = "") -> str:
                         )
         except Exception as e:
             logger.exception("[timezone] timezone lookup: %s", e)
-    
+
     return f"Could not determine time for '{location}'. Local time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"

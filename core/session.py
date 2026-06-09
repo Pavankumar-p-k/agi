@@ -1,3 +1,15 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 from __future__ import annotations
 
 import json
@@ -6,7 +18,7 @@ import os
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger("jarvis.session")
 
@@ -28,12 +40,12 @@ _ensure_dir()
 class ConversationManager:
     """Persistent message-based session with token tracking, stash, and lifecycle."""
 
-    def __init__(self, session_id: Optional[str] = None, name: str = ""):
+    def __init__(self, session_id: str | None = None, name: str = ""):
         self.session_id = session_id or datetime.now().strftime("sess_%Y%m%d_%H%M%S")
         self.created_at = datetime.now().isoformat()
         self.name = name
-        self.messages: List[dict] = []
-        self.stash: List[dict] = []
+        self.messages: list[dict] = []
+        self.stash: list[dict] = []
         self.token_count = 2  # base overhead
         self._dirty = False
 
@@ -59,7 +71,7 @@ class ConversationManager:
         self._dirty = True
         return msg
 
-    def get_context(self, last_n: Optional[int] = None) -> List[dict]:
+    def get_context(self, last_n: int | None = None) -> list[dict]:
         msgs = self.messages[-last_n:] if last_n else self.messages[:]
         return [{"role": m["role"], "content": m["content"]} for m in msgs]
 
@@ -71,6 +83,7 @@ class ConversationManager:
             "name": self.name,
             "messages": self.messages,
             "stash": self.stash,
+            "tasks": self.tasks,
             "token_count": self.token_count,
         }
         self.path.write_text(json.dumps(data, indent=2), encoding="utf-8")
@@ -85,8 +98,17 @@ class ConversationManager:
         self.name = data.get("name", "")
         self.messages = data.get("messages", [])
         self.stash = data.get("stash", [])
+        self.tasks = data.get("tasks", {})
         self.token_count = data.get("token_count", 2)
         self._dirty = False
+
+    def update_task(self, task_id: str, status: str, result: Any = None):
+        self.tasks[task_id] = {
+            "status": status,
+            "result": result,
+            "updated_at": datetime.now().isoformat()
+        }
+        self._dirty = True
 
     def delete(self):
         if self.path.exists():
@@ -109,7 +131,7 @@ class ConversationManager:
 
     # ── Lifecycle ──
 
-    def fork(self) -> "ConversationManager":
+    def fork(self) -> ConversationManager:
         new = ConversationManager(session_id=f"fork_{uuid.uuid4().hex[:8]}")
         new.messages = [dict(m) for m in self.messages]
         new.token_count = self.token_count
@@ -126,7 +148,7 @@ class ConversationManager:
         self._dirty = True
         self.save()
 
-    def export_transcript(self, output_dir: Optional[Path] = None) -> str:
+    def export_transcript(self, output_dir: Path | None = None) -> str:
         out = output_dir or SESSION_DIR
         out.mkdir(parents=True, exist_ok=True)
         path = out / f"{self.session_id}_transcript.txt"
@@ -143,7 +165,7 @@ class ConversationManager:
         self.stash.append({"id": idx, "text": text, "label": label or f"stash_{idx}"})
         return idx
 
-    def list_stash(self) -> List[dict]:
+    def list_stash(self) -> list[dict]:
         return list(self.stash)
 
     def load_stash(self, idx: int) -> str:
@@ -156,13 +178,13 @@ class ConversationManager:
         return f"ConversationManager(session_id={self.session_id}, msgs={self.message_count})"
 
 
-def get_last_session_id() -> Optional[str]:
+def get_last_session_id() -> str | None:
     if LAST_SESSION_FILE.exists():
         return LAST_SESSION_FILE.read_text(encoding="utf-8").strip()
     return None
 
 
-def list_sessions() -> List[str]:
+def list_sessions() -> list[str]:
     if not SESSION_DIR.exists():
         return []
     files = sorted(SESSION_DIR.glob("*.json"), key=os.path.getmtime, reverse=True)
@@ -188,7 +210,7 @@ class SessionKey:
         return self.raw
 
     @property
-    def parent(self) -> Optional[str]:
+    def parent(self) -> str | None:
         if ":" not in self.raw:
             return None
         return self.raw.rsplit(":", 1)[0]
@@ -202,10 +224,10 @@ class SessionKey:
 class HierarchicalSession:
     """Scoped session with parent inheritance for data lookups."""
 
-    def __init__(self, key: str, parent_id: Optional[str] = None):
+    def __init__(self, key: str, parent_id: str | None = None):
         self.key = SessionKey(key)
         self.parent_id = parent_id
-        self.data: Dict[str, Any] = {}
+        self.data: dict[str, Any] = {}
         self.created_at = datetime.now().isoformat()
         self.updated_at = self.created_at
 
@@ -235,14 +257,14 @@ class SessionManager:
     """Global registry for hierarchical sessions."""
 
     def __init__(self):
-        self._active: Dict[str, HierarchicalSession] = {}
+        self._active: dict[str, HierarchicalSession] = {}
 
-    def create_session(self, key: str, parent_id: Optional[str] = None) -> HierarchicalSession:
+    def create_session(self, key: str, parent_id: str | None = None) -> HierarchicalSession:
         session = HierarchicalSession(key, parent_id)
         self._active[str(session.key)] = session
         return session
 
-    def get_session(self, key: str) -> Optional[HierarchicalSession]:
+    def get_session(self, key: str) -> HierarchicalSession | None:
         return self._active.get(key)
 
     def list_conversations(self, limit: int = 50, search: str = "") -> list[dict]:
@@ -251,7 +273,7 @@ class SessionManager:
         for key, session in self._active.items():
             if search and search.lower() not in key.lower():
                 continue
-            
+
             results.append({
                 "session_key": key,
                 "type": session.key.type,
@@ -290,7 +312,7 @@ class SessionManager:
         """Remove a session from memory and optionally delete its persisted file."""
         if key in self._active:
             del self._active[key]
-        
+
         if delete_file:
             path = SESSION_DIR / f"hier_{key.replace(':', '_')}.json"
             if path.exists():
@@ -298,7 +320,7 @@ class SessionManager:
                     path.unlink()
                 except Exception as e:
                     logger.error(f"Failed to delete session file {path}: {e}")
-            
+
             # Also cleanup conversation history if it exists
             conv_path = SESSION_DIR / f"{key.replace(':', '_')}.json"
             if conv_path.exists():

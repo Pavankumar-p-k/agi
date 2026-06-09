@@ -1,18 +1,29 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 # core/plugins/loader.py
 # PluginLoader — scans directories, dynamically loads modules, hot-reloads.
 from __future__ import annotations
+
 import importlib
 import importlib.util
 import logging
 import os
-import subprocess
 import sys
-from typing import Any
 
+from .compatibility import compatibility_checker
+from .dependencies import dependency_resolver
 from .manifest import PluginManifest
 from .registry import get_plugin_registry
-from .dependencies import dependency_resolver
-from .compatibility import compatibility_checker
 
 logger = logging.getLogger("jarvis.plugins.loader")
 
@@ -108,11 +119,11 @@ class PluginLoader:
         for m in manifests:
             if self.load(m):
                 loaded.append(m.id)
-        
+
         # Load from entry points
         ep_loaded = self.load_from_entry_points()
         loaded.extend(ep_loaded)
-        
+
         return loaded
 
     def load_from_entry_points(self) -> list[str]:
@@ -121,7 +132,7 @@ class PluginLoader:
         """
         import importlib.metadata
         loaded = []
-        
+
         try:
             eps = importlib.metadata.entry_points()
             if hasattr(eps, 'select'): # Python 3.10+
@@ -149,10 +160,10 @@ class PluginLoader:
                         entry=ep.value,
                         enabled=True
                     )
-                    
+
                     # Instantiate and register
                     instance = plugin_class()
-                    
+
                     # Subscribe hooks to event bus
                     from .events import PluginEventBus
                     bus = PluginEventBus.instance()
@@ -170,7 +181,7 @@ class PluginLoader:
                     logger.error("Failed to load entry point plugin %s: %s", ep.name, exc)
         except Exception as exc:
             logger.error("Entry point discovery failed: %s", exc)
-            
+
         return loaded
 
     def unload(self, plugin_id: str) -> bool:

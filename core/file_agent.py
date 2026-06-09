@@ -1,20 +1,27 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """core/file_agent.py
 JARVIS File System Agent — read, write, edit (diff-based), organize, run commands.
 Patterns inspired by Aider's EditBlockCoder and Claude Code's file tools.
 """
 
-import os
-import re
-import json
 import difflib
+import json
+import logging
+import os
 import shutil
 import subprocess
-import shlex
-import logging
-import tempfile
-from pathlib import Path
 from datetime import datetime
-from typing import Optional, List
 
 from .llm_router import complete as llm_complete
 
@@ -38,7 +45,7 @@ def confirm(prompt: str) -> bool:
         return False
 
 
-def format_diff(diff_lines: List[str], context: int = 3) -> str:
+def format_diff(diff_lines: list[str], context: int = 3) -> str:
     """Format a diff into readable text."""
     return "\n".join(diff_lines)
 
@@ -53,7 +60,7 @@ class JarvisFileAgent:
         path = os.path.expanduser(path)
         if not os.path.isfile(path):
             raise FileNotFoundError(f"File not found: {path}")
-        with open(path, "r", encoding="utf-8", errors="replace") as f:
+        with open(path, encoding="utf-8", errors="replace") as f:
             return f.read()
 
     # ── Write (with confirmation) ──
@@ -65,7 +72,7 @@ class JarvisFileAgent:
 
         old_content = ""
         if os.path.exists(path):
-            with open(path, "r", encoding="utf-8", errors="replace") as f:
+            with open(path, encoding="utf-8", errors="replace") as f:
                 old_content = f.read()
 
         if old_content == content:
@@ -91,8 +98,9 @@ class JarvisFileAgent:
 
         # Phase 3: Emit hook
         try:
-            from core.plugins.events import PluginEventBus
             import asyncio
+
+            from core.plugins.events import PluginEventBus
             asyncio.create_task(PluginEventBus.instance().emit("on_file_saved", path=path, size=len(content)))
         except Exception as _e:
             logger.debug("file_agent emit hook failed: %s", _e)
@@ -254,7 +262,7 @@ class JarvisFileAgent:
 
     # ── Run command ──
 
-    async def run_command(self, cmd: str, cwd: Optional[str] = None,
+    async def run_command(self, cmd: str, cwd: str | None = None,
                           timeout: int = 30, skip_confirm: bool = False) -> dict:
         """Run a shell command in a sandboxed subprocess. Returns {stdout, stderr, returncode, error}."""
         cwd = os.path.expanduser(cwd) if cwd else os.getcwd()

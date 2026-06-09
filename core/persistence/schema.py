@@ -1,8 +1,20 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Any, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 
 @dataclass
@@ -30,7 +42,7 @@ class AgentCheckpoint:
     MAX_TOOL_RESULTS = 100
 
     def __post_init__(self):
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         if not self.created_at:
             self.created_at = now
         if not self.updated_at:
@@ -40,21 +52,21 @@ class AgentCheckpoint:
         self.tool_results.append(result)
         if len(self.tool_results) > self.MAX_TOOL_RESULTS:
             self.tool_results = self.tool_results[-self.MAX_TOOL_RESULTS:]
-        self.updated_at = datetime.now(timezone.utc).isoformat()
+        self.updated_at = datetime.now(UTC).isoformat()
 
     def mark_completed(self, task_id: str) -> None:
         if task_id in self.pending_tasks:
             self.pending_tasks.remove(task_id)
         if task_id not in self.completed_tasks:
             self.completed_tasks.append(task_id)
-        self.updated_at = datetime.now(timezone.utc).isoformat()
+        self.updated_at = datetime.now(UTC).isoformat()
 
     def mark_failed(self, task_id: str) -> None:
         if task_id in self.pending_tasks:
             self.pending_tasks.remove(task_id)
         if task_id not in self.failed_tasks:
             self.failed_tasks.append(task_id)
-        self.updated_at = datetime.now(timezone.utc).isoformat()
+        self.updated_at = datetime.now(UTC).isoformat()
 
     def to_dict(self) -> dict[str, Any]:
         return {

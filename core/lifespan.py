@@ -1,10 +1,20 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """core/lifespan.py â€” JARVIS server startup/shutdown logic extracted from main.py"""
 from __future__ import annotations
 
 import asyncio
-import os
-import sys
 import logging
 from contextlib import asynccontextmanager
 from datetime import datetime
@@ -12,7 +22,7 @@ from pathlib import Path
 
 from fastapi import FastAPI
 
-from .config import SUPABASE_URL, SUPABASE_SERVICE_KEY
+from .config import SUPABASE_SERVICE_KEY, SUPABASE_URL
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +38,8 @@ def _warmup_ollama_models():
     except ImportError:
         logger.debug("[LIFESPAN] model_router not available, skipping Ollama model check")
         return
-    ollama_url = "http://localhost:11434"
+    from core.config_registry import config as _c
+    ollama_url = _c.get("ollama.base_url")
     try:
         import json
         from urllib.request import urlopen
@@ -58,8 +69,8 @@ async def _migrate_legacy_settings_once():
 
     Runs once, marks itself done with data/.settings_migrated flag.
     """
-    from core.settings_legacy import _LEGACY_FILE, _load_legacy
     from core.settings import get_settings_store
+    from core.settings_legacy import _load_legacy
 
     MIGRATION_DONE_FLAG = Path("data/.settings_migrated")
     if MIGRATION_DONE_FLAG.exists():
@@ -98,14 +109,18 @@ async def lifespan(app: FastAPI):
     print("=" * 50)
 
     # Warn if secret key is not set or is a dev default
-    from core.config import SECRET_KEY, DEV_MODE, ALLOWED_ORIGINS
+    from core.config import ALLOWED_ORIGINS, DEV_MODE, SECRET_KEY
     if not SECRET_KEY:
         startup_status["warnings"].append("JARVIS_SECRET_KEY not set — generate one with: python -c 'import os; print(os.urandom(32).hex())'")
         logger.warning("[SECURITY] JARVIS_SECRET_KEY is empty — set via environment variable")
     if DEV_MODE:
         logger.warning("[SECURITY] Running in DEV_MODE — not suitable for production")
-    if not DEV_MODE and ("*" in ALLOWED_ORIGINS or "http://localhost" in ALLOWED_ORIGINS):
-        startup_status["warnings"].append("Production CORS allows localhost — update allowed_origins in config.yaml")
+    if not DEV_MODE:
+        if "*" in ALLOWED_ORIGINS:
+            startup_status["warnings"].append("Production CORS allows '*' origin — set explicit origins in config.yaml")
+        for origin in ALLOWED_ORIGINS:
+            if origin != "*" and not origin.startswith(("http://", "https://")):
+                startup_status["warnings"].append(f"CORS origin '{origin}' missing protocol — should be http:// or https://")
 
     # One-time legacy settings migration
     try:
@@ -113,8 +128,8 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning("[LIFESPAN] Legacy settings migration skipped: %s", e)
 
+    from core.auth import AuthManager, init_firebase
     from core.database import init_db
-    from core.auth import init_firebase, AuthManager
 
     await init_db()
 
@@ -148,15 +163,17 @@ async def lifespan(app: FastAPI):
 
     try:
         import threading
+
         from assistant.tts import get_tts
         from reminders.manager import reminder_manager
         tts = get_tts()
 
         def _play_audio(audio_bytes):
             try:
+                import io
+
                 import sounddevice as sd
                 import soundfile as sf
-                import io
                 data, sr = sf.read(io.BytesIO(audio_bytes))
                 sd.play(data, sr)
                 sd.wait()
@@ -178,9 +195,9 @@ async def lifespan(app: FastAPI):
 
     # â”€â”€ Phase 10.1: Consolidated Monitoring (replaces health_monitor + proactive_monitor) â”€â”€â”€
     try:
-        from monitors import ResourceMonitor, ServiceHealthChecker, AlertRouter
-        from network.websocket_server import connection_manager
         from assistant.tts import get_tts
+        from monitors import AlertRouter, ResourceMonitor, ServiceHealthChecker
+        from network.websocket_server import connection_manager
         from tools.whatsapp_sender import whatsapp_sender
 
         app.state.resource_monitor = ResourceMonitor()
@@ -217,7 +234,7 @@ async def lifespan(app: FastAPI):
     try:
         from core.config_schema import jarvis_config
         if jarvis_config.failover.enabled:
-            from core.llm_failover import llm_failover, CooldownProbe
+            from core.llm_failover import CooldownProbe, llm_failover
             app.state.failover_probe = CooldownProbe(llm_failover.pm)
             await app.state.failover_probe.start()
             logger.info("[LIFESPAN] LLM failover cooldown probe started [OK]")
@@ -269,8 +286,12 @@ async def lifespan(app: FastAPI):
 
     try:
         from core.agent_registry import (
-            check_available_agents, check_missing_agents, check_unconfigured_agents,
-            auto_install_missing, get_config_report, write_env_file,
+            auto_install_missing,
+            check_available_agents,
+            check_missing_agents,
+            check_unconfigured_agents,
+            get_config_report,
+            write_env_file,
         )
         available = check_available_agents()
         missing = check_missing_agents()
@@ -295,10 +316,12 @@ async def lifespan(app: FastAPI):
         logger.error("[LIFESPAN] Agents setup failed: %s", e)
 
     try:
+        from core.config_registry import config as _c2
+        _ollama_url = _c2.get("ollama.base_url")
         for _ in range(30):
             try:
                 from urllib.request import urlopen
-                with urlopen("http://localhost:11434/api/tags", timeout=1) as resp:
+                with urlopen(f"{_ollama_url}/api/tags", timeout=1) as resp:
                     if resp.status == 200:
                         break
             except Exception as e:
@@ -321,7 +344,7 @@ async def lifespan(app: FastAPI):
         logger.warning("[LIFESPAN] Warmup init failed: %s", e)
 
     try:
-        from assistant.voice_pipeline import get_pipeline, VoiceLoop
+        from assistant.voice_pipeline import VoiceLoop
         _voice_loop = VoiceLoop()
         app.state.voice_loop = _voice_loop
         _voice_loop.start()
@@ -352,7 +375,7 @@ async def lifespan(app: FastAPI):
         logger.warning("[LIFESPAN] AutoDream init failed: %s", e)
 
     try:
-        from .self_healing import self_healing, learning_loop
+        from .self_healing import learning_loop, self_healing
         app.state.self_healing = self_healing
         app.state.learning_loop = learning_loop
         logger.info("[LIFESPAN] Self-healing framework online [OK]")
@@ -361,8 +384,8 @@ async def lifespan(app: FastAPI):
         logger.warning("[LIFESPAN] Self-healing/learning init failed: %s", e)
 
     try:
-        from core.quality_grader import QualityGrader, ConstitutionalMemory
         import core.llm_router
+        from core.quality_grader import ConstitutionalMemory, QualityGrader
         app.state.quality_grader = QualityGrader(
             constitution_path="config/quality_constitution.json",
             llm_router=core.llm_router,
@@ -376,8 +399,8 @@ async def lifespan(app: FastAPI):
     # â”€â”€ Phase 12: PromptOptimizer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     try:
         if hasattr(app.state, "quality_grader") and hasattr(app.state, "constitutional_memory"):
-            from brain.UnifiedBrain import unified_brain
             from brain.prompt_optimizer import PromptOptimizer
+            from brain.UnifiedBrain import unified_brain
             app.state.prompt_optimizer = PromptOptimizer(
                 brain  = unified_brain,
                 grader = app.state.quality_grader,
@@ -402,11 +425,11 @@ async def lifespan(app: FastAPI):
 
     # â”€â”€ Phase 13: Plugin System â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     try:
-        from core.plugins import plugin_registry, MemoryPlugin
+        from core.plugins import MemoryPlugin, plugin_registry
         from core.plugins.base import PluginManifest
-        from plugins.wake_word_plugin import Plugin as WakeWordPlugin
-        from plugins.pii_routing_plugin import Plugin as PIIRoutingPlugin
         from plugins.pc_automation_plugin import Plugin as PCAutomationPlugin
+        from plugins.pii_routing_plugin import Plugin as PIIRoutingPlugin
+        from plugins.wake_word_plugin import Plugin as WakeWordPlugin
         app.state.plugin_registry = plugin_registry
 
         builtin_plugins = [
@@ -494,7 +517,6 @@ async def lifespan(app: FastAPI):
 
     # â”€â”€ Phase 14.1: Tool Policies â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     try:
-        from core.tools.defaults import register_default_policies
         # Already called on import, but explicit is better
         logger.info("[LIFESPAN] Tool policies registered [OK]")
     except Exception as e:
@@ -510,11 +532,10 @@ async def lifespan(app: FastAPI):
     try:
         from channels import channel_controller
         from channels.discord_channel import DiscordChannel
+        from channels.irc_channel import IRCChannel
+        from channels.matrix_channel import MatrixChannel
         from channels.slack_channel import SlackChannel
         from channels.telegram_channel import TelegramChannel
-        from channels.matrix_channel import MatrixChannel
-        from channels.irc_channel import IRCChannel
-        from channels.base import ChannelConfig
 
         channel_controller.register(DiscordChannel())
         channel_controller.register(SlackChannel())
@@ -619,7 +640,7 @@ async def lifespan(app: FastAPI):
         app.state.dreaming_task.cancel()
         try:
             await asyncio.wait_for(app.state.dreaming_task, timeout=5)
-        except (asyncio.CancelledError, asyncio.TimeoutError):
+        except (TimeoutError, asyncio.CancelledError):
             pass
         logger.info("[SHUTDOWN] DreamingLoop scheduler stopped")
     if hasattr(app.state, "build_queue"):

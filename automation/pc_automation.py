@@ -1,3 +1,15 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 from __future__ import annotations
 import logging
 # automation/pc_automation.py
@@ -97,7 +109,9 @@ class BrowserManager:
     def get(self):
         if self._driver:
             try: _ = self._driver.title; return self._driver
-            except Exception: self._driver = None
+            except Exception as e:
+                logger.warning("[automation.pc_automation] browser driver check failed: %s", e)
+                self._driver = None
 
         from selenium import webdriver
         from selenium.webdriver.chrome.options import Options
@@ -264,7 +278,8 @@ class InstagramSender:
             try:
                 d.find_element(By.XPATH, '//a[@href="/direct/inbox/"]')
                 self._ready = True
-            except Exception:
+            except Exception as e:
+                logger.warning("[automation.pc_automation] instagram ready check failed: %s", e)
                 un = os.getenv("INSTAGRAM_USERNAME","")
                 pw = os.getenv("INSTAGRAM_PASSWORD","")
                 if un and pw:

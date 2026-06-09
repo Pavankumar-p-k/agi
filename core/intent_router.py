@@ -1,3 +1,15 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """core/intent_router.py
 Single source of truth for intent classification.
 Replaces dual systems in main.py (extract_intent) and assistant/engine.py (detect_intent).
@@ -122,8 +134,10 @@ def _get_intent_client():
     if _INTENT_CLIENT is None:
         if instructor is None or AsyncOpenAI is None:
             return None
+        from core.config_registry import config as _c
+        _ollama = _c.get("ollama.base_url")
         _INTENT_CLIENT = instructor.from_openai(
-            AsyncOpenAI(base_url="http://localhost:11434/v1", api_key="ollama", timeout=30),
+            AsyncOpenAI(base_url=f"{_ollama}/v1", api_key="ollama", timeout=30),
             mode=instructor.Mode.JSON,
         )
     return _INTENT_CLIENT

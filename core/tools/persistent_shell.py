@@ -1,3 +1,15 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """Persistent shell sessions — stateful subprocesses across tool calls.
 
 Each session gets a long-lived shell process (cmd.exe on Windows, /bin/sh on Unix)
@@ -6,10 +18,8 @@ that preserves working directory, environment variables, and shell state.
 
 import asyncio
 import logging
-import os
 import sys
 import time
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +39,7 @@ class PersistentShell:
 
     def __init__(self, session_id: str):
         self.session_id = session_id
-        self.proc: Optional[asyncio.subprocess.Process] = None
+        self.proc: asyncio.subprocess.Process | None = None
         self.last_used: float = time.time()
         self._closed = False
 
@@ -74,7 +84,7 @@ class PersistentShell:
                 self._read_until_idle(),
                 timeout=timeout,
             )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             return {"output": "", "exit_code": -1, "timed_out": True}
 
         # Extract the last line as pseudo-exit-code marker
@@ -103,7 +113,7 @@ class PersistentShell:
                 if not chunk:
                     break
                 chunks.append(chunk.decode("utf-8", errors="replace"))
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 break
         return "".join(chunks)
 

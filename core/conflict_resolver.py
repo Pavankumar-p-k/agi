@@ -1,10 +1,21 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """core/conflict_resolver.py
 File-locking manager for parallel agent execution.
 Prevents concurrent writes and detects conflicts between agents.
 """
-import time
 import logging
-from typing import Optional
+import time
 from threading import Lock
 
 logger = logging.getLogger(__name__)
@@ -55,7 +66,7 @@ class FileLockManager:
             elif existing:
                 logger.warning(f"[LOCKS] {agent_name} tried to release lock held by {existing['agent']} on {normalized}")
 
-    def is_locked(self, file_path: str) -> Optional[str]:
+    def is_locked(self, file_path: str) -> str | None:
         normalized = self._normalize(file_path)
         now = time.time()
         with self._lock:
@@ -68,10 +79,10 @@ class FileLockManager:
                 return None
             return existing["agent"]
 
-    def get_owner(self, file_path: str) -> Optional[str]:
+    def get_owner(self, file_path: str) -> str | None:
         return self.is_locked(file_path)
 
-    def detect_conflicts(self, agent_name: str, file_path: str) -> Optional[str]:
+    def detect_conflicts(self, agent_name: str, file_path: str) -> str | None:
         owner = self.is_locked(file_path)
         if owner and owner != agent_name:
             logger.warning(f"[LOCKS] CONFLICT: {agent_name} wants {file_path} held by {owner}")

@@ -1,7 +1,19 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import logging
 import time
-from typing import Optional
-from core.sub_agents.base_agent import SubAgent, AgentResult
+
+from core.sub_agents.base_agent import AgentResult, SubAgent
 
 logger = logging.getLogger("jarvis.agents.nexus")
 
@@ -55,14 +67,14 @@ class NexusAgent(SubAgent):
     def get_system_prompt(self, mode: str) -> str:
         return NEXUS_PROMPTS.get(mode, NEXUS_PROMPTS["research"])
 
-    async def run(self, task: str, mode: Optional[str] = None, **kwargs) -> AgentResult:
+    async def run(self, task: str, mode: str | None = None, **kwargs) -> AgentResult:
         user_id = kwargs.get("user_id") or "default"
-        
+
         # 1. Retrieve relevant memories
         from memory.memory_facade import memory
         relevant_memories = memory.recall(task, user_id=user_id, limit=3)
         memory_context = memory.format_context(relevant_memories)
-        
+
         # Add memory context to task if it exists
         enhanced_task = task
         if memory_context:
@@ -73,11 +85,11 @@ class NexusAgent(SubAgent):
             self.status = "running"
             start_time = time.time()
             from tools.deep_research import deep_research
-            
+
             try:
                 logger.info(f"[{self.NAME}:{self.id}] Triggering Deep Research for: {task[:60]}...")
                 result = await deep_research(task, rounds=8, max_sources=12)
-                
+
                 # Format as agent response
                 response_text = f"""# Research Report: {task}
 

@@ -7,8 +7,9 @@ logger = logging.getLogger(__name__)
 
 
 class EdgeTTS:
-    def __init__(self, voice: str = "en-US-ChristopherNeural"):
-        self.voice = voice
+    def __init__(self, voice: str | None = None):
+        from core.config_registry import config as _c
+        self.voice = voice or _c.get("voice.tts_voice")
 
     async def synthesize(self, text: str) -> bytes:
         try:

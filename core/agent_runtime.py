@@ -1,3 +1,15 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 from __future__ import annotations
 
 import asyncio
@@ -6,11 +18,9 @@ import re
 import time
 import uuid
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from core.llm_router import complete
-from tools.registry import get_tool
-from core.result import Result, Ok, Err
 
 logger = logging.getLogger("jarvis.runtime")
 
@@ -20,18 +30,18 @@ class RuntimeTask:
     id: str
     type: str
     description: str
-    depends_on: List[str] = field(default_factory=list)
+    depends_on: list[str] = field(default_factory=list)
     status: str = "pending"
-    result: Optional[Any] = None
-    agent: Optional[str] = None
+    result: Any | None = None
+    agent: str | None = None
 
 
 @dataclass
 class RuntimeSession:
     id: str
     goal: str
-    tasks: Dict[str, RuntimeTask] = field(default_factory=dict)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    tasks: dict[str, RuntimeTask] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
     status: str = "active"
 
 
@@ -40,9 +50,9 @@ class AgentRuntime:
 
     def __init__(self, max_parallel: int = 4):
         self.max_parallel = max_parallel
-        self.active_sessions: Dict[str, RuntimeSession] = {}
+        self.active_sessions: dict[str, RuntimeSession] = {}
 
-    async def run_task(self, task: str, context: Optional[Dict] = None) -> str:
+    async def run_task(self, task: str, context: dict | None = None) -> str:
         session_id = uuid.uuid4().hex[:8]
         logger.info("Runtime task %s: %.80s", session_id, task)
 
@@ -133,7 +143,7 @@ class AgentRuntime:
         logger.info("Executing task %s: %s", task.id, task.description)
         return await self.run_task(task.description, {"session": session})
 
-    def get_session(self, session_id: str) -> Optional[RuntimeSession]:
+    def get_session(self, session_id: str) -> RuntimeSession | None:
         return self.active_sessions.get(session_id)
 
 

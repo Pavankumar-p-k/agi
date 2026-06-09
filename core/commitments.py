@@ -1,12 +1,25 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 from __future__ import annotations
 
+import builtins
 import json
 import logging
 import sqlite3
 import uuid
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from core.llm_router import complete
 
@@ -60,7 +73,7 @@ class CommitmentStore:
         except Exception as e:
             logger.warning("Failed to extract commitments: %s", e)
 
-    def add(self, user_id: str, description: str, due_at: Optional[str] = None,
+    def add(self, user_id: str, description: str, due_at: str | None = None,
             priority: str = "medium", source_id: str = "") -> str:
         cid = f"cmt_{uuid.uuid4().hex[:8]}"
         now = datetime.now().isoformat()
@@ -73,7 +86,7 @@ class CommitmentStore:
             conn.commit()
         return cid
 
-    def list(self, user_id: str, status: str = "pending") -> List[Dict[str, Any]]:
+    def list(self, user_id: str, status: str = "pending") -> builtins.list[dict[str, Any]]:
         with sqlite3.connect(DB_PATH) as conn:
             conn.row_factory = sqlite3.Row
             rows = conn.execute(
@@ -90,7 +103,7 @@ class CommitmentStore:
             )
             conn.commit()
 
-    def upcoming(self, hours: int = 24) -> List[Dict[str, Any]]:
+    def upcoming(self, hours: int = 24) -> builtins.list[dict[str, Any]]:
         threshold = (datetime.now() + timedelta(hours=hours)).isoformat()
         with sqlite3.connect(DB_PATH) as conn:
             conn.row_factory = sqlite3.Row

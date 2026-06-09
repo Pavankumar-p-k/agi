@@ -1,3 +1,15 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """
 core/audio_emotion.py
 Phase 10.2 — Audio Emotion Detector
@@ -35,10 +47,8 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
-from pathlib import Path
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -99,7 +109,7 @@ class AudioContext:
         return d
 
     @classmethod
-    def neutral(cls) -> "AudioContext":
+    def neutral(cls) -> AudioContext:
         """Fallback when analysis unavailable."""
         return cls(
             emotion      = Emotion.NEUTRAL,
@@ -335,7 +345,7 @@ class AudioEmotionDetector:
     @staticmethod
     def _check_librosa() -> bool:
         try:
-            import librosa   # noqa: F401
+            import librosa  # noqa: F401
             return True
         except ImportError:
             logger.info(

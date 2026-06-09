@@ -1,10 +1,21 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """core/site_planner.py
 Takes structured intent from GoalInterpreter → detailed site plan.
 Selects templates, maps pages, defines nav structure and design system.
 """
-import re, json, logging
+import logging
 from pathlib import Path
-from typing import Optional
 
 logger = logging.getLogger("site_planner")
 
@@ -119,7 +130,7 @@ DESIGN_SYSTEM_DEFAULTS = {
 FALLBACK_TEMPLATES = ["landing", "poco-html", "ecommerce-store"]
 
 
-def select_template(goal: str, project_type: str = "website") -> Optional[str]:
+def select_template(goal: str, project_type: str = "website") -> str | None:
     """Select best template path for goal. Returns path or None."""
     goal_lower = goal.lower().replace("_", " ")
     for kw, templates in TEMPLATE_MAP.items():

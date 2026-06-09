@@ -1,3 +1,15 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 from __future__ import annotations
 
 import asyncio
@@ -155,8 +167,9 @@ async def setup_node(state: AgentState) -> AgentState:
         except Exception as e:
             logger.warning("[core.graph.nodes] execute_node failed: %s", e)
     try:
-        from core.repomap import build_repomap
         from pathlib import Path
+
+        from core.repomap import build_repomap
         _repomap = build_repomap(Path.cwd())
     except Exception as e:
         logger.warning("[core.graph.nodes] execute_node failed: %s", e)
@@ -186,8 +199,9 @@ async def setup_node(state: AgentState) -> AgentState:
 
     _t3 = time.time()
     try:
-        from core.context_budget import TokenBudget, compute_input_token_budget
         from core.context_compactor import trim_for_context
+
+        from core.context_budget import TokenBudget, compute_input_token_budget
         soft_budget = int(get_setting("agent_input_token_budget", 6000) or 0)
         if soft_budget > 0:
             before_trim_tokens = estimate_tokens(state.messages)
@@ -950,8 +964,8 @@ async def _run_sub_agent(
     try:
         sub_messages = list(messages) + [{"role": "user", "content": task}]
 
-        from core.agent_tools import FUNCTION_TOOL_SCHEMAS as _FTS
         from core.agent_helpers import _resolve_tool_blocks
+        from core.agent_tools import FUNCTION_TOOL_SCHEMAS as _FTS
         from core.llm_core import stream_llm_with_fallback
 
         tool_schemas = [

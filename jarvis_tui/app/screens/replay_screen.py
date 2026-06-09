@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from textual.app import ComposeResult
-from textual.screen import Screen
-from textual.widgets import Static, Label, ProgressBar, Footer
-from textual.containers import Vertical, Horizontal
-from textual.binding import Binding
-from textual.reactive import reactive
 from rich.panel import Panel
+from textual.app import ComposeResult
+from textual.binding import Binding
+from textual.containers import Horizontal, Vertical
+from textual.reactive import reactive
+from textual.screen import Screen
+from textual.widgets import Footer, Label, ProgressBar, Static
+
 
 class ReplayScreen(Screen):
     """
@@ -21,7 +22,7 @@ class ReplayScreen(Screen):
 
     index = reactive(0)
     playing = reactive(False)
-    
+
     # Mock history for now
     history = [
         {"agent": "NEXUS", "content": "Initializing research on 'quantum computing'...", "type": "thought"},
@@ -46,12 +47,12 @@ class ReplayScreen(Screen):
             event = self.history[index]
             viewer = self.query_one("#replay-viewer", Static)
             progress = self.query_one("#replay-progress", ProgressBar)
-            
+
             # Render event
             content = f"[bold magenta]{event['agent']}[/bold magenta]\n"
             content += f"[italic dim]{event['type']}[/italic dim]\n\n"
             content += event["content"]
-            
+
             viewer.update(Panel(content, border_style="blue"))
             progress.progress = index
 

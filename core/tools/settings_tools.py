@@ -1,17 +1,28 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import asyncio
 import json
 import logging
 import re
-from typing import Any, Dict, List, Optional
 
-from core.tools._tool_utils import MAX_OUTPUT_CHARS, MAX_READ_CHARS, _parse_tool_args, get_mcp_manager
+from core.tools._tool_utils import _parse_tool_args
 
 logger = logging.getLogger(__name__)
 
 
 # Settings/preferences management
 
-def _do_manage_settings_sync(content: str, owner: Optional[str] = None) -> Dict:
+def _do_manage_settings_sync(content: str, owner: str | None = None) -> dict:
     try:
         args = _parse_tool_args(content)
     except ValueError:
@@ -22,7 +33,7 @@ def _do_manage_settings_sync(content: str, owner: Optional[str] = None) -> Dict:
     from core.database_models import SessionLocal
     db = SessionLocal()
     try:
-        from core.settings_legacy import load_settings, save_settings, DEFAULT_SETTINGS
+        from core.settings_legacy import DEFAULT_SETTINGS, load_settings, save_settings
 
         _SECRET_KEYS = {
             "brave_api_key", "google_pse_key", "google_pse_cx",
@@ -84,6 +95,7 @@ def _do_manage_settings_sync(content: str, owner: Optional[str] = None) -> Dict:
         def _endpoint_model_from_cache(model_query: str):
             import json as _json
             import re as _re
+
             from core.database_models import ModelEndpoint
 
             wanted = (model_query or "").strip()
@@ -177,7 +189,7 @@ def _do_manage_settings_sync(content: str, owner: Optional[str] = None) -> Dict:
             return {"response": f"Reset {key} to default ({DEFAULT_SETTINGS[key]}).", "exit_code": 0}
 
         elif action in ("disable_tool", "enable_tool", "list_tools"):
-            from core.settings_legacy import get_setting, save_settings, load_settings
+            from core.settings_legacy import get_setting, load_settings, save_settings
             _ALIASES = {
                 "shell": ["bash"],
                 "terminal": ["bash"],
@@ -248,13 +260,13 @@ def _do_manage_settings_sync(content: str, owner: Optional[str] = None) -> Dict:
         db.close()
 
 
-async def do_manage_settings(content: str, owner: Optional[str] = None) -> Dict:
+async def do_manage_settings(content: str, owner: str | None = None) -> dict:
     return await asyncio.to_thread(_do_manage_settings_sync, content, owner)
 
 
 # API call tool
 
-async def do_api_call(content: str) -> Dict:
+async def do_api_call(content: str) -> dict:
     from core.integrations import execute_api_call, load_integrations
     try:
         args = json.loads(content)
@@ -291,10 +303,12 @@ async def do_api_call(content: str) -> Dict:
 
 # Notes / checklists management
 
-def _do_manage_notes_sync(content: str, owner: Optional[str] = None) -> Dict:
+def _do_manage_notes_sync(content: str, owner: str | None = None) -> dict:
     import uuid as _uuid
-    from core.database_models import SessionLocal, Note
+
     from sqlalchemy.orm.attributes import flag_modified
+
+    from core.database_models import Note, SessionLocal
 
     try:
         args = _parse_tool_args(content)
@@ -478,17 +492,25 @@ def _do_manage_notes_sync(content: str, owner: Optional[str] = None) -> Dict:
         db.close()
 
 
-async def do_manage_notes(content: str, owner: Optional[str] = None) -> Dict:
+async def do_manage_notes(content: str, owner: str | None = None) -> dict:
     return await asyncio.to_thread(_do_manage_notes_sync, content, owner)
 
 
 # Calendar tool — CalDAV-backed event CRUD
 
-def _do_manage_calendar_sync(content: str, owner: Optional[str] = None) -> Dict:
-    from datetime import datetime, timedelta
-    from core.database_models import SessionLocal, CalendarCal, CalendarEvent, Note
-    from routes.calendar_routes import _ensure_default_calendar, _parse_dt, _parse_dt_pair, parse_due_for_user, _resolve_base_uid
+def _do_manage_calendar_sync(content: str, owner: str | None = None) -> dict:
     import uuid as _uuid
+    from datetime import datetime, timedelta
+
+    from routes.calendar_routes import (
+        _ensure_default_calendar,
+        _parse_dt,
+        _parse_dt_pair,
+        _resolve_base_uid,
+        parse_due_for_user,
+    )
+
+    from core.database_models import CalendarCal, CalendarEvent, Note, SessionLocal
 
     try:
         args = _parse_tool_args(content)
@@ -517,7 +539,7 @@ def _do_manage_calendar_sync(content: str, owner: Optional[str] = None) -> Dict:
             q = q.filter(CalendarCal.owner == owner)
         return q
 
-    def _reminder_minutes(raw_args) -> Optional[int]:
+    def _reminder_minutes(raw_args) -> int | None:
         raw = (
             raw_args.get("reminder_minutes")
             or raw_args.get("remind_before_minutes")
@@ -548,7 +570,7 @@ def _do_manage_calendar_sync(content: str, owner: Optional[str] = None) -> Dict:
             return max(0, int(text))
         return None
 
-    def _event_description(raw_args, minutes_before: Optional[int]) -> str:
+    def _event_description(raw_args, minutes_before: int | None) -> str:
         desc = str(raw_args.get("description", "") or "")
         if minutes_before is None:
             return desc
@@ -564,7 +586,7 @@ def _do_manage_calendar_sync(content: str, owner: Optional[str] = None) -> Dict:
 
     def _create_calendar_reminder(summary: str, location: str, dtstart: datetime,
                                   all_day: bool, minutes_before: int,
-                                  is_utc: bool = False) -> tuple[Optional[str], Optional[str]]:
+                                  is_utc: bool = False) -> tuple[str | None, str | None]:
         remind_at = dtstart - timedelta(minutes=minutes_before)
         now = datetime.utcnow() if is_utc else datetime.now()
         if dtstart <= now:
@@ -887,5 +909,5 @@ def _do_manage_calendar_sync(content: str, owner: Optional[str] = None) -> Dict:
         db.close()
 
 
-async def do_manage_calendar(content: str, owner: Optional[str] = None) -> Dict:
+async def do_manage_calendar(content: str, owner: str | None = None) -> dict:
     return await asyncio.to_thread(_do_manage_calendar_sync, content, owner)

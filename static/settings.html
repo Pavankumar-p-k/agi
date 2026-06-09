@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>JARVIS — Settings</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#00d4ff">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap');
+
+:root {
+  --bg:       #0a0e17;
+  --surface:  #111827;
+  --card:     #1a2235;
+  --border:   #1e293b;
+  --cyan:     #00f5ff;
+  --green:    #00ff9d;
+  --orange:   #ff6d00;
+  --red:      #ff2d55;
+  --dim:      #94a3b8;
+  --text:     #e2e8f0;
+  --muted:    #475569;
+  --sidebar-w: 200px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Rajdhani', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+}
+
+.sidebar {
+  width: var(--sidebar-w);
+  min-width: var(--sidebar-w);
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+}
+
+.sidebar-header {
+  padding: 20px 16px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.sidebar-header h1 {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--cyan);
+  text-transform: uppercase;
+}
+
+.sidebar-nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+.nav-item {
+  display: block;
+  width: 100%;
+  padding: 10px 16px;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  text-align: left;
+  transition: all 0.15s;
+  border-left: 3px solid transparent;
+}
+.nav-item:hover { color: var(--text); background: rgba(255,255,255,0.03); }
+.nav-item.active {
+  color: var(--cyan);
+  background: rgba(0,245,255,0.06);
+  border-left-color: var(--cyan);
+}
+
+.main {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+  height: 100vh;
+}
+
+.search-box {
+  width: 100%;
+  max-width: 400px;
+  padding: 10px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 13px;
+  margin-bottom: 16px;
+  outline: none;
+}
+.search-box:focus { border-color: var(--cyan); }
+.search-box::placeholder { color: var(--muted); }
+
+.page { display: none; }
+.page.active { display: block; }
+
+.section-title {
+  color: var(--cyan);
+  font-size: 16px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 20px 0 8px;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin-bottom: 8px;
+  transition: border-color 0.2s;
+}
+.card:hover { border-color: #334155; }
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+.card-key {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 12px;
+  color: var(--cyan);
+  letter-spacing: 0.3px;
+  margin-bottom: 2px;
+}
+.card-desc {
+  font-size: 13px;
+  color: var(--dim);
+  margin-bottom: 8px;
+}
+.card-body { margin-top: 8px; }
+
+.setting-input {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 13px;
+  outline: none;
+}
+.setting-input:focus { border-color: var(--cyan); }
+
+.setting-select {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 14px;
+  outline: none;
+  cursor: pointer;
+}
+.setting-select:focus { border-color: var(--cyan); }
+
+.env-tag {
+  display: inline-block;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  padding: 2px 6px;
+  background: rgba(0,245,255,0.08);
+  color: var(--cyan);
+  border-radius: 3px;
+  margin-top: 4px;
+}
+.default-tag {
+  display: inline-block;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  padding: 2px 6px;
+  background: rgba(0,255,157,0.08);
+  color: var(--green);
+  border-radius: 3px;
+  margin-top: 4px;
+}
+.secret-tag {
+  display: inline-block;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  padding: 2px 6px;
+  background: rgba(255,45,85,0.12);
+  color: var(--red);
+  border-radius: 3px;
+  margin-top: 4px;
+}
+
+.btn {
+  padding: 6px 16px;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-primary { background: var(--cyan); color: #000; }
+.btn-primary:hover { background: #33f7ff; }
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  padding: 12px 20px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 14px;
+  z-index: 999;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.3s;
+  pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateY(0); }
+.toast-success { background: var(--green); color: #000; }
+.toast-error { background: var(--red); color: #fff; }
+
+.models-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.model-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px 14px;
+}
+.model-name { font-family: 'Share Tech Mono', monospace; font-size: 13px; color: var(--text); }
+.model-provider { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.model-size { font-size: 11px; color: var(--dim); margin-top: 2px; }
+
+.group-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.group-name {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 13px;
+  color: var(--cyan);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.group-model {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 12px;
+  color: var(--green);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.status-bar {
+  padding: 0 0 16px;
+  color: var(--dim);
+  font-size: 13px;
+}
+
+@media (max-width: 720px) {
+  body { flex-direction: column; }
+  .sidebar { width: 100%; min-width: unset; height: auto; position: static; }
+  .sidebar-nav { display: flex; flex-wrap: wrap; padding: 4px; }
+  .nav-item { width: auto; border-left: none; border-bottom: 2px solid transparent; padding: 8px 12px; font-size: 12px; }
+  .nav-item.active { border-left: none; border-bottom-color: var(--cyan); }
+  .main { padding: 14px; }
+  .card-header { flex-direction: column; }
+}
+</style>
+</head>
+<body>
+<nav class="sidebar">
+  <div class="sidebar-header"><h1>Settings</h1></div>
+  <div class="sidebar-nav" id="nav">
+    <button class="nav-item active" data-page="settings">Settings</button>
+    <button class="nav-item" data-page="models">Models</button>
+    <button class="nav-item" data-page="groups">Model Groups</button>
+  </div>
+</nav>
+
+<div class="main">
+  <div class="status-bar" id="statusBar"></div>
+
+  <div id="page-settings" class="page active">
+    <input class="search-box" id="search" placeholder="Search settings..." autofocus>
+    <div id="settings-list"></div>
+  </div>
+
+  <div id="page-models" class="page">
+    <div id="models-list"></div>
+  </div>
+
+  <div id="page-groups" class="page">
+    <div id="groups-list"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = '/api';
+let allSettings = [];
+let allModels = [];
+let allGroups = {};
+
+async function api(path, opts = {}) {
+  const res = await fetch(`${API}${path}`, {
+    headers: { 'Content-Type': 'application/json' },
+    ...opts,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail?.[0]?.msg || err.detail || res.statusText);
+  }
+  return res.json();
+}
+
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast toast-${type} show`;
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+async function loadSettings() {
+  allSettings = await api('/settings');
+  renderSettings(allSettings);
+  document.getElementById('statusBar').innerHTML = `<span>${allSettings.length} settings</span>`;
+}
+
+function renderSettings(settings) {
+  const el = document.getElementById('settings-list');
+  el.innerHTML = '';
+  const cats = {};
+  for (const s of settings) {
+    (cats[s.category || 'general'] = cats[s.category || 'general'] || []).push(s);
+  }
+  for (const [cat, items] of Object.entries(cats)) {
+    const h = document.createElement('div');
+    h.className = 'section-title';
+    h.textContent = cat;
+    el.appendChild(h);
+    for (const s of items) el.appendChild(createCard(s));
+  }
+}
+
+function createCard(s) {
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.dataset.key = s.key;
+
+  let inputHtml = '';
+  const isBool = s.type === 'bool';
+  const hasOptions = s.options && s.options.length > 0;
+
+  if (isBool) {
+    const checked = s.value === true || s.value === 'true' || s.value === 1;
+    inputHtml = `<label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+      <input type="checkbox" ${checked ? 'checked' : ''} data-key="${s.key}" style="width:18px;height:18px;accent-color:var(--cyan);">
+      <span style="font-size:13px;color:${checked ? 'var(--green)' : 'var(--dim)'}">${checked ? 'Enabled' : 'Disabled'}</span>
+    </label>`;
+  } else if (hasOptions) {
+    inputHtml = `<select class="setting-select" data-key="${s.key}">${s.options.map(o => `<option value="${o}"${o === s.value ? ' selected' : ''}>${o}</option>`).join('')}</select>`;
+  } else if (s.secret) {
+    inputHtml = `<input class="setting-input" type="password" value="${s.value || ''}" data-key="${s.key}" placeholder="Set via ${s.env_var || 'secret key'}">`;
+  } else {
+    inputHtml = `<input class="setting-input" value="${(s.value ?? '').toString().replace(/"/g,'&quot;')}" data-key="${s.key}">`;
+  }
+
+  const showDefault = s.value !== undefined && s.value !== s.default && s.default !== undefined;
+  const tags = [];
+  if (s.env_var) tags.push(`<span class="env-tag">${s.env_var}</span>`);
+  if (s.secret) tags.push(`<span class="secret-tag">secret</span>`);
+  if (showDefault && !s.secret) tags.push(`<span class="default-tag">default: ${s.default}</span>`);
+
+  card.innerHTML = `
+    <div class="card-header">
+      <div>
+        <div class="card-key">${s.key}</div>
+        <div class="card-desc">${s.description || ''}</div>
+        ${tags.join(' ')}
+      </div>
+      <button class="btn btn-primary save-btn" data-key="${s.key}" disabled>Save</button>
+    </div>
+    <div class="card-body">${inputHtml}</div>
+  `;
+
+  const input = card.querySelector('[data-key]');
+  const saveBtn = card.querySelector('.save-btn');
+  function onChanged() { saveBtn.disabled = false; }
+  if (input.type === 'checkbox') input.addEventListener('change', onChanged);
+  else input.addEventListener('input', onChanged);
+
+  saveBtn.addEventListener('click', async () => {
+    let val;
+    if (isBool) val = input.checked;
+    else if (hasOptions) val = input.value;
+    else if (s.type === 'int' || s.type === 'float') {
+      val = s.type === 'int' ? parseInt(input.value, 10) : parseFloat(input.value);
+      if (isNaN(val)) { showToast('Invalid number', 'error'); return; }
+    } else val = input.value;
+    try {
+      await api(`/settings/${s.key}`, { method: 'PUT', body: JSON.stringify({ value: val }) });
+      showToast(`Saved: ${s.key}`);
+      saveBtn.disabled = true;
+    } catch (e) { showToast(`Error: ${e.message}`, 'error'); }
+  });
+  return card;
+}
+
+async function loadModels() {
+  const data = await api('/models');
+  allModels = data.models || [];
+  renderModels(allModels);
+}
+
+function renderModels(models) {
+  const el = document.getElementById('models-list');
+  el.innerHTML = '<div class="section-title">Available Models</div>';
+  if (!models.length) { el.innerHTML += '<div class="empty-state">No models found</div>'; return; }
+  const grid = document.createElement('div');
+  grid.className = 'models-grid';
+  for (const m of models) {
+    const card = document.createElement('div');
+    card.className = 'model-card';
+    const sz = m.size ? `${(m.size / 1e9).toFixed(1)} GB` : '';
+    card.innerHTML = `<div class="model-name">${m.name}</div><div class="model-provider">${m.provider}</div>${sz ? `<div class="model-size">${sz}</div>` : ''}`;
+    grid.appendChild(card);
+  }
+  el.appendChild(grid);
+}
+
+async function loadGroups() {
+  const data = await api('/models/groups');
+  allGroups = data.groups || {};
+  renderGroups(allGroups, data);
+}
+
+function renderGroups(groups, extra) {
+  const el = document.getElementById('groups-list');
+  el.innerHTML = '<div class="section-title">Model Groups</div>';
+  const entries = Object.entries(groups);
+  if (!entries.length) { el.innerHTML += '<div class="empty-state">No groups configured</div>'; return; }
+  for (const [name, model] of entries) {
+    const card = document.createElement('div');
+    card.className = 'group-card';
+    card.innerHTML = `<span class="group-name">${name}</span><span class="group-model">${model}</span>`;
+    el.appendChild(card);
+  }
+  if (extra?.reasoning_engine_uses) {
+    const info = document.createElement('div');
+    info.style.cssText = 'margin-top:12px;padding:10px 14px;background:var(--card);border:1px solid var(--border);border-radius:6px;font-size:13px;';
+    info.innerHTML = `<span style="color:var(--dim);">Reasoning engine uses group:</span><span style="color:var(--cyan);font-family:Share Tech Mono,monospace;margin-left:6px;">${extra.reasoning_engine_uses}</span><br><span style="color:var(--dim);">Effective reasoning model:</span><span style="color:var(--green);font-family:Share Tech Mono,monospace;margin-left:6px;">${extra.effective_reasoning_model}</span>`;
+    el.appendChild(info);
+  }
+}
+
+document.getElementById('nav').addEventListener('click', e => {
+  const item = e.target.closest('.nav-item');
+  if (!item) return;
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  item.classList.add('active');
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(`page-${item.dataset.page}`).classList.add('active');
+  if (item.dataset.page === 'models' && !allModels.length) loadModels();
+  if (item.dataset.page === 'groups' && !Object.keys(allGroups).length) loadGroups();
+});
+
+document.getElementById('search').addEventListener('input', e => {
+  const q = e.target.value.toLowerCase();
+  document.querySelectorAll('.card').forEach(card => {
+    card.style.display = card.dataset.key.toLowerCase().includes(q) || card.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+});
+
+loadSettings();
+</script>
+</body>
+</html>

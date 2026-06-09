@@ -1,3 +1,15 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 # api/vision_routes.py
 """
 VISION AGENT API — add to existing JARVIS main.py:
@@ -11,27 +23,28 @@ VISION AGENT API — add to existing JARVIS main.py:
       await init_agents()
 """
 
-import asyncio, time
-from fastapi import APIRouter, BackgroundTasks
-from fastapi.responses import JSONResponse
-from pydantic import BaseModel
-from typing import Optional
+import asyncio
+import time
 
-from pc_agent.playbooks  import match, build_steps
+from fastapi import APIRouter, BackgroundTasks
+from pydantic import BaseModel
+
+from pc_agent.playbooks import build_steps, match
 
 router = APIRouter(prefix="/vision", tags=["vision"])
 
-_agent:   Optional[object] = None
+_agent:   object | None = None
 _VisionAgent: type = None
 _Task: type = None
 _tasks:   dict = {}    # bg tasks: id → result
-_running: Optional[str] = None   # currently running task id
+_running: str | None = None   # currently running task id
 
 
 async def _lazy_init():
     global _VisionAgent, _Task
     if _VisionAgent is None:
-        from core.vision_agent import VisionAgent, Task as VA_Task
+        from core.vision_agent import Task as VA_Task
+        from core.vision_agent import VisionAgent
         _VisionAgent = VisionAgent
         _Task = VA_Task
 
@@ -202,7 +215,7 @@ async def _execute(tid: str, instr: str, platform: str) -> dict:
         return {"task_id": tid, "status": "failed", "error": str(e), "latency_ms": int((time.time()-t0)*1000)}
 
 
-def _task_dict(task: object, t0: float, playbook: Optional[str]) -> dict:
+def _task_dict(task: object, t0: float, playbook: str | None) -> dict:
     done  = sum(1 for s in task.steps if isinstance(s,dict) and s.get("_status")=="done")
     total = len(task.steps)
     return {

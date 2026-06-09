@@ -1,3 +1,15 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 # api/agi_routes.py
 #
 # AGI REST API — all AGI capabilities exposed as endpoints
@@ -7,14 +19,11 @@
 #   app.include_router(agi_router)
 #   # startup: await get_agi().start()
 
-import asyncio
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from typing import Optional
 
 from core.agi_core import get_agi
-
 
 router = APIRouter(prefix="/agi", tags=["agi"])
 
@@ -31,8 +40,8 @@ class SolveRequest(BaseModel):
 
 class AgentRunRequest(BaseModel):
     task: str
-    mode: Optional[str] = None
-    agent: Optional[str] = None
+    mode: str | None = None
+    agent: str | None = None
 
 class ResearchRequest(BaseModel):
     query: str
@@ -48,10 +57,10 @@ class HabitRequest(BaseModel):
     params:       dict = {}
 
 class ConfigRequest(BaseModel):
-    autonomous_enabled:   Optional[bool]  = None
-    confidence_threshold: Optional[float] = None
-    dnd_mode:             Optional[bool]  = None
-    dnd_hours:            Optional[list]  = None
+    autonomous_enabled:   bool | None  = None
+    confidence_threshold: float | None = None
+    dnd_mode:             bool | None  = None
+    dnd_hours:            list | None  = None
 
 
 # -------------------------------------------------------------
@@ -62,19 +71,15 @@ class ConfigRequest(BaseModel):
 async def agi_status():
     """Current AGI status, loop count, goals, decisions."""
     agi = get_agi()
-    try:
-        stats = await agi.memory.get_stats()
-        return {
-            **agi.get_status(),
-            "memory_stats":     stats,
-            "reflector_stats":  agi.reflector.get_stats(),
-            "last_predictions": agi.predictor.get_last_predictions(),
-        }
-    except NotImplementedError as e:
-        return JSONResponse(
-            status_code=501,
-            content={"error": "feature not implemented", "detail": str(e)}
-        )
+    memory_stats = await agi.memory.get_stats() if agi.memory else {"info": "not connected"}
+    reflector_stats = agi.reflector.get_stats() if agi.reflector else {}
+    last_predictions = agi.predictor.get_last_predictions() if agi.predictor else []
+    return {
+        **agi.get_status(),
+        "memory_stats": memory_stats,
+        "reflector_stats": reflector_stats,
+        "last_predictions": last_predictions,
+    }
 
 
 @router.post("/goal")
@@ -128,17 +133,10 @@ async def solve_problem(req: SolveRequest):
 async def get_patterns():
     """View all learned behavioral patterns."""
     agi = get_agi()
-    try:
-        return {
-            "patterns":    agi.patterns.get_all_patterns(),
-            "habits":      agi.habits.get_habits(),
-            "habit_summary": agi.habits.get_daily_summary(),
-        }
-    except NotImplementedError as e:
-        return JSONResponse(
-            status_code=501,
-            content={"error": "feature not implemented", "detail": str(e)}
-        )
+    patterns = agi.patterns.get_all_patterns() if agi.patterns else []
+    habits = agi.habits.get_habits() if agi.habits else []
+    summary = agi.habits.get_daily_summary() if agi.habits else {}
+    return {"patterns": patterns, "habits": habits, "habit_summary": summary}
 
 
 @router.get("/predictions")
@@ -146,37 +144,27 @@ async def get_predictions():
     """See what JARVIS is currently predicting you'll need."""
     agi   = get_agi()
     state = await agi._observe()
-    try:
-        predictions = await agi.predictor.predict(state)
-        return {
-            "state":       {"hour": state.hour, "mood": state.pavan_mood, "weekend": state.is_weekend},
-            "predictions": predictions,
-        }
-    except NotImplementedError as e:
-        return JSONResponse(
-            status_code=501,
-            content={"error": "feature not implemented", "detail": str(e)}
-        )
+    predictions = await agi.predictor.predict(state) if agi.predictor else []
+    return {
+        "state": {"hour": state.hour, "mood": state.pavan_mood, "weekend": state.is_weekend},
+        "predictions": predictions,
+    }
 
 
 @router.post("/habit")
 async def add_habit(req: HabitRequest):
     """Add a recurring habit for JARVIS to act on automatically."""
     agi = get_agi()
-    try:
-        h_id = agi.habits.add_habit(
-            description=req.description,
-            trigger_hour=req.trigger_hour,
-            trigger_days=req.trigger_days,
-            action=req.action,
-            params=req.params,
-        )
-        return {"habit_id": h_id, "status": "added"}
-    except NotImplementedError as e:
-        return JSONResponse(
-            status_code=501,
-            content={"error": "feature not implemented", "detail": str(e)}
-        )
+    if not agi.habits:
+        return JSONResponse(status_code=501, content={"error": "feature not implemented", "detail": "Habit engine not connected"})
+    h_id = agi.habits.add_habit(
+        description=req.description,
+        trigger_hour=req.trigger_hour,
+        trigger_days=req.trigger_days,
+        action=req.action,
+        params=req.params,
+    )
+    return {"habit_id": h_id, "status": "added"}
 
 
 @router.get("/decisions")
@@ -193,13 +181,9 @@ async def get_decisions(n: int = 20):
 async def get_reflections():
     """View JARVIS's self-improvement reflections."""
     agi = get_agi()
-    try:
-        return agi.reflector.get_stats()
-    except NotImplementedError as e:
-        return JSONResponse(
-            status_code=501,
-            content={"error": "feature not implemented", "detail": str(e)}
-        )
+    if not agi.reflector:
+        return JSONResponse(status_code=501, content={"error": "feature not implemented", "detail": "Reflector not connected"})
+    return agi.reflector.get_stats()
 
 
 @router.post("/config")
@@ -217,14 +201,10 @@ async def configure_agi(req: ConfigRequest):
         changes["confidence_threshold"] = req.confidence_threshold
 
     if req.dnd_mode is not None:
-        try:
-            agi.goal_planner.set_dnd(req.dnd_mode, req.dnd_hours or [])
-            changes["dnd_mode"] = req.dnd_mode
-        except NotImplementedError as e:
-            return JSONResponse(
-                status_code=501,
-                content={"error": "feature not implemented", "detail": str(e)}
-            )
+        if not agi.goal_planner:
+            return JSONResponse(status_code=501, content={"error": "feature not implemented", "detail": "Goal planner not connected"})
+        agi.goal_planner.set_dnd(req.dnd_mode, req.dnd_hours or [])
+        changes["dnd_mode"] = req.dnd_mode
 
     return {"updated": changes}
 
@@ -234,19 +214,14 @@ async def manual_trigger():
     """Manually trigger one AGI loop cycle (for testing)."""
     agi = get_agi()
     state = await agi._observe()
-    try:
+    if agi.patterns:
         await agi.patterns.learn_from_state(state)
-        predictions = await agi.predictor.predict(state)
-        return {
-            "state":       {"hour": state.hour, "mood": state.pavan_mood},
-            "predictions": predictions,
-            "loop_count":  agi._loop_count,
-        }
-    except NotImplementedError as e:
-        return JSONResponse(
-            status_code=501,
-            content={"error": "feature not implemented", "detail": str(e)}
-        )
+    predictions = await agi.predictor.predict(state) if agi.predictor else []
+    return {
+        "state": {"hour": state.hour, "mood": state.pavan_mood},
+        "predictions": predictions,
+        "loop_count": agi._loop_count,
+    }
 
 
 # ── Agent Management ─────────────────────────────────────

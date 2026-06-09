@@ -1,3 +1,4 @@
+import unittest.mock
 import pytest
 from core.ssrf import is_private_ip, resolve_and_check, assert_safe_url
 
@@ -66,7 +67,13 @@ class TestResolveAndCheck:
 
 class TestAssertSafeUrl:
     def test_public_url(self):
-        assert_safe_url("https://example.com")
+        import httpx
+        with unittest.mock.patch.object(httpx, "Client") as mock_client:
+            mock_instance = mock_client.return_value.__enter__.return_value
+            mock_response = unittest.mock.MagicMock()
+            mock_response.url = "https://example.com"
+            mock_instance.get.return_value = mock_response
+            assert_safe_url("https://example.com")
 
     def test_private_url_raises(self):
         with pytest.raises(ValueError, match="SSRF blocked"):

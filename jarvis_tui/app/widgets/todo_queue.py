@@ -2,9 +2,8 @@ from __future__ import annotations
 
 from textual.app import ComposeResult
 from textual.widget import Widget
-from textual.widgets import Label, Static, ListView, ListItem
-from textual.containers import Vertical
-from textual.reactive import reactive
+from textual.widgets import Label, ListItem, ListView
+
 
 class TodoItem(ListItem):
     def __init__(self, todo_text: str, todo_status: str = "todo", **kwargs):

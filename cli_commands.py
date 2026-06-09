@@ -7,30 +7,37 @@ import os
 import subprocess
 import sys
 import time
-from pathlib import Path
 
-from cli_utils import python_exe, common_env, run_command, spawn_background, IDE_PRESETS, colorize
-from cli_state import ROOT, BACKEND, APPS, AUTONOMY_CLI, STUDENT_MAIN, MODEL_PORTS, CliState, HISTORY_PATH
-from cli_helpers import build_cli_context, is_agentic_prompt, print_plan_preview, workspace_snapshot
-from cli_server import (
-    backend_server_cmd, ensure_server_running, ensure_ollama_running,
-    ensure_local_stack_running, stop_local_services, is_ollama_reachable,
-)
+from cli_helpers import build_cli_context, is_agentic_prompt, print_plan_preview
 from cli_requests import (
-    request_json, poll_job, poll_supervisor, stream_chat_ws,
-    extract_reply, is_limited_mode_reply, run_autonomy_cli,
+    extract_reply,
+    is_limited_mode_reply,
+    poll_job,
+    request_json,
+    run_autonomy_cli,
+    stream_chat_ws,
 )
-from cli_slash_commands import handle_cli_slash_command, print_help
+from cli_server import (
+    backend_server_cmd,
+    ensure_local_stack_running,
+    ensure_ollama_running,
+    is_ollama_reachable,
+    stop_local_services,
+)
+from cli_slash_commands import handle_cli_slash_command
+from cli_state import APPS, BACKEND, HISTORY_PATH, MODEL_PORTS, ROOT, STUDENT_MAIN, CliState
+from cli_utils import IDE_PRESETS, colorize, common_env, python_exe, run_command, spawn_background
 from cli_visuals import render_agents, render_boot_screen, render_design_plan, render_routing_decision
 
 
 def cmd_cli(args: argparse.Namespace) -> int:
-    from core.session import ConversationManager, get_last_session_id, list_sessions
     from prompt_toolkit.formatted_text import FormattedText
-    from prompt_toolkit.shortcuts import PromptSession
     from prompt_toolkit.history import FileHistory
+    from prompt_toolkit.shortcuts import PromptSession
+
     from cli_completer import JarvisCompleter
     from cli_utils import style_theme
+    from core.session import ConversationManager, get_last_session_id
 
     env = common_env()
     base_url = env.get("JARVIS_SERVER", "http://127.0.0.1:8000")
@@ -217,19 +224,20 @@ def cmd_cli(args: argparse.Namespace) -> int:
 
 def cmd_tui(args: argparse.Namespace) -> int:
     """Launch the production-grade JARVIS TUI built with Textual."""
-    import subprocess
     import os
-    from cli_utils import common_env
+    import subprocess
+
     from cli_server import ensure_local_stack_running
-    
+    from cli_utils import common_env
+
     env = common_env()
     ensure_local_stack_running(env)
-    
+
     tui_path = os.path.join(os.path.dirname(__file__), "jarvis_tui", "main.py")
     if not os.path.exists(tui_path):
         print(f"JARVIS TUI not found at {tui_path}")
         return 1
-        
+
     print("Launching JARVIS Production TUI...")
     # Using sys.executable to ensure we use the same environment
     # Pass common_env to the subprocess so it has access to JARVIS_SERVER etc.
@@ -713,6 +721,7 @@ def cmd_agent_list(args):
 
 def cmd_agent_run(args):
     import asyncio
+
     from core.sub_agents.registry import agent_registry
     result = asyncio.run(agent_registry.run(
         args.name.upper(), args.task,
@@ -800,8 +809,8 @@ def cmd_agent_shortcut(args, agent_name: str):
 
 
 def cmd_plugin(args):
-    from core.plugins.registry import get_plugin_registry
     from core.plugins.loader import get_plugin_loader
+    from core.plugins.registry import get_plugin_registry
     registry = get_plugin_registry()
     loader = get_plugin_loader()
 
@@ -858,8 +867,9 @@ def cmd_plugin(args):
 
 def cmd_cloud(args):
     import asyncio
-    from core.cloud.supabase_client import is_connected
+
     from core.cloud.cloud_memory import CloudMemory
+    from core.cloud.supabase_client import is_connected
 
     if args.cloud_action == "status":
         print("Supabase:", "Connected" if is_connected() else "Offline (SQLite mode)")
@@ -877,6 +887,7 @@ def cmd_cloud(args):
 
 def cmd_project(args):
     import asyncio
+
     from core.cloud.project_manager import ProjectManager
     pm = ProjectManager()
 
@@ -975,7 +986,7 @@ def cmd_setup(args: argparse.Namespace) -> int:
         print(f"  [{chr(0x221A)}] API keys detected: {', '.join(found_keys)}")
         passed += 1
     else:
-        print(f"  [i] No API keys found. Set OPENAI_API_KEY or ANTHROPIC_API_KEY in your environment.")
+        print("  [i] No API keys found. Set OPENAI_API_KEY or ANTHROPIC_API_KEY in your environment.")
         checks -= 1
 
     # 5. Docker
@@ -987,7 +998,7 @@ def cmd_setup(args: argparse.Namespace) -> int:
         if docker_ok:
             passed += 1
     except (FileNotFoundError, subprocess.TimeoutExpired):
-        print(f"  [i] Docker not found (sandboxing unavailable)")
+        print("  [i] Docker not found (sandboxing unavailable)")
 
     # 6. Git repo
     checks += 1
@@ -998,7 +1009,7 @@ def cmd_setup(args: argparse.Namespace) -> int:
         if git_ok:
             passed += 1
     except (FileNotFoundError, subprocess.TimeoutExpired):
-        print(f"  [i] Git not found")
+        print("  [i] Git not found")
 
     # Summary
     print()

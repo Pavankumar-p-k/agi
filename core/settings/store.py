@@ -1,25 +1,39 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 from __future__ import annotations
-import os
+
 import json
-import shutil
 import logging
+import os
+import shutil
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
+
 from pydantic import BaseModel, ValidationError
 
-from core.settings.schema import JarvisSettings
 from ai_os.event_bus import EventBus
+from core.settings.schema import JarvisSettings
 
 logger = logging.getLogger("jarvis.settings")
 
 class SettingsStore:
-    def __init__(self, config_dir: Optional[Path] = None, event_bus: Optional[EventBus] = None):
+    def __init__(self, config_dir: Path | None = None, event_bus: EventBus | None = None):
         self.config_dir = config_dir or Path.home() / ".jarvis"
         self.settings_file = self.config_dir / "settings.json"
         self.backup_file = self.config_dir / "settings.json.bak"
         self.event_bus = event_bus
         self._settings: JarvisSettings = JarvisSettings()
-        
+
         # Ensure config directory exists
         self.config_dir.mkdir(parents=True, exist_ok=True)
 
@@ -27,7 +41,7 @@ class SettingsStore:
         """Load settings from file, with fallback to migration or defaults."""
         if self.settings_file.exists():
             try:
-                with open(self.settings_file, "r", encoding="utf-8") as f:
+                with open(self.settings_file, encoding="utf-8") as f:
                     data = json.load(f)
                 self._settings = JarvisSettings.model_validate(data)
                 return self._settings
@@ -37,7 +51,7 @@ class SettingsStore:
                 if self.backup_file.exists():
                     logger.info("Attempting to load settings from backup...")
                     try:
-                        with open(self.backup_file, "r", encoding="utf-8") as f:
+                        with open(self.backup_file, encoding="utf-8") as f:
                             data = json.load(f)
                         self._settings = JarvisSettings.model_validate(data)
                         return self._settings
@@ -53,9 +67,9 @@ class SettingsStore:
     def _migrate_legacy_configs(self):
         """Migrate settings from .env and config.yaml."""
         logger.info("Migrating legacy configurations...")
-        
+
         # Migration from .env (via os.getenv which should have it loaded)
-        def env_to_bool(val: Optional[str]) -> Optional[bool]:
+        def env_to_bool(val: str | None) -> bool | None:
             if val is None: return None
             return val.lower() in ("1", "true", "yes", "on")
 
@@ -64,20 +78,20 @@ class SettingsStore:
         if os.getenv("AIOS_PLANNER_MODEL"): self._settings.llm.planner_model = os.getenv("AIOS_PLANNER_MODEL")
         if os.getenv("AIOS_REASONING_MODEL"): self._settings.llm.reasoning_model = os.getenv("AIOS_REASONING_MODEL")
         if os.getenv("AIOS_FAST_MODEL"): self._settings.llm.fast_model = os.getenv("AIOS_FAST_MODEL")
-        
+
         # Voice
         if os.getenv("WAKE_WORD_ENABLED"): self._settings.voice.wake_word_enabled = env_to_bool(os.getenv("WAKE_WORD_ENABLED"))
         if os.getenv("STT_MODEL"): self._settings.voice.stt_model = os.getenv("STT_MODEL")
         if os.getenv("TTS_VOICE"): self._settings.voice.tts_voice = os.getenv("TTS_VOICE")
-        
+
         # Server
         if os.getenv("HOST"): self._settings.server.host = os.getenv("HOST")
         if os.getenv("PORT"): self._settings.server.port = int(os.getenv("PORT"))
         if os.getenv("JARVIS_DEV_MODE"): self._settings.server.dev_mode = env_to_bool(os.getenv("JARVIS_DEV_MODE"))
-        
+
         # Logging
         if os.getenv("LOG_LEVEL"): self._settings.logging.level = os.getenv("LOG_LEVEL")
-        
+
         # API Keys
         self._settings.news_api_key = os.getenv("NEWS_API_KEY")
         self._settings.openweather_api_key = os.getenv("OPENWEATHER_API_KEY")
@@ -98,7 +112,7 @@ class SettingsStore:
         config_yaml_path = Path("config.yaml")
         if config_yaml_path.exists():
             try:
-                with open(config_yaml_path, "r", encoding="utf-8") as f:
+                with open(config_yaml_path, encoding="utf-8") as f:
                     yaml_data = yaml.safe_load(f)
                 # Currently config.yaml only has plugin info, but we could migrate it here if needed.
                 # For now, we'll keep it simple.
@@ -111,7 +125,7 @@ class SettingsStore:
             # Create backup
             if self.settings_file.exists():
                 shutil.copy2(self.settings_file, self.backup_file)
-            
+
             # Save new settings
             with open(self.settings_file, "w", encoding="utf-8") as f:
                 f.write(self._settings.model_dump_json(indent=2))
@@ -170,10 +184,10 @@ class SettingsStore:
                         target = getattr(target, part)
                     else:
                         raise KeyError
-                
+
                 if not hasattr(target, parts[-1]):
                     raise KeyError
-                
+
                 old_value = getattr(target, parts[-1])
                 setattr(target, parts[-1], value)
         except (KeyError, AttributeError):
@@ -197,7 +211,7 @@ class SettingsStore:
             return True
         return False
 
-    def reset(self, key: Optional[str] = None):
+    def reset(self, key: str | None = None):
         """Reset one key or all to defaults."""
         defaults = JarvisSettings()
         if key:
@@ -227,10 +241,10 @@ class SettingsStore:
 
     def _mask_sensitive(self, data: Any):
         sensitive_keys = {
-            "news_api_key", "openweather_api_key", "alpha_vantage_key", 
-            "composio_api_key", "groq_api_key", "gemini_api_key", 
-            "openai_api_key", "github_token", "telegram_bot_token", 
-            "pexels_api_key", "nvidia_api_key", "meta_whatsapp_token", 
+            "news_api_key", "openweather_api_key", "alpha_vantage_key",
+            "composio_api_key", "groq_api_key", "gemini_api_key",
+            "openai_api_key", "github_token", "telegram_bot_token",
+            "pexels_api_key", "nvidia_api_key", "meta_whatsapp_token",
             "meta_whatsapp_phone_id"
         }
         if isinstance(data, dict):
@@ -265,7 +279,7 @@ class SettingsStore:
     def import_from_json(self, file_path: str) -> bool:
         """Import settings from a JSON file."""
         try:
-            with open(file_path, "r", encoding="utf-8") as f:
+            with open(file_path, encoding="utf-8") as f:
                 data = json.load(f)
             new_settings = JarvisSettings.model_validate(data)
             self._settings = new_settings
@@ -275,7 +289,7 @@ class SettingsStore:
             return False
 
 # Singleton instance
-_store: Optional[SettingsStore] = None
+_store: SettingsStore | None = None
 
 def get_settings_store() -> SettingsStore:
     global _store
