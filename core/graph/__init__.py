@@ -17,6 +17,7 @@ from core.graph.nodes import (
     force_answer_node,
     parallel_sub_agents_node,
     pause_node,
+    plan_node,
     resume_node,
     route_node,
     setup_node,
@@ -33,6 +34,7 @@ def build_default_graph() -> StateGraph:
     g = StateGraph()
     g.add_node("setup", setup_node)
     g.add_node("think", think_node)
+    g.add_node("plan", plan_node)
     g.add_node("tool_call", tool_call_node)
     g.add_node("verify", verify_node)
     g.add_node("route", route_node)
@@ -50,19 +52,19 @@ def build_default_graph() -> StateGraph:
         if state.phase in (AgentPhase.FINISHED, AgentPhase.FORCE_ANSWER):
             return "finish"
         if state.round_state and state.round_state.tool_blocks:
-            return "tool_call"
+            return "plan"  # plan_node runs pre_plan before tool_call
         return "finish"
 
     g.set_entry_point("setup")
     g.add_edge("setup", "think")
-    # think → route unconditionally so route_node parses tool blocks before routing
     g.add_edge("think", "route")
     # route → decision based on parsed tool blocks
     g.add_conditional_edges("route", _route_after_parse, {
-        "tool_call": "tool_call",
+        "plan": "plan",
         "finish": "finish",
         "__pause__": "__pause__",
     })
+    g.add_edge("plan", "tool_call")
     g.add_conditional_edges("tool_call", route_decision, {
         "verify": "verify",
         "think": "think",

@@ -1,0 +1,46 @@
+{
+  "f1": {
+    "benchmark": "F1",
+    "label": "Hierarchical Decomposition Quality",
+    "passed": true,
+    "results": [
+      {
+        "format": "Sentence-list",
+        "top_level_components": 5,
+        "components_with_children": 1,
+        "build_leaves": 5,
+        "email_leaves": 2,
+        "features_clean": true,
+        "max_depth": 2
+      },
+      {
+        "format": "Requirements",
+        "top_level_components": 5,
+        "components_with_children": 1,
+        "build_leaves": 5,
+        "email_leaves": 2,
+        "features_clean": true,
+        "max_depth": 2
+      }
+    ]
+  },
+  "f2": {
+    "benchmark": "F2",
+    "label": "Hierarchical Project Execution",
+    "passed": true,
+    "goal": "Build a coffee shop platform. Android app with UI, payments,",
+    "elapsed": 48.76500000001397,
+    "artifacts": {
+      "email_sent": "art_3682307df207485bbe706e4d1221ae87"
+    },
+    "tool_names": [
+      "browser_navigate",
+      "build_project",
+      "run_tests",
+      "build_project",
+      "send_email"
+    ],
+    "hallucinated_tools": [],
+    "status": "COMPLETE"
+  }
+}

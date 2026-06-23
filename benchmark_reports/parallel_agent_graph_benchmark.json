@@ -1,0 +1,51 @@
+[
+  {
+    "benchmark": "H1",
+    "label": "Graph Correctness \u2014 phases and ready nodes",
+    "passed": true,
+    "phases": [
+      0,
+      1,
+      2,
+      6
+    ],
+    "phase_0_count": 3,
+    "phase_1_agent": "build",
+    "total_nodes": 6
+  },
+  {
+    "benchmark": "H2",
+    "label": "Parallel Speedup \u2014 4 nodes parallel vs sequential",
+    "passed": true,
+    "parallel_elapsed_s": 0.203,
+    "sequential_elapsed_s": 0.844,
+    "speedup_x": 4.16,
+    "nodes": 4
+  },
+  {
+    "benchmark": "H3",
+    "label": "Phase Barrier \u2014 sequential ordering respected",
+    "passed": true,
+    "r1_status": "completed",
+    "r2_status": "completed",
+    "b1_status": "completed",
+    "e1_status": "completed",
+    "is_blocked": false
+  },
+  {
+    "benchmark": "H4",
+    "label": "End-to-End via PlannerStateMachine (parallel)",
+    "passed": true,
+    "state": "COMPLETE",
+    "tool_names": [
+      "build",
+      "test",
+      "validate",
+      "notify"
+    ],
+    "has_build": true,
+    "has_notify": true,
+    "error": null,
+    "elapsed_s": 0.83
+  }
+]

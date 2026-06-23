@@ -29,6 +29,13 @@ async def _resolve_selector(page, selector: str, timeout: int = 10000):
     return locator
 
 
+async def _resolve_selector_visible(page, selector: str, timeout: int = 10000):
+    """Resolve a selector and wait for it to be visible."""
+    locator = page.locator(selector).first
+    await locator.wait_for(state="visible", timeout=timeout)
+    return locator
+
+
 def _action_result(tool: str, url: str, title: str, result=None, error=None, error_type=None, selector=None):
     d = {
         "status": "error" if error else "ok",
@@ -271,15 +278,31 @@ async def do_browser_click(selector: str, session_id: str = None, force: bool = 
         return _action_result("browser_click", url, "", error=str(e), error_type=et, selector=selector)
 
 
-async def do_browser_fill(selector: str, text: str, session_id: str = None) -> dict:
+async def do_browser_fill(selector: str, text: str, session_id: str = None, force: bool = False) -> dict:
     if not selector or not selector.strip():
         return _action_result("browser_fill", "", "", error="selector is required", error_type="ValidationError")
     try:
         bm, session, page = await _ensure(session_id)
         locator = await _resolve_selector(page, selector)
         try:
-            await locator.fill(text)
+            await locator.fill(text, force=force)
         except Exception as fill_err:
+            # If fill fails even with force, try evaluate dispatch
+            try:
+                safe_text = text.replace("'", "\\'").replace("\\", "\\\\")
+                await locator.evaluate(f"""(el) => {{
+                    el.value = '{safe_text}';
+                    el.dispatchEvent(new Event('input', {{ bubbles: true }}));
+                    el.dispatchEvent(new Event('change', {{ bubbles: true }}));
+                    return 'filled_via_js';
+                }}""")
+                url = page.url
+                title = await page.title()
+                _update_session_memory(session_id, url, title, "fill")
+                _record_action(session, "browser_fill", url, selector, "ok")
+                return _action_result("browser_fill", url, title, {"filled": selector})
+            except Exception:
+                pass
             err_str = str(fill_err)
             # If it's a contenteditable or custom element, use JS to set text
             if "not an <input>" in err_str or "not an <textarea>" in err_str or "not an <select>" in err_str or "contenteditable" in err_str:
@@ -325,7 +348,29 @@ async def do_browser_press(selector: str, key: str, session_id: str = None) -> d
     try:
         bm, session, page = await _ensure(session_id)
         locator = await _resolve_selector(page, selector)
-        await locator.press(key)
+        # Click first with force to dismiss overlays
+        try:
+            await locator.click(force=True, timeout=3000)
+        except Exception:
+            pass
+        try:
+            await locator.press(key)
+        except Exception as press_err:
+            # If press fails (covered, disabled), use keyboard event dispatch
+            try:
+                await locator.evaluate(f"""(el) => {{
+                    el.dispatchEvent(new KeyboardEvent('keydown', {{ key: '{key}', code: '{key}', bubbles: true }}));
+                    el.dispatchEvent(new KeyboardEvent('keypress', {{ key: '{key}', code: '{key}', bubbles: true }}));
+                    el.dispatchEvent(new KeyboardEvent('keyup', {{ key: '{key}', code: '{key}', bubbles: true }}));
+                    return 'dispatched';
+                }}""")
+            except Exception:
+                raise press_err
+        # Wait for any navigation triggered by the keypress (e.g. Enter in search)
+        try:
+            await page.wait_for_load_state("load", timeout=10000)
+        except Exception:
+            pass
         url = page.url
         title = await page.title()
         _update_session_memory(session_id, url, title, f"press:{key}")
@@ -378,12 +423,38 @@ async def do_browser_snapshot(session_id: str = None) -> dict:
                 });
                 return results;
             }
+            function collectText(selector) {
+                return Array.from(document.querySelectorAll(selector)).map(el => {
+                    const rect = el.getBoundingClientRect();
+                    const info = { tag: el.tagName.toLowerCase(), text: (el.textContent || '').trim().slice(0, 200), visible: rect.width > 0 && rect.height > 0 };
+                    if (el.id) info.id = el.id;
+                    const cls = el.className;
+                    if (cls && typeof cls === 'string') info.classes = cls.trim().split(/\\s+/).slice(0, 3);
+                    return info;
+                });
+            }
+            function collectDefinitionLists() {
+                return Array.from(document.querySelectorAll('dl')).map(dl => ({
+                    terms: Array.from(dl.querySelectorAll('dt')).map((dt, i) => {
+                        const dd = dl.querySelectorAll('dd')[i];
+                        return { term: (dt.textContent || '').trim().slice(0, 120), definition: (dd ? dd.textContent || '' : '').trim().slice(0, 200) };
+                    }).filter(t => t.term)
+                })).filter(dl => dl.terms.length > 0);
+            }
             return {
                 buttons: collect('button, input[type=\"button\"], input[type=\"submit\"], [role=\"button\"]', null),
                 inputs: collect('input:not([type=\"hidden\"]):not([type=\"button\"]):not([type=\"submit\"]), textarea, select', 'name'),
                 links: collect('a[href]', 'href').filter(l => l.href && !l.href.startsWith('#')),
                 forms: Array.from(document.querySelectorAll('form')).map(f => ({ id: f.id, action: f.action, method: f.method, inputs: f.querySelectorAll('input, select, textarea').length })),
                 headings: collect('h1, h2, h3, h4, h5, h6', null),
+                paragraphs: collectText('p'),
+                list_items: collectText('li'),
+                list_parents: Array.from(document.querySelectorAll('ul, ol')).map(ul => { const li = ul.querySelector('li'); return li ? (li.closest('section, article, div, nav')?.querySelector('h1, h2, h3, h4, h5, h6, strong, b')?.textContent || '').trim().slice(0, 80) : ''; }),
+                tables: Array.from(document.querySelectorAll('table')).map(t => ({
+                    caption: (t.querySelector('caption, th[scope=\"colgroup\"]') || {}).textContent || '',
+                    rows: Array.from(t.querySelectorAll('tr')).map(tr => ({ cells: Array.from(tr.querySelectorAll('td, th')).map(c => (c.textContent || '').trim().slice(0, 150)) })).filter(r => r.cells.length > 0)
+                })).filter(t => t.rows.length > 0),
+                definition_lists: collectDefinitionLists(),
                 shadow_elements: collectShadow(),
                 contenteditable: collect('[contenteditable=\"true\"], [contenteditable=\"\"], div[contenteditable], span[contenteditable]', null),
                 modals: collect('[role=\"dialog\"], [role=\"alertdialog\"], dialog, [aria-modal=\"true\"]', null),

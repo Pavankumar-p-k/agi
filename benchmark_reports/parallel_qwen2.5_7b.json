@@ -1,0 +1,54 @@
+[
+  {
+    "benchmark": "E",
+    "label": "Parallel Feature Extraction + Execution",
+    "goal": "Build a coffee shop Android app with loyalty system, payment integration, admin ",
+    "passed": true,
+    "elapsed": 82.29700000002049,
+    "status": "COMPLETE",
+    "artifacts": {
+      "email_sent": "art_8183c03e6b254190bcb20079ad10e803"
+    },
+    "tool_names": [
+      "build_project",
+      "run_tests",
+      "browser_navigate",
+      "browser_press",
+      "vision_browser",
+      "browser_find_interactive",
+      "send_email"
+    ],
+    "num_features": 5,
+    "features_clean": true,
+    "features": [
+      "loyalty system",
+      "payment integration",
+      "admin dashboard",
+      "customer app",
+      "analytics"
+    ],
+    "has_email_artifact": true,
+    "has_build_tool": true,
+    "decomposition": {
+      "num_features": 5,
+      "feature_names": [
+        "loyalty system",
+        "payment integration",
+        "admin dashboard",
+        "customer app",
+        "analytics"
+      ],
+      "total_leaves": 9,
+      "has_build": true,
+      "has_email": true,
+      "features_clean": true,
+      "decomposition_ok": true
+    },
+    "hallucinated_tools": [
+      "vision_browser",
+      "browser_find_interactive"
+    ],
+    "loop_count": 0,
+    "state": "COMPLETE"
+  }
+]

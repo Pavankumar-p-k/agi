@@ -49,9 +49,37 @@ from core.llm_core import _is_ollama_native_url, stream_llm_with_fallback
 from core.model_context import estimate_tokens
 from core.settings_legacy import get_setting
 from core.tools._constants import TOOL_TAGS, ToolBlock
+from core.tools.browser_planner import BrowserPlanner
 from core.tools.security import blocked_tools_for_owner
 
 logger = logging.getLogger(__name__)
+
+
+async def plan_node(state: AgentState) -> AgentState:
+    """Run deterministic browser planner pre_plan on parsed tool blocks.
+
+    Injects browser_snapshot after every browser_navigate so the LLM
+    always receives page state without needing to ask for it.
+    """
+    from core.tools.browser_planner import BrowserPlanner
+
+    rs = state.round_state
+    if not rs or not rs.tool_blocks:
+        state.phase = AgentPhase.TOOL_CALLING
+        return state
+
+    # Initialise planner context on first round
+    if state.browser_planner_ctx is None:
+        last_msg = _extract_last_user_message(state.messages) or ""
+        state.browser_planner_ctx = BrowserPlanner.init(last_msg)
+
+    # Run pre_plan to inject snapshot after navigate
+    planned, updated_ctx = BrowserPlanner.pre_plan(rs.tool_blocks, state.browser_planner_ctx)
+    rs.tool_blocks = planned
+    state.browser_planner_ctx = updated_ctx
+
+    state.phase = AgentPhase.TOOL_CALLING
+    return state
 
 
 def _lookup_endpoint_supports(SL, ME, endpoint_url):
@@ -195,6 +223,28 @@ async def setup_node(state: AgentState) -> AgentState:
             logger.warning("[core.graph.nodes] execute_node failed: %s", e)
     if _is_chat:
         logger.info("[PROFILE] skipped heavy context (chat mode, saved ~%.0fs)", time.time() - _t2)
+
+    if state.session_id:
+        try:
+            from core.session_db import get_recent_snapshots
+            _prev = get_recent_snapshots(exclude_session=state.session_id, limit=5)
+            if _prev:
+                _lines = ["Previous session summaries:"]
+                for _p in _prev:
+                    _p_sid = _p.get("session_id", "?")[:12]
+                    _p_summary = _p.get("summary", "")
+                    if _p_summary:
+                        _lines.append(f"  [{_p_sid}] {_p_summary}")
+                _previous_sessions_text = "\n".join(_lines)
+                _prev_user_msg = next((m for m in reversed(state.messages) if m.get("role") == "user"), None)
+                if _prev_user_msg:
+                    _prev_user_msg["content"] = (
+                        _previous_sessions_text
+                        + "\n\n---\n\n"
+                        + _prev_user_msg["content"]
+                    )
+        except Exception as _e:
+            logger.debug("[session-db] previous sessions load skipped: %s", _e)
 
     messages, state.mcp_schemas = _build_system_prompt(
         state.messages, state.model, state.active_document, mcp_mgr,
@@ -395,6 +445,7 @@ async def think_node(state: AgentState) -> AgentState:
                 elif data.get("type") == "tool_calls":
                     native_tool_calls = data.get("calls", [])
                     logger.info(f"Agent round {round_num}: received {len(native_tool_calls)} native tool call(s)")
+                    state.events.append(chunk)
                 elif data.get("type") == "usage":
                     u = data.get("data", {})
                     round_input = u.get("input_tokens", 0)
@@ -780,6 +831,32 @@ async def tool_call_node(state: AgentState) -> AgentState:
     tasks = [_execute_one_tool(state, block, i) for i, block in enumerate(rs.tool_blocks)]
     results = await asyncio.gather(*tasks)
 
+    # Post-plan loop: deterministic planner analyzes results and may inject new blocks
+    # (search-fill, result-detection, loop-breaker, login-detection)
+    _max_post_plan_iters = 5
+    _pp_blocks: list[ToolBlock] = list(rs.tool_blocks)  # blocks for current iteration only
+    for _ppi in range(_max_post_plan_iters):
+        _extra_blocks, _updated_ctx = BrowserPlanner.post_plan(
+            [r["result"] for r in results],
+            _pp_blocks,
+            state.browser_planner_ctx or {},
+        )
+        state.browser_planner_ctx = _updated_ctx
+        if not _extra_blocks:
+            break
+        _offset = len(results)
+        for _eb in _extra_blocks:
+            is_doc = _eb.tool_type in ("create_document", "update_document", "edit_document", "suggest_document")
+            cmd = _eb.content.split("\n")[0].strip()[:80] if is_doc else _eb.content.strip()
+            state.events.append(
+                f'data: {json.dumps({"type": "tool_start", "tool": _eb.tool_type, "command": cmd, "round": state.round_num, "planner": True})}\n\n'
+            )
+        _new_tasks = [_execute_one_tool(state, _eb, _offset + i) for i, _eb in enumerate(_extra_blocks)]
+        _new_results = await asyncio.gather(*_new_tasks)
+        results.extend(_new_results)
+        rs.tool_blocks.extend(_extra_blocks)
+        _pp_blocks = list(_extra_blocks)  # next iteration only sees newly injected blocks
+
     # Flush per-tool progress events as they arrive (already in state.events)
     # Process results in index order for deterministic tool_output ordering
     tool_results = []
@@ -890,6 +967,14 @@ async def tool_call_node(state: AgentState) -> AgentState:
         f'data: {json.dumps({"type": "agent_step", "round": state.round_num + 1})}\n\n'
     )
     state.full_response += "\n\n"
+
+    if state.session_id:
+        try:
+            from core.session_db import save_snapshot as _save_snap
+            _save_snap(state)
+        except Exception as _e:
+            logger.debug("[session-db] snapshot save skipped: %s", _e)
+
     state.phase = AgentPhase.THINKING
     return state
 

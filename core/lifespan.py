@@ -635,7 +635,7 @@ async def lifespan(app: FastAPI):
         logger.warning("[LIFESPAN] ProactiveMonitor init failed: %s", e)
 
     try:
-        from core.workflow import WorkflowEngine, recover_active_workflows
+        from core.workflow import HeartbeatMonitor, WorkflowEngine, recover_active_workflows
         engine = WorkflowEngine()
         app.state.workflow_engine = engine
         recovered = await recover_active_workflows(engine)
@@ -649,6 +649,10 @@ async def lifespan(app: FastAPI):
             )
         else:
             logger.info("[WORKFLOW] No active workflows to recover [OK]")
+        heartbeat = HeartbeatMonitor(engine, interval=10, stale_seconds=60)
+        app.state.workflow_heartbeat = heartbeat
+        await heartbeat.start()
+        logger.info("[WORKFLOW] Heartbeat monitor started [OK]")
     except Exception as e:
         startup_status["warnings"].append(f"workflow_recovery: {e}")
         logger.warning("[WORKFLOW] Recovery init failed: %s", e)
@@ -702,6 +706,9 @@ async def lifespan(app: FastAPI):
     if hasattr(app.state, "plugin_registry"):
         await app.state.plugin_registry.unload_all()
         logger.info("[SHUTDOWN] All plugins unloaded")
+    if hasattr(app.state, "workflow_heartbeat"):
+        await app.state.workflow_heartbeat.stop()
+        logger.info("[SHUTDOWN] Workflow heartbeat monitor stopped")
     if hasattr(app.state, "audit_log"):
         app.state.audit_log.force_flush()
         logger.info("[SHUTDOWN] Audit log flushed")

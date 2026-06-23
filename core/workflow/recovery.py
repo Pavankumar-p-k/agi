@@ -15,9 +15,15 @@ async def recover_active_workflows(
 ) -> list[dict[str, Any]]:
     active = engine.store.list_workflows(status=WorkflowStatus.RUNNING.value)
     active += engine.store.list_workflows(status=WorkflowStatus.RECOVERING.value)
+    active += engine.store.list_workflows(status=WorkflowStatus.COMPENSATING.value)
     recovered: list[dict[str, Any]] = []
 
     for wf in active:
+        if wf.status in (WorkflowStatus.RUNNING, WorkflowStatus.COMPENSATING) and not wf.is_stale:
+            logger.info("Workflow %s still alive (heartbeat %s ago) — skipping recovery",
+                         wf.workflow_id, _age(wf.last_heartbeat))
+            continue
+
         old_status = wf.status
         wf.status = WorkflowStatus.RECOVERING
         engine.store.update_workflow(wf)
@@ -30,15 +36,42 @@ async def recover_active_workflows(
             event_id=f"recovery_{wf.workflow_id}",
             workflow_id=wf.workflow_id,
             event_type=WORKFLOW_RECOVERED,
-            data={"previous_status": old_status.value, "step_index": wf.current_step},
+            data={
+                "previous_status": old_status.value,
+                "step_index": wf.current_step,
+                "heartbeat_age_seconds": _age_seconds(wf.last_heartbeat),
+            },
         ))
+        if old_status == WorkflowStatus.COMPENSATING:
+            label = f"compensating at step {wf.current_step}/{len(wf.steps)}"
+        else:
+            label = f"step {wf.current_step}/{len(wf.steps)}"
         recovered.append({
             "workflow_id": wf.workflow_id,
             "workflow_type": wf.workflow_type,
             "current_step": wf.current_step,
             "total_steps": len(wf.steps),
         })
-        logger.info("Recovered workflow %s from %s at step %d/%d",
-                     wf.workflow_id, old_status.value, wf.current_step, len(wf.steps))
+        logger.info("Recovered workflow %s from %s at %s",
+                     wf.workflow_id, old_status.value, label)
+
+    if not recovered:
+        logger.info("[WORKFLOW] No stale workflows to recover [OK]")
 
     return recovered
+
+
+def _age_seconds(last: Any) -> float | None:
+    if last is None:
+        return None
+    from datetime import datetime
+    return (datetime.utcnow() - last).total_seconds()
+
+
+def _age(last: Any) -> str:
+    secs = _age_seconds(last)
+    if secs is None:
+        return "never"
+    if secs < 60:
+        return f"{secs:.0f}s"
+    return f"{secs / 60:.1f}m"

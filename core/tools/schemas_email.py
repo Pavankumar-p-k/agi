@@ -27,7 +27,7 @@ FUNCTION_TOOL_SCHEMAS = [
         "type": "function",
         "function": {
             "name": "send_email",
-            "description": "Send a new email. Use resolve_contact first if you only have a name and need to find the email address. If multiple accounts exist, pass account from list_email_accounts.",
+            "description": "Send a new email. Use resolve_contact first if you only have a name and need to find the email address. If multiple accounts exist, pass account from list_email_accounts. Attachments can be file paths or artifact: prefixed artifact IDs (e.g. artifact:art_abc123).",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -35,6 +35,11 @@ FUNCTION_TOOL_SCHEMAS = [
                     "subject": {"type": "string", "description": "Email subject line"},
                     "body": {"type": "string", "description": "Email body text"},
                     "account": {"type": "string", "description": "Optional account name/email/id from list_email_accounts, e.g. Gmail or user@example.com"},
+                    "attachments": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Optional list of file paths or artifact references (prefix with artifact:) to attach, e.g. artifact:art_abc123 or /path/to/file.pdf"
+                    },
                 },
                 "required": ["to", "subject", "body"]
             }

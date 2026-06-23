@@ -1,0 +1,223 @@
+[
+  {
+    "benchmark": "G1",
+    "label": "Agent Router Correctness",
+    "passed": true,
+    "agents_used": [
+      "email",
+      "research",
+      "build",
+      "test"
+    ],
+    "total_tasks": 7,
+    "all_valid": true,
+    "has_build": true,
+    "has_email": true,
+    "tasks": [
+      {
+        "agent_id": "build",
+        "goal": "  - ui",
+        "step": "build",
+        "parameters": {}
+      },
+      {
+        "agent_id": "build",
+        "goal": "  - payments",
+        "step": "build",
+        "parameters": {}
+      },
+      {
+        "agent_id": "build",
+        "goal": "  - loyalty system",
+        "step": "build",
+        "parameters": {}
+      },
+      {
+        "agent_id": "research",
+        "goal": "research: research competitor apps",
+        "step": "research",
+        "parameters": {}
+      },
+      {
+        "agent_id": "test",
+        "goal": "test: run tests",
+        "step": "test",
+        "parameters": {}
+      },
+      {
+        "agent_id": "build",
+        "goal": "Delivery: email the apk",
+        "step": "email",
+        "parameters": {}
+      },
+      {
+        "agent_id": "email",
+        "goal": "Delivery: email the apk",
+        "step": "email",
+        "parameters": {}
+      }
+    ]
+  },
+  {
+    "benchmark": "G2",
+    "label": "Agent Execution via WorkflowEngine",
+    "passed": true,
+    "status": "COMPLETED",
+    "agents_invoked": [
+      "research",
+      "build",
+      "test",
+      "email"
+    ],
+    "total_steps": 4,
+    "failed_steps": 0,
+    "artifacts": {
+      "build_log": "art_1c11bb87be414370b81032b0c5151e80",
+      "report": "art_c48dc1f701f745018d896932609ec554",
+      "apk": "art_7cb4f5846ab84433be76ceb5a8ff3dc9",
+      "test_result": "art_419d0895cf9741d79f2d26900ccc7e6a",
+      "email_sent": "art_4555a12938b84924a6bdcf049854194a"
+    }
+  },
+  {
+    "benchmark": "G3",
+    "label": "Agent Handoff Chain (Research -> Build -> Test -> Email)",
+    "passed": true,
+    "status": "COMPLETED",
+    "agents_invoked": [
+      "research",
+      "build",
+      "test",
+      "email"
+    ],
+    "correct_order": true,
+    "context_preserved": true
+  },
+  {
+    "benchmark": "G4",
+    "label": "AgentDrivenExecutor via PlannerStateMachine",
+    "passed": true,
+    "state": "COMPLETE",
+    "tool_names": [
+      "build",
+      "test",
+      "validate",
+      "notify"
+    ],
+    "artifacts": [
+      "build_log",
+      "report",
+      "apk",
+      "test_result",
+      "email_sent"
+    ],
+    "has_build": true,
+    "has_notify": true,
+    "has_artifacts": true,
+    "error": null,
+    "elapsed_s": 23.19
+  },
+  {
+    "benchmark": "G5",
+    "label": "Native Agent Routing through PlannerStateMachine",
+    "passed": true,
+    "state": "COMPLETE",
+    "agent_assignments": [
+      {
+        "subgoal_id": "sg_1",
+        "description": "phase_0: research competitors",
+        "agent_id": "research",
+        "step_name": "research"
+      },
+      {
+        "subgoal_id": "sg_2",
+        "description": "phase_1: insight synthesis",
+        "agent_id": "nexus",
+        "step_name": "synthesize"
+      },
+      {
+        "subgoal_id": "sg_3",
+        "description": "phase_2: codegen",
+        "agent_id": "forge",
+        "step_name": "codegen"
+      },
+      {
+        "subgoal_id": "sg_4",
+        "description": "phase_3: security audit",
+        "agent_id": "cipher",
+        "step_name": "security"
+      },
+      {
+        "subgoal_id": "sg_5",
+        "description": "phase_4: documentation",
+        "agent_id": "scribe",
+        "step_name": "docs"
+      },
+      {
+        "subgoal_id": "sg_6",
+        "description": "phase_5: email results",
+        "agent_id": "email",
+        "step_name": "email"
+      }
+    ],
+    "assigned_ids": [
+      "research",
+      "nexus",
+      "forge",
+      "cipher",
+      "scribe",
+      "email"
+    ],
+    "expected_ids": [
+      "research",
+      "nexus",
+      "forge",
+      "cipher",
+      "scribe",
+      "email"
+    ],
+    "routing_correct": true,
+    "tool_names": [
+      "research",
+      "nexus",
+      "forge",
+      "cipher",
+      "scribe",
+      "email"
+    ],
+    "all_agents_called": true,
+    "error": null,
+    "elapsed_s": 0.0
+  },
+  {
+    "benchmark": "G6",
+    "label": "Multi-Agent Artifact Handoff",
+    "passed": true,
+    "state": "COMPLETE",
+    "all_nodes_completed": true,
+    "artifact_chain": {
+      "research_report": "art_report_001",
+      "generated_code": "art_code_002",
+      "security_review": "art_sec_003",
+      "final_document": "art_doc_004",
+      "email_sent": "art_email_005"
+    },
+    "injection_results": {
+      "forge_received_research_data": true,
+      "forge_received_raw_artifact": true,
+      "cipher_received_code_to_audit": true,
+      "scribe_received_audit_results": true,
+      "email_received_doc_to_send": true
+    },
+    "deps_correct": true,
+    "input_art_correct": true,
+    "agents_invoked": [
+      "research",
+      "forge",
+      "cipher",
+      "scribe",
+      "email"
+    ],
+    "error": null
+  }
+]

@@ -40,6 +40,105 @@ class BrowserSession:
         return self.pages[self.current_page_index]
 
 
+_STEALTH_INIT_SCRIPT = """
+// === Stealth: remove automation traces ===
+Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+
+// === Stealth: realistic chrome.runtime ===
+window.chrome = {
+    runtime: { 
+        onConnect: { addListener: () => {} },
+        onMessage: { addListener: () => {} },
+        sendMessage: () => {},
+    },
+    loadTimes: () => {},
+    csi: () => {},
+    app: { isInstalled: false, InstallState: { DISABLED: 'disabled', INSTALLED: 'installed', NOT_INSTALLED: 'not_installed' }, RunningState: { CANNOT_RUN: 'cannot_run', READY_TO_RUN: 'ready_to_run', RUNNING: 'running' } },
+};
+
+// === Stealth: plugins ===
+Object.defineProperty(navigator, 'plugins', {
+    get: () => [
+        { name: 'Chrome PDF Plugin', filename: 'internal-pdf-viewer', description: 'Portable Document Format' },
+        { name: 'Chrome PDF Viewer', filename: 'mhjfbmdgcfjbbpaeojofohoefgiehjai', description: '' },
+        { name: 'Native Client', filename: 'internal-nacl-plugin', description: '' },
+    ],
+});
+
+// === Stealth: languages ===
+Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en'] });
+Object.defineProperty(navigator, 'language', { get: () => 'en-US' });
+
+// === Stealth: platform ===
+Object.defineProperty(navigator, 'platform', { get: () => 'Win32' });
+
+// === Stealth: hardware ===
+Object.defineProperty(navigator, 'hardwareConcurrency', { get: () => 8 });
+Object.defineProperty(navigator, 'deviceMemory', { get: () => 8 });
+
+// === Stealth: permissions ===
+const originalQuery = window.navigator.permissions.query;
+window.navigator.permissions.query = (parameters) => (
+    parameters.name === 'notifications' ? Promise.resolve({ state: Notification.permission }) :
+    parameters.name === 'clipboard-read' ? Promise.resolve({ state: 'granted' }) :
+    parameters.name === 'clipboard-write' ? Promise.resolve({ state: 'granted' }) :
+    originalQuery(parameters)
+);
+
+// === Stealth: media devices ===
+try {
+    Object.defineProperty(navigator, 'mediaDevices', {
+        get: () => ({
+            enumerateDevices: () => Promise.resolve([
+                { deviceId: 'audioinput-1', kind: 'audioinput', label: 'Internal Microphone', groupId: 'audio-group' },
+                { deviceId: 'videoinput-1', kind: 'videoinput', label: 'Internal Camera', groupId: 'video-group' },
+                { deviceId: 'audiooutput-1', kind: 'audiooutput', label: 'Internal Speakers', groupId: 'audio-group' },
+            ]),
+            getUserMedia: () => Promise.reject(new Error('NotAllowedError')),
+        }),
+    });
+} catch(e) {}
+
+// === Stealth: WebGL ===
+try {
+    const getParameter = WebGLRenderingContext.prototype.getParameter;
+    WebGLRenderingContext.prototype.getParameter = function(parameter) {
+        if (parameter === 37445) return 'Intel Inc.';
+        if (parameter === 37446) return 'Intel(R) UHD Graphics 620';
+        return getParameter.call(this, parameter);
+    };
+    const getParameter2 = WebGL2RenderingContext.prototype.getParameter;
+    WebGL2RenderingContext.prototype.getParameter = function(parameter) {
+        if (parameter === 37445) return 'Intel Inc.';
+        if (parameter === 37446) return 'Intel(R) UHD Graphics 620';
+        return getParameter2.call(this, parameter);
+    };
+} catch(e) {}
+
+// === Stealth: screen ===
+Object.defineProperty(screen, 'colorDepth', { get: () => 24 });
+Object.defineProperty(screen, 'pixelDepth', { get: () => 24 });
+Object.defineProperty(screen, 'availWidth', { get: () => 1280 });
+Object.defineProperty(screen, 'availHeight', { get: () => 720 });
+
+// === Stealth: connection ===
+try {
+    Object.defineProperty(navigator, 'connection', {
+        get: () => ({
+            effectiveType: '4g',
+            rtt: 100,
+            downlink: 10,
+            saveData: false,
+        }),
+    });
+} catch(e) {}
+
+// === Stealth: visibility ===
+Object.defineProperty(document, 'hidden', { get: () => false });
+Object.defineProperty(document, 'visibilityState', { get: () => 'visible' });
+"""
+
+
 class BrowserManager:
     _instance: BrowserManager | None = None
     _playwright = None
@@ -69,7 +168,41 @@ class BrowserManager:
         bc = config.browser
         self._playwright_obj = await async_playwright().start()
         headless = not bc.headed
-        self._browser = await self._playwright_obj.chromium.launch(headless=headless)
+        self._browser = await self._playwright_obj.chromium.launch(
+            headless=headless,
+            args=[
+                "--disable-blink-features=AutomationControlled",
+                "--disable-features=ChromeWhatsNewUI",
+                "--no-default-browser-check",
+                "--disable-background-networking",
+                "--disable-background-timer-throttling",
+                "--disable-breakpad",
+                "--disable-client-side-phishing-detection",
+                "--disable-component-update",
+                "--disable-default-apps",
+                "--disable-dev-shm-usage",
+                "--disable-extensions",
+                "--disable-features=InterestFeedContentSuggestions,TranslateUI,LensOverlay,MediaRouter",
+                "--disable-field-trial-config",
+                "--disable-hang-monitor",
+                "--disable-ipc-flooding-protection",
+                "--disable-popup-blocking",
+                "--disable-prompt-on-repost",
+                "--disable-search-engine-choice-screen",
+                "--disable-sync",
+                "--enable-features=NetworkService,NetworkServiceInProcess",
+                "--force-color-profile=srgb",
+                "--hide-scrollbars",
+                "--metrics-recording-only",
+                "--mute-audio",
+                "--no-first-run",
+                "--no-pings",
+            ],
+            ignore_default_args=[
+                "--enable-automation",
+                "--enable-blink-features=IdleDetection",
+            ],
+        )
         self._started = True
         self._cleanup_task = asyncio.create_task(self._cleanup_loop())
         logger.info("[BrowserManager] started (headless=%s)", headless)
@@ -127,7 +260,9 @@ class BrowserManager:
         except Exception as e:
             raise RuntimeError(f"PageClosed: {e}") from e
 
-    async def get_or_create_session(self, session_id: str) -> BrowserSession:
+    async def get_or_create_session(self, session_id: str | None = None) -> BrowserSession:
+        if session_id is None:
+            session_id = "default"
         if session_id in self._sessions:
             session = self._sessions[session_id]
             session.last_used = time.time()
@@ -142,11 +277,22 @@ class BrowserManager:
                     storage_state = json.load(f)
             except Exception as e:
                 logger.warning("[BrowserManager] failed to load storage state: %s", e)
+        # Randomize viewport slightly to appear as a real window
+        import random
+        vw = random.choice([1280, 1366, 1440, 1536, 1600, 1920])
+        vh = random.choice([720, 768, 800, 900, 1080])
         context = await self._browser.new_context(
             storage_state=storage_state,
-            viewport={"width": 1280, "height": 720},
+            viewport={"width": vw, "height": vh},
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+            locale="en-US",
+            timezone_id="America/New_York",
+            color_scheme="light",
+            reduced_motion="no-preference",
+            forced_colors="none",
         )
         page = await context.new_page()
+        await page.add_init_script(_STEALTH_INIT_SCRIPT)
         session = BrowserSession(
             session_id=session_id,
             context=context,

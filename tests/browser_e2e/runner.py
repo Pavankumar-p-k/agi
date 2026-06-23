@@ -83,6 +83,11 @@ async def run_single_task(task, idx):
                                 "name": c.get("name", ""),
                                 "arguments": c.get("arguments", ""),
                             })
+                    elif dtype == "tool_start":
+                        tool_calls.append({
+                            "name": data.get("tool", ""),
+                            "arguments": data.get("command", ""),
+                        })
                     elif dtype == "tool_call_delta":
                         pass
                     elif dtype == "delta" or not dtype:

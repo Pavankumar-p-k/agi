@@ -1,0 +1,26 @@
+[
+  {
+    "benchmark": "A",
+    "label": "Research \u2192 Build \u2192 Validate \u2192 Email",
+    "elapsed": 103.56199999997625,
+    "turns": 19,
+    "completed_naturally": true,
+    "status": "COMPLETED",
+    "tool_order_correct": false,
+    "missing_steps": [],
+    "hallucinated_tools": [
+      "vision_browser",
+      "vision_browser"
+    ],
+    "loop_count": 0,
+    "artifacts_produced": [
+      "snapshot",
+      "email_sent"
+    ],
+    "artifacts_consumed": [
+      "snapshot",
+      "email_sent"
+    ],
+    "artifacts_orphaned": []
+  }
+]

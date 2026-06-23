@@ -1,0 +1,217 @@
+{
+  "scenarios": [
+    {
+      "name": "A1_import_dominate",
+      "strategies_recorded": 10,
+      "strategies_success": 10,
+      "strategies_failed": 0,
+      "expected": "add_import",
+      "selected": "add_import",
+      "score": 0.71,
+      "all_scores": {
+        "add_import": 0.71
+      },
+      "correct": true
+    },
+    {
+      "name": "A2_cast_dominate",
+      "strategies_recorded": 10,
+      "strategies_success": 10,
+      "strategies_failed": 0,
+      "expected": "fix_code",
+      "selected": "fix_code",
+      "score": 0.7,
+      "all_scores": {
+        "fix_code": 0.7
+      },
+      "correct": true
+    },
+    {
+      "name": "A3_layout_dominate",
+      "strategies_recorded": 10,
+      "strategies_success": 10,
+      "strategies_failed": 0,
+      "expected": "create_layout",
+      "selected": "create_layout",
+      "score": 0.7,
+      "all_scores": {
+        "create_layout": 0.7
+      },
+      "correct": true
+    },
+    {
+      "name": "A4_syntax_dominate",
+      "strategies_recorded": 11,
+      "strategies_success": 11,
+      "strategies_failed": 0,
+      "expected": "fix_syntax",
+      "selected": "fix_syntax",
+      "score": 0.71,
+      "all_scores": {
+        "fix_syntax": 0.71
+      },
+      "correct": true
+    },
+    {
+      "name": "A5_string_dominate",
+      "strategies_recorded": 10,
+      "strategies_success": 10,
+      "strategies_failed": 0,
+      "expected": "add_string_resource",
+      "selected": "add_string_resource",
+      "score": 0.71,
+      "all_scores": {
+        "add_string_resource": 0.71
+      },
+      "correct": true
+    },
+    {
+      "name": "B1_close_race",
+      "strategies_recorded": 9,
+      "strategies_success": 9,
+      "strategies_failed": 0,
+      "expected": "add_import",
+      "selected": "add_import",
+      "score": 0.71,
+      "all_scores": {
+        "add_import": 0.71
+      },
+      "correct": true
+    },
+    {
+      "name": "B2_cost_bonus",
+      "strategies_recorded": 6,
+      "strategies_success": 6,
+      "strategies_failed": 0,
+      "expected": "add_import",
+      "selected": "add_import",
+      "score": 0.71,
+      "all_scores": {
+        "add_import": 0.71
+      },
+      "correct": true
+    },
+    {
+      "name": "B3_recovery_matters",
+      "strategies_recorded": 4,
+      "strategies_success": 4,
+      "strategies_failed": 0,
+      "expected": "add_import",
+      "selected": "add_import",
+      "score": 0.71,
+      "all_scores": {
+        "add_import": 0.71
+      },
+      "correct": true
+    },
+    {
+      "name": "B4_expensive_wins_marginally",
+      "strategies_recorded": 8,
+      "strategies_success": 8,
+      "strategies_failed": 0,
+      "expected": "fix_code",
+      "selected": "fix_code",
+      "score": 0.7,
+      "all_scores": {
+        "fix_code": 0.7
+      },
+      "correct": true
+    },
+    {
+      "name": "B5_recent_vs_stale",
+      "strategies_recorded": 11,
+      "strategies_success": 11,
+      "strategies_failed": 0,
+      "expected": "add_import",
+      "selected": "add_import",
+      "score": 0.71,
+      "all_scores": {
+        "add_import": 0.71
+      },
+      "correct": true
+    },
+    {
+      "name": "C1_all_failed",
+      "strategies_recorded": 5,
+      "strategies_success": 0,
+      "strategies_failed": 5,
+      "expected": "add_import",
+      "selected": "add_import",
+      "score": 0.21,
+      "all_scores": {
+        "add_import": 0.21
+      },
+      "correct": true
+    },
+    {
+      "name": "C2_failed_then_success",
+      "strategies_recorded": 5,
+      "strategies_success": 2,
+      "strategies_failed": 3,
+      "expected": "fix_code",
+      "selected": "fix_code",
+      "score": 0.4,
+      "all_scores": {
+        "fix_code": 0.4
+      },
+      "correct": true
+    },
+    {
+      "name": "C3_mixed_failures",
+      "strategies_recorded": 3,
+      "strategies_success": 1,
+      "strategies_failed": 2,
+      "expected": "add_color_resource",
+      "selected": "add_color_resource",
+      "score": 0.71,
+      "all_scores": {
+        "add_color_resource": 0.71
+      },
+      "correct": true
+    },
+    {
+      "name": "D1_no_history",
+      "strategies_recorded": 0,
+      "strategies_success": 0,
+      "strategies_failed": 0,
+      "expected": "(no match)",
+      "selected": "(none)",
+      "score": 0.0,
+      "all_scores": {},
+      "correct": true
+    },
+    {
+      "name": "D2_new_category",
+      "strategies_recorded": 0,
+      "strategies_success": 0,
+      "strategies_failed": 0,
+      "expected": "(no match)",
+      "selected": "(none)",
+      "score": 0.0,
+      "all_scores": {},
+      "correct": true
+    },
+    {
+      "name": "D3_unrecognized_message",
+      "strategies_recorded": 0,
+      "strategies_success": 0,
+      "strategies_failed": 0,
+      "expected": "(no match)",
+      "selected": "(none)",
+      "score": 0.0,
+      "all_scores": {},
+      "correct": true
+    }
+  ],
+  "summary": {
+    "total": 16,
+    "passed": 16,
+    "failed": 0,
+    "accuracy_pct": 100.0,
+    "group_a_passed": 5,
+    "group_b_passed": 5,
+    "group_c_passed": 3,
+    "group_d_passed": 3
+  },
+  "elapsed_s": 0.06
+}

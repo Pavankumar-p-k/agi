@@ -1,0 +1,67 @@
+===  ===
+  artifacts_consumed: ['snapshot']
+  artifacts_orphaned: []
+  artifacts_produced: ['snapshot']
+  benchmark: A
+  completed_naturally: True
+  elapsed: 76.34299999999348
+  hallucinated_tools: ['vision_browser', 'mark_email_read']
+  label: Research → Build → Validate → Email
+  loop_count: 0
+  missing_steps: ['send_email']
+  status: COMPLETED
+  tool_order_correct: False
+  turns: 14
+  tool_calls:
+
+===  ===
+  artifacts_consumed: []
+  artifacts_orphaned: []
+  artifacts_produced: []
+  benchmark: B
+  completed_naturally: True
+  elapsed: 59.625
+  goal: Build an Android coffee shop app and deliver the APK. Research coffee shop app UI trends first. Then build the project, repair any issues, validate runtime, and email the APK file as an attachment.
+  hallucinated_tools: []
+  label: Research → Android APK Delivery
+  loop_count: 0
+  missing_steps: ['browser_navigate', 'send_email']
+  status: COMPLETED
+  turns: 4
+  uses_artifact_ids_only: False
+  tool_calls:
+
+===  ===
+  artifacts_consumed: []
+  artifacts_orphaned: []
+  artifacts_produced: []
+  benchmark: C
+  duplicate_artifacts: []
+  duplicate_emails: 0
+  duplicate_execution: False
+  duplicate_execution_count: 0
+  elapsed: 11.78100000001723
+  goal: Research modern bookstore design trends, then build a bookstore project, run tests, and validate runtime.
+  hallucinated_tools: []
+  label: Long Running Recovery
+  loop_count: 0
+  recovered: True
+  recovery_time_s: 0.09
+  status: COMPLETED
+  tool_calls_before_crash: 3
+  tool_calls:
+
+===  ===
+  benchmark: D
+  comp_steps: 2
+  compensated: True
+  compensation_invoked: True
+  compensation_succeeded: True
+  elapsed: 0.23
+  event_count: 0
+  goal: Generate a project report, email it, then intentionally fail the next step to verify the system rolls back the previous operations.
+  label: Compensation Stress Test
+  partial_rollback: False
+  status: COMPENSATED
+  transitions: ['PENDING', 'COMPENSATED']
+  tool_calls:

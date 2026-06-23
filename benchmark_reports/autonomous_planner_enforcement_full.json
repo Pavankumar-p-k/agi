@@ -1,0 +1,86 @@
+[
+  {
+    "benchmark": "A",
+    "label": "Research \u2192 Build \u2192 Validate \u2192 Email",
+    "elapsed": 181.85899999999674,
+    "turns": 58,
+    "completed_naturally": true,
+    "status": "COMPLETED",
+    "tool_order_correct": false,
+    "missing_steps": [
+      "browser_snapshot"
+    ],
+    "hallucinated_tools": [
+      "mark_email_read"
+    ],
+    "loop_count": 13,
+    "artifacts_produced": [
+      "email_sent"
+    ],
+    "artifacts_consumed": [
+      "email_sent"
+    ],
+    "artifacts_orphaned": []
+  },
+  {
+    "benchmark": "B",
+    "label": "Research \u2192 Android APK Delivery",
+    "goal": "Build an Android coffee shop app and deliver the APK. Research coffee shop app UI trends first. Then build the project, repair any issues, validate runtime, and email the APK file as an attachment.",
+    "elapsed": 142.5779999999795,
+    "turns": 19,
+    "completed_naturally": false,
+    "status": "COMPLETED",
+    "uses_artifact_ids_only": true,
+    "missing_steps": [],
+    "hallucinated_tools": [],
+    "loop_count": 0,
+    "artifacts_produced": [
+      "email_sent"
+    ],
+    "artifacts_consumed": [
+      "email_sent"
+    ],
+    "artifacts_orphaned": []
+  },
+  {
+    "benchmark": "C",
+    "label": "Long Running Recovery",
+    "goal": "Research modern bookstore design trends, then build a bookstore project, run tests, and validate runtime.",
+    "elapsed": 37.31199999997625,
+    "status": "COMPLETED",
+    "tool_calls_before_crash": 5,
+    "recovery_time_s": 0.08,
+    "duplicate_execution": false,
+    "duplicate_execution_count": 0,
+    "duplicate_emails": 0,
+    "duplicate_artifacts": [],
+    "recovered": true,
+    "hallucinated_tools": [],
+    "loop_count": 0,
+    "artifacts_produced": [
+      "email_sent"
+    ],
+    "artifacts_consumed": [
+      "email_sent"
+    ],
+    "artifacts_orphaned": []
+  },
+  {
+    "benchmark": "D",
+    "label": "Compensation Stress Test",
+    "goal": "Generate a project report, email it, then intentionally fail the next step to verify the system rolls back the previous operations.",
+    "status": "COMPENSATED",
+    "elapsed": 0.26,
+    "event_count": 0,
+    "compensated": true,
+    "compensation_invoked": true,
+    "compensation_succeeded": true,
+    "partial_rollback": false,
+    "transitions": [
+      "PENDING",
+      "RUNNING",
+      "COMPENSATED"
+    ],
+    "comp_steps": 2
+  }
+]

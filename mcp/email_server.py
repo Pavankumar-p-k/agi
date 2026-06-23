@@ -39,6 +39,7 @@ from datetime import datetime, timedelta
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
 from mcp.types import Tool, TextContent
+from core.tools.email_utils import attach_files_to_msg
 logger = logging.getLogger(__name__)
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -809,8 +810,8 @@ def _smtp_connect(account=None, cfg=None):
     return conn
 
 
-def _send_email(to, subject, body, in_reply_to=None, references=None, cc=None, bcc=None, account=None):
-    """Send an email via SMTP. Returns dict with status."""
+def _send_email(to, subject, body, in_reply_to=None, references=None, cc=None, bcc=None, account=None, attachments=None):
+    """Send an email via SMTP. attachments is a list of file paths dicts with path/filename keys."""
     send_account, cfg = _resolve_send_config(account)
     msg = EmailMessage()
     msg["From"] = _clean_header_value(cfg["from_address"])
@@ -827,6 +828,9 @@ def _send_email(to, subject, body, in_reply_to=None, references=None, cc=None, b
     if "Message-ID" not in msg:
         msg["Message-ID"] = email.utils.make_msgid()
     msg.set_content(body)
+
+    if attachments:
+        attach_files_to_msg(msg, attachments)
 
     recipients = []
     if isinstance(to, str):
@@ -1518,9 +1522,11 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
                 cc=arguments.get("cc"),
                 bcc=arguments.get("bcc"),
                 account=acct,
+                attachments=arguments.get("attachments"),
             )
             acct_note = f" (from {result['account']})" if result.get("account") else ""
-            return [TextContent(type="text", text=f"Sent email to {result['to']} with subject '{result['subject']}'{acct_note}.")]
+            att_note = f" with {len(arguments.get('attachments', []))} attachment(s)" if arguments.get("attachments") else ""
+            return [TextContent(type="text", text=f"Sent email to {result['to']} with subject '{result['subject']}'{acct_note}{att_note}.")]
 
         elif name == "reply_to_email":
             uid = arguments.get("uid")

@@ -30,6 +30,8 @@ async def do_workflow_start(
             input_data=s.get("input_data", {}),
             timeout_seconds=s.get("timeout_seconds"),
             max_retries=s.get("max_retries", 3),
+            compensation_tool=s.get("compensation_tool"),
+            compensation_data=s.get("compensation_data"),
         ))
 
     engine = kwargs.get("workflow_engine")

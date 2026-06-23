@@ -13,6 +13,12 @@ WORKFLOW_COMPLETED = "workflow_completed"
 WORKFLOW_FAILED = "workflow_failed"
 WORKFLOW_CANCELLED = "workflow_cancelled"
 WORKFLOW_RECOVERED = "workflow_recovered"
+COMPENSATION_STARTED = "compensation_started"
+COMPENSATION_STEP_STARTED = "compensation_step_started"
+COMPENSATION_STEP_COMPLETED = "compensation_step_completed"
+COMPENSATION_STEP_FAILED = "compensation_step_failed"
+WORKFLOW_COMPENSATED = "workflow_compensated"
+COMPENSATION_FAILED = "compensation_failed"
 
 
 class WorkflowEvent:

@@ -87,16 +87,8 @@ class BuildMetrics:
 # ── Structured Javac Error Parsers ─────────────────────────────
 
 _ERROR_PARSERS: list[tuple[re.Pattern, str, str]] = [
-    # Missing import: cannot find symbol class X
-    (re.compile(r"([\w/]+\.java):(\d+):\s*error:\s*cannot find symbol\s*\n\s*symbol:\s*(?:class|variable)\s+(\w+)", re.M), "missing_import", "class"),
-    (re.compile(r"cannot find symbol\s*\n\s*symbol:\s*(?:class|variable)\s+(\w+)", re.I), "missing_import", "class"),
-    # Package does not exist
-    (re.compile(r"package\s+([\w.]+)\s+does not exist", re.I), "missing_package", "package"),
-    # Cannot resolve symbol
-    (re.compile(r"([\w/]+\.java):(\d+):\s*error:\s*cannot find symbol", re.M), "missing_symbol", "symbol"),
-    (re.compile(r"error: cannot find symbol\s+(\w+)", re.I), "missing_symbol", "symbol"),
-    # R.layout / R.id / R.drawable / R.string not found
-    (re.compile(r"([\w/]+\.java):(\d+):\s*error:\s*R\.layout\.(\w+)", re.M), "missing_layout", "layout"),
+    # R.layout / R.id / R.drawable / R.string not found (specific first, before general import)
+    (re.compile(r"([\w/\\:.]+\.java):(\d+):\s*error:\s*R\.layout\.(\w+)", re.M), "missing_layout", "layout"),
     (re.compile(r"R\.layout\.(\w+)"), "missing_layout", "layout"),
     (re.compile(r"R\.id\.(\w+)"), "missing_view_id", "id"),
     (re.compile(r"R\.drawable\.(\w+)"), "missing_drawable", "drawable"),
@@ -104,6 +96,14 @@ _ERROR_PARSERS: list[tuple[re.Pattern, str, str]] = [
     (re.compile(r"R\.color\.(\w+)"), "missing_color", "color"),
     (re.compile(r"R\.mipmap\.(\w+)"), "missing_mipmap", "mipmap"),
     (re.compile(r"R\.(\w+)\.(\w+)"), "missing_resource", "resource"),
+    # Missing import: cannot find symbol class X (after R.* parsers to avoid stealing their matches)
+    (re.compile(r"([\w/\\:.]+\.java):(\d+):\s*error:\s*cannot find symbol.*?symbol:\s*class\s+(\w+)", re.I | re.DOTALL), "missing_import", "class"),
+    (re.compile(r"cannot find symbol.*?symbol:\s*class\s+(\w+)", re.I | re.DOTALL), "missing_import", "class"),
+    # Package does not exist
+    (re.compile(r"package\s+([\w.]+)\s+does not exist", re.I), "missing_package", "package"),
+    # Cannot resolve symbol (catch-all after specific patterns)
+    (re.compile(r"([\w/\\:.]+\.java):(\d+):\s*error:\s*cannot find symbol", re.M), "missing_symbol", "symbol"),
+    (re.compile(r"error: cannot find symbol\s+(\w+)", re.I), "missing_symbol", "symbol"),
     # Class/file name mismatch
     (re.compile(r"class\s+(\w+)\s+is\s+public,\s*should\s+be\s+declared\s+in\s+a\s+file\s+named\s+(\w+)", re.I), "class_file_mismatch", "class"),
     # Package mismatch
@@ -161,11 +161,11 @@ _ERROR_PARSERS: list[tuple[re.Pattern, str, str]] = [
     (re.compile("resource [\w./]+ not found", re.I), "resource_not_found", "resource"),
     (re.compile("error: failed linking file resources", re.I), "resource_linking", "resource"),
     # Unclosed string literal / syntax
-    (re.compile(r"([\w/]+\.java):(\d+):\s*error:\s*unclosed string literal", re.M), "syntax_string", "syntax"),
+    (re.compile(r"([\w/\\:.]+\.java):(\d+):\s*error:\s*unclosed string literal", re.M), "syntax_string", "syntax"),
     (re.compile("unclosed string literal", re.I), "syntax_string", "syntax"),
-    (re.compile(r"([\w/]+\.java):(\d+):\s*error:\s*'\)'\s*expected", re.M), "syntax_paren", "syntax"),
+    (re.compile(r"([\w/\\:.]+\.java):(\d+):\s*error:\s*'\)'\s*expected", re.M), "syntax_paren", "syntax"),
     (re.compile("error: '\)' expected", re.I), "syntax_paren", "syntax"),
-    (re.compile(r"([\w/]+\.java):(\d+):\s*error:\s*';'\s*expected", re.M), "syntax_semicolon", "syntax"),
+    (re.compile(r"([\w/\\:.]+\.java):(\d+):\s*error:\s*';'\s*expected", re.M), "syntax_semicolon", "syntax"),
     (re.compile("error: ';' expected", re.I), "syntax_semicolon", "syntax"),
     # Lambda
     (re.compile("error: lambda expression not expected here", re.I), "lambda_syntax", "syntax"),
@@ -275,7 +275,7 @@ class CompilerRepairEngine:
                         line_num = 0
                     symbol = groups[2] if len(groups) > 2 else ""
                 elif len(groups) == 2:
-                    first_looks_like_file = bool(re.match(r"^[\w/]+\.[a-z]+$", groups[0]))
+                    first_looks_like_file = bool(re.match(r"^[\w/\\:.]+\.[a-z]+$", groups[0]))
                     second_is_int = bool(re.match(r"^\d+$", str(groups[1])))
                     if first_looks_like_file and second_is_int:
                         file_path = groups[0]
@@ -328,7 +328,7 @@ class CompilerRepairEngine:
     def _extract_file_line_from_output(self, output: str, match_start: int) -> tuple[str, int]:
         """Look backwards from match_start for the nearest file.java:line: prefix."""
         text_before = output[:match_start]
-        matches = list(re.finditer(r"([\w/]+\.[a-z]+):(\d+):\s*(?:error:|warning:)", text_before))
+        matches = list(re.finditer(r"([\w/\\:.]+\.[a-z]+):(\d+):\s*(?:error:|warning:)", text_before))
         if matches:
             last = matches[-1]
             return (last.group(1), int(last.group(2)))
@@ -371,23 +371,31 @@ class CompilerRepairEngine:
         return any_fixed, actions
 
     async def _repair_one(self, error: JavacError, root: str, objective: str) -> RepairAction:
-        """Apply deterministic repair for a single error."""
+        """Apply deterministic repair for a single error.
+
+        Priority:
+          1. PatternFailureMemory ranked candidates (try highest score first)
+          2. Deterministic repair by category (compile-time map)
+        """
         import time
         start = time.time()
 
-        # Priority 1: Check PatternFailureMemory
+        # Priority 1: Check PatternFailureMemory — try ranked candidates
         if self._pattern_memory:
-            match = self._pattern_memory.match(error.message)
-            if match:
+            matches = self._pattern_memory.match_all(error.message)
+            if matches:
                 self.metrics.pattern_memory_hits += 1
-                strategy = match.fix_strategy
-                if not strategy.startswith("FAILED:"):
+                for match in matches:
+                    if not match.is_valid:
+                        continue
+                    strategy = match.fix_strategy
                     action_name = strategy.split(":")[0] if ":" in strategy else strategy
                     result = await self._apply_repair(action_name, error, root)
-                    result.duration_ms = (time.time() - start) * 1000
-                    return result
-                else:
-                    self.metrics.pattern_memory_misses += 1
+                    if result.success:
+                        result.duration_ms = (time.time() - start) * 1000
+                        return result
+                # All candidates failed
+                self.metrics.pattern_memory_misses += 1
 
         # Priority 2: Deterministic repair by category
         action_name = CATEGORY_REPAIR_MAP.get(error.category, "fix_code")
@@ -402,6 +410,9 @@ class CompilerRepairEngine:
         try:
             if action == "add_import":
                 ok = self._fix_import(error.symbol, error.file, root)
+                if not ok:
+                    # Symbol not in known imports — try stub class
+                    ok = self._create_class(error.symbol, error.file, root)
                 ra.success = ok
 
             elif action == "add_gradle_dependency":
@@ -780,32 +791,70 @@ class CompilerRepairEngine:
         return False
 
     def _fix_type_mismatch(self, error: JavacError, root: str) -> bool:
-        """Fix type mismatch by adding a cast."""
-        # Extract source and target types from error message
+        """Fix type mismatch — first tries semantic conversion, then simple cast.
+
+        Priority:
+          1. StructuralTransformationEngine — String↔int (Integer.parseInt, String.valueOf),
+             object→String, polymorphic conversions
+          2. Simple cast fallback — primitive widening/narrowing only (int→long, long→int, etc.)
+        """
+        from brain.structural_transformer import StructuralTransformationEngine
+
+        transformer = StructuralTransformationEngine()
+
+        # Priority 1: Structural transformation (semantic conversions)
+        if transformer.fix_type_mismatch(error, root):
+            return True
+
+        # Priority 2: Simple cast fallback for primitive widening/narrowing
         m = re.search(r"incompatible types:\s*(\S+)\s*cannot be converted to\s*(\S+)", error.message, re.I)
         if not m:
             return False
         source_type, target_type = m.group(1), m.group(2)
-        if error.file:
-            full = os.path.join(root, error.file)
-            if os.path.exists(full):
-                try:
-                    with open(full, encoding="utf-8") as f:
-                        lines = f.readlines()
-                    if 0 < error.line <= len(lines):
-                        line = lines[error.line - 1]
-                        # Replace the source expression with cast: (TargetType) sourceExpr
-                        # Simple heuristic: wrap last assignment or return value
-                        if "=" in line:
-                            parts = line.split("=", 1)
-                            rhs = parts[1].strip().rstrip(";")
-                            indent = line[:len(line) - len(line.lstrip())]
-                            lines[error.line - 1] = f"{indent}{parts[0]}= ({target_type}) {rhs};\n"
-                            with open(full, "w", encoding="utf-8") as f:
-                                f.writelines(lines)
-                            return True
-                except Exception:
-                    pass
+        if not error.file:
+            return False
+        full = os.path.join(root, error.file)
+        if not os.path.exists(full):
+            return False
+        try:
+            with open(full, encoding="utf-8") as f:
+                lines = f.readlines()
+            if not (0 < error.line <= len(lines)):
+                return False
+            line = lines[error.line - 1]
+            indent = line[:len(line) - len(line.lstrip())]
+            import re as _re
+            # Handle assignment: int x = longValue → int x = (int) longValue
+            if "=" in line:
+                parts = line.split("=", 1)
+                rhs = parts[1].strip().rstrip(";")
+                lines[error.line - 1] = f"{indent}{parts[0]}= ({target_type}) {rhs};\n"
+                with open(full, "w", encoding="utf-8") as f:
+                    f.writelines(lines)
+                return True
+            # Handle return: return longValue → return (int) longValue
+            ret_match = _re.search(r'return\s+(\S+)\s*;', line)
+            if ret_match:
+                expr = ret_match.group(1)
+                lines[error.line - 1] = line.replace(
+                    ret_match.group(0), f"return ({target_type}) {expr};"
+                )
+                with open(full, "w", encoding="utf-8") as f:
+                    f.writelines(lines)
+                return True
+            # Handle method argument: foo(longVal) → foo((int) longVal)
+            arg_match = _re.search(r'(\w+)\s*[,)]', line)
+            if arg_match:
+                arg = arg_match.group(1)
+                if arg not in ('new', 'null', 'true', 'false'):
+                    lines[error.line - 1] = line.replace(
+                        arg, f"({target_type}) {arg}", 1
+                    )
+                    with open(full, "w", encoding="utf-8") as f:
+                        f.writelines(lines)
+                    return True
+        except Exception:
+            pass
         return False
 
     def _create_class(self, symbol: str, file_path: str, root: str) -> bool:
@@ -813,17 +862,37 @@ class CompilerRepairEngine:
         if not symbol:
             return False
         pkg = self._detect_package(root)
-        if file_path:
-            full = os.path.join(root, file_path.replace("\\", "/"))
-        else:
+        # Find actual source root by scanning for .java files
+        src_root = self._find_source_root(root)
+        if not src_root:
             src_root = os.path.join(root, "src/main/java")
-            full = os.path.join(src_root, *pkg.split("."), f"{symbol}.java")
+        target_dir = os.path.join(src_root, *pkg.split("."))
+        os.makedirs(target_dir, exist_ok=True)
+        full = os.path.join(target_dir, f"{symbol}.java")
         if os.path.exists(full):
             return True  # already exists
-        os.makedirs(os.path.dirname(full), exist_ok=True)
         with open(full, "w", encoding="utf-8") as f:
             f.write(f"package {pkg};\n\npublic class {symbol} {{\n}}\n")
         return True
+
+    def _find_source_root(self, root: str) -> str | None:
+        """Find the base source directory (e.g., app/src/main/java) by scanning for .java files."""
+        candidates = []
+        for r, _dirs, files in os.walk(root):
+            for f in files:
+                if f.endswith(".java"):
+                    dir_path = os.path.dirname(os.path.join(r, f))
+                    parts = dir_path.split(os.sep)
+                    for i, p in enumerate(parts):
+                        if p == "java" and i + 1 < len(parts):
+                            candidate = os.sep.join(parts[:i + 1])
+                            # Prefer main/java over test/java
+                            score = 2 if "main" in candidate.split(os.sep) else 1
+                            candidates.append((score, candidate))
+        if not candidates:
+            return None
+        candidates.sort(reverse=True)
+        return candidates[0][1]
 
     # ── Helpers ───────────────────────────────────────────────────
 

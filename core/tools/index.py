@@ -31,11 +31,7 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 # Tools that are registered but not implemented — return disabled status.
-BROKEN_TOOLS: frozenset[str] = frozenset({
-    "list_sessions", "send_to_session", "pipeline",
-    "manage_session", "list_models",
-    "ui_control", "ask_teacher",
-})
+BROKEN_TOOLS: frozenset[str] = frozenset()
 
 # Tools that are fully implemented and available for execution.
 AVAILABLE_TOOLS: frozenset[str] = frozenset({
@@ -49,7 +45,7 @@ ALWAYS_AVAILABLE = frozenset({
     "browser_navigate",     "browser_find", "browser_find_interactive", "browser_click", "browser_fill", "browser_press",
     "browser_snapshot", "browser_get_url", "browser_get_title", "browser_screenshot",
     "browser_current_state", "browser_health",
-    "browser_get_history", "browser_list_tabs", "browser_switch_tab", "browser_new_tab", "browser_close_tab",
+    "browser_get_history", "browser_get_facts", "browser_list_tabs", "browser_switch_tab", "browser_new_tab", "browser_close_tab",
     "browser_wait_visible", "browser_wait_text", "browser_wait_interactive", "browser_shadow_query",
     "api_call",  # For configured integrations (Miniflux, Gitea, Linkding, etc.)
     # The two genuinely AMBIENT cookbook tools — "what's running" and
@@ -175,6 +171,7 @@ BUILTIN_TOOL_DESCRIPTIONS: dict[str, str] = {
     "browser_evaluate": "Execute arbitrary JavaScript in the current page context. ADMIN ONLY — blocked for non-admin users. Use for extracting data, modifying page state, or debugging.",
     "browser_health": "Check if the browser is alive and responsive. Returns browser status, number of active contexts, sessions, and tabs.",
     "browser_get_history": "Get the browser navigation and action history for the current session. Returns full list of visited URLs and detailed action log (tool, url, selector, status, timestamp). Use when you need to recall what was done in the browser across turns.",
+    "browser_get_facts": "Get facts extracted from browsed pages. Provide a search query to find specific facts (e.g. 'python version', 'pricing', 'release date'), or empty for all facts. Returns structured facts with entity, claim, source_url, category, and confidence score. Use to recall information gathered from previously visited pages.",
     "browser_list_tabs": "List all open tabs in the current browser session. Returns each tab's index, URL, and title. Use before browser_switch_tab to find which tab to switch to.",
     "browser_switch_tab": "Switch to a different tab by index (0-based). Use after browser_list_tabs to pick a specific tab. The tab index is from the list_tabs result.",
     "browser_new_tab": "Open a new browser tab. Optionally provide a URL to navigate to in the new tab. The new tab becomes the active tab.",
@@ -546,6 +543,12 @@ class ToolIndex:
                    "show me the page", "what does this page have",
                    "what is on screen", "browser state"}):
             {"browser_snapshot", "browser_current_state"},
+        # DOM browser facts
+        frozenset({"what did I find", "what facts", "extracted facts",
+                   "browser facts", "page facts", "what did I learn",
+                   "recall facts", "remember what", "fact query",
+                   "what information", "what I found out"}):
+            {"browser_get_facts"},
     }
 
     def get_tools_for_query(

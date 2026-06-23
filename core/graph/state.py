@@ -138,6 +138,8 @@ class AgentState:
     candidates: list[tuple] = field(default_factory=list)
     disabled_tools_set: set = field(default_factory=set)
 
+    browser_planner_ctx: dict | None = None
+
     def advance_round(self) -> int:
         self.round_num += 1
         self.phase = AgentPhase.THINKING
