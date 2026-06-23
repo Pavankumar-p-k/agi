@@ -410,13 +410,13 @@ class TestOpportunityGraphBuilder(unittest.TestCase):
         graph = self.builder.build([])
         self.assertGreater(graph.node_count, 0)
 
-    def test_48_is_dependency_retry_to_benchmark(self):
-        self.assertTrue(
-            self.builder._is_dependency("browser_retry_tool", "run_benchmark")
-        )
-        self.assertTrue(
-            self.builder._is_dependency("fix_bug", "validate_output")
-        )
-        self.assertFalse(
-            self.builder._is_dependency("navigate", "click")
-        )
+    def test_48_builder_uses_miner_for_edge_discovery(self):
+        """Builder delegates mining to SequentialPatternMiner."""
+        from core.opportunity.mining import SequentialPatternMiner
+
+        self.assertIsInstance(self.builder.miner, SequentialPatternMiner)
+
+    def test_49_builder_accepts_experiment_runner(self):
+        """Builder build() handles experiment_runner gracefully."""
+        graph = self.builder.build([], None, None, None)
+        self.assertGreater(graph.node_count, 0)

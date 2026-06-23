@@ -21,6 +21,7 @@ from collections import defaultdict, deque
 from dataclasses import dataclass, field
 from typing import Any
 
+from core.opportunity.mining import MinedEdge, PromotionRules, SequentialPatternMiner
 from core.opportunity.models import Opportunity
 
 logger = logging.getLogger(__name__)
@@ -84,22 +85,35 @@ class OpportunityGraphEdge:
     """A directed dependency edge between two opportunity targets.
 
     source -> target means "improving source enables improving target".
+
+    Fields:
+      lift:          P(B|A) / P(B) — >1.0 means B is likelier after A.
+                     1.0 means no statistical signal. Only meaningful for
+                     learned edges.
+      support_count: how many times this (A → B) pattern was observed.
     """
 
     source_system: str
     target_system: str
     confidence: float = 0.5
     evidence_count: int = 1
-    source_type: str = "mined"  # "mined", "manual", "learned"
+    source_type: str = "mined"  # "mined", "manual", "learned", "default", "merged"
+    lift: float = 1.0
+    support_count: int = 0
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        d: dict[str, Any] = {
             "source": self.source_system,
             "target": self.target_system,
             "confidence": round(self.confidence, 3),
             "evidence": self.evidence_count,
             "source_type": self.source_type,
         }
+        if self.lift != 1.0:
+            d["lift"] = round(self.lift, 3)
+        if self.support_count > 0:
+            d["support"] = self.support_count
+        return d
 
 
 # ── Graph ─────────────────────────────────────────────────────────────
@@ -281,26 +295,26 @@ class UnlockValueScorer:
 
 DEFAULT_DEPENDENCIES: list[tuple[str, str, float, str]] = [
     # Reliability → Benchmarking
-    ("browser_automation", "build_benchmark", 0.50, "manual"),
-    ("automated_build", "build_benchmark", 0.40, "manual"),
+    ("browser_automation", "build_benchmark", 0.50, "default"),
+    ("automated_build", "build_benchmark", 0.40, "default"),
     # Benchmarking → Calibration
-    ("build_benchmark", "belief_quality", 0.45, "manual"),
-    ("build_benchmark", "strategic_reasoning", 0.30, "manual"),
+    ("build_benchmark", "belief_quality", 0.45, "default"),
+    ("build_benchmark", "strategic_reasoning", 0.30, "default"),
     # Calibration → Promotion
-    ("belief_quality", "browser_automation", 0.35, "manual"),
-    ("strategic_reasoning", "self_modification", 0.40, "manual"),
+    ("belief_quality", "browser_automation", 0.35, "default"),
+    ("strategic_reasoning", "self_modification", 0.40, "default"),
     # Memory → Strategy → Improvement
-    ("long_term_memory", "strategic_reasoning", 0.35, "manual"),
-    ("strategic_reasoning", "improvement", 0.45, "manual"),
-    ("improvement", "self_modification", 0.50, "manual"),
+    ("long_term_memory", "strategic_reasoning", 0.35, "default"),
+    ("strategic_reasoning", "improvement", 0.45, "default"),
+    ("improvement", "self_modification", 0.50, "default"),
     # Execution → Generalization
-    ("execution_infrastructure", "generalization", 0.30, "manual"),
-    ("generalization", "belief_quality", 0.35, "manual"),
+    ("execution_infrastructure", "generalization", 0.30, "default"),
+    ("generalization", "belief_quality", 0.35, "default"),
     # Opportunity Discovery feeds Self-Modification
-    ("opportunity_discovery", "self_modification", 0.50, "manual"),
+    ("opportunity_discovery", "self_modification", 0.50, "default"),
     # Self-Modification unlocks everything downstream
-    ("self_modification", "build_benchmark", 0.30, "manual"),
-    ("self_modification", "browser_automation", 0.25, "manual"),
+    ("self_modification", "build_benchmark", 0.30, "default"),
+    ("self_modification", "browser_automation", 0.25, "default"),
 ]
 
 
@@ -321,40 +335,68 @@ def build_default_graph() -> OpportunityGraph:
 
 
 class OpportunityGraphBuilder:
-    """Mines stores for opportunity dependency patterns.
+    """Builds opportunity graphs by combining default rules with learned mining.
 
     Three discovery methods:
-      1. ActivityGraph mining — sequential tool_call patterns
-      2. OpportunityStore mining — chronological opportunity completion
-      3. Default rules — hardcoded domain knowledge (always applied)
+      1. SequentialPatternMiner — learns edges from historical data
+      2. Default rules — hardcoded domain knowledge (always applied)
+      3. Merge strategy — learned edges replace defaults when statistically stronger
     """
 
-    def __init__(self, discount: float = DEPTH_DISCOUNT):
+    def __init__(
+        self,
+        discount: float = DEPTH_DISCOUNT,
+        miner: SequentialPatternMiner | None = None,
+    ):
         self.scorer = UnlockValueScorer(discount=discount)
+        self.miner = miner or SequentialPatternMiner()
 
     def build(
         self,
         opportunities: list[Opportunity],
         activity_store: Any | None = None,
         opportunity_store: Any | None = None,
+        experiment_runner: Any | None = None,
     ) -> OpportunityGraph:
         """Build a complete opportunity graph.
 
-        Combines default dependencies with mined dependencies.
+        Combines default dependencies with statistically learned dependencies
+        from the SequentialPatternMiner. Learned edges that pass promotion
+        gates replace or augment defaults.
         """
+        # Start with default graph skeleton
         graph = build_default_graph()
 
         # Add all discovered opportunities as nodes
         for opp in opportunities:
             graph.add_node(opp.target_system, opp)
 
-        # Mine activity history for sequential patterns
-        if activity_store:
-            self._mine_activity_graph(graph, activity_store)
+        # Mine edges from historical data
+        mined_edges = self.miner.mine_all(
+            activity_store=activity_store,
+            opportunity_store=opportunity_store,
+            experiment_runner=experiment_runner,
+        )
 
-        # Mine opportunity completion history
-        if opportunity_store:
-            self._mine_opportunity_store(graph, opportunity_store)
+        # Only promotable edges influence the graph
+        promotable = self.miner.get_promotable_edges(mined_edges)
+
+        if promotable:
+            merged = self.miner.merge_with_defaults(promotable, graph)
+
+            # Rebuild the graph with merged edges
+            # (preserve existing nodes with their opportunities)
+            opps = {
+                name: node.opportunity
+                for name, node in graph.nodes.items()
+                if node.opportunity is not None
+            }
+            new_graph = OpportunityGraph()
+            for name, opp in opps.items():
+                new_graph.add_node(name, opp)
+            for edge in merged:
+                new_graph.add_edge(edge)
+            graph = new_graph
 
         # Compute unlock values
         unlock_scores = self.scorer.compute(graph)
@@ -391,117 +433,9 @@ class OpportunityGraphBuilder:
         scored.sort(key=lambda x: x[0], reverse=True)
         return [opp for _, opp in scored]
 
-    # ── Mining Methods ─────────────────────────────────────────────
-
-    def _mine_activity_graph(
-        self, graph: OpportunityGraph, activity_store: Any
-    ) -> int:
-        """Mine ActivityGraph for sequential tool_call patterns.
-
-        Looks for pairs of tool_call nodes in the same activity tree where:
-          - A completed before B started
-          - B's label suggests calibration/benchmark/reliability
-        """
-        added = 0
-        try:
-            nodes = activity_store.get_nodes_by_type("tool_call", limit=500)
-            if not nodes:
-                return 0
-
-            # Group by activity_id
-            activities: dict[str, list[Any]] = defaultdict(list)
-            for node in nodes:
-                aid = getattr(node, "activity_id", "") or ""
-                if aid:
-                    activities[aid].append(node)
-
-            # Within each activity, find sequential completions
-            for aid, activity_nodes in activities.items():
-                completed = [
-                    n for n in activity_nodes
-                    if getattr(n, "status", "") == "COMPLETED"
-                ]
-                completed.sort(key=lambda n: (
-                    getattr(n, "completed_at", "") or getattr(n, "created_at", "") or ""
-                ))
-
-                for i in range(len(completed) - 1):
-                    for j in range(i + 1, len(completed)):
-                        a = completed[i]
-                        b = completed[j]
-                        src = getattr(a, "label", "") or ""
-                        tgt = getattr(b, "label", "") or ""
-                        if self._is_dependency(src, tgt):
-                            graph.add_edge(OpportunityGraphEdge(
-                                source_system=_tool_to_system(src),
-                                target_system=_tool_to_system(tgt),
-                                confidence=0.25,
-                                evidence_count=1,
-                                source_type="mined",
-                            ))
-                            added += 1
-        except Exception as e:
-            logger.warning(f"Activity graph mining error: {e}")
-
-        return added
-
-    def _mine_opportunity_store(
-        self, graph: OpportunityGraph, opportunity_store: Any
-    ) -> int:
-        """Mine OpportunityStore for chronological sequences."""
-        added = 0
-        try:
-            records = opportunity_store.list_records(limit=200)
-            if not records:
-                return 0
-
-            completed = [
-                r for r in records
-                if r.actual_success and r.completed_at
-            ]
-            completed.sort(key=lambda r: r.completed_at or "")
-
-            for i in range(len(completed) - 1):
-                for j in range(i + 1, len(completed)):
-                    a = completed[i]
-                    b = completed[j]
-                    # Check if b started after a completed
-                    if b.selected_at and a.completed_at:
-                        if b.selected_at >= a.completed_at:
-                            graph.add_edge(OpportunityGraphEdge(
-                                source_system=a.target_system,
-                                target_system=b.target_system,
-                                confidence=0.20,
-                                evidence_count=1,
-                                source_type="mined",
-                            ))
-                            added += 1
-        except Exception as e:
-            logger.warning(f"Opportunity store mining error: {e}")
-
-        return added
-
-    @staticmethod
-    def _is_dependency(src_label: str, tgt_label: str) -> bool:
-        """Heuristic: does src_label enabling tgt_label?"""
-        src = src_label.lower()
-        tgt = tgt_label.lower()
-
-        # retry/fix -> benchmark/test/validate
-        if any(w in src for w in ["retry", "repair", "fix"]):
-            if any(w in tgt for w in ["benchmark", "test", "validat", "check"]):
-                return True
-
-        # navigate/click -> snapshot/screenshot
-        if any(w in src for w in ["navigate", "click", "fill"]):
-            if any(w in tgt for w in ["snapshot", "screenshot"]):
-                return True
-
-        # build -> test
-        if "build" in src and "test" in tgt:
-            return True
-
-        return False
+    # ── Mining removed in Phase 20 ─────────────────────────────────
+    # Sequential pattern mining is now handled by
+    # core/opportunity/mining.py (SequentialPatternMiner).
 
 
 # ── Helpers ───────────────────────────────────────────────────────────
