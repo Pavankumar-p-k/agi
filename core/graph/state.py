@@ -123,6 +123,9 @@ class AgentState:
 
     events: list[str] = field(default_factory=list)
 
+    mode: str | None = None
+    project_context: dict | None = None
+
     mcp_mgr: Any = None
     mcp_schemas: list[dict] = field(default_factory=list)
     mcp_disabled_map: dict | None = None

@@ -68,34 +68,9 @@ async def health(request: Request):
     }
 
 
-@router.post("/api/chat")
-async def chat_endpoint(body: dict = {}):
-    from core.intent_router import extract_intent
-    from core.llm_router import get_router
-    from core.model_router import route_request
-
-    text = body.get("text") or body.get("message", "")
-    if not text:
-        raise HTTPException(400, "text or message field is required")
-
-    model, tier, processed_query = route_request(text)
-    intent_data = await extract_intent(processed_query)
-    current_intent = intent_data.get("intent", "chat")
-    model_group = "cloud" if model == "cloud" else "local"
-
-    try:
-        resp = await get_router().acompletion(
-            model=model_group,
-            messages=[{"role": "system", "content": "You are JARVIS, your AI assistant. Be concise."},
-                      {"role": "user", "content": processed_query}],
-            timeout=60,
-        )
-        response_text = resp.choices[0].message.content
-    except Exception as e:
-        logger.exception("[REST Chat] LLM failed: %s", e)
-        response_text = "I had a temporary issue processing that request."
-
-    return {"response": response_text, "model": model, "intent": current_intent}
+# POST /api/chat is registered in core/routes/chat.py (with auth + history).
+# This duplicate is removed to avoid route collision.
+# The simpler chat logic is available via /v1/chat/completions (OpenAI-compat).
 
 
 @router.get("/metrics")
@@ -164,6 +139,20 @@ async def skills_list(request: Request):
     if not sm:
         return {"skills": []}
     return {"skills": sm.list()}
+
+
+@router.post("/api/skills/{skill_name}/toggle")
+async def skills_toggle(skill_name: str, request: Request):
+    sm = getattr(request.app.state, "skill_manager", None)
+    if not sm:
+        raise HTTPException(503, "Skill manager not available")
+    skill = sm.get(skill_name)
+    if not skill:
+        raise HTTPException(404, f"Skill '{skill_name}' not found")
+    new_state = not skill.manifest.enabled
+    if not sm.set_enabled(skill_name, new_state):
+        raise HTTPException(500, f"Failed to toggle skill '{skill_name}'")
+    return {"status": "enabled" if new_state else "disabled", "enabled": new_state}
 
 
 # ── Security Audit ─────────────────────────────────────────────────

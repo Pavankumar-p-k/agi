@@ -1,3 +1,4 @@
+import logging
 # Copyright (c) 2024-2026 JARVIS Project
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,6 +20,7 @@ import pytest
 from hypothesis import given, assume, strategies as st, settings, HealthCheck
 
 from core.ssrf import is_private_ip, resolve_and_check, assert_safe_url
+logger = logging.getLogger(__name__)
 
 
 # ── Strategies ───────────────────────────────────────────────────────
@@ -122,8 +124,8 @@ class TestIPRepresentationFuzz:
         try:
             result = resolve_and_check(url)
             assert isinstance(result, bool)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"[SWALLOWED] {e}")
 
 
 # ── Scheme injection attacks ─────────────────────────────────────────
@@ -154,8 +156,8 @@ class TestSchemeInjectionFuzz:
         try:
             result = resolve_and_check(url)
             assert isinstance(result, bool)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"[SWALLOWED] {e}")
 
     def test_scheme_with_newline_injection(self):
         """Newline in scheme should not cause bypass."""
@@ -163,8 +165,8 @@ class TestSchemeInjectionFuzz:
         try:
             result = resolve_and_check(url)
             assert isinstance(result, bool)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"[SWALLOWED] {e}")
 
 
 # ── URL path and fragment attacks ────────────────────────────────────
@@ -176,8 +178,8 @@ class TestURLPathFuzz:
         try:
             result = resolve_and_check(url)
             assert result is True
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"[SWALLOWED] {e}")
 
     @given(st.integers(min_value=1, max_value=65535))
     def test_localhost_on_various_ports(self, port):
@@ -236,8 +238,8 @@ class TestUnicodeFuzz:
         try:
             result = resolve_and_check(url)
             assert isinstance(result, bool)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"[SWALLOWED] {e}")
 
     def test_unicode_url_with_scheme_never_crash(self):
         urls = [
@@ -252,8 +254,8 @@ class TestUnicodeFuzz:
             try:
                 result = resolve_and_check(url)
                 assert isinstance(result, bool)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning(f"[SWALLOWED] {e}")
 
     def test_unicode_homograph_attack(self):
         """Unicode homograph: 'а' (Cyrillic) vs 'a' (Latin) in domain."""
@@ -261,8 +263,8 @@ class TestUnicodeFuzz:
         try:
             result = resolve_and_check(url)
             assert isinstance(result, bool)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"[SWALLOWED] {e}")
 
 
 # ── assert_safe_url fuzz ─────────────────────────────────────────────

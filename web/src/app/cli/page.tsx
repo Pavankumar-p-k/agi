@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
+import { WSClient } from '@/lib/ws';
 
 const MASCOT_FRAMES = [
 `    .-^-.    
@@ -28,21 +29,6 @@ const MASCOT_FRAMES = [
     '-v-'    `,
 ];
 
-const BOOT_LINES = [
-  { text: '┌─ jarvis cli v2.0 ───────────────────────────┐', color: 'var(--j-sky)' },
-  { text: '│ AI Operating System · terminal control plane │', color: 'var(--j-sky)' },
-  { text: '└──────────────────────────────────────────────┘', color: 'var(--j-sky)' },
-  { text: '', color: 'var(--j-text-muted)' },
-  { text: 'OK  cli/chat      prompt_toolkit session ready', color: '#28c840' },
-  { text: 'OK  agents        9 shortcuts registered', color: '#28c840' },
-  { text: 'OK  web           Next.js console linked', color: '#28c840' },
-  { text: 'OK  server        FastAPI stack managed by CLI', color: '#28c840' },
-  { text: 'OK  plugins       marketplace commands available', color: '#28c840' },
-  { text: 'OK  skills        SKILL.md loader online', color: '#28c840' },
-  { text: '', color: 'var(--j-text-muted)' },
-  { text: 'jarvis> _', color: '#28c840' },
-];
-
 const AGENTS = [
   { name: 'MAESTRO', role: 'Routes every task to the right agent', kind: 'orchestrator', color: '#bc8cff', prompt: 'How does the MAESTRO orchestrator route tasks between Jarvis agents in the CLI?' },
   { name: 'NEXUS', role: 'Deep research, synthesis, intel briefs', kind: 'research', color: '#58a6ff', prompt: 'How does NEXUS deep research work in Jarvis CLI?' },
@@ -64,14 +50,6 @@ const CLI_FEATURES = [
   { title: 'Diagnostics', command: 'python jarvis.py doctor --json', desc: 'Dependency, server, model, and degraded-response checks for local repair loops.' },
 ];
 
-const PHASES = [
-  ['phase 01', 'Diamond mascot + boot polish', 'Frame scheduler, boot sequence, version banner, and CLI color tokens.'],
-  ['phase 02', 'REPL routing display', 'Agent autocomplete, MAESTRO routing preview, and per-agent streaming output colors.'],
-  ['phase 03', 'Control loop visualizer', 'Interpret -> Plan -> Build -> Validate -> Check -> Fix rendered inline as tasks run.'],
-  ['phase 04', 'Model + plugin HUD', 'Model status, plugin health, sandbox output, and skills hot-reload indicators.'],
-  ['phase 05', 'Release hardening', 'Binary packaging, docs, command examples, and smoke tests for CLI launch paths.'],
-];
-
 function queuePrompt(prompt: string) {
   localStorage.setItem('jarvis:queuedPrompt', prompt);
   window.location.href = '/chat';
@@ -83,18 +61,51 @@ function copyCommand(command: string) {
 
 export default function CliPage() {
   const [frame, setFrame] = useState(0);
-  const [lineCount, setLineCount] = useState(0);
+  const [lines, setLines] = useState<{ text: string; color?: string; type?: string }[]>([]);
+  const [command, setCommand] = useState('');
+  const wsRef = useRef<WSClient | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const frameTimer = setInterval(() => setFrame(v => (v + 1) % MASCOT_FRAMES.length), 360);
-    const lineTimer = setInterval(() => setLineCount(v => Math.min(v + 1, BOOT_LINES.length)), 170);
+    
+    const ws = new WSClient('/ws/terminal');
+    wsRef.current = ws;
+    ws.connect();
+
+    ws.on('_connected', () => {
+      setLines(prev => [...prev, { text: 'CONNECTED TO JARVIS TERMINAL', color: '#28c840' }]);
+    });
+    ws.on('_disconnected', () => {
+      setLines(prev => [...prev, { text: 'CONNECTION LOST. RECONNECTING...', color: '#ff4757' }]);
+    });
+    ws.on('output', (data: any) => {
+      setLines(prev => [...prev, { 
+        text: data.data, 
+        color: data.stream === 'stderr' ? '#ff4757' : 'var(--j-text)',
+        type: 'output'
+      }]);
+    });
+
     return () => {
       clearInterval(frameTimer);
-      clearInterval(lineTimer);
+      ws.disconnect();
     };
   }, []);
 
-  const visibleLines = useMemo(() => BOOT_LINES.slice(0, lineCount), [lineCount]);
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [lines]);
+
+  const handleCommand = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!command.trim() || !wsRef.current) return;
+    setLines(prev => [...prev, { text: `> ${command}`, color: 'var(--j-sky)' }]);
+    wsRef.current.send({ type: 'command', data: command });
+    setCommand('');
+  };
 
   return (
     <div className="hud-page h-full overflow-y-auto space-y-7">
@@ -104,29 +115,47 @@ export default function CliPage() {
             <div className="hud-label">Terminal Control Plane</div>
             <h1 className="hud-title mt-3 text-7xl md:text-8xl">CLI <span className="text-[var(--j-sky)]">Mode</span></h1>
             <p className="mt-5 max-w-2xl text-sm leading-7 text-[var(--j-text-dim)]">
-              The browser console now links back to the real JARVIS CLI: interactive chat, agent shortcuts,
-              diagnostics, plugin operations, web launch, and backend control.
+              Direct WebSocket link to the JARVIS backend shell. Execute system commands,
+              manage agents, and trigger automation pipelines from the browser.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Button variant="primary" onClick={() => queuePrompt('Show me the best way to use the Jarvis CLI for daily work.')}>Ask In Chat</Button>
-              <Button variant="ghost" onClick={() => copyCommand('python jarvis.py cli')}>Copy CLI Command</Button>
+              <Button variant="primary" onClick={() => queuePrompt('Show me common JARVIS CLI commands.')}>Common Commands</Button>
+              <Button variant="ghost" onClick={() => copyCommand('python jarvis.py cli')}>Copy Local Command</Button>
             </div>
           </div>
 
-          <div className="overflow-hidden border border-[#30363d] bg-[#0d1117]">
-            <div className="flex items-center gap-2 border-b border-[#30363d] bg-[#161b22] px-4 py-3">
-              <span className="h-2.5 w-2.5 rounded-full bg-[#30363d]" />
-              <span className="h-2.5 w-2.5 rounded-full bg-[#30363d]" />
-              <span className="h-2.5 w-2.5 rounded-full bg-[#30363d]" />
-              <span className="ml-2 font-mono text-[11px] text-[#8b949e]">jarvis — powershell — 96x28</span>
+          <div className="overflow-hidden border border-[#30363d] bg-[#0d1117] flex flex-col h-[400px]">
+            <div className="flex items-center gap-2 border-b border-[#30363d] bg-[#161b22] px-4 py-3 shrink-0">
+              <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" />
+              <span className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
+              <span className="h-2.5 w-2.5 rounded-full bg-[#28c840]" />
+              <span className="ml-2 font-mono text-[11px] text-[#8b949e]">jarvis-shell</span>
             </div>
-            <div className="grid grid-cols-1 gap-6 p-5 md:grid-cols-[210px_1fr]">
-              <pre className="whitespace-pre font-mono text-[12px] leading-[1.35] text-[#58a6ff]">{MASCOT_FRAMES[frame]}</pre>
-              <div className="font-mono text-xs leading-7">
-                {visibleLines.map((line, i) => (
-                  <div key={`${line.text}-${i}`} style={{ color: line.color }}>{line.text}</div>
-                ))}
-                {lineCount >= BOOT_LINES.length && <span className="animate-[blink-block_1s_step-end_infinite] text-[#28c840]">█</span>}
+            <div 
+              ref={scrollRef}
+              className="flex-1 p-5 overflow-y-auto font-mono text-xs leading-6 scrollbar-hide"
+            >
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-[180px_1fr] mb-4">
+                <pre className="whitespace-pre font-mono text-[10px] leading-[1.3] text-[#58a6ff]">{MASCOT_FRAMES[frame]}</pre>
+                <div className="text-[var(--j-sky)] uppercase tracking-widest text-[9px] flex items-end pb-1">
+                  Ready for Input
+                </div>
+              </div>
+              {lines.map((line, i) => (
+                <div key={i} style={{ color: line.color }} className={line.type === 'output' ? 'whitespace-pre-wrap' : ''}>
+                  {line.text}
+                </div>
+              ))}
+              <div className="flex gap-2 mt-2">
+                <span className="text-[var(--j-sky)] shrink-0">jarvis@core:~$</span>
+                <form onSubmit={handleCommand} className="flex-1">
+                  <input
+                    autoFocus
+                    value={command}
+                    onChange={(e) => setCommand(e.target.value)}
+                    className="w-full bg-transparent border-none outline-none text-[var(--j-text)] p-0 m-0"
+                  />
+                </form>
               </div>
             </div>
           </div>
@@ -185,18 +214,6 @@ export default function CliPage() {
           <div className="hud-label">Jarvis Has</div>
           {['9 specialized sub-agents', 'Interactive prompt_toolkit CLI', 'Slash commands + sessions', 'Plugin and skills control', 'Backend/web launch command', 'Docker sandbox and SSRF policy'].map(item => (
             <div key={item} className="border-b border-[var(--j-border)] py-2 font-mono text-xs text-[var(--j-text)]"><span className="text-[#28c840]">+</span> {item}</div>
-          ))}
-        </div>
-        <div className="bg-[var(--j-surface)] p-6">
-          <div className="hud-label">Build Plan</div>
-          {PHASES.map(([phase, title, desc]) => (
-            <div key={phase} className="grid grid-cols-[86px_1fr] gap-4 border-b border-[var(--j-border)] py-3">
-              <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-[#28c840]">{phase}</div>
-              <div>
-                <div className="text-sm font-medium text-[var(--j-text)]">{title}</div>
-                <div className="mt-1 text-xs leading-5 text-[var(--j-text-dim)]">{desc}</div>
-              </div>
-            </div>
           ))}
         </div>
       </section>

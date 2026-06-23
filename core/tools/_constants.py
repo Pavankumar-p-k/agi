@@ -41,8 +41,23 @@ TOOL_TAGS = {"bash", "python", "web_search", "web_fetch", "read_file", "write_fi
              "list_serve_presets", "serve_preset", "adopt_served_model",
              "list_cookbook_servers",
              "edit_image", "trigger_research", "manage_research",
-              "app_api", "sessions_spawn", "watch_file",
-              "undo_edit_file", "batch_edit_file", "semantic_search",
-              "shell", "shell_command", "close_shell", "refactor"}
+             "app_api", "sessions_spawn", "watch_file",
+             "undo_edit_file", "batch_edit_file", "semantic_search",
+             "shell", "shell_command", "close_shell", "refactor",
+             # Browser automation tools
+             "vision_browser",
+             "browser_navigate", "browser_find", "browser_find_interactive",
+             "browser_click", "browser_fill", "browser_press",
+             "browser_snapshot", "browser_get_url", "browser_get_title",
+             "browser_screenshot", "browser_current_state", "browser_health",
+             "browser_get_history", "browser_list_tabs", "browser_switch_tab",
+             "browser_new_tab", "browser_close_tab",
+              "browser_wait_visible", "browser_wait_text", "browser_wait_interactive",
+              "browser_shadow_query", "browser_evaluate",
+              # Build automation tools
+               "build_project", "repair_project", "run_tests", "runtime_validate", "cancel_build",
+               # Workflow engine tools
+               "workflow_start", "workflow_resume", "workflow_cancel",
+               "workflow_status", "workflow_list"}
 
 ToolBlock = namedtuple("ToolBlock", ["tool_type", "content"])

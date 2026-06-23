@@ -1,0 +1,19 @@
+> Task :app:compileDebugJavaWithJavac FAILED
+/app/src/main/java/com/example/app/utils/Helper.java:34: error: ';' expected
+        int result = calculateValue(a, b)
+                                          ^
+/app/src/main/java/com/example/app/utils/Helper.java:42: error: ')' expected
+        if (isValid(a, b)
+                         ^
+/app/src/main/java/com/example/app/utils/Helper.java:55: error: unclosed string literal
+        String greeting = "Hello, world
+                                      ^
+/app/src/main/java/com/example/app/utils/Parser.java:12: error: ';' expected
+        List<String> names = new ArrayList<>()
+                                              ^
+/app/src/main/java/com/example/app/utils/Parser.java:18: error: ')' expected
+        String result = parse(input
+                                   ^
+
+Note: Some messages have been simplified; recompile with -Xdiags:verbose for full output.
+FAILURE: Build failed with an exception.

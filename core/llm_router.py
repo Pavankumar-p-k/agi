@@ -23,6 +23,7 @@ import os
 import threading
 import time
 
+import httpx
 from litellm import Router
 
 from core.config_registry import config as _jarvis_config
@@ -82,6 +83,9 @@ def _build_model_list() -> list:
         {"model_name": "reasoning", "litellm_params": _model_config("REASONING_MODEL", _jarvis_config.get("llm.reasoning_model"))},
         {"model_name": "vision",    "litellm_params": _model_config("VISION_MODEL",    _jarvis_config.get("llm.vision_model"))},
         {"model_name": "grader",    "litellm_params": _model_config("GRADER_MODEL",    _jarvis_config.get("llm.grader_model"))},
+        {"model_name": "embedding",   "litellm_params": _model_config("EMBEDDING_MODEL",   _jarvis_config.get("llm.embedding_model"))},
+        {"model_name": "orchestrator","litellm_params": _model_config("ORCHESTRATOR_MODEL", _jarvis_config.get("llm.orchestrator_model"))},
+        {"model_name": "fallback",    "litellm_params": _model_config("FALLBACK_MODEL",    _jarvis_config.get("llm.fallback_model"))},
     ]
 
     if _jarvis_config.get("llm.cloud_model"):
@@ -125,9 +129,23 @@ def get_available_providers() -> list[dict]:
     ]
 
 
+def _ollama_reachable() -> bool:
+    """Ping the configured Ollama host. Returns True if reachable in under 2s."""
+    _ollama = _jarvis_config.get("ollama.base_url")
+    try:
+        r = httpx.get(f"{_ollama}/api/tags", timeout=2.0)
+        return r.status_code == 200
+    except Exception:
+        return False
+
+
 async def complete(model_group: str, messages: list, timeout: int = 120) -> Result[str, LLMError]:
     from core.config_schema import jarvis_config
-    if jarvis_config.failover.enabled:
+
+    # If Ollama is reachable locally, skip failover entirely
+    if jarvis_config.failover.enabled and _ollama_reachable():
+        pass  # skip failover — local model is available
+    elif jarvis_config.failover.enabled:
         from core.llm_failover import llm_failover
         return await llm_failover.complete(model_group, messages, timeout=timeout)
 

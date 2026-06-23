@@ -34,6 +34,17 @@ export function DashboardSkeleton() {
   );
 }
 
+export function Skeleton() {
+  return (
+    <div className="space-y-4 p-4">
+      <SkeletonBar className="h-5 w-24" />
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <SkeletonCard /><SkeletonCard /><SkeletonCard />
+      </div>
+    </div>
+  );
+}
+
 export function MonitorSkeleton() {
   return (
     <div className="space-y-4">

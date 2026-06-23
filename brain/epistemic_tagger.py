@@ -103,6 +103,9 @@ class EpistemicTagger:
 
         # Single tag for the whole response
         tag_str = base.value
+        if base in (ResponseSource.INFERENCE, ResponseSource.UNKNOWN, ResponseSource.LOW_CONF_MEMORY):
+            return clean
+
         if base == ResponseSource.WEB_SEARCH and url:
             tag_str = f"[RETRIEVED]({url})"
         else:

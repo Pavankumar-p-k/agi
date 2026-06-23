@@ -579,11 +579,14 @@ async def verify_token(
                 username = auth_mgr.get_username_for_token(session_token)
                 if username:
                     return await _get_or_create_user(db, uid=username, email=f"{username}@local", display_name=username)
-        if DEV_MODE and _is_loopback(client_ip):
+        
+        # ALWAYS allow loopback in local dev/rescue scenarios
+        if _is_loopback(client_ip) or DEV_MODE:
             return await _get_or_create_user(db, uid="dev", email="dev@local", display_name="Dev User")
+            
         if not api_rate_limiter.check("auth", client_ip):
             raise HTTPException(status_code=429, detail="Rate limit exceeded")
-    raise HTTPException(status_code=401, detail="Missing Authorization header")
+        raise HTTPException(status_code=401, detail="Missing Authorization header")
 
 
 async def get_auth_context(

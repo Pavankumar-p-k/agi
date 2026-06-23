@@ -101,13 +101,10 @@ class APIKeyVault:
 
     def _track_usage(self, service: str, key: str, rotated: bool = False):
         if service not in self._usage:
-            self._usage[service] = {}
-        masked = key[:8] + "..." if key else "none"
-        if masked not in self._usage[service]:
-            self._usage[service][masked] = 0
-        self._usage[service][masked] += 1
+            self._usage[service] = {"calls": 0, "rotations": 0}
+        self._usage[service]["calls"] += 1
         if rotated:
-            self._usage[service][f"{masked}_rotations"] = self._usage[service].get(f"{masked}_rotations", 0) + 1
+            self._usage[service]["rotations"] += 1
         self._save_usage()
 
     def get_usage(self) -> dict:

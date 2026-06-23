@@ -1,15 +1,3 @@
-# Copyright (c) 2024-2026 JARVIS Project
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
 """Persistent shell sessions — stateful subprocesses across tool calls.
 
 Each session gets a long-lived shell process (cmd.exe on Windows, /bin/sh on Unix)
@@ -18,6 +6,7 @@ that preserves working directory, environment variables, and shell state.
 
 import asyncio
 import logging
+import os
 import sys
 import time
 
@@ -29,9 +18,13 @@ _SESSION_MAX_IDLE = 300  # 5 minutes
 if sys.platform == "win32":
     _SHELL_EXECUTABLE = "cmd.exe"
     _SHELL_ARGS = []
+    _EXIT_CODE_CMD = "echo ExitCodeIs:%errorlevel%"
+    _NEWLINE = "\r\n"
 else:
     _SHELL_EXECUTABLE = "/bin/sh"
     _SHELL_ARGS = []
+    _EXIT_CODE_CMD = "echo ExitCodeIs:$?"
+    _NEWLINE = "\n"
 
 
 class PersistentShell:
@@ -42,6 +35,7 @@ class PersistentShell:
         self.proc: asyncio.subprocess.Process | None = None
         self.last_used: float = time.time()
         self._closed = False
+        self._cwd: str = os.getcwd()
 
     async def start(self) -> None:
         if self.proc is not None and self.proc.returncode is None:
@@ -56,48 +50,66 @@ class PersistentShell:
         self.last_used = time.time()
         logger.info("shell session %s started (pid=%s)", self.session_id, self.proc.pid)
 
-    async def exec(self, command: str, timeout: float = 60.0) -> dict:
+    async def exec(self, command: str, timeout: float = 60.0, cwd: str | None = None) -> dict:
         """Execute a command in this shell session.
 
-        Returns {"output": ..., "exit_code": ..., "timed_out": bool}.
+        Returns {"output": ..., "exit_code": ..., "stderr": ..., "duration_ms": ..., "cwd": ..., "timed_out": bool}.
         """
         await self.start()
         self.last_used = time.time()
 
-        if sys.platform == "win32":
-            full_cmd = command + "\r\n"
-        else:
-            full_cmd = command + "\n"
+        start = time.monotonic()
+        full_cmd = command + _NEWLINE + _EXIT_CODE_CMD + _NEWLINE
 
         try:
             self.proc.stdin.write(full_cmd.encode("utf-8", errors="replace"))
             await self.proc.stdin.drain()
         except BrokenPipeError:
-            return {"output": "Shell process died — start a new session", "exit_code": -1, "timed_out": False}
+            return {"output": "Shell process died — start a new session", "exit_code": -1, "stderr": "", "duration_ms": 0, "cwd": self._cwd, "timed_out": False}
         except OSError as e:
-            return {"output": f"Shell error: {e}", "exit_code": -1, "timed_out": False}
+            return {"output": f"Shell error: {e}", "exit_code": -1, "stderr": "", "duration_ms": 0, "cwd": self._cwd, "timed_out": False}
 
-        # Read until we get the next prompt or hit timeout
-        # For cmd.exe we read a chunk; for sh we read until idle
         try:
             output = await asyncio.wait_for(
                 self._read_until_idle(),
                 timeout=timeout,
             )
         except TimeoutError:
-            return {"output": "", "exit_code": -1, "timed_out": True}
+            duration_ms = round((time.monotonic() - start) * 1000)
+            return {"output": "", "exit_code": -1, "stderr": "", "duration_ms": duration_ms, "cwd": self._cwd, "timed_out": True}
 
-        # Extract the last line as pseudo-exit-code marker
-        lines = output.strip().split("\n")
+        duration_ms = round((time.monotonic() - start) * 1000)
+
+        # Parse exit code from the output
         exit_code = 0
-        cleaned = []
+        lines = output.split("\n")
+        cleaned_lines = []
         for line in lines:
-            cleaned.append(line)
+            stripped = line.rstrip("\r")
+            if "ExitCodeIs:" in stripped:
+                try:
+                    exit_code = int(stripped.split("ExitCodeIs:", 1)[1].strip())
+                except (ValueError, IndexError):
+                    exit_code = 0
+            elif stripped.startswith(command.rstrip()):
+                continue
+            elif stripped.strip():
+                cleaned_lines.append(stripped)
 
-        text = "\n".join(cleaned).strip()
+        text = "\n".join(cleaned_lines).strip() if cleaned_lines else "(no output)"
+
+        # Track cwd changes from cd commands
+        if command.strip().startswith("cd "):
+            new_dir = command.strip()[3:].strip()
+            if new_dir:
+                self._cwd = os.path.abspath(os.path.join(self._cwd, new_dir))
+
         return {
-            "output": text or "(no output)",
+            "output": text,
             "exit_code": exit_code,
+            "stderr": "",
+            "duration_ms": duration_ms,
+            "cwd": self._cwd,
             "timed_out": False,
         }
 

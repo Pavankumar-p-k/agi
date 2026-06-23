@@ -135,6 +135,41 @@ def handle_cli_slash_command(text: str, state: CliState) -> str:
         print(f"JARVIS > model set to: {model}")
         return "handled"
 
+    if lowered == "/models":
+        from cli_commands import cmd_models
+        cmd_models(argparse.Namespace(models_command="list"))
+        return "handled"
+
+    if lowered == "/models-priority":
+        from cli_commands import cmd_models_extended
+        cmd_models_extended(argparse.Namespace(models_command="priority", task_type=None, model_name=None, key_action=None, provider_name=None, key_value=None))
+        return "handled"
+
+    if lowered == "/models-assign":
+        from cli_commands import cmd_models_extended
+        cmd_models_extended(argparse.Namespace(models_command="assign", task_type=None, model_name=None, key_action=None, provider_name=None, key_value=None))
+        return "handled"
+
+    if lowered == "/models-apikeys":
+        from cli_commands import cmd_models_extended
+        cmd_models_extended(argparse.Namespace(models_command="apikeys", key_action="list", provider_name=None, key_value=None))
+        return "handled"
+
+    if lowered.startswith("/models-apikeys-set "):
+        from cli_commands import cmd_models_extended
+        parts = text.split(None, 2)
+        if len(parts) >= 3:
+            provider = parts[1].upper()
+            key = parts[2]
+            cmd_models_extended(argparse.Namespace(models_command="apikeys", key_action="set", provider_name=provider, key_value=key))
+        return "handled"
+
+    if lowered.startswith("/models-apikeys-delete "):
+        from cli_commands import cmd_models_extended
+        provider = text.split(None, 2)[1].upper()
+        cmd_models_extended(argparse.Namespace(models_command="apikeys", key_action="delete", provider_name=provider, key_value=None))
+        return "handled"
+
     if lowered == "/clear":
         os.system("cls" if os.name == "nt" else "clear")
         return "handled"
@@ -482,14 +517,100 @@ def handle_cli_slash_command(text: str, state: CliState) -> str:
         cmd_status(argparse.Namespace())
         return "handled"
 
+    if lowered == "/home":
+        from cli_commands import cmd_home
+        cmd_home(argparse.Namespace())
+        return "handled"
+
+    if lowered == "/voice":
+        from cli_commands import cmd_voice
+        cmd_voice(argparse.Namespace(voice_command=None))
+        return "handled"
+
+    if lowered == "/automation":
+        from cli_commands import cmd_automation
+        cmd_automation(argparse.Namespace(automation_command="status"))
+        return "handled"
+
+    if lowered == "/memory":
+        from cli_commands import cmd_memory
+        cmd_memory(argparse.Namespace(memory_command="list", action=None, text=None, query=None))
+        return "handled"
+
+    if lowered.startswith("/memory-add "):
+        from cli_commands import cmd_memory
+        text = text.split(None, 1)[1].strip()
+        cmd_memory(argparse.Namespace(memory_command="add", action="add", text=text, query=None))
+        return "handled"
+
+    if lowered.startswith("/memory-search "):
+        from cli_commands import cmd_memory
+        query = text.split(None, 1)[1].strip()
+        cmd_memory(argparse.Namespace(memory_command="search", action="search", text=query, query=query))
+        return "handled"
+
+    if lowered.startswith("/integrations"):
+        from cli_commands import cmd_integrations
+        parts = lowered.split()
+        sub = parts[1] if len(parts) > 1 else "list"
+        name = parts[2] if len(parts) > 2 else None
+        if sub == "health" and name:
+            cmd_integrations(argparse.Namespace(integration_command="health", name=name, key=None, value=None))
+        elif sub in ("connect", "disconnect") and name:
+            cmd_integrations(argparse.Namespace(integration_command=sub, name=name, key=None, value=None))
+        else:
+            cmd_integrations(argparse.Namespace(integration_command="list", name=None, key=None, value=None))
+        return "handled"
+
+    if lowered == "/features":
+        from cli_commands import cmd_features
+        cmd_features(argparse.Namespace(feature_command=None, action=None, slug=None, enabled=True))
+        return "handled"
+
+    if lowered.startswith("/features explore "):
+        from cli_commands import cmd_features
+        slug = text.split(None, 2)[2].strip()
+        cmd_features(argparse.Namespace(feature_command="explore", action="explore", slug=slug, enabled=True))
+        return "handled"
+
+    if lowered.startswith("/features toggle "):
+        from cli_commands import cmd_features
+        parts = lowered.split()
+        slug = parts[2] if len(parts) > 2 else None
+        off = "--off" in lowered
+        if slug:
+            cmd_features(argparse.Namespace(feature_command="toggle", action="toggle", slug=slug, enabled=not off))
+        return "handled"
+
+    if lowered == "/diagnostics":
+        from cli_commands import cmd_diagnostics
+        cmd_diagnostics(argparse.Namespace(diag_command=None))
+        return "handled"
+
+    if lowered.startswith("/diagnostics "):
+        from cli_commands import cmd_diagnostics
+        parts = lowered.split()
+        sub = parts[1] if len(parts) > 1 else "all"
+        cmd_diagnostics(argparse.Namespace(diag_command=sub))
+        return "handled"
+
     if lowered == "/boot":
         from cli_visuals import render_boot_screen
         render_boot_screen(animated=True, delay=0.025)
         return "handled"
 
     if lowered == "/agents":
-        from cli_visuals import render_agents
-        render_agents()
+        from cli_commands import cmd_agents_extended
+        cmd_agents_extended(argparse.Namespace(agents_command="list", name=None, task=None, mode=None, lang="auto"))
+        return "handled"
+
+    if lowered.startswith("/agents run "):
+        from cli_commands import cmd_agents_extended
+        parts = text.split(None, 2)
+        if len(parts) >= 3:
+            name = parts[1].upper()
+            task = parts[2]
+            cmd_agents_extended(argparse.Namespace(agents_command="run", name=name, task=task, mode=None, lang="auto"))
         return "handled"
 
     if lowered == "/design":
@@ -889,15 +1010,29 @@ def handle_cli_slash_command(text: str, state: CliState) -> str:
         except Exception as e:
             print(f"  Failed: {e}")
         return "handled"
-    if lowered.startswith("/vision "):
-        from cli_helpers import build_cli_context
-        from cli_requests import request_json, extract_reply
+    if lowered.startswith("/vision ") or lowered.startswith("/browser "):
         prompt = text.split(None, 1)[1].strip()
-        context = build_cli_context(prompt)
-        context["intent"] = "vision"
-        context["cli_mode"] = state.mode
-        result = request_json(state.base_url, "/os/agent/think", {"prompt": prompt, "context": context})
-        print(f"JARVIS > {extract_reply(result)}")
+        # Try direct VisionAgent first
+        try:
+            from core.vision_agent import VisionAgent
+            import core.vision_agent as va
+            va.VISION_MODEL = va.model_for_role("vision")
+            va.PLAN_MODEL = va.model_for_role("planning")
+            agent = VisionAgent()
+            import asyncio
+            result = asyncio.run(agent.run(prompt))
+            print(f"JARVIS > {result.result}")
+            done = sum(1 for s in result.steps if s.get("_status") == "done")
+            print(f"  ({done}/{len(result.steps)} steps done)")
+        except Exception as e:
+            print(f"  Direct vision failed ({e}), falling back to agent...")
+            from cli_helpers import build_cli_context
+            from cli_requests import request_json, extract_reply
+            context = build_cli_context(prompt)
+            context["intent"] = "vision"
+            context["cli_mode"] = state.mode
+            result = request_json(state.base_url, "/os/agent/think", {"prompt": prompt, "context": context})
+            print(f"JARVIS > {extract_reply(result)}")
         return "handled"
     if lowered.startswith("/feedback "):
         from cli_requests import request_json
@@ -934,6 +1069,21 @@ def handle_cli_slash_command(text: str, state: CliState) -> str:
 
 def print_help():
     print(colorize("""JARVIS CLI Commands:
+
+Dashboard:
+  /home                 Home dashboard — system overview
+  /status               Show system status
+  /voice                Voice dashboard — STT, TTS, wake word
+  /automation           Automation dashboard — goals, phases, repair
+  /memory               Memory dashboard — show entries
+  /memory-add <text>    Add a memory entry
+  /memory-search <q>    Search memory entries
+  /integrations [action] Integration management (list/health/connect/disconnect)
+  /features             Feature registry — list all features
+  /features explore <s> Feature detail with health and config
+  /features toggle <s>  Enable/disable a feature (add --off)
+  /diagnostics          Full diagnostics dashboard
+  /diagnostics <area>   Area: models, integrations, voice, features
 
 Session:
   /session /s           Show current session info
@@ -978,8 +1128,25 @@ Stash:
 
 System:
   /status               Show system status
+  /home                 Show home dashboard
+  /voice                Show voice dashboard
+  /automation           Show automation dashboard
+  /memory               Show memory entries
+  /memory-add <text>    Add a memory entry
+  /memory-search <q>    Search memory entries
+  /integrations [action] Show integration status (list/health/connect/disconnect)
+  /features             Show feature registry
+  /features explore <s> Explore a feature in detail
+  /features toggle <s>  Toggle a feature on/off
+  /diagnostics          Run all diagnostics
+  /diagnostics <area>   Area: models, integrations, voice, features
+  /models               List models
+  /models-priority      Show provider priority
+  /models-assign        Show per-task model assignment
+  /models-apikeys       Show/manage API keys
   /boot                 Show diamond mascot boot screen
-  /agents               Show the 9-agent terminal overview
+  /agents               Show agent dashboard
+  /agents run <n> <t>   Run an agent by name
   /design               Show CLI animation/build plan
   /frames [state]       Print mascot frames (idle/thinking/talking/error/success)
   /help /h /?           Show this help

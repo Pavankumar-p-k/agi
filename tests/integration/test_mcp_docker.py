@@ -96,7 +96,7 @@ class TestDockerSandbox:
         mock_client = MagicMock()
         mock_client.ping.return_value = True
         with patch("docker.from_env", return_value=mock_client):
-            from ai_os.docker_sandbox import DockerSandbox
+            from core.sandbox.docker_sandbox import DockerSandbox
             yield DockerSandbox()
 
     def test_init_available(self, sandbox):
@@ -104,13 +104,13 @@ class TestDockerSandbox:
 
     def test_init_not_available(self):
         with patch("docker.from_env", side_effect=Exception("No docker")):
-            from ai_os.docker_sandbox import DockerSandbox
+            from core.sandbox.docker_sandbox import DockerSandbox
             s = DockerSandbox()
             assert s.available is False
 
     @pytest.mark.asyncio
     async def test_exec_python_not_available(self):
-        from ai_os.docker_sandbox import DockerSandbox
+        from core.sandbox.docker_sandbox import DockerSandbox
         s = DockerSandbox()
         s._available = False
         result = await s.exec_python("print('hello')")

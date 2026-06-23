@@ -1,0 +1,187 @@
+from __future__ import annotations
+
+import asyncio
+import json
+import logging
+import time
+from dataclasses import dataclass, field
+from typing import Any
+
+from core.llm_router import complete
+
+logger = logging.getLogger(__name__)
+
+_RESOLVE_SYSTEM = (
+    "You map high-level tasks to available tools. "
+    "Available tools: create_directory, write_file, read_file, edit_file_text, "
+    "delete_file, list_directory, run_command, compile_java, run_tests, build_project. "
+    "Respond with JSON: {\"tool\": \"tool_name\", \"params\": {...}}."
+)
+
+_RESOLVE_PROMPT = """Task: {task_label}
+Description: {description}
+
+Which tool should be called and with what parameters?
+Respond with JSON only: {{"tool": "tool_name", "params": {{"key": "value"}}}}
+"""
+
+
+@dataclass
+class ActionResult:
+    """Standardized result from any tool or action execution."""
+    success: bool
+    output: str = ""
+    evidence: str = ""
+    confidence: float = 0.0
+    error: str = ""
+    duration_ms: float = 0.0
+    metadata: dict = field(default_factory=dict)
+
+
+class Executor:
+    """Unified action executor — runs tools and actions with a standard interface.
+
+    Every execution produces an ActionResult with success, output, evidence,
+    and confidence. This replaces ad-hoc tool calling patterns.
+    """
+
+    def __init__(self):
+        self._tools: dict[str, Any] = {}
+
+    def register_tool(self, name: str, tool_fn: Any):
+        """Register a callable tool by name."""
+        self._tools[name] = tool_fn
+        logger.debug("[Executor] registered tool: %s", name)
+
+    async def execute(self, action_name: str, params: dict | None = None,
+                      task_id: str = "", timeout: float = 120.0) -> ActionResult:
+        """Execute an action by name with params. Returns ActionResult."""
+        start = time.time()
+        params = params or {}
+
+        try:
+            if action_name in self._tools:
+                tool_fn = self._tools[action_name]
+                if asyncio.iscoroutinefunction(tool_fn):
+                    result = await asyncio.wait_for(tool_fn(**params), timeout=timeout)
+                else:
+                    result = await asyncio.wait_for(
+                        asyncio.to_thread(tool_fn, **params),
+                        timeout=timeout,
+                    )
+
+                elapsed = (time.time() - start) * 1000
+
+                if isinstance(result, ActionResult):
+                    result.duration_ms = elapsed
+                    return result
+
+                if isinstance(result, dict):
+                    return ActionResult(
+                        success=result.get("success", False),
+                        output=str(result.get("output", result.get("result", ""))),
+                        evidence=str(result.get("evidence", "")),
+                        confidence=float(result.get("confidence", 0.5)),
+                        error=str(result.get("error", "")),
+                        duration_ms=elapsed,
+                        metadata=result.get("metadata", {}),
+                    )
+
+                return ActionResult(
+                    success=True,
+                    output=str(result),
+                    confidence=0.8,
+                    duration_ms=elapsed,
+                )
+
+            # Unknown action — try to resolve via LLM
+            resolved = await self._resolve_unknown_action(
+                action_name, params.get("description", "") or params.get("goal", "")
+            )
+            if resolved:
+                tool_name = resolved.get("tool", "")
+                tool_params = resolved.get("params", {})
+                tool_params.update({k: v for k, v in params.items()
+                                    if k not in tool_params})
+                logger.info("[Executor] resolved '%s' -> %s(%s)",
+                            action_name, tool_name, tool_params)
+                return await self.execute(tool_name, tool_params, timeout=timeout)
+
+            return ActionResult(
+                success=False,
+                error=f"Unknown action: {action_name}. Could not resolve to any tool.",
+                duration_ms=(time.time() - start) * 1000,
+            )
+
+        except asyncio.TimeoutError:
+            elapsed = (time.time() - start) * 1000
+            logger.warning("[Executor] action %s timed out after %.1fs", action_name, timeout)
+            return ActionResult(
+                success=False,
+                error=f"Action timed out after {timeout}s",
+                duration_ms=elapsed,
+            )
+        except Exception as e:
+            elapsed = (time.time() - start) * 1000
+            logger.exception("[Executor] action %s failed: %s", action_name, e)
+            return ActionResult(
+                success=False,
+                error=str(e),
+                duration_ms=elapsed,
+            )
+
+    async def _resolve_unknown_action(self, task_label: str,
+                                       description: str) -> dict | None:
+        """Ask the LLM to map a high-level task to a tool + params."""
+        try:
+            prompt = _RESOLVE_PROMPT.replace("{task_label}", task_label)
+            prompt = prompt.replace("{description}", description or task_label)
+            result = await complete(
+                "code",
+                [
+                    {"role": "system", "content": _RESOLVE_SYSTEM},
+                    {"role": "user", "content": prompt},
+                ],
+                timeout=30,
+            )
+            if result.is_err():
+                logger.warning("[Executor] resolve failed: %s", str(result._error if hasattr(result, '_error') else result))
+                return None
+            raw = result.unwrap()
+            # Strip code fences
+            for prefix in ["```json", "```JSON", "```"]:
+                if raw.startswith(prefix):
+                    raw = raw[len(prefix):]
+            for suffix in ["```"]:
+                if raw.endswith(suffix):
+                    raw = raw[:-len(suffix)]
+            raw = raw.strip()
+            # Find JSON object in response
+            data = None
+            start = raw.find("{")
+            end = raw.rfind("}")
+            if start != -1 and end > start:
+                try:
+                    data = json.loads(raw[start:end + 1])
+                except json.JSONDecodeError:
+                    pass
+            if not isinstance(data, dict) or "tool" not in data:
+                logger.warning("[Executor] resolve bad response: %s", raw[:200])
+                return None
+            return data
+        except Exception as e:
+            logger.warning("[Executor] resolve exception: %s", e)
+            return None
+
+    async def execute_graph_node(self, task_label: str, action_name: str,
+                                 params: dict | None = None) -> ActionResult:
+        """Execute and log for a task graph node."""
+        result = await self.execute(action_name, params)
+        logger.info(
+            "[Executor] node '%s' action=%s success=%s duration=%.0fms",
+            task_label, action_name, result.success, result.duration_ms,
+        )
+        return result
+
+
+executor = Executor()

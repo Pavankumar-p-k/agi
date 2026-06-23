@@ -37,7 +37,7 @@ def backend_server_cmd(host: str, port: int, reload_enabled: bool) -> list[str]:
         "getattr(sys.stdout, 'reconfigure', lambda **kwargs: None)(encoding='utf-8', errors='replace'); "
         "getattr(sys.stderr, 'reconfigure', lambda **kwargs: None)(encoding='utf-8', errors='replace'); "
         "h, p, r = sys.argv[1], int(sys.argv[2]), sys.argv[3].lower() == 'true'; "
-        "uvicorn.run('core.main:app', host=h, port=p, reload=r)"
+        "uvicorn.run('core.main:app', host=h, port=p, reload=r, ws_ping_interval=60, ws_ping_timeout=30)"
     )
     return [python_exe(), "-c", code, host, str(port), str(reload_enabled).lower()]
 
@@ -71,7 +71,7 @@ def free_port(port: int):
 
 def is_server_reachable(base_url: str, timeout: float = 1.0) -> bool:
     host, port = parse_server_location(base_url)
-    if not is_port_open(host, port, timeout=min(timeout, 0.3)):
+    if not is_port_open(host, port, timeout=min(timeout, 1.0)):
         return False
     for endpoint in ("/health", "/os/status", "/"):
         try:
@@ -90,10 +90,10 @@ def is_server_reachable(base_url: str, timeout: float = 1.0) -> bool:
     return False
 
 
-def wait_for_server(base_url: str, attempts: int = 30, interval_s: float = 1.0) -> bool:
+def wait_for_server(base_url: str, attempts: int = 60, interval_s: float = 1.0) -> bool:
     for _ in range(attempts):
         time.sleep(interval_s)
-        if is_server_reachable(base_url, timeout=0.5):
+        if is_server_reachable(base_url, timeout=2.0):
             return True
     return False
 
@@ -102,10 +102,9 @@ def ensure_server_running(base_url: str, host: str = "127.0.0.1", port: int = 80
     target_host, target_port = parse_server_location(base_url)
     if target_host not in {"127.0.0.1", "localhost"}:
         return
-    stop_local_services(include_ollama=False)
-    free_port(target_port)
-    if is_server_reachable(base_url, timeout=0.5):
+    if is_server_reachable(base_url, timeout=1.0):
         return
+    free_port(target_port)
     print("JARVIS backend is not running. Starting local server...")
     env = common_env()
     env["PYTHONUNBUFFERED"] = "1"

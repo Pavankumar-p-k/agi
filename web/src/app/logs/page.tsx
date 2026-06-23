@@ -18,7 +18,9 @@ const SEVERITY_COLORS: Record<string, string> = {
   CRITICAL: '#ff6b81',
 };
 
-const WS_BASE = process.env.NEXT_PUBLIC_WS_URL || 'ws://127.0.0.1:8000';
+const WS_BASE = process.env.NEXT_PUBLIC_WS_URL || (
+  typeof window !== 'undefined' && window.location.protocol === 'https:' ? 'wss://' : 'ws://'
+) + (typeof window !== 'undefined' ? window.location.host : '127.0.0.1:8000');
 
 function tryParseJson(line: string): Record<string, unknown> | null {
   try {
@@ -54,7 +56,9 @@ export default function LogsPage() {
 
     function connect() {
       try {
-        ws = new WebSocket(`${WS_BASE}/ws/logs`);
+        const token = typeof window !== 'undefined' ? localStorage.getItem('j-token') : null;
+        const query = token ? `?token=${encodeURIComponent(token)}` : '';
+        ws = new WebSocket(`${WS_BASE}/ws/logs${query}`);
       } catch {
         scheduleReconnect();
         return;

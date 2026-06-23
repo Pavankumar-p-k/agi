@@ -75,4 +75,6 @@ __all__ = [
     "do_list_serve_presets", "do_serve_preset", "do_adopt_served_model", "do_list_cookbook_servers",
     "do_edit_image", "do_trigger_research", "do_manage_research", "do_resolve_contact",
     "do_manage_contact", "do_vault_search", "do_vault_get", "do_vault_unlock", "do_app_api",
+    "do_build_project", "do_repair_project", "do_run_tests", "do_runtime_validate",
+    "do_manage_memory", "do_create_session", "do_chat_with_model",
 ]

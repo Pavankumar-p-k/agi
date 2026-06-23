@@ -109,10 +109,11 @@ class SlackChannel(ChannelPlugin):
         await super().stop()
 
     async def send(self, target: str, message: str) -> bool:
+        if not self._client:
+            logger.warning("[Slack] Not connected")
+            return False
         try:
-            token = self.config.token or os.getenv("SLACK_BOT_TOKEN", "")
-            client = WebClient(token=token)
-            client.chat_postMessage(channel=target, text=message[:3000])
+            self._client.chat_postMessage(channel=target, text=message[:3000])
             return True
         except Exception as e:
             logger.warning("[Slack] Send failed: %s", e)

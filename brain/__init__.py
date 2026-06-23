@@ -1,16 +1,3 @@
-# Copyright (c) 2024-2026 JARVIS Project
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 import logging
 from typing import Any, Optional, Dict
 from importlib import import_module
@@ -29,4 +16,94 @@ from .reasoning_engine import ReasoningEngine
 from .cognitive_patterns import PATTERNS
 from .UnifiedBrain import UnifiedBrain
 
+# Autonomous OS subsystems
+from .memory import MemoryManager, EpisodicMemory, SemanticMemory, TaskMemory, DecisionMemory
+from .goals import Goal, GoalStatus, GoalManager
+from .planner import TaskGraph, TaskNode, Planner
+from .executor import Executor, ActionResult, Verifier, VerificationResult
+from .automation import AutomationLoop
+
+# Event-driven architecture
+from .events import (
+    EventBus, Event, Subscription, global_event_bus,
+    GoalCreated, GoalCompleted, GoalFailed,
+    TaskCompleted, TaskFailed,
+    MemoryStored, MemoryRetrieved,
+    VerificationPassed, VerificationFailed,
+    FileCreated, FileModified, FileDeleted,
+    SystemDiskLow, SystemCpuHigh, SystemMemoryHigh,
+    UserMessage, UserArrived,
+    ObserverTick, LearningApplied, GoalAutoCreated,
+)
+
+# Environment observers
+from .observers import ObserverManager, FileSystemObserver, SystemMonitor, TimeObserver
+
+# Advanced subsystems
+from .world_model import WorldModel, WorldState
+from .learning_engine import LearningEngine, learning_engine
+from .goal_generator import GoalGenerator
+from .self_improvement import SelfImprovementEngine
+from .persistence import ProjectPersistence, Checkpoint, DecisionRecord
+from .skill_acquisition import SkillAcquisition, SkillTemplate
+from .tools import ToolRegistry, register_all_tools, ProjectTool
+
 logger = logging.getLogger(__name__)
+
+__all__ = [
+    "BrainExecutionContext",
+    "ReasoningEngine",
+    "PATTERNS",
+    "UnifiedBrain",
+    # Memory
+    "MemoryManager",
+    "EpisodicMemory",
+    "SemanticMemory",
+    "TaskMemory",
+    "DecisionMemory",
+    # Goals
+    "Goal",
+    "GoalStatus",
+    "GoalManager",
+    # Planning
+    "TaskGraph",
+    "TaskNode",
+    "Planner",
+    # Execution
+    "Executor",
+    "ActionResult",
+    "Verifier",
+    "VerificationResult",
+    # Automation
+    "AutomationLoop",
+    # Events
+    "EventBus", "Event", "Subscription", "global_event_bus",
+    "GoalCreated", "GoalCompleted", "GoalFailed",
+    "TaskCompleted", "TaskFailed",
+    "MemoryStored", "MemoryRetrieved",
+    "VerificationPassed", "VerificationFailed",
+    "FileCreated", "FileModified", "FileDeleted",
+    "SystemDiskLow", "SystemCpuHigh", "SystemMemoryHigh",
+    "UserMessage", "UserArrived",
+    "ObserverTick", "LearningApplied", "GoalAutoCreated",
+    # Observers
+    "ObserverManager",
+    "FileSystemObserver",
+    "SystemMonitor",
+    "TimeObserver",
+    # Advanced
+    "WorldModel",
+    "WorldState",
+    "LearningEngine",
+    "learning_engine",
+    "GoalGenerator",
+    "SelfImprovementEngine",
+    "ProjectPersistence",
+    "Checkpoint",
+    "DecisionRecord",
+    "SkillAcquisition",
+    "SkillTemplate",
+    "ToolRegistry",
+    "register_all_tools",
+    "ProjectTool",
+]

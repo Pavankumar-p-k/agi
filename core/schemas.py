@@ -76,6 +76,62 @@ class LoopResult:
     steps: int = 0
 
 
+# ---- Memory schemas (Phase 1) ----
+
+@dataclass
+class MemoryEntry:
+    """Base memory entry with importance scoring."""
+    id: str = ""
+    text: str = ""
+    importance: float = 0.0
+    created_at: str = ""
+    accessed_at: str = ""
+    access_count: int = 0
+    tags: list[str] = field(default_factory=list)
+
+
+@dataclass
+class GoalSchema:
+    """Persistent goal with progress tracking."""
+    id: str = ""
+    objective: str = ""
+    status: str = "active"
+    progress: float = 0.0
+    priority: int = 0
+    parent_goal_id: str | None = None
+    blockers: list[str] = field(default_factory=list)
+    next_action: str = ""
+    tags: list[str] = field(default_factory=list)
+    result: str = ""
+    deadline: str = ""
+    created_at: str = ""
+    updated_at: str = ""
+
+
+@dataclass
+class TaskNodeSchema:
+    """A node in a DAG-based task graph."""
+    id: str = ""
+    label: str = ""
+    description: str = ""
+    status: str = "pending"
+    depends_on: list[str] = field(default_factory=list)
+    agent_type: str = "general"
+    result: str = ""
+    error: str = ""
+
+
+@dataclass
+class AutomationStatus:
+    """Status of the autonomous execution loop."""
+    running: bool = False
+    paused: bool = False
+    iterations: int = 0
+    uptime_seconds: float = 0.0
+    active_goals: int = 0
+    poll_interval: float = 5.0
+
+
 COMPLEX_TASK_TYPES = {"website", "code", "email", "report", "analysis", "research"}
 
 class ChatRequest(BaseModel):

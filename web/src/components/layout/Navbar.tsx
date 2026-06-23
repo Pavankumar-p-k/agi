@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useThemeStore } from '@/stores/themeStore';
+import { api, type HealthStatus } from '@/lib/api';
 
 interface Props {
   onMenuClick: () => void;
@@ -30,16 +31,11 @@ interface Notification {
   unread: boolean;
 }
 
-const SAMPLE_NOTIFICATIONS: Notification[] = [
-  { id: '1', text: 'System ready — all services online', time: Date.now() - 60000, unread: true },
-  { id: '2', text: 'Model loaded: qwen3:4b', time: Date.now() - 300000, unread: false },
-  { id: '3', text: 'Web UI export complete', time: Date.now() - 3600000, unread: false },
-];
-
 export default function Navbar({ onMenuClick }: Props) {
   const pathname = usePathname();
   const [notifOpen, setNotifOpen] = useState(false);
-  const [notifs, setNotifs] = useState(SAMPLE_NOTIFICATIONS);
+  const [notifs, setNotifs] = useState<Notification[]>([]);
+  const [health, setHealth] = useState<HealthStatus | null>(null);
   const notifRef = useRef<HTMLDivElement>(null);
 
   const title = PAGE_TITLES[pathname] || 'JARVIS';
@@ -52,9 +48,21 @@ export default function Navbar({ onMenuClick }: Props) {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const unreadCount = notifs.filter(n => n.unread).length;
+  useEffect(() => {
+    api.health().then(h => setHealth(h)).catch(() => {});
+    api.dashboard.activity.today().then(activities => {
+      setNotifs(activities.slice(0, 5).map((a, i) => ({
+        id: String(i),
+        text: a.description,
+        time: new Date(a.ts).getTime(),
+        unread: true,
+      })));
+    }).catch(() => {});
+  }, []);
 
+  const unreadCount = notifs.filter(n => n.unread).length;
   const markRead = () => setNotifs(prev => prev.map(n => ({ ...n, unread: false })));
+  const isOnline = health?.status === 'healthy' || health?.status === 'ok';
 
   return (
     <motion.header
@@ -78,8 +86,8 @@ export default function Navbar({ onMenuClick }: Props) {
       </div>
       <div className="flex-1" />
       <div className="hidden md:flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-[var(--j-text-muted)]">
-        <span className="h-1.5 w-1.5 rounded-full bg-[#00ff88] shadow-[0_0_8px_#00ff88] animate-[pulse-dot_2s_ease-in-out_infinite]" />
-        System Online
+        <span className={`h-1.5 w-1.5 rounded-full ${isOnline ? 'bg-[#00ff88]' : 'bg-red-400'} shadow-[0_0_8px_currentColor] animate-[pulse-dot_2s_ease-in-out_infinite]`} />
+        {isOnline ? 'System Online' : 'Offline'}
       </div>
 
       {/* Notifications */}
@@ -187,7 +195,7 @@ function UserMenu() {
           >
             <div className="px-4 py-3 border-b" style={{ borderColor: 'var(--j-border)' }}>
               <div className="text-sm font-medium" style={{ color: 'var(--j-text)' }}>JARVIS User</div>
-              <div className="text-[10px]" style={{ color: 'var(--j-text-dim)' }}>Signed in locally</div>
+              <div className="text-[10px]" style={{ color: 'var(--j-text-dim)' }}>{localStorage.getItem('j-token') ? 'Authenticated' : 'Guest'}</div>
             </div>
             <div className="py-1">
               {[

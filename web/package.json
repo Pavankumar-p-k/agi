@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "export": "next build && next export && echo Next.js UI exported to out/"
+    "export": "next build && echo Next.js UI exported to out/",
+    "build:production": "npm run build && npm run verify",
+    "verify": "node scripts/verify-build.js",
+    "clean": "node scripts/clean.js",
+    "deploy": "npm run build:production && node scripts/deploy.js"
   },
   "dependencies": {
     "framer-motion": "^12.40.0",

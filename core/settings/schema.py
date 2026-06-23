@@ -21,7 +21,7 @@ from pydantic import BaseModel, Field
 class LLMSettings(BaseModel):
     default_model: str = "claude-sonnet-4-20250514"
     ollama_host: str = "http://127.0.0.1:11434"
-    planner_model: str = "qwen2.5-coder:3b"
+    planner_model: str = "qwen2.5:7b"
     reasoning_model: str = "llama3.1:8b"
     fast_model: str = "phi3:mini"
     coder_model: str = "qwen3:4b"
@@ -98,5 +98,8 @@ class JarvisSettings(BaseModel):
     telegram_bot_token: str | None = None
     pexels_api_key: str | None = None
     nvidia_api_key: str | None = None
+    discord_bot_token: str | None = None
+    slack_bot_token: str | None = None
+    slack_app_token: str | None = None
     meta_whatsapp_token: str | None = None
     meta_whatsapp_phone_id: str | None = None

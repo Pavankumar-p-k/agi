@@ -25,10 +25,14 @@ async def get_system_status():
     from core.config_registry import config
     from core.llm_router import health_check
     ollama_ok = await health_check()
+    model = config.get("llm.chat_model")
     return {
         "status": "online",
         "ollama": "reachable" if ollama_ok else "unreachable",
-        "model": config.get("llm.chat_model"),
+        "model": model,
+        "model_router": {
+            "models": [model.split("/", 1)[1] if "/" in model else model] if model and ollama_ok else [],
+        },
         "version": "0.1.0",
     }
 

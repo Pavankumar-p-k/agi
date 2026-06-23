@@ -26,7 +26,7 @@ router = APIRouter(tags=["Infrastructure"])
 
 @router.get("/api/sandbox/status")
 async def sandbox_status():
-    from ai_os.docker_sandbox import docker_sandbox
+    from core.sandbox.docker_sandbox import docker_sandbox
     return {"available": docker_sandbox.available}
 
 
@@ -37,7 +37,7 @@ class SandboxExecRequest(BaseModel):
 
 @router.post("/api/sandbox/exec", dependencies=[Depends(require_scope(Scope.TOOLS_EXECUTE_HIGH))])
 async def sandbox_exec(body: SandboxExecRequest):
-    from ai_os.docker_sandbox import docker_sandbox
+    from core.sandbox.docker_sandbox import docker_sandbox
     if not docker_sandbox.available:
         raise HTTPException(503, "Docker sandbox not available")
     if not body.code:
@@ -101,6 +101,14 @@ async def backup_restore(request: Request, body: BackupRestoreRequest):
 
 @router.get("/api/cron/jobs")
 async def cron_list_jobs(request: Request):
+    cs = getattr(request.app.state, "scheduler", None)
+    if not cs:
+        return {"jobs": []}
+    return {"jobs": cs.list_jobs()}
+
+
+@router.get("/api/scheduler/jobs")
+async def scheduler_list_jobs(request: Request):
     cs = getattr(request.app.state, "scheduler", None)
     if not cs:
         return {"jobs": []}

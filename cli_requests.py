@@ -263,7 +263,7 @@ def stream_chat_ws(base_url: str, payload: dict) -> str:
         async def _stream():
             from websockets import connect
             full_reply = ""
-            async with connect(ws_url) as ws:
+            async with connect(ws_url, close_timeout=5) as ws:
                 await ws.send(json.dumps(payload))
                 while True:
                     msg = await ws.recv()
@@ -275,6 +275,8 @@ def stream_chat_ws(base_url: str, payload: dict) -> str:
                         if data.get("complete"):
                             print()
                             break
+                    elif data.get("type") == "tier_status":
+                        continue
                     elif data.get("type") == "stream_end":
                         print()
                         full_reply = data.get("full_response", full_reply)
@@ -322,6 +324,121 @@ def extract_reply(result: dict) -> str:
 def is_limited_mode_reply(reply: str) -> bool:
     lowered = reply.lower()
     return "limited mode" in lowered or "start ollama" in lowered or "ollama" in lowered and "full ai features" in lowered
+
+
+def get_project_context_dict() -> dict:
+    """Collect project context for the current working directory."""
+    from pathlib import Path
+    from core.routing import get_project_context
+    return get_project_context(str(Path.cwd().resolve()))
+
+
+def stream_agent_ws(base_url: str, payload: dict, project_context: dict | None = None) -> str:
+    """Connect to /ws/agent_stream and stream the response. Unified entry point for all messages."""
+    import asyncio
+    try:
+        ws_url = base_url.replace("http://", "ws://").replace("https://", "wss://")
+        ws_url += "/ws/agent_stream"
+
+        async def _stream():
+            from websockets import connect
+            full_reply = ""
+            async with connect(ws_url, close_timeout=5) as ws:
+                # Send session_init first (if project context provided)
+                if project_context:
+                    await ws.send(json.dumps({
+                        "type": "session_init",
+                        "session_id": payload.get("session_id", "default"),
+                        "project_context": project_context,
+                    }))
+                    # Read workspace_summary
+                    summary_msg = await ws.recv()
+                    summary_data = json.loads(summary_msg)
+                    if summary_data.get("type") == "workspace_summary":
+                        pt = summary_data.get("project_type", "unknown")
+                        br = summary_data.get("branch", "")
+                        langs = ", ".join(summary_data.get("languages", []))
+                        cwd = summary_data.get("cwd", "")
+                        print(f"[Workspace] {pt} | branch: {br} | langs: {langs}")
+                        print(f"  {cwd}")
+
+                # Send chat message
+                await ws.send(json.dumps(payload))
+
+                while True:
+                    msg = await ws.recv()
+                    data = json.loads(msg)
+                    msg_type = data.get("type")
+
+                    if msg_type == "stream_token":
+                        token = data.get("token", "")
+                        print(token, end="", flush=True)
+                        full_reply += token
+                        if data.get("complete"):
+                            print()
+                            break
+                    elif msg_type == "stream_end":
+                        full_reply = data.get("full_response", full_reply)
+                        break
+                    elif msg_type == "classification":
+                        mode = data.get("mode", "")
+                        sub = data.get("sub_type", "")
+                        conf = data.get("confidence", 0)
+                        if conf < 1.0:
+                            debug_info = f"[{mode}"
+                            if sub:
+                                debug_info += f"/{sub}"
+                            debug_info += f" {conf:.0%}]"
+                            print(f"\n{colorize(debug_info, 'cyan')}")
+                    elif msg_type == "tool_start":
+                        tool = data.get("tool", "")
+                        args = data.get("args", "")
+                        safety = data.get("safety", "")
+                        icon = "⚙"
+                        if safety == "CONFIRM":
+                            icon = "⚠"
+                        print(f"\n{colorize(f'{icon} {tool}: {args}', 'yellow')}")
+                    elif msg_type == "tool_end":
+                        tool = data.get("tool", "")
+                        result = data.get("result", "")
+                        code = data.get("exit_code", 0)
+                        icon = "✓" if code == 0 else "✗"
+                        print(colorize(f"{icon} {tool}: {result}", "green" if code == 0 else "red"))
+                    elif msg_type == "tool_confirm":
+                        tool = data.get("tool", "")
+                        args = data.get("args", "")
+                        prompt = data.get("prompt", f"Approve {tool}?")
+                        print(f"\n{colorize(f'⚠ {prompt}', 'yellow')}")
+                        print(f"  {tool}: {args}")
+                        resp = input("  [y/N]: ").strip().lower()
+                        await ws.send(json.dumps({
+                            "type": "session_response",
+                            "tool_id": data.get("tool_id", ""),
+                            "approved": resp == "y",
+                        }))
+                    elif msg_type == "phase_change":
+                        phase = data.get("phase", "")
+                        print(f"\n{colorize(f'⟳ {phase}...', 'cyan')}")
+                    elif msg_type == "error":
+                        err_msg = data.get("message", "Unknown error")
+                        print(f"\n{colorize(f'✖ {err_msg}', 'red')}")
+                        break
+                    elif msg_type == "stream_tokens":
+                        tokens = data.get("tokens", [])
+                        for token in tokens:
+                            print(token, end=" ", flush=True)
+                            full_reply += token + " "
+                        if data.get("complete"):
+                            print()
+                            break
+
+            return full_reply
+
+        return asyncio.run(_stream())
+    except Exception as e:
+        print(f"\n{colorize('[WS AGENT STREAM]', 'yellow')} falling back to POST: {e}")
+        result = request_json(base_url, "/api/agent/stream", payload)
+        return extract_reply(result)
 
 
 def run_autonomy_cli(cli_args: list[str]) -> int:

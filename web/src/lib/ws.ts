@@ -6,6 +6,11 @@ const BASE = WS_BASE || `${PROTO}//${HOST}`;
 type WSMessage = Record<string, unknown>;
 type Handler = (data: WSMessage) => void;
 
+function getToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('j-token');
+}
+
 export class WSClient {
   private ws: WebSocket | null = null;
   private handlers = new Map<string, Set<Handler>>();
@@ -13,7 +18,9 @@ export class WSClient {
   private url: string;
 
   constructor(path = '/ws/chat_stream') {
-    this.url = `${BASE}${path}`;
+    const token = getToken();
+    const query = token ? `?token=${encodeURIComponent(token)}` : '';
+    this.url = `${BASE}${path}${query}`;
   }
 
   connect() {

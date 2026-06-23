@@ -46,3 +46,45 @@ class Skill:
         self.problem: str = kwargs.get("problem", "")
         self.solution: str = kwargs.get("solution", "")
         self.steps: list = kwargs.get("steps") or []
+
+    @classmethod
+    def from_markdown(cls, md: str) -> Skill:
+        lines = md.split("\n")
+        kwargs = {}
+        header = ""
+        body = []
+        in_frontmatter = False
+        frontmatter_lines = []
+        for line in lines:
+            if line.strip() == "---" and not in_frontmatter:
+                in_frontmatter = True
+                continue
+            if line.strip() == "---" and in_frontmatter:
+                in_frontmatter = False
+                continue
+            if in_frontmatter:
+                frontmatter_lines.append(line)
+                continue
+            if not in_frontmatter and not frontmatter_lines and line.startswith("# "):
+                header = line[2:].strip()
+            elif not in_frontmatter:
+                body.append(line)
+
+        for fl in frontmatter_lines:
+            if ":" in fl:
+                key, _, val = fl.partition(":")
+                kwargs[key.strip()] = val.strip()
+
+        if not kwargs.get("name") and header:
+            kwargs["name"] = slugify(header)
+        if not kwargs.get("description") and header:
+            kwargs["description"] = header
+        if body:
+            body_text = "\n".join(body).strip()
+            kwargs["body_extra"] = body_text
+            if not kwargs.get("procedure"):
+                steps = [b for b in body if b.strip().startswith("- ") or b.strip().startswith("* ")]
+                if steps:
+                    kwargs["procedure"] = [s.strip("- *") for s in steps]
+
+        return cls(**kwargs)

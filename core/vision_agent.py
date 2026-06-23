@@ -52,6 +52,27 @@ logger = logging.getLogger(__name__)
 pyautogui.FAILSAFE = True   # move mouse top-left to emergency stop
 pyautogui.PAUSE    = 0.35
 
+# Safe print that won't crash on Windows consoles with limited Unicode
+_SAFE_PRINT = True
+
+
+_ORIGINAL_PRINT = print
+
+
+def _sp(*args, **kwargs):
+    """Print with Unicode-safe encoding fallback."""
+    if not _SAFE_PRINT:
+        return
+    text = " ".join(str(a) for a in args)
+    try:
+        _ORIGINAL_PRINT(text, **kwargs)
+    except UnicodeEncodeError:
+        safe = text.encode("ascii", errors="replace").decode("ascii")
+        _ORIGINAL_PRINT(safe, **kwargs)
+
+
+print = _sp
+
 VISION_MODEL = model_for_role("vision")
 PLAN_MODEL = model_for_role("planning")
 QUALITY_MODEL = model_for_role("quality")

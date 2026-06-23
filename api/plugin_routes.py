@@ -25,7 +25,7 @@ from pydantic import BaseModel
 
 from core.plugins import get_plugin_loader, get_plugin_registry
 
-router = APIRouter(prefix="/plugins", tags=["plugins"])
+router = APIRouter(prefix="/api/plugins", tags=["plugins"])
 
 
 class SettingsPatch(BaseModel):
@@ -38,13 +38,6 @@ class InstallRequest(BaseModel):
 # ------------------------------------------------------------------ #
 # Routes
 # ------------------------------------------------------------------ #
-
-@router.get("")
-async def list_plugins():
-    """List all registered plugins."""
-    registry = get_plugin_registry()
-    return {"plugins": registry.list_plugins()}
-
 
 @router.get("/search")
 async def search_plugins(q: str):
@@ -95,6 +88,24 @@ async def disable_plugin(plugin_id: str):
     if not registry.disable(plugin_id):
         raise HTTPException(status_code=404, detail=f"Plugin '{plugin_id}' not found")
     return {"status": "disabled", "id": plugin_id}
+
+
+@router.post("/{plugin_id}/toggle")
+async def toggle_plugin(plugin_id: str):
+    registry = get_plugin_registry()
+    manifest = registry.get_manifest(plugin_id)
+    if not manifest:
+        raise HTTPException(status_code=404, detail=f"Plugin '{plugin_id}' not found")
+    # manifest is a PluginManifest object — check if it has an 'enabled' property
+    enabled = getattr(manifest, 'enabled', False)
+    if enabled:
+        if not registry.disable(plugin_id):
+            raise HTTPException(status_code=500, detail=f"Failed to disable plugin '{plugin_id}'")
+        return {"status": "disabled", "enabled": False, "id": plugin_id}
+    else:
+        if not registry.enable(plugin_id):
+            raise HTTPException(status_code=500, detail=f"Failed to enable plugin '{plugin_id}'")
+        return {"status": "enabled", "enabled": True, "id": plugin_id}
 
 
 @router.post("/{plugin_id}/reload")

@@ -111,7 +111,17 @@ def get_prompt(agent: str, extra: dict | None = None) -> str:
             return deployed
     except Exception as e:
         logger.exception("[PROMPTS] Failed to get active prompt: %s", e)
+    
     base = AGENT_PROMPTS.get(agent, AGENT_PROMPTS["chat"])
+    
+    # Inject Action Engine capabilities into chat prompt
+    if agent == "chat":
+        try:
+            from core.action_engine import action_engine
+            base += action_engine.get_prompt_fragment()
+        except ImportError:
+            pass
+
     if extra:
         return base.format(**extra)
     return base

@@ -22,30 +22,36 @@ from .providers import FasterWhisperProvider, DeepgramProvider, AzureSpeechProvi
 logger = logging.getLogger(__name__)
 
 
+def _await_coro(coro):
+    """Safely await a coroutine from a sync context, whether or not an event loop is running."""
+    import asyncio
+    try:
+        loop = asyncio.get_running_loop()
+        if loop.is_running():
+            future = asyncio.run_coroutine_threadsafe(coro, loop)
+            return future.result(timeout=10)
+        return loop.run_until_complete(coro)
+    except RuntimeError:
+        return asyncio.run(coro)
+
+
 def init_stt_providers():
     """Register all STT providers at startup."""
     stt_registry.register(FasterWhisperProvider(), make_default=True)
 
-    deepgram = DeepgramProvider()
-    if await_deepgram_health(deepgram):
-        stt_registry.register(deepgram)
-
-    azure = AzureSpeechProvider()
-    if azure._healthy:
-        stt_registry.register(azure)
-
-
-def await_deepgram_health(dg) -> bool:
     try:
-        import asyncio
-        loop = asyncio.get_running_loop()
-        future = asyncio.run_coroutine_threadsafe(dg.health(), loop)
-        return future.result(timeout=10)
-    except RuntimeError:
-        return asyncio.run(dg.health())
+        deepgram = DeepgramProvider()
+        if _await_coro(deepgram.health()):
+            stt_registry.register(deepgram)
     except Exception as e:
-        logger.warning("[STT] Deepgram health check failed: %s", e)
-        return False
+        logger.warning("[STT] Deepgram registration skipped: %s", e)
+
+    try:
+        azure = AzureSpeechProvider()
+        if _await_coro(azure.health()):
+            stt_registry.register(azure)
+    except Exception as e:
+        logger.warning("[STT] Azure registration skipped: %s", e)
 
 
 def get_stt(provider: str | None = None) -> STTProvider:

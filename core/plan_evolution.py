@@ -13,11 +13,22 @@
 """core/plan_evolution.py
 Phase 4 (D2): Plan Evolution.
 Dynamic DAG mutation mid-run: switch templates, insert/remove steps, change tools.
+Now includes FailureAnalysis step: Plan → Generate → Verify → Failure Analysis → Update Plan → Regenerate.
 """
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class FailureAnalysis:
+    root_cause: str
+    category: str
+    affected_requirements: list[str] = field(default_factory=list)
+    suggested_mutation: str = ""
+    fix_priority: int = 5
+    generalized_pattern: str = ""
 
 
 @dataclass
@@ -27,6 +38,7 @@ class PlanMutation:
     new_task: dict | None = None
     reason: str = ""
     applied_at_retry: int = 0
+    analysis: FailureAnalysis | None = None
 
 
 class PlanEvolutionEngine:
@@ -96,6 +108,120 @@ class PlanEvolutionEngine:
 
     def get_mutations(self, project: str) -> list[PlanMutation]:
         return self.mutations.get(project, [])
+
+    def analyze_failures(self, failures: list[str], plan: list,
+                          retry: int, completion_score: float = 0.0) -> list[FailureAnalysis]:
+        """Failure Analysis step: categorize failures by root cause, not symptom.
+        Returns structured FailureAnalysis list for plan regeneration."""
+        analyses = []
+        seen_causes = set()
+
+        for f in failures:
+            f_lower = f.lower()
+
+            if "missing" in f_lower and "page" in f_lower:
+                page_name = f.split(":")[-1].strip() if ":" in f else "unknown"
+                cause = f"page_missing:{page_name}"
+                if cause not in seen_causes:
+                    seen_causes.add(cause)
+                    analyses.append(FailureAnalysis(
+                        root_cause=f"Required page '{page_name}' was not generated",
+                        category="missing_page",
+                        suggested_mutation="insert_generation_task",
+                        fix_priority=1,
+                        generalized_pattern="missing page: *",
+                    ))
+
+            elif "broken" in f_lower and "link" in f_lower:
+                cause = "broken_links"
+                if cause not in seen_causes:
+                    seen_causes.add(cause)
+                    analyses.append(FailureAnalysis(
+                        root_cause="Generated pages reference non-existent files (images, CSS, JS)",
+                        category="resource_reference",
+                        suggested_mutation="fix_resource_paths",
+                        fix_priority=3,
+                        generalized_pattern="broken link or reference to *",
+                    ))
+
+            elif "placeholder" in f_lower or "lorem" in f_lower or "todo" in f_lower:
+                cause = "placeholders"
+                if cause not in seen_causes:
+                    seen_causes.add(cause)
+                    analyses.append(FailureAnalysis(
+                        root_cause="Template placeholders or filler text left in generated output",
+                        category="incomplete_content",
+                        suggested_mutation="replace_placeholders",
+                        fix_priority=2,
+                        generalized_pattern="placeholder or filler text (*)",
+                    ))
+
+            elif "nav" in f_lower and "differ" in f_lower:
+                cause = "nav_inconsistency"
+                if cause not in seen_causes:
+                    seen_causes.add(cause)
+                    analyses.append(FailureAnalysis(
+                        root_cause="Navigation differs across pages — pages were generated independently",
+                        category="structural_inconsistency",
+                        suggested_mutation="unify_navigation",
+                        fix_priority=4,
+                        generalized_pattern="navigation differs on page *",
+                    ))
+
+            elif "html" in f_lower and ("valid" in f_lower or "parse" in f_lower or "syntax" in f_lower):
+                cause = "html_syntax"
+                if cause not in seen_causes:
+                    seen_causes.add(cause)
+                    analyses.append(FailureAnalysis(
+                        root_cause="Generated HTML contains syntax errors",
+                        category="syntax_error",
+                        suggested_mutation="fix_html_syntax",
+                        fix_priority=3,
+                        generalized_pattern="HTML syntax error in *",
+                    ))
+
+            elif "visual" in f_lower or "score" in f_lower:
+                cause = "visual_quality"
+                if cause not in seen_causes:
+                    seen_causes.add(cause)
+                    analyses.append(FailureAnalysis(
+                        root_cause="Visual appearance does not meet quality threshold",
+                        category="visual_quality",
+                        suggested_mutation="improve_visual_design",
+                        fix_priority=5,
+                        generalized_pattern="visual score below threshold",
+                    ))
+
+            elif "reasoning" in f_lower or "content" in f_lower:
+                cause = "content_quality"
+                if cause not in seen_causes:
+                    seen_causes.add(cause)
+                    analyses.append(FailureAnalysis(
+                        root_cause="Generated content lacks relevance, structure, or completeness",
+                        category="content_quality",
+                        suggested_mutation="regenerate_content",
+                        fix_priority=4,
+                        generalized_pattern="content quality below threshold",
+                    ))
+
+            else:
+                cause = f"uncategorized:{f[:60]}"
+                if cause not in seen_causes:
+                    seen_causes.add(cause)
+                    analyses.append(FailureAnalysis(
+                        root_cause=f"Unknown failure: {f[:120]}",
+                        category="uncategorized",
+                        suggested_mutation="general_repair",
+                        fix_priority=6,
+                    ))
+
+        if completion_score < 100.0:
+            logger.info(f"[ANALYSIS] Requirements at {completion_score:.0f}% — "
+                         f"continuing loop to reach 100%")
+
+        logger.info(f"[ANALYSIS] {len(analyses)} root cause(s) identified: "
+                     f"{[a.category for a in analyses]}")
+        return analyses
 
     def suggest_fixes(self, project: str, failures: list[str],
                       plan: list, retry: int) -> list[PlanMutation]:

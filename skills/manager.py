@@ -172,17 +172,50 @@ class SkillManager:
     def get(self, name: str) -> Skill | None:
         return self._skills.get(name)
 
+    def set_enabled(self, name: str, enabled: bool) -> bool:
+        skill = self._skills.get(name)
+        if not skill:
+            return False
+        old = skill.manifest.enabled
+        skill.manifest.enabled = enabled
+        manifest_path = SKILLS_DIR / name / "skill.json"
+        if manifest_path.exists():
+            try:
+                data = json.loads(manifest_path.read_text())
+                data["enabled"] = enabled
+                manifest_path.write_text(json.dumps(data, indent=2))
+            except Exception:
+                skill.manifest.enabled = old
+                return False
+        return True
+
     def list(self) -> list[dict]:
-        return [
-            {
-                "name": s.manifest.name,
-                "version": s.manifest.version,
-                "description": s.manifest.description,
-                "loaded": s.is_loaded,
-                "tools": list(s.tools.keys()),
-            }
-            for s in self._skills.values()
-        ]
+        result = []
+        for name, s in self._skills.items():
+            try:
+                loaded = getattr(s, "is_loaded", False)
+                if callable(loaded):
+                    loaded = loaded()
+                tools = getattr(s, "tools", {})
+                if callable(tools):
+                    tools = tools()
+                result.append({
+                    "name": s.manifest.name,
+                    "version": s.manifest.version,
+                    "description": s.manifest.description,
+                    "loaded": loaded,
+                    "tools": list(tools.keys()),
+                })
+            except Exception as e:
+                logger.warning("[Skills] list() skipped %s: %s", name, e)
+                result.append({
+                    "name": name,
+                    "version": "?",
+                    "description": "?",
+                    "loaded": False,
+                    "tools": [],
+                })
+        return result
 
     def get_all_tools(self) -> dict[str, tuple[str, Callable]]:
         tools = {}

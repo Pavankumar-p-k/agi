@@ -10,6 +10,7 @@ import CommandPalette from '@/components/layout/CommandPalette';
 import ToastContainer from '@/components/layout/ToastContainer';
 import StatusBar from '@/components/layout/StatusBar';
 import ErrorBoundary from '@/components/ui/ErrorBoundary';
+import { AuthProvider } from '@/lib/auth';
 
 export default function ClientShell({ children }: { children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -83,39 +84,42 @@ export default function ClientShell({ children }: { children: ReactNode }) {
 
   return (
     <ThemeProvider>
-      <div className="jarvis-cursor" />
-      <div className="jarvis-cursor-ring" />
-      <div
-        className="relative flex h-screen overflow-hidden"
-        style={{
-          background: 'linear-gradient(180deg, rgba(var(--j-bg-rgb),0.92), var(--j-bg))',
-          color: 'var(--j-text)',
-        }}
-      >
-        <div className="hud-grid pointer-events-none absolute inset-0 opacity-80" />
-        <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-        <main className="relative z-[1] flex-1 flex flex-col min-w-0 overflow-hidden">
-          <Navbar onMenuClick={() => setSidebarOpen(true)} />
-          <div className="flex-1 overflow-y-auto p-4 md:p-6">
-            <ErrorBoundary>
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={pathname}
-                  initial={{ opacity: 0, y: 18, filter: 'blur(3px)' }}
-                  animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-                  exit={{ opacity: 0, y: -12, filter: 'blur(3px)' }}
-                  transition={{ duration: 0.34, ease: [0.16, 1, 0.3, 1] }}
-                >
-                  {children}
-                </motion.div>
-              </AnimatePresence>
-            </ErrorBoundary>
-          </div>
-          <StatusBar />
-        </main>
-      </div>
-      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
-      <ToastContainer />
+      <AuthProvider>
+        <div className="jarvis-cursor" />
+        <div className="jarvis-cursor-ring" />
+        <div
+          className="relative flex h-screen overflow-hidden"
+          style={{
+            background: 'linear-gradient(180deg, rgba(var(--j-bg-rgb),0.92), var(--j-bg))',
+            color: 'var(--j-text)',
+          }}
+        >
+          <div className="hud-grid pointer-events-none absolute inset-0 opacity-80" />
+          <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+          <main className="relative z-[1] flex-1 flex flex-col min-w-0 overflow-hidden">
+            <Navbar onMenuClick={() => setSidebarOpen(true)} />
+            <div className="flex-1 overflow-y-auto p-4 md:p-6">
+              <ErrorBoundary>
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={pathname}
+                    className="page-content"
+                    initial={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                    animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                    exit={{ opacity: 0, y: -12, filter: 'blur(3px)' }}
+                    transition={{ duration: 0.34, ease: [0.16, 1, 0.3, 1] }}
+                  >
+                    {children}
+                  </motion.div>
+                </AnimatePresence>
+              </ErrorBoundary>
+            </div>
+            <StatusBar />
+          </main>
+        </div>
+        <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
+        <ToastContainer />
+      </AuthProvider>
     </ThemeProvider>
   );
 }

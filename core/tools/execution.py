@@ -31,9 +31,40 @@ from collections.abc import Awaitable, Callable
 from pathlib import Path
 from typing import Any
 
-from ai_os.docker_sandbox import docker_sandbox as _docker_sandbox
+from core.sandbox.docker_sandbox import docker_sandbox as _docker_sandbox
 from core.config_schema import jarvis_config
 from core.tools.security import owner_is_admin_or_single_user
+from core.sub_agents.tool import do_sessions_spawn
+
+# Build automation adapter — bridges the Graph Runtime to the Automation Loop
+from core.tools.build_tools import (
+    do_build_project,
+    do_repair_project,
+    do_run_tests,
+    do_runtime_validate,
+    cancel_build as do_cancel_build,
+)
+# Chat/memory tools — formerly BROKEN_TOOLS, now implemented
+from core.tools.chat_tools import (
+    do_manage_memory,
+    do_create_session,
+    do_chat_with_model,
+)
+# Workflow tools — durable multi-step execution
+from core.tools.workflow_tools import (
+    do_workflow_start,
+    do_workflow_resume,
+    do_workflow_cancel,
+    do_workflow_status,
+    do_workflow_list,
+)
+
+# Tools that are registered but not yet implemented — return disabled status
+BROKEN_TOOLS: set[str] = {
+    "list_sessions", "send_to_session", "pipeline",
+    "manage_session", "list_models",
+    "ui_control", "ask_teacher",
+}
 
 MAX_OUTPUT_CHARS = 10_000
 MAX_READ_CHARS = 20_000
@@ -336,6 +367,7 @@ _ADMIN_TOOLS = {
     "serve_preset",
     "stop_served_model",
     "cancel_download",
+    "browser_evaluate",
 }
 
 
@@ -353,6 +385,9 @@ _MCP_TOOL_MAP = {
     "python":         ("python",     "python"),
     "read_file":      ("filesystem", "read_file"),
     "write_file":     ("filesystem", "write_file"),
+    "append_file":    ("filesystem", "append_file"),
+    "delete_file":    ("filesystem", "delete_file"),
+    "list_folder":    ("filesystem", "list_folder"),
     "web_search":     ("web_search", "web_search"),
     "web_fetch":      ("web_fetch",  "web_fetch"),
     "generate_image": ("image_gen",  "generate_image"),
@@ -394,6 +429,19 @@ def _parse_write_file(content: str) -> dict:
     return {"path": lines[0].strip(), "content": lines[1] if len(lines) > 1 else ""}
 
 
+def _parse_append_file(content: str) -> dict:
+    lines = content.split("\n", 1)
+    return {"path": lines[0].strip(), "content": lines[1] if len(lines) > 1 else ""}
+
+
+def _parse_delete_file(content: str) -> dict:
+    return {"path": content.split("\n")[0].strip()}
+
+
+def _parse_list_folder(content: str) -> dict:
+    return {"path": content.split("\n")[0].strip()}
+
+
 _MCP_ARG_PARSERS: dict[str, callable] = {
     "bash":           lambda c: {"command": c},
     "python":         lambda c: {"code": c},
@@ -401,6 +449,9 @@ _MCP_ARG_PARSERS: dict[str, callable] = {
     "web_fetch":      lambda c: {"url": c.split("\n")[0].strip()},
     "read_file":      lambda c: {"path": c.split("\n")[0].strip()},
     "write_file":     _parse_write_file,
+    "append_file":    _parse_append_file,
+    "delete_file":    _parse_delete_file,
+    "list_folder":    _parse_list_folder,
     "generate_image": _parse_generate_image,
     "manage_memory":  _parse_manage_memory,
 }
@@ -494,7 +545,7 @@ async def _direct_fallback(
                     if res["success"]:
                         return {"output": res["stdout"].rstrip() or "(no output)", "exit_code": res["exit_code"]}
                     return {"error": res.get("error", "bash command failed"), "exit_code": 1}
-                from ai_os.sandbox_manager import sandbox_manager
+                from core.sandbox.sandbox_manager import sandbox_manager
                 res = await sandbox_manager.exec(session_id or "default", tool, [content])
                 if res["success"]:
                     output = res["stdout"].rstrip()
@@ -533,7 +584,7 @@ async def _direct_fallback(
 
         if tool == "python":
             # Phase 7: Sandbox execution if enabled
-            from ai_os.sandbox_manager import sandbox_manager
+            from core.sandbox.sandbox_manager import sandbox_manager
             if jarvis_config.sandbox.enabled:
                 res = await sandbox_manager.exec(session_id or "default", tool, ["python", "-c", content])
                 if res["success"]:
@@ -660,6 +711,77 @@ async def _direct_fallback(
             except Exception as e:
                 logger.warning("[core.tools.execution] process_tool_result failed: %s", e)
             return {"output": f"Wrote {size} bytes to {path}", "exit_code": 0}
+
+        if tool == "append_file":
+            lines = content.split("\n", 1)
+            raw_path = lines[0].strip()
+            body = lines[1] if len(lines) > 1 else ""
+            try:
+                path = _resolve_tool_path(raw_path)
+            except ValueError as e:
+                return {"error": f"append_file: {e}", "exit_code": 1}
+            try:
+                def _append():
+                    d = os.path.dirname(path)
+                    if d:
+                        os.makedirs(d, exist_ok=True)
+                    with open(path, "a", encoding="utf-8") as f:
+                        f.write(body)
+                    return len(body)
+                size = await asyncio.to_thread(_append)
+            except PermissionError:
+                return {"error": f"append_file: {path}: permission denied", "exit_code": 1}
+            except OSError as e:
+                return {"error": f"append_file: {path}: {e}", "exit_code": 1}
+            return {"output": f"Appended {size} bytes to {path}", "exit_code": 0}
+
+        if tool == "delete_file":
+            raw_path = content.split("\n", 1)[0].strip()
+            try:
+                path = _resolve_tool_path(raw_path)
+            except ValueError as e:
+                return {"error": f"delete_file: {e}", "exit_code": 1}
+            try:
+                def _delete():
+                    if os.path.isfile(path):
+                        os.remove(path)
+                        return True
+                    return False
+                deleted = await asyncio.to_thread(_delete)
+            except PermissionError:
+                return {"error": f"delete_file: {path}: permission denied", "exit_code": 1}
+            except OSError as e:
+                return {"error": f"delete_file: {path}: {e}", "exit_code": 1}
+            if deleted:
+                return {"output": f"Deleted {path}", "exit_code": 0}
+            return {"error": f"delete_file: {path}: not found", "exit_code": 1}
+
+        if tool == "list_folder":
+            raw_path = content.split("\n", 1)[0].strip()
+            try:
+                path = _resolve_tool_path(raw_path)
+            except ValueError as e:
+                return {"error": f"list_folder: {e}", "exit_code": 1}
+            try:
+                def _list():
+                    if not os.path.isdir(path):
+                        return None
+                    entries = []
+                    for entry in sorted(os.listdir(path)):
+                        full = os.path.join(path, entry)
+                        size = os.path.getsize(full) if os.path.isfile(full) else 0
+                        mtime = os.path.getmtime(full)
+                        kind = "file" if os.path.isfile(full) else "dir"
+                        entries.append({"name": entry, "kind": kind, "size": size, "mtime": mtime})
+                    return entries
+                entries = await asyncio.to_thread(_list)
+            except PermissionError:
+                return {"error": f"list_folder: {path}: permission denied", "exit_code": 1}
+            except OSError as e:
+                return {"error": f"list_folder: {path}: {e}", "exit_code": 1}
+            if entries is None:
+                return {"error": f"list_folder: {path}: not found", "exit_code": 1}
+            return {"output": entries, "exit_code": 0}
 
         if tool == "web_search":
             try:
@@ -1028,6 +1150,11 @@ async def do_refactor(content: str, owner: str | None = None) -> dict:
                 fp = Path(fp_str.strip())
                 if not fp.is_absolute():
                     fp = Path.cwd() / fp
+                try:
+                    _resolve_tool_path(str(fp))
+                except ValueError as e:
+                    results.append({"file": fp_str, "error": f"path blocked: {e}"})
+                    continue
                 if not fp.exists():
                     results.append({"file": fp_str, "error": "not found"})
                     continue
@@ -1088,6 +1215,10 @@ async def do_undo_edit_file(path_str: str) -> dict:
     if not path.is_absolute():
         path = Path.cwd() / path
     path = path.resolve()
+    try:
+        _resolve_tool_path(str(path))
+    except ValueError as e:
+        return {"error": f"path blocked: {e}", "exit_code": 1}
 
     backup_dir = _get_backup_dir()
     import hashlib
@@ -1138,6 +1269,12 @@ async def do_batch_edit_file(content: str) -> dict:
     total_applied = 0
     total_failed = 0
     for fp in matched:
+        try:
+            _resolve_tool_path(str(fp))
+        except ValueError as e:
+            results.append({"path": str(fp), "error": f"path blocked: {e}"})
+            total_failed += 1
+            continue
         if not fp.is_file():
             continue
         try:
@@ -1190,18 +1327,71 @@ async def execute_tool_block(
     owner: str | None = None,
     progress_cb: Callable[[dict], Awaitable[None]] | None = None,
 ) -> tuple[str, dict]:
-    """Execute a single tool block. Returns (description, result_dict).
+    """Execute a single tool block via the centralized ActionEngine."""
+    from core.action_engine import action_engine
+    
+    tool_type = block.tool_type
+    content = block.content
 
-    `progress_cb` is forwarded to long-running subprocess tools
-    (bash, python) so the agent loop can emit `tool_progress` SSE
-    events while the command is in flight. Ignored by other tools.
-    """
-    from core.ai_interaction import dispatch_ai_tool
-    from core.sub_agents.tool import do_sessions_spawn
+    # Map core tool types to ActionEngine methods
+    CORE_MAPPING = {
+        "read_file": "read_file",
+        "write_file": "write_file",
+        "list_folder": "list_folder",
+        "bash": "run_command",
+        "shell": "run_command",
+    }
+
+    if tool_type in CORE_MAPPING:
+        # Standardize params for ActionEngine
+        params = {}
+        if tool_type == "read_file":
+            params = {"path": content.split("\n", 1)[0].strip()}
+        elif tool_type == "write_file":
+            lines = content.split("\n", 1)
+            params = {"path": lines[0].strip(), "content": lines[1] if len(lines) > 1 else ""}
+        elif tool_type == "list_folder":
+            params = {"path": content.split("\n", 1)[0].strip()}
+        else: # bash/shell
+            params = {"command": content}
+
+        res = await action_engine.execute(CORE_MAPPING[tool_type], params, session_id=session_id)
+        
+        # Return description + result in legacy dict format for AgentState
+        desc = f"{tool_type}: {params.get('path', params.get('command', ''))[:60]}"
+        return desc, {
+            "output": res["result"],
+            "error": res["error"],
+            "exit_code": 0 if res["success"] else 1
+        }
+
+    # If not a core tool, use existing dispatch implementations
     from core.tools.implementations import (
         do_adopt_served_model,
         do_api_call,
         do_app_api,
+        do_browser_click,
+        do_browser_close_tab,
+        do_browser_current_state,
+        do_browser_evaluate,
+        do_browser_fill,
+        do_browser_find,
+        do_browser_find_interactive,
+        do_browser_get_history,
+        do_browser_get_title,
+        do_browser_get_url,
+        do_browser_health,
+        do_browser_list_tabs,
+        do_browser_navigate,
+        do_browser_new_tab,
+        do_browser_press,
+        do_browser_screenshot,
+        do_browser_shadow_query,
+        do_browser_snapshot,
+        do_browser_switch_tab,
+        do_browser_wait_interactive,
+        do_browser_wait_text,
+        do_browser_wait_visible,
         do_cancel_download,
         do_create_document,
         do_create_skill,
@@ -1237,6 +1427,7 @@ async def execute_tool_block(
         do_vault_get,
         do_vault_search,
         do_vault_unlock,
+        do_vision_browser,
     )
 
     _CHR = chr(10)
@@ -1282,7 +1473,7 @@ async def execute_tool_block(
         timeout = float(timeout_str) if timeout_str else 60.0
 
         if use_sandbox:
-            from ai_os.docker_sandbox import docker_sandbox
+            from core.sandbox.docker_sandbox import docker_sandbox
             r = await docker_sandbox.exec_bash(command, timeout=int(timeout))
             return f"shell[sandbox]: {command[:60]}", r
 
@@ -1457,12 +1648,221 @@ async def execute_tool_block(
     async def _hdl_vault_unlock(content, session_id=None, owner=None, **kw):
         return "vault_unlock", await do_vault_unlock(content, owner=owner)
 
+    async def _hdl_vision_browser(content, session_id=None, owner=None, **kw):
+        return "vision_browser", await do_vision_browser(content, owner=owner)
+
+    async def _hdl_browser_navigate(content, session_id=None, owner=None, **kw):
+        return "browser_navigate", await do_browser_navigate(content, session_id=session_id)
+
+    async def _hdl_browser_find(content, session_id=None, owner=None, **kw):
+        return "browser_find", await do_browser_find(content, session_id=session_id)
+
+    async def _hdl_browser_find_interactive(content, session_id=None, owner=None, **kw):
+        return "browser_find_interactive", await do_browser_find_interactive(content, session_id=session_id)
+
+    async def _hdl_browser_click(content, session_id=None, owner=None, **kw):
+        return "browser_click", await do_browser_click(content, session_id=session_id)
+
+    async def _hdl_browser_fill(content, session_id=None, owner=None, **kw):
+        return "browser_fill", await do_browser_fill(content, session_id=session_id)
+
+    async def _hdl_browser_press(content, session_id=None, owner=None, **kw):
+        return "browser_press", await do_browser_press(content, session_id=session_id)
+
+    async def _hdl_browser_snapshot(content, session_id=None, owner=None, **kw):
+        return "browser_snapshot", await do_browser_snapshot(session_id=session_id)
+
+    async def _hdl_browser_get_url(content, session_id=None, owner=None, **kw):
+        return "browser_get_url", await do_browser_get_url(session_id=session_id)
+
+    async def _hdl_browser_get_title(content, session_id=None, owner=None, **kw):
+        return "browser_get_title", await do_browser_get_title(session_id=session_id)
+
+    async def _hdl_browser_screenshot(content, session_id=None, owner=None, **kw):
+        return "browser_screenshot", await do_browser_screenshot(session_id=session_id)
+
+    async def _hdl_browser_current_state(content, session_id=None, owner=None, **kw):
+        return "browser_current_state", await do_browser_current_state(session_id=session_id)
+
+    async def _hdl_browser_evaluate(content, session_id=None, owner=None, **kw):
+        return "browser_evaluate", await do_browser_evaluate(content, session_id=session_id)
+
+    async def _hdl_browser_health(content, session_id=None, owner=None, **kw):
+        return "browser_health", await do_browser_health(session_id=session_id)
+
+    async def _hdl_browser_get_history(content, session_id=None, owner=None, **kw):
+        return "browser_get_history", await do_browser_get_history(session_id=session_id)
+
+    async def _hdl_browser_list_tabs(content, session_id=None, owner=None, **kw):
+        return "browser_list_tabs", await do_browser_list_tabs(session_id=session_id)
+
+    async def _hdl_browser_switch_tab(content, session_id=None, owner=None, **kw):
+        idx = int(content.strip()) if content and content.strip().lstrip("-").isdigit() else 0
+        return "browser_switch_tab", await do_browser_switch_tab(index=idx, session_id=session_id)
+
+    async def _hdl_browser_new_tab(content, session_id=None, owner=None, **kw):
+        url = content.strip() or None
+        return "browser_new_tab", await do_browser_new_tab(url=url, session_id=session_id)
+
+    async def _hdl_browser_close_tab(content, session_id=None, owner=None, **kw):
+        idx = int(content.strip()) if content and content.strip().lstrip("-").isdigit() else 0
+        return "browser_close_tab", await do_browser_close_tab(index=idx, session_id=session_id)
+
+    async def _hdl_browser_wait_visible(content, session_id=None, owner=None, **kw):
+        return "browser_wait_visible", await do_browser_wait_visible(content, session_id=session_id)
+
+    async def _hdl_browser_wait_text(content, session_id=None, owner=None, **kw):
+        return "browser_wait_text", await do_browser_wait_text(content, session_id=session_id)
+
+    async def _hdl_browser_wait_interactive(content, session_id=None, owner=None, **kw):
+        return "browser_wait_interactive", await do_browser_wait_interactive(content, session_id=session_id)
+
+    async def _hdl_browser_shadow_query(content, session_id=None, owner=None, **kw):
+        return "browser_shadow_query", await do_browser_shadow_query(content, session_id=session_id)
+
     async def _hdl_mcp_tool(content, session_id=None, owner=None, **kw):
         fl = content.split(_CHR)[0][:80]
         return f"{tool}: {fl}", await _call_mcp_tool(tool, content, progress_cb=kw.get("progress_cb"), session_id=session_id)
 
     async def _hdl_ai_tool(content, session_id=None, owner=None, **kw):
         return await dispatch_ai_tool(tool, content, session_id, owner=owner)
+
+    # Build automation handlers — bridge to AutomationLoop
+    _BUILD_DIR_CACHE: dict[str, str] = {}
+    _BUILD_EXEC_ID: int = 0
+
+    async def _hdl_build_project(content, **kw):
+        import json as _json
+        import uuid as _uuid
+        try:
+            args = _json.loads(content) if content.strip() else {}
+        except _json.JSONDecodeError:
+            args = {}
+        task = args.get("task", content.split("\n")[0] if "\n" in content else content)
+        proj_dir = args.get("project_dir", "")
+        if not proj_dir and _BUILD_DIR_CACHE:
+            proj_dir = next(iter(_BUILD_DIR_CACHE.values()), "")
+        if not proj_dir:
+            proj_dir = os.getcwd()
+        _BUILD_DIR_CACHE["last"] = proj_dir
+        exec_id = _uuid.uuid4().hex[:12]
+        exec_task = asyncio.create_task(do_build_project(task, proj_dir, progress_cb=kw.get("progress_cb")))
+        from core.tools.build_tools import _BUILD_EXECUTIONS
+        _BUILD_EXECUTIONS[exec_id] = exec_task
+        try:
+            r = await exec_task
+        except asyncio.CancelledError:
+            return "build_project", {"success": False, "status": "cancelled", "execution_id": exec_id}
+        finally:
+            _BUILD_EXECUTIONS.pop(exec_id, None)
+        r["execution_id"] = exec_id
+        return "build_project", r
+
+    async def _hdl_repair_project(content, **kw):
+        import json as _json
+        import uuid as _uuid
+        try:
+            args = _json.loads(content) if content.strip() else {}
+        except _json.JSONDecodeError:
+            args = {}
+        proj_dir = args.get("project_dir", _BUILD_DIR_CACHE.get("last", os.getcwd()))
+        build_output = args.get("build_output", "")
+        exec_id = _uuid.uuid4().hex[:12]
+        exec_task = asyncio.create_task(do_repair_project(proj_dir, build_output, progress_cb=kw.get("progress_cb")))
+        from core.tools.build_tools import _BUILD_EXECUTIONS
+        _BUILD_EXECUTIONS[exec_id] = exec_task
+        try:
+            r = await exec_task
+        except asyncio.CancelledError:
+            return "repair_project", {"success": False, "status": "cancelled", "execution_id": exec_id}
+        finally:
+            _BUILD_EXECUTIONS.pop(exec_id, None)
+        r["execution_id"] = exec_id
+        return "repair_project", r
+
+    async def _hdl_run_tests(content, **kw):
+        import json as _json
+        import uuid as _uuid
+        try:
+            args = _json.loads(content) if content.strip() else {}
+        except _json.JSONDecodeError:
+            args = {}
+        proj_dir = args.get("project_dir", _BUILD_DIR_CACHE.get("last", os.getcwd()))
+        exec_id = _uuid.uuid4().hex[:12]
+        exec_task = asyncio.create_task(do_run_tests(proj_dir, progress_cb=kw.get("progress_cb")))
+        from core.tools.build_tools import _BUILD_EXECUTIONS
+        _BUILD_EXECUTIONS[exec_id] = exec_task
+        try:
+            r = await exec_task
+        except asyncio.CancelledError:
+            return "run_tests", {"success": False, "status": "cancelled", "execution_id": exec_id}
+        finally:
+            _BUILD_EXECUTIONS.pop(exec_id, None)
+        r["execution_id"] = exec_id
+        return "run_tests", r
+
+    async def _hdl_runtime_validate(content, **kw):
+        import json as _json
+        import uuid as _uuid
+        try:
+            args = _json.loads(content) if content.strip() else {}
+        except _json.JSONDecodeError:
+            args = {}
+        proj_dir = args.get("project_dir", _BUILD_DIR_CACHE.get("last", os.getcwd()))
+        exec_id = _uuid.uuid4().hex[:12]
+        exec_task = asyncio.create_task(do_runtime_validate(proj_dir, progress_cb=kw.get("progress_cb")))
+        from core.tools.build_tools import _BUILD_EXECUTIONS
+        _BUILD_EXECUTIONS[exec_id] = exec_task
+        try:
+            r = await exec_task
+        except asyncio.CancelledError:
+            return "runtime_validate", {"success": False, "status": "cancelled", "execution_id": exec_id}
+        finally:
+            _BUILD_EXECUTIONS.pop(exec_id, None)
+        r["execution_id"] = exec_id
+        return "runtime_validate", r
+
+    async def _hdl_manage_memory(content, **kw):
+        r = await do_manage_memory(content)
+        return "manage_memory", r
+
+    async def _hdl_create_session(content, **kw):
+        r = await do_create_session(content)
+        return "create_session", r
+
+    async def _hdl_chat_with_model(content, **kw):
+        r = await do_chat_with_model(content)
+        return "chat_with_model", r
+
+    async def _hdl_cancel_build(content, **kw):
+        import json as _json
+        try:
+            args = _json.loads(content) if content.strip() else {}
+        except _json.JSONDecodeError:
+            args = {}
+        exec_id = args.get("execution_id", content.strip())
+        r = await do_cancel_build(exec_id)
+        return "cancel_build", r
+
+    async def _hdl_workflow_start(content, **kw):
+        r = await do_workflow_start(content, session_id=kw.get("session_id"), owner=kw.get("owner"))
+        return "workflow_start", r
+
+    async def _hdl_workflow_resume(content, **kw):
+        r = await do_workflow_resume(content)
+        return "workflow_resume", r
+
+    async def _hdl_workflow_cancel(content, **kw):
+        r = await do_workflow_cancel(content)
+        return "workflow_cancel", r
+
+    async def _hdl_workflow_status(content, **kw):
+        r = await do_workflow_status(content)
+        return "workflow_status", r
+
+    async def _hdl_workflow_list(content, **kw):
+        r = await do_workflow_list(content)
+        return "workflow_list", r
 
     _TOOL_HANDLERS = {
         "create_document": _hdl_create_document,
@@ -1513,12 +1913,43 @@ async def execute_tool_block(
         "vault_search": _hdl_vault_search,
         "vault_get": _hdl_vault_get,
         "vault_unlock": _hdl_vault_unlock,
+        "vision_browser": _hdl_vision_browser,
+        "browser_navigate": _hdl_browser_navigate,
+        "browser_find": _hdl_browser_find,
+        "browser_find_interactive": _hdl_browser_find_interactive,
+        "browser_click": _hdl_browser_click,
+        "browser_fill": _hdl_browser_fill,
+        "browser_press": _hdl_browser_press,
+        "browser_snapshot": _hdl_browser_snapshot,
+        "browser_get_url": _hdl_browser_get_url,
+        "browser_get_title": _hdl_browser_get_title,
+        "browser_screenshot": _hdl_browser_screenshot,
+        "browser_current_state": _hdl_browser_current_state,
+        "browser_evaluate": _hdl_browser_evaluate,
+        "browser_health": _hdl_browser_health,
+        "browser_get_history": _hdl_browser_get_history,
+        "browser_list_tabs": _hdl_browser_list_tabs,
+        "browser_switch_tab": _hdl_browser_switch_tab,
+        "browser_new_tab": _hdl_browser_new_tab,
+        "browser_close_tab": _hdl_browser_close_tab,
+        "browser_wait_visible": _hdl_browser_wait_visible,
+        "browser_wait_text": _hdl_browser_wait_text,
+        "browser_wait_interactive": _hdl_browser_wait_interactive,
+        "browser_shadow_query": _hdl_browser_shadow_query,
+        "build_project": _hdl_build_project,
+        "repair_project": _hdl_repair_project,
+        "run_tests": _hdl_run_tests,
+        "runtime_validate": _hdl_runtime_validate,
+        "manage_memory": _hdl_manage_memory,
+        "create_session": _hdl_create_session,
+        "chat_with_model": _hdl_chat_with_model,
+        "cancel_build": _hdl_cancel_build,
+        "workflow_start": _hdl_workflow_start,
+        "workflow_resume": _hdl_workflow_resume,
+        "workflow_cancel": _hdl_workflow_cancel,
+        "workflow_status": _hdl_workflow_status,
+        "workflow_list": _hdl_workflow_list,
     }
-    for _t in ("chat_with_model", "create_session", "list_sessions",
-               "send_to_session", "pipeline",
-               "manage_session", "manage_memory", "list_models",
-               "ui_control", "ask_teacher"):
-        _TOOL_HANDLERS[_t] = _hdl_ai_tool
     for _t in _MCP_TOOL_MAP:
         _TOOL_HANDLERS[_t] = _hdl_mcp_tool
 
@@ -1551,6 +1982,13 @@ async def execute_tool_block(
                 return desc, result
         except (ValueError, TypeError) as _e:
             logger.debug("[core.tools.execution] line range parse failed: %s", _e)
+
+    # Reject broken tools (registered but not implemented)
+    if tool in BROKEN_TOOLS:
+        desc = f"{tool}: DISABLED"
+        result = {"status": "disabled", "reason": "not implemented", "exit_code": 1}
+        logger.info(f"Tool disabled (not implemented): {tool}")
+        return desc, result
 
     # Reject tools that the user has disabled for this request
     if disabled_tools and tool in disabled_tools:

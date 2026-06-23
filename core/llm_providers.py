@@ -55,7 +55,9 @@ def _is_ollama_native_url(url: str) -> bool:
     path = (parsed.path or "").rstrip("/")
     if _host_match(url, "ollama.com"):
         return True
-    local_ollama_host = host in {"localhost", "127.0.0.1", "0.0.0.0", "::1"} or parsed.port == 11434
+    if parsed.port == 11434:
+        return True
+    local_ollama_host = host in {"localhost", "127.0.0.1", "0.0.0.0", "::1"}
     return local_ollama_host and (path == "/api" or path.startswith("/api/"))
 
 
@@ -74,6 +76,10 @@ def _ollama_api_root(url: str) -> str:
     if _host_match(url, "ollama.com"):
         root = f"{parsed.scheme}://{parsed.netloc}" if parsed.scheme and parsed.netloc else "https://ollama.com"
         return root.rstrip("/") + "/api"
+    _host = parsed.hostname or ""
+    _base_path = (parsed.path or "").rstrip("/")
+    if (parsed.port == 11434 or _host in {"localhost", "127.0.0.1", "0.0.0.0", "::1"}) and not _base_path:
+        return url.rstrip("/") + "/api"
     return url
 
 
@@ -133,6 +139,23 @@ def _build_ollama_payload(
         payload["options"] = options
     if tools:
         payload["tools"] = tools
+    # Keep model loaded in GPU between requests
+    # Validate duration string — Ollama rejects "-1" and other invalid formats
+    try:
+        from core.config_registry import config as _cfg
+        _ka = _cfg.get("ollama.keep_alive") or "5m"
+    except Exception:
+        _ka = "5m"
+    # Ensure value is a valid duration (positive integer + unit suffix)
+    _valid_keep_alive = False
+    if isinstance(_ka, str) and _ka.strip():
+        import re as _re
+        _m = _re.match(r'^(\d+)([smhd])$', _ka.strip())
+        if _m and int(_m.group(1)) > 0:
+            _valid_keep_alive = True
+    if not _valid_keep_alive:
+        _ka = "5m"
+    payload["keep_alive"] = _ka
     return payload
 
 

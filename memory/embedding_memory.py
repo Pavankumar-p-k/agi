@@ -34,7 +34,7 @@ class EmbeddingMemory:
     """
     def __init__(self, db_path: str = "data/jarvis_memory.db"):
         self.db_path = db_path
-        self.ollama_url = os.getenv("OLLAMA_EMBEDDING_URL", "http://localhost:11434/api/embeddings")
+        self.ollama_url = os.getenv("OLLAMA_EMBEDDING_URL", "http://localhost:11434/api/embed")
         self._init_db()
 
     def _init_db(self):
@@ -55,10 +55,15 @@ class EmbeddingMemory:
         try:
             resp = requests.post(self.ollama_url, json={
                 "model": os.getenv("EMBEDDING_MODEL", "nomic-embed-text"),
-                "prompt": text
+                "input": text
             }, timeout=10)
             resp.raise_for_status()
-            emb = resp.json().get("embedding") or resp.json().get("response") or resp.json()
+            data = resp.json()
+            emb = data.get("embeddings", [])
+            if emb:
+                emb = emb[0]
+            else:
+                emb = data.get("embedding") or data.get("response") or data
             if isinstance(emb, dict) and "embedding" in emb:
                 emb = emb["embedding"]
             if not isinstance(emb, (list, tuple)):

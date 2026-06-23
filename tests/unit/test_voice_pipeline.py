@@ -108,7 +108,7 @@ class TestVoiceLoop:
         loop = VoiceLoop()
         mock_ww = MagicMock()
         mock_ww.get_recent_audio.return_value = b"preroll"
-        loop._wake_word = mock_ww
+        loop._engine._wake_word = mock_ww
         loop._on_wake()
-        assert loop._wake_preroll == b"preroll"
+        assert loop._engine._wake_preroll == b"preroll"
         assert loop._wake_event.is_set()

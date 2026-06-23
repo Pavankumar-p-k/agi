@@ -1,0 +1,8 @@
+> Task :app:kaptDebugKotlin FAILED
+e: /app/src/main/java/com/example/app/data/UserEntity.java:7: error: Entities and POJOs must have a usable public constructor. You can have an empty constructor or a constructor whose parameters match the fields (by name and type).
+e: /app/src/main/java/com/example/app/data/UserEntity.java:12: error: Cannot find setter for field: name.
+e: /app/src/main/java/com/example/app/data/UserEntity.java:15: error: Primary key must be set.
+e: /app/src/main/java/com/example/app/data/UserDao.java:8: error: Not sure how to convert a Cursor to this method's return type.
+e: /app/src/main/java/com/example/app/data/AppDatabase.java:5: error: Schema export directory is not provided to the annotation processor so we cannot export the schema.
+
+w: /app/src/main/java/com/example/app/data/UserDao.java:12: The query returns an empty cursor, but the return type is LiveData<List<UserEntity>>.

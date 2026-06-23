@@ -1,0 +1,17 @@
+> Task :app:compileDebugJavaWithJavac FAILED
+/app/src/main/java/com/example/app/MainActivity.java:12: error: cannot find symbol
+  symbol:   class ActivityMainBinding
+  location: class MainActivity
+
+/app/src/main/java/com/example/app/MainActivity.java:15: error: cannot find symbol
+  symbol:   class DataBindingUtil
+  location: class MainActivity
+
+/app/src/main/java/com/example/app/ui/ProfileFragment.java:22: error: cannot find symbol
+  symbol:   class FragmentProfileBinding
+  location: class ProfileFragment
+
+e: /app/src/main/res/layout/activity_main.xml:10: error: Attribute `binding` is not a valid data binding attribute.
+e: /app/src/main/res/layout/activity_main.xml:15: error: The expression `viewmodel.name` cannot be found.
+
+FAILURE: Build failed with an exception.

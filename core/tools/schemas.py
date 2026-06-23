@@ -32,13 +32,15 @@ from core.tools.schemas_document import FUNCTION_TOOL_SCHEMAS as _DOCUMENT
 from core.tools.schemas_email import FUNCTION_TOOL_SCHEMAS as _EMAIL
 from core.tools.schemas_model import FUNCTION_TOOL_SCHEMAS as _MODEL
 from core.tools.schemas_research import FUNCTION_TOOL_SCHEMAS as _RESEARCH
+from core.tools.schemas_browser import FUNCTION_TOOL_SCHEMAS as _BROWSER
+from core.tools.schemas_build import FUNCTION_TOOL_SCHEMAS as _BUILD
 from core.tools.schemas_shell_web import FUNCTION_TOOL_SCHEMAS as _SHELL_WEB
 from core.tools.validation import validate_tool_call
 
 logger = logging.getLogger(__name__)
 
 FUNCTION_TOOL_SCHEMAS = (
-    _SHELL_WEB + _DOCUMENT + _CHAT + _ADMIN + _CALENDAR + _MODEL + _RESEARCH + _EMAIL
+    _SHELL_WEB + _DOCUMENT + _CHAT + _ADMIN + _CALENDAR + _MODEL + _RESEARCH + _EMAIL + _BROWSER + _BUILD
 )
 
 
@@ -265,6 +267,40 @@ def function_call_to_tool_block(name: str, arguments: str) -> ToolBlock | None:
         content = json.dumps(args)
     elif tool_type == "ask_teacher":
         content = args.get("model", "auto") + "\n" + args.get("problem", "")
+    elif tool_type in ("browser_navigate",):
+        content = args.get("url", "")
+    elif tool_type in ("browser_find", "browser_find_interactive", "browser_wait_text", "browser_wait_interactive"):
+        content = args.get("text", "")
+    elif tool_type == "browser_click":
+        sel = args.get("selector", "")
+        if args.get("force"):
+            content = f"{sel} --force"
+        else:
+            content = sel
+    elif tool_type == "browser_fill":
+        content = args.get("selector", "") + "\n" + args.get("text", "")
+    elif tool_type == "browser_press":
+        content = args.get("selector", "") + "\n" + args.get("key", "")
+    elif tool_type == "browser_evaluate":
+        content = args.get("js", "")
+    elif tool_type == "browser_switch_tab":
+        content = str(args.get("index", 0))
+    elif tool_type == "browser_new_tab":
+        content = args.get("url", "") or ""
+    elif tool_type == "browser_close_tab":
+        idx = args.get("index")
+        content = str(idx) if idx is not None else "0"
+    elif tool_type == "browser_wait_visible":
+        sel = args.get("selector", "")
+        timeout = args.get("timeout")
+        if timeout is not None:
+            content = f"{sel}\n{timeout}"
+        else:
+            content = sel
+    elif tool_type == "browser_shadow_query":
+        content = args.get("selector", "")
+    elif tool_type == "vision_browser":
+        content = args.get("content", "")
     else:
         content = json.dumps(args)
 

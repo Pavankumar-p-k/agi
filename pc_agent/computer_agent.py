@@ -23,7 +23,7 @@ import shutil
 from pathlib import Path
 from governance.GovernanceValidator import GovernanceValidator
 from governance.exceptions import GovernanceViolation
-from ai_os.sandbox import SandboxedExecutor
+from core.sandbox.sandbox import SandboxedExecutor
 logger = logging.getLogger(__name__)
 
 APP_MAP = {

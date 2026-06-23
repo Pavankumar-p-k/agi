@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+import logging
 # Copyright (c) 2024-2026 JARVIS Project
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -10,8 +13,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-from __future__ import annotations
 
 import asyncio
 import sys
@@ -27,6 +28,7 @@ from textual.app import App
 from jarvis_tui.app.screens.main_screen import MainScreen
 from jarvis_tui.app.services.jarvis_client import JarvisClient
 from jarvis_tui.app.services.theme_manager import ThemeManager
+logger = logging.getLogger(__name__)
 
 
 class JarvisApp(App):
@@ -42,13 +44,37 @@ class JarvisApp(App):
         height: 100%;
         background: #262624;
         border-right: solid #3e3e3c;
-        padding: 1;
+    }
+
+    #sidebar-container {
+        padding: 0;
     }
 
     #sidebar-container Label {
         margin-top: 1;
+        margin-left: 1;
         text-style: bold;
         color: #c2c0b6;
+    }
+
+    #nav-container Button {
+        width: 100%;
+        height: 3;
+        border: none;
+        background: transparent;
+        color: #c2c0b6;
+        padding: 0 2;
+        margin: 0;
+    }
+
+    #nav-container Button:hover {
+        background: #3e3e3c;
+    }
+
+    #nav-container Button.primary {
+        background: #3e3e3c;
+        color: #4a9eff;
+        text-style: bold;
     }
 
     .selector {
@@ -244,18 +270,22 @@ class JarvisApp(App):
             # Find the sidebar and update it
             try:
                 sidebar = self.screen.query_one("#sidebar")
-                # Map real models from model_router status
-                models = status.get("model_router", {}).get("models", [])
-                if models:
-                    sidebar.model_name = models[0]
+                # Read model name from /api/system/status response
+                # Response: {"status":"online","ollama":"reachable","model":"ollama/llama3.1:8b",...}
+                model_val = status.get("model") or status.get("ollama", "")
+                if model_val and model_val not in ("unreachable", "offline", ""):
+                    # Strip provider prefix for display
+                    display = model_val.split("/", 1)[1] if "/" in model_val else model_val
+                    sidebar.model_name = display
 
                 # Map real memory/token usage
                 mem = status.get("memory", {})
                 # ... update context pct based on real data if available
-            except Exception: pass
+            except Exception as e:
+                logger.warning(f"[SWALLOWED] {e}")
         except Exception:
             # Backend not ready yet, monitor_events will handle reconnection
-            pass
+            logger.warning(f"[SWALLOWED] error in ./jarvis_tui/main.py")
 
     async def monitor_events(self) -> None:
         """Background worker to monitor JARVIS events."""
@@ -270,7 +300,8 @@ class JarvisApp(App):
                 try:
                     status = self.screen.query_one("#status-bar")
                     status.connected = False
-                except Exception: pass
+                except Exception as e:
+                    logger.warning(f"[SWALLOWED] {e}")
                 # Retry after delay
                 await asyncio.sleep(5.0)
                 try:
@@ -278,7 +309,8 @@ class JarvisApp(App):
                     await self.jarvis_client.get_status()
                     status = self.screen.query_one("#status-bar")
                     status.connected = True
-                except Exception: pass
+                except Exception as e:
+                    logger.warning(f"[SWALLOWED] {e}")
 
     async def handle_jarvis_event(self, event: dict) -> None:
         """Routes real AI OS orchestrator events to appropriate widgets."""
@@ -341,7 +373,45 @@ class JarvisApp(App):
         try:
             toast = self.screen.query_one("#toast-rack")
             toast.show_toast(f"Theme switched to {theme_name.capitalize()}", severity="success")
-        except Exception: pass
+        except Exception as e:
+            logger.warning(f"[SWALLOWED] {e}")
+
+    def handle_navigation(self, screen_name: str) -> None:
+        """Switches the current screen based on navigation selection."""
+        from jarvis_tui.app.screens.home_screen import HomeScreen
+        from jarvis_tui.app.screens.feature_registry_screen import FeatureRegistryScreen
+        from jarvis_tui.app.screens.model_management_screen import ModelManagementScreen
+        from jarvis_tui.app.screens.integration_management_screen import IntegrationManagementScreen
+        from jarvis_tui.app.screens.agent_dashboard_screen import AgentDashboardScreen
+        from jarvis_tui.app.screens.diagnostics_dashboard_screen import DiagnosticsDashboardScreen
+        from jarvis_tui.app.screens.voice_dashboard_screen import VoiceDashboardScreen
+        from jarvis_tui.app.screens.automation_dashboard_screen import AutomationDashboardScreen
+        from jarvis_tui.app.screens.memory_dashboard_screen import MemoryDashboardScreen
+        from jarvis_tui.app.screens.settings_screen import SettingsScreen
+        from jarvis_tui.app.screens.placeholder_screen import PlaceholderScreen
+
+        screens = {
+            "home": HomeScreen,
+            "chat": MainScreen,
+            "registry": FeatureRegistryScreen,
+            "models": ModelManagementScreen,
+            "agents": AgentDashboardScreen,
+            "automation": AutomationDashboardScreen,
+            "integrations": IntegrationManagementScreen,
+            "diagnostics": DiagnosticsDashboardScreen,
+            "voice": VoiceDashboardScreen,
+            "memory": MemoryDashboardScreen,
+            "settings": SettingsScreen,
+        }
+
+        # Handle placeholders for now (Skills, Plugins, Projects)
+        screen_class = screens.get(screen_name, lambda: PlaceholderScreen(title=screen_name.capitalize()))
+        
+        # Don't push if already active
+        if isinstance(self.screen, screen_class):
+            return
+            
+        self.push_screen(screen_class())
 
 if __name__ == "__main__":
     app = JarvisApp()

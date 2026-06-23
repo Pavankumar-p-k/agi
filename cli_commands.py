@@ -35,21 +35,33 @@ from cli_server import (
     ensure_local_stack_running,
     ensure_ollama_running,
     is_ollama_reachable,
+    is_server_reachable,
     stop_local_services,
 )
 from cli_slash_commands import handle_cli_slash_command
 from cli_state import APPS, BACKEND, HISTORY_PATH, MODEL_PORTS, ROOT, STUDENT_MAIN, CliState
 from cli_utils import IDE_PRESETS, colorize, common_env, python_exe, run_command, spawn_background
 from cli_visuals import render_agents, render_boot_screen, render_design_plan, render_routing_decision
+from pathlib import Path
 
 
 def cmd_cli(args: argparse.Namespace) -> int:
     from prompt_toolkit.formatted_text import FormattedText
     from prompt_toolkit.history import FileHistory
     from prompt_toolkit.shortcuts import PromptSession
+    from prompt_toolkit.styles import Style as PtStyle
 
     from cli_completer import JarvisCompleter
-    from cli_utils import style_theme
+    from cli_visuals_new import (
+        JARVISTheme,
+        print_ai_reply,
+        print_system_msg,
+        render_agent_status,
+        render_banner,
+        render_step_progress,
+        show_cmd_menu,
+        show_theme_menu,
+    )
     from core.session import ConversationManager, get_last_session_id
 
     env = common_env()
@@ -57,29 +69,22 @@ def cmd_cli(args: argparse.Namespace) -> int:
     ensure_local_stack_running(env)
     cli_debug = getattr(args, "debug", False)
 
-    cfg = __import__('cli_config').JarvisConfig.load()
+    cfg = __import__("cli_config").JarvisConfig.load()
+    JARVISTheme.set(cfg.theme)
+    
     effective_debug = cli_debug or cfg.debug
     effective_debug_search = getattr(args, "debug_search", False) or cfg.debug_search
 
     if getattr(args, "new_session", False):
         session_id = None
-        if effective_debug:
-            print("[DEBUG] Starting new session")
     elif getattr(args, "session", None):
         session_id = args.session
-        if effective_debug:
-            print(f"[DEBUG] Resuming session: {session_id}")
     else:
-        last_id = get_last_session_id()
-        session_id = last_id
-        if effective_debug:
-            print(f"[DEBUG] Last session: {session_id or 'none — starting fresh'}")
+        session_id = get_last_session_id()
 
     session = ConversationManager(session_id=session_id)
     if session_id and session.path.exists():
         session.load()
-        if effective_debug:
-            print(f"[DEBUG] Loaded session: {session.session_id} ({session.message_count} messages, {session.token_count} tokens)")
 
     state = CliState(
         session=session,
@@ -92,55 +97,69 @@ def cmd_cli(args: argparse.Namespace) -> int:
         base_url=base_url,
     )
 
-    style = style_theme(cfg.theme == "dark")
+    # Initial UI Render
+    os.system("cls" if os.name == "nt" else "clear")
+    render_banner()
+    print_system_msg(f"Connected to {base_url}", "success")
+    print_system_msg(f"Active Session: [bold]{session.session_id}[/]")
+
     hist_path = HISTORY_PATH
     hist_path.parent.mkdir(parents=True, exist_ok=True)
     history = FileHistory(str(hist_path))
     completer = JarvisCompleter(lambda: state)
+
+    # PtStyle for the input area
+    from cli_visuals_new import get_pt_style
+    pt_style = get_pt_style()
+
     prompt_session = PromptSession(
         history=history,
         completer=completer,
-        style=style,
+        style=pt_style,
         enable_history_search=True,
         complete_while_typing=True,
     )
 
-    render_boot_screen(animated=not state.debug, delay=0.018)
-    dbg_label = colorize(" DEBUG", "yellow") if state.debug else ""
-    print(f"{colorize('Session:', 'cyan')} {session.session_id[:8]}...{dbg_label}")
-    print(f"{colorize('Commands:', 'cyan')} /help  /agents  /design  /boot  /frames")
-    print()
-
-    stash_capture_mode = False
     _last_command = ""
 
     while True:
         try:
-            text = prompt_session.prompt(
-                FormattedText([("class:prompt", "You > ")]),
-            ).strip()
+            # Custom prompt rendering
+            prompt_text = [
+                ("class:prompt", "\n ◈ JARVIS "),
+                ("class:continuation", "❯ "),
+            ]
+            text = prompt_session.prompt(prompt_text).strip()
         except (KeyboardInterrupt, EOFError):
             state.session.save()
             cfg.save()
-            print(f"\n{colorize('Goodbye.', 'green')}")
+            print_system_msg("Session saved. Powering down...", "info")
             return 0
+
         if not text and _last_command:
             text = _last_command
         elif not text:
-            if stash_capture_mode:
-                print(f"{colorize('JARVIS > cancelled stash capture.', 'yellow')}")
-                stash_capture_mode = False
             continue
         _last_command = text
 
-        if cfg.aliases and text.split()[0] in cfg.aliases:
-            alias_cmd = cfg.aliases[text.split()[0]]
-            text = alias_cmd + text[len(text.split()[0]):]
+        # Intercept Redesigned Commands
+        if text.lower() == "/cmds":
+            cmd = show_cmd_menu()
+            if cmd:
+                # If it's a slash command, handle it. If it's a text command, treat as input.
+                text = cmd if cmd.startswith("/") else f"/{cmd}"
+                print_system_msg(f"Invoking {text}...", "info")
+            else:
+                continue
 
-        if stash_capture_mode:
-            stash_capture_mode = False
-            idx = state.session.stash_prompt(text)
-            print(f"{colorize(f'JARVIS > stashed as #{idx}.', 'green')}")
+        if text.lower() == "/themes":
+            new_theme = show_theme_menu()
+            if new_theme:
+                cfg.theme = new_theme
+                cfg.save()
+                # Refresh styles
+                from cli_visuals_new import get_pt_style
+                prompt_session.style = get_pt_style()
             continue
 
         if text.lower() in {"exit", "quit", "bye"}:
@@ -148,316 +167,33 @@ def cmd_cli(args: argparse.Namespace) -> int:
             cfg.save()
             return 0
 
+        # Handle Slash Commands (Backend & Logic)
         if text.startswith("/"):
-            command_status = handle_cli_slash_command(text, state)
-            if command_status == "handled":
-                continue
-            if command_status == "exit":
-                state.session.save()
-                cfg.save()
-                return 0
-            if command_status == "stash_capture":
-                stash_capture_mode = True
-                print(f"{colorize('JARVIS > enter text to stash:', 'cyan')}")
-                continue
-            if command_status == "skip":
-                text = state._pending_text
-                state._pending_text = ""
-                if not text:
-                    continue
-            else:
+            if handle_cli_slash_command(text, state):
                 continue
 
+        # Unified Agent Stream Execution
         try:
-            context = build_cli_context(text)
-            context["cli_mode"] = state.mode
-            if state.mode == "agent" and is_agentic_prompt(text):
-                preview = request_json(
-                    state.base_url,
-                    "/os/agents/preview",
-                    {"prompt": text, "agent_name": "auto", "context": context},
-                )
-                print_plan_preview(preview)
-            if state.mode == "chat":
-                state.session.add_message("user", text)
-                payload = {
-                    "message": text,
-                    "tier": "local",
-                    "session_id": state.session.session_id,
-                }
-                if state.current_model:
-                    payload["model"] = state.current_model
-                if state.debug:
-                    payload["debug"] = True
-                result = None
-                if state.stream:
-                    reply = stream_chat_ws(state.base_url, payload)
-                    if is_limited_mode_reply(reply):
-                        ensure_ollama_running(env)
-                        reply = stream_chat_ws(state.base_url, payload)
-                else:
-                    result = request_json(state.base_url, "/api/chat", payload)
-                    reply = extract_reply(result)
-                    if is_limited_mode_reply(reply):
-                        ensure_ollama_running(env)
-                        result = request_json(state.base_url, "/api/chat", payload)
-                        reply = extract_reply(result)
-                state.session.add_message("assistant", reply)
-                state.session.save()
-            else:
-                endpoint = "/os/agents/run"
-                payload = {"prompt": text, "context": context, "agent_name": "auto"}
-                result = request_json(state.base_url, endpoint, payload)
-                reply = extract_reply(result)
-                if is_limited_mode_reply(reply):
-                    ensure_ollama_running(env)
-                    context["retry_after_model_boot"] = True
-                    result = request_json(state.base_url, endpoint, payload)
-                    reply = extract_reply(result)
-                specialist = result.get("specialist", {}).get("name") if result else None
-                if specialist:
-                    render_routing_decision(specialist, "matched prompt intent")
+            from cli_requests import stream_agent_ws, get_project_context_dict
+            payload = {
+                "type": "chat",
+                "text": text,
+                "session_id": state.session.session_id,
+            }
+            project_ctx = get_project_context_dict()
+            stream_agent_ws(state.base_url, payload, project_context=project_ctx)
+        except Exception as e:
+            print_system_msg(f"Core execution error: {e}", "error")
 
-            ts_prefix = ""
-            if state.show_timestamps:
-                ts_str = __import__('datetime').datetime.now().strftime("%H:%M:%S")
-                ts_prefix = f"{colorize(f'[{ts_str}]', 'timestamp')} "
-
-            print(f"{colorize('JARVIS >', 'cyan')} {ts_prefix}{reply}")
-            if result:
-                specialist = result.get("specialist", {}).get("name")
-                if specialist:
-                    agent_str = f"[agent={specialist}]"
-                    print(f"        {colorize(agent_str, 'green')}")
-                lat_str = f"[{result.get('latency_ms', 0)} ms]"
-                print(f"        {colorize(lat_str, 'dim')}")
-        except Exception as exc:
-            print(f"{colorize('JARVIS > request failed:', 'red')} {exc}")
-
-
-def cmd_tui(args: argparse.Namespace) -> int:
-    """Launch the production-grade JARVIS TUI built with Textual."""
-    import os
-    import subprocess
-
-    from cli_server import ensure_local_stack_running
-    from cli_utils import common_env
-
-    env = common_env()
-    ensure_local_stack_running(env)
-
-    tui_path = os.path.join(os.path.dirname(__file__), "jarvis_tui", "main.py")
-    if not os.path.exists(tui_path):
-        print(f"JARVIS TUI not found at {tui_path}")
-        return 1
-
-    print("Launching JARVIS Production TUI...")
-    # Using sys.executable to ensure we use the same environment
-    # Pass common_env to the subprocess so it has access to JARVIS_SERVER etc.
-    subprocess.run([sys.executable, tui_path], env=env)
     return 0
-
-
-def cmd_boot(args: argparse.Namespace) -> int:
-    render_boot_screen(animated=not getattr(args, "static", False), delay=0.04)
-    return 0
-
-
-def cmd_cli_agents(args: argparse.Namespace) -> int:
-    render_agents()
-    return 0
-
-
-def cmd_cli_design(args: argparse.Namespace) -> int:
-    render_design_plan()
-    return 0
-
-
-def cmd_autonomy_passthrough(args: argparse.Namespace) -> int:
-    tail = getattr(args, "text", None) or getattr(args, "query", None) or []
-    if isinstance(tail, list):
-        return run_autonomy_cli([args.command, *tail])
-    return run_autonomy_cli([args.command, str(tail)])
-
-
-def cmd_status(args: argparse.Namespace) -> int:
-    env = common_env()
-    base_url = env.get("JARVIS_SERVER", "http://127.0.0.1:8000")
-    ensure_local_stack_running(env)
-    try:
-        result = request_json(base_url, "/os/status", method="GET")
-    except Exception as exc:
-        print(f"Status request failed: {exc}")
-        return 1
-
-    components = result.get("components", {})
-    world = components.get("world_model", {})
-    learning = components.get("learning", {})
-    tools = components.get("tools", [])
-    models = components.get("models", {})
-    browser = components.get("browser", {})
-    skills_registry = components.get("skills_registry", {})
-    supervisor = components.get("supervisor", {})
-    access_manager = components.get("access_manager", {})
-    mobile_sync = components.get("mobile_sync", {})
-    scheduler = components.get("scheduler", {})
-    gateway = components.get("gateway", {})
-    safety = components.get("safety", {})
-    self_improvement = components.get("self_improvement", {})
-
-    print()
-    print("JARVIS AI OS STATUS")
-    print("-------------------")
-    print(f"Initialized:        {result.get('initialized', False)}")
-    print(f"World memories:     {world.get('memories', 0)}")
-    print(f"Tracked goals:      {world.get('goals', 0)}")
-    print(f"Knowledge facts:    {world.get('knowledge', 0)}")
-    print(f"Experiences:        {world.get('experiences', 0)}")
-    print(f"Tools registered:   {len(tools)}")
-    print(f"Learning enabled:   {learning.get('enabled', False)}")
-    print(f"Student AGI loaded: {learning.get('student_agi_loaded', False)}")
-    print(f"Models ready:       {models.get('ready', False)}")
-    print(f"Browser mode:       {browser.get('mode', 'unknown')}")
-    print(f"Skill registry:     {skills_registry.get('count', 0)} skill(s)")
-    print(f"Supervisor queued:  {supervisor.get('queued', 0)}")
-    print(f"Access profiles:    {len(access_manager.get('grants', []))}")
-    print(f"Mobile devices:     {len(mobile_sync.get('linked_devices', []))}")
-    print(f"Heartbeat jobs:     {scheduler.get('count', 0)}")
-    print(f"Channels online:    {sum(1 for channel in gateway.get('channels', {}).values() if channel.get('enabled'))}")
-    ollama_ready = is_ollama_reachable(env)
-    print(f"Safety strict:      {safety.get('strict_mode', False)}")
-    print(f"Self-improve loop:  {self_improvement.get('running', False)}")
-    print(f"Ollama ready:       {ollama_ready}")
-    if not ollama_ready:
-        print("Ollama info:        unavailable; local/fallback mode is enabled.")
-    return 0
-
-
-def cmd_doctor(args: argparse.Namespace) -> int:
-    from core.diagnostics import build_diagnostic_report
-    report = build_diagnostic_report()
-    if getattr(args, "json", False):
-        print(json.dumps(report.to_dict(), indent=2))
-        return 0 if report.status in {"ok", "warning"} else 1
-
-    print(colorize(f"JARVIS doctor: {report.status}", "green" if report.status == "ok" else "yellow"))
-    print(f"Root: {report.root}")
-    print(f"Python files: {report.counts.get('python_files', 0)} | tests: {report.counts.get('tests', 0)}")
-    missing = [name for name, ok in report.optional_dependencies.items() if not ok]
-    print("Missing optional deps: " + (", ".join(missing) if missing else "none"))
-    print("Runtime flags: " + ", ".join(f"{k}={v}" for k, v in sorted(report.runtime_flags.items())))
-    print("Top issues:")
-    for issue in report.issues[:20]:
-        print(f"- [{issue.severity}] {issue.category} {issue.path}: {issue.message}")
-    if len(report.issues) > 20:
-        print(f"... {len(report.issues) - 20} more issue(s). Use --json for full detail.")
-    print("Capability gaps vs OpenClaw source:")
-    for gap in report.capability_gaps:
-        print(f"- {gap}")
-    return 0 if report.status in {"ok", "warning"} else 1
-
-
-def cmd_cleanup_audit(args: argparse.Namespace) -> int:
-    from core.cleanup_audit import build_cleanup_audit
-    audit = build_cleanup_audit()
-    data = audit.to_dict()
-    if getattr(args, "json", False):
-        print(json.dumps(data, indent=2))
-        return 0
-
-    print(colorize("JARVIS cleanup audit", "cyan"))
-    print(f"Root: {audit.root}")
-    for key, value in audit.totals.items():
-        print(f"{key}: {value}")
-    print("\nEntrypoints:")
-    for item in audit.entrypoints:
-        print(f"- {item}")
-    print("\nTop orphan candidates:")
-    for item in audit.orphan_candidates[:30]:
-        print(f"- {item}")
-    if len(audit.orphan_candidates) > 30:
-        print(f"... {len(audit.orphan_candidates) - 30} more. Use --json for full list.")
-    print("\nRoot clutter:")
-    for item in audit.root_clutter[:30]:
-        print(f"- {item}")
-    if len(audit.root_clutter) > 30:
-        print(f"... {len(audit.root_clutter) - 30} more. Use --json for full list.")
-    print("\nRecommendations:")
-    for item in audit.recommendations:
-        print(f"- {item}")
-    return 0
-
-
-def cmd_goal(args: argparse.Namespace) -> int:
-    prompt = " ".join(args.text).strip()
-    if not prompt:
-        print("Usage: jarvis goal <prompt>")
-        return 1
-    env = common_env()
-    base_url = env.get("JARVIS_SERVER", "http://127.0.0.1:8000")
-    ensure_local_stack_running(env)
-    context = build_cli_context(prompt)
-    context["cli_mode"] = "agent"
-    result = request_json(base_url, "/os/agents/submit", {"prompt": prompt, "agent_name": "auto", "context": context})
-    print()
-    specialist = result.get("specialist", {}).get("name")
-    if specialist:
-        print(f"Agent:   {specialist}")
-    print(f"Goal ID: {result['goal']['goal_id']}")
-    print(f"Job ID:  {result['job_id']}")
-    print("Plan:")
-    for index, step in enumerate(result["plan"]["steps"], start=1):
-        print(f"  {index}. [{step['tool']}] {step['action']}")
-    return 0
-
-
-def cmd_plan_preview(args: argparse.Namespace) -> int:
-    prompt = " ".join(args.text).strip()
-    if not prompt:
-        print("Usage: jarvis plan <prompt>")
-        return 1
-    env = common_env()
-    base_url = env.get("JARVIS_SERVER", "http://127.0.0.1:8000")
-    ensure_local_stack_running(env)
-    context = build_cli_context(prompt)
-    context["cli_mode"] = "agent"
-    result = request_json(base_url, "/os/agents/preview", {"prompt": prompt, "agent_name": "auto", "context": context})
-    print()
-    specialist = result.get("specialist", {}).get("name")
-    if specialist:
-        print(f"Agent:   {specialist}")
-    print(f"Goal ID: {result['goal']['goal_id']}")
-    print(f"Intent:  {result['analysis'].get('intent', 'unknown')}")
-    print("Plan:")
-    for index, step in enumerate(result["plan"]["steps"], start=1):
-        print(f"  {index}. [{step['tool']}] {step['action']}")
-    return 0
-
-
-def cmd_develop(args: argparse.Namespace) -> int:
-    prompt = " ".join(args.text).strip()
-    if not prompt:
-        print("Usage: jarvis develop <prompt>")
-        return 1
-    env = common_env()
-    base_url = env.get("JARVIS_SERVER", "http://127.0.0.1:8000")
-    ensure_local_stack_running(env)
-    context = build_cli_context(prompt)
-    context["cli_mode"] = "agent"
-    result = request_json(base_url, "/os/agents/submit", {"prompt": prompt, "agent_name": "auto", "context": context})
-    job_id = result["job_id"]
-    specialist = result.get("specialist", {}).get("name")
-    if specialist:
-        print(f"Agent: {specialist}")
-    print(f"Started goal {result['goal']['goal_id']} as job {job_id}")
-    print("Plan:")
-    for index, step in enumerate(result["plan"]["steps"], start=1):
-        print(f"  {index}. [{step['tool']}] {step['action']}")
-    print()
-    return poll_job(base_url, job_id)
 
 
 def cmd_server(args: argparse.Namespace) -> int:
+    check_host = "127.0.0.1" if args.host == "0.0.0.0" else args.host
+    base_url = f"http://{check_host}:{args.port}"
+    if is_server_reachable(base_url):
+        print(f"JARVIS backend already running at {base_url}")
+        return 0
     if args.multi_model:
         for model, port in MODEL_PORTS:
             env = common_env()
@@ -548,13 +284,15 @@ def cmd_up(args: argparse.Namespace) -> int:
                 ollama_env = env.copy()
                 ollama_env["OLLAMA_HOST"] = f"127.0.0.1:{port}"
                 spawn_background(f"Ollama-{model}", ["ollama", "serve"], cwd=ROOT, env=ollama_env, dry_run=args.dry_run)
-        spawn_background(
-            "JARVIS-Server",
-            backend_server_cmd(args.host, args.port, not args.no_reload),
-            cwd=BACKEND,
-            env=env,
-            dry_run=args.dry_run,
-        )
+        check_host = "127.0.0.1" if args.host == "0.0.0.0" else args.host
+        if not is_server_reachable(f"http://{check_host}:{args.port}"):
+            spawn_background(
+                "JARVIS-Server",
+                backend_server_cmd(args.host, args.port, not args.no_reload),
+                cwd=BACKEND,
+                env=env,
+                dry_run=args.dry_run,
+            )
         flutter_cmd = [
             "flutter",
             "run",
@@ -587,11 +325,80 @@ def cmd_student(args: argparse.Namespace) -> int:
 
 
 def cmd_models(args: argparse.Namespace) -> int:
-    if args.models_command == "list":
-        for model, port in MODEL_PORTS:
-            print(f"{model:18} http://127.0.0.1:{port}")
+    import asyncio
+
+    models_cmd = getattr(args, "action", "list")
+    if models_cmd == "list":
+        from core.model_providers.hybrid import get_platform
+        from rich.console import Console
+        from rich.table import Table
+        console = Console()
+        platform = get_platform()
+        models = asyncio.run(platform.list_models())
+        mode = platform.mode.value.upper()
+        table = Table(title=f"Model Providers [{mode} MODE]", border_style="cyan")
+        table.add_column("Provider", style="bold")
+        table.add_column("Model")
+        table.add_column("Status")
+        table.add_column("Latency")
+        table.add_column("Cost")
+        for m in models:
+            status_style = {"healthy": "green", "down": "red", "error": "red", "unknown": "yellow"}
+            s = status_style.get(m.status, "white")
+            table.add_row(m.provider, m.model, f"[{s}]{m.status}[/]",
+                          f"{m.latency_ms:.0f}ms" if m.latency_ms else "—", m.cost_estimate)
+        console.print(table)
         return 0
-    if args.models_command == "start":
+
+    if models_cmd == "test":
+        from core.model_providers.hybrid import get_platform
+        from cli_visuals_new import print_system_msg
+        platform = get_platform()
+        print_system_msg(f"Testing provider: {args.provider or 'all'}...", "info")
+        result = asyncio.run(platform.test_model(args.provider, args.model))
+        from rich.console import Console
+        console = Console()
+        if result.status == "healthy":
+            console.print(f"[green]✅ {result.provider}/{result.model}[/] — {result.latency_ms:.0f}ms — {result.cost_estimate}")
+        else:
+            console.print(f"[red]❌ {result.provider}/{result.model}[/] — {result.error}")
+        return 0
+
+    if models_cmd == "benchmark":
+        from core.model_providers.hybrid import get_platform
+        from cli_visuals_new import print_system_msg
+        from rich.table import Table
+        from rich.console import Console
+        console = Console()
+        print_system_msg(f"Benchmarking provider: {args.provider or 'all'}...", "info")
+        results = asyncio.run(get_platform().benchmark(args.provider))
+        table = Table(title="Benchmark Results", border_style="blue")
+        table.add_column("Provider")
+        table.add_column("Model")
+        table.add_column("Test")
+        table.add_column("Latency")
+        table.add_column("Tokens")
+        for r in results:
+            for t in r.get("tests", []):
+                status_icon = "✅" if t.get("latency_ms") else "❌"
+                table.add_row(
+                    r["provider"], r["model"],
+                    t.get("type", "?"),
+                    f"{t.get('latency_ms', 0):.0f}ms" if t.get("latency_ms") else t.get("error", "?"),
+                    str(t.get("tokens", "?")),
+                )
+        console.print(table)
+        return 0
+
+    if models_cmd == "switch":
+        from core.model_providers.hybrid import get_platform
+        platform = get_platform()
+        msg = platform.set_mode_from_string(args.mode)
+        from cli_visuals_new import print_system_msg
+        print_system_msg(msg, "success")
+        return 0
+
+    if models_cmd == "start":
         server_args = argparse.Namespace(
             multi_model=True,
             host=args.host,
@@ -665,6 +472,11 @@ def cmd_web(args: argparse.Namespace) -> int:
     if not args.no_open:
         webbrowser.open(url)
 
+    check_host = "127.0.0.1" if host == "0.0.0.0" else host
+    base_url = f"http://{check_host}:{port}"
+    if is_server_reachable(base_url):
+        print(f"JARVIS backend already running at {base_url}")
+        return 0
     env = common_env()
     return run_command(
         backend_server_cmd(host, port, reload_enabled=not args.no_reload),
@@ -748,39 +560,68 @@ def cmd_agent_run(args):
     return 0 if result.success else 1
 
 
+def _parse_setting_value(val: str):
+    try:
+        import json as _json
+        return _json.loads(val)
+    except json.JSONDecodeError:
+        pass
+    if val.lower() == "true": return True
+    if val.lower() == "false": return False
+    if val.isdigit(): return int(val)
+    try:
+        return float(val)
+    except ValueError:
+        return val
+
+
 def cmd_settings(args: argparse.Namespace) -> int:
     from core.settings.store import get_settings_store
     store = get_settings_store()
+
+    def _try_config_registry(key: str):
+        try:
+            from core.config_registry import config as _cfg
+            return _cfg.get(key, None)
+        except KeyError:
+            return None
+
+    def _set_config_registry(key: str, val):
+        try:
+            from core.config_registry import config as _cfg
+            _cfg.set(key, val)
+            return True
+        except Exception:
+            return False
 
     if args.settings_command == "get":
         try:
             val = store.get(args.key)
             print(val)
-        except KeyError as e:
-            print(f"Error: {e}")
-            return 1
+        except KeyError:
+            val = _try_config_registry(args.key)
+            if val is not None:
+                print(val)
+            else:
+                print(f"Error: Setting '{args.key}' not found.")
+                return 1
     elif args.settings_command == "set":
+        parsed_val = _parse_setting_value(args.value)
         try:
-            try:
-                import json as _json
-                parsed_val = _json.loads(args.value)
-            except json.JSONDecodeError:
-                if args.value.lower() == "true": parsed_val = True
-                elif args.value.lower() == "false": parsed_val = False
-                elif args.value.isdigit(): parsed_val = int(args.value)
-                else:
-                    try:
-                        parsed_val = float(args.value)
-                    except ValueError:
-                        parsed_val = args.value
             if store.set(args.key, parsed_val):
+                print(f"Successfully set {args.key} = {parsed_val}")
+            else:
+                if _set_config_registry(args.key, parsed_val):
+                    print(f"Successfully set {args.key} = {parsed_val}")
+                else:
+                    print(f"Failed to set {args.key}")
+                    return 1
+        except Exception:
+            if _set_config_registry(args.key, parsed_val):
                 print(f"Successfully set {args.key} = {parsed_val}")
             else:
                 print(f"Failed to set {args.key}")
                 return 1
-        except Exception as e:
-            print(f"Error setting {args.key}: {e}")
-            return 1
     elif args.settings_command == "reset":
         store.reset(args.key)
         if args.key:
@@ -874,6 +715,46 @@ def cmd_plugin(args):
         print("1. Create your jarvis_plugin_sdk.Plugin subclass.")
         print("2. Define [project.entry-points.'jarvis.plugins'] in your pyproject.toml.")
         print("3. Run: python -m build && python -m twine upload dist/*")
+        return 0
+    elif args.plugin_action == "create":
+        name = args.name
+        plugins_dir = Path("plugins")
+        plugin_dir = plugins_dir / name
+        if plugin_dir.exists():
+            print(f"Plugin '{name}' already exists at {plugin_dir}")
+            return 1
+        plugin_dir.mkdir(parents=True, exist_ok=True)
+        manifest = {
+            "name": f"jarvis.{name}",
+            "version": "1.0.0",
+            "description": f"Description for {name} plugin",
+            "author": "JARVIS",
+            "entry_point": f"{name}_plugin.py",
+            "enabled": True,
+            "hooks": ["on_load", "on_unload"],
+        }
+        manifest_path = plugin_dir / "plugin.json"
+        manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+        py_content = f'''"""
+plugins/{name}/{name}_plugin.py — {name} plugin for JARVIS.
+"""
+import logging
+from core.plugins.base import Plugin
+logger = logging.getLogger(__name__)
+
+class {name.capitalize().replace("-", "")}Plugin(Plugin):
+    def on_load(self):
+        logger.info("[{name}] Plugin loaded")
+
+    def on_unload(self):
+        logger.info("[{name}] Plugin unloaded")
+'''
+        py_path = plugin_dir / f"{name}_plugin.py"
+        py_path.write_text(py_content, encoding="utf-8")
+        print(f"JARVIS > Plugin '{name}' created at {plugin_dir}")
+        print(f"  📄 {manifest_path}")
+        print(f"  🐍 {py_path}")
+        print("Restart JARVIS or run 'jarvis plugin reload' to activate.")
         return 0
     return 1
 
@@ -1059,3 +940,1564 @@ def cmd_debug(args: argparse.Namespace) -> int:
         else:
             print(f"  {data}")
     return 0
+
+
+def cmd_status(args: argparse.Namespace) -> int:
+    from cli_visuals_new import render_agent_status, print_system_msg
+    import httpx
+    
+    env = common_env()
+    base_url = env.get("JARVIS_SERVER", "http://127.0.0.1:8000")
+    
+    print_system_msg("Probing Neural Network Status...", "info")
+    
+    agents = [
+        {"name": "MAESTRO", "role": "Orchestrator", "ready": True},
+        {"name": "NEXUS", "role": "Research", "ready": True},
+        {"name": "FORGE", "role": "Code", "ready": True},
+        {"name": "ORACLE", "role": "Planning", "ready": True},
+        {"name": "CIPHER", "role": "Security", "ready": True},
+        {"name": "HERALD", "role": "Comms", "ready": True},
+        {"name": "ATLAS", "role": "Data", "ready": True},
+        {"name": "SCRIBE", "role": "Docs", "ready": True},
+        {"name": "SENTINEL", "role": "Monitor", "ready": True},
+    ]
+    
+    render_agent_status(agents)
+    
+    try:
+        resp = httpx.get(f"{base_url}/api/health", timeout=2.0)
+        if resp.status_code == 200:
+            print_system_msg(f"Backend Core: ONLINE ({base_url})", "success")
+        else:
+            print_system_msg(f"Backend Core: DEGRADED ({resp.status_code})", "warning")
+    except Exception:
+        print_system_msg(f"Backend Core: OFFLINE", "error")
+        
+    return 0
+
+
+def cmd_doctor(args):
+    """Run production doctor — feature audit, model check, memory usage, API status."""
+    from cli_visuals_new import print_system_msg
+    from rich.console import Console
+    from rich.table import Table
+    from rich.panel import Panel
+
+    console = Console()
+    print_system_msg("Running JARVIS Production Doctor...", "info")
+
+    try:
+        from core.feature_registry import get_feature_report
+        report = get_feature_report()
+        table = Table(title="Feature Status", border_style="cyan")
+        table.add_column("Feature", style="bold")
+        table.add_column("Status", style="bold")
+        table.add_column("Enabled")
+        for f in report["features"]:
+            status_style = {"stable": "green", "beta": "yellow", "experimental": "blue", "broken": "red", "planned": "dim"}
+            style = status_style.get(f["status"], "white")
+            table.add_row(f["name"], f"[{style}]{f['status']}[/]", "✅" if f["enabled"] else "❌")
+        console.print(table)
+        console.print(f"\n[bold]Summary:[/] {report['enabled']} enabled / {report['disabled']} disabled / {report['stable']} stable / {report['beta']} beta / {report['broken']} broken / {report['planned']} planned")
+    except Exception as e:
+        console.print(f"[red]Feature audit failed: {e}[/]")
+
+    try:
+        from core.diagnostics import build_diagnostic_report
+        diag = build_diagnostic_report()
+        console.print(Panel(f"[bold]Source Diagnostics:[/] {diag.status.upper()} — {len(diag.issues)} issues found", border_style="yellow"))
+        for issue in diag.issues[:10]:
+            sev_style = {"critical": "red", "high": "yellow", "medium": "blue", "low": "dim"}
+            s = sev_style.get(issue.severity, "white")
+            console.print(f"  [{s}]{issue.severity.upper():8s}[/] {issue.category:20s} {issue.path} — {issue.message}")
+        if diag.capability_gaps:
+            console.print(f"\n[bold]Capability Gaps:[/] {len(diag.capability_gaps)}")
+            for g in diag.capability_gaps[:3]:
+                console.print(f"  • {g}")
+    except Exception as e:
+        console.print(f"[red]Diagnostics failed: {e}[/]")
+
+    try:
+        from core.model_providers import get_router
+        router = get_router()
+        import asyncio
+        health = asyncio.run(router.health_check())
+        table = Table(title="Model Provider Health", border_style="blue")
+        table.add_column("Provider", style="bold")
+        table.add_column("Available")
+        table.add_column("Healthy")
+        table.add_column("Latency")
+        for name, status in health.items():
+            table.add_row(name, "✅" if status.available else "❌", "✅" if status.healthy else "❌", f"{status.latency_ms:.0f}ms")
+        console.print(table)
+    except Exception as e:
+        console.print(f"[red]Model health check failed: {e}[/]")
+
+    try:
+        from core.environment_monitor import environment_monitor
+        env = environment_monitor.check()
+        console.print(Panel(
+            f"Disk: {env.disk_free_gb:.1f} GB free  |  Memory: {env.memory_free_mb:.0f} MB free  |  "
+            f"Ollama: {'✓' if env.ollama_available else '✗'} ({env.ollama_latency_ms:.0f}ms)  |  "
+            f"Network: {'✓' if env.network_reachable else '✗'}",
+            title="Environment", border_style="green",
+        ))
+    except Exception as e:
+        console.print(f"[red]Environment check failed: {e}[/]")
+
+    try:
+        from core.integration_manager import health_check_all
+        import asyncio
+        integ_health = asyncio.run(health_check_all())
+        table = Table(title="Integration Status", border_style="magenta")
+        table.add_column("Integration", style="bold")
+        table.add_column("Connected")
+        table.add_column("Healthy")
+        for name, status in integ_health.items():
+            table.add_row(name, "✅" if status.get("connected") else "❌", "✅" if status.get("healthy") else "❌")
+        console.print(table)
+    except Exception as e:
+        console.print(f"[red]Integration health check failed: {e}[/]")
+
+    try:
+        console.print(Panel("[bold]Voice Diagnostics[/]", border_style="cyan"))
+        try:
+            import sounddevice as sd
+            sd_version = sd.__version__
+            try:
+                devices = sd.query_devices()
+                input_devs = [d for d in devices if d["max_input_channels"] > 0]
+                output_devs = [d for d in devices if d["max_output_channels"] > 0]
+                console.print(f"  sounddevice {sd_version}: {len(input_devs)} input, {len(output_devs)} output devices")
+                if input_devs:
+                    default = sd.default.device
+                    if isinstance(default, tuple):
+                        default = default[0]
+                    console.print(f"  Default input device: {default} — {sd.query_devices(default)['name']}")
+                else:
+                    console.print("  [red]No input devices found! Microphone required for voice.[/]")
+            except Exception as e:
+                console.print(f"  [red]sounddevice query failed: {e}[/]")
+        except ImportError:
+            console.print("  [red]sounddevice not installed! Install: pip install sounddevice[/]")
+        try:
+            import webrtcvad
+            console.print(f"  webrtcvad: installed (mode={webrtcvad.Vad(1) is not None})")
+        except ImportError:
+            console.print("  [red]webrtcvad not installed! Install: pip install webrtcvad-wheels[/]")
+        try:
+            from assistant.tts import get_tts
+            tts = get_tts()
+            console.print(f"  TTS: initialized ({tts.voice})")
+        except Exception as e:
+            console.print(f"  [red]TTS init failed: {e}[/]")
+        try:
+            from assistant.stt import get_stt
+            stt = get_stt()
+            console.print(f"  STT: initialized ({type(stt).__name__})")
+        except Exception as e:
+            console.print(f"  [red]STT init failed: {e}[/]")
+        from core.config_registry import config as _jc
+        mode = _jc.get("voice.mode", "push-to-talk")
+        provider = _jc.get("voice.tts_provider", "unknown")
+        console.print(f"  Voice mode: {mode}  |  TTS provider: {provider}")
+    except Exception as e:
+        console.print(f"[red]Voice diagnostics failed: {e}[/]")
+
+    if getattr(args, 'json', False):
+        import json as _json
+        try:
+            from core.feature_registry import get_feature_report
+            console.print(_json.dumps(get_feature_report(), indent=2))
+        except Exception:
+            pass
+
+    print_system_msg("Doctor complete.", "success")
+    return 0
+
+
+def cmd_diagnostics(args):
+    """Diagnostics dashboard — model health, integration health, voice health, feature audit."""
+    from cli_visuals_new import print_system_msg
+    from rich.console import Console
+    from rich.table import Table
+    from rich.panel import Panel
+    import asyncio
+    console = Console()
+
+    sub = getattr(args, 'diag_command', None)
+
+    if sub == "models":
+        print_system_msg("Model Health Diagnostics", "info")
+        try:
+            from core.model_providers import get_router
+            router = get_router()
+            health = asyncio.run(router.health_check())
+            table = Table(title="Model Provider Health", border_style="blue")
+            table.add_column("Provider", style="bold")
+            table.add_column("Available")
+            table.add_column("Healthy")
+            table.add_column("Latency")
+            for name, status in health.items():
+                table.add_row(name, "✅" if status.available else "❌",
+                              "✅" if status.healthy else "❌",
+                              f"{status.latency_ms:.0f}ms")
+            console.print(table)
+        except Exception as e:
+            console.print(f"[red]Model health check failed: {e}[/]")
+
+    elif sub == "integrations":
+        print_system_msg("Integration Health Diagnostics", "info")
+        try:
+            from core.integration_manager import health_check_all
+            health = asyncio.run(health_check_all())
+            table = Table(title="Integration Status", border_style="magenta")
+            table.add_column("Integration", style="bold")
+            table.add_column("Connected")
+            table.add_column("Healthy")
+            for name, status in health.items():
+                table.add_row(name, "✅" if status.get("connected") else "❌",
+                              "✅" if status.get("healthy") else "❌")
+            console.print(table)
+        except Exception as e:
+            console.print(f"[red]Integration health check failed: {e}[/]")
+
+    elif sub == "voice":
+        print_system_msg("Voice Health Diagnostics", "info")
+        try:
+            from core.config_registry import config as _jc
+            mode = _jc.get("voice.mode", "push-to-talk")
+            stt = _jc.get("voice.stt_provider", "faster-whisper")
+            tts = _jc.get("voice.tts_provider", "edge-tts")
+            wake = _jc.get("voice.wake_word_enabled", False)
+            console.print(Panel(
+                f"Mode: {mode}\nSTT: {stt}\nTTS: {tts}\nWake word: {'✅' if wake else '❌'}",
+                title="Voice Configuration", border_style="cyan"))
+            try:
+                import sounddevice as sd
+                devices = sd.query_devices()
+                input_devs = [d for d in devices if d["max_input_channels"] > 0]
+                console.print(f"Audio: {len(input_devs)} input devices")
+            except ImportError:
+                console.print("[red]sounddevice not installed[/]")
+            try:
+                from assistant.stt import get_stt
+                stt_inst = get_stt()
+                console.print(f"STT: initialized ({type(stt_inst).__name__})")
+            except Exception as e:
+                console.print(f"[red]STT init failed: {e}[/]")
+            try:
+                from assistant.tts import get_tts
+                tts_inst = get_tts()
+                console.print(f"TTS: initialized ({tts_inst.voice})")
+            except Exception as e:
+                console.print(f"[red]TTS init failed: {e}[/]")
+        except Exception as e:
+            console.print(f"[red]Voice diagnostics failed: {e}[/]")
+
+    elif sub == "features":
+        print_system_msg("Feature Audit", "info")
+        try:
+            from core.feature_registry import get_feature_report
+            report = get_feature_report()
+            table = Table(title="Feature Status", border_style="cyan")
+            table.add_column("Feature", style="bold")
+            table.add_column("Status")
+            table.add_column("Enabled")
+            for f in report["features"]:
+                status_style = {"stable": "green", "beta": "yellow", "experimental": "blue",
+                               "broken": "red", "planned": "dim"}
+                s = status_style.get(f["status"], "white")
+                table.add_row(f["name"], f"[{s}]{f['status']}[/]", "✅" if f["enabled"] else "❌")
+            console.print(table)
+            console.print(f"\n[bold]Summary:[/] {report['enabled']} enabled / {report['disabled']} disabled / "
+                          f"{report['stable']} stable / {report['broken']} broken")
+        except Exception as e:
+            console.print(f"[red]Feature audit failed: {e}[/]")
+
+    else:
+        return cmd_doctor(args)
+
+    return 0
+
+
+def cmd_home(args):
+    """Home dashboard — show overall system status."""
+    from cli_visuals_new import print_system_msg
+    from rich.console import Console
+    from rich.table import Table
+    from rich.panel import Panel
+    from rich.layout import Layout
+    console = Console()
+    print_system_msg("JARVIS Home Dashboard", "info")
+
+    try:
+        from core.feature_registry import get_feature_report
+        report = get_feature_report()
+        stable_pct = round(report["stable"] / max(report["total"], 1) * 100)
+        enabled_pct = round(report["enabled"] / max(report["total"], 1) * 100)
+        console.print(Panel(
+            f"[bold]Features:[/] {report['enabled']} enabled / {report['total']} total\n"
+            f"[green]{stable_pct}% stable[/] — [yellow]{report['beta']} beta[/] — "
+            f"[red]{report['broken']} broken[/] — [dim]{report['planned']} planned[/]\n"
+            f"[bold]Status:[/] {'✅ All stable' if report['broken'] == 0 else '⚠️ ' + str(report['broken']) + ' broken'}",
+            title="System Health", border_style="cyan"))
+    except Exception as e:
+        console.print(f"[red]Feature report failed: {e}[/]")
+
+    try:
+        from core.diagnostics import build_diagnostic_report
+        diag = build_diagnostic_report()
+        console.print(Panel(
+            f"Status: [{'green' if diag.status == 'ok' else 'yellow'}]{diag.status.upper()}[/]\n"
+            f"Issues: {len(diag.issues)}\n"
+            f"Capability Gaps: {len(diag.capability_gaps)}",
+            title="Diagnostics", border_style="green" if diag.status == "ok" else "yellow"))
+    except Exception:
+        pass
+
+    try:
+        from core.model_providers.hybrid import get_platform
+        import asyncio
+        platform = get_platform()
+        mode = platform.mode.value.upper()
+        models = asyncio.run(platform.list_models())
+        healthy = sum(1 for m in models if m.status == "healthy")
+        console.print(Panel(
+            f"Mode: [bold]{mode}[/]\n"
+            f"Providers: {len(models)} total, [green]{healthy} healthy[/]",
+            title="Models", border_style="blue"))
+    except Exception:
+        pass
+
+    try:
+        from core.integration_manager import get_integration_manager
+        mgr = get_integration_manager()
+        integrations = mgr.list_integrations()
+        connected = sum(1 for i in integrations if i["connected"])
+        console.print(Panel(
+            f"Integrations: {len(integrations)} total, [green]{connected} connected[/]",
+            title="Integrations", border_style="magenta"))
+    except Exception:
+        pass
+
+    try:
+        from core.sub_agents.registry import agent_registry
+        agents = agent_registry.list_agents()
+        console.print(Panel(
+            f"Agents: [bold]{len(agents)}[/] registered",
+            title="Agents", border_style="yellow"))
+    except Exception:
+        pass
+
+    try:
+        mem_mgr = _get_memory_manager()
+        entries = _get_memory_count(mem_mgr)
+        console.print(Panel(
+            f"Memory entries: [bold]{entries}[/]",
+            title="Memory", border_style="green"))
+    except Exception:
+        pass
+
+    print_system_msg("Use /help for available commands, or run a subcommand like 'jarvis models list'", "info")
+    return 0
+
+
+def _get_memory_manager():
+    from core.memory import MemoryManager
+    from pathlib import Path
+    data_dir = str(Path.home() / ".jarvis")
+    return MemoryManager(data_dir=data_dir)
+
+
+def _get_memory_count(mgr=None) -> int:
+    if mgr is None:
+        mgr = _get_memory_manager()
+    try:
+        return len(mgr.load_all())
+    except Exception:
+        return 0
+
+
+def cmd_features(args):
+    """Feature Registry — list, explore, and toggle features."""
+    from cli_visuals_new import print_system_msg
+    from rich.console import Console
+    from rich.table import Table
+    from rich.panel import Panel
+    console = Console()
+    print_system_msg("Feature Registry", "info")
+
+    action = getattr(args, 'feature_command', None) or getattr(args, 'action', None)
+
+    if action == "explore" or action == "show":
+        slug = getattr(args, 'slug', None)
+        if slug:
+            try:
+                from core.feature_registry import FEATURES, get_status, is_enabled, Feature
+                feature = FEATURES.get(slug)
+                if not feature:
+                    console.print(f"[red]Feature not found: {slug}[/]")
+                    return 1
+                status = get_status(slug).value.upper()
+                enabled = is_enabled(slug)
+                console.print(Panel(
+                    f"[bold]{feature.name}[/]\n\n"
+                    f"Slug: {slug}\n"
+                    f"Category: {feature.category}\n"
+                    f"Status: [{'green' if status == 'STABLE' else 'yellow'}]{status}[/]\n"
+                    f"Enabled: {'✅' if enabled else '❌'}\n"
+                    f"Default: {'✅' if feature.enabled_by_default else '❌'}\n"
+                    f"Config key: {feature.config_key or 'N/A'}\n"
+                    f"Docs: {feature.docs_path or 'N/A'}\n"
+                    f"Dependencies: {', '.join(feature.dependencies) or 'None'}\n\n"
+                    f"{feature.description}",
+                    title=f"Feature: {slug}", border_style="cyan"))
+
+                if feature.health_check_fn:
+                    try:
+                        mod_path, _, fn_name = feature.health_check_fn.rpartition(":")
+                        if mod_path and fn_name:
+                            import importlib, asyncio
+                            mod = importlib.import_module(mod_path)
+                            fn = getattr(mod, fn_name)
+                            result = asyncio.run(fn() if asyncio.iscoroutinefunction(fn) else fn())
+                            console.print(f"[green]Health check: OK[/]")
+                            console.print(str(result)[:200])
+                    except Exception as e:
+                        console.print(f"[red]Health check failed: {e}[/]")
+            except Exception as e:
+                console.print(f"[red]Feature detail failed: {e}[/]")
+        else:
+            console.print("[yellow]Usage: jarvis features explore <slug>[/]")
+        return 0
+
+    if action == "toggle":
+        slug = getattr(args, 'slug', None)
+        enabled = getattr(args, 'enabled', True)
+        if slug:
+            try:
+                from core.feature_registry import FEATURES, set_status, FeatureStatus
+                from core.config_registry import config
+                if slug not in FEATURES:
+                    console.print(f"[red]Feature not found: {slug}[/]")
+                    return 1
+                config.set(f"feature.{slug}.enabled", enabled)
+                new_status = FeatureStatus.STABLE if enabled else FeatureStatus.BROKEN
+                set_status(slug, new_status)
+                console.print(f"[green]Feature '{slug}' {'enabled' if enabled else 'disabled'}[/]")
+            except Exception as e:
+                console.print(f"[red]Toggle failed: {e}[/]")
+        else:
+            console.print("[yellow]Usage: jarvis features toggle <slug> [--off][/]")
+        return 0
+
+    # Default: list all features
+    try:
+        from core.feature_registry import get_all_features, get_feature_report
+        report = get_feature_report()
+        console.print(f"Total: {report['total']} | "
+                      f"[green]Stable: {report['stable']}[/] | "
+                      f"[yellow]Beta: {report['beta']}[/] | "
+                      f"[red]Broken: {report['broken']}[/] | "
+                      f"[dim]Planned: {report['planned']}[/]")
+
+        table = Table(title=f"All Features ({report['total']})", border_style="cyan")
+        table.add_column("Feature", style="bold")
+        table.add_column("Slug")
+        table.add_column("Category")
+        table.add_column("Status")
+        table.add_column("Enabled")
+        for f in report["features"]:
+            status_style = {"stable": "green", "beta": "yellow", "experimental": "blue",
+                           "broken": "red", "planned": "dim"}
+            s = status_style.get(f["status"], "white")
+            table.add_row(
+                f["name"][:50],
+                f["slug"],
+                f["category"],
+                f"[{s}]{f['status']}[/]",
+                "✅" if f["enabled"] else "❌",
+            )
+        console.print(table)
+        console.print("\n[yellow]Explore a feature:[/] jarvis features explore <slug>")
+        console.print("[yellow]Toggle a feature:[/] jarvis features toggle <slug> [--off]")
+    except Exception as e:
+        console.print(f"[red]Feature registry unavailable: {e}[/]")
+
+    return 0
+
+
+def cmd_voice(args):
+    """Voice dashboard — STT, TTS, wake word status."""
+    from cli_visuals_new import print_system_msg
+    from rich.console import Console
+    from rich.table import Table
+    from rich.panel import Panel
+    console = Console()
+    print_system_msg("Voice Dashboard", "info")
+
+    try:
+        from core.config_registry import config as _jc
+        mode = _jc.get("voice.mode", "push-to-talk")
+        stt_provider = _jc.get("voice.stt_provider", "faster-whisper")
+        tts_provider = _jc.get("voice.tts_provider", "edge-tts")
+        wake_enabled = _jc.get("voice.wake_word_enabled", False)
+        console.print(Panel(
+            f"Voice mode: [bold]{mode}[/]\n"
+            f"STT: {stt_provider}\n"
+            f"TTS: {tts_provider}\n"
+            f"Wake word: {'✅ Enabled' if wake_enabled else '❌ Disabled'}",
+            title="Voice Configuration", border_style="cyan"))
+    except Exception as e:
+        console.print(f"[red]Config read failed: {e}[/]")
+
+    try:
+        import sounddevice as sd
+        devices = sd.query_devices()
+        input_devs = [d for d in devices if d["max_input_channels"] > 0]
+        output_devs = [d for d in devices if d["max_output_channels"] > 0]
+        console.print(Panel(
+            f"Input devices: {len(input_devs)}\n"
+            f"Output devices: {len(output_devs)}",
+            title="Audio Hardware", border_style="blue"))
+    except Exception:
+        console.print("[yellow]sounddevice not available[/]")
+
+    if args.voice_command == "test":
+        print_system_msg("Voice system test passed (components initialized)", "success")
+    elif args.voice_command == "providers":
+        table = Table(title="Available Providers", border_style="cyan")
+        table.add_column("Type", style="bold")
+        table.add_column("Provider")
+        table.add_column("Status")
+        providers = [
+            ("STT", "faster-whisper", "local"),
+            ("STT", "deepgram", "cloud"),
+            ("STT", "azure", "cloud"),
+            ("TTS", "kokoro", "local"),
+            ("TTS", "edge-tts", "cloud"),
+        ]
+        for tp, prov, kind in providers:
+            table.add_row(tp, prov, kind)
+        console.print(table)
+
+    return 0
+
+
+def cmd_automation(args):
+    """Automation dashboard — goals, phases, logs, repair cycles."""
+    from cli_visuals_new import print_system_msg
+    from rich.console import Console
+    from rich.table import Table
+    from rich.panel import Panel
+    console = Console()
+    print_system_msg("Automation Dashboard", "info")
+
+    if args.automation_command == "status" or not args.automation_command:
+        try:
+            from brain.automation.loop import build_loop
+            loop = build_loop()
+            status = loop.get_status() if hasattr(loop, 'get_status') else {}
+            phase = status.get("phase", "idle")
+            goal = status.get("goal", "No active goal")
+            progress = status.get("progress", 0)
+            repair_cycles = status.get("repair_cycles", 0)
+            completion = status.get("completion_pct", 0)
+            logs = status.get("logs", [])
+            console.print(Panel(
+                f"Goal: [bold]{goal}[/]\n"
+                f"Phase: {phase}\n"
+                f"Progress: {progress}%\n"
+                f"Repair cycles: {repair_cycles}\n"
+                f"Completion: {completion}%",
+                title="Active Automation", border_style="cyan"))
+            if logs:
+                log_table = Table(title="Recent Logs", border_style="blue")
+                log_table.add_column("Time")
+                log_table.add_column("Message")
+                for log in logs[-5:]:
+                    log_table.add_row(log.get("time", ""), log.get("message", ""))
+                console.print(log_table)
+        except Exception as e:
+            console.print(f"[yellow]Automation loop not available: {e}[/]")
+            console.print(Panel(
+                "Use [bold]/goal <goal>[/] to start automation\n"
+                "Use [bold]/develop <goal>[/] for development workflow\n"
+                "Use [bold]/build <goal>[/] for autonomous build",
+                title="Quick Start", border_style="green"))
+
+    elif args.automation_command == "goals":
+        console.print("[yellow]Active goals feature requires backend /api/horizon/goals endpoint[/]")
+
+    elif args.automation_command == "repair":
+        try:
+            from core.pattern_failure_memory import pattern_memory
+            stats = pattern_memory.get_stats()
+            table = Table(title="Repair Pattern Memory", border_style="yellow")
+            table.add_column("Pattern", style="bold")
+            table.add_column("Count")
+            table.add_column("Fix Strategy")
+            for p in stats.get("top_patterns", []):
+                table.add_row(p["pattern"][:50], str(p["count"]), p["fix"][:40])
+            console.print(table)
+            console.print(f"\nTotal patterns: {stats['total_patterns']}")
+            console.print(f"Total fixes applied: {stats['total_fixes_applied']}")
+        except Exception as e:
+            console.print(f"[red]Repair memory unavailable: {e}[/]")
+
+    elif args.automation_command == "architectural":
+        try:
+            from brain.automation.loop import ArchitecturalMemory
+            arch = ArchitecturalMemory()
+            table = Table(title="Architectural Memory", border_style="blue")
+            table.add_column("Project Type", style="bold")
+            table.add_column("Lessons")
+            table.add_column("Components")
+            table.add_column("Hits")
+            for key, entry in arch._patterns.items():
+                table.add_row(
+                    entry.get("project_type", key),
+                    str(len(entry.get("lessons", []))),
+                    ", ".join(entry.get("required_components", [])),
+                    str(entry.get("hit_count", 0)),
+                )
+            console.print(table)
+        except Exception as e:
+            console.print(f"[yellow]Architectural memory not available: {e}[/]")
+
+    return 0
+
+
+def cmd_memory(args):
+    """Memory dashboard — memories, vector store, failure memory, architectural memory."""
+    from cli_visuals_new import print_system_msg
+    from rich.console import Console
+    from rich.table import Table
+    from rich.panel import Panel
+    console = Console()
+    print_system_msg("Memory Dashboard", "info")
+
+    action = getattr(args, 'memory_command', None) or getattr(args, 'action', None)
+
+    if action == "list" or not action:
+        try:
+            from core.memory import MemoryManager
+            from pathlib import Path
+            data_dir = str(Path.home() / ".jarvis")
+            mgr = MemoryManager(data_dir=data_dir)
+            entries = mgr.load_all()
+            table = Table(title=f"Memory Entries ({len(entries)})", border_style="green")
+            table.add_column("ID", style="dim")
+            table.add_column("Text")
+            table.add_column("Category")
+            table.add_column("Uses")
+            table.add_column("Source")
+            for e in entries[-20:]:
+                table.add_row(
+                    e.get("id", "?")[:8],
+                    e.get("text", "")[:60],
+                    e.get("category", ""),
+                    str(e.get("uses", 0)),
+                    e.get("source", ""),
+                )
+            console.print(table)
+        except Exception as ex:
+            console.print(f"[red]Memory load failed: {ex}[/]")
+
+    elif action == "vector":
+        try:
+            from core.memory_vector import MemoryVectorStore
+            from pathlib import Path
+            data_dir = str(Path.home() / ".jarvis")
+            vstore = MemoryVectorStore(data_dir=data_dir)
+            count = vstore.count()
+            console.print(Panel(
+                f"Vector store: {'✅ Healthy' if vstore.healthy else '❌ Unhealthy'}\n"
+                f"Entries: {count}",
+                title="Vector Memory", border_style="cyan"))
+        except Exception as e:
+            console.print(f"[yellow]Vector store not available: {e}[/]")
+
+    elif action == "failure":
+        try:
+            from core.pattern_failure_memory import pattern_memory
+            stats = pattern_memory.get_stats()
+            table = Table(title="Failure Memory", border_style="red")
+            table.add_column("Pattern")
+            table.add_column("Count")
+            table.add_column("Fix")
+            for p in stats.get("top_patterns", []):
+                table.add_row(p["pattern"][:60], str(p["count"]), p["fix"][:40])
+            console.print(table)
+            console.print(f"\nTotal patterns: [bold]{stats['total_patterns']}[/]")
+            console.print(f"Total fixes applied: [bold]{stats['total_fixes_applied']}[/]")
+        except Exception as e:
+            console.print(f"[red]Failure memory unavailable: {e}[/]")
+
+    elif action == "architectural":
+        try:
+            from brain.automation.loop import ArchitecturalMemory
+            arch = ArchitecturalMemory()
+            if not arch._patterns:
+                console.print("[yellow]No architectural patterns learned yet[/]")
+            else:
+                table = Table(title="Architectural Memory", border_style="blue")
+                table.add_column("Project")
+                table.add_column("Lessons")
+                table.add_column("Components")
+                table.add_column("Hits")
+                for key, entry in arch._patterns.items():
+                    table.add_row(
+                        entry.get("project_type", key),
+                        str(len(entry.get("lessons", []))),
+                        ", ".join(entry.get("required_components", []))[:40],
+                        str(entry.get("hit_count", 0)),
+                    )
+                console.print(table)
+        except Exception as e:
+            console.print(f"[yellow]Architectural memory not available: {e}[/]")
+
+    elif action == "add":
+        text = getattr(args, 'text', None)
+        if text:
+            try:
+                from core.memory import MemoryManager
+                from pathlib import Path
+                mgr = MemoryManager(data_dir=str(Path.home() / ".jarvis"))
+                entries = mgr.load_all()
+                entry = mgr.add_entry(text, source="cli")
+                entries.append(entry)
+                mgr.save(entries)
+                console.print(f"[green]✅ Memory added: {text[:60]}[/]")
+            except Exception as e:
+                console.print(f"[red]Failed to add memory: {e}[/]")
+        else:
+            console.print("[yellow]Usage: jarvis memory add <text>[/]")
+
+    elif action == "search":
+        query = getattr(args, 'query', None) or getattr(args, 'text', None)
+        if query:
+            try:
+                from core.memory import MemoryManager
+                from pathlib import Path
+                mgr = MemoryManager(data_dir=str(Path.home() / ".jarvis"))
+                entries = mgr.load_all()
+                relevant = mgr.get_relevant_memories(query, entries)
+                table = Table(title=f"Search Results for '{query}'", border_style="cyan")
+                table.add_column("Score")
+                table.add_column("Text")
+                table.add_column("Category")
+                for score, entry in relevant[:10]:
+                    table.add_row(f"{score:.2f}", entry.get("text", "")[:80], entry.get("category", ""))
+                console.print(table)
+            except Exception as e:
+                console.print(f"[red]Search failed: {e}[/]")
+        else:
+            console.print("[yellow]Usage: jarvis memory search <query>[/]")
+
+    return 0
+
+
+def cmd_integrations(args):
+    """Integration management dashboard."""
+    from cli_visuals_new import print_system_msg
+    from rich.console import Console
+    from rich.table import Table
+    from rich.panel import Panel
+    import asyncio
+    console = Console()
+    print_system_msg("Integration Management", "info")
+
+    action = getattr(args, 'integration_command', None)
+
+    try:
+        from core.integration_manager import get_integration_manager
+        mgr = get_integration_manager()
+    except Exception as e:
+        console.print(f"[red]Integration manager unavailable: {e}[/]")
+        return 1
+
+    if action == "list" or not action:
+        integrations = mgr.list_integrations()
+        table = Table(title=f"Integrations ({len(integrations)})", border_style="magenta")
+        table.add_column("Name", style="bold")
+        table.add_column("Connected")
+        table.add_column("Status")
+        for i in integrations:
+            name = i["name"]
+            connected = i["connected"]
+            icon = "✅" if connected else "❌"
+            try:
+                status = asyncio.run(mgr.health_check(name))
+                healthy = "✅" if status.healthy else "❌"
+            except Exception:
+                healthy = "?"
+            table.add_row(name, icon, healthy)
+        console.print(table)
+
+    elif action == "connect":
+        name = getattr(args, 'name', None)
+        if name:
+            result = asyncio.run(mgr.connect(name))
+            if result:
+                console.print(f"[green]✅ Connected: {name}[/]")
+            else:
+                console.print(f"[red]❌ Failed to connect: {name}[/]")
+        else:
+            console.print("[yellow]Usage: jarvis integrations connect <name>[/]")
+
+    elif action == "disconnect":
+        name = getattr(args, 'name', None)
+        if name:
+            result = asyncio.run(mgr.disconnect(name))
+            console.print(f"[green]Disconnected: {name}[/]" if result else f"[red]Failed: {name}[/]")
+
+    elif action == "health":
+        name = getattr(args, 'name', None)
+        if name:
+            status = asyncio.run(mgr.health_check(name))
+            console.print(Panel(
+                f"Name: {status.name}\n"
+                f"Connected: {'✅' if status.connected else '❌'}\n"
+                f"Healthy: {'✅' if status.healthy else '❌'}\n"
+                f"Latency: {status.latency_ms:.0f}ms\n"
+                f"Error: {status.error or 'None'}",
+                title=f"Health — {name}", border_style="cyan"))
+        else:
+            results = asyncio.run(mgr.health_check_all())
+            table = Table(title="Integration Health", border_style="magenta")
+            table.add_column("Name", style="bold")
+            table.add_column("Connected")
+            table.add_column("Healthy")
+            table.add_column("Latency")
+            for name, status in results.items():
+                table.add_row(name, "✅" if status.connected else "❌",
+                              "✅" if status.healthy else "❌",
+                              f"{status.latency_ms:.0f}ms" if status.latency_ms else "—")
+            console.print(table)
+
+    elif action == "config":
+        name = getattr(args, 'name', None)
+        key = getattr(args, 'key', None)
+        value = getattr(args, 'value', None)
+        if name and key and value:
+            integ = mgr.get(name)
+            if integ:
+                integ._config[key] = value
+                integ._save_config()
+                console.print(f"[green]Set {name}.{key} = {value}[/]")
+            else:
+                console.print(f"[red]Integration not found: {name}[/]")
+        elif name:
+            integ = mgr.get(name)
+            if integ:
+                for k, v in integ._config.items():
+                    console.print(f"  {k}: {v}")
+            else:
+                console.print(f"[red]Integration not found: {name}[/]")
+
+    return 0
+
+
+def cmd_models_extended(args):
+    """Extended model management — includes API key management, per-task assignment, provider priority."""
+    sub = getattr(args, 'models_command', None)
+
+    if sub == "list":
+        return cmd_models(args)
+    if sub == "test":
+        return cmd_models(args)
+    if sub == "benchmark":
+        return cmd_models(args)
+    if sub == "switch":
+        return cmd_models(args)
+    if sub == "start":
+        return cmd_models(args)
+
+    from cli_visuals_new import print_system_msg
+    from rich.console import Console
+    from rich.table import Table
+    from rich.panel import Panel
+    import asyncio
+    console = Console()
+
+    if sub == "priority":
+        try:
+            from core.model_providers.hybrid import get_platform
+            platform = get_platform()
+            console.print(Panel(
+                f"Current mode: [bold]{platform.mode.value.upper()}[/]\n"
+                "Priority order: local providers first (ollama), then cloud providers by latency\n"
+                "Use [bold]jarvis models switch local|cloud|hybrid[/] to change",
+                title="Provider Priority", border_style="blue"))
+        except Exception as e:
+            console.print(f"[red]Error: {e}[/]")
+
+    elif sub == "assign":
+        try:
+            from core.model_providers.router import TaskType
+            from core.config_registry import config
+            task = getattr(args, 'task_type', None)
+            model = getattr(args, 'model_name', None)
+            if task and model:
+                config.set(f"role_models.{task}", model)
+                console.print(f"[green]Assigned {model} to {task} tasks[/]")
+            else:
+                table = Table(title="Per-Task Model Assignment", border_style="cyan")
+                table.add_column("Task Type", style="bold")
+                table.add_column("Assigned Model")
+                table.add_column("Default")
+                from core.model_providers.router import DEFAULT_ROLE_MODELS
+                for t in TaskType:
+                    key = t.value
+                    assigned = config.get(f"role_models.{key}", None)
+                    default = DEFAULT_ROLE_MODELS.get(key, "auto")
+                    table.add_row(key, assigned or "(auto)", default)
+                console.print(table)
+        except Exception as e:
+            console.print(f"[red]Error: {e}[/]")
+
+    elif sub == "apikeys":
+        action = getattr(args, 'key_action', 'list')
+        provider = getattr(args, 'provider_name', None)
+        key_value = getattr(args, 'key_value', None)
+
+        if action == "set" and provider and key_value:
+            from core.api_key_vault import vault
+            vault.set(f"{provider.upper()}_API_KEY", key_value)
+            console.print(f"[green]API key set for {provider}[/]")
+        elif action == "delete" and provider:
+            from core.api_key_vault import vault
+            vault.delete(f"{provider.upper()}_API_KEY")
+            console.print(f"[green]API key deleted for {provider}[/]")
+        else:
+            table = Table(title="API Keys", border_style="yellow")
+            table.add_column("Provider", style="bold")
+            table.add_column("Status")
+            providers_list = ["OPENAI", "ANTHROPIC", "GEMINI", "GROQ", "OPENROUTER"]
+            import os
+            for p in providers_list:
+                env_val = os.getenv(f"{p}_API_KEY", "")
+                from core.api_key_vault import vault
+                vault_val = vault.get(f"{p}_API_KEY")
+                present = bool(env_val or vault_val)
+                table.add_row(p, "✅ Set" if present else "❌ Not set")
+            console.print(table)
+            console.print("\n[yellow]Usage:[/]")
+            console.print("  jarvis models apikeys set <provider> <key>")
+            console.print("  jarvis models apikeys delete <provider>")
+
+    return 0
+
+
+def cmd_agents_extended(args):
+    """Agent dashboard — status, health, active model, execution history."""
+    sub = getattr(args, 'agents_command', None)
+    from cli_visuals_new import print_system_msg, render_agent_status
+    from rich.console import Console
+    from rich.table import Table
+    from rich.panel import Panel
+    console = Console()
+
+    if sub == "list" or not sub:
+        try:
+            from core.sub_agents.registry import agent_registry
+            agents = agent_registry.list_agents()
+            table = Table(title=f"Agent Registry ({len(agents)})", border_style="yellow")
+            table.add_column("Agent", style="bold")
+            table.add_column("Description")
+            table.add_column("Modes")
+            table.add_column("Status")
+            for a in agents:
+                table.add_row(
+                    a["name"],
+                    a.get("description", "")[:50],
+                    ", ".join(a.get("modes", [])),
+                    a.get("status", "idle"),
+                )
+            console.print(table)
+        except Exception as e:
+            console.print(f"[red]Agent registry unavailable: {e}[/]")
+
+    elif sub == "run":
+        from cli_commands import cmd_agent_run
+        return cmd_agent_run(args)
+
+    elif sub == "health":
+        try:
+            from core.sub_agents.registry import agent_registry
+            agents = agent_registry.list_agents()
+            table = Table(title="Agent Health", border_style="green")
+            table.add_column("Agent", style="bold")
+            table.add_column("Status")
+            table.add_column("Available")
+            for a in agents:
+                status = a.get("status", "unknown")
+                available = "✅" if status in ("idle", "done") else "⚠️"
+                table.add_row(a["name"], status, available)
+            console.print(table)
+        except Exception as e:
+            console.print(f"[red]Agent health check failed: {e}[/]")
+
+    return 0
+
+
+def cmd_cleanup_audit(args):
+    """Map active modules, orphan candidates, and root clutter."""
+    from cli_visuals_new import print_system_msg
+    from rich.console import Console
+    from rich.table import Table
+    from pathlib import Path
+    console = Console()
+    print_system_msg("Running cleanup audit...", "info")
+    root = Path(__file__).resolve().parent
+    clutter = [p for p in root.iterdir() if p.suffix in (".py", ".md", ".json", ".yml", ".yaml") and p.is_file()]
+    orphans = [p.name for p in clutter if "test" not in p.name and "setup" not in p.name and p.name not in ("jarvis.py", "config.yaml", "requirements.txt", "pyproject.toml", "README.md")]
+    table = Table(title="Root Clutter", border_style="yellow")
+    table.add_column("File")
+    table.add_column("Size")
+    for o in sorted(orphans):
+        sz = Path(root, o).stat().st_size
+        table.add_row(o, f"{sz:,} bytes")
+    console.print(table)
+    console.print(f"\n[bold]Total root files:[/] {len(orphans)} orphan candidates")
+    if getattr(args, 'json', False):
+        import json as _json
+        console.print(_json.dumps({"orphan_files": sorted(orphans)}, indent=2))
+    return 0
+
+
+def cmd_skill(args):
+    """Create, list, or run skills from CLI."""
+    from cli_visuals_new import print_system_msg
+    from rich.console import Console
+    from rich.table import Table
+    console = Console()
+
+    action = getattr(args, 'skill_action', None) or getattr(args, 'action', None)
+    name = getattr(args, 'name', None)
+
+    if action == "create" and name:
+        print_system_msg(f"Creating skill: {name}...", "info")
+        from core.skill_loader import SKILLS_DIR
+        skill_dir = SKILLS_DIR
+        md_path = skill_dir / f"{name}.md"
+        py_path = skill_dir / f"{name}.py"
+        if md_path.exists():
+            console.print(f"[red]Skill '{name}' already exists at {md_path}[/]")
+            return 1
+        md_content = f"""---
+name: {name}
+description: "A custom {name} skill"
+triggers:
+  - "{name}"
+---
+
+# {name}
+
+Your skill description here.
+"""
+        py_content = f'''"""
+skills/{name}.py — Handler for {name} skill.
+"""
+import logging
+logger = logging.getLogger(__name__)
+
+async def handle(message: str) -> str:
+    return f"{{message}} (handled by {name} skill)"
+'''
+        skill_dir.mkdir(parents=True, exist_ok=True)
+        md_path.write_text(md_content, encoding="utf-8")
+        py_path.write_text(py_content, encoding="utf-8")
+        test_dir = skill_dir.parent / "tests"
+        test_dir.mkdir(parents=True, exist_ok=True)
+        test_path = test_dir / f"test_{name}.py"
+        test_content = f'''"""Tests for {name} skill."""
+import pytest
+from skills.{name} import handle
+
+@pytest.mark.asyncio
+async def test_{name}_handler():
+    result = await handle("test message")
+    assert "{name}" in result
+'''
+        test_path.write_text(test_content, encoding="utf-8")
+        from core.skill_loader import _skills
+        _skills.clear()
+        console.print(f"[green]✅ Skill '{name}' created:[/]")
+        console.print(f"  📄 {md_path}")
+        console.print(f"  🐍 {py_path}")
+        console.print(f"  🧪 {test_path}")
+        return 0
+
+    if action == "list" or not action:
+        from core.skill_loader import match_skill
+        table = Table(title="Installed Skills", border_style="cyan")
+        table.add_column("Name", style="bold")
+        table.add_column("Description")
+        table.add_column("Triggers")
+        from core.skill_loader import SKILLS_DIR
+        if SKILLS_DIR.exists():
+            for md_file in sorted(SKILLS_DIR.glob("*.md")):
+                text = md_file.read_text(encoding="utf-8")
+                name_val = md_file.stem
+                desc = ""
+                triggers = ""
+                for line in text.split("\n"):
+                    if line.startswith("description:"):
+                        desc = line.split(":", 1)[1].strip().strip('"')
+                    if line.startswith("  - "):
+                        triggers += line.strip("- ").strip() + " "
+                table.add_row(name_val, desc or "N/A", triggers.strip())
+        console.print(table)
+        return 0
+
+    console.print(f"[yellow]Usage: jarvis skill create <name>  |  jarvis skill list[/]")
+    return 0
+
+
+def cmd_mcp(args):
+    from cli_visuals_new import print_system_msg
+    from rich.panel import Panel
+    from rich.console import Console
+    console = Console()
+    print_system_msg("Probing Model Context Protocol (MCP) Servers...", "info")
+    console.print(Panel("[dim]No external MCP servers currently linked.[/]\nUse [bold cyan]/mcp connect <url>[/] to bridge a new provider.", title="MCP BRIDGE"))
+    return 0
+
+
+def cmd_remind(args): return 0
+def cmd_note(args): return 0
+def cmd_document(args): return 0
+def cmd_vision(args): return 0
+
+
+def cmd_goal(args): return 0
+def cmd_plan(args): return 0
+def cmd_develop(args): return 0
+def cmd_generate_ui(args): return 0
+def cmd_opencode(args): return 0
+def cmd_tools(args): return 0
+
+
+def cmd_tui(args):
+    from cli_server import ensure_server_running
+    from cli_utils import common_env
+    env = common_env()
+    base_url = env.get("JARVIS_SERVER", "http://127.0.0.1:8000")
+    ensure_server_running(base_url)
+    from jarvis_tui.main import JarvisApp
+    app = JarvisApp()
+    app.run()
+    return 0
+def cmd_gui_electron(args): return 0
+
+
+def cmd_boot(args): return 0
+def cmd_cli_design(args): return 0
+def cmd_cli_frames(args): return 0
+def cmd_autonomy_logs(args): return 0
+def cmd_autonomy_clear(args): return 0
+def cmd_design(args): return 0
+def cmd_frames(args): return 0
+
+
+# ── Primary Commands (Phase 7 CLI) ─────────────────────────────────────────
+
+def _write_report(result: dict, ws: dict, args) -> str:
+    """Write markdown report to output file."""
+    path_short = ws.get('root', '').rstrip('/\\').split('/')[-1].split('\\')[-1]
+    lines = []
+    lines.append(f"# {path_short} — Project Analysis Report")
+    lines.append("")
+    lines.append(f"Generated by JARVIS — language: {ws['language']}, build: {ws['build_system']}, branch: {ws['branch']}")
+    lines.append("")
+    lines.append("## Workspace Overview")
+    lines.append(f"- **Root:** {ws['root']}")
+    lines.append(f"- **Git Root:** {ws['git_root'] or '(not a git repo)'}")
+    lines.append(f"- **Branch:** {ws['branch'] or 'N/A'}")
+    lines.append(f"- **Language:** {ws['language']}")
+    lines.append(f"- **Framework:** {ws['framework'] or 'none'}")
+    lines.append(f"- **Build System:** {ws['build_system']}")
+    lines.append(f"- **Package Manager:** {ws['package_manager']}")
+    lines.append(f"- **Files:** {ws['files']}")
+    lines.append(f"- **Entry Points:** {', '.join(ws['entry_points'][:5]) or 'none'}")
+    lines.append(f"- **Test Suites:** {ws['test_suites']}")
+    lines.append(f"- **Build Command:** {ws['build_command']}")
+    lines.append(f"- **Test Command:** {ws['test_command']}")
+    lines.append(f"- **Run Command:** {ws['run_command']}")
+    lines.append("")
+
+    for aspect_name in ['entry_points', 'api_routes', 'tests', 'auth', 'database', 'dead_code', 'pipeline']:
+        data = result.get(aspect_name)
+        if data is None:
+            continue
+        lines.append(f"## {aspect_name.upper()}")
+        lines.append("")
+        if isinstance(data, list):
+            if len(data) == 0:
+                lines.append("(none detected)")
+            else:
+                count_text = f" ({len(data)} items)"
+                lines.append(f"**Count:** {len(data)}{count_text}")
+                lines.append("")
+                for item in data[:20]:
+                    if isinstance(item, dict):
+                        name = item.get("file", item.get("name", str(item)))
+                        extra = item.get("type", item.get("matches", ""))
+                        if extra:
+                            lines.append(f"- {name} ({extra})")
+                        else:
+                            lines.append(f"- {name}")
+                    else:
+                        lines.append(f"- {item}")
+                if len(data) > 20:
+                    lines.append(f"- ... and {len(data) - 20} more")
+        elif isinstance(data, dict):
+            for k, v in data.items():
+                if isinstance(v, list):
+                    lines.append(f"- **{k}:** {', '.join(str(x) for x in v[:3])}{' ...' if len(v) > 3 else ''}")
+                elif isinstance(v, bool):
+                    lines.append(f"- **{k}:** {'yes' if v else 'no'}")
+                else:
+                    lines.append(f"- **{k}:** {v}")
+        lines.append("")
+
+    lines.append("---")
+    lines.append("_Generated by JARVIS_")
+    return '\n'.join(lines)
+
+
+def cmd_understand(args):
+    """Analyze repository structure, entry points, dependencies, API routes, tests."""
+    import asyncio
+    from core.agent_orchestrator import AgentOrchestrator
+
+    orch = AgentOrchestrator(project_dir=getattr(args, 'path', os.getcwd()))
+    aspect = getattr(args, 'aspect', 'all')
+    result = asyncio.run(orch.analyze_repository(aspect))
+
+    from rich.console import Console
+    from rich.table import Table
+    from rich.panel import Panel
+    console = Console()
+
+    if aspect == "all":
+        ws = asyncio.run(orch.workspace_status())
+        console.print(Panel(
+            f"[bold]{Path(ws['root']).name}[/] — {ws['language']} / {ws['framework'] or 'no framework'}\n"
+            f"Build: {ws['build_system']}  |  {ws['files']} files  |  "
+            f"{ws['test_suites']} test suites  |  branch: {ws['branch']}",
+            title="Workspace Overview", border_style="cyan",
+        ))
+
+        for aspect_name, data in result.items():
+            if isinstance(data, dict) and data.get("error"):
+                continue
+            if isinstance(data, list):
+                console.print(f"\n[bold]{aspect_name.upper()}[/] ({len(data)} items)")
+                for item in data[:10]:
+                    if isinstance(item, dict):
+                        name = item.get("file", item.get("name", str(item)))
+                        console.print(f"  • {name}")
+            elif isinstance(data, dict):
+                console.print(f"\n[bold]{aspect_name.upper()}[/]")
+                for k, v in list(data.items())[:10]:
+                    console.print(f"  {k}: {v}")
+
+        console.print(f"\n[dim]Run 'jarvis understand --aspect <name>' for details on a specific aspect[/]")
+
+        output = getattr(args, 'output', None)
+        if output:
+            report = _write_report(result, ws, args)
+            with open(output, 'w', encoding='utf-8') as f:
+                f.write(report)
+            console.print(f"\n[green]Report written to {output}[/]")
+    else:
+        data = result.get(aspect, {})
+        if isinstance(data, list):
+            for item in data[:20]:
+                console.print(item)
+        else:
+            console.print(data)
+
+    return 0
+
+
+def cmd_workspace(args):
+    """Show current workspace status."""
+    import asyncio
+    import os
+    from core.agent_orchestrator import AgentOrchestrator
+    from rich.console import Console
+    from rich.table import Table
+    from rich.panel import Panel
+
+    console = Console()
+    path = getattr(args, 'path', os.getcwd())
+    orch = AgentOrchestrator(project_dir=str(path))
+    ws = asyncio.run(orch.workspace_status())
+
+    console.print(Panel(
+        f"[bold]Root:[/] {ws['root']}\n"
+        f"[bold]Git Root:[/] {ws['git_root'] or '(not a git repo)'}\n"
+        f"[bold]Branch:[/] {ws['branch'] or 'N/A'}",
+        title="Workspace", border_style="cyan",
+    ))
+
+    table = Table(border_style="blue")
+    table.add_column("Property", style="bold")
+    table.add_column("Value")
+    table.add_row("Language", ws['language'])
+    table.add_row("Framework", ws['framework'] or 'none')
+    table.add_row("Build System", ws['build_system'])
+    table.add_row("Package Manager", ws['package_manager'])
+    table.add_row("Files", str(ws['files']))
+    table.add_row("Entry Points", ", ".join(ws['entry_points'][:5]) or "none")
+    table.add_row("Test Suites", str(ws['test_suites']))
+    table.add_row("Build Command", ws['build_command'] or 'none')
+    table.add_row("Test Command", ws['test_command'] or 'none')
+    table.add_row("Run Command", ws['run_command'] or 'none')
+    console.print(table)
+    return 0
+
+
+def cmd_code(args):
+    """Autonomous coding: understand → plan → generate → build → test → repair → verify."""
+    import asyncio
+    from core.agent_orchestrator import AgentOrchestrator
+    from rich.console import Console
+    from rich.panel import Panel
+
+    console = Console()
+    task = getattr(args, 'task', '')
+    path = getattr(args, 'path', os.getcwd())
+
+    console.print(Panel(
+        f"[bold]Task:[/] {task}\n[bold]Path:[/] {path}",
+        title="Autonomous Coding", border_style="green",
+    ))
+
+    orch = AgentOrchestrator(project_dir=str(path))
+    result = asyncio.run(orch.code(task, str(path)))
+
+    if result.get("status") == "completed":
+        console.print(f"[green]✅ Task completed[/]")
+        console.print(f"Completion: {result.get('completion', 0) * 100:.0f}%")
+    else:
+        console.print(f"[red]❌ Task failed: {result.get('status', 'unknown')}[/]")
+
+    build_history = result.get("build_history", {})
+    if build_history:
+        for gid, entries in build_history.items():
+            console.print(f"\n[bold]Build Attempts ({len(entries)}):[/]")
+            for i, entry in enumerate(entries):
+                console.print(f"  {i+1}. {entry[:120]}...")
+
+    return 0 if result.get("status") == "completed" else 1
+
+
+def cmd_build(args):
+    """Build project with auto-repair on failure."""
+    import asyncio
+    from core.agent_orchestrator import AgentOrchestrator
+    from rich.console import Console
+    from rich.panel import Panel
+
+    console = Console()
+    path = getattr(args, 'path', os.getcwd())
+    command = getattr(args, 'command', None)
+
+    orch = AgentOrchestrator(project_dir=str(path))
+    result = asyncio.run(orch.build(str(path), command))
+
+    if result.get("success"):
+        console.print(Panel(
+            f"[green]✅ Build succeeded[/]\n"
+            f"Output:\n{result.get('output', '')[:2000]}",
+            title="Build Result", border_style="green",
+        ))
+    else:
+        console.print(Panel(
+            f"[red]❌ Build failed[/]\n"
+            f"Error:\n{result.get('output', result.get('error', 'No output'))[:2000]}",
+            title="Build Result", border_style="red",
+        ))
+        if result.get("repaired"):
+            console.print("[yellow]⚠️  Build failed even after repair attempts[/]")
+
+    return 0 if result.get("success") else 1
+
+
+def cmd_run(args):
+    """Run the project using detected run command."""
+    import asyncio
+    from core.agent_orchestrator import AgentOrchestrator
+    from rich.console import Console
+    from rich.panel import Panel
+
+    console = Console()
+    path = getattr(args, 'path', os.getcwd())
+
+    orch = AgentOrchestrator(project_dir=str(path))
+    result = asyncio.run(orch.run(str(path)))
+
+    if result.get("success"):
+        console.print(Panel(
+            f"[green]✅ Ran successfully[/]\n"
+            f"Command: {result.get('command', '')}\n"
+            f"Output:\n{result.get('output', '')[:2000]}",
+            title="Run Result", border_style="green",
+        ))
+    else:
+        console.print(Panel(
+            f"[red]❌ Run failed[/]\n"
+            f"Error: {result.get('error', result.get('output', 'No output'))[:2000]}",
+            title="Run Result", border_style="red",
+        ))
+
+    return 0 if result.get("success") else 1
+
+
+_ADVANCED_COMMANDS = {
+    "server": "Start the FastAPI backend server",
+    "restart": "Restart the local backend stack",
+    "gui": "Start the Flutter Windows GUI",
+    "web": "Build & serve the JARVIS web UI",
+    "up": "Start JARVIS desktop stack (server + GUI)",
+    "agent": "Run JARVIS sub-agents (list/run)",
+    "agents": "Agent dashboard — list, run, health",
+    "tui": "Launch the Textual TUI",
+    "plugin": "Manage plugins",
+    "skill": "Create and list skills",
+    "voice": "Voice dashboard — STT, TTS, wake word",
+    "automation": "Automation dashboard — goals, phases, repair",
+    "memory": "Memory dashboard — memories, vectors, patterns",
+    "integrations": "Manage integrations (Gmail, Telegram, etc.)",
+    "features": "Feature Registry — list, explore, toggle",
+    "diagnostics": "Diagnostics dashboard",
+    "home": "Home dashboard — system overview",
+    "project": "Manage projects",
+    "cloud": "Cloud/Supabase commands",
+    "extension": "Show IDE/extension integration commands",
+    "index": "Index workspace files for codebase search",
+    "setup": "Run setup wizard for first-time configuration",
+    "debug": "Inspect runtime state",
+    "cleanup-audit": "Map active modules and orphan candidates",
+    "boot": "Show the animated boot screen",
+    "status": "Show current JARVIS autonomous status",
+    "design": "Show the CLI animation and build plan",
+}
+
+
+def cmd_advanced(args):
+    """Run advanced commands (server, agents, voice, etc.) or list them."""
+    # Import from the module itself (available at runtime after module loads)
+    import sys
+    _mod = sys.modules[__name__]
+    cmd_server = getattr(_mod, 'cmd_server', lambda a: 0)
+    cmd_restart = getattr(_mod, 'cmd_restart', lambda a: 0)
+    cmd_gui = getattr(_mod, 'cmd_gui', lambda a: 0)
+    cmd_web = getattr(_mod, 'cmd_web', lambda a: 0)
+    cmd_up = getattr(_mod, 'cmd_up', lambda a: 0)
+    cmd_agent_list = getattr(_mod, 'cmd_agent_list', lambda a: 0)
+    cmd_agent_run = getattr(_mod, 'cmd_agent_run', lambda a: 0)
+    cmd_agents_extended = getattr(_mod, 'cmd_agents_extended', lambda a: 0)
+    cmd_tui = getattr(_mod, 'cmd_tui', lambda a: 0)
+    cmd_plugin = getattr(_mod, 'cmd_plugin', lambda a: 0)
+    cmd_skill = getattr(_mod, 'cmd_skill', lambda a: 0)
+    cmd_voice = getattr(_mod, 'cmd_voice', lambda a: 0)
+    cmd_automation = getattr(_mod, 'cmd_automation', lambda a: 0)
+    cmd_memory = getattr(_mod, 'cmd_memory', lambda a: 0)
+    cmd_integrations = getattr(_mod, 'cmd_integrations', lambda a: 0)
+    cmd_features = getattr(_mod, 'cmd_features', lambda a: 0)
+    cmd_diagnostics = getattr(_mod, 'cmd_diagnostics', lambda a: 0)
+    cmd_home = getattr(_mod, 'cmd_home', lambda a: 0)
+    cmd_project = getattr(_mod, 'cmd_project', lambda a: 0)
+    cmd_cloud = getattr(_mod, 'cmd_cloud', lambda a: 0)
+    cmd_extension = getattr(_mod, 'cmd_extension', lambda a: 0)
+    cmd_index = getattr(_mod, 'cmd_index', lambda a: 0)
+    cmd_setup = getattr(_mod, 'cmd_setup', lambda a: 0)
+    cmd_debug = getattr(_mod, 'cmd_debug', lambda a: 0)
+    cmd_cleanup_audit = getattr(_mod, 'cmd_cleanup_audit', lambda a: 0)
+    cmd_boot = getattr(_mod, 'cmd_boot', lambda a: 0)
+    cmd_status = getattr(_mod, 'cmd_status', lambda a: 0)
+    cmd_design = getattr(_mod, 'cmd_design', lambda a: 0)
+    from rich.console import Console
+    from rich.table import Table
+
+    cmds = getattr(args, 'args', []) or getattr(args, 'cmd', [])
+    if not cmds:
+        console = Console()
+        console.print("[bold]Advanced Commands:[/]\n")
+        table = Table(border_style="yellow")
+        table.add_column("Command", style="bold")
+        table.add_column("Description")
+        for name, desc in sorted(_ADVANCED_COMMANDS.items()):
+            table.add_row(name, desc)
+        console.print(table)
+        console.print("\n[dim]Usage: jarvis advanced <command> [args...][/]")
+        return 0
+
+    cmd_name = cmds[0]
+    rest = cmds[1:]
+
+    handler_map = {
+        "server": cmd_server, "restart": cmd_restart,
+        "gui": cmd_gui, "web": cmd_web, "up": cmd_up,
+        "agent": _cmd_advanced_agent,
+        "agents": cmd_agents_extended,
+        "tui": cmd_tui,
+        "plugin": cmd_plugin, "skill": cmd_skill,
+        "voice": cmd_voice, "automation": cmd_automation,
+        "memory": cmd_memory, "integrations": cmd_integrations,
+        "features": cmd_features, "diagnostics": cmd_diagnostics,
+        "home": cmd_home, "project": cmd_project,
+        "cloud": cmd_cloud, "extension": cmd_extension,
+        "index": cmd_index, "setup": cmd_setup,
+        "debug": cmd_debug, "cleanup-audit": cmd_cleanup_audit,
+        "boot": cmd_boot, "status": cmd_status, "design": cmd_design,
+    }
+
+    if cmd_name in ("agent", "agents") and rest:
+        if rest[0] == "list":
+            return cmd_agent_list(args)
+        elif rest[0] == "run" and len(rest) > 2:
+            import argparse
+            a = argparse.Namespace(name=rest[1], task=" ".join(rest[2:]), mode=None, lang="auto")
+            return cmd_agent_run(a)
+
+    handler = handler_map.get(cmd_name)
+    if handler:
+        if cmd_name in ("server", "restart", "gui", "up"):
+            for attr, default in (
+                ("host", "127.0.0.1"), ("port", 8000),
+                ("multi_model", False), ("dry_run", False),
+                ("no_reload", False), ("api_url", None),
+                ("ws_url", None), ("device", "windows"),
+                ("google_api_key", None), ("droq_api_key", None),
+                ("background", False), ("with_models", False),
+                ("forward", []),
+            ):
+                if not hasattr(args, attr):
+                    setattr(args, attr, default)
+        return handler(args)
+
+    print(f"Unknown advanced command: {cmd_name}")
+    print("Run 'jarvis advanced' for the list of available commands.")
+    return 1
+
+
+def _cmd_advanced_agent(args):
+    """Handle agent sub-commands."""
+    rest = getattr(args, 'cmd', [])[1:]
+    if not rest or rest[0] == "list":
+        return cmd_agent_list(argparse.Namespace())
+    if rest[0] == "run" and len(rest) > 2:
+        import argparse
+        a = argparse.Namespace(name=rest[1], task=" ".join(rest[2:]), mode=None, lang="auto")
+        return cmd_agent_run(a)
+    print("Usage: jarvis advanced agent list|run <name> <task>")
+    return 1

@@ -18,7 +18,15 @@ import logging
 logger = logging.getLogger(__name__)
 
 _AGENT_PREAMBLE = """\
-You are an AI coding assistant. Write fenced code blocks with tool names to call tools."""
+You are an AI coding assistant. Call tools by writing fenced code blocks with the tool name as the language tag. Examples:
+
+browser_navigate: https://github.com
+
+bash: ls -la
+
+web_search: Python asyncio
+
+web_fetch: https://example.com"""
 
 _AGENT_RULES = """\
 ## Core rules
@@ -40,7 +48,36 @@ _CODE_EDITING_GUIDE = """\
 6. UNIFIED DIFF — alternative format starting with `--- a/`.
 7. NEW FILES ≥15 lines → create_document. Small snippets OK in chat."""
 
-_TOOL_SHORTLIST = """\
+def _build_tool_shortlist(tool_names: set = None) -> str:
+    """Build the tool shortlist section dynamically from relevant tools.
+    Falls back to the static _TOOL_SHORTLIST_DEFAULT when no tool_names are given.
+    """
+    if not tool_names:
+        return _TOOL_SHORTLIST_DEFAULT
+
+    lines = ["## Available tools"]
+    # Always include core code tools
+    core = {"bash", "read_file", "write_file", "create_document", "edit_document",
+            "update_document", "build_repomap", "code_graph", "app_api",
+            "build_project", "repair_project", "run_tests", "runtime_validate",
+            "workflow_start", "workflow_resume", "workflow_cancel",
+            "workflow_status", "workflow_list"}
+    shown = set()
+    for name in sorted(tool_names, key=lambda n: (n not in core, n)):
+        if name in shown:
+            continue
+        shown.add(name)
+        if name in _TOOL_SECTIONS:
+            desc = _TOOL_SECTIONS[name]
+            # Extract just the first line description from the section entry
+            first_line = desc.split("\n")[0].strip()
+            lines.append(f"- {first_line}")
+        else:
+            lines.append(f"- `{name}`")
+    return "\n".join(lines)
+
+
+_TOOL_SHORTLIST_DEFAULT = """\
 ## Code tools
 - bash: `#!bg` first line for long-running commands. No TTY.
 - read_file / write_file: For files outside the editor.
@@ -48,7 +85,14 @@ _TOOL_SHORTLIST = """\
 - edit_document: FIND/REPLACE blocks or unified diffs (`--- a/`).
 - build_repomap: Project structure (symbols, imports). Call early.
 - code_graph: Dependency graph between files. Shows what imports what.
-- app_api: Internal API loopback. Use `{"action":"endpoints","filter":"<keyword>"}` to discover."""
+- app_api: Internal API loopback. Use `{"action":"endpoints","filter":"<keyword>"}` to discover.
+
+## Workflow tools
+- workflow_start: Create a durable multi-step workflow (survives crashes).
+- workflow_resume: Resume a crashed/cancelled workflow by ID.
+- workflow_cancel: Cancel a running workflow.
+- workflow_status: Check workflow progress.
+- workflow_list: List workflows with optional status filter."""
 
 _TOOL_SECTIONS = {
     "bash": """\
@@ -98,6 +142,25 @@ Read a file and return its contents.""",
 <file contents>
 ```
 Write content to a file. First line is the path, rest is the content.""",
+
+    "append_file": """\
+```append_file
+<file path>
+<content to append>
+```
+Append content to the end of a file. First line is the path, rest is the content to append. Creates the file if it does not exist.""",
+
+    "delete_file": """\
+```delete_file
+<file path>
+```
+Delete a file from disk. Provide the path; returns an error if the file is not found.""",
+
+    "list_folder": """\
+```list_folder
+<folder path>
+```
+List all entries in a folder. Returns name, kind (file/dir), size in bytes, and modification time for each entry.""",
 
     "create_document": """\
 ```create_document
@@ -210,6 +273,34 @@ If the user asks for a reminder/alarm before the event, pass `reminder_minutes` 
     "ui_control": "- ```ui_control``` — Control the UI: toggle tools on/off, OPEN PANELS, open email reply drafts, switch models, change themes. Commands: `toggle <name> on/off` (names: bash/shell, web/search, research, incognito, document_editor/documents), `open_panel <name>` (panels: documents, gallery, email, sessions, notes, memories/brain, skills, settings, cookbook), `open_email_reply <uid> <folder> <reply|reply-all|ai-reply>` (opens an email compose document, does NOT send), `set_mode agent/chat`, `switch_model <name>`, `set_theme <preset>`, `create_theme <name> <bg> <fg> <panel> <border> <accent>` (optional key=val for advanced colors AND background effects: bgPattern=<none|dots|synapse|rain|constellations|perlin-flow|petals|sparkles|embers>, bgEffectColor=#RRGGBB, bgEffectIntensity=<num>, bgEffectSize=<num>, frosted=true|false). \"open documents\" / \"open library\" / \"show gallery\" / \"open inbox\" / \"open notes\" / \"open cookbook\" all map to `open_panel <name>`. Theme presets: dark, light, midnight, paper, cyberpunk, retrowave, forest, ocean, ume, copper, terminal, organs, lavender, gpt, claude, cute.",
     "list_served_models": "- ```list_served_models``` — Show what the Cookbook (LLM-serving subsystem) is currently running. NO args. Use this for ANY 'what's running' / 'what's serving' / 'show my cookbook' / 'is anything up' query. DO NOT shell out (`ps aux`, `docker ps`, etc.) — this tool is the source of truth. Failed serve tasks include recent logs plus diagnosis/retry suggestions; use those suggestions to call `serve_model` again with an adjusted command when appropriate.",
     "stop_served_model": "- ```stop_served_model``` — Stop a running model server. Args (JSON): {\"session_id\": \"<from list_served_models>\"}. Use for 'kill my cookbook' / 'stop the model' / 'shut down vLLM'.",
+    "vision_browser": "- ```vision_browser``` — Vision-based desktop & browser automation. Takes a screenshot, plans steps via vision LLM, and executes them via keyboard/mouse (pyautogui). Use for multi-step browser tasks: open apps, navigate sites, click/fill forms, search, take screenshots. Example: `vision_browser: open chrome, go to google.com, search for python, take screenshot`. Works fully offline with local Ollama models.",
+    "browser_navigate": "- ```browser_navigate``` — Navigate the browser to a URL using Playwright DOM automation. Safer and faster than vision_browser for standard websites. Example: `browser_navigate: https://github.com` or `browser_navigate: google.com` (auto-prepends https://). Returns page URL and title.",
+    "browser_find": "- ```browser_find``` — Find an element on the page by its visible text. Returns whether it was found and its CSS selector. Use BEFORE browser_click when you don't know the exact selector. Example: `browser_find: Sign In` — finds the Sign In button on the page.",
+    "browser_find_interactive": "- ```browser_find_interactive``` — Find an INTERACTIVE element by text (button, link, input, textarea, select). Uses Playwright role/placeholder/label locators with visibility checking. Falls back to plain text search. Preferred over browser_find when you need to click or fill. Example: `browser_find_interactive: Search` — finds the search input, not a non-editable span with the word 'Search'.",
+    "#hybrid_browser": "When DOM browser actions fail (SelectorNotFound in browser_click/browser_fill, or browser_find can't find text), fall back to the hybrid DOM+Vision strategy: 1) ```browser_screenshot``` to capture the page visually, 2) describe what you see and identify the correct selectors, 3) retry the DOM action. You orchestrate this yourself — the tools won't do it automatically.",
+    "browser_click": "- ```browser_click``` — Click an element by CSS selector. Returns SelectorNotFound error if element doesn't exist. Example: `browser_click: button[type=\"submit\"]` or `browser_click: #login-btn`. If click fails, call browser_snapshot to understand the page structure then retry.",
+    "browser_fill": "- ```browser_fill``` — Fill an input field with text. Example: `browser_fill: input[name=\"q\"], search query here` — fills the search input box. Format: `selector, text to type`.",
+    "browser_press": "- ```browser_press``` — Press a key on a focused element. Common keys: Enter (submit form), Escape (close dialog), Tab (next field), ArrowDown/ArrowUp (dropdown). Example: `browser_press: input[name=\"q\"], Enter` — submits the search form.",
+    "browser_snapshot": "- ```browser_snapshot``` — Take a structured DOM snapshot of the current page. Returns buttons, links, inputs, forms, and headings as structured data. This is the PREFERRED way to understand a page — much faster than screenshots. Use BEFORE browser_screenshot.",
+    "browser_get_url": "- ```browser_get_url``` — Get the current page URL. No arguments. Use after navigation to confirm the browser reached the right page.",
+    "browser_get_title": "- ```browser_get_title``` — Get the current page title. No arguments. Use to confirm the correct page is loaded.",
+    "browser_screenshot": "- ```browser_screenshot``` — Take a PNG screenshot of the current page (base64-encoded). Use as FALLBACK when browser_snapshot doesn't provide enough context — e.g. canvas elements, images, video players, or custom-rendered UIs.",
+    "browser_current_state": "- ```browser_current_state``` — Quick page overview: URL, title, tab count, form count, button count, link count. No arguments. Fast health check.",
+    "browser_evaluate": "- ```browser_evaluate``` — ADMIN ONLY. Execute JavaScript in the page context. Blocked for non-admin users.",
+    "browser_health": "- ```browser_health``` — Check if the Playwright browser is alive. Returns active sessions, tabs, memory. No arguments.",
+    "browser_get_history": "- ```browser_get_history``` — Get the browser navigation and action history. Returns all visited URLs and detailed action log (tool, url, selector, status, timestamp). No arguments. Use to recall what was done in the browser across turns.",
+    "browser_list_tabs": "- ```browser_list_tabs``` — List all open browser tabs. Returns each tab's index, URL, and title. No arguments. Use BEFORE browser_switch_tab.",
+    "browser_switch_tab": "- ```browser_switch_tab``` — Switch to a browser tab by 0-based index. Args: the tab index (integer, e.g. ``0``` or ``2```). Use after browser_list_tabs.",
+    "browser_new_tab": "- ```browser_new_tab``` — Open a new blank browser tab. Optional arg: URL to navigate to. Args: URL string (optional, e.g. ``https://example.com``` or blank for empty tab).",
+    "browser_close_tab": "- ```browser_close_tab``` — Close a browser tab by 0-based index. Args: the tab index (integer, e.g. ``1```). Creates a new blank tab if this was the last one.",
+    "browser_wait_visible": "- ```browser_wait_visible``` — Wait until a CSS selector becomes visible. Args: CSS selector. Use before click/fill on dynamically loaded content (async modals, SPA routes). Set timeout in ms (e.g. ``5000```).",
+    "browser_wait_text": "- ```browser_wait_text``` — Wait until specific text appears on the page. Args: the text to wait for. Use after form submit or AJAX load when you expect page content to update.",
+    "browser_wait_interactive": "- ```browser_wait_interactive``` — Wait until an interactive element (button, link, input) with matching text is visible AND enabled. Args: the text to find. Combines wait + find_interactive. Use before clicking in dynamic UIs.",
+    "browser_shadow_query": "- ```browser_shadow_query``` — Query elements inside shadow DOM roots. Args: CSS selector with `>>>` (e.g. ``uhf-search >>> input```). Returns tag, visibility, text, attributes. Use for modern web apps with web components.",
+    "build_project": "- ```build_project``` — Build a project from source with auto-repair. Args (JSON): {\"task\": \"Build Android app\", \"project_dir\": \"/path/to/project\"}. Creates plan, generates files, runs gates, builds with targeted repair, tests, validates. Streams progress events.",
+    "repair_project": "- ```repair_project``` — Repair build failures using the compiler repair engine + failure memory. Args (JSON): {\"project_dir\": \"/path\", \"build_output\": \"...error log...\"}. Applies targeted fixes from failure memory, falls back to LLM repair.",
+    "run_tests": "- ```run_tests``` — Run the project test suite via the automation pipeline. Args (JSON): {\"project_dir\": \"/path\", \"test_command\": \"pytest\"?}. Returns pass/fail with duration. Use after build to verify correctness.",
+    "runtime_validate": "- ```runtime_validate``` — Validate a built project runs correctly. Args (JSON): {\"project_dir\": \"/path\"}. Checks startup, endpoints, and basic behavior.",
     "download_model": "- ```download_model``` — Download a HuggingFace model. Args (JSON): {\"repo_id\": \"Qwen/Qwen3-8B\", \"host\": \"user@gpu-box\"?, \"include\": \"*Q4_K_M*\"?}.",
     "serve_model": "- ```serve_model``` — Start serving a model with vLLM / SGLang / llama.cpp / Ollama / Diffusers. Args (JSON): {\"repo_id\": \"...\", \"cmd\": \"vllm serve ... --port 8000\" or \"python3 -m sglang.launch_server ... --port 30000\" or \"python3 scripts/diffusion_server.py --model diffusers/stable-diffusion-xl-1.0-inpainting-0.1 --port 8100\", \"host\": \"user@gpu-box\"?}. For image/inpaint/diffusion models, use the `scripts/diffusion_server.py` command exactly. After launch, call `list_served_models`; if it returns a diagnosis with an adjusted command, retry with that command.",
     "list_downloads": "- ```list_downloads``` — Show in-progress HuggingFace model downloads (filters Cookbook tasks/status to downloads only). NO args. Use for 'what's downloading' / 'show my downloads' / 'check download progress'.",
@@ -245,6 +336,97 @@ Body for POST/PUT/PATCH goes in `body` (object). Query params in `query` (object
 **When to prefer named tools over app_api:** if a named wrapper exists (list_email_accounts, list_emails, read_email, manage_calendar, manage_notes, list_served_models, etc.) USE IT — it has nicer output formatting and clearer schema. Reach for `app_api` only when there's no wrapper for what you need.
 
 Blocked paths (refused for safety): /api/auth/, /api/users/, /api/tokens/, /api/admin/, /api/backup/restore, /api/email/accounts.""",
+
+    "build_project": """\
+```build_project
+{"task": "Build Android App", "project_dir": "/path/to/project"}
+```
+Build a project from source using the full automation pipeline. Creates a build plan, generates project files, runs static verification gates, builds with targeted compiler-error repair, runs tests, and validates the runtime. Streams progress events (plan, generate, gates, build, test, validate, done/failed) through the SSE connection — you see real-time output as each phase completes.
+
+Use this when the user says "build this project", "compile my app", "make it build", or "set up and build". For projects that fail to build, it automatically retries with the compiler repair engine and failure memory — no need to call repair_project separately unless you want to analyze specific build errors.""",
+
+    "repair_project": """\
+```repair_project
+{"project_dir": "/path/to/project", "build_output": "<error log>"}
+```
+Repair a project based on build errors. Uses the 3-tier repair system: (1) exact FailureMemory match, (2) pattern FailureMemory match, (3) LLM repair. The `build_output` field is optional — if omitted, the repair engine analyzes the project state directly. Returns whether repair succeeded and what fixes were applied.
+
+Use this when "the build failed with these errors" — provide the error output directly to focus the repair engine. If no errors are provided, the engine scans the project for common issues (missing imports, wrong file names, missing resources).""",
+
+    "run_tests": """\
+```run_tests
+{"project_dir": "/path/to/project", "test_command": "pytest tests/"}
+```
+Run the project's test suite through the automation pipeline. Reports pass/fail per test file with timing. The optional `test_command` overrides the auto-detected test command. Use after `build_project` succeeds to verify correctness, or separately when the user asks "run the tests" / "check if tests pass".
+
+Results include: test count, pass count, fail count, duration, and first-failure details for quick debugging.""",
+
+    "runtime_validate": """\
+```runtime_validate
+{"project_dir": "/path/to/project"}
+```
+Validate a built project at runtime. Checks that the project starts, responds to basic requests (if a server), and shuts down cleanly. Catches runtime errors that compilation alone misses — missing config files, port conflicts, startup crashes.
+
+Use this after build + tests pass to confirm the project actually works. Returns pass/fail with diagnostic details on failure.""",
+
+    "manage_memory": """\
+```manage_memory
+list
+```
+Manage the user's persistent memory system. Actions:
+- `list [category]` — List all memories, optionally filtered by category (fact, event, contact, preference)
+- `add <text>` — Store a new memory with optional category on line 3
+- `edit <memory_id> <new_text>` — Update an existing memory by ID prefix
+- `delete <memory_id>` — Remove a memory by ID prefix
+- `search <query>` — Find memories matching a text query
+
+Use when the user says "remember this", "my name is X", "I live in Y", "what do you know about me", or asks about stored facts. Memories persist across chats and sessions.""",
+
+    "create_session": """\
+```create_session
+{"name": "Research Chat", "model": "qwen2.5:7b"}
+```
+Create a new chat session. The session is created in the hierarchical session system with a unique key. Optional model parameter sets the default model for the session.
+
+Use when the user says "create a new chat", "start a new conversation", or you need to fork off parallel work into a separate session.""",
+
+    "chat_with_model": """\
+```chat_with_model
+{"model": "qwen2.5:7b", "message": "What do you think about this code?"}
+```
+Send a message to a specific AI model and get its response. Line 1 = model name (or 'model@endpoint'), rest = the message to send. Uses the LLM router to dispatch to the requested model.
+
+Use when the user says "ask <model> what they think", "compare answers with <model>", "what does <model> say about X", or wants a second opinion from a different model.""",
+
+    "workflow_start": """\
+```workflow_start
+{"workflow_type": "deploy", "steps": [{"tool_name": "build_project", "input_data": {"task": "Build app"}}, {"tool_name": "run_tests", "input_data": {}}]}
+```
+Start a durable multi-step workflow that survives process crashes. Each step is persisted to SQLite and resumed automatically on restart. Create a workflow with one or more tool steps; returns workflow_id for tracking. Use when the user asks to "run a multi-step process", "deploy", or "pipeline" that should survive a restart.""",
+
+    "workflow_resume": """\
+```workflow_resume
+{"workflow_id": "wf_abc123"}
+```
+Resume a crashed or cancelled workflow by ID. Automatically skips already-completed steps. Use when recovering from a JARVIS restart or when a workflow was interrupted.""",
+
+    "workflow_cancel": """\
+```workflow_cancel
+{"workflow_id": "wf_abc123"}
+```
+Cancel a running workflow. Marks it CANCELLED and aborts the current step. Use when the user says "cancel that workflow", "stop the build", or "never mind".""",
+
+    "workflow_status": """\
+```workflow_status
+{"workflow_id": "wf_abc123"}
+```
+Get current status of a workflow: progress (completed/total steps), status enum, artifacts, timestamps.""",
+
+    "workflow_list": """\
+```workflow_list
+{"status": "RUNNING"}
+```
+List workflows with optional status filter. Returns workflow_id, type, status, step progress, and timestamps. Default limit 50.""",
 }
 
 def _assemble_prompt(tool_names: set = None, disabled_tools: set = None, compact: bool = False) -> str:
@@ -252,7 +434,20 @@ def _assemble_prompt(tool_names: set = None, disabled_tools: set = None, compact
     parts = [_AGENT_PREAMBLE, _CODE_EDITING_GUIDE]
 
     if not compact:
-        parts.append(_TOOL_SHORTLIST)
+        if tool_names:
+            parts.append(_build_tool_shortlist(tool_names))
+        else:
+            parts.append(_TOOL_SHORTLIST_DEFAULT)
+
+    # Include full tool documentation from _TOOL_SECTIONS for relevant tools
+    # Provides detailed usage descriptions with the fenced code block format.
+    if not compact and tool_names:
+        tool_descs = []
+        for name in sorted(tool_names):
+            if name in _TOOL_SECTIONS:
+                tool_descs.append(_TOOL_SECTIONS[name])
+        if tool_descs:
+            parts.append("## Tool documentation\n" + "\n\n".join(tool_descs))
 
     parts.append(_AGENT_RULES)
     return "\n\n".join(parts)
@@ -260,6 +455,7 @@ def _assemble_prompt(tool_names: set = None, disabled_tools: set = None, compact
 # Legacy: full prompt with all tools (fallback when RAG unavailable)
 _cached_base_prompt = None
 _cached_base_prompt_key = None
+_cached_skill_index_block = ""
 
 def _build_system_prompt(
     messages: list[dict],
@@ -281,16 +477,13 @@ def _build_system_prompt(
 
     from core.agent_tools import set_active_document, set_active_model
 
-    global _cached_base_prompt, _cached_base_prompt_key
+    global _cached_base_prompt, _cached_base_prompt_key, _cached_skill_index_block
 
     _rt_key = frozenset(relevant_tools) if relevant_tools else None
     cache_key = (frozenset(disabled_tools or []), bool(mcp_mgr), needs_admin, _rt_key, compact)
     if _cached_base_prompt and _cached_base_prompt_key == cache_key and not active_document:
         agent_prompt = _cached_base_prompt
-        _, _skill_index_block = _build_base_prompt(
-            disabled_tools, mcp_mgr, needs_admin, relevant_tools,
-            mcp_disabled_map=mcp_disabled_map, compact=compact,
-        )
+        _skill_index_block = _cached_skill_index_block
     else:
         agent_prompt, _skill_index_block = _build_base_prompt(
             disabled_tools, mcp_mgr, needs_admin, relevant_tools,
@@ -299,6 +492,7 @@ def _build_system_prompt(
         if not active_document:
             _cached_base_prompt = agent_prompt
             _cached_base_prompt_key = cache_key
+            _cached_skill_index_block = _skill_index_block
 
     mcp_schemas = []
     if mcp_mgr:
@@ -649,7 +843,7 @@ def _build_base_prompt(
     from core.integrations import get_integrations_prompt
 
     agent_prompt = _assemble_prompt(
-        set(), set(disabled_tools or []), compact=compact
+        relevant_tools or set(), set(disabled_tools or []), compact=compact
     )
 
     skill_index_block = ""

@@ -41,15 +41,27 @@ def build_default_graph() -> StateGraph:
     g.add_node("resume", resume_node)
     g.add_node("parallel_sub_agents", parallel_sub_agents_node)
     g.add_node("finish", finish_node)
+    def _route_after_parse(state: AgentState) -> str:
+        """Decide what to do after route_node parses tool blocks from the LLM response."""
+        if state.error:
+            return "finish"
+        if state.phase == AgentPhase.PAUSED:
+            return "__pause__"
+        if state.phase in (AgentPhase.FINISHED, AgentPhase.FORCE_ANSWER):
+            return "finish"
+        if state.round_state and state.round_state.tool_blocks:
+            return "tool_call"
+        return "finish"
+
     g.set_entry_point("setup")
     g.add_edge("setup", "think")
-    g.add_conditional_edges("think", route_decision, {
+    # think → route unconditionally so route_node parses tool blocks before routing
+    g.add_edge("think", "route")
+    # route → decision based on parsed tool blocks
+    g.add_conditional_edges("route", _route_after_parse, {
         "tool_call": "tool_call",
-        "pause": "pause",
-        "parallel_sub_agents": "parallel_sub_agents",
-        "force_answer": "force_answer",
         "finish": "finish",
-        "think": "think",
+        "__pause__": "__pause__",
     })
     g.add_conditional_edges("tool_call", route_decision, {
         "verify": "verify",
@@ -75,6 +87,5 @@ def build_default_graph() -> StateGraph:
         "finish": "finish",
     })
     g.add_edge("force_answer", "finish")
-    g.add_edge("route", "think")
     g.add_edge("finish", "__end__")
     return g

@@ -27,6 +27,7 @@ from core.agent_tools import (
     function_call_to_tool_block,
     parse_tool_blocks,
 )
+from core.tools._constants import ToolBlock
 
 logger = logging.getLogger(__name__)
 
@@ -202,6 +203,22 @@ def _resolve_tool_blocks(round_response: str, native_tool_calls: list, round_num
         tool_blocks = parse_tool_blocks(round_response)
         if tool_blocks:
             logger.info(f"Agent round {round_num}: {len(tool_blocks)} fenced tool block(s) detected")
+        # Detect content-first tool format: ```bash\nbrowser_navigate: URL```
+        # where the content starts with a known tool name instead of the language tag.
+        for i, tb in enumerate(tool_blocks):
+            _content = (tb.content or "").strip()
+            _first_word = _content.split(":")[0].strip().lower() if ":" in _content else ""
+            if _first_word:
+                try:
+                    from core.tools.parsing import _TOOL_NAME_MAP as _TN_MAP
+                    from core.tools._constants import TOOL_TAGS as _TT
+                    _mapped = _TN_MAP.get(_first_word)
+                    if _mapped and _mapped in _TT and _mapped != tb.tool_type:
+                        _rest = _content[len(_first_word) + 1:].strip()
+                        logger.info(f"  -> content-remapped: {tb.tool_type} -> {_mapped} (content: {_rest[:100]})")
+                        tool_blocks[i] = ToolBlock(_mapped, _rest)
+                except Exception as _e:
+                    logger.warning(f"  -> content-remap failed for {_first_word}: {_e}")
 
     resp_preview = round_response[:200].replace('\n', '\\n') if round_response else "(empty)"
     logger.info(f"Agent round {round_num} summary: {len(round_response)} chars, "

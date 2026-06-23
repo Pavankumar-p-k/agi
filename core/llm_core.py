@@ -21,6 +21,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import time
 
 import httpx
 
@@ -68,11 +69,15 @@ async def stream_llm_with_fallback(
     for c in candidates or []:
         if not c or not c[0] or not c[1]:
             continue
-        key = (c[0], c[1])
+        url, model, headers = c[0], c[1], c[2] if len(c) > 2 else {}
+        # Strip provider prefix from model name (e.g. "ollama/llama3.1:8b" -> "llama3.1:8b")
+        if "/" in model and model.split("/", 1)[0].lower() in {"ollama", "openai", "anthropic", "groq", "openrouter", "azure"}:
+            model = model.split("/", 1)[1]
+        key = (url, model)
         if key in seen:
             continue
         seen.add(key)
-        cands.append(c)
+        cands.append((url, model, headers))
 
     if not cands:
         yield "event: error\ndata: No model endpoint configured\n\n"
@@ -113,7 +118,7 @@ async def stream_llm_with_fallback(
                 if tools:
                     payload["tools"] = tools
 
-            async with httpx.AsyncClient(timeout=httpx.Timeout(connect=5.0, read=float(timeout), write=10.0)) as client:
+            async with httpx.AsyncClient(timeout=httpx.Timeout(float(timeout))) as client:
                 async with client.stream("POST", target_url, headers=h, json=payload) as resp:
                     if not resp.is_success:
                         body = await resp.aread()
@@ -123,25 +128,58 @@ async def stream_llm_with_fallback(
                         raise httpx.HTTPStatusError(f"HTTP {resp.status_code}", request=resp.request, response=resp)
 
                     if provider == "ollama":
+                        _p_llm = time.perf_counter()
+                        _llm_first = True
+                        _llm_tok_count = 0
+                        _ollama_tool_calls = None
                         async for line in resp.aiter_lines():
                             line = line.strip()
                             if not line:
                                 continue
                             try:
                                 data = json.loads(line)
+                                msg = data.get("message", {})
+                                if isinstance(msg, dict):
+                                    tcs = msg.get("tool_calls")
+                                    if tcs and not _ollama_tool_calls:
+                                        _normalized = []
+                                        for tc in tcs:
+                                            fn = tc.get("function", {})
+                                            name = fn.get("name", "")
+                                            raw_args = fn.get("arguments", {})
+                                            args_str = json.dumps(raw_args) if not isinstance(raw_args, str) else raw_args
+                                            _normalized.append({"name": name, "arguments": args_str})
+                                        _ollama_tool_calls = _normalized
                                 if data.get("done"):
+                                    _llm_dur = time.perf_counter() - _p_llm
+                                    logger.info("[PROFILE] ollama_stream model=%s total=%.3fs tokens=%d tok/s=%.1f",
+                                        model, _llm_dur, _llm_tok_count, _llm_tok_count / _llm_dur if _llm_dur > 0 else 0)
+                                    if _ollama_tool_calls:
+                                        yield f"data: {json.dumps({'type': 'tool_calls', 'calls': _ollama_tool_calls})}\n\n"
                                     yield "data: [DONE]\n\n"
                                     return
-                                content = data.get("message", {}).get("content", "") or data.get("response", "")
+                                content = msg.get("content", "") if isinstance(msg, dict) else ""
+                                if not content:
+                                    content = data.get("response", "")
                                 if content:
+                                    if _llm_first:
+                                        _llm_first = False
+                                        logger.info("[PROFILE] ollama_ttft model=%s %.3fs", model, time.perf_counter() - _p_llm)
+                                    _llm_tok_count += 1
                                     yield f"data: {json.dumps({'delta': content})}\n\n"
                             except json.JSONDecodeError:
                                 continue
                     else:
+                        _p_llm = time.perf_counter()
+                        _llm_first = True
+                        _llm_tok_count = 0
                         async for line in resp.aiter_lines():
                             if line.startswith("data: "):
                                 chunk = line[6:]
                                 if chunk.strip() == "[DONE]":
+                                    _llm_dur = time.perf_counter() - _p_llm
+                                    logger.info("[PROFILE] llm_stream model=%s total=%.3fs tokens=%d tok/s=%.1f",
+                                        model, _llm_dur, _llm_tok_count, _llm_tok_count / _llm_dur if _llm_dur > 0 else 0)
                                     yield "data: [DONE]\n\n"
                                     return
                                 try:
@@ -151,6 +189,10 @@ async def stream_llm_with_fallback(
                                         delta = choice.get("delta", {})
                                         content = delta.get("content") or ""
                                         if content:
+                                            if _llm_first:
+                                                _llm_first = False
+                                                logger.info("[PROFILE] llm_ttft model=%s %.3fs", model, time.perf_counter() - _p_llm)
+                                            _llm_tok_count += 1
                                             yield f"data: {json.dumps({'delta': content})}\n\n"
                                         tc_delta = delta.get("tool_calls")
                                         if tc_delta:

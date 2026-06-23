@@ -120,12 +120,15 @@ class SkillsManager:
             return True
         return False
 
-    def get_relevant_skills(self, query: str, skills: list[dict], max_items: int = 5) -> list[dict]:
+    def get_relevant_skills(self, query: str, skills: list[dict], max_items: int = 5, min_confidence: float = 0.0) -> list[dict]:
         if not query:
-            return skills[:max_items]
+            filtered = [s for s in skills if s.get("confidence", 0) >= min_confidence]
+            return filtered[:max_items]
         q = query.lower()
         scored = []
         for s in skills:
+            if s.get("confidence", 0) < min_confidence:
+                continue
             score = 0.0
             name = (s.get("name") or "").lower()
             desc = (s.get("description") or "").lower()
@@ -140,3 +143,18 @@ class SkillsManager:
             scored.append((score, s))
         scored.sort(key=lambda x: x[0], reverse=True)
         return [s for _, s in scored[:max_items] if _ > 0.1]
+
+    def index_for(self, owner: str = None) -> dict[str, list[dict]]:
+        skills = self.load(owner=owner)
+        index: dict[str, list[dict]] = {}
+        for s in skills:
+            cat = s.get("category", "general")
+            if cat not in index:
+                index[cat] = []
+            index[cat].append({
+                "name": s["name"],
+                "description": s.get("description", ""),
+                "status": s.get("status", "draft"),
+                "confidence": s.get("confidence", 0.0),
+            })
+        return index

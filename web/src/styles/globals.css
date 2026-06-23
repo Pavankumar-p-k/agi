@@ -9,17 +9,14 @@
 @import './themes/arctic.css';
 @import './themes/ember.css';
 
+.page-content { animation: page-enter 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+/* Base variables — used as fallback when no theme class is set (should not happen) */
 :root {
   --j-sky: #00d2ff;
   --j-sky-rgb: 0,210,255;
-  --j-deep: #1a6fa8;
-  --j-navy: #0a2b45;
-  --j-mid: #0d3a6b;
-  --j-accent: #7ddcff;
-  --j-glow: rgba(0,210,255,0.15);
   --j-gold: #f5c842;
   --j-gold-rgb: 245,200,66;
-  --j-dark: #020406;
   --j-bg: #020406;
   --j-bg-rgb: 2,4,6;
   --j-surface: #0f1e2d;
@@ -36,6 +33,12 @@
   --j-radius-sm: 2px;
   --j-radius-md: 4px;
   --j-radius-lg: 6px;
+}
+
+/* Entrance animation — CSS-driven so content is always visible, even without JS */
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(18px); filter: blur(3px); }
+  to   { opacity: 1; transform: translateY(0);    filter: blur(0px); }
 }
 
 * { box-sizing: border-box; }

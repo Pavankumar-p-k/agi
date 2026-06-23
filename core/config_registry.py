@@ -56,15 +56,15 @@ class ConfigEntry:
 
 _REGISTRY: list[ConfigEntry] = [
     # ── LLM models ────────────────────────────────────────────────────────
-    ConfigEntry("llm.chat_model",        "ollama/llama3.1:8b",            "str",  "models",       "Chat completion model",            ui="model_select", env_var="CHAT_MODEL"),
-    ConfigEntry("llm.code_model",        "ollama/qwen2.5-coder:3b",      "str",  "models",       "Code generation model",            ui="model_select", env_var="CODE_MODEL"),
+    ConfigEntry("llm.chat_model",        "ollama/qwen2.5:7b",      "str",  "models",       "Chat completion model",            ui="model_select", env_var="CHAT_MODEL"),
+    ConfigEntry("llm.code_model",        "ollama/qwen2.5:7b",      "str",  "models",       "Code generation model",            ui="model_select", env_var="CODE_MODEL"),
     ConfigEntry("llm.analysis_model",    "ollama/qwen2.5:7b",            "str",  "models",       "Analysis/reasoning model",         ui="model_select", env_var="ANALYSIS_MODEL"),
     ConfigEntry("llm.reasoning_model",   "ollama/deepseek-r1:1.5b",      "str",  "models",       "Step-by-step reasoning model",     ui="model_select", env_var="REASONING_MODEL"),
     ConfigEntry("llm.vision_model",      "ollama/moondream:latest",      "str",  "models",       "Vision/image model",               ui="model_select", env_var="VISION_MODEL"),
     ConfigEntry("llm.embedding_model",   "ollama/nomic-embed-text:latest", "str", "models",      "Embedding model",                  ui="model_select", env_var="EMBEDDING_MODEL"),
     ConfigEntry("llm.grader_model",      "ollama/phi3:mini",              "str", "models",       "Quality grading model",            ui="model_select", env_var="GRADER_MODEL"),
     ConfigEntry("llm.orchestrator_model","ollama/qwen2.5:7b",            "str",  "models",       "Orchestrator/planner model",       ui="model_select", env_var="ORCHESTRATOR_MODEL"),
-    ConfigEntry("llm.fallback_model",    "ollama/llama3.1:8b",           "str",  "models",       "Fallback when primary fails",      ui="model_select", env_var="FALLBACK_MODEL"),
+    ConfigEntry("llm.fallback_model",    "ollama/qwen2.5:7b",           "str",  "models",       "Fallback when primary fails",      ui="model_select", env_var="FALLBACK_MODEL"),
     ConfigEntry("llm.cloud_model",       "",                              "str",  "models",       "Cloud model override (e.g. claude-sonnet-4-20250514)", ui="model_select"),
     ConfigEntry("llm.ping_model",        "tinyllama",                     "str",  "models",       "Small model for health checks",    ui="hidden"),
 
@@ -73,6 +73,9 @@ _REGISTRY: list[ConfigEntry] = [
 
     # ── Role models ───────────────────────────────────────────────────────
     ConfigEntry("role_models.default",   "ollama/llama3.1:8b",            "str",  "models",       "Default role model",               ui="model_select"),
+
+    # ── Hybrid platform ───────────────────────────────────────────────────
+    ConfigEntry("model.mode",            "local",                         "str",  "models",       "Hybrid model mode: local, cloud, hybrid", ui="select", options=["local","cloud","hybrid"], env_var="MODEL_MODE"),
 
     # ── Ollama ────────────────────────────────────────────────────────────
     ConfigEntry("ollama.base_url",       "http://localhost:11434",        "str",  "ollama",       "Ollama server URL",                env_var="OLLAMA_BASE_URL"),
@@ -86,6 +89,7 @@ _REGISTRY: list[ConfigEntry] = [
     ConfigEntry("server.secret_key",     "",                               "str",  "server",       "Server secret key (set via env)",  env_var="JARVIS_SECRET_KEY", secret=True),
 
     # ── Voice ─────────────────────────────────────────────────────────────
+    ConfigEntry("voice.enabled",         True,                             "bool", "voice",        "Enable voice subsystem",           env_var="VOICE_ENABLED"),
     ConfigEntry("voice.tts_provider",    "edge-tts",                      "str",  "voice",        "TTS provider (edge-tts, pyttsx3)", ui="select", options=["edge-tts", "pyttsx3", "none"], env_var="TTS_PROVIDER"),
     ConfigEntry("voice.tts_voice",       "en-US-ChristopherNeural",       "str",  "voice",        "TTS voice name",                   env_var="TTS_VOICE"),
     ConfigEntry("voice.stt_provider",    "faster-whisper",                "str",  "voice",        "STT provider",                     ui="select", options=["faster-whisper", "whisper", "google", "none"], env_var="STT_PROVIDER"),
@@ -105,6 +109,18 @@ _REGISTRY: list[ConfigEntry] = [
     ConfigEntry("voice.wake_cooldown_trigger",5.0,                          "float","voice",        "Cooldown after wake word trigger (seconds)", min_value=0.0, max_value=30.0),
     ConfigEntry("voice.wake_cooldown_skip",   3.0,                          "float","voice",        "Cooldown after wake word skip (seconds)", min_value=0.0, max_value=30.0),
     ConfigEntry("voice.ring_buffer_seconds",  4.0,                          "float","voice",        "Audio ring buffer length (seconds)", min_value=1.0, max_value=30.0),
+    ConfigEntry("voice.mode",                "push-to-talk",                "str",  "voice",        "Voice mode (push-to-talk, continuous, wake-word)", ui="select", options=["push-to-talk", "continuous", "wake-word"]),
+    ConfigEntry("voice.continuous_timeout",  30.0,                          "float","voice",        "Continuous listening timeout (seconds)", min_value=5.0, max_value=300.0),
+    ConfigEntry("voice.push_to_talk_key",    "",                            "str",  "voice",        "Keyboard key for push-to-talk (empty=disabled)"),
+    ConfigEntry("voice.speaker_device",      "",                            "str",  "voice",        "Speaker device index (empty=default)"),
+    ConfigEntry("voice.auto_recovery",       True,                          "bool", "voice",        "Auto-recover STT/TTS on failure", env_var="VOICE_AUTO_RECOVER"),
+    ConfigEntry("voice.recovery_interval",   5.0,                           "float","voice",        "Seconds between recovery attempts", min_value=1.0, max_value=60.0),
+    ConfigEntry("voice.sensitivity_gain",    1.0,                           "float","voice",        "Wake word input gain multiplier",  min_value=0.1, max_value=10.0),
+    ConfigEntry("voice.adaptive_threshold",  True,                          "bool", "voice",        "Adaptive noise floor for VAD"),
+    ConfigEntry("voice.frame_ms",            30,                            "int",  "voice",        "Audio frame size in ms (10,20,30)", min_value=10, max_value=30),
+    ConfigEntry("voice.wake_min_confidence", 0.6,                           "float","voice",        "Minimum confidence for wake word match", min_value=0.0, max_value=1.0),
+    ConfigEntry("voice.wake_max_retries",    3,                             "int",  "voice",        "Max auto-restart attempts for detector", min_value=0, max_value=10),
+    ConfigEntry("voice.wake_retry_delay",    1.0,                           "float","voice",        "Base delay (s) for restart backoff", min_value=0.5, max_value=30.0),
 
     # ── Failover ──────────────────────────────────────────────────────────
     ConfigEntry("failover.enabled",         False,   "bool", "failover",  "Enable cloud failover providers",  env_var="FAILOVER_ENABLED"),
@@ -116,7 +132,7 @@ _REGISTRY: list[ConfigEntry] = [
     ConfigEntry("failover.max_retries",      3,      "int",  "failover",  "Max retries per provider",         env_var="FAILOVER_MAX_RETRIES", min_value=0, max_value=10),
 
     # ── Brain / Reasoning ─────────────────────────────────────────────────
-    ConfigEntry("brain.reasoning_timeout",      60,   "int",   "reasoning", "Reasoning engine timeout seconds",        env_var="REASONING_TIMEOUT", min_value=5, max_value=300),
+    ConfigEntry("brain.reasoning_timeout",      120,  "int",   "reasoning", "Reasoning engine timeout seconds",        env_var="REASONING_TIMEOUT", min_value=5, max_value=300),
     ConfigEntry("brain.max_reasoning_loops",    3,     "int",   "reasoning", "Max reasoning loops before giving up",   env_var="MAX_REASONING_LOOPS", min_value=1, max_value=20),
     ConfigEntry("brain.enable_critique",        True,  "bool",  "reasoning", "Enable self-critique in reasoning",      env_var="ENABLE_CRITIQUE"),
     ConfigEntry("brain.critique_threshold",     0.7,   "float", "reasoning", "Critique acceptance threshold",          env_var="CRITIQUE_THRESHOLD", min_value=0.0, max_value=1.0),
@@ -139,6 +155,13 @@ _REGISTRY: list[ConfigEntry] = [
     ConfigEntry("logging.level",             "INFO",  "str",   "logging",   "Log level",                         ui="select", options=["DEBUG","INFO","WARNING","ERROR"], env_var="LOG_LEVEL"),
     ConfigEntry("logging.max_bytes",         10485760, "int", "logging",    "Log file max bytes before rotation", env_var="LOG_MAX_BYTES"),
     ConfigEntry("logging.backup_count",      5,        "int", "logging",    "Log file backup count",              env_var="LOG_BACKUP_COUNT"),
+
+    # ── Browser ───────────────────────────────────────────────────────────
+    ConfigEntry("browser.headed",           True,     "bool", "browser",    "Show browser window (false=headless)", env_var="BROWSER_HEADED"),
+    ConfigEntry("browser.timeout",          30000,    "int",  "browser",    "Browser action timeout (ms)",          env_var="BROWSER_TIMEOUT", min_value=1000, max_value=120000),
+    ConfigEntry("browser.viewport_width",   1280,     "int",  "browser",    "Browser viewport width (px)",          env_var="BROWSER_VIEWPORT_WIDTH", min_value=320, max_value=3840),
+    ConfigEntry("browser.viewport_height",  720,      "int",  "browser",    "Browser viewport height (px)",         env_var="BROWSER_VIEWPORT_HEIGHT", min_value=240, max_value=2160),
+    ConfigEntry("browser.session_timeout",  1800,     "int",  "browser",    "Idle session timeout (seconds)",       env_var="BROWSER_SESSION_TIMEOUT", min_value=60, max_value=86400),
 
     # ── Monitoring ─────────────────────────────────────────────────────────
     ConfigEntry("monitor.check_interval",    60,       "int", "monitor",    "Environment monitor check interval (s)", min_value=5, max_value=3600),
@@ -423,3 +446,4 @@ _ON_CHANGE_CALLBACKS: dict[str, list] = {}
 
 # Singleton
 config = Config()
+config.load()

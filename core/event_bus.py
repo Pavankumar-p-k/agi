@@ -15,51 +15,93 @@ import inspect
 import logging
 import threading
 from collections import defaultdict
+from typing import Any, Callable
 
 logger = logging.getLogger(__name__)
 
-_lock = threading.Lock()
-_subscribers: dict[str, list] = defaultdict(list)
 
+class EventBus:
+    """Unified Event Bus supporting sync, async, and streaming subscribers."""
+    def __init__(self):
+        self._subscribers: dict[str, list[Callable]] = defaultdict(list)
+        self._event_queues: list[asyncio.Queue[dict[str, Any]]] = []
+        self._lock = threading.Lock()
 
-def subscribe(event: str, callback) -> None:
-    with _lock:
-        _subscribers[event].append(callback)
+    def subscribe(self, channel: str, callback: Callable) -> None:
+        with self._lock:
+            self._subscribers[channel].append(callback)
 
+    def unsubscribe(self, channel: str, callback: Callable) -> None:
+        with self._lock:
+            try:
+                self._subscribers[channel].remove(callback)
+            except ValueError:
+                pass
 
-def unsubscribe(event: str, callback) -> None:
-    with _lock:
-        try:
-            _subscribers[event].remove(callback)
-        except ValueError:
-            pass
+    def publish(self, channel: str, payload: dict[str, Any]) -> None:
+        """Publish an event to all subscribers."""
+        # Wrap payload with channel info for streaming
+        event = {"channel": channel, **payload}
+        
+        with self._lock:
+            handlers = list(self._subscribers.get(channel, []))
+            wildcard = list(self._subscribers.get("*", []))
+        
+        all_handlers = handlers + wildcard
+        
+        # Notify handlers
+        for handler in all_handlers:
+            try:
+                if inspect.iscoroutinefunction(handler):
+                    try:
+                        loop = asyncio.get_event_loop()
+                        if loop.is_running():
+                            asyncio.ensure_future(handler(channel, payload))
+                        else:
+                            loop.run_until_complete(handler(channel, payload))
+                    except RuntimeError:
+                        asyncio.create_task(handler(channel, payload))
+                else:
+                    handler(channel, payload)
+            except Exception as err:
+                logger.error("EventBus handler error for %s: %s", channel, err)
+        
+        # Publish to all streaming subscribers
+        for queue in self._event_queues:
+            try:
+                queue.put_nowait(event)
+            except asyncio.QueueFull:
+                logger.debug("[EventBus] Dropped event for full stream queue: %s", channel)
 
+    def subscribe_stream(self) -> asyncio.Queue[dict[str, Any]]:
+        """Create a new queue for streaming subscribers."""
+        queue: asyncio.Queue[dict[str, Any]] = asyncio.Queue(maxsize=100)
+        self._event_queues.append(queue)
+        return queue
+
+    def unsubscribe_stream(self, queue: asyncio.Queue[dict[str, Any]]) -> None:
+        """Remove a streaming subscriber."""
+        if queue in self._event_queues:
+            self._event_queues.remove(queue)
+
+    def clear(self) -> None:
+        with self._lock:
+            self._subscribers.clear()
+            self._event_queues.clear()
+
+# Global Singleton
+event_bus = EventBus()
+
+# Compatibility functions (mapping to global instance)
+def subscribe(event: str, callback: Callable) -> None:
+    event_bus.subscribe(event, callback)
+
+def unsubscribe(event: str, callback: Callable) -> None:
+    event_bus.unsubscribe(event, callback)
 
 def fire_event(event: str, data=None) -> None:
-    with _lock:
-        handlers = list(_subscribers.get(event, []))
-        wildcard = list(_subscribers.get("*", []))
-    all_handlers = handlers + wildcard
-    if not all_handlers:
-        logger.debug("Event: %s data=%s (no subscribers)", event, data)
-        return
-    for handler in all_handlers:
-        try:
-            if inspect.iscoroutinefunction(handler):
-                try:
-                    loop = asyncio.get_event_loop()
-                    if loop.is_running():
-                        asyncio.ensure_future(handler(event, data))
-                    else:
-                        loop.run_until_complete(handler(event, data))
-                except RuntimeError:
-                    asyncio.run(handler(event, data))
-            else:
-                handler(event, data)
-        except Exception as _e:
-            logger.debug("event_bus handler failed: %s", _e)
-            logger.exception("Event handler failed for %s", event)
-
+    payload = data if isinstance(data, dict) else {"data": data}
+    event_bus.publish(event, payload)
 
 def get_task_scheduler():
     try:

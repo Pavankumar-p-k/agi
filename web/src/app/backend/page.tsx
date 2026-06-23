@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
+import { api } from '@/lib/api';
 
 interface ServiceStatus {
   name: string;
@@ -32,20 +33,23 @@ function ServiceRow({ s, index }: { s: ServiceStatus; index: number }) {
 export default function BackendPage() {
   const [health, setHealth] = useState<{ status: string; version?: string; uptime?: string } | null>(null);
   const [stats, setStats] = useState<{ cpu: { percent: number }; memory: { percent: number } } | null>(null);
+  const [diagnostics, setDiagnostics] = useState<any>(null);
   const [plugins, setPlugins] = useState<{ plugins: { name: string }[] } | null>(null);
 
   const fetchAll = useCallback(async () => {
     try {
-      const [h, s, p] = await Promise.all([
-        fetch('/api/health').then(r => r.ok ? r.json() : null),
-        fetch('/api/system/stats').then(r => r.ok ? r.json() : null),
-        fetch('/api/plugins').then(r => r.ok ? r.json() : null),
+      const [h, s, p, d] = await Promise.all([
+        api.health().catch(() => null),
+        api.system.stats().catch(() => null),
+        api.plugins.list().catch(() => null),
+        api.diagnostics.all().catch(() => null),
       ]);
       if (h) setHealth(h);
-      if (s) setStats(s);
-      if (p) setPlugins(p);
-    } catch {
-      setHealth(prev => prev);
+      if (s) setStats({ cpu: { percent: s.cpu.percent }, memory: { percent: s.memory.percent } });
+      if (p) setPlugins(p as unknown as { plugins: { name: string }[] });
+      if (d) setDiagnostics(d);
+    } catch (e) {
+      console.warn('[Backend] fetchAll failed', e);
     }
   }, []);
 
@@ -56,12 +60,29 @@ export default function BackendPage() {
   }, [fetchAll]);
 
   const isHealthy = health?.status === 'healthy' || health?.status === 'ok';
+  
   const services: ServiceStatus[] = [
     { name: 'api-server', status: isHealthy ? 'running' : 'error', detail: isHealthy ? `${stats ? stats.cpu.percent.toFixed(1) : '0'}% CPU` : 'offline' },
-    { name: 'ai-worker', status: 'running', detail: 'ready' },
-    { name: 'postgres', status: 'running', detail: 'ready' },
-    { name: 'cache-layer', status: stats && stats.memory.percent > 80 ? 'warn' : 'running', detail: stats ? `${stats.memory.percent.toFixed(0)}% MEM` : 'standby' },
-    { name: 'plugin-host', status: plugins && plugins.plugins.length > 0 ? 'running' : 'warn', detail: `${plugins?.plugins.length ?? 0} plugins` },
+    { 
+      name: 'ollama', 
+      status: diagnostics?.data?.environment?.ollama_available ? 'running' : 'error', 
+      detail: diagnostics?.data?.environment?.ollama_available ? `${diagnostics.data.environment.ollama_latency_ms}ms` : 'offline' 
+    },
+    { 
+      name: 'memory-engine', 
+      status: diagnostics?.data?.environment?.memory_free_mb > 100 ? 'running' : 'warn', 
+      detail: diagnostics?.data?.environment?.memory_free_mb ? `${diagnostics.data.environment.memory_free_mb.toFixed(0)}MB free` : 'ready' 
+    },
+    { 
+      name: 'network', 
+      status: diagnostics?.data?.environment?.network_reachable ? 'running' : 'error', 
+      detail: diagnostics?.data?.environment?.network_reachable ? 'reachable' : 'offline' 
+    },
+    { 
+      name: 'plugin-host', 
+      status: plugins && plugins.plugins.length > 0 ? 'running' : 'warn', 
+      detail: `${plugins?.plugins.length ?? 0} active` 
+    },
   ];
 
   return (

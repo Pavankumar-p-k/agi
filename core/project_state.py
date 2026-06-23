@@ -19,12 +19,29 @@ import logging
 import re
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
+from enum import Enum
 from pathlib import Path
 from typing import Optional
 
 logger = logging.getLogger("project_state")
 
 PROJECTS_DIR = Path.home() / ".jarvis" / "projects"
+
+
+class RequirementStatus(Enum):
+    MET = "met"
+    NOT_MET = "not_met"
+    PARTIAL = "partial"
+    UNKNOWN = "unknown"
+
+
+@dataclass
+class Requirement:
+    id: str
+    description: str
+    category: str = "general"
+    status: RequirementStatus = RequirementStatus.UNKNOWN
+    evidence: str = ""
 
 
 @dataclass
@@ -63,6 +80,9 @@ class ProjectState:
 
     agent_log: list = field(default_factory=list)
     events: list = field(default_factory=list)
+
+    requirements: list = field(default_factory=list)
+    completion_score: float = 0.0
 
     def __post_init__(self):
         if not self.created_at:
@@ -107,6 +127,67 @@ class ProjectState:
         entry = {"timestamp": datetime.now().isoformat(), "event": event, "data": data or {}}
         self.events.append(entry)
         self.save()
+
+    def extract_requirements(self):
+        if not self.interpreted_goal:
+            return
+
+        goal = self.interpreted_goal
+        pages = goal.get("pages", [])
+        tech = goal.get("tech_stack", [])
+        features = goal.get("features", [])
+        brand = goal.get("brand_name", "")
+        business = goal.get("business_type", "")
+        original = goal.get("original_goal", "").lower()
+
+        reqs = []
+        req_id = 0
+        for p in pages:
+            req_id += 1
+            reqs.append(Requirement(id=f"req_{req_id}", description=f"Page: {p}", category="pages"))
+
+        for f in features:
+            req_id += 1
+            reqs.append(Requirement(id=f"req_{req_id}", description=f"Feature: {f}", category="features"))
+
+        for t in tech:
+            req_id += 1
+            reqs.append(Requirement(id=f"req_{req_id}", description=f"Tech stack: {t}", category="tech"))
+
+        if brand:
+            req_id += 1
+            reqs.append(Requirement(id=f"req_{req_id}", description=f"Brand name '{brand}' present", category="branding"))
+
+        if business:
+            req_id += 1
+            reqs.append(Requirement(id=f"req_{req_id}", description=f"Business type: {business}", category="business"))
+
+        for keyword, label in [("dark mode", "Dark Mode"), ("light mode", "Light Mode"),
+                                ("responsive", "Responsive Design"), ("mobile", "Mobile Friendly"),
+                                ("deploy", "Deployment"), ("auth", "Authentication"),
+                                ("login", "Login"), ("contact", "Contact Form"),
+                                ("animation", "Animations"), ("seo", "SEO")]:
+            if keyword in original:
+                req_id += 1
+                reqs.append(Requirement(id=f"req_{req_id}", description=label, category="features"))
+
+        self.requirements = [asdict(r) for r in reqs]
+
+    def compute_completion(self):
+        if not self.requirements:
+            self.completion_score = 0.0
+            return
+
+        reqs = [Requirement(**r) if isinstance(r, dict) else r for r in self.requirements]
+        if not reqs:
+            self.completion_score = 0.0
+            return
+
+        met = sum(1 for r in reqs if r.status == RequirementStatus.MET)
+        partial = sum(1 for r in reqs if r.status == RequirementStatus.PARTIAL)
+        total = len(reqs)
+
+        self.completion_score = (met + partial * 0.5) / total * 100.0 if total else 0.0
 
     def log_agent(self, agent: str, task_id: str, action: str, result: str = ""):
         entry = {

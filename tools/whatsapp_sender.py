@@ -1,17 +1,6 @@
-# Copyright (c) 2024-2026 JARVIS Project
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
 """tools/whatsapp_sender.py
-Meta Cloud API WhatsApp sender — no browser, no Selenium.
+Backward-compatible wrapper around the production WhatsApp provider.
+Delegates to integrations.whatsapp.WhatsAppCloudAPIProvider.
 Used by ProactiveMonitor for alert dispatch and by routers/whatsapp.py for replies.
 """
 from __future__ import annotations
@@ -19,11 +8,20 @@ from __future__ import annotations
 import logging
 import os
 
-import httpx
-
 logger = logging.getLogger(__name__)
 
-META_API_BASE = "https://graph.facebook.com/v18.0"
+_cloud_provider = None
+
+
+async def _get_provider():
+    global _cloud_provider
+    if _cloud_provider is None:
+        from integrations.whatsapp.cloud_api import WhatsAppCloudAPIProvider
+        _cloud_provider = WhatsAppCloudAPIProvider()
+        ok = await _cloud_provider.connect()
+        if not ok:
+            logger.warning("[WHATSAPP] Cloud API provider failed to connect")
+    return _cloud_provider
 
 
 class WhatsAppSender:
@@ -35,31 +33,31 @@ class WhatsAppSender:
     def ready(self) -> bool:
         return bool(self._token and self._phone_id)
 
+    async def health_check(self) -> bool:
+        if not self.ready:
+            return False
+        try:
+            provider = await _get_provider()
+            if provider:
+                return await provider.health_check()
+        except Exception as e:
+            logger.warning("[WHATSAPP] Health check error: %s", e)
+        return False
+
     async def send(self, to: str, message: str) -> bool:
         if not self.ready:
             logger.debug("[WHATSAPP] Not configured — skipping send")
             return False
-        url = f"{META_API_BASE}/{self._phone_id}/messages"
         try:
-            async with httpx.AsyncClient(timeout=15) as client:
-                r = await client.post(
-                    url,
-                    headers={
-                        "Authorization": f"Bearer {self._token}",
-                        "Content-Type": "application/json",
-                    },
-                    json={
-                        "messaging_product": "whatsapp",
-                        "to": to,
-                        "type": "text",
-                        "text": {"body": message[:4096]},
-                    },
-                )
-                if r.status_code == 200:
-                    logger.info("[WHATSAPP] Sent to %s: %.60s", to, message)
-                    return True
-                logger.warning("[WHATSAPP] Send failed: %d %s", r.status_code, r.text[:200])
+            provider = await _get_provider()
+            if not provider:
                 return False
+            result = await provider.send_text(to, message)
+            if result.success:
+                logger.info("[WHATSAPP] Sent to %s: %.60s", to, message)
+                return True
+            logger.warning("[WHATSAPP] Send failed: %s", result.error)
+            return False
         except Exception as e:
             logger.warning("[WHATSAPP] Send error: %s", e)
             return False

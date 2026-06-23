@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 import logging
+import time
 from collections.abc import AsyncGenerator
 
 from core.graph.state import AgentState
@@ -40,8 +41,11 @@ class StateGraph:
         self._entry = name
 
     async def execute(self, state: AgentState) -> AsyncGenerator[str, None]:
+        _start = time.perf_counter()
+        _node_times = {}
         current = self._entry
         while current and current != "__end__":
+            _t0 = time.perf_counter()
             if current == "__pause__":
                 yield 'data: ' + json.dumps({
                     "type": "paused",
@@ -50,12 +54,16 @@ class StateGraph:
                 }) + '\n\n'
                 return
 
+            # Send heartbeat before each node to keep WS alive
+            yield 'data: ' + json.dumps({"type": "phase_change", "phase": current}) + '\n\n'
+
             fn = self.nodes.get(current)
             if not fn:
                 logger.error("Graph missing node: %s", current)
                 break
 
             state = await fn(state)
+            _node_times[current] = time.perf_counter() - _t0
 
             for event in state.events:
                 yield event
@@ -70,6 +78,10 @@ class StateGraph:
                 current = path_map.get(decision, "__end__")
             else:
                 current = "__end__"
+
+        _wall = time.perf_counter() - _start
+        _node_summary = " | ".join(f"{n}:{t:.2f}s" for n, t in sorted(_node_times.items(), key=lambda x: -x[1]))
+        logger.info("[PROFILE] graph.execute total=%.2fs nodes=[%s]", _wall, _node_summary)
 
         if state.error:
             yield f'data: {json.dumps({"type": "error", "error": state.error})}\n\n'

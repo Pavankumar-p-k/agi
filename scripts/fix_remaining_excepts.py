@@ -1,3 +1,4 @@
+import logging
 # Copyright (c) 2024-2026 JARVIS Project
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -10,8 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Fix remaining except:pass blocks missed by initial batch."""
+"""Fix remaining except Exception as e:     logger.warning(f"[SWALLOWED] {e}") blocks missed by initial batch."""
 import re
+logger = logging.getLogger(__name__)
 
 fixes = {
     'tests/unit/test_ssrf_fuzz.py': [(146, 'ssrf_fuzz_cleanup')],

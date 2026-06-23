@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 # Copyright (c) 2024-2026 JARVIS Project
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -10,8 +12,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-from __future__ import annotations
 
 import json
 import os
@@ -57,8 +57,101 @@ class JarvisClient:
                         continue
 
     async def get_status(self) -> dict[str, Any]:
-        """Gets status from /api/system/status."""
-        response = await self.client.get("/api/system/status")
+        """Gets status from /health or /api/system/status."""
+        try:
+            response = await self.client.get("/api/system/status")
+            return response.json()
+        except:
+            response = await self.client.get("/health")
+            return response.json()
+
+    async def get_features(self) -> dict[str, Any]:
+        """Gets features from /api/features."""
+        response = await self.client.get("/api/features")
+        response.raise_for_status()
+        return response.json()
+
+    async def get_feature_report(self) -> dict[str, Any]:
+        """Gets feature report from /api/features/report."""
+        response = await self.client.get("/api/features/report")
+        response.raise_for_status()
+        return response.json()
+
+    async def toggle_feature(self, slug: str, enabled: bool) -> dict[str, Any]:
+        """Toggles a feature."""
+        response = await self.client.post(f"/api/features/{slug}/toggle", json={"enabled": enabled})
+        response.raise_for_status()
+        return response.json()
+
+    async def get_integrations(self) -> dict[str, Any]:
+        """Gets integrations from /api/integrations."""
+        response = await self.client.get("/api/integrations")
+        response.raise_for_status()
+        return response.json()
+
+    async def connect_integration(self, name: str, credentials: dict) -> dict[str, Any]:
+        """Connects an integration."""
+        response = await self.client.post(f"/api/integrations/{name}/connect", json={"credentials": credentials})
+        response.raise_for_status()
+        return response.json()
+
+    async def disconnect_integration(self, name: str) -> dict[str, Any]:
+        """Disconnects an integration."""
+        response = await self.client.post(f"/api/integrations/{name}/disconnect")
+        response.raise_for_status()
+        return response.json()
+
+    async def get_diagnostics(self) -> dict[str, Any]:
+        """Gets diagnostics from /api/diagnostics."""
+        response = await self.client.get("/api/diagnostics")
+        response.raise_for_status()
+        return response.json()
+
+    async def get_models(self) -> dict[str, Any]:
+        """Gets models from /api/models."""
+        response = await self.client.get("/api/models")
+        response.raise_for_status()
+        return response.json()
+
+    async def get_model_groups(self) -> dict[str, Any]:
+        """Gets model groups from /api/models/groups."""
+        response = await self.client.get("/api/models/groups")
+        response.raise_for_status()
+        return response.json()
+
+    async def get_agents(self) -> dict[str, Any]:
+        """Gets agents from /api/v1/agents."""
+        response = await self.client.get("/api/v1/agents")
+        response.raise_for_status()
+        return response.json()
+
+    async def run_agent(self, name: str, task: str, mode: str | None = None) -> dict[str, Any]:
+        """Runs an agent."""
+        data = {"task": task}
+        if mode: data["mode"] = mode
+        response = await self.client.post(f"/api/v1/agents/{name}/run", json=data)
+        response.raise_for_status()
+        return response.json()
+
+    async def get_memory_stats(self) -> dict[str, Any]:
+        """Gets memory stats from /api/memory/stats."""
+        # Some backends use /api/memory/stats, some /api/memory/{user_id}
+        # We'll stick to the common one identified in previous research
+        try:
+            response = await self.client.get("/api/memory/stats")
+            return response.json()
+        except:
+            return {"memories": []}
+
+    async def get_settings(self) -> list[dict]:
+        """Gets all settings."""
+        response = await self.client.get("/api/settings")
+        response.raise_for_status()
+        return response.json()
+
+    async def update_setting(self, key: str, value: Any) -> dict[str, Any]:
+        """Updates a setting."""
+        response = await self.client.put(f"/api/settings/{key}", json={"value": value})
         response.raise_for_status()
         return response.json()
 

@@ -21,7 +21,7 @@ from typing import Any
 
 from pydantic import BaseModel, ValidationError
 
-from ai_os.event_bus import EventBus
+from core.event_bus import EventBus
 from core.settings.schema import JarvisSettings
 
 logger = logging.getLogger("jarvis.settings")
@@ -104,6 +104,9 @@ class SettingsStore:
         self._settings.telegram_bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
         self._settings.pexels_api_key = os.getenv("PEXELS_API_KEY")
         self._settings.nvidia_api_key = os.getenv("NVIDIA_API_KEY")
+        self._settings.discord_bot_token = os.getenv("DISCORD_BOT_TOKEN")
+        self._settings.slack_bot_token = os.getenv("SLACK_BOT_TOKEN")
+        self._settings.slack_app_token = os.getenv("SLACK_APP_TOKEN")
         self._settings.meta_whatsapp_token = os.getenv("META_WHATSAPP_TOKEN")
         self._settings.meta_whatsapp_phone_id = os.getenv("META_WHATSAPP_PHONE_ID")
 
@@ -294,7 +297,7 @@ _store: SettingsStore | None = None
 def get_settings_store() -> SettingsStore:
     global _store
     if _store is None:
-        from ai_os.event_bus import event_bus as global_bus
+        from core.event_bus import event_bus as global_bus
         _store = SettingsStore(event_bus=global_bus)
         _store.load()
     return _store

@@ -1,0 +1,19 @@
+> Task :app:mergeDebugResources FAILED
+[56/78] AndroidResourceLinker: Linking /build/app/intermediates/res/merged/debug/values/values.xml
+AAPT2 error: check logs for details
+  /app/src/main/res/values/colors.xml:3: error: resource color/background_primary is defined but not referenced.
+  /app/src/main/res/values/styles.xml:7: error: resource style/AppTheme is defined but not referenced.
+  /app/src/main/res/drawable/ic_launcher.xml:2: error: failed linking file resources.
+  /app/src/main/res/layout/activity_main.xml:5: AAPT2 error: check logs for details.
+  /app/src/main/res/values/strings.xml:2: error: attribute "name" in <string> tag has invalid value.
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:mergeDebugResources'.
+> AAPT2 link failed. See logs for details.
+
+* Try:
+Run with --stacktrace option to get the stack trace. Run with --info or --debug option to get more log output. Run with --scan to get full insights.
+
+* Get more help at https://help.gradle.org

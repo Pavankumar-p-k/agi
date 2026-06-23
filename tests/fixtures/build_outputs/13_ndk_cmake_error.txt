@@ -1,0 +1,13 @@
+* What went wrong:
+Execution failed for task ':app:configureCMakeDebug[arm64-v8a]'.
+> Build command failed.
+  Error while executing process C:\Users\user\AppData\Local\Android\Sdk\cmake\3.22.1.0\bin\cmake.exe --build ...
+    C/C++: ninja: error: 'libs/openssl/libcrypto.a', needed by 'native-lib', missing and no known rule to make it
+    C/C++: ninja: error: 'libs/openssl/libssl.a', needed by 'native-lib', missing and no known rule to make it
+    C/C++: /src/main/cpp/native-lib.cpp:22:10: fatal error: 'openssl/ssl.h' file not found
+    C/C++: /src/main/cpp/native-lib.cpp:23:10: fatal error: 'openssl/crypto.h' file not found
+
+* Try:
+Run with --stacktrace option to get the stack trace. Run with --info or --debug option to get more log output.
+
+BUILD FAILED in 6s

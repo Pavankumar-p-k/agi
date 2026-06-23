@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+import logging
 # Copyright (c) 2024-2026 JARVIS Project
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,8 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import annotations
-
 from textual import events
 from textual.app import ComposeResult
 from textual.binding import Binding
@@ -20,6 +21,7 @@ from textual.containers import Horizontal
 from textual.reactive import reactive
 from textual.widget import Widget
 from textual.widgets import Input, Label
+logger = logging.getLogger(__name__)
 
 
 class InputBar(Widget):
@@ -53,8 +55,8 @@ class InputBar(Widget):
             else:
                 badge.styles.background = "#3e3e3c"
                 badge.styles.color = "#c2c0b6"
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"[SWALLOWED] {e}")
 
     def watch_is_code(self, is_code: bool) -> None:
         badge = self.query_one("#code-badge", Label)
@@ -104,7 +106,8 @@ class InputBar(Widget):
         try:
             label = self.query_one("#ghost-label", Label)
             label.update(self.ghost_text)
-        except Exception: pass
+        except Exception as e:
+            logger.warning(f"[SWALLOWED] {e}")
 
     def _on_key(self, event: events.Key) -> None:
         """Handle global triggers even when input is focused."""
@@ -123,8 +126,8 @@ class InputBar(Widget):
                 chat = self.screen.query_one("#chat-stream")
                 chat.add_message("YOU", msg, msg_type="user")
                 self.run_worker(self.send_to_backend(msg))
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning(f"[SWALLOWED] {e}")
 
             inp = self.query_one("#chat-input", Input)
             inp.value = ""
@@ -132,13 +135,20 @@ class InputBar(Widget):
 
     async def send_to_backend(self, message: str) -> None:
         try:
-            await self.app.jarvis_client.execute_prompt(message)
+            result = await self.app.jarvis_client.execute_prompt(message)
+            reply = (result.get("result") or {}).get("reply") or ""
+            if reply.strip():
+                try:
+                    chat = self.screen.query_one("#chat-stream")
+                    chat.add_message("JARVIS", reply, msg_type="agent")
+                except Exception as e:
+                    logger.warning(f"[SWALLOWED] {e}")
         except Exception as e:
             try:
                 chat = self.screen.query_one("#chat-stream")
                 chat.add_message("SYSTEM", f"Error: {str(e)}", msg_type="agent")
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning(f"[SWALLOWED] {e}")
 
     def action_accept_ghost(self) -> None:
         if self.ghost_text:

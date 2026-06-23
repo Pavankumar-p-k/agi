@@ -34,29 +34,41 @@ except Exception as e:
 
 
 from ..schemas import ChatRequest
+from memory.memory_facade import memory
 
 if three_pass_handler:
     @router.post("/api/chat")
-    async def chat_route(req: ChatRequest):
+    async def chat_route(
+        req: ChatRequest,
+        db: AsyncSession = Depends(get_db),
+        user: User = Depends(verify_token)
+    ):
         user_id = req.session_id or "default_user"
-        from ..context_builder import build_unified_context
-        combined_context = await build_unified_context(
-            req.message, 
-            session_id=req.session_id, 
-            extra_context=req.context or ""
-        )
-
-        from ..intent_router import extract_intent
-        intent_data = await extract_intent(req.message)
-
         result = await three_pass_handler(req)
-
         response_text = result.get("response", "")
+
+        # Immediate persistence to SQLite
+        from core.database import ChatHistory
+        db.add(ChatHistory(
+            user_id=user.id,
+            role="user",
+            message=req.message,
+            session_id=req.session_id,
+            intent=result.get("intent", {}).get("intent", "chat")
+        ))
+        db.add(ChatHistory(
+            user_id=user.id,
+            role="assistant",
+            message=response_text,
+            session_id=req.session_id,
+            intent=result.get("intent", {}).get("intent", "chat")
+        ))
+        await db.commit()
+
         memory.store(
             [{"role": "user", "content": req.message}, {"role": "assistant", "content": response_text}],
             user_id=user_id,
         )
-
         return result
 
 

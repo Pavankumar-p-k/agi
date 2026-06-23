@@ -90,6 +90,27 @@ class FailureClassifier:
         if not failure_text:
             return FailureCategory.UNKNOWN
 
+        # Check generalized pattern memory first (learned patterns)
+        try:
+            from core.pattern_failure_memory import pattern_memory
+            match = pattern_memory.match(failure_text)
+            if match:
+                strat = match.fix_strategy
+                if strat.startswith("FAILED:"):
+                    pass
+                elif "replan" in strat.lower():
+                    return FailureCategory.LOGIC
+                elif "resource" in strat.lower() or "key" in strat.lower() or "install" in strat.lower():
+                    return FailureCategory.RESOURCE
+                elif "tool" in strat.lower() or "switch" in strat.lower():
+                    return FailureCategory.TOOL
+                elif "retry" in strat.lower() or "timeout" in strat.lower():
+                    return FailureCategory.TRANSIENT
+                elif "fix" in strat.lower() or "validate" in strat.lower():
+                    return FailureCategory.VALIDATION
+        except Exception:
+            pass
+
         for pattern, category in FAILURE_PATTERNS_FLAT:
             if pattern.search(failure_text):
                 logger.debug(f"[CLASSIFIER] {category.value}: {pattern.pattern}")

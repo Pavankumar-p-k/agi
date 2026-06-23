@@ -1,15 +1,7 @@
 'use client';
 
 import { useRef, useEffect, useState } from 'react';
-
-const MODELS = [
-  { id: 'auto', label: 'Auto' },
-  { id: 'qwen3:4b', label: 'Qwen 3 4B' },
-  { id: 'llama3.2:3b', label: 'Llama 3.2 3B' },
-  { id: 'mistral:7b', label: 'Mistral 7B' },
-  { id: 'gpt-4o', label: 'GPT-4o' },
-  { id: 'claude-3.5', label: 'Claude 3.5' },
-];
+import { api, type Model } from '@/lib/api';
 
 interface Props {
   value: string;
@@ -18,7 +10,18 @@ interface Props {
 
 export default function ModelSelector({ value, onChange }: Props) {
   const [open, setOpen] = useState(false);
+  const [models, setModels] = useState<{ id: string; label: string }[]>([]);
   const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    api.models.list().then(r => {
+      const fetched = r.models.map((m: Model) => ({ id: m.id, label: m.name }));
+      setModels([{ id: 'auto', label: 'Auto' }, ...fetched]);
+    }).catch((e) => {
+      console.warn('[ModelSelector] fetch failed', e);
+      setModels([{ id: 'auto', label: 'Auto' }]);
+    });
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -28,7 +31,7 @@ export default function ModelSelector({ value, onChange }: Props) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const current = MODELS.find(m => m.id === value) || MODELS[0];
+  const current = models.find(m => m.id === value) || models[0] || { id: 'auto', label: 'Auto' };
 
   return (
     <div ref={ref} className="relative">
@@ -54,7 +57,7 @@ export default function ModelSelector({ value, onChange }: Props) {
             background: 'var(--j-surface)',
             borderColor: 'var(--j-border)',
           }}>
-          {MODELS.map(m => (
+          {models.map(m => (
             <button
               key={m.id}
               onClick={() => { onChange(m.id); setOpen(false); }}

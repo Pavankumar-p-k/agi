@@ -120,7 +120,7 @@ async def chat_handler(req: ChatRequest, endpoint: str = "/api/chat") -> dict:
     )
 
     task_type = getattr(req, "task_type", None)
-    if len(raw.answer) > 200 or (task_type and task_type in COMPLEX_TASK_TYPES):
+    if len(raw.answer) > 2000 or (task_type and task_type in COMPLEX_TASK_TYPES):
         final = await unified_brain.three_pass(
             req.message,
             {"context": req.context or "", "system_prompt": system_prompt} if req.context
@@ -129,8 +129,35 @@ async def chat_handler(req: ChatRequest, endpoint: str = "/api/chat") -> dict:
     else:
         final = raw.answer
 
-    provenance = raw.provenance or {"source": "inference", "confidence": 0.5, "url": None}
-    tagged = epistemic_tagger.tag_response(final, provenance)
+    # Detect and surface LLM errors instead of silent empty/tagged responses
+    error_source = raw.provenance.get("source") if raw.provenance else None
+    error_msg = raw.provenance.get("error", "") if raw.provenance else ""
+
+    if error_source == "error" or not final or not final.strip():
+        import logging as _logging
+        if not final or not final.strip():
+            _logging.getLogger(__name__).warning(
+                "chat_handler: empty answer from reason() — provenance=%s", raw.provenance
+            )
+        if error_source == "error" and final and final.strip():
+            _logging.getLogger(__name__).warning(
+                "chat_handler: error answer from reason() — %s, provenance=%s",
+                final[:120], raw.provenance
+            )
+        if "connection" in error_msg.lower() or "refused" in error_msg.lower() or "unreachable" in error_msg.lower():
+            final = "LLM is unreachable. Check that Ollama is running (`ollama serve`) or that a cloud API key is configured."
+        elif error_source == "error" and (not final or not final.strip()):
+            final = "The language model returned an error. Check server logs for details."
+        elif error_source == "error":
+            # final already contains the error message from reasoning engine — use as-is
+            pass
+        else:
+            final = "I received an empty response from the language model. The model may still be loading or unavailable."
+        provenance = {"source": "error", "confidence": 0.0, "url": None}
+        tagged = final
+    else:
+        provenance = raw.provenance or {"source": "inference", "confidence": 0.5, "url": None}
+        tagged = epistemic_tagger.tag_response(final, provenance)
 
     mfr = await build_response(tagged, fmt, req.message)
 
@@ -141,6 +168,8 @@ async def chat_handler(req: ChatRequest, endpoint: str = "/api/chat") -> dict:
         tag_label = "VERIFIED"
     elif tag_label == "INFERENCE":
         tag_label = "INFERRED"
+    elif tag_label == "ERROR":
+        tag_label = "ERROR"
     else:
         tag_label = "ASSUMED"
 
@@ -148,7 +177,7 @@ async def chat_handler(req: ChatRequest, endpoint: str = "/api/chat") -> dict:
         "response": tagged,
         "intent": {"intent": "chat"},
         "action": {"executed": True},
-        "model": "reasoning",
+        "model": raw.model_group if raw.model_group else "reasoning",
         "privacy_tier": "LOCAL",
         "epistemic_tags": [tag_label],
         "format_used": fmt,

@@ -35,7 +35,7 @@ class ServerConfig:
     port: int = 8000
     secret_key: str = ""
     dev_mode: bool = True
-    allowed_origins: list[str] = field(default_factory=lambda: ["http://localhost:5173", "http://127.0.0.1:8000"])
+    allowed_origins: list[str] = field(default_factory=lambda: ["http://localhost:3000"])
     firebase_credentials: str = ""
 
 
@@ -102,22 +102,22 @@ class LLMFallback:
 
 @dataclass
 class LLMConfig:
-    chat_model: str = "ollama/llama3.1:8b"
-    code_model: str = "openai/gpt-4o"
-    analysis_model: str = "anthropic/claude-sonnet-4-20250514"
-    reasoning_model: str = "gemini/gemini-2.5-flash"
-    vision_model: str = "openai/gpt-4o"
+    chat_model: str = "ollama/qwen2.5:7b"
+    code_model: str = "ollama/qwen2.5:7b"
+    analysis_model: str = "ollama/qwen2.5:7b"
+    reasoning_model: str = "ollama/deepseek-r1:1.5b"
+    vision_model: str = "ollama/moondream:latest"
 
     default_endpoint_id: str = "ollama"
-    default_model: str = "llama3.1:8b"
+    default_model: str = "qwen2.5:7b"
     default_model_fallbacks: list[LLMFallback] = field(default_factory=list)
 
     utility_endpoint_id: str = "ollama"
     utility_model: str = "llama3"
     utility_model_fallbacks: list[LLMFallback] = field(default_factory=list)
 
-    research_endpoint_id: str = "openai"
-    research_model: str = "gpt-4o"
+    research_endpoint_id: str = "ollama"
+    research_model: str = "llama3.1:8b"
 
     vision_enabled: bool = True
     vision_model_fallbacks: list[str] = field(default_factory=list)
@@ -174,10 +174,19 @@ class VoiceConfig:
     stt_language: str = "en"
 
     tts_enabled: bool = True
-    tts_provider: str = "disabled"
+    tts_provider: str = "edge-tts"
     tts_model: str = "tts-1"
     tts_voice: str = "alloy"
     tts_speed: float = 1.0
+
+
+@dataclass
+class BrowserConfig:
+    headed: bool = True
+    timeout: int = 30000
+    viewport_width: int = 1280
+    viewport_height: int = 720
+    session_timeout: int = 1800
 
 
 @dataclass
@@ -213,7 +222,7 @@ class AuthProfile:
 
 @dataclass
 class FailoverConfig:
-    enabled: bool = False
+    enabled: bool = True
     profiles: list[AuthProfile] = field(default_factory=list)
     max_retries_per_profile: int = 2
     retry_delay_seconds: float = 1.0
@@ -235,6 +244,7 @@ _SUB_CONFIGS = {
     "voice": VoiceConfig,
     "sandbox": SandboxConfig,
     "failover": FailoverConfig,
+    "browser": BrowserConfig,
 }
 
 

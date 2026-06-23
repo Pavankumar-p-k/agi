@@ -2,11 +2,21 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
+import { api } from '@/lib/api';
+
+type HealthDot = 'green' | 'red' | 'yellow';
 
 export default function StatusBar() {
   const [time, setTime] = useState('');
   const [status, setStatus] = useState<'online' | 'offline'>('offline');
   const [stats, setStats] = useState<{ cpu?: number; mem?: number }>({});
+  const [diagnostics, setDiagnostics] = useState<{
+    ollama?: boolean;
+    db?: boolean;
+    integrations?: boolean;
+    openai?: boolean;
+    gemini?: boolean;
+  }>({});
 
   useEffect(() => {
     const t = setInterval(() => {
@@ -15,26 +25,64 @@ export default function StatusBar() {
     return () => clearInterval(t);
   }, []);
 
-  const fetchStatus = useCallback(async () => {
+  const fetchAll = useCallback(async () => {
     try {
-      const r = await fetch('/api/system/stats');
-      if (r.ok) {
-        const d = await r.json();
-        setStats({ cpu: d.cpu.percent, mem: d.memory.percent });
+      const ac = new AbortController();
+      const timer = setTimeout(() => ac.abort(), 4000);
+      try {
+        const s = await api.system.stats(ac.signal);
+        setStats({ cpu: s.cpu.percent, mem: s.memory.percent });
         setStatus('online');
-      } else {
-        setStatus('offline');
+      } finally {
+        clearTimeout(timer);
       }
-    } catch {
+    } catch (e) {
+      console.warn('[StatusBar] stats fetch failed', e);
       setStatus('offline');
+    }
+    try {
+      const d = await api.diagnostics.environment();
+      setDiagnostics(prev => ({ ...prev, ollama: d.ollama_available }));
+    } catch (e) {
+      console.warn('[StatusBar] diagnostics failed', e);
+    }
+    try {
+      const h = await api.health();
+      setDiagnostics(prev => ({ ...prev, db: h.status === 'healthy' }));
+    } catch (e) {
+      console.warn('[StatusBar] health check failed', e);
+    }
+    try {
+      const m = await api.diagnostics.models();
+      const openai = m.providers.find(p => p.name === 'openai')?.available;
+      const gemini = m.providers.find(p => p.name === 'gemini')?.available;
+      setDiagnostics(prev => ({ ...prev, openai, gemini }));
+    } catch (e) {
+      console.warn('[StatusBar] model diagnostics failed', e);
+    }
+    try {
+      const i = await api.diagnostics.integrations();
+      const someConnected = i.integrations.some(ix => ix.connected);
+      setDiagnostics(prev => ({ ...prev, integrations: someConnected }));
+    } catch (e) {
+      console.warn('[StatusBar] integration diagnostics failed', e);
     }
   }, []);
 
   useEffect(() => {
-    fetchStatus();
-    const t = setInterval(fetchStatus, 5000);
+    fetchAll();
+    const t = setInterval(fetchAll, 15000);
     return () => clearInterval(t);
-  }, [fetchStatus]);
+  }, [fetchAll]);
+
+  const dots: { label: string; color: HealthDot }[] = [
+    { label: 'BE', color: status === 'online' ? 'green' : 'red' },
+    { label: 'DB', color: diagnostics.db ? 'green' : 'red' },
+    { label: 'OL', color: diagnostics.ollama ? 'green' : 'red' },
+    { label: 'GPT', color: diagnostics.openai ? 'green' : 'red' },
+    { label: 'GEM', color: diagnostics.gemini ? 'green' : 'red' },
+    { label: 'INT', color: diagnostics.integrations ? 'green' : 'red' },
+  ];
 
   return (
     <motion.div
@@ -50,21 +98,21 @@ export default function StatusBar() {
       }}
     >
       <div className="flex items-center gap-3">
-        <motion.span
-          animate={{ scale: status === 'online' ? [1, 1.2, 1] : 1 }}
-          transition={{ repeat: Infinity, duration: 2 }}
-          className={`inline-block w-1.5 h-1.5 rounded-full ${status === 'online' ? 'bg-green-400' : 'bg-red-400'}`}
-        />
-        <span>{status === 'online' ? 'Connected' : 'Offline'}</span>
+        {dots.map(d => (
+          <span key={d.label} className="flex items-center gap-1">
+            <span className={`inline-block w-1.5 h-1.5 rounded-full bg-${d.color === 'green' ? 'green' : d.color === 'red' ? 'red' : 'yellow'}-400`} />
+            {d.label}
+          </span>
+        ))}
         {stats.cpu !== undefined && (
           <>
+            <span className="text-[var(--j-text-muted)]">|</span>
             <span>CPU {stats.cpu.toFixed(0)}%</span>
             <span>MEM {stats.mem?.toFixed(0)}%</span>
           </>
         )}
       </div>
       <div className="flex items-center gap-3">
-        <span>JARVIS v1.0</span>
         <span>{time}</span>
       </div>
     </motion.div>

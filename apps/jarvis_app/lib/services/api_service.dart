@@ -466,4 +466,103 @@ class ApiService {
       return List<String>.from((r.data as Map)['checkpoints'] ?? []);
     } catch (_) { return []; }
   }
+
+  // —— Features ——————————————————————————————————
+  Future<List<Feature>> getFeatures() async {
+    if (!await isOnline()) return [];
+    try {
+      final r = await _dio.get(ApiConfig.features);
+      final list = (r.data as Map)['features'] as List? ?? [];
+      return list.map((j) => Feature.fromJson(j as Map<String, dynamic>)).toList();
+    } catch (_) { return []; }
+  }
+
+  Future<bool> toggleFeature(String slug, bool enabled) async {
+    if (!await isOnline()) return false;
+    try {
+      final r = await _dio.post('${ApiConfig.features}/$slug/toggle', data: {'enabled': enabled});
+      return r.statusCode == 200;
+    } catch (_) { return false; }
+  }
+
+  // —— Integrations ——————————————————————————————
+  Future<List<Integration>> getIntegrations() async {
+    if (!await isOnline()) return [];
+    try {
+      final r = await _dio.get(ApiConfig.integrations);
+      final list = (r.data as Map)['integrations'] as List? ?? [];
+      return list.map((j) => Integration.fromJson(j as Map<String, dynamic>)).toList();
+    } catch (_) { return []; }
+  }
+
+  Future<bool> connectIntegration(String name, Map<String, dynamic> creds) async {
+    if (!await isOnline()) return false;
+    try {
+      final r = await _dio.post('${ApiConfig.integrations}/$name/connect', data: {'credentials': creds});
+      return r.statusCode == 200;
+    } catch (_) { return false; }
+  }
+
+  Future<bool> disconnectIntegration(String name) async {
+    if (!await isOnline()) return false;
+    try {
+      final r = await _dio.post('${ApiConfig.integrations}/$name/disconnect');
+      return r.statusCode == 200;
+    } catch (_) { return false; }
+  }
+
+  // —— Diagnostics ———————————————————————————————
+  Future<Map<String, dynamic>> getDiagnostics() async {
+    if (!await isOnline()) return {};
+    try {
+      final r = await _dio.get(ApiConfig.diagnostics);
+      return r.data as Map<String, dynamic>;
+    } catch (_) { return {}; }
+  }
+
+  // —— Models ————————————————————————————————————
+  Future<Map<String, dynamic>> getModelInfo() async {
+    if (!await isOnline()) return {};
+    try {
+      final r = await _dio.get(ApiConfig.models);
+      return r.data as Map<String, dynamic>;
+    } catch (_) { return {}; }
+  }
+
+  Future<Map<String, dynamic>> getModelGroups() async {
+    if (!await isOnline()) return {};
+    try {
+      final r = await _dio.get(ApiConfig.modelGroups);
+      return r.data as Map<String, dynamic>;
+    } catch (_) { return {}; }
+  }
+
+  Future<bool> updateSetting(String key, dynamic value) async {
+    if (!await isOnline()) return false;
+    try {
+      final r = await _dio.put('${ApiConfig.settings}/$key', data: {'value': value});
+      return r.statusCode == 200;
+    } catch (_) { return false; }
+  }
+
+  // —— Agents ————————————————————————————————————
+  Future<List<Agent>> getAgents() async {
+    if (!await isOnline()) return [];
+    try {
+      final r = await _dio.get(ApiConfig.agents);
+      final list = (r.data as Map)['agents'] as List? ?? [];
+      return list.map((j) => Agent.fromJson(j as Map<String, dynamic>)).toList();
+    } catch (_) { return []; }
+  }
+
+  Future<Map<String, dynamic>> runAgent(String name, String task, {String? mode}) async {
+    if (!await isOnline()) return {'error': 'Offline'};
+    try {
+      final r = await _dio.post('${ApiConfig.agents}/$name/run', data: {
+        'task': task,
+        if (mode != null) 'mode': mode,
+      });
+      return r.data as Map<String, dynamic>;
+    } catch (e) { return {'error': e.toString()}; }
+  }
 }

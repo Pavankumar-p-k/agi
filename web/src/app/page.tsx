@@ -6,13 +6,7 @@ import Card from '@/components/ui/Card';
 import Pill from '@/components/ui/Pill';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
-import { DashboardSkeleton } from '@/components/ui/Skeleton';
-
-interface SystemStats {
-  cpu: { percent: number; count: number };
-  memory: { total: number; available: number; percent: number };
-  disk: { total: number; free: number; percent: number };
-}
+import { api, type SystemStats, type HealthStatus } from '@/lib/api';
 
 function fmtBytes(v: number): string {
   const units = ['B', 'KB', 'MB', 'GB', 'TB'];
@@ -22,7 +16,7 @@ function fmtBytes(v: number): string {
 }
 
 const containerVariants: Variants = {
-  hidden: { opacity: 0 },
+  hidden: { opacity: 1 },
   visible: {
     opacity: 1,
     transition: { staggerChildren: 0.08, delayChildren: 0.08 },
@@ -30,42 +24,42 @@ const containerVariants: Variants = {
 };
 
 const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 28 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.62, ease: [0.16, 1, 0.3, 1] } },
+  hidden: { opacity: 1, y: 0 },
+  visible: { opacity: 1, y: 0 },
 };
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<SystemStats | null>(null);
-  const [health, setHealth] = useState<{ status: string; version?: string; uptime?: string } | null>(null);
+  const [health, setHealth] = useState<HealthStatus | null>(null);
   const [plugins, setPlugins] = useState<{ plugins: { name: string }[] } | null>(null);
-  const [loading, setLoading] = useState(true);
-
   const fetchAll = useCallback(async () => {
+    const ac = new AbortController();
+    const timer = setTimeout(() => ac.abort(), 5000);
     try {
       const [s, h, p] = await Promise.all([
-        fetch('/api/system/stats').then(r => r.ok ? r.json() : null),
-        fetch('/api/health').then(r => r.ok ? r.json() : null),
-        fetch('/api/plugins').then(r => r.ok ? r.json() : null),
+        api.system.stats(ac.signal).catch(() => null),
+        api.health(ac.signal).catch(() => null),
+        api.plugins.list(ac.signal).catch(() => null),
       ]);
       if (s) setStats(s);
       if (h) setHealth(h);
       if (p) setPlugins(p);
+    } catch (e) {
+      console.warn('[Dashboard] fetchAll failed', e);
     } finally {
-      setLoading(false);
+      clearTimeout(timer);
     }
   }, []);
 
   useEffect(() => {
     fetchAll();
-    const t = setInterval(fetchAll, 10000);
-    return () => clearInterval(t);
+    const interval = setInterval(fetchAll, 10000);
+    return () => clearInterval(interval);
   }, [fetchAll]);
 
   const isHealthy = health?.status === 'healthy' || health?.status === 'ok';
   const memUsed = stats ? stats.memory.total - stats.memory.available : 0;
   const pluginCount = plugins?.plugins.length ?? 0;
-
-  if (loading) return <DashboardSkeleton />;
 
   return (
     <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-8 pb-8">
@@ -155,11 +149,15 @@ export default function DashboardPage() {
           <SectionTitle label="Operations" title="Backend Control" compact />
           <div className="mt-8 grid grid-cols-1 gap-px bg-[var(--j-border)] sm:grid-cols-2">
             {BACKEND.map(item => (
-              <div key={item.title} className="bg-[var(--j-surface-hover)] p-5 transition-colors hover:bg-[rgba(var(--j-sky-rgb),0.08)]">
-                <div className="hud-label mb-3">{item.kicker}</div>
+              <button
+                key={item.title}
+                onClick={() => window.location.href = item.href}
+                className="bg-[var(--j-surface-hover)] p-5 text-left transition-colors hover:bg-[rgba(var(--j-sky-rgb),0.08)] group"
+              >
+                <div className="hud-label mb-3 group-hover:text-[var(--j-sky)]">{item.kicker}</div>
                 <div className="font-display text-2xl tracking-[0.08em]">{item.title}</div>
                 <p className="mt-2 text-xs leading-6 text-[var(--j-text-dim)]">{item.desc}</p>
-              </div>
+              </button>
             ))}
           </div>
         </div>
@@ -201,7 +199,7 @@ function MetricCard({ label, value, detail, gold = false }: { label: string; val
       </div>
       <div className="mt-5 h-1.5 bg-[rgba(var(--j-sky-rgb),0.08)]">
         <motion.div
-          initial={{ width: 0 }}
+          initial={false}
           animate={{ width: `${Math.min(value, 100)}%` }}
           transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
           className="h-full shadow-[0_0_14px_currentColor]"
@@ -213,7 +211,16 @@ function MetricCard({ label, value, detail, gold = false }: { label: string; val
   );
 }
 
-function TerminalPanel({ health, stats }: { health: { status: string; version?: string; uptime?: string } | null; stats: SystemStats | null }) {
+function TerminalPanel({ health, stats }: { health: HealthStatus | null; stats: SystemStats | null }) {
+  const [diagnostics, setDiagnostics] = useState<any>(null);
+  useEffect(() => {
+    api.diagnostics.all().then(setDiagnostics).catch(() => null);
+  }, []);
+
+  const isHealthy = health?.status === 'healthy' || health?.status === 'ok';
+  const ollamaOk = diagnostics?.data?.environment?.ollama_available;
+  const modelsOk = diagnostics?.data?.models && Object.keys(diagnostics.data.models).length > 0;
+
   return (
     <div className="bg-[#020a0f] p-6 font-mono text-xs leading-7 text-[var(--j-text-dim)] md:p-8">
       <div className="mb-5 flex items-center gap-2 border-b border-[var(--j-border)] pb-4">
@@ -224,10 +231,9 @@ function TerminalPanel({ health, stats }: { health: { status: string; version?: 
       </div>
       <TermLine prompt cmd="status --all" />
       <div className="mt-3">
-        <StatusLine ok label="api-server" value={health?.status || 'unknown'} />
-        <StatusLine ok label="ai-worker" value="ready" />
-        <StatusLine warn label="memory" value={stats ? `${stats.memory.percent.toFixed(0)}% used` : 'standby'} />
-        <StatusLine ok label="plugins" value="indexed" />
+        <StatusLine ok={isHealthy} label="api-server" value={health?.status || 'connecting...'} />
+        <StatusLine ok={ollamaOk} label="ollama-host" value={ollamaOk ? 'active' : 'offline'} />
+        <StatusLine ok={modelsOk} label="model-router" value={modelsOk ? 'ready' : 'no models'} />
         <StatusLine ok label="web-ui" value="hud active" />
       </div>
       <div className="mt-5">
@@ -235,7 +241,7 @@ function TerminalPanel({ health, stats }: { health: { status: string; version?: 
         <div className="mt-2 grid grid-cols-2 gap-x-5">
           <span>CPU</span><span className="text-[var(--j-sky)]">{stats ? `${stats.cpu.percent.toFixed(1)}%` : '--'}</span>
           <span>DISK</span><span className="text-[var(--j-sky)]">{stats ? `${stats.disk.percent.toFixed(1)}%` : '--'}</span>
-          <span>UPTIME</span><span className="text-[var(--j-gold)]">{health?.uptime || 'local'}</span>
+          <span>UPTIME</span><span className="text-[var(--j-gold)]">{health?.version || 'v1.0'}</span>
         </div>
       </div>
       <div className="mt-5 flex items-center gap-2">
@@ -317,11 +323,19 @@ const MODULES = [
     href: '/auth/login',
     gold: true,
   },
+  {
+    tag: 'Module 08',
+    title: 'Autonomous Build',
+    desc: 'Deploy JARVIS to autonomously build, test, and repair software with real-time progress tracking.',
+    tags: ['Loops', 'Repair', 'Build'],
+    href: '/build',
+    gold: true,
+  },
 ];
 
 const BACKEND = [
-  { kicker: 'Services', title: 'Process Manager', desc: 'Start, stop, restart, and inspect JARVIS services from the browser.' },
-  { kicker: 'Config', title: 'Env Control', desc: 'Review runtime settings and prepare safe configuration changes.' },
-  { kicker: 'Security', title: 'Key Vault', desc: 'Keep API key operations visible without exposing raw secrets.' },
-  { kicker: 'Scheduler', title: 'Cron Jobs', desc: 'Track recurring jobs, automation hooks, and background tasks.' },
+  { kicker: 'Services', title: 'Process Manager', desc: 'Start, stop, restart, and inspect JARVIS services from the browser.', href: '/backend' },
+  { kicker: 'Config', title: 'Env Control', desc: 'Review runtime settings and prepare safe configuration changes.', href: '/settings' },
+  { kicker: 'Security', title: 'Key Vault', desc: 'Keep API key operations visible without exposing raw secrets.', href: '/settings/keys' },
+  { kicker: 'Scheduler', title: 'Cron Jobs', desc: 'Track recurring jobs, automation hooks, and background tasks.', href: '/automation' },
 ];

@@ -61,6 +61,7 @@ def inc_tool_calls_total(tool_name: str) -> None:
 
 
 def observe_llm_latency(seconds: float) -> None:
+    global _metric_llm_latency
     if not _metrics_enabled:
         return
     _metric_llm_latency.append(seconds)

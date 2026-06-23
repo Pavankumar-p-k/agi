@@ -300,12 +300,14 @@ class WorkQueue:
 
     async def _run_tool(self, tool_name: str, task: str, context: dict) -> dict:
         try:
-            from ai_os.tool_registry import get_default_tool_registry  # type: ignore
-            reg    = get_default_tool_registry()
-            result = reg.execute({"tool": tool_name, "args": {"task": task, **context}})
+            from core.tools.parsing import ToolBlock
+            from core.tools.execution import execute_tool_block
+            import json
+            block = ToolBlock(tool_type=tool_name, content=json.dumps({"task": task, **context}))
+            _, result = await execute_tool_block(block)
             return result
         except Exception as exc:
-            logger.debug("[WorkQueue] tool '%s' error: %s", tool_name, exc)
+            logger.warning(f"[SWALLOWED] error in core/governance/work_queue.py: {exc}")
             return {"status": "error", "tool": tool_name, "error": str(exc)}
 
     # ── persistence ───────────────────────────────────────────────────────────

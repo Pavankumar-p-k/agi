@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+import logging
 # Copyright (c) 2024-2026 JARVIS Project
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,8 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import annotations
-
 from datetime import datetime
 
 from textual.app import ComposeResult
@@ -20,6 +21,7 @@ from textual.containers import Horizontal
 from textual.reactive import reactive
 from textual.widget import Widget
 from textual.widgets import Label
+logger = logging.getLogger(__name__)
 
 
 class StatusBar(Widget):
@@ -48,19 +50,23 @@ class StatusBar(Widget):
 
     def watch_session_id(self, val: str) -> None:
         try: self.query_one("#status-session", Label).update(f" session:{val} ")
-        except Exception: pass
+        except Exception as e:
+            logger.warning(f"[SWALLOWED] {e}")
 
     def watch_tokens(self, val: str) -> None:
         try: self.query_one("#status-tokens", Label).update(f" tokens:{val} ")
-        except Exception: pass
+        except Exception as e:
+            logger.warning(f"[SWALLOWED] {e}")
 
     def watch_agents_count(self, val: int) -> None:
         try: self.query_one("#status-agents", Label).update(f" agents:{val} ")
-        except Exception: pass
+        except Exception as e:
+            logger.warning(f"[SWALLOWED] {e}")
 
     def watch_git_branch(self, val: str) -> None:
         try: self.query_one("#status-git", Label).update(f" git:{val}✓ ")
-        except Exception: pass
+        except Exception as e:
+            logger.warning(f"[SWALLOWED] {e}")
 
     def on_mount(self) -> None:
         self.set_interval(1.0, self.update_time)
@@ -92,5 +98,5 @@ class StatusBar(Widget):
                 label.styles.color = "#d1a041"
             else:
                 label.styles.color = "#ee8884"
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"[SWALLOWED] {e}")

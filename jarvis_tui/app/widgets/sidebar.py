@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+import logging
 # Copyright (c) 2024-2026 JARVIS Project
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,20 +14,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import annotations
-
 from textual.app import ComposeResult
 from textual.containers import Vertical
 from textual.reactive import reactive
 from textual.widget import Widget
 from textual.widgets import Label, ProgressBar, Static
 
+from jarvis_tui.app.widgets.navigation import Navigation
 from jarvis_tui.app.widgets.todo_queue import TodoQueue
+logger = logging.getLogger(__name__)
 
 
 class Sidebar(Widget):
     """
-    Sidebar with model selector, active agents, tool calls, todo queue, and stats.
+    Sidebar with unified navigation, model selector, active agents, tool calls, and stats.
     """
     model_name = reactive("none")
     context_pct = reactive(0)
@@ -35,6 +38,9 @@ class Sidebar(Widget):
 
     def compose(self) -> ComposeResult:
         with Vertical(id="sidebar-container"):
+            yield Label("NAVIGATION")
+            yield Navigation(id="main-nav")
+
             yield Label("MODEL")
             yield Static(f" {self.model_name} ▾", id="model-selector", classes="selector")
 
@@ -63,18 +69,21 @@ class Sidebar(Widget):
                 status = agent.get("status", "idle")
                 color = "green" if status == "busy" else "yellow"
                 container.mount(Static(f"● [bold {color}]{agent['name'].upper()}[/bold {color}] [dim]{status}[/dim]"))
-        except Exception: pass
+        except Exception as e:
+            logger.warning(f"[SWALLOWED] {e}")
 
     def watch_model_name(self, name: str) -> None:
         try:
             self.query_one("#model-selector", Static).update(f" {name} ▾")
-        except Exception: pass
+        except Exception as e:
+            logger.warning(f"[SWALLOWED] {e}")
 
     def watch_context_pct(self, pct: int) -> None:
         try:
             self.query_one("#ctx-progress", ProgressBar).progress = pct
             self.query_one("#ctx-label", Static).update(f"{pct}% [{(pct*1280):.0f} / 128k]")
-        except Exception: pass
+        except Exception as e:
+            logger.warning(f"[SWALLOWED] {e}")
 
     def watch_cpu_usage(self, val: int) -> None:
         self._update_stat("#cpu-stat", "CPU", val)
@@ -89,7 +98,8 @@ class Sidebar(Widget):
         try:
             chars = "█" * (val // 10) + "░" * (10 - (val // 10))
             self.query_one(selector, Static).update(f"{label} {chars} [{val}%]")
-        except Exception: pass
+        except Exception as e:
+            logger.warning(f"[SWALLOWED] {e}")
 
     def on_mount(self) -> None:
         # Wait for backend sync

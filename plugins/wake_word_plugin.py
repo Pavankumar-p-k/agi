@@ -59,8 +59,7 @@ class Plugin(VoicePlugin):
         if not self._detector:
             return None
         with self._lock:
-            is_active = self._detector.is_running and self._detector._pending_confirm
-            if is_active:
+            if self._detector.check_detection():
                 import time
                 self._last_trigger = time.time()
                 return True

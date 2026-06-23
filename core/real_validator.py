@@ -370,10 +370,24 @@ class RealValidator:
         except Exception as e:
             return ValidationResult("browser_loads", True, f"browser_check_skipped:{str(e)[:80]}")
 
+    def _build_requirement_prompt(self, state) -> str:
+        """Build a structured requirement checklist from project state for vision."""
+        reqs = state.requirements or []
+        if not reqs:
+            return ""
+
+        lines = ["\n\n## Requirement Checklist (check each):"]
+        for r in reqs:
+            rd = r if isinstance(r, dict) else {}
+            lines.append(f"- [{rd.get('status', '?')}] {rd.get('description', '')} ({rd.get('category', '')})")
+
+        return "\n".join(lines)
+
     async def check_visual_quality(self, state, workspace: Path = None,
                                     _correction_depth: int = 0):
         """Score visual quality using vision LLM (gemma4 → moondream → fallback).
         Takes Playwright screenshot, sends to complete_vision, returns score + issues.
+        Now includes structured requirement comparison for each screenshot.
         Self-correction loop: score < 80 triggers auto-fix + re-validate (max 3)."""
         if not workspace or not workspace.exists():
             return ValidationResult("visual_quality", True, "no_workspace")
@@ -385,6 +399,7 @@ class RealValidator:
         goal = (state.interpreted_goal or {}).get("original_goal", "website")
         brand_name = (state.interpreted_goal or {}).get("brand_name", "")
         business_type = (state.interpreted_goal or {}).get("business_type", "")
+        req_checklist = self._build_requirement_prompt(state)
 
         try:
             from playwright.async_api import async_playwright
@@ -407,10 +422,20 @@ class RealValidator:
                         screenshot = await page.screenshot(full_page=True)
                         import base64
                         b64 = base64.b64encode(screenshot).decode()
+                        prompt = (
+                            f"Score this website 1-100 for a '{business_type}' called '{brand_name}'. "
+                            f"Goal: '{goal}'. Check: "
+                            f"(a) Does content match goal? (b) Are images loading? "
+                            f"(c) Is branding correct? (d) Is layout professional? "
+                            f"(e) No broken elements."
+                            f"{req_checklist}"
+                            f" Return ONLY JSON: {{\"score\": int, \"issues\": [str], "
+                            f"\"requirement_results\": {{}},\"overall_verdict\": str}}"
+                        )
                         vision_messages.append({
                             "role": "user",
                             "content": [
-                                {"type": "text", "text": f"Score this website 1-100 for a '{business_type}' called '{brand_name}'. Goal: '{goal}'. Check: (a) Does content match goal? (b) Are images loading? (c) Is branding correct? (d) Is layout professional? (e) No broken elements. Return ONLY JSON: {{\"score\": int between 1-100, \"issues\": [str], \"overall_verdict\": str}}"},
+                                {"type": "text", "text": prompt},
                                 {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{b64}"}}
                             ]
                         })
@@ -470,6 +495,24 @@ class RealValidator:
                 passed = avg_score >= 85
                 issues_str = "; ".join(all_issues[:5]) if all_issues else ""
                 msg = f"visual_score={avg_score}/100" if passed else f"visual_score={avg_score}/100 issues:{issues_str}"
+
+                for resp in raw_responses:
+                    try:
+                        parsed = json.loads(resp)
+                        req_results = parsed.get("requirement_results", {})
+                        if req_results and state.requirements:
+                            updated = []
+                            for r in state.requirements:
+                                rd = r if isinstance(r, dict) else {}
+                                rid = rd.get("id", "")
+                                if rid in req_results:
+                                    rd["status"] = "met" if req_results[rid] else "not_met"
+                                updated.append(rd)
+                            state.requirements = updated
+                            state.compute_completion()
+                    except Exception:
+                        pass
+
                 return ValidationResult("visual_quality", passed, msg)
 
             except ImportError:

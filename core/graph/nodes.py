@@ -54,6 +54,20 @@ from core.tools.security import blocked_tools_for_owner
 logger = logging.getLogger(__name__)
 
 
+def _lookup_endpoint_supports(SL, ME, endpoint_url):
+    """Thunk for asyncio.to_thread to avoid blocking event loop with sync DB query."""
+    _db = SL()
+    try:
+        ep = _db.query(ME).filter(ME.base_url == endpoint_url).first()
+        if not ep and endpoint_url:
+            u = endpoint_url.rstrip("/")
+            ep = _db.query(ME).filter(ME.base_url == u).first() or \
+                 _db.query(ME).filter(ME.base_url == u + "/").first()
+        return ep
+    finally:
+        _db.close()
+
+
 async def setup_node(state: AgentState) -> AgentState:
     mcp_mgr = get_mcp_manager()
     state.mcp_mgr = mcp_mgr
@@ -73,7 +87,8 @@ async def setup_node(state: AgentState) -> AgentState:
 
     _t1 = time.time()
     if state.relevant_tools:
-        logger.info(f"[tool-rag] Using caller-provided relevant_tools ({len(state.relevant_tools)} tools)")
+        state.relevant_tools_set = set(state.relevant_tools)
+        logger.info(f"[tool-rag] Using caller-provided relevant_tools ({len(state.relevant_tools)} tools): {sorted(state.relevant_tools)[:10]}")
     if not state.relevant_tools:
         try:
             from core.tools.index import ALWAYS_AVAILABLE, get_tool_index
@@ -128,17 +143,9 @@ async def setup_node(state: AgentState) -> AgentState:
     try:
         from core.database_models import ModelEndpoint as _ME
         from core.database_models import SessionLocal as _SL
-        _db = _SL()
-        try:
-            _ep = _db.query(_ME).filter(_ME.base_url == state.endpoint_url).first()
-            if not _ep and state.endpoint_url:
-                _u = state.endpoint_url.rstrip("/")
-                _ep = _db.query(_ME).filter(_ME.base_url == _u).first() or \
-                      _db.query(_ME).filter(_ME.base_url == _u + "/").first()
-            if _ep is not None:
-                _endpoint_supports = _ep.supports_tools
-        finally:
-            _db.close()
+        _ep = await asyncio.to_thread(_lookup_endpoint_supports, _SL, _ME, state.endpoint_url)
+        if _ep is not None:
+            _endpoint_supports = _ep.supports_tools
     except Exception as _e:
         logger.debug(f"endpoint supports_tools lookup failed: {_e}")
     _model_supports_tools = any(kw in _model_lc for kw in (
@@ -158,23 +165,27 @@ async def setup_node(state: AgentState) -> AgentState:
     else:
         state.is_api_model = any(h in state.endpoint_url for h in _API_HOSTS) or _model_supports_tools
 
+    # Skip expensive context building for simple chat requests
+    _mode_val = state.mode.value if hasattr(state.mode, 'value') else str(state.mode or "")
+    _is_chat = _mode_val in ("chat", "direct")
     _codebase_context = ""
     _repomap = ""
-    if state.retrieval_query:
+    _code_graph_context = ""
+    if not _is_chat and state.retrieval_query:
         try:
             from core.codebase_indexer import search_codebase
             _codebase_context = search_codebase(state.retrieval_query, k=3, owner=state.owner)
         except Exception as e:
             logger.warning("[core.graph.nodes] execute_node failed: %s", e)
-    try:
-        from pathlib import Path
+    if not _is_chat:
+        try:
+            from pathlib import Path
 
-        from core.repomap import build_repomap
-        _repomap = build_repomap(Path.cwd())
-    except Exception as e:
-        logger.warning("[core.graph.nodes] execute_node failed: %s", e)
-    _code_graph_context = ""
-    if state.retrieval_query:
+            from core.repomap import build_repomap
+            _repomap = build_repomap(Path.cwd())
+        except Exception as e:
+            logger.warning("[core.graph.nodes] execute_node failed: %s", e)
+    if not _is_chat and state.retrieval_query:
         try:
             from core.code_graph import get_code_graph
             cg = get_code_graph()
@@ -182,6 +193,8 @@ async def setup_node(state: AgentState) -> AgentState:
                 _code_graph_context = cg.format_for_prompt(state.retrieval_query, top_n=8)
         except Exception as e:
             logger.warning("[core.graph.nodes] execute_node failed: %s", e)
+    if _is_chat:
+        logger.info("[PROFILE] skipped heavy context (chat mode, saved ~%.0fs)", time.time() - _t2)
 
     messages, state.mcp_schemas = _build_system_prompt(
         state.messages, state.model, state.active_document, mcp_mgr,
@@ -229,6 +242,13 @@ async def setup_node(state: AgentState) -> AgentState:
     state.verifier_instruction = _extract_last_user_message(state.messages)
     state.phase = AgentPhase.THINKING
 
+    _total_prep = time.time() - _t0
+    logger.info("[PROFILE] setup_node total=%.3fs breakdown=%s",
+        _total_prep, {k: round(v, 3) for k, v in state.prep_timings.items()})
+    state.events.append(
+        f'data: {json.dumps({"type":"phase_change","phase":"setup_complete","prep":{k:round(v,3) for k,v in state.prep_timings.items()}})}\n\n'
+    )
+
     state.events.append(
         f'data: {json.dumps({"type": "agent_prep", "data": {k: round(v, 3) for k, v in state.prep_timings.items()}})}\n\n'
     )
@@ -274,9 +294,29 @@ async def think_node(state: AgentState) -> AgentState:
                 and t.get("name") not in state.disabled_tools_set
             ]
     else:
-        _last_content = state.last_user.lower()
-        _wants_mcp = any(kw in _last_content for kw in _MCP_KEYWORDS)
-        all_tool_schemas = state.mcp_schemas if (_wants_mcp and state.mcp_schemas) else []
+        relevant = state.relevant_tools_set
+        if relevant:
+            base_schemas = [
+                s for s in FUNCTION_TOOL_SCHEMAS
+                if s.get("function", {}).get("name") in relevant
+            ]
+            mcp_filtered = [
+                s for s in state.mcp_schemas
+                if s.get("function", {}).get("name") in relevant
+            ]
+            all_tool_schemas = base_schemas + mcp_filtered
+        else:
+            base_schemas = FUNCTION_TOOL_SCHEMAS if state.needs_admin else [
+                s for s in FUNCTION_TOOL_SCHEMAS
+                if s.get("function", {}).get("name") not in _ADMIN_SCHEMA_NAMES
+            ]
+            all_tool_schemas = base_schemas + state.mcp_schemas
+        if state.disabled_tools_set:
+            all_tool_schemas = [
+                t for t in all_tool_schemas
+                if t.get("function", {}).get("name") not in state.disabled_tools_set
+                and t.get("name") not in state.disabled_tools_set
+            ]
 
     agent_stream_timeout = int(get_setting("agent_stream_timeout_seconds", 300) or 300)
     _tool_names_sent = [t.get("function", {}).get("name") for t in (all_tool_schemas or []) if t.get("function")]

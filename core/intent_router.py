@@ -202,6 +202,11 @@ async def extract_intent(message: str) -> dict:
             if 'send an email' in m or 'send email' in m or re.search(r'\b[\w.%+-]+@[\w.-]+\.[a-zA-Z]{2,}\b', message):
                 return {"intent": "message", "target": message, "parameters": {}}
 
+            # Vision browser automation (open chrome/browser, navigate, search, fill)
+            if any(k in m for k in ['open chrome', 'open browser', 'search on google', 'search amazon',
+                                     'vision agent', 'control browser', 'automate browser',
+                                     'take screenshot', 'go to amazon', 'go to google']):
+                return {"intent": "vision_browser", "target": message, "parameters": {}}
             # Browser tasks (signup, register, login, sign up, add to cart)
             if any(k in m for k in ['sign up', 'register', 'login', 'log in', 'add to cart', 'fill out', 'fill', 'submit', 'checkout']):
                 return {"intent": "browser_task", "target": message, "parameters": {}}

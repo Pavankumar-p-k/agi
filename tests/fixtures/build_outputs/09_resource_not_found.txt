@@ -1,0 +1,38 @@
+> Task :app:compileDebugJavaWithJavac FAILED
+/app/src/main/java/com/example/app/MainActivity.java:45: error: cannot find symbol
+  R.layout.activity_main
+      ^
+  symbol:   variable activity_main
+  location: class layout
+
+/app/src/main/java/com/example/app/MainActivity.java:47: error: cannot find symbol
+  R.id.button_submit
+      ^
+  symbol:   variable button_submit
+  location: class id
+
+/app/src/main/java/com/example/app/HomeFragment.java:22: error: cannot find symbol
+  R.drawable.ic_background
+      ^
+  symbol:   variable ic_background
+  location: class drawable
+
+/app/src/main/java/com/example/app/HomeFragment.java:25: error: cannot find symbol
+  R.string.welcome_message
+      ^
+  symbol:   variable welcome_message
+  location: class string
+
+/app/src/main/java/com/example/app/theme/ThemeManager.java:18: error: cannot find symbol
+  R.color.primary_dark
+      ^
+  symbol:   variable primary_dark
+  location: class color
+
+/app/src/main/java/com/example/app/theme/ThemeManager.java:22: error: cannot find symbol
+  R.mipmap.ic_launcher_round
+      ^
+  symbol:   variable ic_launcher_round
+  location: class mipmap
+
+FAILURE: Build failed with an exception.

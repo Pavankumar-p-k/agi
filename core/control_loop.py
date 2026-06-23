@@ -36,6 +36,7 @@ from core.interrupt_override import interrupt_manager
 from core.memory_driven_decisions import memory_router
 from core.nondet_control import DecisionEntry, decision_logger
 from core.partial_success import PartialSuccessTracker
+from core.pattern_failure_memory import pattern_memory
 from core.plan_evolution import plan_evolution
 from core.proactive_adaptation import adaptation_engine
 from core.project_state import PROJECTS_DIR, ProjectState, list_projects
@@ -209,9 +210,14 @@ class ControlLoop:
         state.interpreted_goal = interpreted
         state.log_event("goal_interpreted", interpreted)
         ctx.write_goal(goal, interpreted)
+
+        # Extract requirements from interpreted goal
+        state.extract_requirements()
+        state.compute_completion()
+
         await self._notify(safe_name, "goal_interpreted", interpreted)
         logger.info(f"[CONTROL] Interpreted: {interpreted.get('project_type')} "
-                         f"pages={interpreted.get('pages')} tech={interpreted.get('tech_stack')}")
+                      f"pages={interpreted.get('pages')} tech={interpreted.get('tech_stack')}")
 
         # ── AMBIGUITY CHECK ──
         try:
@@ -383,6 +389,20 @@ class ControlLoop:
             if interrupt_manager.check_and_handle(state):
                 return state
 
+            # ── DEPENDENCY GRAPH CONSISTENCY CHECK (pre-build) ──
+            dag_issues = self._check_dag_consistency(state.plan)
+            if dag_issues:
+                logger.warning(f"[CONTROL] DAG consistency issues: {dag_issues}")
+                ctx.append("[DAG]", f"Issues: {'; '.join(dag_issues)}")
+                repaired = self._repair_dag(state.plan, dag_issues)
+                if repaired:
+                    state.plan = repaired
+                    logger.info(f"[CONTROL] DAG auto-repaired ({len(dag_issues)} issue(s))")
+                    state.log_event("dag_repaired", {"issues": dag_issues, "tasks": len(state.plan)})
+                else:
+                    logger.error("[CONTROL] DAG repair failed — proceeding with caution")
+                state.save()
+
             # STEP 3: BUILD (parallel)
             if state.status in ("planning", "building", "fixing"):
                 state.status = "building"
@@ -467,7 +487,7 @@ class ControlLoop:
             if interrupt_manager.check_and_handle(state):
                 return state
 
-            # STEP 6: DIAGNOSE + FIX
+            # STEP 6: FAILURE ANALYSIS + UPDATE PLAN + REGENERATE
             state.status = "fixing"
             state.issues = failures
             state.retries += 1
@@ -475,11 +495,13 @@ class ControlLoop:
 
             # Phase 3: Log retry decision
             seed = decision_logger.get_seed(safe_name) or 0
+            failure_text = " ".join(failures)
+            failure_cat = classify(failure_text, {"tool": state.current_task_id})
             decision_logger.log(safe_name, DecisionEntry(
                 step=f"retry_{state.retries}", decision_type="retry_strategy",
                 choices=["continue", "abort"],
                 chosen="continue",
-                rationale=f"category={classify(' '.join(failures), {}).value if failures else 'none'}",
+                rationale=f"category={failure_cat.value if failures else 'none'}",
                 seeded=seed is not None,
             ))
 
@@ -492,10 +514,18 @@ class ControlLoop:
                 if snap:
                     state.partial_progress = snap.to_dict()
 
-            # Classify failures to pick the right fix strategy
-            failure_text = " ".join(failures)
-            failure_cat = classify(failure_text, {"tool": state.current_task_id})
             ctx.append("[CLASSIFIER]", f"{failure_cat.value}: {failure_text[:100]}")
+
+            # ── FAILURE ANALYSIS (root cause, not symptom) ──
+            analyses = plan_evolution.analyze_failures(
+                failures, state.plan, state.retries,
+                completion_score=state.completion_score
+            )
+            for a in analyses:
+                ctx.append(f"[ANALYSIS] {a.category}", a.root_cause[:120])
+                pattern_memory.record(failure_text[:200], f"replan:{a.suggested_mutation}")
+                logger.info(f"[ANALYSIS] {a.category}: {a.root_cause[:80]} "
+                             f"→ {a.suggested_mutation} (priority {a.fix_priority})")
 
             # Phase 4 (D1): System Governor decides the action
             quality_val = state.quality_score.get("average", 0.0) if state.quality_score else None
@@ -550,7 +580,7 @@ class ControlLoop:
             else:
                 state.plan = self._generate_fix_tasks(failures, interpreted)
 
-            # Phase 4 (D2): Plan Evolution — apply suggested mutations
+            # Phase 4 (D2): Plan Evolution — apply suggested mutations based on failure analysis
             suggestions = plan_evolution.suggest_fixes(safe_name, failures, state.plan, state.retries)
             for s in suggestions:
                 if s.mutation_type == "insert" and s.new_task:
@@ -569,12 +599,18 @@ class ControlLoop:
             except Exception as e:
                 logger.exception("[CONTROL] Decision memory agent selection failed: %s", e)
 
+            # ── REQUIREMENT COMPLETION TRACKING ──
+            state.extract_requirements()
+            state.compute_completion()
+            logger.info(f"[CONTROL] Requirement completion: {state.completion_score:.1f}% "
+                         f"({len(state.requirements)} requirements)")
+
             state.log_event("retry", {"retry": state.retries, "failures": failures,
                                        "category": failure_cat.value, "governor": gov_decision.action})
             ctx.set_state("retries", state.retries)
             ctx.set_state("issues", failures)
             ctx.append(f"Retry {state.retries}/{state.max_retries}",
-                       f"Failed: {', '.join(failures)} [{failure_cat.value}] Governor: {gov_decision.action}")
+                       f"Failed: {', '.join(failures)} [{failure_cat.value}] Gov: {gov_decision.action}")
             await self._notify(safe_name, "retry", {"retry": state.retries, "failures": failures,
                                                      "category": failure_cat.value, "governor": gov_decision.action})
             logger.warning(f"[CONTROL] Retry {state.retries}/{state.max_retries}: {failures} [{failure_cat.value}] Gov: {gov_decision.action}")
@@ -868,7 +904,7 @@ class ControlLoop:
             visual_score = None
             reasoning_score = None
             if state.quality_score:
-                visual_score = state.quality_score.get("average")  # QualityScorer average
+                visual_score = state.quality_score.get("average")
             if state.validation_results:
                 for r in state.validation_results:
                     if hasattr(r, "check") and r.check == "visual_quality" and not r.passed:
@@ -890,6 +926,14 @@ class ControlLoop:
                 ambiguity_resolved=amb_resolved,
                 fix_applied=None,
             )
+
+            # Record all failures to pattern memory for future generalization
+            for issue in state.issues or []:
+                from core.pattern_failure_memory import pattern_memory
+                pattern_memory.record_success(
+                    issue,
+                    fix_strategy="replan_and_regenerate" if state.status == "done" else "needs_different_approach"
+                )
         except Exception as e:
             logger.warning(f"[CONTROL] Outcome recording skipped: {e}")
 
@@ -922,6 +966,8 @@ class ControlLoop:
                 "validation": get_summary(state) if state.validation_results else None,
                 "quality_score": state.quality_score,
                 "partial_progress": state.partial_progress,
+                "completion_score": state.completion_score,
+                "requirements": len(state.requirements),
             }
         return None
 
@@ -993,6 +1039,94 @@ class ControlLoop:
             except Exception as e:
                 logger.warning(f"[FIX] Task {task['id']} failed: {e}")
         return executed
+
+
+    def _check_dag_consistency(self, tasks: list[dict]) -> list[str]:
+        """Pre-build DAG consistency check. Catches graph mismatches before generation.
+        Checks: orphan tasks, circular deps, missing refs, ordering conflicts."""
+        if not tasks:
+            return ["no_tasks"]
+
+        issues = []
+        task_ids = {t["id"] for t in tasks}
+        task_map = {t["id"]: t for t in tasks}
+
+        for t in tasks:
+            tid = t["id"]
+            deps = t.get("depends_on", []) or []
+            for d in deps:
+                if d == tid:
+                    issues.append(f"self_dependency:{tid}")
+                if d not in task_ids:
+                    issues.append(f"missing_dependency:{tid}->{d}")
+
+        if not issues:
+            resolved = set()
+            remaining = list(tasks)
+            max_iter = len(tasks) * 2
+            while remaining and max_iter > 0:
+                max_iter -= 1
+                batch = []
+                for t in remaining:
+                    deps = [d for d in (t.get("depends_on") or []) if d in task_ids]
+                    if all(d in resolved for d in deps):
+                        batch.append(t)
+                if not batch:
+                    unresolved = [t["id"] for t in remaining]
+                    issues.append(f"circular_or_blocked_dependency:{','.join(unresolved[:5])}")
+                    break
+                for t in batch:
+                    resolved.add(t["id"])
+                    remaining.remove(t)
+
+        return issues
+
+    def _repair_dag(self, tasks: list[dict], issues: list[str]) -> list[dict] | None:
+        """Attempt to auto-repair DAG consistency issues."""
+        if not issues:
+            return tasks
+
+        repaired = [dict(t) for t in tasks]
+        task_ids = {t["id"] for t in repaired}
+
+        for issue in issues:
+            if issue.startswith("self_dependency:"):
+                tid = issue.split(":", 1)[1]
+                for t in repaired:
+                    if t["id"] == tid:
+                        t["depends_on"] = [d for d in (t.get("depends_on") or []) if d != tid]
+                        break
+
+            elif issue.startswith("missing_dependency:"):
+                rest = issue.split(":", 1)[1]
+                tid, dep = rest.split("->", 1) if "->" in rest else (rest, "")
+                if dep and dep not in task_ids:
+                    for t in repaired:
+                        if t["id"] == tid:
+                            t["depends_on"] = [d for d in (t.get("depends_on") or []) if d != dep]
+                            break
+
+            elif issue.startswith("circular_or_blocked_dependency:"):
+                blocked = issue.split(":", 1)[1].split(",") if ":" in issue else []
+                for bid in blocked:
+                    for t in repaired:
+                        if t["id"] == bid:
+                            t["depends_on"] = []
+                            break
+
+        repaired.sort(key=lambda t: TASK_TYPE_ORDER.get(t.get("type", "scaffold"), 0))
+        if self._check_dag_consistency(repaired):
+            return None
+
+        return repaired
+
+    def get_requirement_tracker(self, project_name: str) -> dict | None:
+        """Get requirement completion tracker for a project."""
+        state = ProjectState.load(project_name)
+        if not state:
+            return None
+        from core.success_criteria import compute_tracker
+        return compute_tracker(state)
 
 
 control_loop = ControlLoop()

@@ -1,0 +1,27 @@
+> Task :app:compileDebugJavaWithJavac FAILED
+/app/src/main/java/com/example/app/MainActivity.java:23: error: cannot find symbol
+  symbol:   class RecyclerView
+  location: class MainActivity
+/app/src/main/java/com/example/app/MainActivity.java:24: error: cannot find symbol
+  symbol:   class LinearLayoutManager
+  location: class MainActivity
+/app/src/main/java/com/example/app/DetailActivity.java:12: error: cannot find symbol
+  symbol:   class LiveData
+  location: class DetailActivity
+/app/src/main/java/com/example/app/DetailActivity.java:15: error: cannot find symbol
+  symbol:   class ViewModelProvider
+  location: class DetailActivity
+/app/src/main/java/com/example/app/model/User.java:8: error: package com.google.gson does not exist
+  import com.google.gson.Gson;
+                   ^
+/app/src/main/java/com/example/app/ui/HomeFragment.java:17: error: cannot find symbol
+  symbol:   class MaterialButton
+  location: class HomeFragment
+/app/src/main/java/com/example/app/ui/ImageFragment.java:5: error: cannot find symbol
+  symbol:   class Glide
+  location: class ImageFragment
+
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+FAILURE: Build failed with an exception.

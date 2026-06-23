@@ -32,6 +32,7 @@ class JarvisCompleter(Completer):
         "/status", "/boot", "/agents", "/design", "/frames", "/help", "/h", "/exit", "/quit",
         "/generate-ui", "/gui", "/opencode",
         "/plan", "/goal", "/develop", "/vision", "/feedback", "/tools",
+        "/cmds", "/themes",
     ]
 
     def __init__(self, state_getter):

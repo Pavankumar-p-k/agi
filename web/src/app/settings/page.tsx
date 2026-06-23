@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
+import { api } from '@/lib/api';
 
 interface ToggleProps {
   label: string;
@@ -58,7 +59,7 @@ export default function SettingsPage() {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('jarvis:settings');
       if (saved) {
-        try { return { ...DEFAULTS, ...JSON.parse(saved) }; } catch { return { ...DEFAULTS }; }
+        try { return { ...DEFAULTS, ...JSON.parse(saved) }; } catch (e) { console.warn('[Settings] parse failed', e); return { ...DEFAULTS }; }
       }
     }
     return { ...DEFAULTS };
@@ -70,7 +71,7 @@ export default function SettingsPage() {
   }, [prefs]);
 
   useEffect(() => {
-    fetch('/api/health').then(r => r.ok ? r.json() : null).then(d => setHealth(d)).catch(() => setHealth(null));
+    api.health().then(d => setHealth(d)).catch((e) => { console.warn('[Settings] health fetch failed', e); setHealth(null); });
   }, []);
 
   const update = (key: keyof typeof prefs) => (v: boolean) => setPrefs(prev => ({ ...prev, [key]: v }));
@@ -97,6 +98,32 @@ export default function SettingsPage() {
           <div className="hud-label mb-4">Typography</div>
           <h2 className="font-display text-4xl tracking-[0.08em]">Font Engine</h2>
           <p className="mt-3 text-sm leading-6 text-[var(--j-text-dim)]">Outfit, DM Mono, and Bebas Neue mapped to exact HUD usage.</p>
+        </Card>
+      </section>
+
+      <section className="grid grid-cols-1 gap-px bg-[var(--j-border)] md:grid-cols-2">
+        <Card variant="deep" onClick={() => window.location.href = '/settings/models'} className="min-h-44 rounded-none">
+          <div className="hud-label mb-4">Model Config</div>
+          <h2 className="font-display text-4xl tracking-[0.08em]">Model Settings</h2>
+          <p className="mt-3 text-sm leading-6 text-[var(--j-text-dim)]">Primary model, provider priority, per-task routing, and fallback configuration.</p>
+        </Card>
+        <Card variant="sky" onClick={() => window.location.href = '/settings/integrations'} className="min-h-44 rounded-none">
+          <div className="hud-label mb-4">Service Config</div>
+          <h2 className="font-display text-4xl tracking-[0.08em]">Integration Settings</h2>
+          <p className="mt-3 text-sm leading-6 text-[var(--j-text-dim)]">API keys, webhooks, and connection parameters for all external services.</p>
+        </Card>
+      </section>
+
+      <section className="grid grid-cols-1 gap-px bg-[var(--j-border)] md:grid-cols-2">
+        <Card variant="sky" onClick={() => window.location.href = '/settings/voice'} className="min-h-44 rounded-none">
+          <div className="hud-label mb-4">Audio Config</div>
+          <h2 className="font-display text-4xl tracking-[0.08em]">Voice Settings</h2>
+          <p className="mt-3 text-sm leading-6 text-[var(--j-text-dim)]">STT/TTS providers, wake word detection, and audio processing tweaks.</p>
+        </Card>
+        <Card variant="deep" onClick={() => window.location.href = '/settings/keys'} className="min-h-44 rounded-none">
+          <div className="hud-label mb-4">Security</div>
+          <h2 className="font-display text-4xl tracking-[0.08em]">API Keys</h2>
+          <p className="mt-3 text-sm leading-6 text-[var(--j-text-dim)]">Manage provider keys, vault status, and sensitive connection credentials.</p>
         </Card>
       </section>
 

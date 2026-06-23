@@ -30,6 +30,15 @@ class PrivacyClassifier:
     def __init__(self):
         self.nlp = None
         self._nlp_loaded = False
+        self.tier_1_patterns = [
+            r'api[_-]?key', r'password', r'token', r'ssh[_-]?key',
+            r'medical', r'diagnosis', r'prescription',
+            r'account[_-]?number', r'routing[_-]?number',
+            r'ssn', r'social[_-]?security',
+            r'credit[_-]?card', r'\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b',
+            r'private[_-]?file', r'c:\\', r'/home/', r'secret'
+        ]
+        self.pii_entities = ["PERSON", "ORG", "GPE", "LOC", "FAC", "DATE", "TIME"]
 
     def _ensure_nlp(self):
         if not self._nlp_loaded:
@@ -40,17 +49,6 @@ class PrivacyClassifier:
             except Exception as e:
                 logger.exception("[PRIVACY] spacy model load failed: %s", e)
                 self.nlp = None
-
-        self.tier_1_patterns = [
-            r'api[_-]?key', r'password', r'token', r'ssh[_-]?key',
-            r'medical', r'diagnosis', r'prescription',
-            r'account[_-]?number', r'routing[_-]?number',
-            r'ssn', r'social[_-]?security',
-            r'credit[_-]?card', r'\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b',
-            r'private[_-]?file', r'c:\\', r'/home/', r'secret'
-        ]
-
-        self.pii_entities = ["PERSON", "ORG", "GPE", "LOC", "FAC", "DATE", "TIME"]
 
     def classify(self, query: str, context: dict | None = None) -> PrivacyTier:
         """

@@ -58,7 +58,31 @@ class ApiConfig {
 
   static const String files = '/api/files';
 
-// Automation
+  // Features
+  static const String features = '/api/features';
+  static const String featureReport = '/api/features/report';
+  static const String featureCategories = '/api/features/categories';
+
+  // Integrations
+  static const String integrations = '/api/integrations';
+  static const String integrationsHealth = '/api/integrations/health';
+
+  // Diagnostics
+  static const String diagnostics = '/api/diagnostics';
+  static const String diagnosticsModels = '/api/diagnostics/models';
+  static const String diagnosticsIntegrations = '/api/diagnostics/integrations';
+  static const String diagnosticsVoice = '/api/diagnostics/voice';
+  static const String diagnosticsEnvironment = '/api/diagnostics/environment';
+
+  // Models
+  static const String models = '/api/models';
+  static const String modelGroups = '/api/models/groups';
+  static const String settings = '/api/settings';
+
+  // Agents
+  static const String agents = '/api/v1/agents';
+
+  // Automation
   static const String automationCommand = '/api/automation/command';
 
   // Voice

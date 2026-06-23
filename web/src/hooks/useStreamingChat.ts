@@ -69,6 +69,19 @@ export function useStreamingChat() {
     const unsub1 = ws.on('_connected', () => setIsConnected(true));
     const unsub2 = ws.on('_disconnected', () => setIsConnected(false));
 
+    const unsubErr = ws.on('error', (data) => {
+      const msg = (data as any)?.message || 'Connection error';
+      setIsStreaming(false);
+      setIsWaiting(false);
+      streamTextRef.current = '';
+      setMessages((prev) => [...prev, {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        text: `⚠ ${msg}`,
+        time: Date.now(),
+      }]);
+    });
+
     const unsub3 = ws.on('stream_token', (data) => {
       const token = data.token as string;
       const complete = data.complete as boolean;
@@ -105,7 +118,7 @@ export function useStreamingChat() {
 
     ws.connect();
     return () => {
-      unsub1(); unsub2(); unsub3();
+      unsub1(); unsub2(); unsub3(); unsubErr();
       ws.disconnect();
     };
   }, []);
@@ -130,12 +143,17 @@ export function useStreamingChat() {
   }, [activeConvId]);
 
   const clear = useCallback(() => {
-    // save current to history before clearing
+    streamTextRef.current = '';
+    setIsStreaming(false);
+    setIsWaiting(false);
     setMessages([]);
     setActiveConvId(null);
   }, []);
 
   const loadConversation = useCallback((convId: string) => {
+    streamTextRef.current = '';
+    setIsStreaming(false);
+    setIsWaiting(false);
     const conv = conversations.find(c => c.id === convId);
     if (!conv) return;
     setMessages(conv.messages);

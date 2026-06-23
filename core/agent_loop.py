@@ -47,6 +47,8 @@ async def stream_agent_loop(
     fallbacks: list[tuple] | None = None,
     _is_teacher_run: bool = False,
     pause_before_effectful: bool = False,
+    mode: str | None = None,
+    project_context: dict | None = None,
 ) -> AsyncGenerator[str, None]:
     """Streaming agent loop generator.
 
@@ -66,7 +68,7 @@ async def stream_agent_loop(
         headers=headers or {},
         temperature=temperature,
         max_tokens=max_tokens,
-        prompt_type=prompt_type,
+        prompt_type=mode or prompt_type,
         max_rounds=max_rounds or MAX_AGENT_ROUNDS,
         max_tool_calls=max_tool_calls,
         context_length=context_length,
@@ -78,6 +80,8 @@ async def stream_agent_loop(
         fallbacks=list(fallbacks or []),
         _is_teacher_run=_is_teacher_run,
         pause_before_effectful=pause_before_effectful,
+        mode=mode,
+        project_context=project_context,
     )
     async for event in graph.execute(state):
         yield event

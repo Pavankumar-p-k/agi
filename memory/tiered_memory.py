@@ -69,7 +69,7 @@ class TieredMemory:
     Warm: SQLite (session history)
     Cold: Semantic (long-term)
     """
-    def __init__(self, user_id: str = "default_user"):
+    def __init__(self, user_id: str = "default"):
         self.user_id = user_id
         self.hot_tier: List[Dict] = []
         self.max_hot = 10
@@ -94,40 +94,49 @@ class TieredMemory:
                 print(f"[MEMORY] Qdrant unavailable — running without vector store: {e}")
                 self.mem0 = None
 
-    def remember(self, content: str, importance: float = 0.5, metadata: Dict = None):
+    def remember(self, content: str, importance: float = 0.5, metadata: Dict = None, user_id: str | None = None):
         """
         Store a new memory.
         """
+        uid = user_id or self.user_id
         # Add to Hot tier
         self.hot_tier.append({
             "content": content,
             "timestamp": time.time(),
-            "metadata": metadata or {}
+            "metadata": {**(metadata or {}), "user_id": uid}
         })
         if len(self.hot_tier) > self.max_hot:
-            to_archive = self.hot_tier.pop(0)
-            # Consolidate to Warm/Cold tier via Mem0
-            if self.mem0:
-                self.mem0.add(to_archive["content"], user_id=self.user_id, metadata=to_archive["metadata"])
+            self.hot_tier.pop(0)
+
+        # Persist to cold storage immediately
+        if self.mem0:
+            try:
+                self.mem0.add(content, user_id=uid, metadata=metadata or {})
+            except Exception as e:
+                print(f"[MEMORY] mem0 persist failed: {e}")
 
         # If very important, store in semantic memory immediately
         if importance > 0.8 and self._embedding is not None:
-            self._embedding.store(content, metadata)
+            self._embedding.store(content, {**(metadata or {}), "user_id": uid})
         elif importance > 0.8:
             emb = _get_embedding()
             if emb is not None:
                 self._embedding = emb
-                self._embedding.store(content, metadata)
+                self._embedding.store(content, {**(metadata or {}), "user_id": uid})
 
-    def recall(self, query: str, limit: int = 5) -> List[Dict]:
+    def recall(self, query: str, limit: int = 5, user_id: str | None = None) -> List[Dict]:
         """
         Recall memories across all tiers.
         """
+        uid = user_id or self.user_id
         results = []
 
-        # 1. Search Hot tier with word-overlap scoring
+        # 1. Search Hot tier with word-overlap scoring (filtered by user)
         query_words = set(query.lower().split())
         for m in reversed(self.hot_tier):
+            meta = m.get("metadata") or {}
+            if meta.get("user_id", self.user_id) != uid:
+                continue
             content_words = set(m["content"].lower().split())
             if query_words and content_words:
                 overlap = len(query_words & content_words) / max(len(query_words), len(content_words))
@@ -146,7 +155,7 @@ class TieredMemory:
         # 2. Search Warm/Cold tier via Mem0
         if self.mem0:
             try:
-                mem0_results = self.mem0.search(query, filters={'user_id': self.user_id}, limit=limit)
+                mem0_results = self.mem0.search(query, filters={'user_id': uid}, limit=limit)
                 results.extend(mem0_results)
             except Exception as e:
                 print(f"[WARN] Mem0 search failed: {e}")
@@ -161,6 +170,10 @@ class TieredMemory:
                 semantic_results = []
             else:
                 semantic_results = semantic_result.unwrap()
+                semantic_results = [
+                    r for r in semantic_results
+                    if r.get("metadata", {}).get("user_id", uid) == uid
+                ]
             results.extend(semantic_results)
 
         return results
@@ -224,6 +237,10 @@ class TieredMemory:
                 summary = m.summary or m.value[:200]
                 lines.append(f"- {summary}")
         return "\n".join(lines)
+
+    def get_hot_memories(self) -> List[str]:
+        """Return the contents of the hot tier."""
+        return [m["content"] for m in self.hot_tier]
 
     def consolidate(self):
         """

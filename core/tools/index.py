@@ -30,10 +30,27 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+# Tools that are registered but not implemented — return disabled status.
+BROKEN_TOOLS: frozenset[str] = frozenset({
+    "list_sessions", "send_to_session", "pipeline",
+    "manage_session", "list_models",
+    "ui_control", "ask_teacher",
+})
+
+# Tools that are fully implemented and available for execution.
+AVAILABLE_TOOLS: frozenset[str] = frozenset({
+
+})  # populated below
+
 # Tools that are ALWAYS included regardless of retrieval results.
 # These are the most commonly needed and should never be missing.
 ALWAYS_AVAILABLE = frozenset({
-    "bash", "python", "web_search", "web_fetch", "read_file", "edit_file", "undo_edit_file", "batch_edit_file", "watch_file", "semantic_search", "shell", "shell_command", "close_shell", "refactor",
+    "bash", "python", "web_search", "web_fetch", "read_file", "write_file", "append_file", "delete_file", "list_folder", "edit_file", "undo_edit_file", "batch_edit_file", "watch_file", "semantic_search", "shell", "shell_command", "close_shell", "refactor",
+    "browser_navigate",     "browser_find", "browser_find_interactive", "browser_click", "browser_fill", "browser_press",
+    "browser_snapshot", "browser_get_url", "browser_get_title", "browser_screenshot",
+    "browser_current_state", "browser_health",
+    "browser_get_history", "browser_list_tabs", "browser_switch_tab", "browser_new_tab", "browser_close_tab",
+    "browser_wait_visible", "browser_wait_text", "browser_wait_interactive", "browser_shadow_query",
     "api_call",  # For configured integrations (Miniflux, Gitea, Linkding, etc.)
     # The two genuinely AMBIENT cookbook tools — "what's running" and
     # "kill it" can be asked any time without prior cookbook context,
@@ -45,6 +62,13 @@ ALWAYS_AVAILABLE = frozenset({
     "list_served_models", "stop_served_model",
     # Generic API loopback — the catch-all when no named tool fits.
     "app_api",
+    # Build automation tools — universal build/test/repair/validate
+    "build_project", "repair_project", "run_tests", "runtime_validate",
+    # Chat/memory — always available query surface
+    "manage_memory", "create_session", "chat_with_model",
+    # Workflow engine — durable multi-step execution
+    "workflow_start", "workflow_resume", "workflow_cancel",
+    "workflow_status", "workflow_list",
 })
 
 # Tools that the Personal Assistant always has access to during scheduled
@@ -57,11 +81,6 @@ ASSISTANT_ALWAYS_AVAILABLE = frozenset({
     "create_document", "update_document",
     "resolve_contact", "search_chats",
     "api_call",  # For Miniflux/Gitea/Linkding/etc. integrations
-    # Core UI control (toggles, open panels, switch model/mode, themes).
-    # Always available so vague follow-ups ("now make it playful", "make it
-    # darker") that don't repeat a theme/UI keyword still keep the tool in
-    # reach — without it the model narrates instead of acting.
-    "ui_control",
 })
 
 COLLECTION_NAME = "odysseus_tool_index"
@@ -76,6 +95,9 @@ BUILTIN_TOOL_DESCRIPTIONS: dict[str, str] = {
     "web_fetch": "Fetch and read the text content of a specific URL/website the user names (e.g. 'check example.com', 'open this link'). Use when you have a concrete URL; for open-ended lookups use web_search instead.",
     "read_file": "Read a file from disk. Supports line ranges: path:start-end or path:line. Output includes line numbers. View source code, config files, logs.",
     "write_file": "Write content to a file on disk. Create new files, save output, update configs.",
+    "append_file": "Append content to the end of an existing file. Creates the file if it does not exist. Use for adding to logs, accumulating output, appending to configs.",
+    "delete_file": "Delete a file from disk. Returns error if the file does not exist or is a directory.",
+    "list_folder": "List all files and directories in a folder. Returns name, kind (file/dir), size, and modification time for each entry.",
     "edit_file": "Edit an existing file on disk using FIND/REPLACE or unified diff. Creates automatic backups. Auto-formats Python/JS/TS. Generates diff preview. Suggests related tests. Preferred over write_file for targeted changes.",
     "semantic_search": "Search the codebase by meaning (vector embeddings + BM25 + symbol match). Find functions, classes, or patterns without knowing exact filenames.",
     "shell": "Run a command in a persistent shell session. Preserves working directory, environment variables, and shell state across calls. Use instead of bash when you need 'cd', virtualenvs, or sequential multi-step commands.",
@@ -138,6 +160,38 @@ BUILTIN_TOOL_DESCRIPTIONS: dict[str, str] = {
     "app_api": "Generic loopback to ANY Odysseus internal endpoint. Use this when the user wants something the UI can do but there's no named tool for it. Covers calendar, gallery, library/documents, memory, notes, tasks, settings, research, compare, cookbook GPUs/state — every UI button hits some /api/* endpoint and you can hit it too. action='endpoints' with filter=<keyword> lists available endpoints. action='call' takes method+path+body. Hits same routes the UI uses — auth flows free. NOTE: themes are NOT an API endpoint — use the ui_control tool (create_theme / set_theme), not app_api. SESSIONS/CHATS: do NOT use app_api for these — GET /api/sessions returns EMPTY for tool calls (it's owner-filtered and tool calls authenticate as a different identity). EMAIL ACCOUNTS: do NOT use /api/email/accounts via app_api; use list_email_accounts, list_emails, and read_email instead. To list/rename/archive/delete/fork chats use the list_sessions and manage_session tools instead.",
     "edit_image": "Edit an image in the gallery: upscale (increase resolution), remove background (rembg), inpaint (fill selected area), or harmonize (blend edits). Specify image ID and action.",
     "trigger_research": "Start a deep research job on any topic — appears in the Deep Research sidebar, streams progress, produces a detailed report. Use for 'research X', 'look into Y', 'do deep research on Z', 'investigate'. NOT a scheduled task — it runs now and surfaces in the sidebar.",
+    "vision_browser": "Vision-based desktop and browser automation. Opens apps (Chrome, Notepad), navigates websites, clicks UI elements (vision-guided), fills forms, types text, searches. Use for multi-step browser tasks like 'open chrome, go to amazon, search for headphones, take screenshot' or 'open notepad, type a message, save it'.",
+    "browser_navigate": "Navigate the browser to a URL. Opens the page and waits for it to fully load. Use instead of vision_browser for reliable DOM-based navigation.",
+    "browser_find": "Find an element on the page by its visible text. Returns whether the text was found along with the element tag and CSS selector. Use before browser_click when you don't know the exact CSS selector — just say 'find the Sign In button'.",
+    "browser_find_interactive": "Find an INTERACTIVE element by text. Prioritises visible buttons, links, inputs, textareas, selects, and comboboxes using Playwright's role/placeholder/label locators. Falls back to plain text search. Returns the element tag and CSS selector ready for browser_click or browser_fill. Preferred over browser_find for actionable elements.",
+    "browser_click": "Click an element on the page by CSS selector. Uses Playwright DOM automation for reliable clicks. Returns structured errors (SelectorNotFound) if the element doesn't exist.",
+    "browser_fill": "Fill an input field with text. Uses the CSS selector to find the input and Playwright fill() method for reliable typing.",
+    "browser_press": "Press a keyboard key on a focused element. Supports Enter, Escape, Tab, ArrowDown, ArrowUp, and other standard keys. Use after browser_fill to submit forms.",
+    "browser_snapshot": "Take a structured DOM snapshot of the current page. Returns buttons, links, inputs, forms, and headings as structured data. This is the fastest way to understand a page — prefer over screenshots for text-based UIs.",
+    "browser_get_url": "Get the current page URL. Useful after navigation or clicks to verify where the browser ended up.",
+    "browser_get_title": "Get the current page title. Useful for confirming the correct page is loaded.",
+    "browser_screenshot": "Take a screenshot of the current page as a base64 PNG. Use as fallback when browser_snapshot doesn't provide enough context (canvas, video, image-heavy UIs).",
+    "browser_current_state": "Get the current browser state including URL, title, tab count, form count, button count, and link count. Fast health check for the current page.",
+    "browser_evaluate": "Execute arbitrary JavaScript in the current page context. ADMIN ONLY — blocked for non-admin users. Use for extracting data, modifying page state, or debugging.",
+    "browser_health": "Check if the browser is alive and responsive. Returns browser status, number of active contexts, sessions, and tabs.",
+    "browser_get_history": "Get the browser navigation and action history for the current session. Returns full list of visited URLs and detailed action log (tool, url, selector, status, timestamp). Use when you need to recall what was done in the browser across turns.",
+    "browser_list_tabs": "List all open tabs in the current browser session. Returns each tab's index, URL, and title. Use before browser_switch_tab to find which tab to switch to.",
+    "browser_switch_tab": "Switch to a different tab by index (0-based). Use after browser_list_tabs to pick a specific tab. The tab index is from the list_tabs result.",
+    "browser_new_tab": "Open a new browser tab. Optionally provide a URL to navigate to in the new tab. The new tab becomes the active tab.",
+    "browser_close_tab": "Close a browser tab by index (0-based). If it's the last tab, a new blank tab is created. The active tab switches to the nearest remaining tab.",
+    "browser_wait_visible": "Wait until a CSS selector becomes visible on the page. Use before browser_click or browser_fill when content loads dynamically (async modals, lazy-loaded images, SPA routes). Set timeout in ms (default 10000).",
+    "browser_wait_text": "Wait until specific text appears somewhere on the page. Use when you expect the page to update after an action (form submit, ajax load, navigation). Returns when the text is visible. Set timeout in ms (default 10000).",
+    "browser_wait_interactive": "Wait until an interactive element (button, link, input, textarea) with matching text is visible and enabled on the page. Combines wait + find_interactive. Use before clicking or filling in dynamic pages where the element isn't immediately actionable. Set timeout in ms (default 10000).",
+    "browser_shadow_query": "Query elements inside shadow DOM roots using CSS '>>>' concatenation syntax. Example: 'my-component >>> input' finds inputs inside my-component's shadow root. Returns found elements with tag, visibility, text, and attributes. Use for modern web apps with web components (shadow DOM).",
+    "build_project": "Build a project from source with the full automation pipeline: create plan, generate files, run static verification gates, compile with targeted repair, test, and validate runtime. Streams progress events. Use for 'build this project', 'compile my app', 'make it build'.",
+    "repair_project": "Repair build failures using the compiler repair engine with 3-tier failure memory: exact match, pattern match, and LLM fallback. Provide build errors as context for targeted fixes. Use when build_project fails or the user provides build error output.",
+    "run_tests": "Run the project's test suite through the automation pipeline. Reports pass/fail per test file with timing. Supports custom test command override. Use after build_project succeeds or when the user asks 'run the tests'.",
+    "runtime_validate": "Validate a built project at runtime: checks startup, basic response behavior, and clean shutdown. Catches runtime errors that compilation alone misses. Use after build + tests pass to confirm the project works.",
+    "workflow_start": "Start a new durable workflow with a sequence of steps. Each step is a tool call that is persisted to SQLite and survives process crashes. Accepts: workflow_type (str), steps (list of {tool_name, input_data, timeout_seconds, max_retries}), timeout_seconds (optional), execution_context (optional dict). Returns workflow_id for status/cancel/resume.",
+    "workflow_resume": "Resume a workflow that was interrupted by a crash or cancellation. Finds the workflow by ID and continues from the last incomplete step. Idempotent — already-completed steps are skipped. Accepts: workflow_id.",
+    "workflow_cancel": "Cancel a running workflow by ID. Marks it CANCELLED in the store and cancels any in-flight step execution. Accepts: workflow_id.",
+    "workflow_status": "Get the current status of a workflow: workflow_id, type, status, current_step, total_steps, progress, artifacts, timestamps. Accepts: workflow_id.",
+    "workflow_list": "List workflows with optional status filter and limit. Returns workflow_id, type, status, step progress, timestamps, and owner. Accepts: status (optional filter), limit (default 50).",
 }
 
 
@@ -447,6 +501,51 @@ class ToolIndex:
         frozenset({"write a", "create a doc", "draft", "compose", "poem", "story",
                    "essay", "outline", "letter"}):
             {"create_document", "edit_document", "update_document"},
+        # Vision/browser automation intent
+        frozenset({"open chrome", "open browser", "vision", "browse to", "go to website",
+                   "search for", "type in", "click on", "fill form", "take screenshot",
+                   "automate browser", "vision agent", "control my computer"}):
+            {"vision_browser"},
+        # DOM browser navigation
+        frozenset({"go to", "navigate to", "open website", "open url",
+                   "load page", "visit site"}):
+            {"browser_navigate"},
+        # DOM browser interactive find
+        frozenset({"find button", "find link", "find input", "find interactive",
+                   "find clickable", "find search", "find the"}):
+            {"browser_find_interactive", "browser_find"},
+        # DOM browser interaction
+        frozenset({"click the", "click button", "press enter", "submit form",
+                   "fill input", "type into", "find text", "find button",
+                   "press key", "tab to"}):
+            {"browser_find", "browser_click", "browser_fill", "browser_press"},
+        # DOM browser wait / visibility
+        frozenset({"wait until", "wait for", "wait until visible", "wait until loaded",
+                   "wait for page", "wait for element", "wait for text",
+                   "wait for button", "wait for modal", "wait for popup",
+                   "wait for input", "wait until interactive"}):
+            {"browser_wait_visible", "browser_wait_text", "browser_wait_interactive"},
+        # DOM browser shadow DOM
+        frozenset({"shadow dom", "shadow root", "shadow element", "web component",
+                   "custom element", "inside shadow", "shadow query",
+                   "uhf-search", "penetrate shadow", "pierce shadow"}):
+            {"browser_shadow_query"},
+        # DOM browser history / memory
+        frozenset({"browser history", "what did I do", "what pages", "navigation history",
+                   "action history", "browser log", "what have I visited",
+                   "page history", "browser memory", "recall what I did"}):
+            {"browser_get_history", "browser_current_state"},
+        # DOM browser tab management
+        frozenset({"list tabs", "open tab", "new tab", "switch tab", "close tab",
+                   "tab management", "which tabs", "tab list", "another tab",
+                   "next tab", "previous tab", "first tab", "second tab",
+                   "open a new tab", "open in new tab"}):
+            {"browser_list_tabs", "browser_switch_tab", "browser_new_tab", "browser_close_tab"},
+        # DOM browser extraction
+        frozenset({"list buttons", "list links", "page snapshot",
+                   "show me the page", "what does this page have",
+                   "what is on screen", "browser state"}):
+            {"browser_snapshot", "browser_current_state"},
     }
 
     def get_tools_for_query(

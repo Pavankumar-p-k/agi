@@ -12,6 +12,7 @@
 # limitations under the License.
 """core/context_builder.py — Unified context gathering for all chat entry points."""
 
+import asyncio
 import logging
 from typing import Any
 
@@ -34,8 +35,9 @@ async def build_unified_context(message: str, session_id: str, extra_context: st
         history_str = "\n".join([f"{m['role']}: {m['content']}" for m in history])
         history_context = f"## Recent Conversation History:\n{history_str}"
 
-    # 2. Semantic Memory (Recall)
-    memories = memory.recall(message, user_id=session_id, limit=5)
+    # 2. Semantic Memory (Recall) — run in thread to avoid blocking event loop
+    loop = asyncio.get_event_loop()
+    memories = await loop.run_in_executor(None, lambda: memory.recall(message, user_id=session_id, limit=5))
     memory_context = memory.format_context(memories)
 
     # 3. RAG (External Knowledge)

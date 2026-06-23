@@ -8,17 +8,31 @@ services:
     networks:
       - jarvis-net
 
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: jarvis-qdrant
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    restart: unless-stopped
+    networks:
+      - jarvis-net
+
   jarvis:
     build: .
     container_name: jarvis-app
     depends_on:
       - ollama
+      - qdrant
     ports:
       - "8000:8000"
     volumes:
       - jarvis_data:/app/data
+      - .env:/app/.env:ro
     environment:
       - OLLAMA_URL=http://ollama:11434
+      - QDRANT_HOST=qdrant
       - HOST=0.0.0.0
       - PORT=8000
     restart: unless-stopped
@@ -31,4 +45,5 @@ networks:
 
 volumes:
   ollama_data:
+  qdrant_data:
   jarvis_data:

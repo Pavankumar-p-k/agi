@@ -26,6 +26,8 @@ sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='repla
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 _LOG_LEVEL = os.getenv("JARVIS_LOG_LEVEL", "INFO").upper()
 _LOG_DIR = Path("data/logs")
 _LOG_DIR.mkdir(parents=True, exist_ok=True)
@@ -45,6 +47,10 @@ if not logger.handlers:
     fh.setLevel(_LOG_LEVEL)
     fh.setFormatter(fmt)
     logger.addHandler(fh)
+
+# Load .env before any config initialization
+_env_path = Path(__file__).resolve().parents[1] / ".env"
+load_dotenv(_env_path)
 
 # Initialize config registry before any jarvis imports
 from core.config_init import init_config
@@ -131,15 +137,17 @@ async def rate_limit_middleware(request, call_next):
 
 AUTH_EXEMPT_PREFIXES = (
     "/health", "/docs", "/openapi.json", "/redoc", "/static",
-    "/assets", "/manifest.json", "/sw.js", "/api/auth", "/api/setup",
-    "/icons", "/_next",
+    "/assets", "/manifest.json", "/sw.js", "/api/auth", "/auth",
+    "/api/setup", "/api/chat", "/api/whatsapp",
+    "/icons", "/_next", "/ws",
 )
 AUTH_EXEMPT_PATHS = {"/"}
 
 @app.middleware("http")
 async def session_auth_middleware(request, call_next):
+    from core.config import DEV_MODE
     auth_mgr = getattr(request.app.state, "auth_manager", None)
-    if auth_mgr and auth_mgr.is_configured:
+    if auth_mgr and auth_mgr.is_configured and not DEV_MODE:
         path = request.url.path
         if path in AUTH_EXEMPT_PATHS or any(path.startswith(e) for e in AUTH_EXEMPT_PREFIXES):
             return await call_next(request)
@@ -334,12 +342,12 @@ except Exception as e:
     logger.warning("[Router] Settings routes not loaded: %s", e)
 
 # JARVIS Sub-Agents
-# try:
-#     from api.agent_routes import router as agent_router
-#     app.include_router(agent_router, prefix="/api/v1")
-#     logger.info("[Router] JARVIS Sub-Agents routes loaded [OK]")
-# except Exception as e:
-#     logger.warning("[Router] Sub-Agents routes not loaded: %s", e)
+try:
+    from api.agent_routes import router as agent_router
+    app.include_router(agent_router, prefix="/api/v1")
+    logger.info("[Router] JARVIS Sub-Agents routes loaded [OK]")
+except Exception as e:
+    logger.warning("[Router] Sub-Agents routes not loaded: %s", e)
 
 # AGI routes
 # try:
@@ -467,6 +475,41 @@ try:
 except Exception as e:
     logger.warning("[Router] Utility routes not loaded: %s", e)
 
+try:
+    from core.routes.features import router as features_router
+    app.include_router(features_router)
+    logger.info("[Router] Feature registry routes loaded [OK]")
+except Exception as e:
+    logger.warning("[Router] Feature registry routes not loaded: %s", e)
+
+try:
+    from core.routes.integrations import router as integrations_router
+    app.include_router(integrations_router)
+    logger.info("[Router] Integration management routes loaded [OK]")
+except Exception as e:
+    logger.warning("[Router] Integration management routes not loaded: %s", e)
+
+try:
+    from core.routes.terminal import router as terminal_router
+    app.include_router(terminal_router)
+    logger.info("[Router] Terminal WebSocket routes loaded [OK]")
+except Exception as e:
+    logger.warning("[Router] Terminal routes not loaded: %s", e)
+
+try:
+    from core.routes.diagnostics import router as diagnostics_router
+    app.include_router(diagnostics_router)
+    logger.info("[Router] Diagnostics routes loaded [OK]")
+except Exception as e:
+    logger.warning("[Router] Diagnostics routes not loaded: %s", e)
+
+try:
+    from core.routes.mcp import router as mcp_router
+    app.include_router(mcp_router)
+    logger.info("[Router] MCP tools routes loaded [OK]")
+except Exception as e:
+    logger.warning("[Router] MCP tools routes not loaded: %s", e)
+
 
 # ── Static mounts ──
 
@@ -479,12 +522,8 @@ if _NEXT_OUT.is_dir():
     app.mount("/_next", StaticFiles(directory=str(_NEXT_OUT / "_next")), name="web_next")
     app.mount("/icons", StaticFiles(directory=str(_NEXT_OUT / "icons")), name="web_icons")
 
-    @app.get("/{path:path}")
-    async def web_ui(request: Request, path: str):
-        # API/WS/email/v1 paths that reached here have no matching handler
-        if path.startswith(("api/", "ws/", "email/", "v1/")):
-            return JSONResponse(status_code=404, content={"detail": "Not found"})
-
+    async def _serve_next_static(path: str):
+        """Serve a Next.js static export file from web/out/."""
         # Try exact file
         file_candidate = _NEXT_OUT / path
         if file_candidate.is_file():
@@ -499,6 +538,25 @@ if _NEXT_OUT.is_dir():
         html_candidate = _NEXT_OUT / f"{path}.html"
         if html_candidate.is_file():
             return FileResponse(str(html_candidate))
+
+        return None
+
+    @app.get("/")
+    async def web_root():
+        result = await _serve_next_static("index.html")
+        if result:
+            return result
+        return FileResponse("static/index.html")
+
+    @app.get("/{path:path}")
+    async def web_ui(request: Request, path: str):
+        # API/WS/email/v1 paths that reached here have no matching handler
+        if path.startswith(("api/", "ws/", "email/", "v1/")):
+            return JSONResponse(status_code=404, content={"detail": "Not found"})
+
+        result = await _serve_next_static(path)
+        if result:
+            return result
 
         # Fallback to old static UI
         return FileResponse("static/index.html")
@@ -571,8 +629,22 @@ async def execute_action(intent_data: dict, message: str = "", session_id: str =
             from automation.pc_automation import execute_command as pc_exec
             result = pc_exec(message)
             return {"executed": True, "action": result.get("speech", f"Executed: {target}"), "result": result}
-        elif intent in ("message", "browser_task", "code_task"):
-            return {"executed": False, "action": "", "result": {}, "error": None}
+        elif intent in ("browser_task", "code_task", "vision_browser"):
+            return {
+                "executed": False,
+                "action": "",
+                "result": {},
+                "error": None,
+                "fallback_mode": "agent",
+                "message": "This intent requires the agent loop. Route to /ws/agent_stream.",
+            }
+        elif intent == "message":
+            from channels.processor import route_intent
+            try:
+                result = await route_intent(message, params)
+                return {"executed": True, "action": "Message processed", "result": result}
+            except Exception as e:
+                return {"executed": False, "action": "", "result": {}, "error": str(e)}
         else:
             return {"executed": False, "action": "", "result": {}, "error": None}
     except Exception as e:
@@ -640,4 +712,5 @@ if __name__ == "__main__":
     import uvicorn
     print(f"\n[JARVIS] Server starting at http://{HOST}:{PORT}")
     print(f"[JARVIS] API docs at  http://localhost:{PORT}/docs\n")
-    uvicorn.run("core.main:app", host=HOST, port=PORT, reload=True, log_level="info")
+    uvicorn.run("core.main:app", host=HOST, port=PORT, reload=True, log_level="info",
+                ws_ping_interval=60, ws_ping_timeout=30)

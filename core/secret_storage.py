@@ -33,13 +33,12 @@ def encrypt(plaintext: str) -> str:
         cipher = Fernet(key)
         return cipher.encrypt(plaintext.encode()).decode()
     except Exception as e:
-        logger.warning(f"encrypt failed: {e}")
-        return plaintext
+        logger.error(f"Encryption failed: {e}")
+        raise RuntimeError(f"Could not encrypt secret: {e}")
 
 
 def decrypt(ciphertext: str) -> str:
-    if ciphertext.startswith("enc:"):
-        return ciphertext[4:]
+    # Handle legacy unencrypted values if necessary, or just fail
     try:
         from cryptography.fernet import Fernet
         key_file = os.path.join(DATA_DIR, ".app_key")
@@ -48,5 +47,5 @@ def decrypt(ciphertext: str) -> str:
         cipher = Fernet(key)
         return cipher.decrypt(ciphertext.encode()).decode()
     except Exception as e:
-        logger.warning(f"decrypt failed: {e}")
-        return ciphertext
+        logger.error(f"Decryption failed: {e}")
+        raise RuntimeError(f"Could not decrypt secret: {e}")

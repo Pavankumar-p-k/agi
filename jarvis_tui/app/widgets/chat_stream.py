@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+import logging
 # Copyright (c) 2024-2026 JARVIS Project
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,8 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import annotations
-
 import re
 
 from rich.align import Align
@@ -25,6 +26,7 @@ from textual.app import ComposeResult
 from textual.reactive import reactive
 from textual.widget import Widget
 from textual.widgets import Static
+logger = logging.getLogger(__name__)
 
 
 class MessageWidget(Static):
@@ -57,7 +59,8 @@ class MessageWidget(Static):
                 data = [float(n) for n in numbers[:20]]
                 spark = self._render_sparkline(data)
                 self.content = self.content + "\n\n" + spark.markup
-            except: pass
+            except Exception as e:
+                logger.warning(f"[SWALLOWED] {e}")
 
         display_text = Text.from_markup(self.content)
         if not self.expanded:

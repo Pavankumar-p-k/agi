@@ -1,0 +1,9 @@
+{
+  "name": "jarvis.filetools",
+  "version": "1.0.0",
+  "description": "Production-grade filesystem tools: read, write, append, delete, and list files and folders with structured responses and Windows compatibility.",
+  "author": "JARVIS",
+  "entry_point": "file_tools_plugin.py",
+  "enabled": true,
+  "hooks": ["on_load", "on_unload"]
+}

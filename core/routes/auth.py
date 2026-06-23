@@ -12,12 +12,49 @@
 # limitations under the License.
 
 from fastapi import APIRouter, Request
+from pydantic import BaseModel
 
 router = APIRouter(tags=["Authentication"])
 
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+@router.post("/auth/login")
+async def password_login(body: LoginRequest, request: Request):
+    """Authenticate with username+password, return session token."""
+    from core.config import DEV_MODE
+    auth_mgr = getattr(request.app.state, "auth_manager", None)
+    if not auth_mgr:
+        return {"token": None, "detail": "Auth not configured"}
+    token = auth_mgr.create_session(body.username, body.password)
+    if not token and DEV_MODE:
+        auth_mgr.create_user(body.username, body.password, is_admin=True)
+        token = auth_mgr.create_session(body.username, body.password)
+    if not token:
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=401, content={"detail": "Invalid credentials"})
+    return {"token": token, "username": body.username.strip().lower()}
+
 @router.get("/auth/status")
 async def auth_status():
-    return {"status": "active", "provider": "firebase"}
+    try:
+        from ..auth import get_auth_manager
+        from ..oauth import oauth_manager
+        am = get_auth_manager()
+        providers = oauth_manager.get_providers() if hasattr(oauth_manager, "get_providers") else []
+        return {
+            "configured": am.is_configured,
+            "user_count": len(am.users) if hasattr(am, "users") else 0,
+            "providers": providers,
+            "signup_enabled": am.signup_enabled if hasattr(am, "signup_enabled") else False,
+        }
+    except Exception as e:
+        from fastapi import logger as _log
+        _log.warning("[auth] status check failed: %s", e)
+        return {"configured": False, "error": str(e)}
 
 
 @router.get("/auth/providers")

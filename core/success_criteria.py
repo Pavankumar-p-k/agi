@@ -11,12 +11,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """core/success_criteria.py
-Defines when a build is truly done — binary pass/fail based on real validation.
+Defines when a build is truly done — requirement completion score + binary pass/fail.
 Not LLM opinions — real checks only.
 """
 import logging
 
-from core.project_state import ProjectState, ValidationResult
+from core.project_state import ProjectState, Requirement, RequirementStatus, ValidationResult
 
 logger = logging.getLogger("success_criteria")
 
@@ -31,13 +31,16 @@ REQUIRED_CHECKS = [
 CRITICAL_CHECKS = ["all_pages_exist"]
 SOFT_CHECKS = ["nav_consistent", "html_valid"]
 
+COMPLETION_TARGET = 100.0
+
 
 def is_done(state: ProjectState, results: list[ValidationResult] = None) -> tuple[bool, list[str]]:
     """Returns (is_done: bool, reasons: list[str]).
 
-    DONE if ALL required checks pass. CRITICAL checks must ALL pass.
-    SOFT checks can fail up to configurable threshold.
+    DONE if ALL required checks pass AND completion_score == COMPLETION_TARGET.
     """
+    update_requirement_status(state)
+
     checks = results or state.validation_results
     if not checks:
         return False, ["no_validation_results"]
@@ -55,13 +58,67 @@ def is_done(state: ProjectState, results: list[ValidationResult] = None) -> tupl
                 failed.append(f"{check}:failed")
 
     done = len(failed) == 0
+
+    if done and state.completion_score < COMPLETION_TARGET:
+        failed.append(f"completion:{state.completion_score:.0f}% < {COMPLETION_TARGET:.0f}%")
+        done = False
+
     return done, failed
 
 
+def update_requirement_status(state: ProjectState):
+    """Update requirement statuses based on validation results and quality scores."""
+    if not state.requirements:
+        return
+
+    checks = state.validation_results or []
+    quality = state.quality_score or {}
+
+    reqs = [Requirement(**r) if isinstance(r, dict) else r for r in state.requirements]
+
+    all_pages_exist = any(r.passed for r in checks if r.check == "all_pages_exist")
+    html_valid = any(r.passed for r in checks if r.check == "html_valid")
+
+    for req in reqs:
+        desc = req.description.lower()
+        cat = req.category
+
+        if cat == "pages":
+            req.status = RequirementStatus.MET if all_pages_exist else RequirementStatus.NOT_MET
+        elif cat == "features":
+            if "dark mode" in desc:
+                vresult = next((r for r in checks if r.check == "visual_quality"), None)
+                if vresult and "dark" in vresult.details.lower():
+                    req.status = RequirementStatus.MET
+                else:
+                    req.status = RequirementStatus.UNKNOWN
+            elif "contact form" in desc:
+                req.status = RequirementStatus.MET if all_pages_exist else RequirementStatus.NOT_MET
+            else:
+                avg_quality = quality.get("average", 0.0) if quality else 0.0
+                req.status = RequirementStatus.MET if avg_quality >= 6.0 else RequirementStatus.PARTIAL
+        elif cat == "tech":
+            req.status = RequirementStatus.MET if html_valid else RequirementStatus.PARTIAL
+        elif cat == "branding":
+            vresult = next((r for r in checks if r.check == "visual_quality"), None)
+            if vresult:
+                passed = vresult.passed
+                req.status = RequirementStatus.MET if passed else RequirementStatus.PARTIAL
+            else:
+                req.status = RequirementStatus.UNKNOWN
+        elif cat == "business":
+            req.status = RequirementStatus.MET if all_pages_exist else RequirementStatus.PARTIAL
+        else:
+            req.status = RequirementStatus.UNKNOWN
+
+    state.requirements = [r.__dict__ if hasattr(r, "__dict__") else r for r in reqs]
+    state.compute_completion()
+
+
 def get_summary(state: ProjectState) -> dict:
-    """Human-readable summary of validation status."""
+    """Human-readable summary of validation status with requirement completion."""
     done, failed = is_done(state)
-    checks = state.validation_results
+    checks = state.validation_results or []
     return {
         "is_done": done,
         "failed_checks": failed,
@@ -71,7 +128,26 @@ def get_summary(state: ProjectState) -> dict:
         "retries": state.retries,
         "max_retries": state.max_retries,
         "status": state.status,
+        "completion_score": state.completion_score,
+        "requirement_count": len(state.requirements),
     }
+
+
+def compute_tracker(state: ProjectState) -> dict:
+    """Build a requirement tracker for display."""
+    update_requirement_status(state)
+
+    if not state.requirements:
+        return {"completion": 0.0, "requirements": []}
+
+    reqs = [Requirement(**r) if isinstance(r, dict) else r for r in state.requirements]
+    lines = []
+    for r in reqs:
+        icon = {RequirementStatus.MET: "✓", RequirementStatus.NOT_MET: "✗",
+                RequirementStatus.PARTIAL: "~", RequirementStatus.UNKNOWN: "?"}.get(r.status, "?")
+        lines.append({"id": r.id, "status": r.status.value, "icon": icon, "description": r.description, "category": r.category})
+
+    return {"completion": state.completion_score, "requirements": lines}
 
 
 def should_retry(state: ProjectState) -> tuple[bool, str]:

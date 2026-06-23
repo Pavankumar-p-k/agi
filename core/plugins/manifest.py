@@ -58,10 +58,13 @@ class PluginManifest:
         if "id" not in data and "name" in data:
             data["id"] = data["name"]
         if not data.get("entry"):
-            rel = os.path.relpath(path, os.getcwd())
-            parts = rel.replace("\\", "/").split("/")[:-1]
-            entry_point = data.get("entry_point", "main").replace(".py", "")
-            data["entry"] = ".".join(parts + [entry_point])
+            entry_point = data.get("entry_point", "").replace(".py", "")
+            if entry_point:
+                rel = os.path.relpath(path, os.getcwd())
+                parts = rel.replace("\\", "/").split("/")[:-1]
+                data["entry"] = ".".join(parts + [entry_point])
+            else:
+                data["entry"] = data.get("id", "plugin")
         return cls.from_dict(data)
 
     def to_dict(self) -> dict:

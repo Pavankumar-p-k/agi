@@ -1,0 +1,18 @@
+* What went wrong:
+Could not resolve all dependencies for configuration ':app:debugRuntimeClasspath'.
+  Could not resolve com.squareup.retrofit2:retrofit:2.9.0.
+    Required by: project :app
+    > Could not resolve com.squareup.retrofit2:retrofit:2.9.0.
+      > Could not get resource 'https://repo.maven.apache.org/maven2/com/squareup/retrofit2/retrofit/2.9.0/retrofit-2.9.0.pom'
+        > Could not GET 'https://repo.maven.apache.org/maven2/com/squareup/retrofit2/retrofit/2.9.0/retrofit-2.9.0.pom'
+          > Connect to repo.maven.apache.org:443 [repo.maven.apache.org/151.101.52.215] failed: Connection timed out
+  Could not resolve com.google.dagger:dagger:2.48.
+    Required by: project :app
+    > Skipped due to earlier error
+
+Cannot resolve external dependency com.github.bumptech.glide:glide:4.15.1 because no repositories are defined.
+
+Required by:
+    project :app
+
+BUILD FAILED in 15s

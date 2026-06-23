@@ -29,6 +29,15 @@ from prompt_toolkit.styles import Style
 ROOT = Path(__file__).resolve().parent
 
 
+def get_git_root(cwd: str = "") -> str | None:
+    """Detect git root from a directory path."""
+    root = Path(cwd or os.getcwd()).resolve()
+    for parent in [root] + list(root.parents):
+        if (parent / ".git").exists():
+            return str(parent)
+    return None
+
+
 def style_theme(dark=True):
     return Style.from_dict({
         "prompt": "fg:#00ff00 bold" if dark else "fg:#005500 bold",

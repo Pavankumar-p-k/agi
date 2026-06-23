@@ -10,7 +10,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Fix silent except Exception: pass blocks across the codebase.
+"""Fix silent except Exception as e:     logger.warning(f"[SWALLOWED] {e}") blocks across the codebase.
 AST-based: finds, patches, verifies compilation."""
 import ast
 import os

@@ -432,3 +432,84 @@ class SystemIdentity {
     phasesImplemented: List<String>.from(j['phases_implemented'] ?? []),
   );
 }
+
+// ── Feature ──
+class Feature {
+  final String name;
+  final String slug;
+  final String status;
+  final bool enabled;
+  final String category;
+  final String description;
+  final String configKey;
+  final List<String> dependencies;
+  final String docsPath;
+
+  Feature({
+    required this.name,
+    required this.slug,
+    required this.status,
+    required this.enabled,
+    required this.category,
+    required this.description,
+    this.configKey = '',
+    this.dependencies = const [],
+    this.docsPath = '',
+  });
+
+  factory Feature.fromJson(Map<String, dynamic> j) => Feature(
+    name: j['name'] ?? '',
+    slug: j['slug'] ?? '',
+    status: j['status'] ?? 'planned',
+    enabled: j['enabled'] ?? false,
+    category: j['category'] ?? '',
+    description: j['description'] ?? '',
+    configKey: j['config_key'] ?? '',
+    dependencies: List<String>.from(j['dependencies'] ?? []),
+    docsPath: j['docs_path'] ?? '',
+  );
+}
+
+// ── Integration ──
+class Integration {
+  final String name;
+  final bool connected;
+  final Map<String, dynamic> status;
+
+  Integration({
+    required this.name,
+    required this.connected,
+    required this.status,
+  });
+
+  factory Integration.fromJson(Map<String, dynamic> j) => Integration(
+    name: j['name'] ?? '',
+    connected: j['connected'] ?? false,
+    status: j['status'] ?? {},
+  );
+
+  bool get healthy => status['healthy'] ?? false;
+  String? get error => status['error'];
+}
+
+// ── Agent ──
+class Agent {
+  final String name;
+  final String description;
+  final List<String> modes;
+  final String defaultMode;
+
+  Agent({
+    required this.name,
+    required this.description,
+    required this.modes,
+    required this.defaultMode,
+  });
+
+  factory Agent.fromJson(Map<String, dynamic> j) => Agent(
+    name: j['name'] ?? '',
+    description: j['description'] ?? '',
+    modes: List<String>.from(j['modes'] ?? []),
+    defaultMode: j['default_mode'] ?? 'normal',
+  );
+}

@@ -3,14 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { MonitorSkeleton } from '@/components/ui/Skeleton';
-
-interface SystemStats {
-  cpu: { percent: number; count: number };
-  memory: { total: number; available: number; percent: number };
-  disk: { total: number; free: number; percent: number };
-  network: { bytes_sent: number; bytes_recv: number };
-  timestamp: number;
-}
+import { api, type SystemStats, type HealthStatus } from '@/lib/api';
 
 interface DataPoint {
   time: string;
@@ -94,15 +87,13 @@ const MAX_HISTORY = 60;
 export default function MonitorPage() {
   const [stats, setStats] = useState<SystemStats | null>(null);
   const [history, setHistory] = useState<DataPoint[]>([]);
-  const [serverInfo, setServerInfo] = useState<{ status: string; version: string; uptime: string } | null>(null);
+  const [serverInfo, setServerInfo] = useState<{ status: string; version?: string; uptime?: string } | null>(null);
   const prevNet = useRef({ in: 0, out: 0, time: 0 });
   const intRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchStats = useCallback(async () => {
     try {
-      const res = await fetch('/api/system/stats');
-      if (!res.ok) return;
-      const data: SystemStats = await res.json();
+      const data = await api.system.stats();
       setStats(data);
 
       const now = Date.now();
@@ -121,14 +112,14 @@ export default function MonitorPage() {
         const next = [...prev, pt];
         return next.length > MAX_HISTORY ? next.slice(next.length - MAX_HISTORY) : next;
       });
-    } catch { /* ignore */ }
+    } catch (e) { console.warn('[Monitor] stats fetch failed', e); }
   }, []);
 
   const fetchServer = useCallback(async () => {
     try {
-      const r = await fetch('/api/health');
-      if (r.ok) setServerInfo(await r.json());
-    } catch { /* ignore */ }
+      const info = await api.health();
+      setServerInfo(info);
+    } catch (e) { console.warn('[Monitor] health fetch failed', e); }
   }, []);
 
   useEffect(() => {

@@ -1,20 +1,22 @@
-# Copyright (c) 2024-2026 JARVIS Project
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+"""assistant/providers/__init__.py
+STT and TTS provider implementations.
+"""
+from assistant.providers.faster_whisper import FasterWhisperProvider
+from assistant.providers.deepgram import DeepgramProvider
+from assistant.providers.azure_speech import AzureSpeechProvider
+from assistant.providers.kokoro_tts import KokoroTTSProvider
+from assistant.providers.edge_tts_provider import EdgeTTSProvider
 
-from __future__ import annotations
 
-from .faster_whisper import FasterWhisperProvider
-from .deepgram import DeepgramProvider
-from .azure_speech import AzureSpeechProvider
+def _register_tts_providers():
+    from assistant.tts_protocol import get_tts_registry
+    registry = get_tts_registry()
+    registry.register("kokoro", KokoroTTSProvider, default=True)
+    registry.register("edge-tts", EdgeTTSProvider)
 
-__all__ = ["FasterWhisperProvider", "DeepgramProvider", "AzureSpeechProvider"]
+_register_tts_providers()
+
+__all__ = [
+    "FasterWhisperProvider", "DeepgramProvider", "AzureSpeechProvider",
+    "KokoroTTSProvider", "EdgeTTSProvider",
+]

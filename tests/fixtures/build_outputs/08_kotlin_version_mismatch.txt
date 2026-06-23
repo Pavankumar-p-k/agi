@@ -1,0 +1,13 @@
+* What went wrong:
+Execution failed for task ':app:compileDebugKotlin'.
+> 'compileDebugJavaWithJavac' task (current target is 1.8) and 'compileDebugKotlin' task (current target is 11) jvm target compatibility should be set to the same Java version.
+
+* Try:
+Run with --stacktrace option to get the stack trace.
+
+e: Incompatible JVM target version between Java and Kotlin sources.
+  Java target: 1.8
+  Kotlin target: 11
+  Consider using 'kotlinOptions { jvmTarget = "1.8" }' or update compileOptions.
+
+BUILD FAILED in 3s

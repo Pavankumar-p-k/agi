@@ -430,6 +430,7 @@ async def lifespan(app: FastAPI):
         from plugins.pc_automation_plugin import Plugin as PCAutomationPlugin
         from plugins.pii_routing_plugin import Plugin as PIIRoutingPlugin
         from plugins.wake_word_plugin import Plugin as WakeWordPlugin
+        from plugins.file_tools_plugin import Plugin as FileToolsPlugin
         app.state.plugin_registry = plugin_registry
 
         builtin_plugins = [
@@ -452,6 +453,11 @@ async def lifespan(app: FastAPI):
                 name="jarvis.memory", version="1.0.0",
                 description="Tiered memory hooks: store, recall, consolidate",
                 hooks=["on_store", "on_recall", "on_consolidate", "on_load", "on_unload"],
+            )),
+            FileToolsPlugin(PluginManifest(
+                name="jarvis.filetools", version="1.0.0",
+                description="Production-grade filesystem tools: read, write, append, delete, list_folder",
+                hooks=["on_load", "on_unload"],
             )),
         ]
         for plugin in builtin_plugins:
@@ -620,6 +626,32 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         startup_status["warnings"].append(f"commitments: {e}")
         logger.warning("[LIFESPAN] Commitments init failed: %s", e)
+
+    try:
+        from core.proactive_monitor import init_proactive_monitor
+        await init_proactive_monitor(app.state)
+    except Exception as e:
+        startup_status["warnings"].append(f"proactive_monitor: {e}")
+        logger.warning("[LIFESPAN] ProactiveMonitor init failed: %s", e)
+
+    try:
+        from core.workflow import WorkflowEngine, recover_active_workflows
+        engine = WorkflowEngine()
+        app.state.workflow_engine = engine
+        recovered = await recover_active_workflows(engine)
+        if recovered:
+            for r in recovered:
+                logger.info("[WORKFLOW] Recovered %s (%s) at step %d/%d",
+                            r["workflow_id"], r["workflow_type"],
+                            r["current_step"], r["total_steps"])
+            startup_status["warnings"].append(
+                f"workflow: {len(recovered)} workflow(s) recovered from crash"
+            )
+        else:
+            logger.info("[WORKFLOW] No active workflows to recover [OK]")
+    except Exception as e:
+        startup_status["warnings"].append(f"workflow_recovery: {e}")
+        logger.warning("[WORKFLOW] Recovery init failed: %s", e)
 
     if startup_status["warnings"]:
         logger.warning("[JARVIS] Startup completed with warnings: %s", startup_status["warnings"])

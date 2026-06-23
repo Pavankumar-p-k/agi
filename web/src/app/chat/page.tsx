@@ -9,6 +9,7 @@ import ModelSelector from '@/components/chat/ModelSelector';
 import FileUpload from '@/components/chat/FileUpload';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
+import { api } from '@/lib/api';
 
 function fmtTime(ts: number): string {
   return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -188,7 +189,7 @@ export default function ChatPage() {
           {estTokens} tokens
         </div>
         <Badge variant={isConnected ? 'new' : 'hot'}>{isConnected ? 'Connected' : 'Offline'}</Badge>
-        <ModelSelector value="auto" onChange={(m) => console.log('model:', m)} />
+        <ModelSelector value="auto" onChange={async (m) => { try { await api.settings.update('model', { primary: m }); } catch (e) { console.warn('[Chat] model update failed', e); } }} />
         <Button variant="ghost" size="sm" onClick={clear}>New Chat</Button>
       </div>
 

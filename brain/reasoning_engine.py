@@ -24,6 +24,7 @@ from typing import Callable
 import httpx
 
 from core.config_registry import config as _jarvis_config
+from core.errors import LLMError
 from core.llm_router import complete
 from core.schemas import ReasonResult
 
@@ -122,6 +123,7 @@ class ReasoningEngine:
         system_override: str | None = None,
         temperature: float | None = None,
     ) -> ReasonResult:
+
         if self._warmed:
             alive = await self._ollama_alive()
             if not alive:
@@ -140,7 +142,11 @@ class ReasoningEngine:
                 ],
                 timeout=self._get_timeout(60),
             )
-            raw = raw_r.unwrap_or("")
+            if raw_r.is_err():
+                err_detail = str(raw_r._error) if hasattr(raw_r, '_error') else "Unknown LLM error"
+                logger.warning("[Reasoning] complete() returned error: %s", err_detail)
+                raise LLMError(err_detail)
+            raw = raw_r.unwrap()
         except Exception as e:
             logger.exception("[Reasoning] First complete call failed: %s", e)
             if model_group != self._fallback_group:
@@ -154,18 +160,24 @@ class ReasoningEngine:
                         ],
                         timeout=self._get_timeout(120),
                     )
-                    raw = raw_r.unwrap_or("")
+                    if raw_r.is_err():
+                        err_detail = str(raw_r._error) if hasattr(raw_r, '_error') else "Unknown LLM error"
+                        logger.warning("[Reasoning] Fallback complete() returned error: %s", err_detail)
+                        raise LLMError(err_detail)
+                    raw = raw_r.unwrap()
                 except Exception as e:
                     logger.exception("[Reasoning] Fallback complete call failed: %s", e)
                     return ReasonResult(
-                        answer="I'm having trouble reasoning right now.",
+                        answer="I'm having trouble reasoning right now. LLM unreachable — check that Ollama is running or a cloud API key is set.",
                         confidence=0.0,
+                        provenance={"source": "error", "confidence": 0.0, "error": str(e)},
                         model_group="none",
                     )
             else:
                 return ReasonResult(
-                    answer="I'm having trouble reasoning right now.",
+                    answer="I'm having trouble reasoning right now. LLM unreachable — check that Ollama is running or a cloud API key is set.",
                     confidence=0.0,
+                    provenance={"source": "error", "confidence": 0.0, "error": str(e)},
                     model_group="none",
                 )
 
@@ -173,6 +185,15 @@ class ReasoningEngine:
             self._warmed = True
 
         thinking, answer = self._parse_cot(raw)
+
+        if not answer.strip():
+            logger.warning("[Reasoning] Model returned empty answer for goal=%s model_group=%s", goal[:80], model_group)
+            return ReasonResult(
+                answer="I received an empty response from the language model. The model may still be loading or unavailable.",
+                confidence=0.0,
+                provenance={"source": "error", "confidence": 0.0, "error": "empty_llm_response"},
+                model_group=model_group,
+            )
 
         if thinking:
             await self._emit_trace(thinking)

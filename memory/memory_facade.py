@@ -64,7 +64,7 @@ class MemoryFacade:
         if tiered is not None:
             try:
                 content = text[-1]["content"] if isinstance(text, list) else text
-                tiered.remember(content, metadata=metadata or {})
+                tiered.remember(content, metadata=metadata or {}, user_id=user_id)
             except Exception as exc:
                 logger.debug("tiered_memory.store failed: %s", exc)
         # Note: tiered_memory.remember() handles mem0 internally.
@@ -80,7 +80,7 @@ class MemoryFacade:
             try:
                 results = None
                 if hasattr(backend, "recall"):
-                    results = backend.recall(query, limit=limit)
+                    results = backend.recall(query, limit=limit, user_id=user_id)
                 elif hasattr(backend, "search"):
                     results = backend.search(query, user_id=user_id, limit=limit)
                 if results:
@@ -95,13 +95,25 @@ class MemoryFacade:
         return merged[:limit]
 
     def get_all(self, user_id: str) -> list[dict]:
+        results = []
+        # Get from Tiered (Hot)
+        tiered = self._tiered_memory
+        if tiered is not None:
+            try:
+                hot = tiered.get_hot_memories()
+                results.extend([{"memory": m, "tier": "hot"} for m in hot])
+            except Exception as exc:
+                logger.debug("tiered_memory.get_hot failed: %s", exc)
+
+        # Get from Mem0 (Cold)
         mem0 = self._mem0_adapter
         if mem0 is not None:
             try:
-                return mem0.get_all(user_id)
+                cold = mem0.get_all(user_id)
+                results.extend(cold)
             except Exception as exc:
                 logger.debug("mem0.get_all failed: %s", exc)
-        return []
+        return results
 
     def delete_all(self, user_id: str) -> bool:
         mem0 = self._mem0_adapter
@@ -125,7 +137,7 @@ class MemoryFacade:
             try:
                 items = None
                 if hasattr(backend, "recall"):
-                    items = backend.recall(query, limit=limit)
+                    items = backend.recall(query, limit=limit, user_id=user_id)
                 elif hasattr(backend, "search"):
                     items = backend.search(query, user_id=user_id, limit=limit)
                 if items:
