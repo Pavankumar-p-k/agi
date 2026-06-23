@@ -1,24 +1,23 @@
-"""Opportunity Discovery Engine (Phase 17) — Calibration (Phase 17.1) — Graph (Phase 19) — Mining (Phase 20).
+"""Opportunity Discovery (Phase 17) — Calibration (17.1) — Graph (19) — Mining (20) — Bottlenecks (22).
 
 Answers: "What should JARVIS improve first?"
 
-Phase 17: Discovers opportunities from 4 sources (bottleneck, ceiling, experiment, principle).
-Phase 17.1: Calibrates scores based on historical prediction accuracy.
-Phase 19: Builds opportunity dependency graphs and computes unlock_value.
-Phase 20: Learns opportunity dependencies from historical evidence via
-          sequential pattern mining — transitions the graph from human-seeded
-          to empirically learned.
+Phase 17: Discovers opportunities from 4 sources.
+Phase 17.1: Calibrates scores based on prediction accuracy.
+Phase 19: Builds dependency graphs, computes unlock_value.
+Phase 20: Learns dependencies from historical evidence.
+Phase 22: Predicts which subsystem weaknesses cause the most downstream
+          damage — propagates local impact through the learned graph.
 
-Scoring formula (6-dimensional):
+Scoring formula (7-dimensional for bottleneck analysis):
 
-    opportunity_score = impact × headroom × success_probability
-                      × confidence × calibration_accuracy × unlock_value
+    total_constrained_value = local_impact + propagated_impact
 
-The 6th dimension (unlock_value) is computed from forward-reachability analysis
-of the opportunity dependency graph. Edges in the graph shift from DEFAULT to
-LEARNED as historical evidence accumulates.
+    propagated_impact(node) = SUM over reachable nodes of:
+        downstream.local_impact * edge.confidence * depth_discount^depth
 """
 
+from core.opportunity.bottlenecks import Bottleneck, BottleneckAnalyzer, BottleneckImpact
 from core.opportunity.calibration import OpportunityCalibrator
 from core.opportunity.engine import OpportunityDiscoveryEngine, DEFAULT_SYSTEM_SCORES
 from core.opportunity.graph import (
@@ -44,6 +43,9 @@ from core.opportunity.models import (
 from core.opportunity.store import OpportunityRecord, OpportunityStore
 
 __all__ = [
+    "Bottleneck",
+    "BottleneckAnalyzer",
+    "BottleneckImpact",
     "DEFAULT_SYSTEM_SCORES",
     "DEFAULT_UNLOCK_VALUE",
     "EdgeSource",
