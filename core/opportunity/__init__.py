@@ -1,20 +1,15 @@
-"""Opportunity Discovery (Phase 17) — Calibration (17.1) — Graph (19) — Mining (20) — Bottlenecks (22).
+"""Opportunity Discovery (17) — Calibration (17.1) — Graph (19) — Mining (20) — Bottlenecks (22) — Roadmap (23).
 
-Answers: "What should JARVIS improve first?"
+Answers: "What should JARVIS improve first, in what sequence?"
 
 Phase 17: Discovers opportunities from 4 sources.
 Phase 17.1: Calibrates scores based on prediction accuracy.
 Phase 19: Builds dependency graphs, computes unlock_value.
 Phase 20: Learns dependencies from historical evidence.
-Phase 22: Predicts which subsystem weaknesses cause the most downstream
-          damage — propagates local impact through the learned graph.
-
-Scoring formula (7-dimensional for bottleneck analysis):
-
-    total_constrained_value = local_impact + propagated_impact
-
-    propagated_impact(node) = SUM over reachable nodes of:
-        downstream.local_impact * edge.confidence * depth_discount^depth
+Phase 22: Predicts bottlenecks — local + propagated impact.
+Phase 23: Generates multi-phase improvement roadmaps combining
+          opportunity scores, dependency ordering, and bottleneck
+          weights into sequenced execution plans.
 """
 
 from core.opportunity.bottlenecks import Bottleneck, BottleneckAnalyzer, BottleneckImpact
@@ -40,6 +35,7 @@ from core.opportunity.models import (
     OpportunitySource,
     OpportunityStatus,
 )
+from core.opportunity.roadmap import Roadmap, RoadmapGenerator, RoadmapItem, RoadmapPhase
 from core.opportunity.store import OpportunityRecord, OpportunityStore
 
 __all__ = [
@@ -62,6 +58,10 @@ __all__ = [
     "OpportunityStatus",
     "OpportunityStore",
     "PromotionRules",
+    "Roadmap",
+    "RoadmapGenerator",
+    "RoadmapItem",
+    "RoadmapPhase",
     "SequentialPatternMiner",
     "UnlockValueScorer",
     "build_default_graph",
