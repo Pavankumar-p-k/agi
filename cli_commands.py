@@ -2222,6 +2222,57 @@ def _cmd_scheduler(args):
                 print(f"error: {r['error']}")
             else:
                 print(f"no action ({r.get('reason', 'unknown')})")
+        elif cmd_name == "chain_submit":
+            if len(args.steps) < 2:
+                print("Usage: jarvis advanced scheduler chain_submit <chain_name> <goal1:type1> <goal2:type2> ...")
+                print("Example: jarvis advanced scheduler chain_submit \"Android Project\" research build email")
+                return 1
+            steps_list = []
+            for s in args.steps[1:]:  # skip chain_name
+                parts = s.split(":")
+                goal = parts[0]
+                ntype = parts[1] if len(parts) > 1 else "goal"
+                steps_list.append([goal, ntype])
+            r = await do_scheduler_chain_submit(name=args.steps[0], steps=steps_list)
+            if "chain_id" in r:
+                print(f"Chain created: {r['chain_id']}")
+                print(f"  Name: {r['name']}")
+                print(f"  Status: {r['status']}")
+                print(f"  Activities: {len(r['activities'])}")
+                for a in r['activities']:
+                    print(f"    {a['activity_id']}: {a['goal'][:50]} (order={a['metadata'].get('chain_order', '?')})")
+            else:
+                print(f"Error: {r}")
+        elif cmd_name == "chain_list":
+            r = await do_scheduler_chain_list()
+            chains = r.get("chains", [])
+            if not chains:
+                print("No chains found.")
+            else:
+                print(f"Chains ({len(chains)}):")
+                for c in chains:
+                    print(f"  {c['chain_id']}: {c['name']} [{c['status']}] {c['progress']}")
+        elif cmd_name == "chain_status":
+            if len(args.steps) < 1:
+                print("Usage: jarvis advanced scheduler chain_status <chain_id>")
+                return 1
+            r = await do_scheduler_chain_status(args.steps[0])
+            if "error" in r:
+                print(f"Error: {r['error']}")
+            else:
+                print(f"Chain: {r['name']}")
+                print(f"  Status: {r['status']}")
+                print(f"  Progress: {r['progress']}")
+                print(f"  Current step: {r['current_step']}")
+                for a in r['activities']:
+                    deps = ", ".join(a['depends_on']) if a['depends_on'] else "none"
+                    print(f"  {a['activity_id']}: [{a['status']}] {a['goal'][:50]} (deps: {deps})")
+        elif cmd_name == "chain_cancel":
+            if len(args.steps) < 1:
+                print("Usage: jarvis advanced scheduler chain_cancel <chain_id>")
+                return 1
+            r = await do_scheduler_chain_cancel(args.steps[0])
+            print(f"Cancelled: {r['cancelled']}" if r.get('cancelled') else f"Chain not found: {args.steps[0]}")
         else:
             print(f"Unknown scheduler subcommand: {cmd_name}")
             print("Run 'jarvis advanced scheduler' for help.")

@@ -49,6 +49,8 @@ ALWAYS_AVAILABLE = frozenset({
     "browser_wait_visible", "browser_wait_text", "browser_wait_interactive", "browser_shadow_query",
     "scheduler_submit", "scheduler_list", "scheduler_status", "scheduler_cancel",
     "scheduler_set_priority", "scheduler_tick",
+    "scheduler_chain_submit", "scheduler_chain_list",
+    "scheduler_chain_status", "scheduler_chain_cancel",
     "api_call",  # For configured integrations (Miniflux, Gitea, Linkding, etc.)
     # The two genuinely AMBIENT cookbook tools — "what's running" and
     # "kill it" can be asked any time without prior cookbook context,
@@ -181,6 +183,10 @@ BUILTIN_TOOL_DESCRIPTIONS: dict[str, str] = {
     "scheduler_cancel": "Cancel a pending or blocked activity by activity_id. Completed or running activities cannot be cancelled. Returns whether the cancellation succeeded.",
     "scheduler_set_priority": "Change the priority of a queued activity. Higher priority (0-5) means the scheduler will pick it sooner. Args (JSON): {\"activity_id\": \"...\", \"priority\": 5}. Returns updated priority.",
     "scheduler_tick": "Force an immediate scheduler tick (for testing or manual triggering). Returns the tick result including which activity was executed and whether it succeeded. Not needed for normal operation.",
+    "scheduler_chain_submit": "Submit a chain of dependent activities that execute sequentially. Args (JSON): {\"name\": \"Android Project\", \"steps\": [[\"Research SDK\", \"research\"], [\"Build APK\", \"build\"], [\"Email\", \"email\"]], \"priority\": 3}. Each step depends on the previous. Returns chain_id, status, and activity list.",
+    "scheduler_chain_list": "List all activity chains with their aggregate status and progress. Returns array of chains with chain_id, name, status, progress string, and step count.",
+    "scheduler_chain_status": "Get detailed status of a specific chain by chain_id. Returns chain status, current step, progress, and all activities with their individual statuses.",
+    "scheduler_chain_cancel": "Cancel all pending/blocked activities in a chain by chain_id. Running or completed activities are unaffected.",
     "browser_list_tabs": "List all open tabs in the current browser session. Returns each tab's index, URL, and title. Use before browser_switch_tab to find which tab to switch to.",
     "browser_switch_tab": "Switch to a different tab by index (0-based). Use after browser_list_tabs to pick a specific tab. The tab index is from the list_tabs result.",
     "browser_new_tab": "Open a new browser tab. Optionally provide a URL to navigate to in the new tab. The new tab becomes the active tab.",

@@ -175,3 +175,74 @@ def _serialize(a: ScheduledActivity) -> dict[str, Any]:
 def SchedulerStateName(state: str) -> str:
     m = {"stopped": "stopped", "running": "running", "paused": "paused"}
     return m.get(state, state)
+
+
+# ── Chain tools ─────────────────────────────────────────────────────
+
+
+async def do_scheduler_chain_submit(
+    name: str,
+    steps: list[list[str]],
+    priority: int = 0,
+) -> dict[str, Any]:
+    """Submit a chain of dependent activities.
+
+    Steps is a list of [goal, node_type] pairs in execution order.
+    Each activity depends on the previous. Returns the chain details.
+    """
+    from core.scheduler.chain import ChainManager
+    mgr = ChainManager()
+    typed_steps: list[tuple[str, str]] = [(s[0], s[1]) for s in steps]
+    chain = mgr.create_chain(name, typed_steps, priority=priority)
+    return {
+        "chain_id": chain.chain_id,
+        "name": chain.name,
+        "status": chain.status,
+        "progress": chain.progress,
+        "activities": [_serialize(a) for a in chain.activities],
+    }
+
+
+async def do_scheduler_chain_list() -> dict[str, Any]:
+    """List all activity chains."""
+    from core.scheduler.chain import ChainManager
+    mgr = ChainManager()
+    chains = mgr.list_chains()
+    return {
+        "chains": [
+            {
+                "chain_id": c.chain_id,
+                "name": c.name,
+                "status": c.status,
+                "progress": c.progress,
+                "step_count": len(c.activities),
+            }
+            for c in chains
+        ],
+    }
+
+
+async def do_scheduler_chain_status(chain_id: str) -> dict[str, Any]:
+    """Get detailed status of a specific chain."""
+    from core.scheduler.chain import ChainManager
+    mgr = ChainManager()
+    chain = mgr.get_chain(chain_id)
+    if not chain:
+        return {"error": f"Chain {chain_id} not found"}
+    return {
+        "chain_id": chain.chain_id,
+        "name": chain.name,
+        "status": chain.status,
+        "progress": chain.progress,
+        "current_step": chain.current_step,
+        "is_complete": chain.is_complete,
+        "activities": [_serialize(a) for a in chain.activities],
+    }
+
+
+async def do_scheduler_chain_cancel(chain_id: str) -> dict[str, Any]:
+    """Cancel all pending/blocked activities in a chain."""
+    from core.scheduler.chain import ChainManager
+    mgr = ChainManager()
+    found = mgr.delete_chain(chain_id)
+    return {"chain_id": chain_id, "cancelled": found}

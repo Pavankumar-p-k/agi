@@ -202,3 +202,120 @@ class TestSchedulerExt:
         act = sched.queue.submit("sched_sub", goal="Via scheduler")
         assert act is not None
         assert act.activity_id == "sched_sub"
+
+    # ── Worker pool tests ──────────────────────────────────────────────────
+
+    def test_default_max_workers(self):
+        sched = Scheduler(self._mgr, self._resume, store_db_path=self._db)
+        assert sched.max_workers == 3
+
+    def test_max_workers_setter(self):
+        sched = Scheduler(self._mgr, self._resume, store_db_path=self._db)
+        sched.max_workers = 5
+        assert sched.max_workers == 5
+        with pytest.raises(ValueError):
+            sched.max_workers = 0
+
+    def test_running_count_and_activities(self):
+        sched = Scheduler(self._mgr, self._resume, store_db_path=self._db)
+        assert sched.running_count == 0
+        assert sched.running_activities == []
+
+    def test_running_count_after_launch(self):
+        async def run():
+            sched = Scheduler(self._mgr, self._resume, store_db_path=self._db)
+            sched.max_workers = 2
+
+            async def slow_executor(**kw):
+                await asyncio.sleep(10)
+                return {"ok": True}
+
+            sched.registry.register("goal", slow_executor)
+            self._mgr.create_activity("Task A")
+            self._mgr.create_activity("Task B")
+            result = await sched.tick()
+            assert result["executed"] is True
+            assert len(result["launched"]) == 2
+            assert sched.running_count == 2
+            assert "Task A" in str(sched.running_activities) or len(sched.running_activities) == 2
+            await sched.stop()
+        asyncio.run(run())
+
+    def test_workers_complete_and_cleanup(self):
+        async def run():
+            sched = Scheduler(self._mgr, self._resume, store_db_path=self._db)
+            sched.max_workers = 2
+
+            async def quick_executor(**kw):
+                return {"ok": True}
+
+            sched.registry.register("goal", quick_executor)
+            act_a = self._mgr.create_activity("Quick A")
+            act_b = self._mgr.create_activity("Quick B")
+            result = await sched.tick()
+            assert len(result["launched"]) == 2
+            # Give workers time to finish
+            await asyncio.sleep(0.1)
+            assert sched.running_count == 0
+            assert sched.queue._activities.get(act_a.node_id).status == "completed"
+            assert sched.queue._activities.get(act_b.node_id).status == "completed"
+            await sched.stop()
+        asyncio.run(run())
+
+    def test_get_best_n(self):
+        sched = Scheduler(self._mgr, self._resume, store_db_path=self._db)
+
+        async def mock_exec(**kw):
+            return {"ok": True}
+
+        sched.registry.register("goal", mock_exec)
+        self._mgr.create_activity("A")
+        self._mgr.create_activity("B")
+        self._mgr.create_activity("C")
+        sched.queue.refresh()
+        best_2 = sched.queue.get_best_n(2)
+        assert len(best_2) == 2
+        best_5 = sched.queue.get_best_n(5)
+        assert len(best_5) == 3
+        best_0 = sched.queue.get_best_n(0)
+        assert best_0 == []
+        best_with_exclude = sched.queue.get_best_n(2, exclude={best_2[0].activity_id})
+        assert best_with_exclude[0].activity_id != best_2[0].activity_id
+
+    def test_worker_pool_respects_max_workers(self):
+        async def run():
+            sched = Scheduler(self._mgr, self._resume, store_db_path=self._db)
+            sched.max_workers = 2
+
+            async def sleeper(**kw):
+                await asyncio.sleep(10)
+                return {"ok": True}
+
+            sched.registry.register("goal", sleeper)
+            self._mgr.create_activity("A")
+            self._mgr.create_activity("B")
+            self._mgr.create_activity("C")
+            result = await sched.tick()
+            assert len(result["launched"]) == 2
+            # Third should not be launched (all workers busy)
+            result2 = await sched.tick()
+            assert result2.get("reason") == "all_workers_busy" or result2.get("reason") == "all_workers_busy"
+            await sched.stop()
+        asyncio.run(run())
+
+    def test_stop_cancels_all_workers(self):
+        async def run():
+            sched = Scheduler(self._mgr, self._resume, store_db_path=self._db)
+
+            async def slow_executor(**kw):
+                await asyncio.sleep(30)
+                return {"ok": True}
+
+            sched.registry.register("goal", slow_executor)
+            self._mgr.create_activity("A")
+            await sched.tick()
+            assert sched.running_count == 1
+            await sched.stop()
+            assert sched.running_count == 0
+            assert sched.state == "stopped"
+        asyncio.run(run())

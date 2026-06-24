@@ -136,6 +136,63 @@ class SchedulerQueue:
             return None
         return self._ready[0]
 
+    def get_best_n(self, n: int, exclude: set[str] | None = None) -> list[ScheduledActivity]:
+        """Return the top N ready activities, excluding any in the exclude set."""
+        if not self._ready:
+            return []
+        if exclude:
+            candidates = [a for a in self._ready if a.activity_id not in exclude]
+        else:
+            candidates = list(self._ready)
+        return candidates[:n]
+
+    def get_best_n_chain_aware(self, n: int, exclude: set[str] | None = None
+                                ) -> list[ScheduledActivity]:
+        """Return top N ready activities, balanced across chains for parallelism.
+
+        Strategy:
+          1. Group ready activities by chain_id (metadata.chain_id).
+          2. Pick the top activity from each chain (round-robin by chain).
+          3. Fill remaining slots from top-scored ungrouped activities.
+
+        This prevents one chain from consuming all worker slots.
+        """
+        if not self._ready:
+            return []
+        exclude = exclude or set()
+
+        # Group by chain
+        chains: dict[str, list[ScheduledActivity]] = {}
+        ungrouped: list[ScheduledActivity] = []
+        for act in self._ready:
+            if act.activity_id in exclude:
+                continue
+            cid = act.metadata.get("chain_id")
+            if cid:
+                chains.setdefault(cid, []).append(act)
+            else:
+                ungrouped.append(act)
+
+        selected: list[ScheduledActivity] = []
+        chain_iterators = {cid: iter(acts) for cid, acts in chains.items()}
+
+        # Round-robin: pick one from each chain
+        while chain_iterators and len(selected) < n:
+            for cid in list(chain_iterators.keys()):
+                if len(selected) >= n:
+                    break
+                it = chain_iterators[cid]
+                try:
+                    selected.append(next(it))
+                except StopIteration:
+                    del chain_iterators[cid]
+
+        # Fill remaining from ungrouped
+        if len(selected) < n and ungrouped:
+            selected.extend(ungrouped[: n - len(selected)])
+
+        return selected[:n]
+
     def mark_running(self, activity_id: str) -> None:
         act = self._activities.get(activity_id)
         if act:

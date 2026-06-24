@@ -58,6 +58,8 @@ TOOL_TAGS = {"bash", "python", "web_search", "web_fetch", "read_file", "write_fi
                # Scheduler tools
                 "scheduler_submit", "scheduler_list", "scheduler_status", "scheduler_cancel",
                 "scheduler_set_priority", "scheduler_tick",
+                "scheduler_chain_submit", "scheduler_chain_list",
+                "scheduler_chain_status", "scheduler_chain_cancel",
                # Build automation tools
                 "build_project", "repair_project", "run_tests", "runtime_validate", "cancel_build",
                # Workflow engine tools

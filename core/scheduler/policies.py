@@ -3,16 +3,19 @@
 Avoids AI. Uses static weights with activity-state modifiers.
 
 Score = priority_weight + urgency_weight + retry_weight
-        + waiting_time_bonus + user_requested_bonus
+        + waiting_time_bonus + user_requested_bonus + intelligence_boost
 """
 
 from __future__ import annotations
 
 import logging
 from datetime import datetime, timezone
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from core.scheduler.models import ScheduledActivity
+
+if TYPE_CHECKING:
+    from core.scheduler.intelligence import ActivityIntelligence
 
 logger = logging.getLogger(__name__)
 
@@ -35,14 +38,33 @@ USER_REQUESTED_BONUS = 80
 class PriorityPolicy:
     """Deterministic activity ranking.
 
+    Integrates optional ActivityIntelligence for learned priority boost
+    based on historical success rate and expected duration per node_type.
+
     Usage:
         policy = PriorityPolicy()
         ranked = policy.rank(activities)
         best = ranked[0]  # highest score
+
+        # With intelligence:
+        policy = PriorityPolicy(intelligence=ActivityIntelligence())
     """
 
-    def __init__(self, weights: dict[str, int] | None = None):
+    def __init__(
+        self,
+        weights: dict[str, int] | None = None,
+        intelligence: ActivityIntelligence | None = None,
+    ):
         self._weights = weights or {}
+        self._intelligence = intelligence
+
+    @property
+    def intelligence(self) -> ActivityIntelligence | None:
+        return self._intelligence
+
+    @intelligence.setter
+    def intelligence(self, ai: ActivityIntelligence | None) -> None:
+        self._intelligence = ai
 
     def rank(self, activities: list[ScheduledActivity],
              now: datetime | None = None) -> list[ScheduledActivity]:
@@ -86,5 +108,12 @@ class PriorityPolicy:
         for key, weight in self._weights.items():
             if act.metadata.get(key):
                 score += weight
+
+        # 7. Intelligence boost — learned success_rate / duration tradeoff
+        if self._intelligence:
+            boost = self._intelligence.learned_priority(
+                act.node_type, act.priority,
+            )
+            score += boost
 
         return score

@@ -229,6 +229,19 @@ class SchedulerStore:
         with self._lock, sqlite3.connect(self._db_path) as conn:
             conn.execute("DELETE FROM schedules WHERE id = ?", (schedule_id,))
 
+    def list_by_metadata(self, key: str, value: str) -> list[ScheduledActivity]:
+        """Find activities whose metadata contains the given key=value pair."""
+        with self._lock, sqlite3.connect(self._db_path) as conn:
+            rows = conn.execute(
+                "SELECT * FROM scheduled_activities ORDER BY created_at ASC"
+            ).fetchall()
+        result = []
+        for r in rows:
+            act = self._row_to_activity(r)
+            if act.metadata.get(key) == value:
+                result.append(act)
+        return result
+
     def clear(self) -> None:
         with self._lock, sqlite3.connect(self._db_path) as conn:
             conn.execute("DELETE FROM scheduled_activities")

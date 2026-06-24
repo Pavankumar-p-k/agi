@@ -2475,6 +2475,36 @@ async def execute_tool_block(
         r = await do_scheduler_tick()
         return "scheduler_tick", r
 
+    async def _hdl_scheduler_chain_submit(content, **kw):
+        from core.tools.scheduler_tools import do_scheduler_chain_submit
+        try:
+            args = json.loads(content) if content and content.strip() else {}
+        except (json.JSONDecodeError, ValueError):
+            args = {}
+        r = await do_scheduler_chain_submit(
+            name=args.get("name", "Chain") if isinstance(args, dict) else "Chain",
+            steps=args.get("steps", []) if isinstance(args, dict) else [],
+            priority=args.get("priority", 0) if isinstance(args, dict) else 0,
+        )
+        return "scheduler_chain_submit", r
+
+    async def _hdl_scheduler_chain_list(content, **kw):
+        from core.tools.scheduler_tools import do_scheduler_chain_list
+        r = await do_scheduler_chain_list()
+        return "scheduler_chain_list", r
+
+    async def _hdl_scheduler_chain_status(content, **kw):
+        from core.tools.scheduler_tools import do_scheduler_chain_status
+        chain_id = content.strip() if content and content.strip() else ""
+        r = await do_scheduler_chain_status(chain_id)
+        return "scheduler_chain_status", r
+
+    async def _hdl_scheduler_chain_cancel(content, **kw):
+        from core.tools.scheduler_tools import do_scheduler_chain_cancel
+        chain_id = content.strip() if content and content.strip() else ""
+        r = await do_scheduler_chain_cancel(chain_id)
+        return "scheduler_chain_cancel", r
+
     # ── Agent Dispatch ──────────────────────────────────────────────────
     async def _hdl_agent_exec(content, **kw):
         """Route to a registered agent via the multi-agent graph.
@@ -2602,6 +2632,10 @@ async def execute_tool_block(
         "scheduler_cancel": _hdl_scheduler_cancel,
         "scheduler_set_priority": _hdl_scheduler_set_priority,
         "scheduler_tick": _hdl_scheduler_tick,
+        "scheduler_chain_submit": _hdl_scheduler_chain_submit,
+        "scheduler_chain_list": _hdl_scheduler_chain_list,
+        "scheduler_chain_status": _hdl_scheduler_chain_status,
+        "scheduler_chain_cancel": _hdl_scheduler_chain_cancel,
         "agent_exec": _hdl_agent_exec,
     }
 

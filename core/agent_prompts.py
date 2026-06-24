@@ -63,7 +63,9 @@ def _build_tool_shortlist(tool_names: set = None) -> str:
             "workflow_start", "workflow_resume", "workflow_cancel",
             "workflow_status", "workflow_list",
             "scheduler_submit", "scheduler_list", "scheduler_status", "scheduler_cancel",
-            "scheduler_set_priority", "scheduler_tick"}
+            "scheduler_set_priority", "scheduler_tick",
+            "scheduler_chain_submit", "scheduler_chain_list",
+            "scheduler_chain_status", "scheduler_chain_cancel"}
     shown = set()
     for name in sorted(tool_names, key=lambda n: (n not in core, n)):
         if name in shown:
@@ -299,6 +301,10 @@ If the user asks for a reminder/alarm before the event, pass `reminder_minutes` 
     "scheduler_cancel": "- ```scheduler_cancel``` — Cancel a pending or blocked activity by activity_id. Completed or running activities cannot be cancelled. Args: the activity_id string.",
     "scheduler_set_priority": "- ```scheduler_set_priority``` — Change priority of a queued activity. Accepts JSON: {\"activity_id\": \"...\", \"priority\": 5}. Higher priority (0-5) runs sooner.",
     "scheduler_tick": "- ```scheduler_tick``` — Force an immediate scheduler tick (testing/debugging only). Returns which activity was executed and the result.",
+    "scheduler_chain_submit": "- ```scheduler_chain_submit``` — Submit a chain of dependent activities that execute sequentially. Accepts JSON: {\"name\": \"Android Project\", \"steps\": [[\"Research SDK\", \"research\"], [\"Build APK\", \"build\"]], \"priority\": 3}. Each step depends on the previous. The scheduler executes them in order as workers become available.",
+    "scheduler_chain_list": "- ```scheduler_chain_list``` — List all activity chains with aggregate status and progress.",
+    "scheduler_chain_status": "- ```scheduler_chain_status``` — Get detailed status of a chain by ID, including current step and per-activity status.",
+    "scheduler_chain_cancel": "- ```scheduler_chain_cancel``` — Cancel all pending/blocked activities in a chain. Running/completed steps are unaffected.",
     "browser_list_tabs": "- ```browser_list_tabs``` — List all open browser tabs. Returns each tab's index, URL, and title. No arguments. Use BEFORE browser_switch_tab.",
     "browser_switch_tab": "- ```browser_switch_tab``` — Switch to a browser tab by 0-based index. Args: the tab index (integer, e.g. ``0``` or ``2```). Use after browser_list_tabs.",
     "browser_new_tab": "- ```browser_new_tab``` — Open a new blank browser tab. Optional arg: URL to navigate to. Args: URL string (optional, e.g. ``https://example.com``` or blank for empty tab).",
