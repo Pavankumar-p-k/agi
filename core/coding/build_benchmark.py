@@ -193,10 +193,12 @@ async def get_strategy_prediction(goal: str, goal_type: str = "build"
         from core.strategy.memory_adapter import MemoryAdapter
 
         gen = StrategyGenerator()
-        pred = OutcomePredictor()
+        from core.belief.integration import BeliefIntegrator as _BI
+        _bel = _BI()
+        pred = OutcomePredictor(belief_integrator=_bel)
         ev = StrategyEvaluator()
         sel = StrategySelector(evaluator=ev)
-        mem = MemoryAdapter()
+        mem = MemoryAdapter(belief_integrator=_bel)
 
         # Generate → Predict → Evaluate → Select
         strategies = gen.generate(goal)
@@ -507,7 +509,8 @@ async def _record_benchmark_calibration(session: BenchmarkSession) -> None:
         logger.debug("Calibration not available")
         return
 
-    calibrator = PredictionCalibrator()
+    from core.belief.integration import BeliefIntegrator
+    calibrator = PredictionCalibrator(belief_integrator=BeliefIntegrator())
 
     for run in (session.build_project_run, session.automated_build_run):
         duration_days = run.duration_seconds / 86400.0 if run.duration_seconds > 0 else 0.01

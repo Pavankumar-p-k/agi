@@ -40,13 +40,15 @@ class Consolidator:
         activity_manager: ActivityManager | None = None,
         store: KnowledgeStore | None = None,
         interval_seconds: int = _DEFAULT_INTERVAL_SECONDS,
+        belief_integrator: Any | None = None,
     ):
         self._store = store or KnowledgeStore()
         self._am = activity_manager or ActivityManager(
             store=ActivityStore(self._store._db_path),
         )
         self._extractor = ExperienceExtractor(self._am, self._store)
-        self._synthesizer = KnowledgeSynthesizer(self._store)
+        self._belief = belief_integrator or self._create_belief_integrator()
+        self._synthesizer = KnowledgeSynthesizer(self._store, belief_integrator=self._belief)
         self._interval = interval_seconds
         self._running = False
 
@@ -112,3 +114,11 @@ class Consolidator:
         if count > 0:
             logger.info("Consolidator: pruned %d stale knowledge items", count)
         return count
+
+    @staticmethod
+    def _create_belief_integrator():
+        try:
+            from core.belief.integration import BeliefIntegrator
+            return BeliefIntegrator()
+        except ImportError:
+            return None

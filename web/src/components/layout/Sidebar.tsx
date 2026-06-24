@@ -12,6 +12,7 @@ const NAV = [
   { href: '/voice', label: 'Voice', icon: '♢' },
   { href: '/models', label: 'Models', icon: '◎' },
   { href: '/agents', label: 'Agents', icon: '⊚' },
+  { href: '/operations', label: 'Operations', icon: '⚙' },
   { href: '/automation', label: 'Automation', icon: '⟁' },
   { href: '/memory', label: 'Memory', icon: '◈' },
   { href: '/skills', label: 'Skills', icon: '⌘' },

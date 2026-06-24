@@ -1886,6 +1886,21 @@ async def execute_tool_block(
             })
         return "browser_get_facts", {"facts": serialized, "count": len(serialized)}
 
+    async def _hdl_browser_research(content, session_id=None, owner=None, **kw):
+        from core.tools.browser_research import do_browser_research
+        try:
+            args = json.loads(content) if content and content.strip() else {}
+        except (json.JSONDecodeError, ValueError):
+            args = {"question": content.strip()} if content and content.strip() else {}
+        question = args.get("question", "") if isinstance(args, dict) else str(args)
+        max_pages = args.get("max_pages", 5) if isinstance(args, dict) else 5
+        result = await do_browser_research(
+            question=question,
+            session_id=session_id,
+            max_pages=max_pages,
+        )
+        return "browser_research", result
+
     async def _hdl_browser_list_tabs(content, session_id=None, owner=None, **kw):
         return "browser_list_tabs", await do_browser_list_tabs(session_id=session_id)
 
@@ -2404,6 +2419,62 @@ async def execute_tool_block(
         r = await do_workflow_list(content)
         return "workflow_list", r
 
+    # ── Scheduler Tools ──────────────────────────────────────────────────
+    async def _hdl_scheduler_submit(content, **kw):
+        from core.tools.scheduler_tools import do_scheduler_submit
+        try:
+            args = json.loads(content) if content and content.strip() else {}
+        except (json.JSONDecodeError, ValueError):
+            args = {"goal": content.strip()} if content and content.strip() else {}
+        r = await do_scheduler_submit(
+            goal=args.get("goal", "") if isinstance(args, dict) else str(args),
+            priority=args.get("priority", 0) if isinstance(args, dict) else 0,
+            activity_id=args.get("activity_id") if isinstance(args, dict) else None,
+            node_type=args.get("node_type", "goal") if isinstance(args, dict) else "goal",
+            depends_on=args.get("depends_on") if isinstance(args, dict) else None,
+            metadata=args.get("metadata") if isinstance(args, dict) else None,
+        )
+        return "scheduler_submit", r
+
+    async def _hdl_scheduler_list(content, **kw):
+        from core.tools.scheduler_tools import do_scheduler_list
+        try:
+            args = json.loads(content) if content and content.strip() else {}
+        except (json.JSONDecodeError, ValueError):
+            args = {}
+        r = await do_scheduler_list(
+            status_filter=args.get("status") if isinstance(args, dict) else None,
+        )
+        return "scheduler_list", r
+
+    async def _hdl_scheduler_status(content, **kw):
+        from core.tools.scheduler_tools import do_scheduler_status
+        aid = content.strip() if content and content.strip() else ""
+        r = await do_scheduler_status(aid)
+        return "scheduler_status", r
+
+    async def _hdl_scheduler_cancel(content, **kw):
+        from core.tools.scheduler_tools import do_scheduler_cancel
+        aid = content.strip() if content and content.strip() else ""
+        r = await do_scheduler_cancel(aid)
+        return "scheduler_cancel", r
+
+    async def _hdl_scheduler_set_priority(content, **kw):
+        from core.tools.scheduler_tools import do_scheduler_set_priority
+        try:
+            args = json.loads(content) if content and content.strip() else {}
+        except (json.JSONDecodeError, ValueError):
+            args = {}
+        aid = args.get("activity_id", "") if isinstance(args, dict) else ""
+        pri = args.get("priority", 0) if isinstance(args, dict) else 0
+        r = await do_scheduler_set_priority(aid, pri)
+        return "scheduler_set_priority", r
+
+    async def _hdl_scheduler_tick(content, **kw):
+        from core.tools.scheduler_tools import do_scheduler_tick
+        r = await do_scheduler_tick()
+        return "scheduler_tick", r
+
     # ── Agent Dispatch ──────────────────────────────────────────────────
     async def _hdl_agent_exec(content, **kw):
         """Route to a registered agent via the multi-agent graph.
@@ -2495,6 +2566,7 @@ async def execute_tool_block(
         "browser_health": _hdl_browser_health,
         "browser_get_history": _hdl_browser_get_history,
         "browser_get_facts": _hdl_browser_get_facts,
+        "browser_research": _hdl_browser_research,
         "browser_list_tabs": _hdl_browser_list_tabs,
         "browser_switch_tab": _hdl_browser_switch_tab,
         "browser_new_tab": _hdl_browser_new_tab,
@@ -2524,8 +2596,15 @@ async def execute_tool_block(
         "workflow_cancel": _hdl_workflow_cancel,
         "workflow_status": _hdl_workflow_status,
         "workflow_list": _hdl_workflow_list,
+        "scheduler_submit": _hdl_scheduler_submit,
+        "scheduler_list": _hdl_scheduler_list,
+        "scheduler_status": _hdl_scheduler_status,
+        "scheduler_cancel": _hdl_scheduler_cancel,
+        "scheduler_set_priority": _hdl_scheduler_set_priority,
+        "scheduler_tick": _hdl_scheduler_tick,
         "agent_exec": _hdl_agent_exec,
     }
+
     for _t in _MCP_TOOL_MAP:
         _TOOL_HANDLERS[_t] = _hdl_mcp_tool
 

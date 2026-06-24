@@ -1,0 +1,15 @@
+{
+  "name": "@jarvis/sdk",
+  "version": "0.1.0",
+  "description": "JARVIS Agent OS — typed SDK for all frontends",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "generate": "node scripts/generate-types.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  }
+}

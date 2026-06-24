@@ -61,7 +61,9 @@ def _build_tool_shortlist(tool_names: set = None) -> str:
             "update_document", "build_repomap", "code_graph", "app_api",
             "build_project", "repair_project", "run_tests", "runtime_validate",
             "workflow_start", "workflow_resume", "workflow_cancel",
-            "workflow_status", "workflow_list"}
+            "workflow_status", "workflow_list",
+            "scheduler_submit", "scheduler_list", "scheduler_status", "scheduler_cancel",
+            "scheduler_set_priority", "scheduler_tick"}
     shown = set()
     for name in sorted(tool_names, key=lambda n: (n not in core, n)):
         if name in shown:
@@ -290,6 +292,13 @@ If the user asks for a reminder/alarm before the event, pass `reminder_minutes` 
     "browser_health": "- ```browser_health``` — Check if the Playwright browser is alive. Returns active sessions, tabs, memory. No arguments.",
     "browser_get_history": "- ```browser_get_history``` — Get the browser navigation and action history. Returns all visited URLs and detailed action log (tool, url, selector, status, timestamp). No arguments. Use to recall what was done in the browser across turns.",
     "browser_get_facts": "- ```browser_get_facts``` — Get structured facts extracted from previously visited pages. Provide a search query to find specific facts (e.g. 'python version', 'pricing'), or empty for all facts. Returns entity, claim, source_url, category, and confidence score for each fact. Facts are automatically extracted after each browser_snapshot — no manual extraction needed.",
+    "browser_research": "- ```browser_research``` — Run multi-page browser research on a question. Accepts JSON: {\"question\": \"your research question\", \"max_pages\": 5}. Decomposes the question, searches the web, visits result pages, extracts facts from each page, detects contradictions and agreements, and returns a structured research report with sources_consulted, total_facts, summary, agreements, contradictions, gaps, overall_confidence, and recommendations. Use for ANY multi-page research task where you need to compare information across multiple sources.",
+    "scheduler_submit": "- ```scheduler_submit``` — Submit a new activity to the autonomous scheduler. Accepts JSON: {\"goal\": \"Build Android app\", \"priority\": 5, \"node_type\": \"build\"}. The scheduler will execute it based on priority and dependency ordering. Activities are persisted to SQLite and survive restarts. Use to queue work for later execution.",
+    "scheduler_list": "- ```scheduler_list``` — List all activities in the scheduler queue. Optional status filter (pending, running, blocked, completed, failed). Returns total, ready, blocked counts and per-activity details. Use to inspect what the scheduler is working on.",
+    "scheduler_status": "- ```scheduler_status``` — Get status of a specific activity by activity_id. Returns priority, score, status, goal, node_type, dependencies, and metadata.",
+    "scheduler_cancel": "- ```scheduler_cancel``` — Cancel a pending or blocked activity by activity_id. Completed or running activities cannot be cancelled. Args: the activity_id string.",
+    "scheduler_set_priority": "- ```scheduler_set_priority``` — Change priority of a queued activity. Accepts JSON: {\"activity_id\": \"...\", \"priority\": 5}. Higher priority (0-5) runs sooner.",
+    "scheduler_tick": "- ```scheduler_tick``` — Force an immediate scheduler tick (testing/debugging only). Returns which activity was executed and the result.",
     "browser_list_tabs": "- ```browser_list_tabs``` — List all open browser tabs. Returns each tab's index, URL, and title. No arguments. Use BEFORE browser_switch_tab.",
     "browser_switch_tab": "- ```browser_switch_tab``` — Switch to a browser tab by 0-based index. Args: the tab index (integer, e.g. ``0``` or ``2```). Use after browser_list_tabs.",
     "browser_new_tab": "- ```browser_new_tab``` — Open a new blank browser tab. Optional arg: URL to navigate to. Args: URL string (optional, e.g. ``https://example.com``` or blank for empty tab).",

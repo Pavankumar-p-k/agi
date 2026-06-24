@@ -314,7 +314,8 @@ async def _record_calibration(record: BuildExecutionRecord) -> None:
         logger.debug("Calibration not available, skipping calibration recording")
         return
 
-    calibrator = PredictionCalibrator()
+    from core.belief.integration import BeliefIntegrator
+    calibrator = PredictionCalibrator(belief_integrator=BeliefIntegrator())
 
     # Build a minimal strategy with a default heuristic prediction
     duration_days = record.actual_duration_seconds / 86400.0 if record.actual_duration_seconds else 1.0

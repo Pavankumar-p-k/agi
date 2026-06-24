@@ -116,6 +116,18 @@ from core.tools.workflow_tools import (
     do_workflow_status,
     do_workflow_list,
 )
+from core.tools.scheduler_tools import (
+    do_scheduler_submit,
+    do_scheduler_list,
+    do_scheduler_status,
+    do_scheduler_cancel,
+    do_scheduler_set_priority,
+    do_scheduler_start,
+    do_scheduler_stop,
+    do_scheduler_pause,
+    do_scheduler_resume,
+    do_scheduler_tick,
+)
 
 __all__ = [
     "MAX_OUTPUT_CHARS", "MAX_READ_CHARS",
@@ -158,4 +170,8 @@ __all__ = [
     "do_manage_memory", "do_create_session", "do_chat_with_model",
     "do_workflow_start", "do_workflow_resume", "do_workflow_cancel",
     "do_workflow_status", "do_workflow_list",
+    "do_scheduler_submit", "do_scheduler_list", "do_scheduler_status",
+    "do_scheduler_cancel", "do_scheduler_set_priority",
+    "do_scheduler_start", "do_scheduler_stop",
+    "do_scheduler_pause", "do_scheduler_resume", "do_scheduler_tick",
 ]

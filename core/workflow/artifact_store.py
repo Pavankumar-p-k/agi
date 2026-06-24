@@ -60,6 +60,12 @@ class ArtifactStore:
     def list_artifacts(self, workflow_id: str) -> list[ArtifactRef]:
         return self._store.list_artifacts(workflow_id)
 
+    def list_all_artifacts(self) -> list[ArtifactRef]:
+        return self._store.list_all_artifacts()
+
+    def search_artifacts(self, query: str) -> list[ArtifactRef]:
+        return self._store.search_artifacts(query)
+
     def delete_artifact(self, artifact_id: str) -> None:
         self._store.delete_artifact(artifact_id)
 

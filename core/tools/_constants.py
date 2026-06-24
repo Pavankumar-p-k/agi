@@ -50,12 +50,16 @@ TOOL_TAGS = {"bash", "python", "web_search", "web_fetch", "read_file", "write_fi
              "browser_click", "browser_fill", "browser_press",
              "browser_snapshot", "browser_get_url", "browser_get_title",
              "browser_screenshot", "browser_current_state", "browser_health",
-             "browser_get_history", "browser_list_tabs", "browser_switch_tab",
+              "browser_get_history", "browser_get_facts", "browser_research",
+              "browser_list_tabs", "browser_switch_tab",
              "browser_new_tab", "browser_close_tab",
               "browser_wait_visible", "browser_wait_text", "browser_wait_interactive",
               "browser_shadow_query", "browser_evaluate",
-              # Build automation tools
-               "build_project", "repair_project", "run_tests", "runtime_validate", "cancel_build",
+               # Scheduler tools
+                "scheduler_submit", "scheduler_list", "scheduler_status", "scheduler_cancel",
+                "scheduler_set_priority", "scheduler_tick",
+               # Build automation tools
+                "build_project", "repair_project", "run_tests", "runtime_validate", "cancel_build",
                # Workflow engine tools
                "workflow_start", "workflow_resume", "workflow_cancel",
                "workflow_status", "workflow_list"}

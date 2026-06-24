@@ -380,6 +380,56 @@ class WorkflowStore:
                 for r in rows
             ]
 
+    def list_all_artifacts(self) -> "list[ArtifactRef]":
+        from core.workflow.artifact_store import ArtifactRef
+
+        with self._lock, sqlite3.connect(self._db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            rows = conn.execute(
+                "SELECT * FROM workflow_artifacts ORDER BY created_at DESC"
+            ).fetchall()
+            return [
+                ArtifactRef(
+                    artifact_id=r["artifact_id"],
+                    workflow_id=r["workflow_id"],
+                    name=r["name"],
+                    artifact_type=r["artifact_type"],
+                    path=r["path"],
+                    size_bytes=r["size_bytes"],
+                    checksum=r["checksum"],
+                    metadata=json.loads(r["metadata_json"]),
+                    created_at=_parse_dt(r["created_at"]),
+                )
+                for r in rows
+            ]
+
+    def search_artifacts(self, query: str) -> "list[ArtifactRef]":
+        from core.workflow.artifact_store import ArtifactRef
+
+        with self._lock, sqlite3.connect(self._db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            like = f"%{query}%"
+            rows = conn.execute(
+                """SELECT * FROM workflow_artifacts
+                   WHERE name LIKE ? OR artifact_type LIKE ? OR path LIKE ?
+                   ORDER BY created_at DESC""",
+                (like, like, like),
+            ).fetchall()
+            return [
+                ArtifactRef(
+                    artifact_id=r["artifact_id"],
+                    workflow_id=r["workflow_id"],
+                    name=r["name"],
+                    artifact_type=r["artifact_type"],
+                    path=r["path"],
+                    size_bytes=r["size_bytes"],
+                    checksum=r["checksum"],
+                    metadata=json.loads(r["metadata_json"]),
+                    created_at=_parse_dt(r["created_at"]),
+                )
+                for r in rows
+            ]
+
     def delete_artifact(self, artifact_id: str) -> None:
         with self._lock, sqlite3.connect(self._db_path) as conn:
             conn.execute(

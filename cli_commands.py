@@ -2101,6 +2101,133 @@ def cmd_cli_frames(args): return 0
 def cmd_autonomy_logs(args): return 0
 def cmd_autonomy_clear(args): return 0
 def cmd_design(args): return 0
+
+
+def _cmd_scheduler(args):
+    """Handle scheduler sub-commands from the CLI."""
+    import asyncio
+    from core.scheduler.store import SchedulerStore
+    from core.scheduler.queue import SchedulerQueue
+    from core.scheduler.scheduler import Scheduler
+    from core.activity.manager import ActivityManager
+    from core.activity.resume import ResumeEngine
+    from core.activity.storage import ActivityStore
+
+    rest = getattr(args, 'cmd', [])[1:]
+    if not rest or rest[0] in ("-h", "--help", "help"):
+        print("Usage: jarvis advanced scheduler <subcommand> [args]")
+        print()
+        print("Subcommands:")
+        print("  start              Start the scheduler background loop")
+        print("  stop               Stop the scheduler background loop")
+        print("  pause              Pause scheduling (keep state)")
+        print("  resume             Resume scheduling")
+        print("  submit <goal>      Submit a new activity")
+        print("  list [status]      List activities (optionally filter by status)")
+        print("  status <id>        Get status of an activity")
+        print("  cancel <id>        Cancel a pending/blocked activity")
+        print("  set-priority <id> <priority>   Change priority (0-5)")
+        print("  tick               Force a single scheduler tick")
+        return 0
+
+    cmd_name = rest[0]
+    cmd_args = rest[1:]
+
+    from core.tools.scheduler_tools import (
+        do_scheduler_start, do_scheduler_stop, do_scheduler_pause,
+        do_scheduler_resume, do_scheduler_submit, do_scheduler_list,
+        do_scheduler_status, do_scheduler_cancel, do_scheduler_set_priority,
+        do_scheduler_tick, set_scheduler, get_scheduler,
+    )
+    from core.scheduler.registry import get_registry
+
+    # Auto-create scheduler if not running
+    sched = get_scheduler()
+    if sched is None:
+        store = ActivityStore()
+        mgr = ActivityManager(store=store)
+        resume = ResumeEngine(mgr)
+        sched = Scheduler(mgr, resume_engine=resume, registry=get_registry())
+        set_scheduler(sched)
+
+    async def _run():
+        if cmd_name == "start":
+            r = await do_scheduler_start()
+            print(f"Scheduler: {r['status']} (state={r['state']})")
+        elif cmd_name == "stop":
+            r = await do_scheduler_stop()
+            print(f"Scheduler: {r['status']}")
+        elif cmd_name == "pause":
+            r = await do_scheduler_pause()
+            print(f"Scheduler: {r['status']} (state={r['state']})")
+        elif cmd_name == "resume":
+            r = await do_scheduler_resume()
+            print(f"Scheduler: {r['status']} (state={r['state']})")
+        elif cmd_name == "submit":
+            goal = " ".join(cmd_args) if cmd_args else "Untitled activity"
+            r = await do_scheduler_submit(goal=goal)
+            print(f"Submitted: {r['activity_id']} (goal={r['goal']}, priority={r['priority']})")
+        elif cmd_name == "list":
+            status_filter = cmd_args[0] if cmd_args else None
+            r = await do_scheduler_list(status_filter=status_filter)
+            print(f"Queue: {r['total']} total ({r['ready']} ready, {r['blocked']} blocked)")
+            if r.get("current"):
+                print(f"  Current: {r['current']['activity_id']} ({r['current']['goal']}) [{r['current']['status']}]")
+            for a in r.get("activities", []):
+                print(f"  {a['activity_id']}: {a['goal']} [{a['status']}] priority={a['priority']} score={a['score']}")
+        elif cmd_name == "status":
+            if not cmd_args:
+                print("Usage: scheduler status <activity_id>")
+                return
+            r = await do_scheduler_status(cmd_args[0])
+            if "error" in r:
+                print(f"Error: {r['error']}")
+            else:
+                print(f"Activity: {r['activity_id']}")
+                print(f"  Goal: {r.get('goal', '')}")
+                print(f"  Status: {r.get('status', '')}")
+                print(f"  Priority: {r.get('priority', 0)}")
+                print(f"  Score: {r.get('score', 0)}")
+                print(f"  Node type: {r.get('node_type', '')}")
+                print(f"  Depends on: {r.get('depends_on', [])}")
+        elif cmd_name == "cancel":
+            if not cmd_args:
+                print("Usage: scheduler cancel <activity_id>")
+                return
+            r = await do_scheduler_cancel(cmd_args[0])
+            if r["cancelled"]:
+                print(f"Cancelled: {r['activity_id']}")
+            else:
+                print(f"Not found or not cancellable: {r['activity_id']}")
+        elif cmd_name == "set-priority":
+            if len(cmd_args) < 2:
+                print("Usage: scheduler set-priority <activity_id> <priority>")
+                return
+            try:
+                pri = int(cmd_args[1])
+            except ValueError:
+                print("Priority must be an integer (0-5)")
+                return
+            r = await do_scheduler_set_priority(cmd_args[0], pri)
+            if r["updated"]:
+                print(f"Updated: {r['activity_id']} → priority={r['priority']}")
+            else:
+                print(f"Activity not found: {r['activity_id']}")
+        elif cmd_name == "tick":
+            r = await do_scheduler_tick()
+            print(f"Tick {r.get('tick', '?')}: ", end="")
+            if r.get("executed"):
+                print(f"executed {r['activity_id']} ({r.get('executor', '?')}) in {r.get('duration_ms', '?')}ms")
+            elif r.get("error"):
+                print(f"error: {r['error']}")
+            else:
+                print(f"no action ({r.get('reason', 'unknown')})")
+        else:
+            print(f"Unknown scheduler subcommand: {cmd_name}")
+            print("Run 'jarvis advanced scheduler' for help.")
+
+    asyncio.run(_run())
+    return 0
 def cmd_frames(args): return 0
 
 
@@ -2389,6 +2516,7 @@ _ADVANCED_COMMANDS = {
     "boot": "Show the animated boot screen",
     "status": "Show current JARVIS autonomous status",
     "design": "Show the CLI animation and build plan",
+    "scheduler": "Autonomous scheduler: start, stop, pause, resume, submit, list, status, cancel, set-priority, tick",
 }
 
 
@@ -2459,6 +2587,7 @@ def cmd_advanced(args):
         "index": cmd_index, "setup": cmd_setup,
         "debug": cmd_debug, "cleanup-audit": cmd_cleanup_audit,
         "boot": cmd_boot, "status": cmd_status, "design": cmd_design,
+        "scheduler": _cmd_scheduler,
     }
 
     if cmd_name in ("agent", "agents") and rest:

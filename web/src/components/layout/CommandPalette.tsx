@@ -11,6 +11,7 @@ const ACTIONS = [
   { id: 'monitor', label: 'Open Monitor', icon: '◉', href: '/monitor', keys: 'g m' },
   { id: 'logs', label: 'Open Logs', icon: '▤', href: '/logs', keys: 'g l' },
   { id: 'backend', label: 'Backend Control', icon: '⚙', href: '/backend', keys: 'g b' },
+  { id: 'operations', label: 'Operations Center', icon: '⚙', href: '/operations', keys: 'g o' },
   { id: 'settings', label: 'Settings', icon: '⚛', href: '/settings', keys: 'g s' },
   { id: 'themes', label: 'Theme Studio', icon: '🎨', href: '/settings/themes', keys: 'g t' },
   { id: 'fonts', label: 'Font Picker', icon: '🔤', href: '/settings/fonts', keys: 'g f' },

@@ -1,4 +1,4 @@
-"""ScheduledActivity — the unit of work the scheduler manages."""
+"""Models: ScheduledActivity (queue) + ScheduleModel (user-facing schedule definition)."""
 
 from __future__ import annotations
 
@@ -45,6 +45,25 @@ class ScheduledActivity:
 
     def unblock(self) -> None:
         self.status = "pending"
+
+
+@dataclass
+class ScheduleModel:
+    """A user-facing schedule definition — wraps an activity or workflow with timing.
+
+    Used by the REST API. The Scheduler checks this table for due schedules.
+    """
+
+    id: str = ""
+    name: str = ""
+    activity_id: str | None = None
+    workflow_id: str | None = None
+    cron: str | None = None
+    interval_seconds: int | None = None
+    next_run_at: datetime | None = None
+    last_run_at: datetime | None = None
+    status: str = "active"  # active | paused | completed | failed
+    created_at: datetime | None = None
 
 
 def activity_status_from_node(node_status: str) -> str:

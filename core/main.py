@@ -448,6 +448,34 @@ except Exception as e:
     logger.warning("[Router] Operations routes not loaded: %s", e)
 
 try:
+    from core.routes.activity import router as activity_router
+    app.include_router(activity_router)
+    logger.info("[Router] Activity Graph routes loaded [OK]")
+except Exception as e:
+    logger.warning("[Router] Activity Graph routes not loaded: %s", e)
+
+try:
+    from core.routes.artifacts import router as artifacts_router
+    app.include_router(artifacts_router)
+    logger.info("[Router] Artifact Store routes loaded [OK]")
+except Exception as e:
+    logger.warning("[Router] Artifact Store routes not loaded: %s", e)
+
+try:
+    from core.routes.workflows import router as workflows_router
+    app.include_router(workflows_router)
+    logger.info("[Router] Workflow Engine routes loaded [OK]")
+except Exception as e:
+    logger.warning("[Router] Workflow Engine routes not loaded: %s", e)
+
+try:
+    from core.routes.scheduler import router as scheduler_router
+    app.include_router(scheduler_router)
+    logger.info("[Router] Scheduler routes loaded [OK]")
+except Exception as e:
+    logger.warning("[Router] Scheduler routes not loaded: %s", e)
+
+try:
     from core.routes.websocket import router as ws_router
     app.include_router(ws_router)
     logger.info("[Router] WebSocket routes loaded [OK]")

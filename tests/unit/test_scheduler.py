@@ -101,7 +101,9 @@ class TestSchedulerQueue(unittest.TestCase):
         self._db = os.path.join(self._tmp, "test_queue.db")
         self.store = ActivityStore(db_path=self._db)
         self.mgr = ActivityManager(store=self.store)
-        self.queue = SchedulerQueue(self.mgr)
+        from core.scheduler.store import SchedulerStore
+        self._sched_store = SchedulerStore(db_path=self._db)
+        self.queue = SchedulerQueue(self.mgr, store=self._sched_store)
 
     def tearDown(self):
         shutil.rmtree(self._tmp, ignore_errors=True)
@@ -160,18 +162,21 @@ class TestScheduler(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self._tmp, ignore_errors=True)
 
+    def _make_scheduler(self, **kw):
+        kw.setdefault("execute_fn", self._fake_execute)
+        return Scheduler(self.mgr, self.resume, store_db_path=self._db, **kw)
+
     async def _fake_execute(self, activity_id: str, label: str) -> None:
         self.executed.append((activity_id, label))
 
     def test_14_tick_no_activities(self):
-        scheduler = Scheduler(self.mgr, self.resume, execute_fn=self._fake_execute)
+        scheduler = self._make_scheduler()
         asyncio.run(scheduler.tick())
         self.assertEqual(self.executed, [])
 
     def test_15_tick_resumes_activity(self):
         self.mgr.create_activity("Build app")
-        scheduler = Scheduler(self.mgr, self.resume, execute_fn=self._fake_execute,
-                              tick_interval=0.5)
+        scheduler = self._make_scheduler(tick_interval=0.5)
         asyncio.run(scheduler.tick())
         self.assertEqual(len(self.executed), 1)
         self.assertIn("Build app", self.executed[0][1])
@@ -179,14 +184,13 @@ class TestScheduler(unittest.TestCase):
     def test_16_tick_skips_completed(self):
         a1 = self.mgr.create_activity("Build app")
         self.mgr.complete_activity(a1.activity_id)
-        scheduler = Scheduler(self.mgr, self.resume, execute_fn=self._fake_execute)
+        scheduler = self._make_scheduler()
         asyncio.run(scheduler.tick())
         self.assertEqual(self.executed, [])
 
     def test_17_start_stop(self):
         async def run():
-            scheduler = Scheduler(self.mgr, self.resume, execute_fn=self._fake_execute,
-                                  tick_interval=0.1)
+            scheduler = self._make_scheduler(tick_interval=0.1)
             self.assertFalse(scheduler.is_running)
             await scheduler.start()
             self.assertTrue(scheduler.is_running)
@@ -212,16 +216,15 @@ class TestScheduler(unittest.TestCase):
 
     def test_19_no_execute_fn_fallback(self):
         self.mgr.create_activity("Build app")
-        scheduler = Scheduler(self.mgr, self.resume, execute_fn=None)
+        scheduler = self._make_scheduler(execute_fn=None)
         asyncio.run(scheduler.tick())
-        # No crash — logs "no execute_fn" and returns
+        # No crash — no executor registered for "goal" type
         self.assertEqual(scheduler.ticks, 1)
 
     def test_20_multiple_ticks(self):
         # Manually tick twice — each tick loads activities and executes one
         self.mgr.create_activity("Build app")
-        scheduler = Scheduler(self.mgr, self.resume, execute_fn=self._fake_execute,
-                              tick_interval=0.05)
+        scheduler = self._make_scheduler(tick_interval=0.05)
         asyncio.run(scheduler.tick())
         asyncio.run(scheduler.tick())
         # First tick resumes; second tick: activity is now RUNNING,

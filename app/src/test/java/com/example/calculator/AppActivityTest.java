@@ -1,1 +1,0 @@
-/* Your AppActivity Test Java code here */
