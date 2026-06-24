@@ -1,6 +1,6 @@
 # JARVIS Architecture Status
 
-> Current Version: Commit `fe28ab3` (Phase 23)
+> Current Version: Commit `75fc499` (Phase 21-23 complete)
 > Auto-generated summary of completed, pending, and planned phases.
 
 ---
@@ -35,6 +35,7 @@
 - **Phase 17.1** — Opportunity Calibration (prediction-vs-actual tracking per source)
 - **Phase 19** — Opportunity Graph (unlock_value via BFS reachability, 6th scoring dimension)
 - **Phase 20** — Learned Opportunity Graph (sequential pattern mining, support/confidence/lift, promotion gates)
+- **Phase 21** — Opportunity Forecasting (trend analysis, velocity estimation, bottleneck pressure, horizon classification)
 - **Phase 22** — Bottleneck Prediction (local + propagated impact through learned graph)
 - **Phase 23** — Autonomous Roadmap Generation (multi-phase improvement plans with dependency ordering)
 
@@ -43,18 +44,38 @@
 
 ---
 
-## Remaining Planned Phase
+## Closed Planned Phases
+
+All 23 phases are now implemented. The architecture is structurally complete.
 
 ### Phase 21 — Opportunity Forecasting
 
-**Status:** Designed, not implemented
+**Status:** Complete (60 tests)
 
 **Purpose:**
-Predict future high-value opportunities before they become visible through current backward-looking discovery methods.
+Predict future high-value opportunities using trend analysis, velocity estimation, bottleneck pressure, unlock value, and horizon classification.
+
+**Formula:**
+```
+future_score = current_score × (1 + trend_factor) × (1 + bottleneck_factor) × unlock_factor
+```
+
+Where:
+- `trend_factor = -velocity` (declining → higher opportunity)
+- `bottleneck_factor = bottleneck_pressure × 0.30`
+- `unlock_factor = 1 + (unlock_value - 1) × 0.20`
+
+**Output:**
+- `ForecastedOpportunity` with predicted_score, confidence, horizon (short/medium/long-term), trend, velocity, rationale
+- `ForecastResult` with ranked forecasts, average confidence
+- Confidence: base 0.30, +0.15-0.40 for data, +0.20 for clear trend signal
 
 **Dependencies:**
-- Phase 22 (Bottleneck Prediction) — provides causal architecture understanding
-- Phase 23 (Roadmap Generation) — provides forecast target structure
+- Phase 17 — Current opportunity scores
+- Phase 19 — Unlock value (forward reachability)
+- Phase 20 — Graph structure for history collection
+- Phase 22 — Bottleneck pressure as leading indicator
+- Phase 23 — Roadmap structure for forecast targets
 
 ---
 
@@ -66,7 +87,7 @@ Predict future high-value opportunities before they become visible through curre
 | **Improvement** | Principle → Proposal → Experiment → Outcome → Principle | Complete |
 | **Strategic** | Opportunity → Strategy → Portfolio → Execute → Measure | Complete |
 | **Self-Modification** | Discover → Decide → Patch → Test → Promote/Rollback | Complete |
-| **Forecasting** | Historical data → Trend model → Future opportunity scores | Pending (Phase 21) |
+| **Forecasting** | Historical data → Trend model → Future opportunity scores | Complete |
 
 ---
 
@@ -79,23 +100,27 @@ Predict future high-value opportunities before they become visible through curre
 | Strategy | 88 | Portfolio optimization, option value, strategic execution |
 | Generalization | 90 | Principles → proposals → experiments → outcomes → principles |
 | Self-Modification | 72 | Safe, recipe-based. Ceiling is recipe surface area. |
-| Opportunity Discovery | 80 | Raised by Phase 20 learned edges; forecasting still pending |
-| **Overall** | **85–90** | Cognitive operating system with complete improvement stack minus forecasting |
+| Opportunity Discovery | 84 | Forecasting now adds trend-aware, horizon-aware anticipatory layer |
+| **Overall** | **88–92** | All 23 phases complete. Every closed loop now exists. |
 
 ---
 
 ## Known Architectural Bottlenecks
 
-1. **Opportunity Forecasting (Phase 21)** — The last major missing capability. Without it, the system can only react to current state, not anticipate future bottlenecks.
+1. **Self-Modification Recipe Surface Area** — Only 6 recipes exist. Every new recipe requires developer intervention. This is the one area where the system cannot yet expand itself.
 
-2. **Self-Modification Recipe Surface Area** — Only 6 recipes exist. Every new recipe requires developer intervention. This is the one area where the system cannot yet expand itself.
-
-3. **Autonomous Opportunity Generation Quality** — Depends on activity store data accumulation. More real execution history = better graph edges = better bottleneck rankings = better roadmaps.
+2. **Autonomous Opportunity Generation Quality** — Depends on activity store data accumulation. More real execution history = better graph edges = better bottleneck rankings = better roadmaps = better forecasts.
 
 ---
 
-## Next Recommended Phase
+## Next Recommended Steps
 
-**Phase 21 — Opportunity Forecasting**
+With Phases 1–23 complete, the architecture is feature-complete. Recommended order:
 
-The only remaining planned capability before the autonomous-improvement stack reaches structural completeness. All prerequisite data (bottleneck trends, improvement velocity, maturity curves) is now available from Phases 16, 22, and 23.
+1. **Phase 21 → Multi-model Benchmarking** — Run identical workloads through Qwen, Gemma, Llama, Mistral. Quantify `Capability = Model × Architecture`.
+
+2. **Multi-model Benchmarking → Real-world Deployment** — Expose assumptions and integration weaknesses that synthetic tests cannot reveal.
+
+3. **Real-world Deployment → Hardening & Reliability** — Address failures exposed by deployment. Expand self-modification recipe surface area.
+
+The fundamental architectural hypothesis — that planner authority matters more than model size — now has a complete test bed. Multi-model benchmarking would provide the strongest evidence.

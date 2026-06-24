@@ -36,6 +36,7 @@ This document helps AI coding tools understand the JARVIS codebase structure, co
 | **15.1a** — StrategyExecutor (bridges StrategicDecision → ProposalExecutor → experiment → learning) | **COMPLETE** | 10 tests in core/strategy_v2/executor.py |
 | **15.2** — Resource-Constrained Portfolio Optimization (budget-aware knapsack selection, selected + deferred allocation) | **COMPLETE** | 12 tests in core/strategy_v2/portfolio.py |
 | **15.2+** — Future Option Value (dependency-aware option value scoring, enables strategies that unlock future improvements) | **COMPLETE** | 8 tests in core/strategy_v2/tradeoffs.py |
+| **21** — Opportunity Forecasting (trend analysis, velocity estimation, bottleneck pressure, horizon classification) | **COMPLETE** | 60 tests in core/opportunity/forecasting.py |
 
 **Key empirical finding: planner authority > model size.** With enforcement architecture (Phase 3.3), the same qwen2.5:7b went from 50% → 100% on the original suite + Benchmark E, without any model change.
 
@@ -1521,11 +1522,13 @@ RefactoringEngine.rollback(snapshots)  (if needed)
 - **Multi-Agent Collaboration: 8.5/10** — CollaborationCoordinator, ConsensusEngine, ArtifactReviewer, NegotiationEngine (34 tests, 5 files, wired produce→review→negotiate→consensus→revise/complete)
 - **Coding Intelligence: 9.3/10** — Repository indexer, dependency graph, architecture mapper, impact analyzer, change planner, refactor safety, change simulation, refactoring engine, architecture scorer, design analyzer, tradeoff engine, migration planner, improvement-driven safety
 - **Research: 9.3/10** — Fact extraction, knowledge graph, reasoning, synthesis, improvement-driven quality
-- **Memory: 8.5/10** — KnowledgeStore, ExperienceExtractor, KnowledgeSynthesizer, BehaviorAdapter, Consolidator all working
-- **Learning: 8.5/10** — ImprovementDetector, ProposalEngine, ExperimentRunner, SafePromotion, KnobStore — closed-loop adaptation
+- **Memory: 9/10** — KnowledgeStore, ExperienceExtractor, KnowledgeSynthesizer, BehaviorAdapter, Consolidator all working
+- **Learning: 9/10** — ImprovementDetector, ProposalEngine, ExperimentRunner, SafePromotion, KnobStore — closed-loop adaptation
 - **Strategic Reasoning: 7.5/10** — StrategyGenerator, OutcomePredictor, StrategyEvaluator, StrategySelector, MemoryAdapter, SimilarityScorer (105 tests, 8 files in core/strategy/)
 - **Automated Build: 8/10** — do_automated_build with ActivityGraph + Calibration + KnowledgeStore feedback (30 tests)
 - **Build Benchmark: 7/10** — Comparison framework + promotion decisions fully wired, no multi-sample statistics yet (25 tests)
 - **Principle Discovery: 7/10** — Registry + extractor + validator + store proven, no cross-domain proposal engine yet (44 tests in core/generalization/)
 - **Generalization Pipeline: 9.2/10** — Proposal engine, prioritizer, causal filter, derived properties, proposal executor — full evidence → principle → proposal → experiment → outcome loop (101 tests in core/generalization/)
 - **Strategic Reasoning v2: 8.5/10** — StrategyCandidate, TradeoffEngine, OutcomePredictor, StrategicSelector, **StrategyExecutor** (bridges decision → ProposalExecutor → experiment → outcome data point), **PortfolioOptimizer** (budget-aware knapsack selection, selected + deferred allocation), **Future Option Value** (dependency-aware option value scoring, enables strategies that unlock future improvements to score higher) (73 tests, 9 files in core/strategy_v2/)
+- **Opportunity Forecasting: 8/10** — ForecastingEngine with trend analysis, velocity estimation, bottleneck pressure, unlock value, horizon classification (60 tests in core/opportunity/forecasting.py)
+- **Opportunity Management: 9/10** — Full pipeline: discover (17) → calibrate (17.1) → graph (19) → mine (20) → forecast (21) → bottleneck (22) → roadmap (23) (280+ tests total)
