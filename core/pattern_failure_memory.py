@@ -369,6 +369,11 @@ class PatternFailureMemory:
             ],
         }
 
+    def get_all_patterns(self) -> dict[str, "PatternEntry"]:
+        """Return a copy of all pattern entries keyed by pattern string."""
+        self._ensure_loaded()
+        return dict(self._patterns)
+
     def clear(self):
         self._patterns = {}
         self._save()

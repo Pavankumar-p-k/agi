@@ -131,20 +131,25 @@ async def main(argv: list[str] | None = None) -> int:
         include_arch=not args.no_arch,
     )
 
-    # Print summary
-    print()
-    print(BenchmarkReportGenerator.to_text_summary(report))
-    print()
-
-    # Generate markdown report
+    # Generate markdown report (write to file first, before console output)
     md = BenchmarkReportGenerator.to_markdown(report)
     if args.report:
-        with open(args.report, "w") as f:
+        with open(args.report, "w", encoding="utf-8") as f:
             f.write(md)
         logger.info("Report written to %s", args.report)
-    else:
+
+    # Print text summary (ASCII-safe)
+    text = BenchmarkReportGenerator.to_text_summary(report)
+    safe_text = text.encode("ascii", errors="replace").decode("ascii")
+    print()
+    print(safe_text)
+    print()
+
+    # Print markdown to stdout only if no report file specified
+    if not args.report:
         print("=== Markdown Report ===")
-        print(md)
+        safe_md = md.encode("ascii", errors="replace").decode("ascii")
+        print(safe_md)
 
     # Store results
     store = BenchmarkResultsStore()

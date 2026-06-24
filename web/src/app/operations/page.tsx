@@ -9,6 +9,12 @@ import { ActivityGraph } from '@/components/operations/ActivityGraph';
 import { WorkflowTimeline } from '@/components/operations/WorkflowTimeline';
 import { RecentArtifacts } from '@/components/operations/RecentArtifacts';
 import { ScheduledGoals } from '@/components/operations/ScheduledGoals';
+import { KnowledgeExplorer } from '@/components/operations/KnowledgeExplorer';
+import { ResearchExplorer } from '@/components/operations/ResearchExplorer';
+import { PlannerStudio } from '@/components/operations/PlannerStudio';
+import { AgentPerformanceDashboard } from '@/components/operations/AgentPerformanceDashboard';
+import { ImprovementPanel } from '@/components/operations/ImprovementPanel';
+import { NegotiationPanel } from '@/components/operations/NegotiationPanel';
 import { RecoveryFeed } from '@/components/operations/RecoveryFeed';
 import type { ActivityNode } from '@jarvis/sdk';
 
@@ -135,6 +141,13 @@ export default function OperationsCenter() {
         )}
       </motion.div>
 
+      {/* ── Planner Studio ──────────────────────────────────────────────── */}
+      {!loading && (
+        <motion.div variants={itemVariants} style={{ marginBottom: 16 }}>
+          <PlannerStudio />
+        </motion.div>
+      )}
+
       {/* ── Loading state ───────────────────────────────────────────────── */}
       {loading && (
         <motion.div variants={itemVariants}>
@@ -205,6 +218,41 @@ export default function OperationsCenter() {
       {!loading && (
         <motion.div variants={itemVariants} style={{ marginBottom: 16 }}>
           <RecentArtifacts />
+        </motion.div>
+      )}
+
+      {/* ── Knowledge Explorer ──────────────────────────────────────────── */}
+      {!loading && (
+        <motion.div variants={itemVariants} style={{ marginBottom: 16 }}>
+          <KnowledgeExplorer />
+        </motion.div>
+      )}
+
+      {/* ── Research Explorer ──────────────────────────────────────────── */}
+      {!loading && (
+        <motion.div variants={itemVariants} style={{ marginBottom: 16 }}>
+          <ResearchExplorer />
+        </motion.div>
+      )}
+
+      {/* ── Agent Performance Dashboard ────────────────────────────────── */}
+      {!loading && (
+        <motion.div variants={itemVariants} style={{ marginBottom: 16 }}>
+          <AgentPerformanceDashboard />
+        </motion.div>
+      )}
+
+      {/* ── Improvement System ──────────────────────────────────────────── */}
+      {!loading && (
+        <motion.div variants={itemVariants} style={{ marginBottom: 16 }}>
+          <ImprovementPanel />
+        </motion.div>
+      )}
+
+      {/* ── Negotiations ─────────────────────────────────────────────────── */}
+      {!loading && (
+        <motion.div variants={itemVariants} style={{ marginBottom: 16 }}>
+          <NegotiationPanel />
         </motion.div>
       )}
 

@@ -587,7 +587,37 @@ async def lifespan(app: FastAPI):
         startup_status["warnings"].append(f"cron: {e}")
         logger.warning("[LIFESPAN] Cron init failed: %s", e)
 
-    # â”€â”€ Phase 18: Backup Manager â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ── Phase 8.1: Activity Scheduler ──────────────────────────────────────
+    try:
+        from core.scheduler.scheduler import Scheduler
+        from core.scheduler.registry import SchedulerRegistry
+        from core.scheduler.executors import (
+            research_executor,
+            build_executor,
+            repair_executor,
+            email_executor,
+            benchmark_executor,
+        )
+        registry = SchedulerRegistry()
+        registry.register("research", research_executor)
+        registry.register("build", build_executor)
+        registry.register("repair", repair_executor)
+        registry.register("email", email_executor)
+        registry.register("benchmark", benchmark_executor)
+        activity_scheduler = Scheduler(
+            tick_interval=5.0,
+            registry=registry,
+        )
+        await activity_scheduler.start()
+        app.state.activity_scheduler = activity_scheduler
+        app.state.activity_scheduler_registry = registry
+        logger.info("[LIFESPAN] Activity scheduler started [OK]")
+    except Exception as e:
+        startup_status["warnings"].append(f"activity_scheduler: {e}")
+        logger.warning("[LIFESPAN] Activity scheduler init failed: %s", e)
+
+    # ── Phase 18: Backup Manager ──────────────────────────────────────────────
+        # â”€â”€ Phase 18: Backup Manager â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     try:
         from core.backup import backup_manager
         app.state.backup_manager = backup_manager
@@ -691,6 +721,9 @@ async def lifespan(app: FastAPI):
     if hasattr(app.state, "failover_probe"):
         await app.state.failover_probe.stop()
         logger.info("[SHUTDOWN] Failover probe stopped")
+    if hasattr(app.state, "activity_scheduler"):
+        await app.state.activity_scheduler.stop()
+        logger.info("[SHUTDOWN] Activity scheduler stopped")
     if hasattr(app.state, "scheduler"):
         await app.state.scheduler.stop()
         logger.info("[SHUTDOWN] Cron scheduler stopped")

@@ -87,7 +87,7 @@ class BenchmarkReportGenerator:
                 for r in m.raw_runs:
                     lines.append(
                         f"| {r.task_id} "
-                        f"| {'✅' if r.is_success else '❌'} "
+                        f"| {'PASS' if r.is_success else 'FAIL'} "
                         f"| {r.elapsed_seconds:.1f}s "
                         f"| {r.metrics.get('raw_turns', '-')} |"
                     )
@@ -100,7 +100,7 @@ class BenchmarkReportGenerator:
                 for r in m.arch_runs:
                     lines.append(
                         f"| {r.task_id} "
-                        f"| {'✅' if r.is_success else '❌'} "
+                        f"| {'PASS' if r.is_success else 'FAIL'} "
                         f"| {r.elapsed_seconds:.1f}s "
                         f"| {len(r.tool_names)} "
                         f"| {len(r.hallucinated_tools)} "
@@ -135,7 +135,7 @@ class BenchmarkReportGenerator:
             key=lambda x: x.average_gain,
             reverse=True,
         ):
-            gain_arrow = "↑" if m.average_gain > 0 else "↓" if m.average_gain < 0 else "→"
+            gain_arrow = "+" if m.average_gain > 0 else "-" if m.average_gain < 0 else "="
             lines.append(
                 f"  {m.model_config.name:20s}  "
                 f"Raw: {m.raw_success_rate:5.0%}  "
@@ -146,7 +146,7 @@ class BenchmarkReportGenerator:
         lines.append(f"  {'Average':20s}  "
                      f"Raw: {report.overall_avg_raw:5.0%}  "
                      f"Arch: {report.overall_avg_arch:5.0%}  "
-                     f"Gain: ↑ {report.overall_avg_gain:+6.0%}")
+                     f"Gain: + {report.overall_avg_gain:+6.0%}")
         return "\n".join(lines)
 
     @staticmethod

@@ -476,6 +476,27 @@ except Exception as e:
     logger.warning("[Router] Scheduler routes not loaded: %s", e)
 
 try:
+    from core.routes.planner import router as planner_router
+    app.include_router(planner_router)
+    logger.info("[Router] Planner routes loaded [OK]")
+except Exception as e:
+    logger.warning("[Router] Planner routes not loaded: %s", e)
+
+try:
+    from core.routes.knowledge import router as knowledge_router
+    app.include_router(knowledge_router)
+    logger.info("[Router] Knowledge Store routes loaded [OK]")
+except Exception as e:
+    logger.warning("[Router] Knowledge Store routes not loaded: %s", e)
+
+try:
+    from core.routes.research import router as research_router
+    app.include_router(research_router)
+    logger.info("[Router] Research Memory routes loaded [OK]")
+except Exception as e:
+    logger.warning("[Router] Research Memory routes not loaded: %s", e)
+
+try:
     from core.routes.websocket import router as ws_router
     app.include_router(ws_router)
     logger.info("[Router] WebSocket routes loaded [OK]")
@@ -537,6 +558,27 @@ try:
     logger.info("[Router] MCP tools routes loaded [OK]")
 except Exception as e:
     logger.warning("[Router] MCP tools routes not loaded: %s", e)
+
+try:
+    from core.routes.analytics import router as analytics_router
+    app.include_router(analytics_router)
+    logger.info("[Router] Analytics routes loaded [OK]")
+except Exception as e:
+    logger.warning("[Router] Analytics routes not loaded: %s", e)
+
+try:
+    from core.routes.improvements import router as improvements_router
+    app.include_router(improvements_router)
+    logger.info("[Router] Improvement system routes loaded [OK]")
+except Exception as e:
+    logger.warning("[Router] Improvement system routes not loaded: %s", e)
+
+try:
+    from core.routes.negotiations import router as negotiations_router
+    app.include_router(negotiations_router)
+    logger.info("[Router] Negotiation routes loaded [OK]")
+except Exception as e:
+    logger.warning("[Router] Negotiation routes not loaded: %s", e)
 
 
 # ── Static mounts ──
