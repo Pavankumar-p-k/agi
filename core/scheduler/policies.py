@@ -4,6 +4,12 @@ Avoids AI. Uses static weights with activity-state modifiers.
 
 Score = priority_weight + urgency_weight + retry_weight
         + waiting_time_bonus + user_requested_bonus + intelligence_boost
+
+Phase 8.3D: adds DecisionPriorityPolicy that replaces the flat additive
+score with expected-value-based scoring from the DecisionEngine bridge.
+
+DecisionPriorityPolicy:
+    score = expected_value * success_probability * confidence / resource_cost
 """
 
 from __future__ import annotations
@@ -15,6 +21,7 @@ from typing import TYPE_CHECKING, Any
 from core.scheduler.models import ScheduledActivity
 
 if TYPE_CHECKING:
+    from core.scheduler.decision import DecisionEngine
     from core.scheduler.intelligence import ActivityIntelligence
 
 logger = logging.getLogger(__name__)
@@ -117,3 +124,57 @@ class PriorityPolicy:
             score += boost
 
         return score
+
+
+class DecisionPriorityPolicy:
+    """Expected-value-based priority scoring (Phase 8.3D).
+
+    Replaces the flat additive score with decision-quality scoring:
+
+        score = expected_value * success_probability * confidence / resource_cost
+
+    The DecisionEngine bridge pulls signals from:
+        - ActivityIntelligence (success_prob, duration, resources)
+        - strategy_v2 (impact, risk, opportunity cost)
+        - Opportunity pipeline (forecast, bottleneck)
+
+    Usage:
+        engine = DecisionEngine(intelligence=ActivityIntelligence())
+        policy = DecisionPriorityPolicy(engine=engine)
+        ranked = policy.rank(activities)
+    """
+
+    def __init__(
+        self,
+        engine: DecisionEngine | None = None,
+        intelligence: ActivityIntelligence | None = None,
+    ):
+        from core.scheduler.decision import DecisionEngine as _DE
+        self._engine = engine or _DE(intelligence=intelligence)
+
+    @property
+    def engine(self) -> DecisionEngine:
+        return self._engine
+
+    @engine.setter
+    def engine(self, e: DecisionEngine) -> None:
+        self._engine = e
+
+    def rank(self, activities: list[ScheduledActivity],
+             now: datetime | None = None) -> list[ScheduledActivity]:
+        """Score each activity by expected value, return sorted descending."""
+        for act in activities:
+            act.score = self._score(act)
+        ranked = sorted(activities, key=lambda a: a.score, reverse=True)
+        if ranked:
+            logger.debug("DecisionPriorityPolicy: top=%s score=%d type=%s",
+                         ranked[0].activity_id, ranked[0].score, ranked[0].node_type)
+        return ranked
+
+    def _score(self, act: ScheduledActivity) -> int:
+        """Compute decision-quality score for an activity.
+
+        Returns 0–100 scaled integer for compatibility with existing
+        priority system.
+        """
+        return self._engine.score(act)

@@ -3,6 +3,7 @@
 Phases:
   8.3A — Historical Learning: record outcomes, compute per-type stats
   8.3B — Prediction: predict before execution, calibrate after measurement
+  8.3C — Resource Estimation: predict token/api/memory/browser cost, calibrate
 
 Stored in same SQLite database as scheduler state (data/workflow.db).
 """
@@ -20,6 +21,15 @@ from pathlib import Path
 from typing import Any
 
 from core.scheduler.models import ScheduledActivity
+from core.scheduler.resources import (
+    ResourceEstimate,
+    ResourceUsage,
+    ResourceCalibration,
+    ResourcePredictor,
+    compute_resource_cost,
+    ALL_RESOURCE_COLS,
+    RESOURCE_MIGRATIONS,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +44,9 @@ CONFIDENCE_SATURATION = 20
 DEFAULT_PRIOR_SUCCESS = 0.5
 DEFAULT_PRIOR_DURATION_MS = 10000.0
 
+# Resource cost weights for priority scoring
+RESOURCE_PENALTY_MULTIPLIER = 3
+
 _TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS activity_stats (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -47,6 +60,14 @@ CREATE TABLE IF NOT EXISTS activity_stats (
     predicted_success REAL,
     predicted_duration_ms INTEGER,
     prediction_source TEXT DEFAULT 'historical_stats',
+    predicted_tokens INTEGER,
+    predicted_api_cost REAL,
+    predicted_memory_mb REAL,
+    predicted_browser_steps INTEGER,
+    actual_tokens INTEGER,
+    actual_api_cost REAL,
+    actual_memory_mb REAL,
+    actual_browser_steps INTEGER,
     completed_at TEXT NOT NULL,
     created_at TEXT NOT NULL
 );
@@ -235,14 +256,14 @@ class ActivityIntelligence:
             self._migrate(conn)
 
     def _migrate(self, conn: sqlite3.Connection) -> None:
-        """Add prediction columns if they don't exist (safe for existing DBs)."""
+        """Add prediction + resource columns if they don't exist (safe for existing DBs)."""
         cursor = conn.execute("PRAGMA table_info(activity_stats)")
         existing = {row[1] for row in cursor.fetchall()}
         migrations = [
             ("predicted_success", "REAL"),
             ("predicted_duration_ms", "INTEGER"),
             ("prediction_source", "TEXT DEFAULT 'historical_stats'"),
-        ]
+        ] + RESOURCE_MIGRATIONS
         for col_name, col_type in migrations:
             if col_name not in existing:
                 logger.info("ActivityIntelligence: adding column %s", col_name)
@@ -263,6 +284,8 @@ class ActivityIntelligence:
         predicted_success: float | None = None,
         predicted_duration_ms: int | None = None,
         prediction_source: str | None = None,
+        predicted_resources: ResourceEstimate | None = None,
+        actual_resources: ResourceUsage | None = None,
     ) -> None:
         """Record a completed activity execution outcome.
 
@@ -276,6 +299,8 @@ class ActivityIntelligence:
             predicted_success: Prior prediction of success probability (0.0-1.0)
             predicted_duration_ms: Prior prediction of duration in ms
             prediction_source: Source of the prediction
+            predicted_resources: Prior resource usage estimate
+            actual_resources: Actual resource usage after execution
         """
         now = datetime.utcnow().isoformat()
         chain_id = (metadata or {}).get("chain_id", "")
@@ -285,8 +310,10 @@ class ActivityIntelligence:
                    (activity_id, node_type, goal, chain_id, success,
                     duration_ms, retry_count,
                     predicted_success, predicted_duration_ms, prediction_source,
+                    predicted_tokens, predicted_api_cost, predicted_memory_mb, predicted_browser_steps,
+                    actual_tokens, actual_api_cost, actual_memory_mb, actual_browser_steps,
                     completed_at, created_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     activity_id,
                     node_type,
@@ -298,6 +325,14 @@ class ActivityIntelligence:
                     predicted_success,
                     predicted_duration_ms,
                     prediction_source or "historical_stats",
+                    int(predicted_resources.token_cost) if predicted_resources else None,
+                    predicted_resources.api_cost if predicted_resources else None,
+                    predicted_resources.memory_mb if predicted_resources else None,
+                    int(predicted_resources.browser_steps) if predicted_resources else None,
+                    int(actual_resources.token_cost) if actual_resources else None,
+                    actual_resources.api_cost if actual_resources else None,
+                    actual_resources.memory_mb if actual_resources else None,
+                    int(actual_resources.browser_steps) if actual_resources else None,
                     now,
                     now,
                 ),
@@ -317,13 +352,17 @@ class ActivityIntelligence:
         with self._lock, sqlite3.connect(self._db_path) as conn:
             for r in records:
                 meta = r.get("metadata", {})
+                pred_res = r.get("predicted_resources")
+                act_res = r.get("actual_resources")
                 conn.execute(
                     """INSERT INTO activity_stats
                        (activity_id, node_type, goal, chain_id, success,
                         duration_ms, retry_count,
                         predicted_success, predicted_duration_ms, prediction_source,
+                        predicted_tokens, predicted_api_cost, predicted_memory_mb, predicted_browser_steps,
+                        actual_tokens, actual_api_cost, actual_memory_mb, actual_browser_steps,
                         completed_at, created_at)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                     (
                         r["activity_id"],
                         r["node_type"],
@@ -335,6 +374,14 @@ class ActivityIntelligence:
                         r.get("predicted_success"),
                         r.get("predicted_duration_ms"),
                         r.get("prediction_source", "historical_stats"),
+                        int(pred_res.token_cost) if pred_res else None,
+                        pred_res.api_cost if pred_res else None,
+                        pred_res.memory_mb if pred_res else None,
+                        int(pred_res.browser_steps) if pred_res else None,
+                        int(act_res.token_cost) if act_res else None,
+                        act_res.api_cost if act_res else None,
+                        act_res.memory_mb if act_res else None,
+                        int(act_res.browser_steps) if act_res else None,
                         r.get("completed_at", now),
                         now,
                     ),
@@ -356,6 +403,85 @@ class ActivityIntelligence:
         """Get all known type statistics."""
         self._ensure_cache()
         return dict(self._cache)
+
+    # ── Phase 8.3C: Resource Prediction ──────────────────────────────────────
+
+    def predict_resources(self, node_type: str) -> ResourceEstimate:
+        """Predict resource usage for an activity of the given type.
+
+        Returns a ResourceEstimate with historical averages and confidence.
+        """
+        with self._lock, sqlite3.connect(self._db_path) as conn:
+            row = conn.execute(
+                """SELECT AVG(actual_tokens), AVG(actual_api_cost),
+                          AVG(actual_memory_mb), AVG(actual_browser_steps)
+                   FROM activity_stats
+                   WHERE node_type = ?
+                     AND actual_tokens IS NOT NULL""",
+                (node_type,),
+            ).fetchone()
+            count_row = conn.execute(
+                "SELECT COUNT(*) FROM activity_stats WHERE node_type = ? AND actual_tokens IS NOT NULL",
+                (node_type,),
+            ).fetchone()
+        sample_count = count_row[0] if count_row else 0
+        has_data = row is not None and row[0] is not None and sample_count > 0
+
+        estimate = ResourcePredictor.predict_from_stats(
+            node_type, row if has_data else None, sample_count,
+        )
+
+        # Apply calibration
+        cal = self.get_resource_calibration(node_type)
+        if cal.sample_count >= 3:
+            estimate = ResourcePredictor.apply_calibration(estimate, cal)
+
+        return estimate
+
+    def get_resource_calibration(self, node_type: str) -> ResourceCalibration:
+        """Get calibration multipliers for resource predictions."""
+        with self._lock, sqlite3.connect(self._db_path) as conn:
+            rows = conn.execute(
+                """SELECT predicted_tokens, actual_tokens,
+                          predicted_api_cost, actual_api_cost,
+                          predicted_memory_mb, actual_memory_mb,
+                          predicted_browser_steps, actual_browser_steps
+                   FROM activity_stats
+                   WHERE node_type = ?
+                     AND predicted_tokens IS NOT NULL
+                     AND actual_tokens IS NOT NULL
+                   ORDER BY completed_at DESC
+                   LIMIT 500""",
+                (node_type,),
+            ).fetchall()
+        pairs = [
+            (float(r[0] or 0), float(r[1] or 0),
+             float(r[2] or 0), float(r[3] or 0),
+             float(r[4] or 0), float(r[5] or 0),
+             float(r[6] or 0), float(r[7] or 0))
+            for r in rows
+        ]
+        result = ResourcePredictor.calibrate(pairs)
+        result.node_type = node_type
+        return result
+
+    def resource_cost_score(self, node_type: str) -> int:
+        """Compute a resource cost penalty for priority scoring.
+
+        Returns an integer 0-30 representing relative resource cost.
+        Higher = more expensive = lower priority.
+        """
+        stats = self.get_stats(node_type)
+        if stats.count < MIN_SAMPLES_FOR_STATS:
+            return 0
+
+        estimate = self.predict_resources(node_type)
+        if estimate.confidence == 0:
+            return 0
+
+        cost = compute_resource_cost(estimate)
+        penalty = min(int(cost * RESOURCE_PENALTY_MULTIPLIER), MAX_DURATION_PENALTY)
+        return penalty
 
     # ── Phase 8.3B: Prediction ───────────────────────────────────────────────
 
@@ -456,7 +582,11 @@ class ActivityIntelligence:
             int(blended_duration / 10000) * DURATION_PENALTY_PER_10S,
             MAX_DURATION_PENALTY,
         )
-        return success_boost - duration_penalty
+
+        # Phase 8.3C: resource cost penalty
+        resource_penalty = self.resource_cost_score(node_type)
+
+        return success_boost - duration_penalty - resource_penalty
 
     def expected_duration_ms(self, node_type: str) -> float:
         """Predicted duration in ms for a given activity type."""

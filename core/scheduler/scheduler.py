@@ -279,6 +279,10 @@ class Scheduler:
         pred_dur = int(prediction.expected_duration_ms) if prediction.confidence > 0 else None
         pred_source = prediction.prediction_source if prediction.confidence > 0 else None
 
+        # Phase 8.3C: predict resources before execution
+        resource_estimate = self._intelligence.predict_resources(activity.node_type)
+        pred_res = resource_estimate if resource_estimate.confidence > 0 else None
+
         try:
             # Find resume point
             try:
@@ -321,6 +325,16 @@ class Scheduler:
                 (datetime.utcnow() - start_time).total_seconds() * 1000
             )
             try:
+                # Build actual resource usage from metadata (if executor recorded any)
+                meta = activity.metadata or {}
+                actual_res = ResourceUsage(
+                    token_cost=float(meta.get("actual_tokens", 0)),
+                    api_cost=float(meta.get("actual_api_cost", 0)),
+                    memory_mb=float(meta.get("actual_memory_mb", 0)),
+                    browser_steps=float(meta.get("actual_browser_steps", 0)),
+                )
+                has_actual = actual_res.token_cost > 0 or actual_res.api_cost > 0 or actual_res.memory_mb > 0 or actual_res.browser_steps > 0
+
                 self._intelligence.record(
                     activity_id=aid,
                     node_type=activity.node_type,
@@ -331,6 +345,8 @@ class Scheduler:
                     predicted_success=pred_success,
                     predicted_duration_ms=pred_dur,
                     prediction_source=pred_source,
+                    predicted_resources=pred_res,
+                    actual_resources=actual_res if has_actual else None,
                 )
             except Exception as e:
                 logger.warning("Scheduler: intelligence record error: %s", e)

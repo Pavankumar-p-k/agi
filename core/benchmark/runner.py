@@ -21,6 +21,8 @@ from core.benchmark.models import (
     ModelConfiguration,
     RunStatus,
 )
+from core.planner import PlannerExecutor
+from core.tools._constants import ToolBlock
 from core.tools.execution import execute_tool_block
 from core.tools.schemas import FUNCTION_TOOL_SCHEMAS
 
@@ -187,11 +189,16 @@ class BenchmarkRunner:
         task: BenchmarkTask,
         max_turns: int = 15,
     ) -> dict[str, Any]:
-        """Run model with full JARVIS architecture.
+        """Run model with full JARVIS architecture including planner enforcement.
 
-        This mirrors the Phase 3 approach: planner + tool dispatch.
-        The model gets tool schemas and the planner enforces required steps.
+        Phase 3b approach:
+          1. LLM proposes tool calls using tool schemas
+          2. Planner detects early termination / missing steps
+          3. Planner enforces required steps via inject_task (narrow LLM prompt for params)
+          4. Loop detection prevents infinite execution
         """
+        planner = PlannerExecutor()
+        plan = planner.create_plan(task.goal)
         messages = [
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": task.goal},
@@ -202,10 +209,11 @@ class BenchmarkRunner:
         loop_count = 0
         completed_naturally = False
         turn_count = 0
+        early_termination_count = 0
+        enforced_steps: list[str] = []
 
         # Track tool sequences for loop detection
         tool_sequence: list[str] = []
-        seq_history: list[list[str]] = []
         sequence_for_loop = False
         no_tool_count = 0
 
@@ -220,12 +228,69 @@ class BenchmarkRunner:
             if content:
                 messages.append({"role": "assistant", "content": content})
 
-            if not tool_calls:
+            # ── Planner Enforcement ─────────────────────────────────
+            if not tool_calls and plan is not None:
                 no_tool_count += 1
-                # If model stops producing tool calls, check if we should continue
+
+                if no_tool_count == 1 and not tool_names:
+                    # Model hasn't started yet — prompt it to begin
+                    messages.append({
+                        "role": "user",
+                        "content": "Start working on the task using the available tools. Make your first tool call now.",
+                    })
+                    continue
+
+                # Check if model stopped early (missing required steps)
+                missing = planner.check_early_termination(plan.template_id, tool_names)
+                if missing:
+                    early_termination_count += 1
+
+                    for step_name in missing:
+                        async def enforce_step(tname: str, dargs: dict) -> dict:
+                            args = dict(dargs)
+                            if tname == "send_email":
+                                _, forced_tc = await self.adapter.generate(
+                                    messages + [{"role": "user", "content": "Provide parameters for send_email. Reply with ONLY a tool call containing to, subject, and body."}],
+                                    tools=TOOL_SCHEMAS, timeout=task.timeout_seconds,
+                                )
+                                if forced_tc:
+                                    fa = forced_tc[0].get("arguments", {})
+                                    if "to" in fa: args["to"] = fa["to"]
+                                    if "subject" in fa: args["subject"] = fa["subject"]
+                                    if "body" in fa: args["body"] = fa["body"]
+                            elif tname == "browser_navigate":
+                                _, forced_tc = await self.adapter.generate(
+                                    messages + [{"role": "user", "content": "Provide the URL for browser_navigate. Reply with ONLY a tool call containing a url parameter."}],
+                                    tools=TOOL_SCHEMAS, timeout=task.timeout_seconds,
+                                )
+                                if forced_tc:
+                                    fa = forced_tc[0].get("arguments", {})
+                                    if "url" in fa: args["url"] = fa["url"]
+                                    else: args.setdefault("url", dargs.get("url", "https://www.google.com"))
+                            import json as _json2
+                            block = ToolBlock(tool_type=tname, content=_json2.dumps(args))
+                            _, result = await execute_tool_block(block, owner="dev")
+                            return result
+
+                        result = await planner.inject_task(plan.template_id, step_name, enforce_step)
+                        enforced_tool = planner.get_task_for_step(plan.template_id, step_name)
+                        tool_name = enforced_tool["tool"] if enforced_tool else step_name
+                        tool_names.append(tool_name)
+                        tool_sequence.append(tool_name)
+                        enforced_steps.append(tool_name)
+                        msg_text = str(result.get("result", result))[:500]
+                        messages.append({"role": "tool", "tool_call_id": tool_name, "content": f"[Planner-enforced] {msg_text}"})
+
+                    if planner.is_workflow_complete(plan.template_id):
+                        break
+                    continue
+
+                # No missing steps and no tool calls — model is done
                 if no_tool_count >= 2:
                     completed_naturally = True
                     break
+
+            if not tool_calls:
                 continue
 
             no_tool_count = 0
@@ -242,10 +307,16 @@ class BenchmarkRunner:
                 tool_names.append(name)
                 tool_sequence.append(name)
 
+                # Record step in planner
+                if plan is not None:
+                    planner.record_step(plan.template_id, name, True)
+
                 # Execute the tool
                 try:
-                    block = {"name": name, "content": str(args)} if not isinstance(args, str) else {"name": name, "content": args}
-                    result = await execute_tool_block(block)
+                    import json as _json
+                    content_str = args if isinstance(args, str) else _json.dumps(args)
+                    block = ToolBlock(tool_type=name, content=content_str)
+                    _, result = await execute_tool_block(block, owner="dev")
                     result_str = str(result.get("result", "") or result.get("error", ""))[:2000]
                     messages.append({
                         "role": "tool",
@@ -275,6 +346,10 @@ class BenchmarkRunner:
             if sequence_for_loop:
                 break
 
+        # Finalize planner
+        if plan is not None:
+            planner.finalize(plan.template_id, planner.is_workflow_complete(plan.template_id))
+
         # Determine missing required tools
         expected = task.required_tools
         missing = [t for t in expected if t not in set(tool_names)]
@@ -290,5 +365,9 @@ class BenchmarkRunner:
                 "arch_turns": turn_count,
                 "tool_call_count": len(tool_names),
                 "hallucination_count": len(hallucinated),
+                "early_termination_count": early_termination_count,
+                "enforced_steps": enforced_steps,
+                "planner_template": plan.template_id if plan else None,
+                "planner_completed": planner.is_workflow_complete(plan.template_id) if plan else None,
             },
         }

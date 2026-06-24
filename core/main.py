@@ -576,6 +576,12 @@ except Exception as e:
 try:
     from core.routes.negotiations import router as negotiations_router
     app.include_router(negotiations_router)
+    from core.routes.opportunities import router as opportunities_router
+    app.include_router(opportunities_router)
+    from core.routes.autonomous import router as autonomous_router
+    app.include_router(autonomous_router)
+    from core.routes.evidence import router as evidence_router
+    app.include_router(evidence_router)
     logger.info("[Router] Negotiation routes loaded [OK]")
 except Exception as e:
     logger.warning("[Router] Negotiation routes not loaded: %s", e)

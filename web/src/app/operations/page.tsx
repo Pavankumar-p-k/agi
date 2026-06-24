@@ -15,6 +15,7 @@ import { PlannerStudio } from '@/components/operations/PlannerStudio';
 import { AgentPerformanceDashboard } from '@/components/operations/AgentPerformanceDashboard';
 import { ImprovementPanel } from '@/components/operations/ImprovementPanel';
 import { NegotiationPanel } from '@/components/operations/NegotiationPanel';
+import { OpportunityPanel } from '@/components/operations/OpportunityPanel';
 import { RecoveryFeed } from '@/components/operations/RecoveryFeed';
 import type { ActivityNode } from '@jarvis/sdk';
 
@@ -253,6 +254,13 @@ export default function OperationsCenter() {
       {!loading && (
         <motion.div variants={itemVariants} style={{ marginBottom: 16 }}>
           <NegotiationPanel />
+        </motion.div>
+      )}
+
+      {/* ── Opportunity Discovery ────────────────────────────────────────── */}
+      {!loading && (
+        <motion.div variants={itemVariants} style={{ marginBottom: 16 }}>
+          <OpportunityPanel />
         </motion.div>
       )}
 

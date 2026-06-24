@@ -812,6 +812,86 @@ export interface NegotiationSession {
   resolved_at: string | null;
 }
 
+// ── Opportunity Discovery System ───────────────────────────────────────────
+
+export interface Opportunity {
+  id: string;
+  target_system: string;
+  improvement_description: string;
+  source: string;
+  bottleneck_impact: number;
+  improvement_headroom: number;
+  success_probability: number;
+  confidence: number;
+  calibration_accuracy: number;
+  opportunity_score: number;
+  rationale: string;
+  evidence: string[];
+  status: string;
+  created_at: string | null;
+}
+
+export interface RoadmapPhase {
+  name: string;
+  item_count: number;
+  total_priority: number;
+  items: RoadmapItem[];
+  rationale: string;
+}
+
+export interface RoadmapItem {
+  system: string;
+  priority: number;
+  depth: number;
+  dependencies: string[];
+  unlocks: string[];
+  current_score: number;
+  expected_gain: number;
+  rationale: string;
+}
+
+export interface Bottleneck {
+  subsystem: string;
+  local_impact: number;
+  propagated_impact: number;
+  total_constrained_value: number;
+  confidence: number;
+  affected_systems: string[];
+}
+
+export interface ForecastedOpportunity {
+  system: string;
+  current_score: number;
+  predicted_score: number;
+  confidence: number;
+  horizon: string;
+  trend: string;
+  velocity: number;
+  unlock_value: number;
+  bottleneck_pressure: number;
+  rationale: string;
+}
+
+export interface GraphNode {
+  system_name: string;
+  base_score: number;
+  unlock_value: number;
+  compounded_score: number;
+  has_opportunity: boolean;
+}
+
+export interface GraphEdge {
+  source: string;
+  target: string;
+  confidence: number;
+  source_type: string;
+}
+
+export interface OpportunityGraph {
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+}
+
 // ─── API Response Wrappers ────────────────────────────────────────────────
 
 export interface ListResponse<T> {

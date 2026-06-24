@@ -24,3 +24,6 @@ export { plans } from './plans';
 export { analytics } from './analytics';
 export { improvements } from './improvements';
 export { negotiations } from './negotiations';
+export { opportunities } from './opportunities';
+export { autonomous } from './autonomous';
+export { evidence } from './evidence';

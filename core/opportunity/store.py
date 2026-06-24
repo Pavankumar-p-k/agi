@@ -1,6 +1,7 @@
-"""OpportunityStore — SQLite-backed persistence for opportunity outcome records.
+"""OpportunityStore — SQLite-backed persistence for opportunities + outcome records.
 
-Table:
+Tables:
+  - opportunities: discovered opportunity candidates with full scoring
   - opportunity_records: predicted vs actual outcome tracking
 
 Lives in the same database (data/workflow.db) as the belief quality system.
@@ -18,6 +19,8 @@ from pathlib import Path
 from typing import Any
 
 from core.opportunity.models import OpportunitySource
+
+from core.opportunity.models import Opportunity, OpportunitySource, OpportunityStatus
 
 logger = logging.getLogger(__name__)
 
@@ -96,11 +99,120 @@ class OpportunityStore:
                         prediction_error REAL NOT NULL DEFAULT 0.0
                     )
                 """)
+                conn.execute("""
+                    CREATE TABLE IF NOT EXISTS opportunities (
+                        id TEXT PRIMARY KEY,
+                        target_system TEXT NOT NULL,
+                        improvement_description TEXT NOT NULL,
+                        source TEXT NOT NULL,
+                        bottleneck_impact REAL NOT NULL,
+                        improvement_headroom REAL NOT NULL,
+                        success_probability REAL NOT NULL,
+                        confidence REAL NOT NULL,
+                        opportunity_score REAL NOT NULL,
+                        rationale TEXT NOT NULL,
+                        calibration_accuracy REAL NOT NULL DEFAULT 1.0,
+                        evidence TEXT NOT NULL DEFAULT '[]',
+                        status TEXT NOT NULL DEFAULT 'open',
+                        created_at TEXT NOT NULL
+                    )
+                """)
                 conn.commit()
             finally:
                 conn.close()
 
-    # ── CRUD ───────────────────────────────────────────────────────────
+    # ── CRUD (Opportunity Candidates) ──────────────────────────────────
+
+    def save_opportunity(self, opp: Opportunity) -> None:
+        with self._lock:
+            conn = self._get_conn()
+            try:
+                conn.execute(
+                    """INSERT OR REPLACE INTO opportunities
+                       (id, target_system, improvement_description, source,
+                        bottleneck_impact, improvement_headroom, success_probability,
+                        confidence, opportunity_score, rationale, calibration_accuracy,
+                        evidence, status, created_at)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    (
+                        opp.id, opp.target_system, opp.improvement_description,
+                        opp.source.value, opp.bottleneck_impact, opp.improvement_headroom,
+                        opp.success_probability, opp.confidence, opp.opportunity_score,
+                        opp.rationale, opp.calibration_accuracy,
+                        json.dumps(opp.evidence), opp.status.value,
+                        opp.created_at.isoformat() if opp.created_at else "",
+                    ),
+                )
+                conn.commit()
+            finally:
+                conn.close()
+
+    def list_opportunities(
+        self, status: str | None = None, source: str | None = None, limit: int = 100
+    ) -> list[Opportunity]:
+        with self._lock:
+            conn = self._get_conn()
+            try:
+                query = "SELECT * FROM opportunities WHERE 1=1"
+                params: list[Any] = []
+                if status:
+                    query += " AND status = ?"
+                    params.append(status)
+                if source:
+                    query += " AND source = ?"
+                    params.append(source)
+                query += " ORDER BY opportunity_score DESC LIMIT ?"
+                params.append(limit)
+                rows = conn.execute(query, params).fetchall()
+                return [self._row_to_opportunity(r) for r in rows]
+            finally:
+                conn.close()
+
+    def get_opportunity(self, opp_id: str) -> Opportunity | None:
+        with self._lock:
+            conn = self._get_conn()
+            try:
+                row = conn.execute(
+                    "SELECT * FROM opportunities WHERE id = ?", (opp_id,)
+                ).fetchone()
+                if row is None:
+                    return None
+                return self._row_to_opportunity(row)
+            finally:
+                conn.close()
+
+    def update_opportunity_status(self, opp_id: str, status: str) -> bool:
+        with self._lock:
+            conn = self._get_conn()
+            try:
+                cursor = conn.execute(
+                    "UPDATE opportunities SET status = ? WHERE id = ?",
+                    (status, opp_id),
+                )
+                conn.commit()
+                return cursor.rowcount > 0
+            finally:
+                conn.close()
+
+    def _row_to_opportunity(self, row: sqlite3.Row) -> Opportunity:
+        return Opportunity(
+            id=row["id"],
+            target_system=row["target_system"],
+            improvement_description=row["improvement_description"],
+            source=OpportunitySource(row["source"]),
+            bottleneck_impact=row["bottleneck_impact"],
+            improvement_headroom=row["improvement_headroom"],
+            success_probability=row["success_probability"],
+            confidence=row["confidence"],
+            opportunity_score=row["opportunity_score"],
+            rationale=row["rationale"],
+            calibration_accuracy=row["calibration_accuracy"],
+            evidence=json.loads(row["evidence"]) if row["evidence"] else [],
+            status=OpportunityStatus(row["status"]),
+            created_at=datetime.fromisoformat(row["created_at"]) if row["created_at"] else None,
+        )
+
+    # ── CRUD (Outcome Records) ────────────────────────────────────────
 
     def save(self, record: OpportunityRecord) -> None:
         with self._lock:
@@ -191,11 +303,12 @@ class OpportunityStore:
                 conn.close()
 
     def clear(self) -> None:
-        """Clear all records (testing only)."""
+        """Clear all records and opportunities (testing only)."""
         with self._lock:
             conn = self._get_conn()
             try:
                 conn.execute("DELETE FROM opportunity_records")
+                conn.execute("DELETE FROM opportunities")
                 conn.commit()
             finally:
                 conn.close()

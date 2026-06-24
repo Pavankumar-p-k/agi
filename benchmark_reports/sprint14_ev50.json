@@ -1,0 +1,423 @@
+{
+  "benchmark_type": "capability",
+  "cycles": 20,
+  "duration_seconds": 34.1,
+  "timestamp": "2026-06-24T15:28:47.884796+00:00",
+  "baseline": {
+    "timestamp": "2026-06-24T15:27:54.911617+00:00",
+    "dimensions": {
+      "planner_health": {
+        "score": 0.4917,
+        "success_rate": 0.246,
+        "avg_prediction_accuracy": 0.468,
+        "avg_calibration_error": 0.231,
+        "total_plans": 62
+      },
+      "strategy_diversity": {
+        "score": 0.9523,
+        "strategies_tried": 6,
+        "active_strategies": 6,
+        "avg_win_rate": 0.4697,
+        "win_rate_variance": 0.0477
+      },
+      "system_scores": {
+        "score": 0.6479,
+        "average": 0.7756,
+        "min": 0.35,
+        "max": 0.96,
+        "systems": {
+          "execution_infrastructure": 0.96,
+          "research_infrastructure": 0.92,
+          "coding_intelligence": 0.93,
+          "memory_learning": 0.88,
+          "collaboration": 0.85,
+          "generalization": 0.86,
+          "belief_quality": 0.91,
+          "strategic_reasoning": 0.82,
+          "autonomous_improvement": 0.78,
+          "activity_scheduler": 0.85,
+          "automated_build": 0.8,
+          "build_benchmark": 0.7,
+          "self_modification": 0.45,
+          "opportunity_discovery": 0.35,
+          "browser_automation": 0.65,
+          "voice_assistant": 0.7
+        }
+      },
+      "opportunity_health": {
+        "score": 0.0097,
+        "total": 48,
+        "open": 43,
+        "in_progress": 1,
+        "completed": 0,
+        "rejected": 4,
+        "completion_rate": 0.0,
+        "avg_score": 0.0276,
+        "calibration_accuracy": 0.0
+      },
+      "experiment_health": {
+        "score": 0.1,
+        "total": 9,
+        "promoted": 1,
+        "rolled_back": 5,
+        "running": 0,
+        "promotion_rate": 0.1667
+      },
+      "negotiation_health": {
+        "score": 0.8889,
+        "total": 20,
+        "accepted": 16,
+        "rejected": 2,
+        "open": 2,
+        "consensus_rate": 0.8888888888888888
+      },
+      "knowledge_health": {
+        "score": 0.0,
+        "knowledge_items": 0,
+        "experience_summaries": 0,
+        "principles": 0,
+        "total": 0
+      },
+      "loop_health": {
+        "score": 0.3783,
+        "total_cycles": 9,
+        "completed": 6,
+        "completion_rate": 0.6667
+      }
+    }
+  },
+  "post": {
+    "timestamp": "2026-06-24T15:28:43.791060+00:00",
+    "dimensions": {
+      "planner_health": {
+        "score": 0.6449,
+        "success_rate": 0.516,
+        "avg_prediction_accuracy": 0.557,
+        "avg_calibration_error": 0.109,
+        "total_plans": 127
+      },
+      "strategy_diversity": {
+        "score": 0.9284,
+        "strategies_tried": 6,
+        "active_strategies": 6,
+        "avg_win_rate": 0.596,
+        "win_rate_variance": 0.0716
+      },
+      "system_scores": {
+        "score": 0.6479,
+        "average": 0.7756,
+        "min": 0.35,
+        "max": 0.96,
+        "systems": {
+          "execution_infrastructure": 0.96,
+          "research_infrastructure": 0.92,
+          "coding_intelligence": 0.93,
+          "memory_learning": 0.88,
+          "collaboration": 0.85,
+          "generalization": 0.86,
+          "belief_quality": 0.91,
+          "strategic_reasoning": 0.82,
+          "autonomous_improvement": 0.78,
+          "activity_scheduler": 0.85,
+          "automated_build": 0.8,
+          "build_benchmark": 0.7,
+          "self_modification": 0.45,
+          "opportunity_discovery": 0.35,
+          "browser_automation": 0.65,
+          "voice_assistant": 0.7
+        }
+      },
+      "opportunity_health": {
+        "score": 0.0076,
+        "total": 64,
+        "open": 54,
+        "in_progress": 1,
+        "completed": 0,
+        "rejected": 9,
+        "completion_rate": 0.0,
+        "avg_score": 0.0222,
+        "calibration_accuracy": 0.0
+      },
+      "experiment_health": {
+        "score": 0.0545,
+        "total": 14,
+        "promoted": 1,
+        "rolled_back": 10,
+        "running": 0,
+        "promotion_rate": 0.0909
+      },
+      "negotiation_health": {
+        "score": 0.8846,
+        "total": 80,
+        "accepted": 69,
+        "rejected": 9,
+        "open": 2,
+        "consensus_rate": 0.8846153846153846
+      },
+      "knowledge_health": {
+        "score": 0.0,
+        "knowledge_items": 0,
+        "experience_summaries": 0,
+        "principles": 0,
+        "total": 0
+      },
+      "loop_health": {
+        "score": 0.4629,
+        "total_cycles": 14,
+        "completed": 11,
+        "completion_rate": 0.7857
+      }
+    }
+  },
+  "deltas": {
+    "overall_before": 0.4336,
+    "overall_after": 0.4539,
+    "overall_delta": 0.0203,
+    "dimensions": {
+      "planner_health": {
+        "before": 0.4917,
+        "after": 0.6449,
+        "delta": 0.1532,
+        "improved": true,
+        "regressed": false
+      },
+      "strategy_diversity": {
+        "before": 0.9523,
+        "after": 0.9284,
+        "delta": -0.0239,
+        "improved": false,
+        "regressed": true
+      },
+      "system_scores": {
+        "before": 0.6479,
+        "after": 0.6479,
+        "delta": 0.0,
+        "improved": false,
+        "regressed": false
+      },
+      "opportunity_health": {
+        "before": 0.0097,
+        "after": 0.0076,
+        "delta": -0.0021,
+        "improved": false,
+        "regressed": true
+      },
+      "experiment_health": {
+        "before": 0.1,
+        "after": 0.0545,
+        "delta": -0.0455,
+        "improved": false,
+        "regressed": true
+      },
+      "negotiation_health": {
+        "before": 0.8889,
+        "after": 0.8846,
+        "delta": -0.0043,
+        "improved": false,
+        "regressed": true
+      },
+      "knowledge_health": {
+        "before": 0.0,
+        "after": 0.0,
+        "delta": 0.0,
+        "improved": false,
+        "regressed": false
+      },
+      "loop_health": {
+        "before": 0.3783,
+        "after": 0.4629,
+        "delta": 0.0846,
+        "improved": true,
+        "regressed": false
+      }
+    },
+    "summary": {
+      "dimensions_improved": 2,
+      "dimensions_regressed": 4,
+      "dimensions_unchanged": 2
+    }
+  },
+  "cycle_results": [
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_e54d0520e2fb",
+      "experiment_id": "exp_bbe864dc0b4e"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_e54d0520e2fb",
+      "experiment_id": "exp_bbe864dc0b4e"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_e54d0520e2fb",
+      "experiment_id": "exp_bbe864dc0b4e",
+      "result": {
+        "overall": "insufficient_data",
+        "changes": {},
+        "improved": true,
+        "experiment_id": "exp_bbe864dc0b4e"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_e54d0520e2fb",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "rolled_back",
+      "opp_id": "opp_ceiling_e54d0520e2fb",
+      "experiment_id": "exp_bbe864dc0b4e",
+      "improved": false
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_9f739293f135",
+      "experiment_id": "exp_800475089e46"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_9f739293f135",
+      "experiment_id": "exp_800475089e46",
+      "result": {
+        "overall": "insufficient_data",
+        "changes": {},
+        "improved": true,
+        "experiment_id": "exp_800475089e46"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_9f739293f135",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "rolled_back",
+      "opp_id": "opp_ceiling_9f739293f135",
+      "experiment_id": "exp_800475089e46",
+      "improved": false
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_ab05873c060c",
+      "experiment_id": "exp_833949def9f5"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_ab05873c060c",
+      "experiment_id": "exp_833949def9f5"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_ab05873c060c",
+      "experiment_id": "exp_833949def9f5",
+      "result": {
+        "overall": "insufficient_data",
+        "changes": {},
+        "improved": true,
+        "experiment_id": "exp_833949def9f5"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_ab05873c060c",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "rolled_back",
+      "opp_id": "opp_ceiling_ab05873c060c",
+      "experiment_id": "exp_833949def9f5",
+      "improved": false
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_3093874089f3",
+      "experiment_id": "exp_15caaf8ec6bc"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_3093874089f3",
+      "experiment_id": "exp_15caaf8ec6bc"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_3093874089f3",
+      "experiment_id": "exp_15caaf8ec6bc",
+      "result": {
+        "overall": "insufficient_data",
+        "changes": {},
+        "improved": true,
+        "experiment_id": "exp_15caaf8ec6bc"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_3093874089f3",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "rolled_back",
+      "opp_id": "opp_ceiling_3093874089f3",
+      "experiment_id": "exp_15caaf8ec6bc",
+      "improved": false
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_624d93cc47a4",
+      "experiment_id": "exp_2f4b5d696add"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_624d93cc47a4",
+      "experiment_id": "exp_2f4b5d696add"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_624d93cc47a4",
+      "experiment_id": "exp_2f4b5d696add",
+      "result": {
+        "overall": "insufficient_data",
+        "changes": {},
+        "improved": true,
+        "experiment_id": "exp_2f4b5d696add"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_624d93cc47a4",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "rolled_back",
+      "opp_id": "opp_ceiling_624d93cc47a4",
+      "experiment_id": "exp_2f4b5d696add",
+      "improved": false
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_2a1c31cb2897",
+      "experiment_id": "exp_8a1d7be09891"
+    }
+  ]
+}
