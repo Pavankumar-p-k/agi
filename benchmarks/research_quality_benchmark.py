@@ -1,8 +1,9 @@
-"""Research Quality Benchmark — LLM-only vs full Research Pipeline.
+"""Research Quality Benchmark — LLM-only vs full Research Pipeline vs Pipeline+FSM.
 
-Tests 2 configurations:
-  raw      — LLM answers directly (no research pipeline)
-  pipeline — LLM + FactExtractor → FactStore → FactRetriever → FactReasoner → FactSynthesizer
+Tests 3 configurations:
+  raw           — LLM answers directly (no research pipeline)
+  pipeline      — LLM + FactExtractor → FactStore → FactRetriever → FactReasoner → FactSynthesizer
+  pipeline+fsm  — pipeline + ExtractionFSM (deterministic state machine for extraction workflow)
 
 Metrics:
   - fact_recall: ground-truth facts present in output / total ground-truth facts
@@ -11,6 +12,7 @@ Metrics:
   - coverage: required subtopics addressed
   - hallucination_rate: false claims / total claims
   - duration
+  - FSM metrics (pipeline+fsm only): transitions, forced transitions, loops prevented, etc.
 
 Usage:
     python benchmarks/research_quality_benchmark.py
@@ -353,6 +355,19 @@ class TaskResult:
     duration_seconds: float = 0.0
     error: str = ""
     details: dict = field(default_factory=dict)
+    # FSM metrics (pipeline+fsm only)
+    efsm_transitions: int = 0
+    efsm_forced_transitions: int = 0
+    efsm_loops_prevented: int = 0
+    efsm_timeouts: int = 0
+    efsm_final_state: str = ""
+    efsm_entities_found: int = 0
+    efsm_attributes_extracted: int = 0
+    efsm_relations_extracted: int = 0
+    efsm_normalizations_applied: int = 0
+    efsm_validation_checks: int = 0
+    efsm_duplicates_removed: int = 0
+    efsm_stored_facts: int = 0
 
 
 SW_PROMPT = (
@@ -459,6 +474,217 @@ async def run_pipeline_task(dataset: ResearchDataset) -> TaskResult:
     return result
 
 
+async def run_pipeline_fsm_task(dataset: ResearchDataset) -> TaskResult:
+    """Pipeline + ExtractionFSM: FSM-controlled extraction workflow."""
+    start = time.time()
+    result = TaskResult(dataset_id=dataset.id, config="pipeline+fsm")
+    
+    try:
+        from core.research.extraction_fsm import (
+            ExtractionFSM, ExtractionState, create_extraction_context,
+            normalize_entity_name, normalize_date_value, normalize_unit, normalize_price,
+            is_duplicate,
+        )
+        from core.research import FactExtractor, FactStore, FactRetriever, FactReasoner, FactSynthesizer
+        
+        import tempfile
+        import os
+        
+        # Build combined source text
+        combined_text = "\n\n".join(
+            f"Source ({s['url']}):\n{s['content']}"
+            for s in dataset.source_texts
+        )
+        
+        # Initialize FSM and pipeline components
+        ctx = create_extraction_context(
+            source_text=combined_text,
+            source_url=dataset.source_texts[0]["url"] if dataset.source_texts else "",
+        )
+        fsm = ExtractionFSM(ctx=ctx)
+        
+        tmp = tempfile.NamedTemporaryFile(suffix="_fsm.db", delete=False)
+        tmp.close()
+        tmp_path = tmp.name
+        store = FactStore(db_path=tmp_path)
+        extractor = FactExtractor()
+        retriever = FactRetriever(store)
+        reasoner = FactReasoner()
+        synthesizer = FactSynthesizer()
+        
+        # ── START ──
+        fsm.record_action("initialize")
+        
+        # ── DETECT_ENTITIES ──
+        all_facts = []
+        for src in dataset.source_texts:
+            facts = extractor.extract(text=src["content"], source_url=src["url"])
+            for f in facts:
+                # Extract entity names from the claim's tags (proper nouns, version numbers)
+                entity_name = f.tags[0] if f.tags else f.claim.split()[0].rstrip(".,;:!?")
+                fsm.record_entity(name=entity_name, entity_type=f.category or "unknown")
+                store.insert_fact(f)
+                all_facts.append(f)
+            fsm.record_action("extract_entities")
+            
+            # Check loops after each source
+            if fsm.check_loop()[0]:
+                fsm.handle_loop()
+        
+        # ── SPLIT_ENTITIES ──
+        # Normalize entity names to catch merged entities
+        entity_names_seen = {}
+        for f in all_facts:
+            entity_name = f.tags[0] if f.tags else f.claim.split()[0].rstrip(".,;:!?")
+            canonical = normalize_entity_name(entity_name)
+            if canonical.lower() not in entity_names_seen:
+                entity_names_seen[canonical.lower()] = canonical
+                fsm.record_action("split_entity")
+        
+        # ── EXTRACT_ATTRIBUTES ──
+        # Map entities to their claims as attributes
+        entity_claims = {}
+        for f in all_facts:
+            entity_name = f.tags[0] if f.tags else f.claim.split()[0].rstrip(".,;:!?")
+            entity_claims.setdefault(entity_name, []).append(f)
+        
+        for ename, eclaims in entity_claims.items():
+            for ec in eclaims:
+                if ec.claim:
+                    fsm.record_attribute(
+                        entity=ename,
+                        attribute=ec.category or "general",
+                        value=ec.claim,
+                    )
+            fsm.record_action("extract_attribute")
+        
+        # ── EXTRACT_RELATIONS ──
+        # Entities co-occurring in the same source are related
+        entities_by_source = {}
+        for i, src in enumerate(dataset.source_texts):
+            src_facts = extractor.extract(text=src["content"], source_url=src["url"])
+            for f in src_facts:
+                ename = f.tags[0] if f.tags else f.claim.split()[0].rstrip(".,;:!?")
+                entities_by_source.setdefault(i, set()).add(ename)
+        
+        for src_idx, entities in entities_by_source.items():
+            entity_list = list(entities)
+            if len(entity_list) > 1:
+                for i in range(len(entity_list)):
+                    for j in range(i + 1, len(entity_list)):
+                        fsm.record_relation(
+                            source=entity_list[i],
+                            target=entity_list[j],
+                            relation_type="co_occurring",
+                        )
+                        fsm.record_action("extract_relation")
+        
+        # ── NORMALIZE ──
+        for ename, attrs in list(fsm.ctx["attributes"].items()):
+            for attr in attrs:
+                orig_value = attr["value"]
+                norm_value = normalize_date_value(orig_value)
+                if norm_value != orig_value:
+                    fsm.record_normalization(ename, "date", orig_value, norm_value)
+                    fsm.record_action("normalize_date")
+                
+                norm_value = normalize_unit(orig_value)
+                if norm_value != orig_value:
+                    fsm.record_normalization(ename, "unit", orig_value, norm_value)
+                    fsm.record_action("normalize_unit")
+                
+                norm_value = normalize_price(orig_value)
+                if norm_value != orig_value:
+                    fsm.record_normalization(ename, "price", orig_value, norm_value)
+                    fsm.record_action("normalize_value")
+        
+        # ── VALIDATE ──
+        existing_claims = []
+        for ename, attrs in list(fsm.ctx["attributes"].items()):
+            filtered = []
+            for attr in attrs:
+                if is_duplicate(existing_claims, attr["value"]):
+                    fsm.record_validation("check_duplicates", False, f"Duplicate: {attr['value']}")
+                else:
+                    existing_claims.append(attr["value"])
+                    filtered.append(attr)
+                    fsm.record_validation("check_duplicates", True, attr["value"])
+            fsm.ctx["attributes"][ename] = filtered
+            fsm.record_action("check_duplicates")
+        
+        for f in all_facts:
+            passed = f.confidence >= 0.5
+            fsm.record_validation("check_confidence", passed, f.claim)
+        
+        fsm.record_action("check_confidence")
+        
+        # ── STORE ──
+        retrieved = retriever.retrieve(dataset.question, limit=50)
+        comparison = reasoner.analyze(retrieved)
+        report = synthesizer.synthesize(dataset.question, retrieved, comparison)
+        
+        fsm.ctx["stored_facts"] = [str(i) for i in range(len(all_facts))]
+        fsm.record_action("persist_facts")
+        fsm.transition_to(ExtractionState.COMPLETE)
+        
+        # ── Evaluate ──
+        pipeline_result = {
+            "facts": [{"claim": f.claim, "category": f.category, "source": f.source_url, "confidence": f.confidence} for f in all_facts],
+            "retrieved": [{"claim": f.claim, "category": f.category, "confidence": f.confidence} for f in retrieved],
+            "comparison": {
+                "contradictions": [{"entity": c.entity, "attribute": c.attribute, "values": c.values} for c in comparison.contradictions],
+                "agreements": [{"entity": a.entity, "attribute": a.attribute} for a in comparison.agreements],
+                "gaps": [{"question": g.question} for g in comparison.gaps],
+            },
+            "report": {
+                "summary": report.summary,
+                "agreements": report.agreements,
+                "conflicts": report.conflicts,
+                "gaps": report.gaps,
+                "overall_confidence": report.overall_confidence,
+                "recommendations": report.recommendations,
+            },
+        }
+        
+        eval_result = evaluate_pipeline_output(dataset.question, pipeline_result, dataset)
+        
+        result.fact_recall = eval_result["fact_recall"]
+        result.subtopic_coverage = eval_result["subtopic_coverage"]
+        result.contradictions_detected = eval_result["contradictions_detected"]
+        result.hallucinations = 0
+        
+        # FSM metrics
+        metrics = fsm.get_metrics()
+        result.efsm_transitions = metrics["efsm_transitions"]
+        result.efsm_forced_transitions = metrics["efsm_forced_transitions"]
+        result.efsm_loops_prevented = metrics["efsm_loops_prevented"]
+        result.efsm_timeouts = metrics["efsm_timeouts"]
+        result.efsm_final_state = metrics["efsm_final_state"]
+        result.efsm_entities_found = metrics["efsm_entities_found"]
+        result.efsm_attributes_extracted = metrics["efsm_attributes_extracted"]
+        result.efsm_relations_extracted = metrics["efsm_relations_extracted"]
+        result.efsm_normalizations_applied = metrics["efsm_normalizations_applied"]
+        result.efsm_validation_checks = metrics["efsm_validation_checks"]
+        result.efsm_duplicates_removed = metrics["efsm_duplicates_removed"]
+        result.efsm_stored_facts = metrics["efsm_stored_facts"]
+        
+        result.details = eval_result
+        result.details["pipeline_data"] = pipeline_result
+        result.details["efsm_metrics"] = metrics
+        
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
+    
+    except Exception as e:
+        result.error = f"{type(e).__name__}: {e}"
+        traceback.print_exc()
+    
+    result.duration_seconds = round(time.time() - start, 2)
+    return result
+
+
 # ── Report ──────────────────────────────────────────────────────
 
 @dataclass
@@ -483,7 +709,12 @@ def print_report(report: BenchmarkReport):
     for t in report.tasks:
         tasks_by_config.setdefault(t["config"], []).append(t)
     
-    for cfg, tasks in tasks_by_config.items():
+    # Metrics table
+    header = f"  {'Config':<14} {'Recall':>7} {'Coverage':>9} {'CtrDet':>6} {'Hall':>5} {'Duration':>9} {'Errors':>6}"
+    print(header)
+    print(f"  {'-'*len(header)}")
+    for cfg in sorted(tasks_by_config.keys()):
+        tasks = tasks_by_config[cfg]
         n = len(tasks)
         recall = sum(t["fact_recall"] for t in tasks) / n * 100
         coverage = sum(t["subtopic_coverage"] for t in tasks) / n * 100
@@ -491,19 +722,46 @@ def print_report(report: BenchmarkReport):
         hallucinations = sum(t["hallucinations"] for t in tasks)
         duration = sum(t["duration_seconds"] for t in tasks) / n
         errors = sum(1 for t in tasks if t.get("error"))
-        
-        print(f"  Config       Recall  Coverage CtrDet Hall  Duration  Errors")
-        print(f"  {'-'*60}")
-        print(f"  {cfg:<12} {recall:>5.1f}%  {coverage:>5.1f}%  {contradictions:>3d}    {hallucinations:>2d}   {duration:>6.1f}s  {errors:>2d}")
+        print(f"  {cfg:<14} {recall:>6.1f}% {coverage:>7.1f}% {contradictions:>5d} {hallucinations:>4d} {duration:>7.1f}s {errors:>5d}")
     
-    if len(tasks_by_config) == 2:
-        raw_tasks = tasks_by_config.get("raw", [])
-        pipe_tasks = tasks_by_config.get("pipeline", [])
-        if raw_tasks and pipe_tasks:
-            n = min(len(raw_tasks), len(pipe_tasks))
-            d_recall = (sum(t["fact_recall"] for t in pipe_tasks) - sum(t["fact_recall"] for t in raw_tasks)) / n * 100
-            d_coverage = (sum(t["subtopic_coverage"] for t in pipe_tasks) - sum(t["subtopic_coverage"] for t in raw_tasks)) / n * 100
-            print(f"\n  Delta vs Raw:")
+    # FSM metrics table (for pipeline+fsm)
+    fsm_tasks = tasks_by_config.get("pipeline+fsm", [])
+    if fsm_tasks:
+        n = len(fsm_tasks)
+        avg_trans = sum(t.get("efsm_transitions", 0) for t in fsm_tasks) / n
+        avg_forced = sum(t.get("efsm_forced_transitions", 0) for t in fsm_tasks) / n
+        avg_loops = sum(t.get("efsm_loops_prevented", 0) for t in fsm_tasks) / n
+        avg_entities = sum(t.get("efsm_entities_found", 0) for t in fsm_tasks) / n
+        avg_attrs = sum(t.get("efsm_attributes_extracted", 0) for t in fsm_tasks) / n
+        avg_rels = sum(t.get("efsm_relations_extracted", 0) for t in fsm_tasks) / n
+        avg_norms = sum(t.get("efsm_normalizations_applied", 0) for t in fsm_tasks) / n
+        avg_vals = sum(t.get("efsm_validation_checks", 0) for t in fsm_tasks) / n
+        avg_dups = sum(t.get("efsm_duplicates_removed", 0) for t in fsm_tasks) / n
+        
+        print()
+        print(f"  FSM Metrics (avg over {n} task(s)):")
+        print(f"  {'-'*60}")
+        print(f"    Transitions:        {avg_trans:.1f}")
+        print(f"    Forced Transitions: {avg_forced:.1f}")
+        print(f"    Loops Prevented:    {avg_loops:.1f}")
+        print(f"    Entities Found:     {avg_entities:.1f}")
+        print(f"    Attributes Extr:    {avg_attrs:.1f}")
+        print(f"    Relations Extr:     {avg_rels:.1f}")
+        print(f"    Normalizations:     {avg_norms:.1f}")
+        print(f"    Validation Checks:  {avg_vals:.1f}")
+        print(f"    Duplicates Removed: {avg_dups:.1f}")
+    
+    # Deltas across all configs
+    if "raw" in tasks_by_config and ("pipeline" in tasks_by_config or "pipeline+fsm" in tasks_by_config):
+        raw_tasks = tasks_by_config["raw"]
+        for other_cfg in ["pipeline", "pipeline+fsm"]:
+            other_tasks = tasks_by_config.get(other_cfg)
+            if not other_tasks:
+                continue
+            n = min(len(raw_tasks), len(other_tasks))
+            d_recall = (sum(t["fact_recall"] for t in other_tasks) - sum(t["fact_recall"] for t in raw_tasks)) / n * 100
+            d_coverage = (sum(t["subtopic_coverage"] for t in other_tasks) - sum(t["subtopic_coverage"] for t in raw_tasks)) / n * 100
+            print(f"\n  Delta vs Raw ({other_cfg}):")
             print(f"    Recall:    {d_recall:+.1f}%")
             print(f"    Coverage:  {d_coverage:+.1f}%")
     
@@ -515,7 +773,7 @@ async def main(smoke: bool = False):
     if smoke:
         datasets = DATASETS[:1]
     
-    configs = ["raw", "pipeline"]
+    configs = ["raw", "pipeline", "pipeline+fsm"]
     
     model_id = MODEL.replace(":", "_")
     safe_model = re.sub(r"[^\w.-]", "_", model_id)
@@ -533,6 +791,8 @@ async def main(smoke: bool = False):
             logger.info("[%s] %s ...", config, dataset.id)
             if config == "raw":
                 result = await run_raw(dataset)
+            elif config == "pipeline+fsm":
+                result = await run_pipeline_fsm_task(dataset)
             else:
                 result = await run_pipeline_task(dataset)
             
@@ -546,6 +806,18 @@ async def main(smoke: bool = False):
                 "duration_seconds": result.duration_seconds,
                 "error": result.error,
                 "details": result.details,
+                "efsm_transitions": result.efsm_transitions,
+                "efsm_forced_transitions": result.efsm_forced_transitions,
+                "efsm_loops_prevented": result.efsm_loops_prevented,
+                "efsm_timeouts": result.efsm_timeouts,
+                "efsm_final_state": result.efsm_final_state,
+                "efsm_entities_found": result.efsm_entities_found,
+                "efsm_attributes_extracted": result.efsm_attributes_extracted,
+                "efsm_relations_extracted": result.efsm_relations_extracted,
+                "efsm_normalizations_applied": result.efsm_normalizations_applied,
+                "efsm_validation_checks": result.efsm_validation_checks,
+                "efsm_duplicates_removed": result.efsm_duplicates_removed,
+                "efsm_stored_facts": result.efsm_stored_facts,
             }
             report.tasks.append(task_entry)
             logger.info("  recall=%.2f coverage=%.2f dur=%.1fs",

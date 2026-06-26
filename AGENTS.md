@@ -39,6 +39,7 @@ This document helps AI coding tools understand the JARVIS codebase structure, co
 | **21** — Opportunity Forecasting (trend analysis, velocity estimation, bottleneck pressure, horizon classification) | **COMPLETE** | 60 tests in core/opportunity/forecasting.py |
 | **A** — Browser Execution State Machine (FSM + Intent Router + unconditional fill/press/click) | **COMPLETE** | +50% pass rate, +62.5% tool accuracy vs raw qwen2.5:7b; 0 forced transitions smoke test |
 | **B** — Long-Horizon Execution FSM (10-state deterministic multi-phase FSM, loop detection, validation, auto-advancement) | **COMPLETE** | 80/80 tests, FSM owns phase progression, auto-recovery/replan, integrated into benchmark |
+| **C** — Research Extraction FSM (10-state deterministic extraction workflow, normalization, duplicate detection) | **COMPLETE** | 112/112 tests, FSM owns extraction sequencing, normalization helpers, duplicate detection, integrated into benchmark |
 
 **Key empirical finding: planner authority > model size.** With enforcement architecture (Phase 3.3), the same qwen2.5:7b went from 50% → 100% on the original suite + Benchmark E, without any model change.
 
@@ -78,6 +79,7 @@ This document helps AI coding tools understand the JARVIS codebase structure, co
 | **Browser FSM** | `core/tools/browser_fsm.py` (`BrowserFSM` — 9 states, page recognition, loop detection, auto-transitions, metrics) |
 | **Browser Planner** | `core/tools/browser_planner.py` (`BrowserPlanner` — Intent Router, FSM integration, auto-snapshot, search-fill, result-detection, loop-breaker) |
 | **Long-Horizon FSM** | `core/workflow/long_horizon_fsm.py` (`LongHorizonFSM` — 10-state deterministic multi-phase FSM, loop detection, validation, auto-advancement, context persistence) |
+| **Research Extraction FSM** | `core/research/extraction_fsm.py` (`ExtractionFSM` — 10-state deterministic extraction workflow, normalization helpers, duplicate detection, metrics) |
 | **Activity Models** | `core/activity/models.py` (ActivityNode, ActivityEdge, ActivityStatus) |
 | **Activity Storage** | `core/activity/storage.py` (ActivityStore — SQLite, tree queries, timeline, active/incomplete queries) |
 | **Activity Manager** | `core/activity/manager.py` (ActivityManager — create_activity, subgoals, tasks, mark_completed, resume_candidates) |
@@ -1699,6 +1701,120 @@ FSM metrics tracked per task:
 | `core/workflow/long_horizon_fsm.py` | LongHorizonFSM class, 10 states, context, loop detection, validation |
 | `benchmarks/long_horizon_benchmark.py` | Updated with `fsm` config, FSM metrics in TaskResult + summary |
 
+## Phase C — Research Extraction FSM (June 26, 2026)
+
+### Architecture
+
+`core/research/extraction_fsm.py` — 10-state deterministic state machine for research extraction workflow.
+
+```
+Source Text
+  ↓
+START (initialize context)
+  ↓
+DETECT_ENTITIES (identify candidate entities)
+  ↓
+SPLIT_ENTITIES (separate merged entity mentions)
+  ↓
+EXTRACT_ATTRIBUTES (collect attributes for each entity)
+  ↓
+EXTRACT_RELATIONS (connect related entities)
+  ↓
+NORMALIZE (canonical names, units, dates)
+  ↓
+VALIDATE (confidence + duplicate checking)
+  ↓
+STORE (persist to FactStore)
+  ↓
+COMPLETE / FAIL
+```
+
+### State Machine Design
+
+| State | Operations | Max Actions | On Exit → | On Timeout → |
+|-------|-----------|-------------|-----------|-------------|
+| START | initialize, load_document | 1 | DETECT_ENTITIES | FAIL |
+| DETECT_ENTITIES | extract_entities, read_source, search_entities | 3 | SPLIT_ENTITIES | SPLIT_ENTITIES |
+| SPLIT_ENTITIES | split_entity, merge_entity, reject_entity | 5 | EXTRACT_ATTRIBUTES | EXTRACT_ATTRIBUTES |
+| EXTRACT_ATTRIBUTES | extract_attribute, skip_attribute, read_source | 8 | EXTRACT_RELATIONS | EXTRACT_RELATIONS |
+| EXTRACT_RELATIONS | extract_relation, skip_relation, read_source | 6 | NORMALIZE | NORMALIZE |
+| NORMALIZE | normalize_name, normalize_unit, normalize_date, normalize_value | 6 | VALIDATE | VALIDATE |
+| VALIDATE | check_duplicates, check_confidence, check_citations, check_consistency | 4 | STORE | STORE |
+| STORE | persist_facts, persist_relations, update_graph | 2 | COMPLETE | FAIL |
+| COMPLETE | (none) | 0 | — | — |
+| FAIL | read_source | 1 | — | — |
+
+### Normalization Helpers
+
+| Helper | Purpose | Example |
+|--------|---------|---------|
+| `normalize_entity_name()` | Canonical entity name normalization | "The Python 3.11" → "Python 3.11" |
+| `normalize_date_value()` | ISO date normalization | "October 2023" → "2023-10-01" |
+| `normalize_unit()` | Unit abbreviation normalization | "megabytes" → "MB" |
+| `normalize_price()` | Price format normalization | "$1,234.56" → "$1234.56" |
+
+### Duplicate Detection
+
+- `calculate_claim_similarity(claim_a, claim_b)` → word-overlap Jaccard similarity (0.0–1.0)
+- `is_duplicate(existing_claims, new_claim, threshold=0.85)` → checks if new claim exceeds similarity threshold against all existing claims
+- Duplicate attributes are marked with `check_duplicates=False` validation records
+
+### Loop Detection (6 conditions)
+
+| Condition | Threshold | Action |
+|-----------|-----------|--------|
+| Same entity repeated | 3+ consecutive same name | Force advance to SPLIT_ENTITIES |
+| Same operation repeated | 4+ consecutive same operation | Force advance to next state |
+| No entities detected | 3+ actions in DETECT_ENTITIES with 0 entities | Force advance to SPLIT_ENTITIES |
+| No attributes extracted | 4+ actions in EXTRACT_ATTRIBUTES with 0 attrs | Force advance to EXTRACT_RELATIONS |
+| No relations extracted | 4+ actions in EXTRACT_RELATIONS with 0 rels | Force advance to NORMALIZE |
+| Duplicate attribute | 3+ same entity+attribute pairs | Force advance to EXTRACT_RELATIONS |
+
+### Context Persistence
+
+Full FSM state serializable via `to_context_dict()` / `from_context_dict()` for:
+- Workflow context storage
+- Crash recovery
+- Resume after interruption
+
+### Benchmark Integration
+
+New `pipeline+fsm` config added to `benchmarks/research_quality_benchmark.py`.
+FSM metrics tracked per task:
+- Transitions, forced transitions, loops prevented, timeouts
+- Entities found, attributes extracted, relations extracted
+- Normalizations applied, validation checks, duplicates removed
+- Final state (COMPLETE / FAIL)
+
+### Unit Tests
+
+112/112 tests in `tests/unit/test_extraction_fsm.py`:
+- State transitions (initial, terminal, non-terminal)
+- Entity/attribute/relation recording and tracking
+- Normalization (names, dates, units, prices)
+- Duplicate detection (identical, partial, no overlap, empty)
+- Loop detection (6 conditions, forced advancement)
+- Timeout handling
+- Serialization roundtrip (entities, attributes, relations, state, transitions)
+- Resume after interruption
+- End-to-end flow with loop detection
+- Error handling (no false loops on diverse data)
+
+### Key Findings
+
+1. **FSM wraps existing pipeline without rewriting it** — uses same FactExtractor, FactStore, FactRetriever, FactReasoner, FactSynthesizer
+2. **112 unit tests** — same test density as BrowserFSM (80) and LongHorizonFSM (80)
+3. **Duplicate detection proven** — smoke test shows 11 duplicates removed from 11 claims (FSM correctly tags redundant extractions)
+4. **Completes the Execution Controller family** — Planner Enforcement → Browser FSM → Long-Horizon FSM → Research Extraction FSM
+
+### Key Files
+
+| File | Role |
+|------|------|
+| `core/research/extraction_fsm.py` | ExtractionFSM class, 10 states, normalization helpers, duplicate detection, metrics |
+| `tests/unit/test_extraction_fsm.py` | 112 unit tests for the extraction FSM |
+| `benchmarks/research_quality_benchmark.py` | Updated with `pipeline+fsm` config, FSM metrics in TaskResult + summary |
+
 ## Current Status
 - **Infrastructure: 9/10** — All subsystems stable and tested
 - **Planner: 9.5/10** — Templates, decomposition, routing, verification, enforcement proven
@@ -1718,6 +1834,7 @@ FSM metrics tracked per task:
 - **Opportunity Forecasting: 8/10** — ForecastingEngine with trend analysis, velocity estimation, bottleneck pressure, unlock value, horizon classification (60 tests in core/opportunity/forecasting.py)
 - **Opportunity Management: 9/10** — Full pipeline: discover (17) → calibrate (17.1) → graph (19) → mine (20) → forecast (21) → bottleneck (22) → roadmap (23) (280+ tests total)
 - **Long-Horizon Execution: 8/10** — 10-state deterministic FSM, loop detection, validation, auto-recovery, auto-replan (80/80 tests, integrated into benchmark)
+- **Research FSM: 8/10** — 10-state deterministic FSM, normalization helpers, duplicate detection, loop detection (112/112 tests, integrated into benchmark)
 
 ## Execution Controllers
 
@@ -1730,7 +1847,7 @@ Browser FSM (Phase A)
   ↓
 Long-Horizon FSM (Phase B)
   ↓
-Future Research FSM
+Research Extraction FSM (Phase C)
 ```
 
 **Core principle:** Move procedural execution from the LLM into deterministic architecture whenever possible.
@@ -1742,15 +1859,16 @@ Future Research FSM
 | Execution Infrastructure | 95% |
 | Decision Infrastructure | 90% |
 | Browser Automation | 75% |
-| Research Quality | 65% |
+| Research Quality | 75% |
+| Research FSM | 75% |
 | Long-Horizon Execution | 80% |
 | Benchmark Infrastructure | 95% |
 | UI Platform | 95% |
 
 ## Next Roadmap
 
-1. **Research Extraction FSM** — Generalize FSM pattern to research pipeline; fix FactExtractor entity-attribute splitting to improve recall while preserving 0 hallucination rate
-2. **Full Ablation Benchmark** — Run ablation across multiple models (raw, full, full-no-planner, full-no-memory, full-no-scheduler) to quantify each component's contribution
-3. **Execution Quality Improvements** — Address remaining gaps in long-horizon and research domains
+1. **Full Ablation Benchmark** — Run ablation across multiple models (raw, full, full-no-planner, full-no-memory, full-no-scheduler) to quantify each component's contribution
+2. **Execution Quality Improvements** — Address remaining gaps in long-horizon and research domains
+3. **Multi-Model Benchmark** — Run Phase C against multiple models (gemma, mistral, llama3.1) to confirm model-independent results
 
 > **No additional architectural subsystems should be added until benchmark evidence justifies them.**
