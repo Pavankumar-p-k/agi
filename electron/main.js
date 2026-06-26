@@ -610,6 +610,40 @@ ipcMain.handle('get-sys-stats', async () => {
   } catch { return { cpu: '—', mem: '—' }; }
 });
 
+// ── Activity Graph IPC handlers ──────────────────────────────────────────
+
+ipcMain.handle('get-activities', async () => {
+  return getJSON(`${JARVIS_URL}/api/activity`);
+});
+
+ipcMain.handle('get-activity-counts', async () => {
+  return getJSON(`${JARVIS_URL}/api/activity/counts`);
+});
+
+ipcMain.handle('get-activity-detail', async (_e, id) => {
+  return getJSON(`${JARVIS_URL}/api/activity/${encodeURIComponent(id)}`);
+});
+
+ipcMain.handle('get-activity-tree', async (_e, id) => {
+  return getJSON(`${JARVIS_URL}/api/activity/${encodeURIComponent(id)}/tree`);
+});
+
+ipcMain.handle('get-activity-summary', async (_e, id) => {
+  return getJSON(`${JARVIS_URL}/api/activity/${encodeURIComponent(id)}/summary`);
+});
+
+ipcMain.handle('pause-activity', async (_e, id) => {
+  return postJSON(`${JARVIS_URL}/api/activity/${encodeURIComponent(id)}/pause`, JSON.stringify({}));
+});
+
+ipcMain.handle('resume-activity', async (_e, id) => {
+  return postJSON(`${JARVIS_URL}/api/activity/${encodeURIComponent(id)}/resume`, JSON.stringify({}));
+});
+
+ipcMain.handle('cancel-activity', async (_e, id) => {
+  return postJSON(`${JARVIS_URL}/api/activity/${encodeURIComponent(id)}/cancel`, JSON.stringify({ activity_id: id, error: 'cancelled by user' }));
+});
+
 // ─── Sound volume ────────────────────────────────────────────────────────────
 ipcMain.handle('get-sound-volume', () => {
   return loadConfig().soundVolume ?? 50;

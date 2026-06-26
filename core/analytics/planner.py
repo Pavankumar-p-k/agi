@@ -83,14 +83,14 @@ class PlannerAnalytics:
         failures = sum(1 for o in outcomes if o.get("actual_success") == 0)
         success_rate = round(successes / max(n, 1), 3)
 
-        # Average accuracy
+        # Average accuracy — computed in-memory from loaded outcomes
+        # (avoids N+1 SQLite queries that get_prediction_accuracy would do)
         accuracies = []
         for o in outcomes:
             try:
-                from core.planner.outcomes import get_prediction_accuracy
-                acc = get_prediction_accuracy(o["plan_id"])
-                if acc and acc.get("has_actuals"):
-                    accuracies.append(acc["overall_accuracy"])
+                acc = self._fast_prediction_accuracy(o)
+                if acc is not None:
+                    accuracies.append(acc)
             except Exception:
                 pass
         avg_accuracy = round(sum(accuracies) / max(len(accuracies), 1), 3) if accuracies else None
@@ -103,6 +103,43 @@ class PlannerAnalytics:
             "success_rate": success_rate,
             "avg_prediction_accuracy": avg_accuracy,
         }
+
+    @staticmethod
+    def _fast_prediction_accuracy(outcome: dict) -> float | None:
+        """Compute overall prediction accuracy from a single outcome dict.
+
+        Pure in-memory — no SQLite queries. Mirrors get_prediction_accuracy
+        logic but avoids loading from DB.
+        """
+        if outcome.get("actual_success") is None:
+            return None
+
+        scores = []
+
+        # 1. Success prediction accuracy
+        predicted_success = outcome.get("predicted_confidence", 0.5) >= 0.5
+        actual_success = bool(outcome["actual_success"])
+        scores.append(1.0 if predicted_success == actual_success else 0.0)
+
+        # 2. Duration accuracy
+        actual_duration_sec = outcome.get("actual_duration_seconds")
+        predicted_duration_days = outcome.get("predicted_duration_days")
+        if actual_duration_sec is not None and predicted_duration_days:
+            actual_hours = actual_duration_sec / 3600
+            actual_days = actual_hours / 8
+            if actual_days > 0:
+                ratio = min(predicted_duration_days, actual_days) / max(predicted_duration_days, actual_days)
+                scores.append(ratio)
+
+        # 3. Risk accuracy
+        actual_failures = outcome.get("actual_failures")
+        if actual_failures is not None:
+            predicted_risk = outcome.get("predicted_risk_score", 0.5)
+            actual_risk = min(1.0, actual_failures / max(outcome.get("predicted_duration_days", 5) * 2, 1))
+            risk_diff = abs(predicted_risk - actual_risk)
+            scores.append(max(0.0, 1.0 - risk_diff))
+
+        return round(sum(scores) / max(len(scores), 1), 3) if scores else None
 
     def _compute_strategy_win_rates(
         self, plans: list[dict], outcomes: list[dict]

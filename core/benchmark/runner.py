@@ -211,11 +211,53 @@ class BenchmarkRunner:
         turn_count = 0
         early_termination_count = 0
         enforced_steps: list[str] = []
+        hallucinated_turn_count = 0
+        max_turns_without_progress = 3
 
         # Track tool sequences for loop detection
         tool_sequence: list[str] = []
         sequence_for_loop = False
         no_tool_count = 0
+
+        # ── Helper: enforce missing steps ────────────────────────────
+        async def _enforce_missing_steps(missing: list[str]) -> bool:
+            nonlocal hallucinated_turn_count, early_termination_count
+            enforced = 0
+            for step_name in missing:
+                overrides = {}
+                if step_name == "email":
+                    _, forced_tc = await self.adapter.generate(
+                        messages + [{"role": "user", "content": "Provide parameters for send_email. Reply with ONLY a tool call containing to, subject, and body."}],
+                        tools=TOOL_SCHEMAS, timeout=task.timeout_seconds,
+                    )
+                    if forced_tc:
+                        fa = forced_tc[0].get("arguments", {})
+                        if "to" in fa: overrides["to"] = fa["to"]
+                        if "subject" in fa: overrides["subject"] = fa["subject"]
+                        if "body" in fa: overrides["body"] = fa["body"]
+                elif step_name == "research":
+                    _, forced_tc = await self.adapter.generate(
+                        messages + [{"role": "user", "content": "Provide the URL for browser_navigate. Reply with ONLY a tool call containing a url parameter."}],
+                        tools=TOOL_SCHEMAS, timeout=task.timeout_seconds,
+                    )
+                    if forced_tc:
+                        fa = forced_tc[0].get("arguments", {})
+                        if "url" in fa: overrides["url"] = fa["url"]
+
+                result = await planner.inject_task(plan.template_id, step_name, overrides)
+                task_info = planner.get_task_for_step(plan.template_id, step_name)
+                tool_name = task_info["tool"] if task_info else step_name
+                tool_names.append(tool_name)
+                tool_sequence.append(tool_name)
+                enforced_steps.append(tool_name)
+                enforced += 1
+                msg_text = str(result.get("result", result))[:500]
+                messages.append({"role": "tool", "tool_call_id": tool_name, "content": f"[Planner-enforced] {msg_text}"})
+
+            if enforced:
+                early_termination_count += enforced
+            hallucinated_turn_count = 0
+            return planner.is_workflow_complete(plan.template_id)
 
         for turn in range(max_turns):
             turn_count += 1
@@ -228,76 +270,65 @@ class BenchmarkRunner:
             if content:
                 messages.append({"role": "assistant", "content": content})
 
+            # ── Hallucination detection ──────────────────────────────
+            all_hallucinated = False
+            if tool_calls and plan is not None:
+                hallucinated_this_turn = 0
+                for tc in tool_calls:
+                    name = tc.get("name", "")
+                    if name not in VALID_TOOLS:
+                        hallucinated_this_turn += 1
+                if hallucinated_this_turn == len(tool_calls):
+                    all_hallucinated = True
+
             # ── Planner Enforcement ─────────────────────────────────
-            if not tool_calls and plan is not None:
-                no_tool_count += 1
+            if plan is not None:
+                should_enforce = False
+                if not tool_calls:
+                    no_tool_count += 1
+                    if no_tool_count > 1 or tool_names:
+                        should_enforce = True
+                elif all_hallucinated:
+                    hallucinated_turn_count += 1
+                    if hallucinated_turn_count >= max_turns_without_progress:
+                        should_enforce = True
+                else:
+                    no_tool_count = 0
+                    hallucinated_turn_count = 0
 
-                if no_tool_count == 1 and not tool_names:
-                    # Model hasn't started yet — prompt it to begin
-                    messages.append({
-                        "role": "user",
-                        "content": "Start working on the task using the available tools. Make your first tool call now.",
-                    })
-                    continue
-
-                # Check if model stopped early (missing required steps)
-                missing = planner.check_early_termination(plan.template_id, tool_names)
-                if missing:
-                    early_termination_count += 1
-
-                    for step_name in missing:
-                        async def enforce_step(tname: str, dargs: dict) -> dict:
-                            args = dict(dargs)
-                            if tname == "send_email":
-                                _, forced_tc = await self.adapter.generate(
-                                    messages + [{"role": "user", "content": "Provide parameters for send_email. Reply with ONLY a tool call containing to, subject, and body."}],
-                                    tools=TOOL_SCHEMAS, timeout=task.timeout_seconds,
-                                )
-                                if forced_tc:
-                                    fa = forced_tc[0].get("arguments", {})
-                                    if "to" in fa: args["to"] = fa["to"]
-                                    if "subject" in fa: args["subject"] = fa["subject"]
-                                    if "body" in fa: args["body"] = fa["body"]
-                            elif tname == "browser_navigate":
-                                _, forced_tc = await self.adapter.generate(
-                                    messages + [{"role": "user", "content": "Provide the URL for browser_navigate. Reply with ONLY a tool call containing a url parameter."}],
-                                    tools=TOOL_SCHEMAS, timeout=task.timeout_seconds,
-                                )
-                                if forced_tc:
-                                    fa = forced_tc[0].get("arguments", {})
-                                    if "url" in fa: args["url"] = fa["url"]
-                                    else: args.setdefault("url", dargs.get("url", "https://www.google.com"))
-                            import json as _json2
-                            block = ToolBlock(tool_type=tname, content=_json2.dumps(args))
-                            _, result = await execute_tool_block(block, owner="dev")
-                            return result
-
-                        result = await planner.inject_task(plan.template_id, step_name, enforce_step)
-                        enforced_tool = planner.get_task_for_step(plan.template_id, step_name)
-                        tool_name = enforced_tool["tool"] if enforced_tool else step_name
-                        tool_names.append(tool_name)
-                        tool_sequence.append(tool_name)
-                        enforced_steps.append(tool_name)
-                        msg_text = str(result.get("result", result))[:500]
-                        messages.append({"role": "tool", "tool_call_id": tool_name, "content": f"[Planner-enforced] {msg_text}"})
-
+                if should_enforce:
                     if planner.is_workflow_complete(plan.template_id):
                         break
-                    continue
+                    missing = planner.check_early_termination(plan.template_id, tool_names)
+                    if missing:
+                        done = await _enforce_missing_steps(missing)
+                        if done:
+                            break
+                        continue
 
-                # No missing steps and no tool calls — model is done
-                if no_tool_count >= 2:
-                    completed_naturally = True
-                    break
+                    # No missing steps and no tool calls — model is done
+                    if no_tool_count >= 2:
+                        completed_naturally = True
+                        break
+
+                    # Reset counters if model was just taking a break
+                    if not tool_calls:
+                        messages.append({
+                            "role": "user",
+                            "content": "Continue working on the task using the available tools.",
+                        })
+                        continue
 
             if not tool_calls:
                 continue
 
-            no_tool_count = 0
+            if not all_hallucinated:
+                no_tool_count = 0
+                hallucinated_turn_count = 0
 
             for tc in tool_calls:
                 name = tc.get("name", "")
-                args = tc.get("arguments", {})
+                tc_args = tc.get("arguments", {})
 
                 # Validate tool name
                 if name not in VALID_TOOLS:
@@ -314,7 +345,7 @@ class BenchmarkRunner:
                 # Execute the tool
                 try:
                     import json as _json
-                    content_str = args if isinstance(args, str) else _json.dumps(args)
+                    content_str = tc_args if isinstance(tc_args, str) else _json.dumps(tc_args)
                     block = ToolBlock(tool_type=name, content=content_str)
                     _, result = await execute_tool_block(block, owner="dev")
                     result_str = str(result.get("result", "") or result.get("error", ""))[:2000]
@@ -344,6 +375,10 @@ class BenchmarkRunner:
                         break
 
             if sequence_for_loop:
+                break
+
+            # Workflow complete — exit early even if LLM keeps generating
+            if plan is not None and planner.is_workflow_complete(plan.template_id):
                 break
 
         # Finalize planner

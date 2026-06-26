@@ -736,12 +736,13 @@ class BrowserPlanner:
         if ctx.get("pending_search"):
             return BrowserPlanner._handle_result_detection(executed_results, executed_blocks, ctx)
 
-        # Rule 5: search-fill (if task has a query, limit refills)
+        # Rule 5: search-fill (single-pass deterministic selectors)
+        # Uses a list of common search selectors in priority order.
+        # No multi-pass evaluate probes — they overwhelm small model context budgets.
+        # The evaluate JS runs ALL selectors in one shot and returns the first match
+        # or the highest-scored match.
         if ctx.get("query") and ctx.get("search_attempts", 0) < 2 and not ctx.get("pending_search") and not ctx.get("result_detected"):
-            # Check if any executed result contains snapshot DOM we can analyze
-            snapshot_text = BrowserPlanner._find_snapshot_text(executed_results)
-
-            # Check if we just got a selector result from a previous evaluate
+            # Check if we already have a selector from a previous snapshot or evaluate
             selector = BrowserPlanner._extract_search_selector(executed_results)
             if selector:
                 ctx["search_attempts"] = ctx.get("search_attempts", 0) + 1
@@ -750,35 +751,49 @@ class BrowserPlanner:
                     "time": time.time(),
                     "detail": f"selecting '{selector}', filling '{ctx['query']}' (attempt {ctx['search_attempts']})",
                 })
-                # Use fill+press (force=True handled by tool layer) to
-                # bypass cookie banners, overlays, etc.
                 extra.append(ToolBlock("browser_fill", f"{selector}\n{ctx['query']}"))
                 extra.append(ToolBlock("browser_press", f"{selector}\nEnter"))
                 ctx["pending_search"] = True
                 return extra, ctx
 
-            # Multi-pass probe to discover search input.
-            # If the previous probe returned no selector, retry up to 3 times
-            # with a delay to let dynamic content load.
-            pcount = ctx.get("probe_count", 0)
-            if pcount >= 3:
-                return extra, ctx
-
-            if pcount > 0:
-                # Previous probe failed — schedule a wait-and-retry
-                if not ctx.get("wait_scheduled"):
-                    ctx["wait_scheduled"] = True
-                    extra.append(ToolBlock("browser_evaluate", "() => new Promise(r => setTimeout(r, 1500))"))
-                    return extra, ctx
-
-            ctx["probe_count"] = pcount + 1
-            ctx["wait_scheduled"] = False
+            # Single-shot: try common search selectors, pick first match.
+            # This replaces the old multi-pass evaluate probe that consumed
+            # 3-6 tool calls and overwhelmed small model context budgets.
+            _FAST_SEARCH_JS = """
+() => {
+    const selectors = [
+        'input[type="search"]',
+        'input[name="q"]',
+        'input[placeholder*="search" i]',
+        'textarea[name="q"]',
+        'input[name="search_query"]',
+        'input[name="query"]',
+        'input[name="search"]',
+        'input[aria-label*="search" i]',
+        'input[role="searchbox"]',
+        'input[role="combobox"]',
+        'textarea[placeholder*="search" i]',
+        'input[type="text"]',
+    ];
+    for (const sel of selectors) {
+        const el = document.querySelector(sel);
+        if (el && el.offsetParent !== null) return sel;
+    }
+    // Fallback: any visible text input (last resort)
+    for (const sel of selectors) {
+        const el = document.querySelector(sel);
+        if (el) return sel;
+    }
+    return null;
+}
+"""
+            ctx["search_attempts"] = ctx.get("search_attempts", 0) + 1
             decisions.append({
                 "rule": "search_fill",
                 "time": time.time(),
-                "detail": f"probing (attempt {ctx['probe_count']}/3): domain selectors + CSS for query='{ctx['query']}'",
+                "detail": f"direct-selector probe for query='{ctx['query']}'",
             })
-            extra.append(ToolBlock("browser_evaluate", _SEARCH_DISCOVERY_JS))
+            extra.append(ToolBlock("browser_evaluate", _FAST_SEARCH_JS))
             return extra, ctx
 
         # Rule 6: search-result-click — open first search result link

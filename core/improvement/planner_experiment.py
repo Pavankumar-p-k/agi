@@ -287,11 +287,32 @@ class PlannerExperimentManager:
 
     @staticmethod
     def _compute_result(before: dict, after: dict) -> dict:
-        """Compare metrics before and after to determine improvement."""
-        before_acc = before.get("overall_accuracy") if isinstance(before.get("overall_accuracy"), (int, float)) else None
-        after_acc = after.get("overall_accuracy") if isinstance(after.get("overall_accuracy"), (int, float)) else None
-        before_sr = before.get("success_rate") if isinstance(before.get("success_rate"), (int, float)) else None
-        after_sr = after.get("success_rate") if isinstance(after.get("success_rate"), (int, float)) else None
+        """Compare metrics before and after to determine improvement.
+
+        Handles both flattened format (metrics_before from DB) and raw
+        nested format (metrics_after from PlannerAnalytics().compute()).
+        """
+        def _extract(d: dict, flat_key: str, nested_path: list[str]) -> float | None:
+            """Extract a numeric value from either flattened or nested format."""
+            # Try flattened first (metrics_before in DB)
+            val = d.get(flat_key)
+            if isinstance(val, (int, float)):
+                return val
+            # Try nested path (raw PlannerAnalytics output)
+            cur = d
+            for key in nested_path:
+                if isinstance(cur, dict):
+                    cur = cur.get(key, {})
+                else:
+                    return None
+            if isinstance(cur, (int, float)):
+                return cur
+            return None
+
+        before_acc = _extract(before, "overall_accuracy", ["overall", "avg_prediction_accuracy"])
+        after_acc = _extract(after, "overall_accuracy", ["overall", "avg_prediction_accuracy"])
+        before_sr = _extract(before, "success_rate", ["overall", "success_rate"])
+        after_sr = _extract(after, "success_rate", ["overall", "success_rate"])
 
         changes = {}
         improved = True

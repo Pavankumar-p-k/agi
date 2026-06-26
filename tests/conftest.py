@@ -11,6 +11,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+import shutil
+import tempfile
 import pytest
 import asyncio
 import sqlite3
@@ -96,3 +99,29 @@ def sample_user_context() -> dict:
         "auth": True,
         "privacy_tier": "LOCAL",
     }
+
+
+@pytest.fixture
+def isolated_fs():
+    """Change to a temp directory and clean up after the test."""
+    tmpdir = tempfile.mkdtemp()
+    old_cwd = os.getcwd()
+    try:
+        os.chdir(tmpdir)
+        yield tmpdir
+    finally:
+        os.chdir(old_cwd)
+        shutil.rmtree(tmpdir, ignore_errors=True)
+
+
+@pytest.fixture
+def activity_manager(isolated_fs):
+    """Create a fresh ActivityManager with an isolated on-disk DB."""
+    from core.activity.manager import ActivityManager
+    from core.activity.storage import ActivityStore
+    from pathlib import Path
+
+    db_path = str(Path(isolated_fs) / "test_activity.db")
+    store = ActivityStore(db_path=db_path)
+    mgr = ActivityManager(store=store)
+    return mgr

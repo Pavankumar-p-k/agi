@@ -563,13 +563,101 @@ def run_benchmark(
         last = checkpoints[-1]
         trend = last["overall"] - first["overall"]
         trend_str = f"+{trend:.4f}" if trend >= 0 else f"{trend:.4f}"
-        print(f"{'─' * 60}")
+        print(f"{'-' * 60}")
         print(f" Trend: {trend_str} over {last['cycle'] - first['cycle']} cycles " +
               ("" if abs(trend) < 0.001 else
                f"({'RISING' if trend > 0 else 'FALLING'})"))
         print()
 
+    # 9. Print promotion diagnostics
+    _print_promotion_diagnostics(cycle_results)
+    print()
+
     return report
+
+
+def _print_promotion_diagnostics(cycle_results: list[dict[str, Any]]) -> None:
+    """Extract and print per-experiment delta diagnostics."""
+    deltas_acc = []
+    deltas_sr = []
+    promoted_count = 0
+    rolled_back_count = 0
+    completed_count = 0
+
+    # Collect all "completed" results with changes
+    for r in cycle_results:
+        if r.get("action") == "completed":
+            completed_count += 1
+            result = r.get("result", {})
+            if not isinstance(result, dict):
+                continue
+            changes = result.get("changes", {})
+            if not changes:
+                continue
+            acc = changes.get("accuracy_change")
+            sr = changes.get("success_rate_change")
+            if isinstance(acc, (int, float)):
+                deltas_acc.append(acc)
+            if isinstance(sr, (int, float)):
+                deltas_sr.append(sr)
+        elif r.get("action") == "promoted":
+            promoted_count += 1
+        elif r.get("action") == "rolled_back":
+            rolled_back_count += 1
+
+    # Print promotion summary
+    total_decided = promoted_count + rolled_back_count
+    if total_decided == 0:
+        return
+
+    pr = promoted_count / max(total_decided, 1) * 100
+    rr = rolled_back_count / max(total_decided, 1) * 100
+    print(f"\n Promotion Diagnostics")
+    print(f"{'-' * 60}")
+    print(f" Completed: {completed_count}  |  Promoted: {promoted_count} ({pr:.0f}%)  "
+          f"Rolled back: {rolled_back_count} ({rr:.0f}%)")
+
+    # Accuracy change histogram
+    if deltas_acc:
+        _print_delta_histogram("accuracy_change", deltas_acc, 5)
+    if deltas_sr:
+        _print_delta_histogram("success_rate_change", deltas_sr, 5)
+
+    # Summary stats
+    all_deltas = deltas_acc + deltas_sr
+    if all_deltas:
+        avg = sum(all_deltas) / len(all_deltas)
+        _min = min(all_deltas)
+        _max = max(all_deltas)
+        positive = sum(1 for d in all_deltas if d > 0)
+        negative = sum(1 for d in all_deltas if d < 0)
+        zero = sum(1 for d in all_deltas if d == 0)
+        print(f" Combined: n={len(all_deltas)}  avg={avg:+.4f}  "
+              f"range=[{_min:+.4f}, {_max:+.4f}]")
+        print(f" Positive: {positive}  Negative: {negative}  Zero: {zero}")
+
+
+def _print_delta_histogram(label: str, values: list[float], bins: int = 5) -> None:
+    """Print a simple ASCII histogram of delta values."""
+    if not values:
+        return
+    _min = min(values)
+    _max = max(values)
+    if _min == _max:
+        print(f" {label}: all = {_min:+.4f} (no variance)")
+        return
+    bin_w = (_max - _min) / bins
+    hist = [0] * bins
+    for v in values:
+        idx = min(bins - 1, int((v - _min) / bin_w)) if bin_w > 0 else 0
+        hist[idx] += 1
+    print(f" {label}: n={len(values)}  [{_min:+.4f}, {_max:+.4f}]")
+    for i in range(bins):
+        lo = _min + i * bin_w
+        hi = lo + bin_w
+        bar = "#" * hist[i]
+        pct = hist[i] / len(values) * 100
+        print(f"   [{lo:+.4f}, {hi:+.4f}): {bar} ({pct:.0f}%)")
 
 
 def _re_seed_opportunity(benchmark: CapabilityBenchmark) -> int:
@@ -600,6 +688,7 @@ def _build_checkpoint(
     """Snapshot metrics at a checkpoint for learning curve plotting."""
     snapshot = benchmark.snapshot()
     overall = benchmark.overall_score(snapshot)
+    dims = snapshot.get("dimensions", {})
 
     # Compute experiment stats from cycle results
     actions = [r.get("action", "") for r in cycle_results]
@@ -611,14 +700,14 @@ def _build_checkpoint(
     return {
         "cycle": cycle_num,
         "overall": overall,
-        "planner_health": snapshot.get("planner_health", {}).get("score", 0),
-        "experiment_health": snapshot.get("experiment_health", {}).get("score", 0),
-        "strategy_diversity": snapshot.get("strategy_diversity", {}).get("score", 0),
-        "system_scores": snapshot.get("system_scores", {}).get("score", 0),
-        "loop_health": snapshot.get("loop_health", {}).get("score", 0),
-        "knowledge_health": snapshot.get("knowledge_health", {}).get("score", 0),
-        "negotiation_health": snapshot.get("negotiation_health", {}).get("score", 0),
-        "opportunity_health": snapshot.get("opportunity_health", {}).get("score", 0),
+        "planner_health": dims.get("planner_health", {}).get("score", 0),
+        "experiment_health": dims.get("experiment_health", {}).get("score", 0),
+        "strategy_diversity": dims.get("strategy_diversity", {}).get("score", 0),
+        "system_scores": dims.get("system_scores", {}).get("score", 0),
+        "loop_health": dims.get("loop_health", {}).get("score", 0),
+        "knowledge_health": dims.get("knowledge_health", {}).get("score", 0),
+        "negotiation_health": dims.get("negotiation_health", {}).get("score", 0),
+        "opportunity_health": dims.get("opportunity_health", {}).get("score", 0),
         "promotion_rate": promoted / max(completed, 1),
         "rollback_rate": rolled_back / max(completed, 1),
         "experiments_created": created,

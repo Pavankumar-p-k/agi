@@ -249,6 +249,60 @@ class ApiService {
     }
   }
 
+  // ── Activity Graph ───────────────────────────────────────────────────
+  
+  Future<List<Map<String, dynamic>>> getActivities() async {
+    try {
+      final r = await _dio.get(ApiConfig.activityGraph);
+      final data = r.data as Map<String, dynamic>;
+      return List<Map<String, dynamic>>.from(data['activities'] ?? []);
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<Map<String, dynamic>> getActivityCounts() async {
+    try {
+      final r = await _dio.get(ApiConfig.activityCounts);
+      return r.data as Map<String, dynamic>;
+    } catch (_) {
+      return {};
+    }
+  }
+
+  Future<Map<String, dynamic>> getActivityDetail(String id) async {
+    final r = await _dio.get('${ApiConfig.activityGraph}/$id');
+    return r.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> getActivityTree(String id) async {
+    final r = await _dio.get('${ApiConfig.activityGraph}/$id/tree');
+    return r.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> getActivitySummaryById(String id) async {
+    final r = await _dio.get('${ApiConfig.activityGraph}/$id/summary');
+    return r.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> pauseActivity(String id) async {
+    final r = await _dio.post('${ApiConfig.activityGraph}/$id/pause');
+    return r.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> resumeActivity(String id) async {
+    final r = await _dio.post('${ApiConfig.activityGraph}/$id/resume');
+    return r.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> cancelActivity(String id) async {
+    final r = await _dio.post(
+      '${ApiConfig.activityGraph}/$id/cancel',
+      data: {'activity_id': id, 'error': 'cancelled by user'},
+    );
+    return r.data as Map<String, dynamic>;
+  }
+
   Future<bool> sendMessage(String platform, String recipient, String msg) async {
     if (!await isOnline()) return false;
     try {

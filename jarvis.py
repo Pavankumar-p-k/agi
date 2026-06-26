@@ -22,7 +22,7 @@ if str(ROOT) not in sys.path:
 from cli_commands import (
     cmd_cli, cmd_doctor, cmd_models, cmd_settings,
     cmd_understand, cmd_workspace, cmd_code, cmd_build, cmd_run,
-    cmd_advanced,
+    cmd_advanced, cmd_activity,
 )
 
 
@@ -82,6 +82,12 @@ def build_parser() -> argparse.ArgumentParser:
     p = subparsers.add_parser("advanced", help="Access advanced commands (server, agents, voice, etc.)")
     p.add_argument("args", nargs=argparse.REMAINDER, help="Advanced command and its arguments")
     p.set_defaults(func=cmd_advanced)
+
+    p = subparsers.add_parser("activity", help="View and manage the activity graph")
+    p.add_argument("action", nargs="?", default="list",
+                   choices=["list", "tree", "get", "summary", "watch"])
+    p.add_argument("args", nargs=argparse.REMAINDER)
+    p.set_defaults(func=cmd_activity)
 
     return parser
 

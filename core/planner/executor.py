@@ -265,17 +265,13 @@ class PlannerExecutor:
         }
 
     async def inject_task(self, plan_id: str, step_name: str,
-                           execute_fn: Callable[[str, dict], Awaitable[dict]],
+                           overrides: dict | None = None,
                            context: Any = None) -> dict:
         """Enforce a required workflow step by executing the mapped tool.
 
         The planner owns the decision to execute — this bypasses the LLM's
-        choice gate. The caller provides an execute_fn that handles tool
-        dispatch and optional LLM parameter generation.
-
-        execute_fn signature:
-            async def execute_fn(tool_name: str, default_args: dict) -> dict
-              where the returned dict has at least {"exit_code": int, ...}
+        choice gate. The caller may provide argument overrides (e.g. a specific
+        URL or email recipient) which are merged on top of default_args.
 
         Returns the execution result dict.
         """
@@ -288,18 +284,27 @@ class PlannerExecutor:
         default_args = task_info["default_args"]
         self._metrics["enforced_steps_executed"] = self._metrics.get("enforced_steps_executed", 0) + 1
 
-        logger.info("Planner: enforcing step=%s -> tool=%s default_args=%s",
-                     step_name, tool_name, default_args)
+        args = dict(default_args)
+        if overrides:
+            args.update(overrides)
 
-        result = await execute_fn(tool_name, default_args)
+        logger.info("Planner: enforcing step=%s -> tool=%s args=%s",
+                     step_name, tool_name, args)
+
+        from core.tools._constants import ToolBlock
+        from core.tools.execution import execute_tool_block
+        import json as _json
+        block = ToolBlock(tool_type=tool_name, content=_json.dumps(args))
+        _, result = await execute_tool_block(block, owner="dev")
 
         # Determine success: tools may signal via exit_code==0, sent=True,
-        # success=True, or absence of an "error" key.
+        # success=True, status=ok, or absence of an "error" key.
         success = (
             result.get("exit_code", -1) == 0
             or result.get("sent") is True
             or result.get("success", False) is True
-            or (result.get("error") is None and result.get("output") is not None)
+            or result.get("status") in ("ok", "success")
+            or result.get("error") is None
         )
         self.record_step(plan_id, tool_name, success)
 

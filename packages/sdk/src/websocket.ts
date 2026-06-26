@@ -20,7 +20,7 @@ function getWsBase(): string {
 
 export class ActivityStream {
   private ws: WebSocket | null = null;
-  private handlers = new Map<string, Set<(data: ActivityEvent) => void>>();
+  private handlers = new Map<string, Set<(data: any) => void>>();
   private subscribed = new Set<string>();
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private reconnectAttempts = 0;
@@ -39,7 +39,7 @@ export class ActivityStream {
   }
 
   connect(): void {
-    if (this.ws?.readyState === WebSocket.OPEN) return;
+    if (this.ws?.readyState === 1) return;
     try {
       this.ws = new WebSocket(this.url);
     } catch {
@@ -50,7 +50,6 @@ export class ActivityStream {
     this.ws.onopen = () => {
       this.reconnectAttempts = 0;
       this.emit('_connected', { event: '_connected', activity_id: '' });
-      // Re-subscribe to all pending subscriptions
       for (const id of this.subscribed) {
         this.ws?.send(JSON.stringify({ type: 'subscribe', activity_id: id }));
       }
@@ -92,19 +91,19 @@ export class ActivityStream {
 
   subscribe(activityId: string): void {
     this.subscribed.add(activityId);
-    if (this.ws?.readyState === WebSocket.OPEN) {
+    if (this.ws?.readyState === 1) {
       this.ws.send(JSON.stringify({ type: 'subscribe', activity_id: activityId }));
     }
   }
 
   unsubscribe(activityId: string): void {
     this.subscribed.delete(activityId);
-    if (this.ws?.readyState === WebSocket.OPEN) {
+    if (this.ws?.readyState === 1) {
       this.ws.send(JSON.stringify({ type: 'unsubscribe', activity_id: activityId }));
     }
   }
 
-  on(event: string, handler: (data: ActivityEvent) => void): () => void {
+  on(event: string, handler: (data: any) => void): () => void {
     if (!this.handlers.has(event)) {
       this.handlers.set(event, new Set());
     }
@@ -134,7 +133,7 @@ export class ActivityStream {
     return this.on('_disconnected', () => handler());
   }
 
-  private emit(event: string, data: ActivityEvent): void {
+  private emit(event: string, data: any): void {
     const handlers = this.handlers.get(event);
     if (handlers) {
       handlers.forEach((h) => h(data));

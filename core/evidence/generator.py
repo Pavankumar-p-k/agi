@@ -85,7 +85,20 @@ class PlanOutcomeGenerator:
 
     Creates plans in PlanStore, records completions in PlanOutcomeStore with
     realistic distributions (some succeed, some fail, varying durations).
+
+    Strategy weights from KnobStore influence which strategies are selected
+    and how likely they are to succeed — closing the feedback loop between
+    config changes and measurable outcomes.
     """
+
+    STRATEGY_WEIGHT_KNOBS = {
+        "flutter": "planner.strategy_weight.flutter",
+        "native_android": "planner.strategy_weight.native_android",
+        "react_native": "planner.strategy_weight.react_native",
+        "web_first": "planner.strategy_weight.web_first",
+        "ios_first": "planner.strategy_weight.ios_first",
+        "backend_first": "planner.strategy_weight.backend_first",
+    }
 
     def __init__(
         self,
@@ -95,16 +108,48 @@ class PlanOutcomeGenerator:
         self.plan_store = plan_store or PlanStore()
         self.outcome_store = outcome_store or PlanOutcomeStore()
 
+    def _get_knob_strategy_weights(self) -> dict[str, float]:
+        """Read current strategy weights from KnobStore (default 1.0 each)."""
+        try:
+            from core.improvement.knob_store import KnobStore
+            ks = KnobStore()
+            weights = {}
+            for strat, knob_key in self.STRATEGY_WEIGHT_KNOBS.items():
+                val = ks.get(knob_key)
+                if isinstance(val, (int, float)) and val > 0:
+                    weights[strat] = float(val)
+                else:
+                    weights[strat] = 1.0
+            return weights
+        except Exception:
+            return {s: 1.0 for s in STRATEGY_KEYS}
+
+    def _weighted_strategy_choice(self, weights: dict[str, float]) -> str:
+        """Select a strategy using weighted random selection."""
+        strategies = list(weights.keys())
+        w = [max(weights[s], 0.1) for s in strategies]
+        total = sum(w)
+        r = random.uniform(0, total)
+        cumulative = 0.0
+        for i, strategy in enumerate(strategies):
+            cumulative += w[i]
+            if r <= cumulative:
+                return strategy
+        return strategies[-1]
+
     def generate_batch(self, count: int = 5) -> list[dict[str, Any]]:
         """Generate a batch of plans with outcomes.
 
-        Each plan gets a random goal, predicted metrics, and a simulated
-        actual outcome (success/failure) so PlannerAnalytics has signal.
+        Strategy selection and success probability are biased by current
+        KnobStore weights, creating a measurable link between config changes
+        and PlannerAnalytics metrics.
         """
+        strategy_weights = self._get_knob_strategy_weights()
         results = []
         for _ in range(count):
             goal = random.choice(GOAL_TEMPLATES)
-            strategy = random.choice(STRATEGY_KEYS)
+            strategy = self._weighted_strategy_choice(strategy_weights)
+            weight = strategy_weights.get(strategy, 1.0)
 
             plan = self.plan_store.create(
                 goal=f"{goal} ({STRATEGY_LABELS[strategy]})",
@@ -113,6 +158,7 @@ class PlanOutcomeGenerator:
                     "title": goal,
                     "description": goal,
                     "status": "completed",
+                    "strategy": strategy,
                     "children": [],
                 },
             )
@@ -121,9 +167,11 @@ class PlanOutcomeGenerator:
             self.plan_store.update_status(plan["id"], "executing")
             self.plan_store.update_status(plan["id"], "completed")
 
-            # Create outcome record with realistic predictions
-            predicted_success = random.gauss(0.7, 0.15)
-            predicted_success = max(0.1, min(1.0, predicted_success))
+            # Create outcome record — success probability biased by strategy weight
+            # Higher weight → more resources allocated → higher success rate
+            base_success = random.gauss(0.7, 0.15)
+            weight_bias = (weight - 1.0) * 0.15  # ±0.15 per unit of weight
+            predicted_success = max(0.1, min(1.0, base_success + weight_bias))
             predicted_duration = random.randint(3, 30)
             predicted_cost = random.choice(["low", "medium", "high"])
 

@@ -37,6 +37,7 @@ class Navigation(Widget):
             yield Button("Voice", id="nav-voice")
             yield Button("Models", id="nav-models")
             yield Button("Agents", id="nav-agents")
+            yield Button("Activity", id="nav-activity")
             yield Button("Automation", id="nav-automation")
             yield Button("Memory", id="nav-memory")
             yield Button("Skills", id="nav-skills")

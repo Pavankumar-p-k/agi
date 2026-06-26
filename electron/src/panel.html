@@ -690,6 +690,18 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:13px; h
       </div>
     </div>
 
+    <!-- ACTIVITY GRAPH -->
+    <div id="v-activity" class="view" style="display:none">
+      <div class="panel-body">
+        <div id="activity-controls" style="margin-bottom:8px;display:flex;align-items:center;gap:8px;">
+          <button onclick="loadActivities()" class="btn-small" style="padding:4px 10px;font-size:11px;border:1px solid var(--c-bdr);border-radius:6px;background:var(--c-dim);color:var(--c);cursor:pointer;">Refresh</button>
+          <span id="activity-counts" style="font-size:11px;color:var(--text3);"></span>
+        </div>
+        <div id="activity-list" style="max-height:300px;overflow-y:auto;border:1px solid var(--bdr);border-radius:var(--r3);background:rgba(0,0,0,0.15);"></div>
+        <div id="activity-detail" style="border-top:1px solid var(--bdr2);margin-top:8px;padding-top:8px;font-size:12px;display:none;"></div>
+      </div>
+    </div>
+
   </div><!-- /pbody -->
 </div><!-- /shell -->
 
@@ -776,9 +788,10 @@ const ICONS = {
   term:  `<svg viewBox="0 0 24 24"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>`,
   sound: `<svg viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>`,
   custom:`<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.93 4.93l2.12 2.12M16.95 16.95l2.12 2.12M4.93 19.07l2.12-2.12M16.95 7.05l2.12-2.12"/></svg>`,
+  activity:`<svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>`,
 };
-const TITLES = { home:'JARVIS',answer:'AI Response',files:'File Manager',music:'Music',video:'Video',stocks:'Markets',news:'News Feed',mail:'Mail',msgs:'Messages',apps:'Applications',term:'Terminal',sound:'Sound',custom:'Customize' };
-const SUBS   = { home:'AI Operating System',answer:'Screen Understanding',files:'Filesystem Browser',music:'Now Playing',video:'Media Player',stocks:'Live Data',news:'Latest Headlines',mail:'Inbox',msgs:'Conversations',apps:'Installed Apps',term:'Shell',sound:'Audio Settings',custom:'Appearance' };
+const TITLES = { home:'JARVIS',answer:'AI Response',files:'File Manager',music:'Music',video:'Video',stocks:'Markets',news:'News Feed',mail:'Mail',msgs:'Messages',apps:'Applications',term:'Terminal',sound:'Sound',custom:'Customize',activity:'Activity Graph' };
+const SUBS   = { home:'AI Operating System',answer:'Screen Understanding',files:'Filesystem Browser',music:'Now Playing',video:'Media Player',stocks:'Live Data',news:'Latest Headlines',mail:'Inbox',msgs:'Conversations',apps:'Installed Apps',term:'Shell',sound:'Audio Settings',custom:'Appearance',activity:'Execution DAG' };
 
 let currentView = 'home';
 
@@ -811,6 +824,7 @@ function showView(id, data={}) {
   if (id==='term')   initTerm();
   if (id==='sound')  initSound();
   if (id==='custom') initCustom();
+  if (id==='activity') loadActivities();
 
   requestAnimationFrame(resizePanel);
 }
@@ -1286,6 +1300,110 @@ function sendCfg(partial){
   if(full.text){document.documentElement.style.setProperty('--text',full.text);}
   if(full.visualTheme!==undefined)applyVisualTheme(full.visualTheme);
   try{const raw=localStorage.getItem('jarvis-dot-cfg')||'{}';const cur=JSON.parse(raw);Object.assign(cur,full);localStorage.setItem('jarvis-dot-cfg',JSON.stringify(cur));}catch{}
+}
+
+// ─── Activity Graph ────────────────────────────────────────────────────────
+
+async function loadActivities() {
+  try {
+    const data = await ipc.invoke('get-activities');
+    const counts = await ipc.invoke('get-activity-counts');
+    const activities = data.activities || [];
+    const list = document.getElementById('activity-list');
+    const countsEl = document.getElementById('activity-counts');
+
+    if (countsEl && counts) {
+      countsEl.textContent = `${counts.total || 0} total | ${counts.running || 0} running | ${counts.pending || 0} pending | ${counts.failed || 0} failed`;
+    }
+
+    if (!list) return;
+    if (activities.length === 0) {
+      list.innerHTML = '<div style="padding:16px;color:var(--text3);text-align:center;">No active activities</div>';
+      return;
+    }
+
+    list.innerHTML = activities.map(a => {
+      const sc = { RUNNING: '#4caf50', PENDING: '#ff9800', SUSPENDED: '#2196f3', FAILED: '#f44336', COMPLETED: '#888', CANCELLED: '#666' };
+      const statusColor = sc[a.status] || '#fff';
+      return `<div class="activity-item" data-id="${a.node_id}" onclick="selectActivity('${a.node_id}')" style="padding:6px 8px;border-bottom:1px solid var(--bdr2);cursor:pointer;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-weight:bold;font-size:13px;">${esc(a.label||'').substring(0,60)}</span>
+          <span style="color:${statusColor};font-size:11px;">● ${a.status}</span>
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px;">
+          ${a.node_type||'goal'} ${a.agent_id?'| '+a.agent_id:''} ${a.depth!==undefined?'| depth '+a.depth:''}
+        </div>
+      </div>`;
+    }).join('');
+  } catch (e) {
+    console.error('loadActivities error:', e);
+  }
+}
+
+async function selectActivity(id) {
+  try {
+    const detail = document.getElementById('activity-detail');
+    const tree = await ipc.invoke('get-activity-tree', id);
+    const summary = await ipc.invoke('get-activity-summary', id);
+
+    if (!detail) return;
+    detail.style.display = 'block';
+
+    const nodes = tree.nodes || [];
+    const edges = tree.edges || [];
+    const byStatus = summary.by_status || {};
+    const statusStr = Object.entries(byStatus).map(([k,v]) => `${k}: ${v}`).join(' | ');
+
+    const children = {};
+    nodes.forEach(n => { const p = n.parent_id||''; if (!children[p]) children[p] = []; children[p].push(n); });
+
+    let treeHtml = '';
+    function printTree(parentId, indent) {
+      (children[parentId]||[]).forEach(n => {
+        const icon = { PENDING:'○', RUNNING:'▶', COMPLETED:'✓', FAILED:'✗', SUSPENDED:'⏸', CANCELLED:'⊘' }[n.status]||'?';
+        const sc = { RUNNING:'#4caf50', PENDING:'#ff9800', COMPLETED:'#888', FAILED:'#f44336', SUSPENDED:'#2196f3', CANCELLED:'#666' };
+        treeHtml += '<div style="padding-left:'+(indent*16)+'px;font-size:11px;line-height:1.6;">' +
+          icon+' <b>'+n.node_type+'</b>: '+esc((n.label||'').substring(0,50)) +
+          (n.agent_id?' <span style="color:var(--text3);">['+n.agent_id+']</span>':'') +
+          ' <span style="color:'+(sc[n.status]||'#fff')+';">'+n.status+'</span>' +
+          '</div>';
+        printTree(n.node_id, indent+1);
+      });
+    }
+    printTree('', 0);
+
+    detail.innerHTML = `
+      <div style="margin-bottom:4px;"><b>${esc(summary.goal||'')}</b> <span style="color:var(--text3);font-size:11px;">(${id.substring(0,12)})</span></div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:4px;">${statusStr} | Agents: ${(summary.agents_used||[]).join(', ')||'none'} | Depth: ${summary.depth||0}</div>
+      <div style="max-height:200px;overflow-y:auto;background:rgba(0,0,0,0.2);border-radius:4px;padding:4px;">
+        ${treeHtml||'<div style="color:var(--text3);padding:8px;">No nodes</div>'}
+      </div>
+      <div style="margin-top:6px;display:flex;gap:4px;">
+        <button onclick="pauseActivity('${id}')" class="btn-small" style="padding:4px 10px;font-size:11px;border:1px solid #ff9800;border-radius:6px;background:rgba(255,152,0,0.15);color:#ff9800;cursor:pointer;">Pause</button>
+        <button onclick="resumeActivity('${id}')" class="btn-small" style="padding:4px 10px;font-size:11px;border:1px solid #4caf50;border-radius:6px;background:rgba(76,175,80,0.15);color:#4caf50;cursor:pointer;">Resume</button>
+        <button onclick="cancelActivity('${id}')" class="btn-small" style="padding:4px 10px;font-size:11px;border:1px solid #f44336;border-radius:6px;background:rgba(244,67,54,0.15);color:#f44336;cursor:pointer;">Cancel</button>
+      </div>
+    `;
+  } catch (e) {
+    console.error('selectActivity error:', e);
+  }
+}
+
+async function pauseActivity(id) {
+  try { await ipc.invoke('pause-activity', id); loadActivities(); } catch (e) { console.error(e); }
+}
+
+async function resumeActivity(id) {
+  try { await ipc.invoke('resume-activity', id); loadActivities(); } catch (e) { console.error(e); }
+}
+
+async function cancelActivity(id) {
+  try { await ipc.invoke('cancel-activity', id); loadActivities(); } catch (e) { console.error(e); }
+}
+
+function esc(s) {
+  if (!s) return '';
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 // ─── Boot ─────────────────────────────────────────────────────────────────────

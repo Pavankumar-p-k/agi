@@ -13,6 +13,26 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
+# Maps from opportunity target_system to appropriate executor type
+OPPORTUNITY_TARGET_TO_EXECUTOR: dict[str, str] = {
+    "research_infrastructure": "research",
+    "browser_automation": "research",
+    "coding_intelligence": "research",
+    "memory_learning": "research",
+    "collaboration": "research",
+    "generalization": "research",
+    "belief_quality": "research",
+    "strategic_reasoning": "research",
+    "autonomous_improvement": "research",
+    "activity_scheduler": "research",
+    "automated_build": "research",
+    "build_benchmark": "research",
+    "self_modification": "research",
+    "opportunity_discovery": "research",
+    "voice_assistant": "research",
+    "execution_infrastructure": "research",
+}
+
 
 async def research_executor(
     activity_id: str, goal: str, metadata: dict[str, Any],
@@ -93,6 +113,43 @@ async def benchmark_executor(
         "benchmark_id": session.session_id if hasattr(session, "session_id") else str(id(session)),
         "comparison": session.comparison.to_dict() if hasattr(session, "comparison") and hasattr(session.comparison, "to_dict") else {},
     }
+
+
+async def opportunity_executor(
+    activity_id: str, goal: str, metadata: dict[str, Any],
+) -> dict[str, Any]:
+    """Execute an opportunity-driven research activity.
+
+    Maps the opportunity's target_system to a research question and
+    delegates to the research executor for investigation.
+    """
+    target_system = metadata.get("target_system", "general")
+    opportunity_id = metadata.get("opportunity_id", "")
+    description = metadata.get("description", goal)
+
+    logger.info("opportunity_executor: %s (%s) — researching %s",
+                activity_id, opportunity_id, target_system)
+
+    try:
+        result = await research_executor(
+            activity_id=activity_id,
+            goal=f"Research improvement opportunity: {description[:200]}",
+            metadata={
+                "question": f"Investigate and propose improvements for {target_system}: {description[:200]}",
+                "max_pages": 3,
+                "opportunity_id": opportunity_id,
+                "target_system": target_system,
+            },
+        )
+        return {
+            "status": "completed",
+            "target_system": target_system,
+            "opportunity_id": opportunity_id,
+            "result": result,
+        }
+    except Exception as e:
+        logger.error("opportunity_executor: failed for %s: %s", activity_id, e)
+        return {"status": "failed", "error": str(e), "activity_id": activity_id}
 
 
 # ── Default executor (fallback when no specific executor is registered) ──

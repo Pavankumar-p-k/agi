@@ -101,8 +101,8 @@ export function ActivityGraph({ activityId, onClose }: Props) {
                 {child.children.length > 0 && (
                   <div style={{ marginLeft: 24, borderLeft: '1px solid var(--j-border)', paddingLeft: 16, marginTop: 6 }}>
                     {child.children.map((gc) => (
-                      <div key={gc.node.node_id} style={{ marginBottom: 4 }}>
-                        <TreeNodeView node={gc.node} depth={2} />
+                      <div key={gc.node_id} style={{ marginBottom: 4 }}>
+                        <TreeNodeView node={gc} depth={2} />
                       </div>
                     ))}
                   </div>

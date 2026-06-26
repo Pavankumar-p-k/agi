@@ -390,10 +390,66 @@ The planner lives in `benchmarks/` — move to `core/tools/` for agent pipeline 
 | result-detection | post_plan | One turn after search-fill | Check URL/DOM for results → inject `browser_snapshot` |
 | loop-breaker | post_plan | Same tool sequence ≥3× | Inject `browser_snapshot` |
 
+### June 25 Fix: Fast Search JS
+
+Replaced 3-attempt multi-pass evaluate probe loop with single-shot `_FAST_SEARCH_JS` that tries 12 common selectors in one call. Results:
+- Planner injections -72% (60→17), evaluate probes -80% (40→8)
+- llama3.1 planner success doubled (20%→40%)
+- Planner accuracy jumped +25% (45%→70%)
+
 ### Running the Benchmark
 
 ```powershell
 $env:MAX_TASKS="10"; $env:USE_PLANNER="1"; python benchmarks/browser_e2e_benchmark.py
+```
+
+## Long-Horizon Execution Benchmark (June 25-26, 2026)
+
+`benchmarks/long_horizon_benchmark.py` — 6 multi-phase tasks testing deterministic phase enforcement.
+
+### Results (qwen2.5:7b)
+
+| Config | Phase% | Pass Rate | Injections | Key Finding |
+|--------|--------|-----------|------------|-------------|
+| raw | 0% | 0% (0/6) | 0 | Model cannot sequence multi-phase projects alone |
+| workflow | 76% | 0% (0/6) | 109 | Phase enforcement works but model loops within phases |
+| workflow (fixed v2) | 56% | **16.7% (1/6)** | 66 | Auto-inject on loop detection + model-only call tracking |
+
+### Three bugs found and fixed
+
+| Bug | Fix |
+|-----|-----|
+| `self._phase_index` NameError in `run_task` | Changed `self._phase_index` → `_phase_index` (module-level function) |
+| Injected tools pollute loop detection | Added `_model_tool_calls` separate list tracking model calls only |
+| Tool loop detector breaks task instead of advancing | Changed to auto-inject next phase tool when 4+ same-tool loop detected |
+
+### Key empirical finding
+
+Phase enforcement jumps phase completion from **0% to 76%** (same pattern as planner enforcement: 0%→100%). The remaining gap is **tool-level looping within phases** — model calls `runtime_validate`/`build_project` 20+ times. Fixed by auto-injecting next phase tool at loop detection.
+
+## Research Quality Benchmark (June 26, 2026)
+
+`benchmarks/research_quality_benchmark.py` — 2 datasets with ground-truth facts, compares LLM-only (`raw`) vs full Research Pipeline (`pipeline`).
+
+### Results (qwen2.5:7b)
+
+| Config | Recall | Coverage | Contradictions | Hallucinations | Duration |
+|--------|--------|----------|---------------|---------------|----------|
+| raw | 30.0% | 52.5% | 0 | 58 | 34.4s |
+| pipeline | 18.8% | 20.0% | 1 | **0** | **0.1s** |
+
+### Key findings
+
+1. **Pipeline produces ZERO hallucinations** — deterministic extraction is 100% fact-based
+2. **Pipeline is 344x faster** (0.1s vs 34.4s) — no LLM latency
+3. **Pipeline recall is lower (18.8% vs 30.0%)** — FactExtractor splits entity-attribute connections across sentences
+4. **Pipeline found 1 contradiction** (false positive: version release dates) — raw found 0
+5. **Tradeoff confirmed**: hallucination-free speed vs LLM's broad recall
+
+### Running
+
+```powershell
+$env:AGENT_MODEL="qwen2.5:7b"; python benchmarks/research_quality_benchmark.py
 ```
 
 ## Testing
@@ -920,6 +976,10 @@ Current classification for qwen2.5:7b: all planner failures.
 ### Key Files
 
 - `benchmarks/autonomous_workflow_benchmark.py` — 4 benchmarks in one file
+- `benchmarks/browser_automation_benchmark.py` — 15 browser tasks, 3 configs, 3 models tested (June 25)
+- `benchmarks/long_horizon_benchmark.py` — 6 multi-phase tasks, phase state machine enforcement (June 25-26)
+- `benchmarks/research_quality_benchmark.py` — LLM-only vs pipeline comparison with ground-truth facts (June 26)
+- `benchmarks/ablation_benchmark.py` — Component ablation: Full vs No-Planner vs No-Memory vs No-Scheduler vs No-Belief vs No-Negotiation
 - `benchmark_reports/autonomous_qwen2.5_7b.json` — saved report for model comparison
 
 ## Current Architecture
@@ -961,7 +1021,7 @@ User
  Verification (artifact-driven checks)
 ```
 
-## Maturity Assessment (June 23, 2026)
+## Maturity Assessment (June 26, 2026)
 
 | Subsystem | Score | Notes |
 |-----------|-------|-------|
@@ -979,13 +1039,17 @@ User
 | Goal Decomposition | 9/10 | 5-feature parallel + hierarchical depth-2 extraction |
 | Multi-Agent Coordination | 8/10 | Agent graph, dependency edges, artifact handoff |
 | Activity Graph | 8.5/10 | Persistent DAG: goals, subgoals, agents, tools, artifacts |
-| Long-Horizon Execution | 7.5/10 | Resume engine proven, scheduling next |
+| Long-Horizon Execution | 6/10 | Phase enforcement proven (76%), tool-looping gap exposed |
 | **Activity Scheduler** | **8/10** | Core loop, policy, queue, worker, metrics all passing |
 | **Repository Understanding** | **8.5/10** | Indexer, dependency graph, architecture mapper, impact analyzer (31 tests) |
 | **Strategic Reasoning** | **7.5/10** | Strategy pipeline + similarity scoring (105 tests, 8 files) |
 | **Automated Build** | **8/10** | First subsystem with full ActivityGraph + Calibration + KnowledgeStore learning loop |
 | **Build Benchmark** | **7/10** | Comparison framework + promotion decisions fully wired, no multi-sample statistics yet |
 | **Principle Discovery** | **7/10** | Registry + extractor + validator + store proven, no cross-domain proposal engine yet |
+| **Research Pipeline** | **8/10** | FactStore, extractor, retriever, reasoner, synthesizer all tested (29 unit, 20 benchmarks) |
+| **Research Quality** | **7/10** | Hallucination-free but recall lower than LLM; entity-attribute splitting is biggest gap |
+| **Browser Workflow Automation** | **5/10** | Multi-step browser tasks still near zero; planner helps but action sequencing unsolved |
+| **Benchmark Infrastructure** | **8/10** | 5 benchmarks covering browser, long-horizon, research quality, autonomous workflow, ablation |
 
 ## What Phase 5 Actually Changed
 

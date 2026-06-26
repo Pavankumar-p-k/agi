@@ -7,27 +7,27 @@ interface Props {
   max?: number;
 }
 
-function isUpdated(e: ActivityEvent): e is ActivityUpdatedEvent {
+export function isUpdated(e: ActivityEvent): e is ActivityUpdatedEvent {
   return e.event === 'activity_updated';
 }
 
-function isCompleted(e: ActivityEvent): e is ActivityCompletedEvent {
+export function isCompleted(e: ActivityEvent): e is ActivityCompletedEvent {
   return e.event === 'activity_completed';
 }
 
-function isResumed(e: ActivityEvent): e is ActivityResumedEvent {
+export function isResumed(e: ActivityEvent): e is ActivityResumedEvent {
   return e.event === 'activity_resumed';
 }
 
-function isScheduleTriggered(e: ActivityEvent): e is ScheduleTriggeredEvent {
+export function isScheduleTriggered(e: ActivityEvent): e is ScheduleTriggeredEvent {
   return e.event === 'schedule_triggered';
 }
 
-function isScheduleFailed(e: ActivityEvent): e is ScheduleFailedEvent {
+export function isScheduleFailed(e: ActivityEvent): e is ScheduleFailedEvent {
   return e.event === 'schedule_failed';
 }
 
-function getEventIcon(event: ActivityEvent): string {
+export function getEventIcon(event: ActivityEvent): string {
   if (isCompleted(event)) {
     return event.status === 'FAILED' || event.status === 'CANCELLED' ? '⚠' : '✓';
   }
@@ -38,7 +38,7 @@ function getEventIcon(event: ActivityEvent): string {
   return '•';
 }
 
-function getEventColor(event: ActivityEvent): string {
+export function getEventColor(event: ActivityEvent): string {
   if (isCompleted(event)) {
     return event.status === 'FAILED' || event.status === 'CANCELLED' ? '#ef4444' : '#22c55e';
   }
@@ -48,7 +48,7 @@ function getEventColor(event: ActivityEvent): string {
   return 'var(--j-text-dim)';
 }
 
-function formatTimestamp(ts: string): string {
+export function formatTimestamp(ts: string): string {
   try {
     const d = new Date(ts);
     const now = new Date();
@@ -62,7 +62,7 @@ function formatTimestamp(ts: string): string {
   }
 }
 
-function getEventDescription(event: ActivityEvent): string {
+export function getEventDescription(event: ActivityEvent): string {
   if (isCompleted(event)) {
     if (event.error) return `Activity ${event.activity_id.slice(0, 12)} — ${event.error}`;
     return `Activity ${event.activity_id.slice(0, 12)} completed`;

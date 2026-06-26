@@ -385,6 +385,7 @@ class JarvisApp(App):
         from jarvis_tui.app.screens.agent_dashboard_screen import AgentDashboardScreen
         from jarvis_tui.app.screens.diagnostics_dashboard_screen import DiagnosticsDashboardScreen
         from jarvis_tui.app.screens.voice_dashboard_screen import VoiceDashboardScreen
+        from jarvis_tui.app.screens.activity_dashboard_screen import ActivityDashboardScreen
         from jarvis_tui.app.screens.automation_dashboard_screen import AutomationDashboardScreen
         from jarvis_tui.app.screens.memory_dashboard_screen import MemoryDashboardScreen
         from jarvis_tui.app.screens.settings_screen import SettingsScreen
@@ -392,6 +393,7 @@ class JarvisApp(App):
 
         screens = {
             "home": HomeScreen,
+            "activity": ActivityDashboardScreen,
             "chat": MainScreen,
             "registry": FeatureRegistryScreen,
             "models": ModelManagementScreen,

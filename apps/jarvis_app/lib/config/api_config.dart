@@ -42,6 +42,10 @@ class ApiConfig {
   static const String activity = '/api/activity/today';
   static const String summary = '/api/activity/summary';
 
+  // Activity Graph (full API)
+  static const String activityGraph = '/api/activity';
+  static const String activityCounts = '/api/activity/counts';
+
   static const String messageSend = '/api/message/send';
 
   static const String facesIdentify = '/api/faces/identify';

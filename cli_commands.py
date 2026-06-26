@@ -2279,6 +2279,188 @@ def _cmd_scheduler(args):
 
     asyncio.run(_run())
     return 0
+
+
+def _cmd_activity(args, _store=None):
+    """Handle activity sub-commands from the CLI."""
+    import asyncio
+    from core.activity.manager import ActivityManager
+    from core.activity.storage import ActivityStore
+
+    rest = getattr(args, 'args', [])
+    cmd_name = getattr(args, 'action', 'list')
+
+    if cmd_name in ("-h", "--help", "help"):
+        print("Usage: jarvis activity <subcommand> [args]")
+        print()
+        print("Subcommands:")
+        print("  list                   List active activities")
+        print("  tree <id>              Show activity tree")
+        print("  get <id>               Show activity details")
+        print("  summary [id]           Show activity summary")
+        print("  watch                  Live activity feed (Ctrl+C to stop)")
+        return 0
+
+    store = _store or ActivityStore()
+    mgr = ActivityManager(store=store)
+
+    if cmd_name == "list":
+        activities = mgr.get_active_activities()
+        if not activities:
+            print("No active activities.")
+            return 0
+        from rich.table import Table
+        from rich.console import Console
+        table = Table(title="Active Activities")
+        table.add_column("ID", style="cyan")
+        table.add_column("Goal", style="white")
+        table.add_column("Status", style="yellow")
+        table.add_column("Depth", style="dim")
+        table.add_column("Created", style="dim")
+        for a in activities:
+            status_style = {
+                "PENDING": "yellow", "RUNNING": "green",
+                "SUSPENDED": "blue", "FAILED": "red", "CANCELLED": "dim",
+            }.get(a.status.value, "white")
+            table.add_row(
+                a.node_id[:16],
+                a.label[:60],
+                f"[{status_style}]{a.status.value}[/]",
+                str(a.depth),
+                a.created_at.strftime("%H:%M:%S") if a.created_at else "",
+            )
+        Console().print(table)
+        return 0
+
+    elif cmd_name == "tree":
+        if not rest:
+            print("Usage: jarvis activity tree <activity_id>")
+            return 1
+        aid = rest[0]
+        nodes = mgr.get_tree(aid)
+        if not nodes:
+            print(f"Activity not found: {aid}")
+            return 1
+        edges = store.get_outgoing_edges(aid)
+        children: dict[str, list] = {}
+        for n in nodes:
+            p = n.parent_id or ""
+            children.setdefault(p, []).append(n)
+
+        def _print_tree(parent_id: str, indent: int = 0):
+            for n in children.get(parent_id, []):
+                status_icon = {"PENDING": "○", "RUNNING": "▶", "COMPLETED": "✓", "FAILED": "✗", "SUSPENDED": "⏸", "CANCELLED": "⊘"}.get(n.status.value, "?")
+                agent_tag = f" [{n.agent_id}]" if n.agent_id else ""
+                print(f"{'  ' * indent}{status_icon} {n.node_type}:{n.label[:50]}{agent_tag} [{n.status.value}]")
+                _print_tree(n.node_id, indent + 1)
+
+        print(f"\nActivity Tree: {aid}")
+        print("=" * 60)
+        _print_tree("")
+        print()
+        if edges:
+            print(f"Edges ({len(edges)}):")
+            for e in edges:
+                print(f"  {e.from_node_id[:12]} → {e.to_node_id[:12]} [{e.edge_type}]")
+        return 0
+
+    elif cmd_name == "get":
+        if not rest:
+            print("Usage: jarvis activity get <activity_id>")
+            return 1
+        aid = rest[0]
+        node = mgr.get_activity(aid)
+        if not node:
+            print(f"Activity not found: {aid}")
+            return 1
+        print(f"ID:         {node.node_id}")
+        print(f"Type:       {node.node_type}")
+        print(f"Label:      {node.label}")
+        print(f"Status:     {node.status.value}")
+        print(f"Depth:      {node.depth}")
+        if node.agent_id:
+            print(f"Agent:      {node.agent_id}")
+        if node.workflow_id:
+            print(f"Workflow:   {node.workflow_id}")
+        if node.parent_id:
+            print(f"Parent:     {node.parent_id}")
+        if node.started_at:
+            print(f"Started:    {node.started_at}")
+        if node.completed_at:
+            print(f"Completed:  {node.completed_at}")
+        if node.artifacts:
+            print(f"Artifacts:  {', '.join(f'{k}={v}' for k, v in node.artifacts.items())}")
+        edges = store.get_edges(aid)
+        if edges:
+            print("\nEdges:")
+            for e in edges:
+                direction = "→" if e.from_node_id == aid else "←"
+                other = e.to_node_id if e.from_node_id == aid else e.from_node_id
+                print(f"  {direction} {other[:16]} [{e.edge_type}]")
+        return 0
+
+    elif cmd_name == "summary":
+        from rich.table import Table
+        from rich.console import Console
+        if rest:
+            aids = [rest[0]]
+        else:
+            acts = mgr.get_active_activities()
+            aids = [a.node_id for a in acts]
+        if not aids:
+            print("No activities to summarize.")
+            return 0
+        for aid in aids:
+            summary = mgr.summarize(aid)
+            if "error" in summary:
+                print(f"Activity {aid}: {summary['error']}")
+                continue
+            print(f"\nActivity: {summary['goal']} ({summary['activity_id'][:16]})")
+            print(f"  Status: {summary['status']} | Nodes: {summary['total_nodes']} | Depth: {summary['depth']}")
+            print(f"  Agents: {', '.join(summary['agents_used']) if summary['agents_used'] else 'none'}")
+            print(f"  Created: {summary.get('created_at', 'unknown')}")
+            by_status = summary.get('by_status', {})
+            if by_status:
+                print(f"  Status breakdown:")
+                table = Table(show_header=False, box=None)
+                table.add_column("Status")
+                table.add_column("Count")
+                for s, c in sorted(by_status.items()):
+                    table.add_row(f"  {s}", str(c))
+                Console().print(table)
+        return 0
+
+    elif cmd_name == "watch":
+        print("Watching activity feed... (Ctrl+C to stop)")
+        import time
+        last_ids = set()
+        try:
+            while True:
+                activities = mgr.get_active_activities()
+                current_ids = {a.node_id for a in activities}
+                new_ids = current_ids - last_ids
+                for a in activities:
+                    if a.node_id in new_ids:
+                        print(f"[NEW] {a.node_id[:12]} {a.label[:50]} [{a.status.value}]")
+                counts = {}
+                for a in activities:
+                    c = store.count_by_status(a.node_id)
+                    counts[a.node_id] = c
+                last_ids = current_ids
+                time.sleep(3)
+        except KeyboardInterrupt:
+            print("\nStopped.")
+        return 0
+
+    else:
+        print(f"Unknown activity subcommand: {cmd_name}")
+        print("Run 'jarvis activity' for help.")
+        return 1
+
+
+cmd_activity = _cmd_activity
+
+
 def cmd_frames(args): return 0
 
 

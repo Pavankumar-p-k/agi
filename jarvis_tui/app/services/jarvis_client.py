@@ -155,5 +155,72 @@ class JarvisClient:
         response.raise_for_status()
         return response.json()
 
+    async def get_activities(self) -> list[dict]:
+        """List all active root activities."""
+        try:
+            response = await self.client.get("/api/activity")
+            response.raise_for_status()
+            data = response.json()
+            return data.get("activities", [])
+        except Exception:
+            return []
+
+    async def get_activity_counts(self) -> dict:
+        """Get aggregate counts by status."""
+        try:
+            response = await self.client.get("/api/activity/counts")
+            response.raise_for_status()
+            return response.json()
+        except Exception:
+            return {}
+
+    async def get_activity_tree(self, activity_id: str) -> dict:
+        """Get full activity tree (nodes + edges)."""
+        response = await self.client.get(f"/api/activity/{activity_id}/tree")
+        response.raise_for_status()
+        return response.json()
+
+    async def get_activity_detail(self, activity_id: str) -> dict:
+        """Get a single activity node by ID."""
+        response = await self.client.get(f"/api/activity/{activity_id}")
+        response.raise_for_status()
+        return response.json()
+
+    async def get_activity_summary(self, activity_id: str) -> dict:
+        """Get summary of an activity."""
+        response = await self.client.get(f"/api/activity/{activity_id}/summary")
+        response.raise_for_status()
+        return response.json()
+
+    async def get_activity_timeline(self, activity_id: str) -> list[dict]:
+        """Get nodes in chronological order."""
+        response = await self.client.get(f"/api/activity/{activity_id}/timeline")
+        response.raise_for_status()
+        data = response.json()
+        return data.get("timeline", [])
+
+    async def pause_activity(self, activity_id: str) -> dict:
+        """Suspend a running activity."""
+        response = await self.client.post(f"/api/activity/{activity_id}/pause")
+        response.raise_for_status()
+        return response.json()
+
+    async def resume_activity(self, activity_id: str) -> dict:
+        """Resume a suspended activity."""
+        response = await self.client.post(f"/api/activity/{activity_id}/resume")
+        response.raise_for_status()
+        return response.json()
+
+    async def cancel_activity(self, activity_id: str) -> dict:
+        """Cancel an activity."""
+        import json
+        response = await self.client.post(
+            f"/api/activity/{activity_id}/cancel",
+            content=json.dumps({"activity_id": activity_id, "error": "cancelled by user"}),
+            headers={"Content-Type": "application/json"},
+        )
+        response.raise_for_status()
+        return response.json()
+
     async def close(self):
         await self.client.aclose()

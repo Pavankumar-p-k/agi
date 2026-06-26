@@ -2,7 +2,15 @@
 import sys, os, asyncio, re
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 
-from benchmarks.browser_planner import BrowserPlanner, extract_query, has_search_form, detect_loop
+from core.tools.browser_planner import BrowserPlanner, extract_query, detect_loop
+
+def has_search_form(text):
+    """Re-implemented from legacy benchmarks.browser_planner."""
+    indicators = [
+        "search", "input", "textbox", "find", "look up",
+        "type here", "ask anything", "what are you looking for",
+    ]
+    return any(ind in text.lower() for ind in indicators)
 
 
 def test_extract_query():

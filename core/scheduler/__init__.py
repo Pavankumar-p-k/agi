@@ -3,6 +3,7 @@
 Only decides WHAT to run next. Delegates HOW to registered executors.
 """
 
+from core.scheduler.autonomous import AutonomousScheduler, OpportunityActivity
 from core.scheduler.decision import DecisionEngine, DecisionEstimate
 from core.scheduler.metrics import SchedulerMetrics, TickRecord
 from core.scheduler.models import ScheduleModel, ScheduledActivity, activity_status_from_node
@@ -13,9 +14,11 @@ from core.scheduler.scheduler import Scheduler, SchedulerState
 from core.scheduler.store import SchedulerStore
 
 __all__ = [
+    "AutonomousScheduler",
     "DecisionEngine",
     "DecisionEstimate",
     "DecisionPriorityPolicy",
+    "OpportunityActivity",
     "PriorityPolicy",
     "ScheduleModel",
     "ScheduledActivity",
