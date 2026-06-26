@@ -99,6 +99,7 @@ class TaskResult:
     duration_seconds: float = 0.0
     error: str = ""
     final_output: str = ""
+    fsm_metrics: dict[str, Any] = field(default_factory=dict)
 
 
 TASKS: list[BrowserTask] = [
@@ -719,15 +720,31 @@ async def run_task(task: BrowserTask, config_name: str, enable_planner: bool) ->
                         injected_names.append(eb.tool_type)
                         tool_name = eb.tool_type
                         args = {}
-                        try:
-                            args = json.loads(eb.content) if hasattr(eb, 'content') else {}
-                        except Exception:
-                            args = {}
+                        if hasattr(eb, 'content') and eb.content:
+                            try:
+                                args = json.loads(eb.content)
+                            except (json.JSONDecodeError, TypeError):
+                                # Non-JSON content (e.g. evaluate JS) — pass as raw value
+                                args = {"code": eb.content} if tool_name in ("browser_evaluate",) else {"content": eb.content}
                         tool_result2 = await execute_tool(tool_name, args)
                         scheduled_blocks.append((eb, tool_result2))
 
                 result.planner_injected.extend(injected_names)
                 result.unique_tools.update(injected_names)
+
+                # Capture FSM metrics from planner_ctx
+                if planner_ctx and "fsm" in planner_ctx:
+                    fsm = planner_ctx["fsm"]
+                    result.fsm_metrics = {
+                        "final_state": fsm.get("state", ""),
+                        "transitions": fsm.get("transitions", 0),
+                        "loops_prevented": fsm.get("loops_prevented", 0),
+                        "page_recognitions": fsm.get("page_recognitions", 0),
+                        "timeouts": fsm.get("timeouts", 0),
+                        "forced_transitions": fsm.get("forced_transitions", 0),
+                        "total_actions": fsm.get("total_actions", 0),
+                        "actions_in_last_state": fsm.get("actions_in_state", 0),
+                    }
 
                 # Feed results back to LLM (real tool results)
                 for tb, tr in scheduled_blocks:
@@ -897,6 +914,14 @@ def _compute_summary(all_results: list[TaskResult]) -> dict[str, Any]:
                 Counter(all_tools_llm + all_tools_planner).items(), key=lambda x: -x[1]
             )[:10]),
             "errors": [t.error for t in tasks if t.error],
+            "fsm_metrics": {
+                "total_transitions": sum(len(t.fsm_metrics.get("transitions", [])) if isinstance(t.fsm_metrics.get("transitions"), list) else t.fsm_metrics.get("transitions", 0) for t in tasks if t.fsm_metrics),
+                "total_loops_prevented": sum(t.fsm_metrics.get("loops_prevented", 0) for t in tasks if t.fsm_metrics),
+                "total_page_recognitions": sum(t.fsm_metrics.get("page_recognitions", 0) for t in tasks if t.fsm_metrics),
+                "total_timeouts": sum(t.fsm_metrics.get("timeouts", 0) for t in tasks if t.fsm_metrics),
+                "total_forced_transitions": sum(t.fsm_metrics.get("forced_transitions", 0) for t in tasks if t.fsm_metrics),
+                "final_states": dict(Counter(t.fsm_metrics.get("final_state", "") for t in tasks if t.fsm_metrics)),
+            },
         }
 
     # Deltas vs raw
@@ -1035,16 +1060,21 @@ def print_report(report: BrowserBenchmarkReport) -> None:
     deltas = summary.get("deltas", {})
 
     # Config summary table
-    header = f"{'Config':<12} {'Tasks':>5} {'Pass':>5} {'Rate':>7} {'Acc':>7} {'Turns':>6} {'Duration':>9} {'Inj':>5}"
+    header = f"{'Config':<12} {'Tasks':>5} {'Pass':>5} {'Rate':>7} {'Acc':>7} {'Turns':>6} {'Duration':>9} {'Inj':>5}  {'FSM Tr':>6} {'Loop':>5} {'Force':>6}"
     print(header)
-    print("-" * 72)
+    print("-" * 90)
 
     for cname in sorted(by_config.keys()):
         s = by_config[cname]
+        fsm = s.get("fsm_metrics", {})
+        fsm_tr = fsm.get("total_transitions", "-")
+        fsm_lp = fsm.get("total_loops_prevented", "-")
+        fsm_fo = fsm.get("total_forced_transitions", "-")
         print(f"{cname:<12} {s['total_tasks']:>5} {s['successes']:>5} "
               f"{s['success_rate']:>6.1%} {s['avg_tool_selection_accuracy']:>6.1%} "
               f"{s['avg_turns']:>6.1f} {s['avg_duration_seconds']:>7.1f}s "
-              f"{s['total_planner_injections']:>5}")
+              f"{s['total_planner_injections']:>5}  "
+              f"{str(fsm_tr):>6} {str(fsm_lp):>5} {str(fsm_fo):>6}")
 
     # Deltas
     if deltas:

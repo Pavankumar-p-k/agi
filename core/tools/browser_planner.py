@@ -2,13 +2,14 @@
 Deterministic planning layer that augments LLM browser tool calls with rules.
 
 Runs in two phases:
-  pre_plan  — before execution (inject snapshot after navigate)
+  pre_plan  — before execution (inject snapshot after navigate, intent routing)
   post_plan — after execution  (analyze results, inject fill/press/snapshot/loop-break)
 
 State is stored externally (on AgentState.browser_planner_ctx) so the planner
 remains a stateless computation — no serialisation issues across graph cycles.
 
-Rules (v5):
+Rules (v6):
+  0. intent-router     — if task needs browse but LLM chose web_search, inject browser_navigate
   1. auto-snapshot     — inject browser_snapshot after every browser_navigate
   2. challenge-bypass  — detect bot-challenge pages (Amazon), click through
   3. loop-breaker      — detect repeating tool patterns, force snapshot
@@ -28,6 +29,32 @@ import time
 from typing import Any
 
 logger = logging.getLogger(__name__)
+
+_BROWSER_TOOLS = frozenset({
+    "browser_navigate", "browser_find", "browser_find_interactive",
+    "browser_click", "browser_fill", "browser_press",
+    "browser_snapshot", "browser_get_url", "browser_get_title",
+    "browser_screenshot", "browser_current_state", "browser_health",
+    "browser_get_history", "browser_get_facts", "browser_research",
+    "browser_list_tabs", "browser_switch_tab",
+    "browser_new_tab", "browser_close_tab",
+    "browser_wait_visible", "browser_wait_text", "browser_wait_interactive",
+    "browser_shadow_query", "browser_evaluate",
+})
+
+_BROWSER_INTENT_PATTERNS = [
+    r"\bsearch\s+(?:for\s+|google\s+|duckduckgo\s+|bing\s+|wikipedia\s+)",
+    r"\bsearch\s+(?:the\s+|this\s+)?(?:web|internet|site)",
+    r"\bfind\s+(?:information|details|price|pricing|review|rating|comparison)",
+    r"\b(?:look\s+up|check|get)\s+(?:price|pricing|info|details|review)",
+    r"\bopen\s+(?:the\s+)?(?:link|page|result|article)",
+    r"\bbrowse\s",
+    r"\bgo\s+to\s",
+    r"\bnavigate\s+to\s",
+    r"\bvisit\s",
+    r"\b(?:tutorial|article|guide|lesson)\s+on\b",
+    r"\bcompare\s+(?:prices|products|options)",
+]
 
 
 # ── Search input discovery (multi-stage JS evaluate) ───────────
@@ -519,6 +546,52 @@ def _build_selector_js(mode: str = "result") -> str:
 
 # ── Query extraction ───────────────────────────────────────────
 
+# ── Browser Intent Router ────────────────────────────────────
+
+def needs_browser(prompt: str) -> bool:
+    """Check if the task requires web browser interaction.
+    Returns True if the prompt indicates the agent needs to browse/search the web.
+    """
+    prompt_lower = prompt.lower()
+    return any(re.search(p, prompt_lower) for p in _BROWSER_INTENT_PATTERNS)
+
+
+def _resolve_browser_target(prompt: str) -> str:
+    """Determine the navigation URL based on task prompt.
+    Returns a search engine URL or specific site URL.
+    """
+    prompt_lower = prompt.lower()
+    # Direct site mention
+    site_map = {
+        "amazon": "https://www.amazon.com",
+        "reddit": "https://www.reddit.com",
+        "youtube": "https://www.youtube.com",
+        "github": "https://github.com",
+        "wikipedia": "https://www.wikipedia.org",
+        "google": "https://www.google.com",
+        "duckduckgo": "https://duckduckgo.com",
+        "hacker news": "https://news.ycombinator.com",
+        "fastapi": "https://fastapi.tiangolo.com",
+    }
+    for name, url in site_map.items():
+        if name in prompt_lower:
+            return url
+    # Extract query for search engine
+    query = extract_query(prompt)
+    if query and any(w in prompt_lower for w in ["search", "find", "look up"]):
+        return f"https://duckduckgo.com/?q={query.replace(' ', '+')}"
+    return "https://duckduckgo.com"
+
+
+def _llm_chose_browser_tool(tool_blocks: list[Any]) -> bool:
+    """Check if LLM already selected any browser tool."""
+    for tb in tool_blocks:
+        name = getattr(tb, "tool_type", None) or (tb.get("name") if isinstance(tb, dict) else None)
+        if name in _BROWSER_TOOLS:
+            return True
+    return False
+
+
 def needs_result_click(prompt: str) -> bool:
     """Check if task prompt explicitly requires clicking/opening a search result.
     Prevents the result-click rule from firing on single-page search tasks."""
@@ -617,6 +690,190 @@ def detect_loop(history: list[str], threshold: int = 3) -> bool:
     return False
 
 
+# ── FSM Integration Helpers ────────────────────────────────────
+
+def _save_fsm_to_ctx(fsm: Any, fsm_data: dict) -> None:
+    """Serialize FSM state to ctx dict for graph roundtrip."""
+    fsm_data["state"] = fsm.state.value
+    fsm_data["actions_in_state"] = fsm.actions_in_state
+    fsm_data["total_actions"] = fsm.total_actions
+    fsm_data["forced_transitions"] = fsm.forced_transitions
+    fsm_data["loops_prevented"] = fsm.loops_prevented
+    fsm_data["page_recognitions"] = fsm.page_recognitions
+    fsm_data["timeouts"] = fsm.timeouts
+    fsm_data["recoveries"] = fsm.recoveries
+    fsm_data["consecutive_same_tool"] = fsm.consecutive_same_tool
+    fsm_data["last_tool"] = fsm.last_tool
+    fsm_data["visited_urls"] = fsm.visited_urls
+    fsm_data["transitions"] = fsm.transitions
+
+
+def _fsm_force_advance(fsm: Any, executed_results: list[dict], ctx: dict) -> Any:
+    """Force advance the FSM when a loop is detected.
+    Picks the next logical state based on current state and context.
+    """
+    from core.tools._constants import ToolBlock
+    from core.tools.browser_fsm import BrowserState
+
+    query = ctx.get("query", "")
+    has_query = bool(query and len(query) > 3)
+
+    # State-specific forced transitions
+    state_map = {
+        BrowserState.START: BrowserState.NAVIGATE,
+        BrowserState.NAVIGATE: BrowserState.SEARCH_PAGE if has_query else BrowserState.ARTICLE,
+        BrowserState.SEARCH_PAGE: BrowserState.SEARCH_RESULTS,
+        BrowserState.SEARCH_RESULTS: BrowserState.ARTICLE,
+        BrowserState.ARTICLE: BrowserState.EXTRACT,
+        BrowserState.EXTRACT: BrowserState.COMPLETE,
+        BrowserState.FORM: BrowserState.COMPLETE,
+        BrowserState.LOGIN: BrowserState.FAIL,
+    }
+    target = state_map.get(fsm.state, BrowserState.COMPLETE)
+    fsm.transition_to(target, forced=True)
+    return target
+
+
+def _fsm_state_entry_inject(fsm: Any, ctx: dict) -> list[Any]:
+    """Inject appropriate tool blocks when entering a new state."""
+    from core.tools._constants import ToolBlock
+    from core.tools.browser_fsm import BrowserState
+
+    blocks = []
+    query = ctx.get("query", "")
+
+    if fsm.state == BrowserState.NAVIGATE:
+        pass  # navigation already happened, snapshot will follow
+    elif fsm.state == BrowserState.SEARCH_PAGE and query:
+        # Inject search probe
+        _FAST_SEARCH_JS = """
+() => {
+    const selectors = [
+        'input[type="search"]', 'input[name="q"]', 'input[placeholder*="search" i]',
+        'textarea[name="q"]', 'input[name="search_query"]', 'input[name="query"]',
+        'input[name="search"]', 'input[aria-label*="search" i]', 'input[role="searchbox"]',
+        'input[role="combobox"]', 'textarea[placeholder*="search" i]', 'input[type="text"]',
+    ];
+    for (const sel of selectors) { const el = document.querySelector(sel); if (el && el.offsetParent !== null) return sel; }
+    for (const sel of selectors) { const el = document.querySelector(sel); if (el) return sel; }
+    return null;
+}"""
+        blocks.append(ToolBlock("browser_evaluate", _FAST_SEARCH_JS))
+    elif fsm.state == BrowserState.SEARCH_RESULTS:
+        blocks.append(ToolBlock("browser_snapshot", ""))
+    elif fsm.state == BrowserState.ARTICLE:
+        blocks.append(ToolBlock("browser_snapshot", ""))
+    elif fsm.state == BrowserState.LOGIN:
+        ctx["login_reported"] = True
+        blocks.append(ToolBlock("browser_snapshot", ""))
+
+    return blocks
+
+
+def _fsm_handle_state(
+    fsm: Any,
+    executed_results: list[dict],
+    executed_blocks: list[Any],
+    ctx: dict,
+) -> list[Any] | None:
+    """Handle FSM state-specific logic — unconditionally injects required tools per state.
+    The FSM owns execution within each state; the LLM only provides parameters.
+    """
+    from core.tools._constants import ToolBlock
+    from core.tools.browser_fsm import BrowserState, _extract_snapshot_text, _extract_snapshot_dict
+
+    query = ctx.get("query", "")
+    decisions = ctx.setdefault("decisions", [])
+
+    # ── SEARCH_PAGE: fill search form and press Enter ──────────
+    if fsm.state == BrowserState.SEARCH_PAGE and query:
+        # Check if fill+press were already injected this round
+        already_filled = any(
+            getattr(b, "tool_type", None) == "browser_fill" or (isinstance(b, dict) and b.get("name") == "browser_fill")
+            for b in executed_blocks
+        )
+        if already_filled:
+            return None  # Already injected, wait for next cycle
+
+        selector = BrowserPlanner._extract_search_selector(executed_results)
+        if selector:
+            decisions.append({
+                "rule": "fsm_fill_press",
+                "time": time.time(),
+                "detail": f"filling '{query}' in '{selector}'",
+            })
+            ctx["pending_search"] = True
+            return [
+                ToolBlock("browser_fill", f"{selector}\n{query}"),
+                ToolBlock("browser_press", f"{selector}\nEnter"),
+            ]
+        # No selector yet — inject evaluate probe
+        _FAST_SEARCH_JS = """
+() => {
+    const selectors = [
+        'input[type="search"]', 'input[name="q"]', 'input[placeholder*="search" i]',
+        'textarea[name="q"]', 'input[name="search_query"]', 'input[name="query"]',
+        'input[name="search"]', 'input[aria-label*="search" i]', 'input[role="searchbox"]',
+        'input[role="combobox"]', 'textarea[placeholder*="search" i]', 'input[type="text"]',
+    ];
+    for (const sel of selectors) { const el = document.querySelector(sel); if (el && el.offsetParent !== null) return sel; }
+    for (const sel of selectors) { const el = document.querySelector(sel); if (el) return sel; }
+    return null;
+}"""
+        decisions.append({
+            "rule": "fsm_search_probe",
+            "time": time.time(),
+            "detail": f"probing for search selector in state {fsm.state.value}",
+        })
+        return [ToolBlock("browser_evaluate", _FAST_SEARCH_JS)]
+
+    # ── SEARCH_RESULTS: click first result link, then snapshot ─
+    if fsm.state == BrowserState.SEARCH_RESULTS:
+        # Check ctx flag (set by _handle_search_result_click when navigate succeeds)
+        # Do NOT scan executed_blocks — that would match router-injected navigates
+        if ctx.get("result_navigated", False):
+            ctx["result_navigated"] = True
+            return None  # Navigation done, wait for snapshot/extraction next cycle
+
+        # Not navigated yet — find and click first result
+        blocks, _ = BrowserPlanner._handle_search_result_click(executed_results, executed_blocks, ctx)
+        return blocks
+
+    # ── ARTICLE: snapshot for extraction ──────────────────────
+    if fsm.state == BrowserState.ARTICLE:
+        already_snapshotted = any(
+            getattr(b, "tool_type", None) == "browser_snapshot" or (isinstance(b, dict) and b.get("name") == "browser_snapshot")
+            for b in executed_blocks
+        )
+        if already_snapshotted:
+            return None
+        decisions.append({
+            "rule": "fsm_article_snapshot",
+            "time": time.time(),
+            "detail": "snapshotting article for extraction",
+        })
+        return [ToolBlock("browser_snapshot", "")]
+
+    # ── LOGIN: report and snapshot ────────────────────────────
+    if fsm.state == BrowserState.LOGIN and not ctx.get("login_reported"):
+        ctx["login_reported"] = True
+        decisions.append({
+            "rule": "fsm_login_detected",
+            "time": time.time(),
+            "detail": "login form detected",
+        })
+        return [ToolBlock("browser_snapshot", "")]
+
+    # ── Fallback: result detection after search ────────────────
+    if ctx.get("pending_search"):
+        result = BrowserPlanner._handle_result_detection(executed_results, executed_blocks, ctx)
+        if result:
+            blocks, _ = result
+            return blocks
+
+    return None
+
+
 # ── Planner ────────────────────────────────────────────────────
 
 class BrowserPlanner:
@@ -657,24 +914,50 @@ class BrowserPlanner:
 
     @staticmethod
     def pre_plan(tool_blocks: list[Any], ctx: dict) -> tuple[list[Any], dict]:
-        """Inject browser_snapshot after every browser_navigate (Rule 1)."""
+        """Inject browser_navigate if task requires browsing but LLM chose wrong tool (Rule 0).
+        Also injects browser_snapshot after every browser_navigate (Rule 1)."""
+        from core.tools._constants import ToolBlock
+
+        task_prompt = ctx.get("task_prompt", "")
+        needs_browse = needs_browser(task_prompt)
+        llm_chose_browser = _llm_chose_browser_tool(tool_blocks)
+
+        # Check FSM state — don't re-navigate if already past START
+        fsm_state = ctx.get("fsm", {}).get("state", "START")
+        already_navigated = fsm_state not in ("START", "NAVIGATE")
+
         planned = []
+        # Rule 0: Intent Router — if task needs browsing but LLM didn't pick a browser tool,
+        # inject browser_navigate only if we haven't already navigated (FSM past START)
+        if needs_browse and not llm_chose_browser and not already_navigated:
+            url = _resolve_browser_target(task_prompt)
+            planned.append(ToolBlock("browser_navigate", url))
+            ctx.setdefault("decisions", []).append({
+                "rule": "intent_router",
+                "time": time.time(),
+                "detail": f"LLM chose non-browser tools for browsing task → injected navigate to {url}",
+            })
+
+        # Add LLM's chosen blocks
         for tb in tool_blocks:
             planned.append(tb)
-            if getattr(tb, "tool_type", None) == "browser_navigate":
-                # Also check raw dict format
-                if isinstance(tb, dict) and tb.get("name") == "browser_navigate":
-                    pass
-                from core.tools._constants import ToolBlock
-                planned.append(ToolBlock("browser_snapshot", ""))
+
+        # Rule 1: Auto-snapshot after EVERY browser_navigate in the planned list
+        # (handles both router-injected and LLM-chosen navigates)
+        final = []
+        for tb in planned:
+            final.append(tb)
+            name = getattr(tb, "tool_type", None) or (tb.get("name") if isinstance(tb, dict) else None)
+            if name == "browser_navigate":
+                final.append(ToolBlock("browser_snapshot", ""))
                 ctx.setdefault("decisions", []).append({
                     "rule": "auto_snapshot",
                     "time": time.time(),
-                    "detail": "injected snapshot after navigate",
+                    "detail": "injected snapshot after browser_navigate",
                 })
-        return planned, ctx
+        return final, ctx
 
-    # ── Post-plan (after execution) ─────────────────────────
+    # ── Post-plan (after execution) — FSM-driven ──────────────
 
     @staticmethod
     def post_plan(
@@ -684,157 +967,107 @@ class BrowserPlanner:
     ) -> tuple[list[Any], dict]:
         """Analyze execution results and inject new tool blocks.
 
-        Rules run in priority order:
-          2. loop-breaker
-          3. result-detection   (if pending_search)
-          4. search-fill        (if query found + search form detected)
-          5. search-result-click(if results detected, open first search result link)
-          6. page-link-explore  (if multi-page task, explore links on non-search pages)
-          7. login-detection    (if login form detected)
+        Uses the Browser Execution State Machine (browser_fsm.py) for
+        deterministic state transitions. The FSM replaces the old rule chain.
         """
         from core.tools._constants import ToolBlock
+        from core.tools.browser_fsm import BrowserFSM, BrowserState, recognize_page, _extract_snapshot_dict
 
         extra: list[Any] = []
         decisions = ctx.setdefault("decisions", [])
         history = ctx.setdefault("history", [])
 
-        # Record executed tools into history
-        any_navigate = False
-        for block in executed_blocks:
+        # ── Build FSM from ctx (always done) ──────────────────
+        fsm_data = ctx.setdefault("fsm", {})
+        fsm = BrowserFSM()
+        fsm.state = BrowserState(fsm_data.get("state", "START"))
+        fsm.actions_in_state = fsm_data.get("actions_in_state", 0)
+        fsm.total_actions = fsm_data.get("total_actions", 0)
+        fsm.forced_transitions = fsm_data.get("forced_transitions", 0)
+        fsm.loops_prevented = fsm_data.get("loops_prevented", 0)
+        fsm.page_recognitions = fsm_data.get("page_recognitions", 0)
+        fsm.timeouts = fsm_data.get("timeouts", 0)
+        fsm.recoveries = fsm_data.get("recoveries", 0)
+        fsm.consecutive_same_tool = fsm_data.get("consecutive_same_tool", 0)
+        fsm.last_tool = fsm_data.get("last_tool", "")
+        fsm.visited_urls = fsm_data.get("visited_urls", [])
+        fsm.transitions = fsm_data.get("transitions", [])
+        fsm_data.setdefault("_initialized", True)
+
+        # ── Record new tools since last post_plan call ───────
+        # Track already-recorded count to avoid double-counting
+        # across post_plan loop iterations.
+        recorded_count = ctx.setdefault("_fsm_recorded_count", 0)
+        for i in range(recorded_count, len(executed_blocks)):
+            block = executed_blocks[i]
             name = getattr(block, "tool_type", None) or (block.get("name") if isinstance(block, dict) else None)
             if name:
                 history.append({"name": name, "time": time.time()})
-                if name == "browser_navigate":
-                    any_navigate = True
+                result = executed_results[i].get("result", {}) if i < len(executed_results) and isinstance(executed_results[i], dict) else {}
+                fsm.record_action(name, result)
+        ctx["_fsm_recorded_count"] = len(executed_blocks)
 
-        # Reset search state on re-navigation — if the LLM navigates to a new
-        # page after our probes failed, we want to retry search-fill fresh.
-        if any_navigate and ctx.get("probe_count", 0) > 0:
-            ctx["probe_count"] = 0
-            ctx["search_attempts"] = 0
-            ctx["pending_search"] = False
-            ctx["wait_scheduled"] = False
+        # ── Snapshot processing → page recognition ────────────
+        # Must run BEFORE timeout/loop checks so recognized pages
+        # transition to correct state (e.g. NAVIGATE→SEARCH_PAGE)
+        snapshot = _extract_snapshot_dict(executed_results)
+        if snapshot:
+            url = snapshot.get("url", "") or ""
+            recognized = recognize_page(snapshot, url)
+            if recognized != fsm.state and recognized not in (BrowserState.NAVIGATE, BrowserState.START):
+                decisions.append({
+                    "rule": "fsm_page_recognition",
+                    "time": time.time(),
+                    "detail": f"recognized {recognized.value} from state {fsm.state.value}",
+                })
+                fsm.transition_to(recognized)
+                # On entering new state, inject appropriate next tool
+                injected = _fsm_state_entry_inject(fsm, ctx)
+                extra.extend(injected)
+                _save_fsm_to_ctx(fsm, fsm_data)
+                return extra, ctx
 
-        # Rule 2: loop-breaker
-        tool_names = [h["name"] for h in history[-12:]]
-        if detect_loop(tool_names):
+        # ── FSM checks (priority order) ───────────────────────
+
+        # 1. Loop detection: same tool 3+ consecutive → forced transition
+        if fsm.check_loop():
             decisions.append({
-                "rule": "loop_breaker",
+                "rule": "fsm_loop_breaker",
                 "time": time.time(),
-                "detail": f"pattern={tool_names[-6:]}",
+                "detail": f"same tool {fsm.last_tool} called {fsm.consecutive_same_tool}x in state {fsm.state.value}",
             })
-            extra.append(ToolBlock("browser_snapshot", ""))
+            new_state = _fsm_force_advance(fsm, executed_results, ctx)
+            if new_state == BrowserState.FAIL:
+                extra.append(ToolBlock("browser_snapshot", ""))
+            _save_fsm_to_ctx(fsm, fsm_data)
             return extra, ctx
 
-        # Rule 3: challenge-bypass — detect bot-challenge pages and click through
+        # 2. Timeout check: max actions exceeded → forced transition
+        if fsm.check_timeout():
+            decisions.append({
+                "rule": "fsm_timeout",
+                "time": time.time(),
+                "detail": f"state {fsm.state.value} exceeded {fsm.actions_in_state} actions",
+            })
+            fsm.handle_timeout()
+            _save_fsm_to_ctx(fsm, fsm_data)
+            return extra, ctx
+
+        # 3. Challenge bypass (independent of state)
         if not ctx.get("challenge_bypassed"):
             bypass = BrowserPlanner._handle_challenge_bypass(executed_results, executed_blocks, ctx)
             if bypass:
+                _save_fsm_to_ctx(fsm, fsm_data)
                 return bypass
 
-        # Rule 4: result-detection (one turn after search-fill)
-        if ctx.get("pending_search"):
-            return BrowserPlanner._handle_result_detection(executed_results, executed_blocks, ctx)
-
-        # Rule 5: search-fill (single-pass deterministic selectors)
-        # Uses a list of common search selectors in priority order.
-        # No multi-pass evaluate probes — they overwhelm small model context budgets.
-        # The evaluate JS runs ALL selectors in one shot and returns the first match
-        # or the highest-scored match.
-        if ctx.get("query") and ctx.get("search_attempts", 0) < 2 and not ctx.get("pending_search") and not ctx.get("result_detected"):
-            # Check if we already have a selector from a previous snapshot or evaluate
-            selector = BrowserPlanner._extract_search_selector(executed_results)
-            if selector:
-                ctx["search_attempts"] = ctx.get("search_attempts", 0) + 1
-                decisions.append({
-                    "rule": "search_fill",
-                    "time": time.time(),
-                    "detail": f"selecting '{selector}', filling '{ctx['query']}' (attempt {ctx['search_attempts']})",
-                })
-                extra.append(ToolBlock("browser_fill", f"{selector}\n{ctx['query']}"))
-                extra.append(ToolBlock("browser_press", f"{selector}\nEnter"))
-                ctx["pending_search"] = True
-                return extra, ctx
-
-            # Single-shot: try common search selectors, pick first match.
-            # This replaces the old multi-pass evaluate probe that consumed
-            # 3-6 tool calls and overwhelmed small model context budgets.
-            _FAST_SEARCH_JS = """
-() => {
-    const selectors = [
-        'input[type="search"]',
-        'input[name="q"]',
-        'input[placeholder*="search" i]',
-        'textarea[name="q"]',
-        'input[name="search_query"]',
-        'input[name="query"]',
-        'input[name="search"]',
-        'input[aria-label*="search" i]',
-        'input[role="searchbox"]',
-        'input[role="combobox"]',
-        'textarea[placeholder*="search" i]',
-        'input[type="text"]',
-    ];
-    for (const sel of selectors) {
-        const el = document.querySelector(sel);
-        if (el && el.offsetParent !== null) return sel;
-    }
-    // Fallback: any visible text input (last resort)
-    for (const sel of selectors) {
-        const el = document.querySelector(sel);
-        if (el) return sel;
-    }
-    return null;
-}
-"""
-            ctx["search_attempts"] = ctx.get("search_attempts", 0) + 1
-            decisions.append({
-                "rule": "search_fill",
-                "time": time.time(),
-                "detail": f"direct-selector probe for query='{ctx['query']}'",
-            })
-            extra.append(ToolBlock("browser_evaluate", _FAST_SEARCH_JS))
+        # 4. State-specific logic
+        injected = _fsm_handle_state(fsm, executed_results, executed_blocks, ctx)
+        if injected is not None:
+            extra.extend(injected)
+            _save_fsm_to_ctx(fsm, fsm_data)
             return extra, ctx
 
-        # Rule 6: search-result-click — open first search result link
-        # Only fires after search-fill → result-detection pipeline.
-        if (
-            ctx.get("needs_result_click")
-            and ctx.get("result_detected")
-            and not ctx.get("result_navigated")
-        ):
-            return BrowserPlanner._handle_search_result_click(executed_results, executed_blocks, ctx)
-
-        # Rule 7: page-link-exploration — independent of search pipeline.
-        # Fires on any page with external links for multi-page tasks that
-        # don't go through search-fill (e.g. blog posts, GitHub trending,
-        # Wikipedia articles). Two-phase: evaluate JS to find link, then
-        # navigate + snapshot.
-        if (
-            ctx.get("needs_result_click")
-            and not ctx.get("link_exploration_done")
-            and not ctx.get("result_navigated")
-            and not ctx.get("pending_search")
-        ):
-            return BrowserPlanner._handle_page_link_exploration(executed_results, executed_blocks, ctx)
-
-        # Rule 8: login-detection
-        if not ctx.get("login_reported"):
-            login_info = BrowserPlanner._detect_login_form(executed_results)
-            if login_info:
-                decisions.append({
-                    "rule": "login_detection",
-                    "time": time.time(),
-                    "detail": f"login form detected: {login_info}",
-                })
-                ctx["login_reported"] = True
-                extra.append(ToolBlock(
-                    "browser_snapshot",
-                    "",
-                ))
-                return extra, ctx
-
-        # Rule 9: fact extraction — auto-extract facts from snapshot results
+        # 6. Fact extraction from snapshots
         snapshot_facts = BrowserPlanner._extract_snapshot_facts(executed_results, ctx)
         if snapshot_facts:
             ctx["facts"] = ctx.get("facts", []) + snapshot_facts
@@ -844,6 +1077,7 @@ class BrowserPlanner:
                 "detail": f"extracted {len(snapshot_facts)} facts from page",
             })
 
+        _save_fsm_to_ctx(fsm, fsm_data)
         return extra, ctx
 
     # ── Rule helpers ─────────────────────────────────────────

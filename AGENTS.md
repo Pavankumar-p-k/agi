@@ -427,6 +427,26 @@ $env:MAX_TASKS="10"; $env:USE_PLANNER="1"; python benchmarks/browser_e2e_benchma
 
 Phase enforcement jumps phase completion from **0% to 76%** (same pattern as planner enforcement: 0%→100%). The remaining gap is **tool-level looping within phases** — model calls `runtime_validate`/`build_project` 20+ times. Fixed by auto-injecting next phase tool at loop detection.
 
+### Three bugs fixed (June 26, 2026)
+
+| Bug | Fix |
+|-----|-----|
+| `self._phase_index` NameError in `run_task` | Changed to module-level `_phase_index` variable |
+| Injected tools pollute loop detection | Added `_model_tool_calls` separate list tracking model calls only |
+| Tool loop detector breaks task instead of advancing | Changed to auto-inject next phase tool when 4+ same-tool loop detected |
+
+### Fixed v2 Results
+
+| Task | Phases Executed | Final Phase | Pass |
+|------|----------------|-------------|------|
+| research_and_build | 2/7 | validate | FAIL |
+| build_test_2 | **7/7** | complete | **PASS** |
+| multi_phase_research | 2/7 | research_2 | FAIL |
+| research_and_build_2 | 4/7 | validate | FAIL |
+| multi_phase_build | 2/7 | build_1 | FAIL |
+| long_research_build_test | 3/7 | test | FAIL |
+| **Overall** | **~56%** | — | **16.7%** |
+
 ## Research Quality Benchmark (June 26, 2026)
 
 `benchmarks/research_quality_benchmark.py` — 2 datasets with ground-truth facts, compares LLM-only (`raw`) vs full Research Pipeline (`pipeline`).
@@ -756,6 +776,35 @@ Weighted scoring against 4 metrics:
 | otherwise | KEEP_BOTH |
 
 Adjusted score = overall_score + 0.05 capability_bonus (automated_build has repair + richer artifact advantage).
+
+### Tests
+
+25 tests in `tests/unit/test_build_benchmark.py`: models (7), comparison (5), promotion (4), strategy prediction (2), ActivityGraph (2), session (1), integration (3), knowledge store (1).
+
+## Research Quality Benchmark (June 26, 2026)
+
+`benchmarks/research_quality_benchmark.py` — 2 datasets with ground-truth facts, compares LLM-only (`raw`) vs full Research Pipeline (`pipeline`).
+
+### Results (qwen2.5:7b)
+
+| Config | Recall | Coverage | Contradictions | Hallucinations | Duration |
+|--------|--------|----------|---------------|---------------|----------|
+| raw | 30.0% | 52.5% | 0 | 58 | 34.4s |
+| pipeline | 18.8% | 20.0% | 1 | **0** | **0.1s** |
+
+### Key findings
+
+1. **Pipeline produces ZERO hallucinations** — deterministic extraction is 100% fact-based
+2. **Pipeline is 344x faster** (0.1s vs 34.4s) — no LLM latency
+3. **Pipeline recall is lower (18.8% vs 30.0%)** — FactExtractor splits entity-attribute connections across sentences
+4. **Pipeline found 1 contradiction** (false positive: version release dates) — raw found 0
+5. **Tradeoff confirmed**: hallucination-free speed vs LLM's broad recall
+
+### Running
+
+```powershell
+$env:AGENT_MODEL="qwen2.5:7b"; python benchmarks/research_quality_benchmark.py
+```
 
 ### Integration Points
 
