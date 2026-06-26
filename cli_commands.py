@@ -759,6 +759,501 @@ class {name.capitalize().replace("-", "")}Plugin(Plugin):
     return 1
 
 
+def cmd_provider(args):
+    import asyncio
+    from core.providers.registry import provider_registry
+    from core.providers.router import provider_router
+    from core.providers.base import ExecutionResult, ProviderHealthStatus
+    from core.providers.memory import provider_memory
+
+    action = args.action
+    rest = args.args or []
+
+    if action == "list":
+        providers = provider_registry.list_providers()
+        if not providers:
+            print("No providers registered")
+            return 0
+        print(f"{'ID':25s} {'Status':10s} {'Priority':10s} {'Performance':12s} {'Capabilities'}")
+        print("-" * 95)
+        for p in providers:
+            status = "ENABLED" if p.enabled else "DISABLED"
+            if not p.installed:
+                status = "NOT_FOUND"
+            perf = provider_memory.get_score(p.provider_id)
+            perf_str = f"{perf*100:.0f}%" if perf > 0 else "---"
+            caps = ", ".join(p.capabilities().capability_names[:5])
+            if len(p.capabilities().capability_names) > 5:
+                caps += f" (+{len(p.capabilities().capability_names) - 5})"
+            priority = provider_registry.get_priority(p.provider_id)
+            print(f"{p.provider_id:25s} {status:10s} {str(priority):10s} {perf_str:12s} {caps}")
+        print(f"\nTotal: {len(providers)} providers")
+        return 0
+
+    elif action == "enable":
+        if not rest:
+            print("Usage: jarvis provider enable <provider_id>")
+            return 1
+        pid = rest[0]
+        if provider_registry.enable(pid):
+            print(f"Enabled provider: {pid}")
+            return 0
+        print(f"Provider not found: {pid}")
+        return 1
+
+    elif action == "disable":
+        if not rest:
+            print("Usage: jarvis provider disable <provider_id>")
+            return 1
+        pid = rest[0]
+        if provider_registry.disable(pid):
+            print(f"Disabled provider: {pid}")
+            return 0
+        print(f"Provider not found: {pid}")
+        return 1
+
+    elif action == "set-priority":
+        if len(rest) < 2:
+            print("Usage: jarvis provider set-priority <provider_id> <priority>")
+            return 1
+        pid = rest[0]
+        try:
+            priority = int(rest[1])
+        except ValueError:
+            print("Priority must be an integer")
+            return 1
+        if provider_registry.set_priority(pid, priority):
+            print(f"Set priority for {pid} to {priority}")
+            return 0
+        print(f"Provider not found: {pid}")
+        return 1
+
+    elif action == "doctor":
+        return asyncio.run(_cmd_provider_doctor())
+
+    elif action == "install":
+        if not rest:
+            print("Usage: jarvis provider install <provider_id>")
+            print("Known providers: " + ", ".join(sorted(_list_known_providers().keys())))
+            return 1
+        return asyncio.run(_cmd_provider_install(rest[0]))
+
+    elif action == "benchmark":
+        return asyncio.run(_cmd_provider_benchmark(rest))
+
+    elif action == "info":
+        if not rest:
+            print("Usage: jarvis provider info <provider_id>")
+            return 1
+        return asyncio.run(_cmd_provider_info(rest[0]))
+
+    elif action == "search":
+        query = rest[0].lower() if rest else ""
+        return _cmd_provider_search(query)
+
+    return 1
+
+
+def _list_known_providers():
+    from core.providers.store import list_known_providers
+    return list_known_providers()
+
+
+async def _cmd_provider_doctor():
+    from core.providers.registry import provider_registry
+    from core.providers.base import ProviderHealthStatus
+    from core.providers.memory import provider_memory
+
+    providers = provider_registry.list_providers()
+    if not providers:
+        print("No providers registered")
+        return 0
+
+    print("Provider Health & Capability Coverage")
+    print("=" * 60)
+    print()
+
+    all_caps: dict[str, list[tuple[str, bool, float]]] = {}
+    results = {}
+
+    import time
+    for p in providers:
+        pid = p.provider_id
+        installed = "OK" if p.installed else "MISSING"
+        enabled = "ON" if p.enabled else "OFF"
+        print(f"  [{installed}/{enabled}] {pid:20s} ... ", end="")
+        try:
+            start = time.monotonic()
+            health = await p.health()
+            elapsed = (time.monotonic() - start) * 1000
+            healthy = health.status == ProviderHealthStatus.HEALTHY
+            if healthy:
+                print(f"HEALTHY ({elapsed:.0f}ms)")
+            elif health.status == ProviderHealthStatus.DEGRADED:
+                print(f"DEGRADED ({elapsed:.0f}ms): {health.error}")
+            else:
+                print(f"DOWN: {health.error}")
+            results[pid] = healthy
+        except Exception as e:
+            print(f"ERROR: {e}")
+            results[pid] = False
+
+        caps = p.capabilities()
+        perf = provider_memory.get_score(pid)
+        for cap in caps.capability_names:
+            if cap not in all_caps:
+                all_caps[cap] = []
+            all_caps[cap].append((pid, results.get(pid, False), perf))
+
+    print()
+    print("Capability Coverage")
+    print("-" * 60)
+    for cap in sorted(all_caps.keys()):
+        providers_for_cap = all_caps[cap]
+        healthy_count = sum(1 for _, h, _ in providers_for_cap if h)
+        total = len(providers_for_cap)
+        bar_len = 20
+        filled = int(bar_len * healthy_count / max(total, 1))
+        bar = "█" * filled + "░" * (bar_len - filled)
+        names = ", ".join(p for p, h, _ in providers_for_cap if h)
+        if not names:
+            names = "No healthy provider"
+        print(f"  {cap:15s} {bar} {healthy_count}/{total}  {names}")
+
+    print()
+    ok_count = sum(1 for v in results.values() if v)
+    print(f"Health: {ok_count}/{len(results)} providers healthy")
+    return 0 if ok_count == len(results) else 1
+
+
+async def _cmd_provider_install(provider_id: str):
+    from core.providers.store import get_known_provider, write_manifest
+    from core.providers.bootstrap import register_internal_providers, register_external_providers
+
+    info = get_known_provider(provider_id)
+    if not info:
+        print(f"Unknown provider: {provider_id}")
+        print("Known providers: " + ", ".join(sorted(_list_known_providers().keys())))
+        print("To install a custom provider, place a manifest in ~/.jarvis/providers/manifests/")
+        return 1
+
+    pid = info["provider_id"]
+    from core.providers.registry import provider_registry
+    existing = provider_registry.get(pid)
+    if existing:
+        print(f"Provider {info['name']} is already installed")
+        return 0
+
+    write_manifest(provider_id)
+    register_external_providers()
+    from core.providers.bootstrap import scan_provider_plugins
+    scan_provider_plugins()
+
+    if provider_registry.get(pid):
+        print(f"Installed: {info['name']} ({info['version']})")
+        if info.get("install_hint"):
+            print(f"NOTE: {info['install_hint']}")
+        print(f"Enabled: {provider_registry.is_enabled(pid)}")
+        return 0
+
+    print(f"Registered manifest for {info['name']}")
+    if info.get("install_hint"):
+        print(f"To use: {info['install_hint']}")
+    print("Then restart JARVIS or run: jarvis provider enable " + pid)
+    return 0
+
+
+async def _cmd_provider_benchmark(args: list[str]):
+    import time
+    from core.providers.registry import provider_registry
+    from core.providers.benchmark import BenchmarkRunner, get_tasks, get_categories, TASKS
+    from core.providers.benchmark_store import benchmark_store
+
+    if "--leaderboard" in args or "-l" in args:
+        category = None
+        language = None
+        for i, a in enumerate(args):
+            if a in ("--category", "-c") and i + 1 < len(args):
+                category = args[i + 1]
+            if a in ("--language", "-lang") and i + 1 < len(args):
+                language = args[i + 1]
+
+        return _show_benchmark_leaderboard(benchmark_store, category, language)
+
+    if "--results" in args or "-r" in args:
+        provider = None
+        category = None
+        for i, a in enumerate(args):
+            if a in ("--provider", "-p") and i + 1 < len(args):
+                provider = args[i + 1]
+            if a in ("--category", "-c") and i + 1 < len(args):
+                category = args[i + 1]
+        return _show_benchmark_results(benchmark_store, provider, category)
+
+    if "--clear" in args:
+        benchmark_store.clear()
+        print("Benchmark data cleared")
+        return 0
+
+    if "--stats" in args or "-s" in args:
+        return _show_benchmark_stats(benchmark_store)
+
+    providers = provider_registry.list_providers()
+    coding_providers = [p for p in providers if "coding" in p.capabilities().capability_names]
+    if not coding_providers:
+        print("No coding providers registered")
+        return 1
+
+    category = None
+    for i, a in enumerate(args):
+        if a in ("--category", "-c") and i + 1 < len(args):
+            category = args[i + 1]
+
+    print("Provider Benchmark Suite")
+    print("=" * 60)
+    if category:
+        print(f"  Category: {category}")
+        print()
+
+    runner = BenchmarkRunner(store=benchmark_store)
+    all_results: dict[str, list] = {}
+
+    for p in coding_providers:
+        pid = p.provider_id
+        if not p.enabled:
+            print(f"  [{pid}] SKIPPED (disabled)")
+            continue
+        if not p.installed:
+            print(f"  [{pid}] SKIPPED (not installed)")
+            continue
+
+        tasks = get_tasks(category=category)
+        print(f"  [{pid}] running {len(tasks)} benchmarks...")
+        try:
+            results = await runner.run_provider(p, category=category)
+            all_results[pid] = results
+        except Exception as e:
+            print(f"  [{pid}] ERROR: {e}")
+            continue
+
+    print()
+    return _show_benchmark_leaderboard(benchmark_store, category)
+
+
+def _show_benchmark_leaderboard(store, category=None, language=None):
+    from core.providers.benchmark_store import benchmark_store as bs
+    leaderboard = store.get_leaderboard(category=category, language=language)
+    if not leaderboard:
+        print("No benchmark data yet. Run `jarvis provider benchmark` to collect data.")
+        return 0
+
+    print("Benchmark Leaderboard")
+    print("=" * 70)
+    if category:
+        print(f"  Category: {category}")
+    if language:
+        print(f"  Language: {language}")
+    print()
+
+    print(f"{'Provider':20s} {'Category':15s} {'Language':12s} {'Quality':8s} {'Success':8s} {'Avg Dur':8s} {'Runs':6s}")
+    print("-" * 70)
+    for row in leaderboard:
+        pid = row["provider_id"][:18]
+        cat = row["category"][:13]
+        lang = row["language"][:10] if row["language"] else "-"
+        qual = f"{row['avg_quality']*100:.0f}%"
+        succ = f"{row['success_rate']*100:.0f}%"
+        dur = f"{row['avg_duration_ms']:.0f}ms"
+        runs = str(row["runs"])
+        print(f"{pid:20s} {cat:15s} {lang:12s} {qual:8s} {succ:8s} {dur:8s} {runs:6s}")
+    print()
+
+    print("Top Recommendations:")
+    print("-" * 70)
+    seen_cats: set[str] = set()
+    for row in leaderboard:
+        cat_key = f"{row['category']}/{row['language']}"
+        if cat_key not in seen_cats and row['runs'] >= 2:
+            seen_cats.add(cat_key)
+            print(f"  {row['category']:15s} ({row['language'] or 'any':10s}) → {row['provider_id']:20s}  ({row['avg_quality']*100:.0f}% quality, {row['avg_duration_ms']:.0f}ms)")
+    return 0
+
+
+def _show_benchmark_results(store, provider=None, category=None):
+    results = store.get_results(provider_id=provider, category=category)
+    if not results:
+        print("No benchmark results found.")
+        return 0
+
+    print(f"{'Task':30s} {'Provider':15s} {'Status':8s} {'Quality':8s} {'Duration':10s}")
+    print("-" * 70)
+    for r in results:
+        status = "PASS" if r["success"] else "FAIL"
+        qual = f"{r['quality_score']*100:.0f}%"
+        dur = f"{r['duration_ms']:.0f}ms"
+        task = r["task_id"][:28]
+        pid = r["provider_id"][:13]
+        print(f"{task:30s} {pid:15s} {status:8s} {qual:8s} {dur:10s}")
+    print(f"\n{len(results)} results")
+    return 0
+
+
+def _show_benchmark_stats(store):
+    stats = store.get_stats()
+    print("Benchmark Statistics")
+    print("=" * 40)
+    print(f"  Total benchmark runs: {stats['total_runs']}")
+    print(f"  Providers tested: {stats['providers']}")
+    print(f"  Categories: {stats['categories']}")
+    if stats["last_run"]:
+        from datetime import datetime
+        last = datetime.fromtimestamp(stats["last_run"])
+        print(f"  Last run: {last.strftime('%Y-%m-%d %H:%M:%S')}")
+    return 0
+
+
+async def _cmd_provider_info(provider_id: str):
+    from core.providers.registry import provider_registry
+    from core.providers.memory import provider_memory
+    from core.providers.budget import provider_budget
+    from core.providers.store import get_known_provider
+
+    p = provider_registry.get(provider_id)
+    if not p:
+        known = get_known_provider(provider_id)
+        if known:
+            print(f"Provider '{known['name']}' is known but not installed")
+            print(f"  Install hint: {known.get('install_hint', '')}")
+            return 0
+        print(f"Provider not found: {provider_id}")
+        return 1
+
+    print(f"Provider: {p.name} ({p.provider_id})")
+    print(f"  Version: {p.version}")
+    print(f"  Status: {'ENABLED' if p.enabled else 'DISABLED'}")
+    print(f"  Installed: {p.installed}")
+    print(f"  Priority: {provider_registry.get_priority(p.provider_id)}")
+    print()
+    caps = p.capabilities()
+    print(f"  Capabilities ({len(caps.capability_names)}):")
+    for c in caps.capability_names:
+        print(f"    - {c}")
+    if caps.languages:
+        print(f"  Languages: {', '.join(caps.languages)}")
+    print()
+    record = provider_memory.get_record(provider_id)
+    if record:
+        print(f"  Performance:")
+        print(f"    Executions: {record.total_executions}")
+        print(f"    Success rate: {record.success_rate*100:.0f}%")
+        print(f"    Avg duration: {record.avg_duration_ms:.0f}ms")
+        print(f"    Avg cost: ${record.avg_cost:.4f}")
+        print(f"    Consecutive failures: {record.consecutive_failures}")
+    print()
+    budget_rec = provider_budget.get_record(provider_id)
+    if budget_rec:
+        print(f"  Budget:")
+        print(f"    Total spent: ${budget_rec.total_spent:.2f}")
+        print(f"    Total tokens: {budget_rec.total_tokens}")
+        print(f"    Daily cost: ${budget_rec.daily_cost:.2f}")
+        print(f"    Monthly cost: ${budget_rec.monthly_cost:.2f}")
+    return 0
+
+
+def _cmd_provider_search(query: str):
+    from core.providers.store import list_known_providers
+    import shutil
+
+    known = list_known_providers()
+    if query:
+        matches = {k: v for k, v in known.items() if query in k or query in v.get("name", "").lower() or any(query in c.get("name", "") for c in v.get("capabilities", []))}
+    else:
+        matches = known
+
+    if not matches:
+        print(f"No providers matching '{query}'")
+        return 0
+
+    print(f"{'ID':25s} {'Name':20s} {'Status':12s} {'Capabilities'}")
+    print("-" * 80)
+    for pid, info in sorted(matches.items()):
+        cmd = info.get("health_command", "").split()[0] if info.get("health_command") else ""
+        installed = "INSTALLED" if (cmd and shutil.which(cmd)) else "AVAILABLE"
+        caps = ", ".join(c.get("name", "") for c in info.get("capabilities", [])[:3])
+        print(f"{pid:25s} {info['name']:20s} {installed:12s} {caps}")
+    print(f"\n{len(matches)} providers found")
+    return 0
+
+
+def cmd_orchestrate(args):
+    """Multi-provider orchestration: compose teams of providers."""
+    import asyncio
+
+    goal = args.goal
+    if not goal and not args.plan_only:
+        goal = input("Goal: ").strip()
+    if not goal:
+        print("Usage: jarvis orchestrate <goal> [--plan-only]")
+        return 1
+
+    from core.providers.orchestration import OrchestrationPlanner, Orchestrator
+
+    planner = OrchestrationPlanner()
+    plan = planner.plan(goal, context={
+        "language": getattr(args, "language", ""),
+        "framework": getattr(args, "framework", ""),
+    })
+
+    print("\nOrchestration Plan")
+    print("=" * 60)
+    print(f"  Goal: {plan.goal}")
+    print(f"  Steps: {plan.total_steps}")
+    print(f"  Providers: {plan.provider_count()}")
+    print()
+    for step in plan.steps:
+        dep_str = ""
+        if step.dependencies:
+            dep_str = f" → after [{', '.join(d.step_id for d in step.dependencies)}]"
+        print(f"  [{step.step_id}]")
+        print(f"    Label:     {step.label}")
+        print(f"    Provider:  {step.provider_id}")
+        print(f"    Chain:     {step.chain_type.value}")
+        print(f"    Capability: {step.task.get('capability', '?')}{dep_str}")
+        print()
+
+    if args.plan_only:
+        print("Plan only mode — not executing.")
+        return 0
+
+    confirm = input("Execute this orchestration plan? [Y/n]: ").strip().lower()
+    if confirm and confirm not in ("y", "yes", ""):
+        print("Aborted.")
+        return 0
+
+    print("\nExecuting orchestration plan...")
+    print("-" * 60)
+
+    orchestrator = Orchestrator()
+    result = asyncio.run(orchestrator.execute(plan))
+
+    print()
+    print(result.summary())
+    print()
+
+    if result.overall_success:
+        print("✓ Orchestration completed successfully")
+    else:
+        print(f"✗ Orchestration failed: {result.error or 'Unknown error'}")
+
+    merged = result.collect_artifacts()
+    if merged:
+        print(f"\nArtifacts produced: {len(merged)}")
+        for key, val in list(merged.items())[:5]:
+            print(f"  {key}: {val[:80]}...")
+
+    return 0 if result.overall_success else 1
+
+
 def cmd_cloud(args):
     import asyncio
 
@@ -1104,6 +1599,29 @@ def cmd_doctor(args):
         console.print(f"  Voice mode: {mode}  |  TTS provider: {provider}")
     except Exception as e:
         console.print(f"[red]Voice diagnostics failed: {e}[/]")
+
+    try:
+        from core.providers.registry import provider_registry
+        from core.providers.base import ProviderHealthStatus
+        providers = provider_registry.list_providers()
+        if providers:
+            console.print(Panel("[bold]Capability Coverage[/]", border_style="green"))
+            all_caps: dict[str, list[str]] = {}
+            for p in providers:
+                for cap in p.capabilities().capability_names:
+                    if cap not in all_caps:
+                        all_caps[cap] = []
+                    all_caps[cap].append(p.provider_id)
+            for cap in sorted(all_caps.keys()):
+                names = all_caps[cap]
+                healthy_count = sum(1 for p in providers if p.provider_id in names and p.enabled and p.installed)
+                total = len(names)
+                bar_len = 20
+                filled = int(bar_len * healthy_count / max(total, 1))
+                bar = "█" * filled + "░" * (bar_len - filled)
+                console.print(f"  [bold]{cap:15s}[/] {bar} {healthy_count}/{total}")
+    except Exception:
+        pass
 
     if getattr(args, 'json', False):
         import json as _json

@@ -378,6 +378,20 @@ def _owner_is_admin(owner: str | None) -> bool:
 # ---------------------------------------------------------------------------
 
 # Map legacy tool names -> (MCP server_id, MCP tool_name)
+# Plugin tool handlers — registered dynamically by plugins
+_PLUGIN_TOOL_HANDLERS: dict[str, Callable[..., Awaitable[tuple[str, dict]]]] = {}
+
+
+def register_plugin_tool(name: str, handler: Callable[..., Awaitable[tuple[str, dict]]]) -> None:
+    _PLUGIN_TOOL_HANDLERS[name] = handler
+    logger.info("[PluginTools] Registered plugin tool: %s", name)
+
+
+def unregister_plugin_tool(name: str) -> None:
+    _PLUGIN_TOOL_HANDLERS.pop(name, None)
+    logger.info("[PluginTools] Unregistered plugin tool: %s", name)
+
+
 _MCP_TOOL_MAP = {
     "bash":           ("bash",       "bash"),
     "python":         ("python",     "python"),
@@ -2787,6 +2801,9 @@ async def execute_tool_block(
         else:
             desc = f"mcp: {tool}"
             result = {"error": "MCP manager not available", "exit_code": 1}
+    elif tool in _PLUGIN_TOOL_HANDLERS:
+        plugin_handler = _PLUGIN_TOOL_HANDLERS[tool]
+        desc, result = await plugin_handler(content, session_id=session_id, owner=owner, progress_cb=progress_cb, context=context)
     else:
         desc = f"unknown: {tool}"
         result = {"error": f"Unknown tool type: {tool}", "exit_code": 1}

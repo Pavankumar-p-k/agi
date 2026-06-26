@@ -144,7 +144,7 @@ class PluginLoader:
                 try:
                     plugin_class = ep.load()
                     # Create a manifest shim
-                    from .manifest import PluginManifest
+                    from .base import PluginManifest
                     hooks: list[str] = []
                     for attr_name in dir(plugin_class):
                         attr = getattr(plugin_class, attr_name, None)

@@ -1,11 +1,3 @@
-"""AgentRouter — matches decomposed goals to capable agents.
-
-Receives a SubGoal tree from the Planner, matches each leaf sub-goal
-to an agent via can_handle(), and returns an execution plan.
-
-Agents are evaluated in priority order (lower = checked first).
-"""
-
 from __future__ import annotations
 
 import logging
@@ -29,11 +21,13 @@ from core.agents.adapters import (
     SentinelAdapter,
 )
 from core.planner.models import SubGoal
-from core.workflow.models import StepDefinition
+from core.providers.router import ProviderRouter, provider_router
+from core.providers.registry import provider_registry
+from core.providers.base import ExecutionProvider
+from core.capability.registry import capability_registry
 
 logger = logging.getLogger(__name__)
 
-# Registry of all available agents.
 _AGENT_REGISTRY: dict[str, BaseAgent] = {}
 
 
@@ -50,11 +44,9 @@ def list_agents() -> list[BaseAgent]:
 
 
 def _sorted_agents() -> list[BaseAgent]:
-    """Return all agents sorted by priority ascending."""
     return sorted(_AGENT_REGISTRY.values(), key=lambda a: a.priority)
 
 
-# Register built-in agents (tool agents first, then LLM specialists)
 register_agent(ResearchAgent(priority=10))
 register_agent(BuildAgent(priority=10))
 register_agent(TestAgent(priority=10))
@@ -62,7 +54,6 @@ register_agent(BrowserAgent(priority=10))
 register_agent(MemoryAgent(priority=10))
 register_agent(EmailAgent(priority=10))
 
-# LLM specialist adapters
 register_agent(ForgeAdapter())
 register_agent(NexusAdapter())
 register_agent(OracleAdapter())
@@ -74,8 +65,18 @@ register_agent(ScribeAdapter())
 register_agent(SentinelAdapter())
 
 
+_CAPABILITY_TO_DEFAULT_AGENT: dict[str, str] = {
+    "research": "research",
+    "build": "build",
+    "test": "test",
+    "browser": "browser",
+    "memory": "memory",
+    "email": "email",
+    "coding": "forge",
+}
+
+
 def find_agent_for_goal(goal: str, exclude: set[str] | None = None) -> BaseAgent | None:
-    """Return the first matching agent, evaluated in priority order."""
     exclude = exclude or set()
     for agent in _sorted_agents():
         if agent.agent_id in exclude:
@@ -85,12 +86,19 @@ def find_agent_for_goal(goal: str, exclude: set[str] | None = None) -> BaseAgent
     return None
 
 
-def find_agents_for_subgoal(subgoal: SubGoal, context: dict | None = None) -> list[BaseAgent]:
-    """Return all agents that can handle a sub-goal, in priority order.
+def find_providers_for_goal(goal: str) -> list[ExecutionProvider]:
+    matched = capability_registry.get_providers_for_task(goal)
+    all_providers: list[ExecutionProvider] = []
+    seen: set[str] = set()
+    for capability, providers in matched.items():
+        for p in providers:
+            if p.provider_id not in seen:
+                all_providers.append(p)
+                seen.add(p.provider_id)
+    return all_providers
 
-    Most sub-goals map to a single agent, but some may require multiple
-    (e.g. "build and test" -> [BuildAgent, TestAgent]).
-    """
+
+def find_agents_for_subgoal(subgoal: SubGoal, context: dict | None = None) -> list[BaseAgent]:
     goal_text = f"{subgoal.description} {subgoal.step_name or ''}"
     agents: list[BaseAgent] = []
     seen: set[str] = set()
@@ -102,7 +110,6 @@ def find_agents_for_subgoal(subgoal: SubGoal, context: dict | None = None) -> li
             agents.append(candidate)
             seen.add(candidate.agent_id)
 
-    # If no agent matched the goal text, fall back to step_name lookup
     if not agents and subgoal.step_name:
         step_agent = _AGENT_REGISTRY.get(subgoal.step_name)
         if step_agent:
@@ -113,13 +120,6 @@ def find_agents_for_subgoal(subgoal: SubGoal, context: dict | None = None) -> li
 
 def find_best_agent_for_subgoal(subgoal: SubGoal,
                                  step_name: str | None = None) -> BaseAgent | None:
-    """Return the single best (highest priority) agent for a sub-goal, or None.
-
-    Unlike find_agents_for_subgoal() which returns all candidates, this returns
-    exactly one — the first match in priority order. No fallback to step_name.
-
-    If step_name is provided, it overrides subgoal.step_name for matching.
-    """
     goal_text = f"{subgoal.description} {step_name or subgoal.step_name or ''}"
     for agent in _sorted_agents():
         if agent.can_handle(goal_text):
@@ -127,27 +127,21 @@ def find_best_agent_for_subgoal(subgoal: SubGoal,
     return None
 
 
+def select_provider(
+    goal: str,
+    workflow_id: str = "",
+    exclude: set[str] | None = None,
+) -> ExecutionProvider | None:
+    return provider_router.select_with_fallback(
+        capability="coding",
+        task={"goal": goal},
+        workflow_id=workflow_id,
+        exclude=exclude,
+    )
+
+
 class AgentRouter:
-    """Routes planner sub-goals to capable agents and creates execution plans.
-
-    Usage:
-        router = AgentRouter()
-        plan = router.route(subgoal_tree, context)
-        for step in plan:
-            result = await agents.execute(step, context)
-    """
-
     def route(self, root: SubGoal, context: dict | None = None) -> list[dict]:
-        """Convert a SubGoal tree into an ordered list of agent execution tasks.
-
-        Each task has:
-          agent_id: str  — which agent to invoke
-          goal: str      — the sub-goal description
-          step: str      — the step name
-          parameters: dict — execution parameters
-
-        Returns a flat ordered list (depth-first traversal of leaf sub-goals).
-        """
         leaves = root.flatten()
         tasks: list[dict] = []
 
@@ -158,21 +152,28 @@ class AgentRouter:
                                leaf.id, leaf.description[:60])
                 continue
             for agent in agents:
-                tasks.append({
+                task = {
                     "agent_id": agent.agent_id,
                     "goal": leaf.description,
                     "step": leaf.step_name or agent.agent_id,
                     "parameters": dict(leaf.parameters),
-                })
+                }
+
+                providers = find_providers_for_goal(leaf.description)
+                if providers:
+                    task["providers"] = [p.provider_id for p in providers]
+                    ranked = provider_router.select_with_fallback(
+                        capability="coding" if any("coding" in p.capabilities().capability_names for p in providers) else leaf.step_name or "",
+                        task={"goal": leaf.description},
+                    )
+                    if ranked:
+                        task["selected_provider"] = ranked[0].provider_id
+
+                tasks.append(task)
 
         return tasks
 
     def route_steps(self, steps: list[dict], context: dict | None = None) -> list[dict]:
-        """Route abstract step names to agent tasks.
-
-        Accepts step dicts like [{"name": "research"}, {"name": "build"}, ...]
-        and returns agent tasks.
-        """
         tasks: list[dict] = []
         for step in steps:
             step_name = step.get("name", "")
@@ -182,10 +183,17 @@ class AgentRouter:
             if not agent:
                 logger.warning("Router: no agent for step %s", step_name)
                 continue
-            tasks.append({
+            task = {
                 "agent_id": agent.agent_id,
                 "goal": step.get("description", step_name),
                 "step": step_name,
                 "parameters": step.get("parameters", {}),
-            })
+            }
+
+            providers = find_providers_for_goal(step_name)
+            if providers:
+                task["providers"] = [p.provider_id for p in providers]
+
+            tasks.append(task)
+
         return tasks

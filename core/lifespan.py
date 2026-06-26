@@ -473,6 +473,18 @@ async def lifespan(app: FastAPI):
         startup_status["warnings"].append(f"plugins: {e}")
         logger.warning("[LIFESPAN] Plugin system init failed: %s", e)
 
+    # Bootstrap provider ecosystem (ExecutionProviders, CapabilityRegistry)
+    try:
+        from core.providers.bootstrap import bootstrap_providers
+        from core.providers.registry import provider_registry
+        from core.plugins.base import plugin_registry as _plugin_registry
+        provider_registry.link_plugin_registry(_plugin_registry)
+        bootstrap_providers()
+        logger.info("[LIFESPAN] Provider ecosystem bootstrapped [OK]")
+    except Exception as e:
+        startup_status["warnings"].append(f"providers: {e}")
+        logger.warning("[LIFESPAN] Provider ecosystem bootstrap failed: %s", e)
+
     # Load skills/library plugins (new plugin system — plugin.json manifests)
     try:
         from core.plugins.loader import get_plugin_loader

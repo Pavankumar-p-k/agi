@@ -11,8 +11,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """core/agent_registry.py
-Defines all 6 CLI coding agents — capabilities, invocation,
-auto-install, and API key configuration.
+DEPRECATED — Use core/providers/ and core/providers/adapters/ instead.
+
+This module is kept for backward compatibility only.
+CLI agent definitions are now in:
+  - core/providers/adapters/claude_code.py
+  - core/providers/adapters/codex.py
+New agents should implement ExecutionProvider (core/providers/base.py).
 """
 
 import asyncio
@@ -20,8 +25,14 @@ import logging
 import os
 import shutil
 import subprocess
+import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
+
+warnings.warn(
+    "core/agent_registry.py is deprecated. Use core/providers/ instead.",
+    DeprecationWarning, stacklevel=2,
+)
 
 from dotenv import load_dotenv
 

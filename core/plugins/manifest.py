@@ -1,21 +1,23 @@
-# Copyright (c) 2024-2026 JARVIS Project
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+"""core/plugins/manifest.py
+DEPRECATED — re-exports PluginManifest from base.py for backward compatibility.
+New code should import from core.plugins.base import PluginManifest.
+"""
 from __future__ import annotations
 
 import json
-import os
+import logging
+import warnings
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
+
+from core.plugins.base import PluginManifest as _BaseManifest
+
+logger = logging.getLogger(__name__)
+warnings.warn(
+    "Import PluginManifest from core.plugins.base instead of core.plugins.manifest",
+    DeprecationWarning, stacklevel=2,
+)
 
 
 @dataclass
@@ -31,6 +33,22 @@ class PluginManifest:
     requires: list[str] = field(default_factory=list)
     min_jarvis_version: str = "1.0.0"
     enabled: bool = True
+
+    def to_base(self) -> _BaseManifest:
+        return _BaseManifest(
+            name=self.name,
+            version=self.version,
+            description=self.description,
+            author=self.author,
+            entry_point=self.entry,
+            enabled=self.enabled,
+            config_schema=self.settings_schema if self.settings_schema else None,
+            dependencies=list(self.requires),
+            hooks=list(self.hooks),
+            id=self.id,
+            requires=list(self.requires),
+            min_jarvis_version=self.min_jarvis_version,
+        )
 
     @classmethod
     def from_dict(cls, data: dict) -> PluginManifest:
@@ -60,7 +78,8 @@ class PluginManifest:
         if not data.get("entry"):
             entry_point = data.get("entry_point", "").replace(".py", "")
             if entry_point:
-                rel = os.path.relpath(path, os.getcwd())
+                import os as _os
+                rel = _os.path.relpath(path, _os.getcwd())
                 parts = rel.replace("\\", "/").split("/")[:-1]
                 data["entry"] = ".".join(parts + [entry_point])
             else:
@@ -83,6 +102,9 @@ class PluginManifest:
         }
 
     def save(self, directory: str):
-        path = os.path.join(directory, "plugin.json")
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(self.to_dict(), f, indent=2)
+        path = Path(directory) / "plugin.json"
+        path.write_text(json.dumps(self.to_dict(), indent=2), encoding="utf-8")
+
+
+def from_file(path: str | Path) -> PluginManifest:
+    return PluginManifest.from_file(str(path))

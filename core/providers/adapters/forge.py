@@ -1,0 +1,97 @@
+from __future__ import annotations
+
+import logging
+import time
+from typing import Any, AsyncIterator
+
+from core.providers.base import (
+    ExecutionProvider,
+    ExecutionResult,
+    ProviderCapabilities,
+    ProviderHealth,
+    ProviderHealthStatus,
+)
+from core.sub_agents.agents.forge import ForgeAgent as ForgeSubAgent
+
+logger = logging.getLogger(__name__)
+
+
+class ForgeProvider(ExecutionProvider):
+    provider_id = "forge"
+    name = "Forge"
+    version = "1.0.0"
+    priority = 10
+    installed = True
+
+    def capabilities(self) -> ProviderCapabilities:
+        return ProviderCapabilities(
+            capability_names=[
+                "coding",
+                "codegen",
+                "generate code",
+                "implement",
+                "refactor",
+                "debug code",
+                "build",
+                "compile",
+                "create",
+                "develop",
+                "make",
+                "test",
+                "testing",
+                "validate",
+                "verify",
+                "check",
+            ],
+            languages=["python", "java", "kotlin", "javascript", "typescript", "rust", "go"],
+            frameworks=["android", "spring", "react", "django", "flask", "fastapi"],
+            features=["scaffold", "modify", "repair", "test_generation"],
+        )
+
+    async def health(self) -> ProviderHealth:
+        return ProviderHealth(
+            status=ProviderHealthStatus.HEALTHY,
+            latency_ms=0.0,
+            last_checked=time.time(),
+        )
+
+    async def execute(
+        self, task: dict[str, Any], context: dict[str, Any] | None = None
+    ) -> ExecutionResult:
+        goal = task.get("goal", "")
+        mode = task.get("mode", "generate")
+        start = time.monotonic()
+
+        try:
+            agent = ForgeSubAgent()
+            import asyncio
+            result = await asyncio.wait_for(
+                agent.run(goal, mode),
+                timeout=task.get("timeout", 120),
+            )
+            elapsed = (time.monotonic() - start) * 1000
+            return ExecutionResult(
+                success=result.success,
+                output=result.output,
+                exit_code=0 if result.success else 1,
+                duration_ms=elapsed,
+                artifacts=result.to_dict() if hasattr(result, "to_dict") else {},
+                metadata={"mode": mode, "provider": "forge"},
+            )
+        except Exception as e:
+            elapsed = (time.monotonic() - start) * 1000
+            logger.exception("[ForgeProvider] Execution failed: %s", e)
+            return ExecutionResult(
+                success=False,
+                output="",
+                error=str(e),
+                exit_code=1,
+                duration_ms=elapsed,
+                metadata={"mode": mode, "provider": "forge"},
+            )
+
+    async def estimate_cost(self, task: dict[str, Any]) -> float:
+        return 0.0
+
+    async def estimate_latency(self, task: dict[str, Any]) -> float:
+        return 0.0

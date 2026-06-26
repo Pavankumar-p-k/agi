@@ -22,7 +22,7 @@ if str(ROOT) not in sys.path:
 from cli_commands import (
     cmd_cli, cmd_doctor, cmd_models, cmd_settings,
     cmd_understand, cmd_workspace, cmd_code, cmd_build, cmd_run,
-    cmd_advanced, cmd_activity,
+    cmd_advanced, cmd_activity, cmd_provider, cmd_orchestrate,
 )
 
 
@@ -88,6 +88,24 @@ def build_parser() -> argparse.ArgumentParser:
                    choices=["list", "tree", "get", "summary", "watch"])
     p.add_argument("args", nargs=argparse.REMAINDER)
     p.set_defaults(func=cmd_activity)
+
+    p = subparsers.add_parser("provider", help="Manage execution providers")
+    p.add_argument("action", nargs="?", default="list",
+                   choices=["list", "enable", "disable", "set-priority",
+                            "doctor", "install", "benchmark", "info", "search"])
+    p.add_argument("args", nargs=argparse.REMAINDER)
+    p.set_defaults(func=cmd_provider)
+
+    p = subparsers.add_parser("orchestrate", help="Multi-provider orchestration: compose teams of providers")
+    p.add_argument("goal", nargs="?", default="",
+                   help="The goal to orchestrate across multiple providers")
+    p.add_argument("--plan-only", action="store_true",
+                   help="Show the orchestration plan without executing")
+    p.add_argument("--language", default="",
+                   help="Primary language for the task")
+    p.add_argument("--framework", default="",
+                   help="Framework for the task")
+    p.set_defaults(func=cmd_orchestrate)
 
     return parser
 

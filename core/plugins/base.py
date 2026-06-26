@@ -73,9 +73,32 @@ class PluginManifest:
         "before_message_write",
         "on_request", "on_response",
     ])
+    id: str = ""  # Backward-compat: defaults to name
+    min_jarvis_version: str = "1.0.0"
+    requires: list[str] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        if not self.id:
+            self.id = self.name
 
     def __hash__(self) -> int:
         return hash(self.name)
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "name": self.name,
+            "version": self.version,
+            "description": self.description,
+            "author": self.author,
+            "entry_point": self.entry_point,
+            "enabled": self.enabled,
+            "has_config_schema": self.config_schema is not None,
+            "dependencies": self.dependencies,
+            "requires": self.requires,
+            "min_jarvis_version": self.min_jarvis_version,
+            "hooks_count": len(self.hooks),
+        }
 
 
 _DEPENDENCY_GRAPH_CACHE: dict[tuple, list[str]] = {}
