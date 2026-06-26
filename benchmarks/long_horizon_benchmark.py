@@ -42,6 +42,8 @@ from typing import Any
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from core.workflow.long_horizon_fsm import LongHorizonFSM, ExecutionState, create_context
+
 logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(message)s")
 logger = logging.getLogger("long_horizon_bench")
 
@@ -526,12 +528,26 @@ class TaskResult:
     error: str = ""
     final_output: str = ""
     tool_sequence: list[dict] = field(default_factory=list)
+    # FSM metrics
+    fsm_transitions: int = 0
+    fsm_forced_transitions: int = 0
+    fsm_loops_prevented: int = 0
+    fsm_timeouts: int = 0
+    fsm_recoveries: int = 0
+    fsm_replans: int = 0
+    fsm_validation_failures: int = 0
+    fsm_retries: int = 0
+    fsm_final_state: str = ""
+    fsm_phases_completed: int = 0
+    fsm_phases_total: int = 0
+    fsm_fraction_complete: float = 0.0
 
 
 CONFIGS = {
     "raw": {"workflow": False, "prompt": "base"},
     "workflow": {"workflow": True, "prompt": "base"},
     "full": {"workflow": True, "prompt": "full"},
+    "fsm": {"workflow": True, "prompt": "base", "use_fsm": True},
 }
 
 
@@ -582,6 +598,9 @@ async def run_task(task: LongHorizonTask, config_name: str, enable_workflow: boo
         phases_required=task.required_phases,
     )
 
+    config = CONFIGS.get(config_name, {})
+    use_fsm = config.get("use_fsm", False)
+
     if config_name == "full":
         sys_prompt = BASE_PROMPT + WORKFLOW_PROMPT + MEMORY_PROMPT
     else:
@@ -592,7 +611,8 @@ async def run_task(task: LongHorizonTask, config_name: str, enable_workflow: boo
         {"role": "user", "content": task.prompt},
     ]
 
-    sm = PhaseStateMachine(task.required_phases) if enable_workflow else None
+    sm = PhaseStateMachine(task.required_phases) if enable_workflow and not use_fsm else None
+    lh_fsm = LongHorizonFSM(ctx=create_context(phases=task.required_phases, objective=task.prompt)) if use_fsm else None
     phase_log: list[str] = []
     _loop_count = 0
     start = time.time()
@@ -602,46 +622,101 @@ async def run_task(task: LongHorizonTask, config_name: str, enable_workflow: boo
     _last_tool_name = ""
     try:
         for turn in range(MAX_TURNS):
+            # FSM loop detection and auto-advancement
+            if lh_fsm:
+                is_looping, reason = lh_fsm.check_loop()
+                if is_looping:
+                    result.fsm_loops_prevented = lh_fsm.loops_prevented
+                    adv_state = lh_fsm.handle_loop()
+                    if adv_state == ExecutionState.FAIL:
+                        result.error = f"fsm_loop_fail: {reason}"
+                        break
+                    if adv_state in (ExecutionState.VALIDATE, ExecutionState.ADVANCE):
+                        # Auto-advance phase via FSM
+                        lh_fsm.advance_phase()
+                        result.phases_completed = list(lh_fsm.ctx["completed_phases"])
+                        result.fsm_forced_transitions = lh_fsm.forced_transitions
+                        result.injections += 1
+                        result.fsm_transitions = len(lh_fsm.transitions)
+                        _model_tool_calls = []
+                        continue
+
+                # Check stall timeout
+                if lh_fsm.check_stall(stall_timeout=60):
+                    result.fsm_timeouts = lh_fsm.timeouts
+                    # Advance on stall
+                    lh_fsm.advance_phase()
+                    result.phases_completed = list(lh_fsm.ctx["completed_phases"])
+                    result.injections += 1
+                    continue
+
             # Detect tool loop (same tool 4+ times in MODEL's calls only)
             recent = _model_tool_calls[-6:]
             if len(recent) >= 4 and len(set(recent[-4:])) == 1:
-                if not sm:
+                if lh_fsm:
+                    next_phase_tool = _pick_fsm_phase_tool(lh_fsm, task)
+                    if next_phase_tool:
+                        inject_args = _build_tool_args(next_phase_tool, task)
+                        logger.info("    [fsm-auto-inject] detected loop, forcing next phase with %s", next_phase_tool)
+                        result.injections += 1
+                        tool_res = await execute_tool(next_phase_tool, inject_args, task.id, config_name)
+                        messages.append({
+                            "role": "assistant",
+                            "content": f"Auto-injecting {next_phase_tool} to advance phase",
+                            "tool_calls": [{"function": {"name": next_phase_tool, "arguments": inject_args}}],
+                        })
+                        messages.append({
+                            "role": "tool",
+                            "content": json.dumps(tool_res),
+                            "name": next_phase_tool,
+                        })
+                        lh_fsm.record_action(next_phase_tool, tool_res)
+                        lh_fsm.handle_exit_tool(next_phase_tool)
+                        lh_fsm.advance_phase()
+                        result.phases_completed = list(lh_fsm.ctx["completed_phases"])
+                        result.fsm_transitions = len(lh_fsm.transitions)
+                        _model_tool_calls = []
+                        continue
+                elif not sm:
                     result.error = f"loop_detected: {recent[-1]} called {len(recent)} times"
                     break
-                # With SM active: auto-inject next phase tool instead of breaking
-                next_tool = _pick_next_phase_tool(sm, task)
-                if next_tool:
-                    inject_args = _build_tool_args(next_tool, task)
-                    logger.info("    [auto-inject] detected loop, forcing next phase with %s", next_tool)
-                    result.injections += 1
-                    phase_log.append(next_tool)
-                    tool_res = await execute_tool(next_tool, inject_args, task.id, config_name)
-                    messages.append({
-                        "role": "assistant",
-                        "content": f"Auto-injecting {next_tool} to advance phase",
-                        "tool_calls": [{"function": {"name": next_tool, "arguments": inject_args}}],
-                    })
-                    messages.append({
-                        "role": "tool",
-                        "content": json.dumps(tool_res),
-                        "name": next_tool,
-                    })
-                    for check_phase in task.required_phases:
-                        if next_tool in task.expected_phase_tools.get(check_phase, []):
-                            if check_phase not in result.phases_completed:
-                                result.phases_completed.append(check_phase)
-                                sm.advance()
-                    _same_tool_run = 0
-                    _last_tool_name = ""
-                    _model_tool_calls = []
-                    continue
+                else:
+                    # With SM active: auto-inject next phase tool
+                    next_tool = _pick_next_phase_tool(sm, task)
+                    if next_tool:
+                        inject_args = _build_tool_args(next_tool, task)
+                        logger.info("    [auto-inject] detected loop, forcing next phase with %s", next_tool)
+                        result.injections += 1
+                        phase_log.append(next_tool)
+                        tool_res = await execute_tool(next_tool, inject_args, task.id, config_name)
+                        messages.append({
+                            "role": "assistant",
+                            "content": f"Auto-injecting {next_tool} to advance phase",
+                            "tool_calls": [{"function": {"name": next_tool, "arguments": inject_args}}],
+                        })
+                        messages.append({
+                            "role": "tool",
+                            "content": json.dumps(tool_res),
+                            "name": next_tool,
+                        })
+                        for check_phase in task.required_phases:
+                            if next_tool in task.expected_phase_tools.get(check_phase, []):
+                                if check_phase not in result.phases_completed:
+                                    result.phases_completed.append(check_phase)
+                                    sm.advance()
+                        _same_tool_run = 0
+                        _last_tool_name = ""
+                        _model_tool_calls = []
+                        continue
 
             content, tool_calls = await call_llm(messages)
             result.turns = turn + 1
 
             if not tool_calls:
                 result.final_output = content
-                if sm:
+                if lh_fsm:
+                    result.success = lh_fsm.fraction_complete() >= task.min_phases_complete / max(len(set(task.required_phases)), 1)
+                elif sm:
                     result.success = sm.fraction_complete() >= task.min_phases_complete / max(len(set(task.required_phases)), 1)
                 else:
                     result.success = bool(content and len(content) > 50)
@@ -655,6 +730,51 @@ async def run_task(task: LongHorizonTask, config_name: str, enable_workflow: boo
                 result.tool_calls.append(name)
                 _model_tool_calls.append(name)
                 result.unique_tools.add(name)
+
+                # FSM: record action and check loop/exit/validation
+                if lh_fsm:
+                    tool_result = await execute_tool(name, args, task.id, config_name)
+                    lh_fsm.record_action(name, tool_result)
+
+                    # Check for phase-relevant tool (track phase completion)
+                    for check_phase in task.required_phases:
+                        if name in task.expected_phase_tools.get(check_phase, []):
+                            if check_phase not in result.phases_completed:
+                                # Validate before advancing
+                                val_result = lh_fsm.validate_phase(check_phase)
+                                if val_result["valid"]:
+                                    result.phases_completed.append(check_phase)
+                                    lh_fsm.advance_phase()
+                                    result.fsm_transitions = len(lh_fsm.transitions)
+                                    result.fsm_validation_failures = lh_fsm.validation_failures
+                                else:
+                                    result.fsm_validation_failures = lh_fsm.validation_failures
+                                    # Recovery: try again after validation failure
+                                    lh_fsm.transition_to(ExecutionState.RECOVER, forced=True)
+
+                    # Handle exit tool transition
+                    exit_state = lh_fsm.handle_exit_tool(name)
+                    if exit_state:
+                        result.fsm_transitions = len(lh_fsm.transitions)
+
+                    result.fsm_final_state = lh_fsm.state.value
+                    result.fsm_phases_completed = len(lh_fsm.ctx["completed_phases"])
+                    result.fsm_phases_total = len(lh_fsm.ctx["phases"])
+                    result.fsm_fraction_complete = lh_fsm.fraction_complete()
+                    result.fsm_forced_transitions = lh_fsm.forced_transitions
+                    result.fsm_loops_prevented = lh_fsm.loops_prevented
+
+                    messages.append({
+                        "role": "assistant",
+                        "content": content if content else f"Calling {name}",
+                        "tool_calls": [{"function": {"name": name, "arguments": args}}],
+                    })
+                    messages.append({
+                        "role": "tool",
+                        "content": json.dumps(tool_result),
+                        "name": name,
+                    })
+                    continue
 
                 # Track consecutive same-tool calls within phase
                 if sm:
@@ -672,8 +792,7 @@ async def run_task(task: LongHorizonTask, config_name: str, enable_workflow: boo
                         result.re_plans += 1
 
                 # Workflow enforcement: inject correct tool for current phase if model
-                # chose a wrong-phase tool. Both the injected tool AND the model's tool
-                # are executed — the model sees results for both, which helps it learn.
+                # chose a wrong-phase tool.
                 injected = False
                 if sm and name != "send_email":
                     curr_phase = sm.current_phase
@@ -746,8 +865,24 @@ async def run_task(task: LongHorizonTask, config_name: str, enable_workflow: boo
 
     result.duration_seconds = round(time.time() - start, 2)
     if not result.error:
-        result.success = len(result.phases_completed) >= task.min_phases_complete
+        if lh_fsm:
+            result.success = len(result.phases_completed) >= task.min_phases_complete
+        elif sm:
+            result.success = len(result.phases_completed) >= task.min_phases_complete
+        else:
+            result.success = bool(result.final_output and len(result.final_output) > 50)
     return result
+
+
+def _pick_fsm_phase_tool(fsm: LongHorizonFSM, task: LongHorizonTask) -> str | None:
+    """Get the first tool for the current FSM phase."""
+    phase = fsm.get_current_phase()
+    if not phase:
+        return None
+    expected = task.expected_phase_tools.get(phase, [])
+    if expected:
+        return expected[0]
+    return None
 
 
 @staticmethod
@@ -817,6 +952,15 @@ def _compute_summary(all_results: list[TaskResult]) -> dict[str, Any]:
         all_replans = sum(t.re_plans for t in tasks)
         all_durations = [t.duration_seconds for t in tasks]
 
+        # FSM metrics
+        all_fsm_transitions = sum(t.fsm_transitions for t in tasks)
+        all_fsm_forced = sum(t.fsm_forced_transitions for t in tasks)
+        all_fsm_loops = sum(t.fsm_loops_prevented for t in tasks)
+        all_fsm_timeouts = sum(t.fsm_timeouts for t in tasks)
+        all_fsm_recoveries = sum(t.fsm_recoveries for t in tasks)
+        all_fsm_replans = sum(t.fsm_replans for t in tasks)
+        all_fsm_val_fails = sum(t.fsm_validation_failures for t in tasks)
+
         configs[cname] = {
             "total_tasks": total,
             "successes": successes,
@@ -828,6 +972,13 @@ def _compute_summary(all_results: list[TaskResult]) -> dict[str, Any]:
             "total_phases_required": all_required,
             "total_injections": all_injections,
             "total_replans": all_replans,
+            "fsm_transitions": all_fsm_transitions,
+            "fsm_forced_transitions": all_fsm_forced,
+            "fsm_loops_prevented": all_fsm_loops,
+            "fsm_timeouts": all_fsm_timeouts,
+            "fsm_recoveries": all_fsm_recoveries,
+            "fsm_replans": all_fsm_replans,
+            "fsm_validation_failures": all_fsm_val_fails,
             "tools_by_frequency": dict(sorted(
                 Counter([t for r in tasks for t in r.tool_calls]).items(),
                 key=lambda x: -x[1]
@@ -909,6 +1060,13 @@ async def run_benchmark(max_tasks: int = 0, categories: list[str] | None = None,
                 "re_plans": result.re_plans,
                 "duration_seconds": result.duration_seconds,
                 "error": result.error,
+                "fsm_transitions": result.fsm_transitions,
+                "fsm_forced_transitions": result.fsm_forced_transitions,
+                "fsm_loops_prevented": result.fsm_loops_prevented,
+                "fsm_timeouts": result.fsm_timeouts,
+                "fsm_final_state": result.fsm_final_state,
+                "fsm_phases_completed": result.fsm_phases_completed,
+                "fsm_fraction_complete": result.fsm_fraction_complete,
             }
             task_details.append(detail)
 
@@ -1012,6 +1170,19 @@ def print_report(report: LongHorizonReport) -> None:
         if top5:
             freq_str = ", ".join(f"{t}({c})" for t, c in top5)
             print(f"    {cname:<10} {freq_str}")
+
+    # FSM metrics for fsm config
+    fsm_data = by_config.get("fsm", {})
+    if fsm_data and any(t.fsm_transitions > 0 for rs in [all_results] for t in rs if t.config_name == "fsm"):
+        print()
+        print("  FSM Metrics:")
+        print(f"    {'Metric':<25} {'Total':>8}")
+        print("    " + "-" * 33)
+        for key in ("fsm_transitions", "fsm_forced_transitions", "fsm_loops_prevented",
+                     "fsm_timeouts", "fsm_recoveries", "fsm_replans", "fsm_validation_failures"):
+            val = fsm_data.get(key, 0)
+            label = key.replace("fsm_", "").replace("_", " ").title()
+            print(f"    {label:<25} {val:>8}")
     print()
 
 

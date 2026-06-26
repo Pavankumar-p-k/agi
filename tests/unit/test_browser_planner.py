@@ -18,7 +18,7 @@ def test_extract_query():
     assert extract_query("Search for 'hello world'") == "hello world"
     assert extract_query("find the meaning of life") == "the meaning of life"
     assert extract_query("Open Wikipedia") is None
-    assert extract_query("search YouTube for cat videos") == "YouTube for cat videos"
+    assert extract_query("search YouTube for cat videos") == "cat videos"
 
 
 def test_has_search_form():
