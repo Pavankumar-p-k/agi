@@ -41,6 +41,20 @@ class Orchestrator:
         self._router = router
         self._store = store
         self._adapt = AdaptEngine(registry, router)
+        self._feedback = None
+
+    def _get_feedback(self):
+        if self._feedback is None:
+            try:
+                from core.providers.feedback import get_decision_recorder, get_calibration_engine
+                self._feedback = {
+                    "recorder": get_decision_recorder(),
+                    "calibrator": get_calibration_engine(),
+                }
+            except Exception as e:
+                logger.debug("[Orchestrator] Feedback unavailable: %s", e)
+                self._feedback = False
+        return self._feedback if self._feedback else None
 
     async def execute(self, plan: OrchestrationPlan) -> OrchestrationResult:
         """Execute an orchestration plan with adaptive replanning."""
@@ -189,6 +203,22 @@ class Orchestrator:
                     duration_ms=s_result.duration_ms,
                 )
 
+        # ── Trigger calibration update ────────────────────────────────
+        try:
+            fb = self._get_feedback()
+            if fb:
+                seen_pairs: set[tuple[str, str]] = set()
+                for step in plan.steps:
+                    pid = step.provider_id
+                    cap = step.task.get("capability", "")
+                    if pid and cap and (pid, cap) not in seen_pairs:
+                        seen_pairs.add((pid, cap))
+                        fb["calibrator"].update_from_outcomes(
+                            provider_id=pid, capability=cap,
+                        )
+        except Exception as e:
+            logger.debug("[Orchestrator] Calibration update failed: %s", e)
+
         try:
             self._store.save_result(result)
         except Exception as e:
@@ -222,6 +252,9 @@ class Orchestrator:
 
         s_result = await self._execute_step(step, context)
 
+        # Record outcome for feedback loop
+        self._record_step_outcome(step, s_result)
+
         # If successful, return immediately
         if s_result.success:
             return s_result
@@ -250,6 +283,9 @@ class Orchestrator:
 
         new_result = await self._execute_step(new_step, context)
 
+        # Record outcome for replanned step
+        self._record_step_outcome(new_step, new_result)
+
         # Update confidence to reflect replanning
         new_result.confidence = self._adapt.compute_confidence(
             success=new_result.success,
@@ -261,6 +297,28 @@ class Orchestrator:
         )
 
         return new_result
+
+    def _record_step_outcome(self, step: ProviderStep, s_result: StepResult) -> None:
+        """Record a step outcome to the decision feedback loop."""
+        fb = self._get_feedback()
+        if not fb:
+            return
+        decision_id = step.task.get("_decision_id", "")
+        if not decision_id:
+            return
+        try:
+            fb["recorder"].record_outcome(
+                decision_id=decision_id,
+                success=s_result.success,
+                duration_ms=s_result.duration_ms or 0.0,
+                quality_score=s_result.confidence.quality_score if s_result.confidence else 0.0,
+                cost=s_result.confidence.cost if s_result.confidence else 0.0,
+                error=s_result.error or "",
+                retries=s_result.retries,
+                replan_level=0,
+            )
+        except Exception as e:
+            logger.debug("[Orchestrator] Failed to record outcome: %s", e)
 
     async def _execute_step(
         self,

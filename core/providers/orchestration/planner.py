@@ -232,7 +232,10 @@ class OrchestrationPlanner:
         return task
 
     def _select_provider(self, capability: str, task: dict[str, Any]) -> ExecutionProvider | None:
-        return self._router.select(capability, task)
+        provider = self._router.select(capability, task, record_decision=True)
+        if provider and self._router.last_decision_id:
+            task["_decision_id"] = self._router.last_decision_id
+        return provider
 
     def plan_and_summarize(self, goal: str) -> str:
         plan = self.plan(goal)
