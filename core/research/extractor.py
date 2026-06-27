@@ -80,6 +80,7 @@ class FactExtractor:
             return []
 
         raw_sentences = self._split_sentences(text)
+        raw_sentences = self._resolve_pronouns(raw_sentences)
         facts: list[Fact] = []
         now = datetime.utcnow()
 
@@ -141,6 +142,31 @@ class FactExtractor:
         # Split on sentence-ending punctuation
         raw = re.split(r'(?<=[.!?])\s+(?=[A-Z])', text)
         return [s.strip() for s in raw if len(s.strip()) > 15]
+
+    def _resolve_pronouns(self, sentences: list[str]) -> list[str]:
+        """Resolve 'It'/'They' pronouns to the previous sentence's named entity.
+        Deterministic: extracts the first proper noun phrase from the previous
+        sentence and substitutes it for 'It'/'They' at the start of the current sentence.
+        """
+        resolved = []
+        prev_entity: str | None = None
+        for s in sentences:
+            # Replace "It " or "They " with the previous entity
+            if prev_entity:
+                m = re.match(r'^(It|They)\s', s)
+                if m:
+                    s = prev_entity + ' ' + s[m.end():]
+            # Extract first proper noun phrase (multi-word capitalized entity)
+            m = re.search(r'\b([A-Z][a-z]+(?:\s+\d+\.\d+|\s+[A-Z][a-z]+)+)\b', s)
+            if m:
+                prev_entity = m.group(1)
+            # Also track simple capitalized single words as fallback entities
+            elif re.match(r'^[A-Z][a-z]+\b', s):
+                entity_word = re.match(r'^[A-Z][a-z]+', s)
+                if entity_word:
+                    prev_entity = entity_word.group(0)
+            resolved.append(s)
+        return resolved
 
     def _clean_sentence(self, sentence: str) -> str:
         """Normalize a sentence for extraction."""
@@ -212,6 +238,25 @@ class FactExtractor:
                            " was used for ", " was known as ",
                            " aimed to ", " attempted to ",
                            " tends to ",
+                           # Additional technical/descriptive verbs
+                           " proposes ", " proposed ",
+                           " ships ", " shipped ",
+                           " becomes ", " became ",
+                           " remains ", " remained ",
+                           " results in ", " resulted in ",
+                           " designed to ", " designed for ",
+                           " built for ", " built as ",
+                           " configures ", " configured ",
+                           " implements ", " implemented ",
+                           " represents ", " represented ",
+                           " functions ", " functioned ",
+                           " operates ", " operated ",
+                           " prepares ", " prepared ",
+                           " transforms ", " transformed ",
+                           " converts ", " converted ",
+                           " permits ", " permitted ",
+                           " guarantees ", " guaranteed ",
+                           " corresponds to ", " corresponded to ",
         ]
         if not any(v in lower for v in verb_indicators):
             return False

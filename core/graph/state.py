@@ -140,6 +140,9 @@ class AgentState:
 
     browser_planner_ctx: dict | None = None
 
+    # Pipeline context — set by RuntimePipeline for architecture integration
+    pipeline_context: dict | None = None
+
     def advance_round(self) -> int:
         self.round_num += 1
         self.phase = AgentPhase.THINKING

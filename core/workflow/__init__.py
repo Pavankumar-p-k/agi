@@ -10,6 +10,7 @@ from core.workflow.models import (
     WorkflowStep,
 )
 from core.workflow.recovery import recover_active_workflows
+from core.workflow.recorder import WorkflowExecutionRecorder
 from core.workflow.storage import WorkflowStore
 
 __all__ = [
@@ -26,4 +27,5 @@ __all__ = [
     "StepStatus",
     "StepDefinition",
     "recover_active_workflows",
+    "WorkflowExecutionRecorder",
 ]

@@ -238,12 +238,39 @@ def normalize(text: str) -> str:
     return re.sub(r"\s+", " ", text.lower().strip())
 
 
+def _tokenize(text: str) -> list[str]:
+    """Tokenize text for matching: lowercase, strip punctuation from each token."""
+    return [t.strip(",.!?;:()[]{}'\"-").lower() for t in text.split() if t.strip(",.!?;:()[]{}'\"-")]
+
+
+def _tokens_in_order(value_tokens: list[str], claim_tokens: list[str]) -> bool:
+    """Check if value tokens appear in claim tokens preserving order (not necessarily contiguous).
+    This handles wording variations like 'client-server with daemon' vs
+    'client-server architecture with a background daemon'.
+    """
+    vi = 0
+    for ct in claim_tokens:
+        if vi < len(value_tokens) and ct == value_tokens[vi]:
+            vi += 1
+    return vi == len(value_tokens)
+
+
+def _value_in_claim(nv: str, nc: str) -> bool:
+    """Check if value appears in claim, using token-order matching.
+    Falls back to exact substring match for short values (1 token).
+    """
+    vt = _tokenize(nv)
+    if len(vt) <= 1:
+        return nv in nc
+    return _tokens_in_order(vt, _tokenize(nc))
+
+
 def fact_in_output(fact: GroundTruthFact, output: str) -> bool:
     """Check if a ground-truth fact is mentioned in a text output."""
     n_output = normalize(output)
     entity = normalize(fact.entity)
     value = normalize(fact.value)
-    return entity in n_output and value in n_output
+    return entity in n_output and _value_in_claim(value, n_output)
 
 
 def evaluate_raw_output(question: str, output: str, dataset: ResearchDataset) -> dict[str, Any]:
@@ -283,7 +310,7 @@ def fact_matches_ground_truth(fact_claim: str, gt: GroundTruthFact) -> bool:
     nc = normalize(fact_claim)
     ne = normalize(gt.entity)
     nv = normalize(gt.value)
-    return ne in nc and nv in nc
+    return ne in nc and _value_in_claim(nv, nc)
 
 
 def evaluate_pipeline_output(question: str, result: dict[str, Any], dataset: ResearchDataset) -> dict[str, Any]:

@@ -148,6 +148,69 @@ class TestModels:
         # Generic last
         assert _CONTEXT_FALLBACK_CHAIN[-1] == (0, 0, 0)
 
+    def test_calibration_config_defaults(self):
+        from core.providers.feedback.models import CalibrationConfig
+        cfg = CalibrationConfig()
+        assert cfg.half_life_days == 100.0
+        assert cfg.minimum_weight == 0.05
+        assert cfg.maximum_history_days == 365
+        assert cfg.min_evidence == 3
+        assert cfg.max_evidence == 50
+        assert cfg.alpha == 0.3
+
+    def test_calibration_config_custom(self):
+        from core.providers.feedback.models import CalibrationConfig
+        cfg = CalibrationConfig(half_life_days=30.0, max_evidence=100)
+        assert cfg.half_life_days == 30.0
+        assert cfg.max_evidence == 100
+
+    def test_compute_time_weights(self):
+        import time
+        from core.providers.feedback.models import _compute_time_weights
+        now = time.time()
+        recent = now - 1000
+        old = now - (200 * 86400)
+
+        weights, effective_n = _compute_time_weights(
+            [recent, old],
+            half_life_days=100.0, max_history_days=365, min_weight=0.05, now=now,
+        )
+        assert len(weights) == 2
+        assert weights[0] > weights[1]
+        assert effective_n > 0
+
+    def test_compute_time_weights_old_filtered(self):
+        import time
+        from core.providers.feedback.models import _compute_time_weights
+        now = time.time()
+        very_old = now - (500 * 86400)
+
+        weights, effective_n = _compute_time_weights(
+            [very_old],
+            half_life_days=100.0, max_history_days=365, min_weight=0.05, now=now,
+        )
+        assert weights == []
+        assert effective_n == 0.0
+
+    def test_compute_time_weights_future_timestamp(self):
+        import time
+        from core.providers.feedback.models import _compute_time_weights
+        now = time.time()
+        future = now + 3600
+
+        weights, effective_n = _compute_time_weights(
+            [future],
+            half_life_days=100.0, max_history_days=365, min_weight=0.05, now=now,
+        )
+        assert len(weights) == 1
+        assert weights[0] > 0.99
+
+    def test_compute_time_weights_empty(self):
+        from core.providers.feedback.models import _compute_time_weights
+        weights, effective_n = _compute_time_weights([], now=0)
+        assert weights == []
+        assert effective_n == 0.0
+
 
 # ═════════════════════════════════════════════════════════════════════════════
 # FeedbackStore
@@ -163,12 +226,14 @@ class TestFeedbackStore:
             s.close()
 
     def _decision(self, **kw):
-        defaults = dict(goal="test", capability="coding", selected_provider="forge")
+        import time
+        defaults = dict(goal="test", capability="coding", selected_provider="forge", timestamp=time.time())
         defaults.update(kw)
         return RoutingDecision(**defaults)
 
     def _outcome(self, **kw):
-        defaults = dict(decision_id="dec_1", success=True)
+        import time
+        defaults = dict(decision_id="dec_1", success=True, timestamp=time.time())
         defaults.update(kw)
         return RoutingOutcome(**defaults)
 
@@ -552,18 +617,21 @@ class TestCalibrationEngine:
 
     def _add_outcome(self, store: FeedbackStore, provider_id: str, capability: str,
                      success: bool, quality: float = 0.5, duration_ms: float = 1000.0,
-                     replan_level: int = 0, **task_kw):
+                     replan_level: int = 0, timestamp: float | None = None,
+                     **task_kw):
+        import time
         task = {"language": "", "framework": "", "project_size": ""}
         task.update(task_kw)
+        now = timestamp if timestamp is not None else time.time()
         d = RoutingDecision(
             capability=capability, selected_provider=provider_id,
-            task=task,
+            task=task, timestamp=now,
         )
         store.save_decision(d)
         store.save_outcome(RoutingOutcome(
             decision_id=d.decision_id, success=success,
             quality_score=quality, duration_ms=duration_ms,
-            replan_level=replan_level,
+            replan_level=replan_level, timestamp=now,
         ))
 
     def test_get_adjustment_no_data(self, engine):
@@ -784,6 +852,150 @@ class TestCalibrationEngine:
         # At least 2 context groups (python, javascript) + generic
         assert count >= 2
 
+    # ── Time-decay tests ──────────────────────────────────────────
+
+    def test_time_decay_recent_outcomes_dominate(self, engine):
+        """Recent good outcomes should outweigh old bad outcomes."""
+        import time
+        old = time.time() - (200 * 86400)  # 200 days ago
+        now = time.time()
+
+        # Old bad outcomes
+        for _ in range(5):
+            self._add_outcome(
+                engine._store, "forge", "coding",
+                success=False, quality=0.1, timestamp=old,
+            )
+        # Recent good outcomes
+        for _ in range(5):
+            self._add_outcome(
+                engine._store, "forge", "coding",
+                success=True, quality=0.95, timestamp=now,
+            )
+
+        engine.update_from_outcomes("forge", "coding")
+        adj = engine.get_adjustment("forge", "coding")
+        assert adj > 0, "Recent good outcomes should outweigh old bad ones"
+
+    def test_time_decay_very_old_outcomes_filtered(self, engine):
+        """Outcomes older than maximum_history_days should be excluded."""
+        import time
+        very_old = time.time() - (400 * 86400)  # 400 days ago
+
+        for _ in range(5):
+            self._add_outcome(
+                engine._store, "forge", "coding",
+                success=True, quality=0.95, timestamp=very_old,
+            )
+
+        result = engine.update_from_outcomes_for_context(
+            "forge", "coding",
+            language="", framework="", project_size="",
+        )
+        # With only very old outcomes, effective_n should be 0 -> returns None
+        assert result is None
+
+    def test_time_decay_neutral_recent_mixed_old(self, engine):
+        """Mixed recent bad and old good should produce negative adjustment
+        since recent outcomes have higher weight."""
+        import time
+        old = time.time() - (200 * 86400)
+        now = time.time()
+
+        for _ in range(5):
+            self._add_outcome(
+                engine._store, "forge", "coding",
+                success=True, quality=0.95, timestamp=old,
+            )
+        for _ in range(5):
+            self._add_outcome(
+                engine._store, "forge", "coding",
+                success=False, quality=0.1, timestamp=now,
+            )
+
+        engine.update_from_outcomes("forge", "coding")
+        adj = engine.get_adjustment("forge", "coding")
+        assert adj < 0, "Recent bad outcomes should outweigh old good ones"
+
+    def test_query_time_confidence_decay(self, engine):
+        """Confidence should decay as calibration ages."""
+        import time
+        now = time.time()
+        for _ in range(5):
+            self._add_outcome(
+                engine._store, "forge", "coding",
+                success=True, quality=0.9, timestamp=now,
+            )
+
+        engine.update_from_outcomes("forge", "coding")
+        adj, conf_fresh = engine.get_adjustment_with_confidence("forge", "coding")
+        assert conf_fresh == pytest.approx(0.1, abs=1e-3), "5/50 evidence = 0.1 confidence"
+
+        # Manually age the calibration entry by 150 days
+        entries = engine._store.get_all_calibrations()
+        for e in entries:
+            e.last_updated = now - (150 * 86400)
+            engine._store.save_calibration(e)
+
+        adj, conf_aged = engine.get_adjustment_with_confidence("forge", "coding")
+        assert conf_aged < conf_fresh, "Aged calibration should have lower confidence"
+
+    def test_query_time_confidence_fully_decayed(self, engine):
+        """After enough time, confidence should drop to near zero."""
+        import time
+        now = time.time()
+        for _ in range(5):
+            self._add_outcome(
+                engine._store, "forge", "coding",
+                success=True, quality=0.9, timestamp=now,
+            )
+
+        engine.update_from_outcomes("forge", "coding")
+
+        # Age the calibration by 1000 days
+        entries = engine._store.get_all_calibrations()
+        for e in entries:
+            e.last_updated = now - (1000 * 86400)
+            engine._store.save_calibration(e)
+
+        adj = engine.get_adjustment("forge", "coding")
+        assert adj == 0.0, "Fully decayed calibration should return 0 adjustment"
+
+    def test_calibration_config_custom_half_life(self, engine):
+        """Using a shorter half-life should make old outcomes decay faster."""
+        from core.providers.feedback.models import CalibrationConfig
+        import time
+        now = time.time()
+        old = time.time() - (50 * 86400)
+
+        for _ in range(5):
+            self._add_outcome(
+                engine._store, "forge", "coding",
+                success=False, quality=0.1, timestamp=old,
+            )
+        for _ in range(5):
+            self._add_outcome(
+                engine._store, "forge", "coding",
+                success=True, quality=0.95, timestamp=now,
+            )
+
+        # With default 100-day half-life
+        engine.update_from_outcomes("forge", "coding")
+        adj_default = engine.get_adjustment("forge", "coding")
+
+        # With 10-day half-life (old outcomes decay much faster)
+        short_cfg = CalibrationConfig(half_life_days=10.0)
+        short_engine = CalibrationEngine(
+            store=engine._store, config=short_cfg,
+        )
+        short_engine.update_from_outcomes("forge", "coding", force=True)
+        adj_short = short_engine.get_adjustment("forge", "coding")
+
+        # Shorter half-life = old bad outcomes decay more = more positive
+        assert adj_short >= adj_default, (
+            "Shorter half-life should give more weight to recent outcomes"
+        )
+
 
 # ═════════════════════════════════════════════════════════════════════════════
 # Integration: Router calibration integration
@@ -797,6 +1009,7 @@ class TestRouterFeedbackIntegration:
         yield
 
     def test_router_score_includes_calibration(self):
+        import time
         from core.providers.feedback.store import FeedbackStore
         from core.providers.feedback.calibrator import CalibrationEngine
         from core.providers.router import ProviderRouter
@@ -810,12 +1023,13 @@ class TestRouterFeedbackIntegration:
             cal_engine = CalibrationEngine(store=fb_store)
             router = ProviderRouter(calibration_engine=cal_engine)
             score_before = router._score(forge, {"capability": "coding"})
+            now = time.time()
             for _ in range(5):
-                d = RoutingDecision(capability="coding", selected_provider="forge")
+                d = RoutingDecision(capability="coding", selected_provider="forge", timestamp=now)
                 fb_store.save_decision(d)
                 fb_store.save_outcome(RoutingOutcome(
                     decision_id=d.decision_id, success=True,
-                    quality_score=0.95, duration_ms=100,
+                    quality_score=0.95, duration_ms=100, timestamp=now,
                 ))
             cal_engine.update_from_outcomes("forge", "coding")
             score_after = router._score(forge, {"capability": "coding"})
@@ -823,6 +1037,7 @@ class TestRouterFeedbackIntegration:
             fb_store.close()
 
     def test_router_score_context_aware(self):
+        import time
         from core.providers.feedback.store import FeedbackStore
         from core.providers.feedback.calibrator import CalibrationEngine
         from core.providers.router import ProviderRouter
@@ -835,27 +1050,30 @@ class TestRouterFeedbackIntegration:
             fb_store = FeedbackStore(db_path=db_path)
             cal_engine = CalibrationEngine(store=fb_store)
             router = ProviderRouter(calibration_engine=cal_engine)
+            now = time.time()
             # Python good outcomes
             for _ in range(5):
                 d = RoutingDecision(
                     capability="coding", selected_provider="forge",
                     task={"language": "python", "goal": "test"},
+                    timestamp=now,
                 )
                 fb_store.save_decision(d)
                 fb_store.save_outcome(RoutingOutcome(
                     decision_id=d.decision_id, success=True,
-                    quality_score=0.95, duration_ms=100,
+                    quality_score=0.95, duration_ms=100, timestamp=now,
                 ))
             # JS bad outcomes
             for _ in range(5):
                 d = RoutingDecision(
                     capability="coding", selected_provider="forge",
                     task={"language": "javascript", "goal": "test"},
+                    timestamp=now,
                 )
                 fb_store.save_decision(d)
                 fb_store.save_outcome(RoutingOutcome(
                     decision_id=d.decision_id, success=False,
-                    quality_score=0.2, duration_ms=5000,
+                    quality_score=0.2, duration_ms=5000, timestamp=now,
                 ))
             cal_engine.update_from_outcomes("forge", "coding")
 

@@ -28,6 +28,7 @@ class DecisionRecorder:
         candidate_scores: list[ScoreBreakdown],
         goal: str = "",
         excluded_providers: list[str] | None = None,
+        provider_version: str = "",
     ) -> RoutingDecision:
         decision = RoutingDecision(
             goal=goal or task.get("goal", ""),
@@ -37,6 +38,7 @@ class DecisionRecorder:
             candidate_scores=candidate_scores,
             excluded_providers=excluded_providers or [],
             timestamp=time.time(),
+            provider_version=provider_version,
         )
         self._store.save_decision(decision)
         logger.debug(

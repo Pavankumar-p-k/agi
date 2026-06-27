@@ -123,6 +123,7 @@ class ProviderRouter:
                     task=task or {},
                     selected_provider=best.provider_id,
                     candidate_scores=breakdowns,
+                    provider_version=best.version,
                 )
                 self.last_decision_id = decision.decision_id
 

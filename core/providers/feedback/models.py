@@ -1,8 +1,20 @@
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 from typing import Any
 from uuid import uuid4
+
+
+@dataclass
+class CalibrationConfig:
+    """Configuration for time-aware calibration computation."""
+    half_life_days: float = 100.0
+    minimum_weight: float = 0.05
+    maximum_history_days: int = 365
+    min_evidence: int = 3
+    max_evidence: int = 50
+    alpha: float = 0.3
 
 
 @dataclass
@@ -50,6 +62,7 @@ class RoutingDecision:
     candidate_scores: list[ScoreBreakdown] = field(default_factory=list)
     excluded_providers: list[str] = field(default_factory=list)
     timestamp: float = 0.0
+    provider_version: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -61,6 +74,7 @@ class RoutingDecision:
             "candidate_scores": [s.to_dict() for s in self.candidate_scores],
             "excluded_providers": self.excluded_providers,
             "timestamp": self.timestamp,
+            "provider_version": self.provider_version,
         }
 
     @classmethod
@@ -74,6 +88,7 @@ class RoutingDecision:
             candidate_scores=[ScoreBreakdown.from_dict(s) for s in d.get("candidate_scores", [])],
             excluded_providers=d.get("excluded_providers", []),
             timestamp=d.get("timestamp", 0.0),
+            provider_version=d.get("provider_version", ""),
         )
 
     @property
@@ -152,17 +167,17 @@ def context_key(
 
 
 _CONTEXT_FALLBACK_CHAIN: list[tuple[int, int, int]] = [
-    (3, 2, 1),  # (language, framework, project_size) — most specific
-    (3, 2, 0),  # language + framework
-    (3, 0, 0),  # language only
-    (0, 0, 0),  # generic (no context)
+    (3, 2, 1),
+    (3, 2, 0),
+    (3, 0, 0),
+    (0, 0, 0),
 ]
 """Fallback chain for context-aware calibration lookup.
 
 Each entry is (include_language, include_framework, include_project_size)
 where 0 = exclude, 1 = include exact, >1 = treat as priority ranking.
 
-The chain walks from most specific to least specific context.
+Walks from most specific to least specific context.
 """
 
 
@@ -177,10 +192,48 @@ def _extract_context(task: dict[str, Any] | None) -> dict[str, str]:
     }
 
 
+def _compute_time_weights(
+    timestamps: list[float],
+    half_life_days: float = 100.0,
+    max_history_days: int = 365,
+    min_weight: float = 0.05,
+    now: float | None = None,
+) -> tuple[list[float], float]:
+    """Compute exponential time-decay weights for a list of timestamps.
+
+    Returns (weights, effective_n) where effective_n is Kish's
+    effective sample size for the weighted set.
+    """
+    if now is None:
+        import time
+        now = time.time()
+
+    weights: list[float] = []
+    for ts in timestamps:
+        age_days = (now - ts) / 86400.0
+        if age_days > max_history_days:
+            continue
+        if age_days < 0:
+            age_days = 0.0
+        w = math.exp(-age_days / half_life_days)
+        if w < min_weight:
+            continue
+        weights.append(w)
+
+    if not weights:
+        return [], 0.0
+
+    sum_w = sum(weights)
+    sum_w2 = sum(w * w for w in weights)
+    effective_n = (sum_w * sum_w) / sum_w2 if sum_w2 > 0 else 0.0
+
+    return weights, effective_n
+
+
 @dataclass
 class CalibrationEntry:
     """Calibration adjustment for a (provider_id, capability) pair
-    with optional context (language, framework, project_size)."""
+    with optional context (language, framework, project_size, etc.)."""
 
     entry_id: str = field(default_factory=lambda: f"cal_{uuid4().hex[:12]}")
     provider_id: str = ""
@@ -192,6 +245,8 @@ class CalibrationEntry:
     language: str = ""
     framework: str = ""
     project_size: str = ""
+    context_json: dict[str, Any] = field(default_factory=dict)
+    provider_version: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -205,6 +260,8 @@ class CalibrationEntry:
             "language": self.language,
             "framework": self.framework,
             "project_size": self.project_size,
+            "context_json": self.context_json,
+            "provider_version": self.provider_version,
         }
 
     @classmethod
@@ -220,4 +277,6 @@ class CalibrationEntry:
             language=d.get("language", ""),
             framework=d.get("framework", ""),
             project_size=d.get("project_size", ""),
+            context_json=d.get("context_json", {}),
+            provider_version=d.get("provider_version", ""),
         )

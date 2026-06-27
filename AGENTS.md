@@ -12,7 +12,8 @@ This document helps AI coding tools understand the JARVIS codebase structure, co
 | **3.2** — Goal Decomposition (parallel features) | **COMPLETE** | Benchmark E: 5 features extracted, email sent, 82.3s |
 | **3.2.1** — Hierarchical Decomposition (nested projects) | **COMPLETE** | Benchmark F: depth-2 tree, email sent, 48.8s |
 | **4** — Multi-Agent Routing (parallel features) | **COMPLETE** | G5: 100% routing accuracy, G6: 5-agent artifact chain PASS |
-| **5** — Activity Graph (persistent long-horizon execution) | **COMPLETE** | 113/113 tests, 8 files: models, storage, manager, recorder, resume engine, planner + workflow hooks |
+| **4.1** — Workflow Learning (calibration engine, recorder, history store, learning models) | **COMPLETE** | 175 tests, 8 files: calibration.py, recorder.py, learning_store.py, learning_models.py, failures.py |
+| **5** — Decision Engine (unified evidence collection, weighted scoring, ranking, trace) | **COMPLETE** | 38 tests, 4 files in core/decision/: models, evidence, scoring, bridge |
 | **6** — Activity Scheduler (time-driven autonomous continuation) | **COMPLETE** | 20/20 tests, 6 files: scheduler, policies, queue, worker, metrics, models |
 | **7.1–7.5** — Research Memory, Knowledge Graph, Planning, Reasoning | **COMPLETE** | 29 unit tests, 20 benchmarks (R1-R5, K1-K5, P1-P5, Reasoning R1-R5) |
 | **8.1** — Repository Understanding (indexer, dependency graph, architecture map, impact analyzer) | **COMPLETE** | 31 tests, 4 files in core/coding/ |
@@ -1865,6 +1866,7 @@ FSM metrics tracked per task:
 - **Research: 9.3/10** — Fact extraction, knowledge graph, reasoning, synthesis, improvement-driven quality
 - **Memory: 9/10** — KnowledgeStore, ExperienceExtractor, KnowledgeSynthesizer, BehaviorAdapter, Consolidator all working
 - **Learning: 9/10** — ImprovementDetector, ProposalEngine, ExperimentRunner, SafePromotion, KnobStore — closed-loop adaptation
+- **Decision Engine: 8/10** — Unified evidence collection from 7 dimensions (workflow_calibration, provider_quality, strategy_alignment, system_health, budget_viability, context_fit, confidence), weighted scoring with full DecisionTrace explainability, StrategyBridge for strategy_v2 integration (38 tests, 4 files in core/decision/)
 - **Strategic Reasoning: 7.5/10** — StrategyGenerator, OutcomePredictor, StrategyEvaluator, StrategySelector, MemoryAdapter, SimilarityScorer (105 tests, 8 files in core/strategy/)
 - **Automated Build: 8/10** — do_automated_build with ActivityGraph + Calibration + KnowledgeStore feedback (30 tests)
 - **Build Benchmark: 7/10** — Comparison framework + promotion decisions fully wired, no multi-sample statistics yet (25 tests)
@@ -1897,7 +1899,7 @@ Research Extraction FSM (Phase C)
 | Area | Score |
 |------|-------|
 | Execution Infrastructure | 95% |
-| Decision Infrastructure | 90% |
+| Decision Infrastructure | 92% |
 | Browser Automation | 75% |
 | Research Quality | 75% |
 | Research FSM | 75% |

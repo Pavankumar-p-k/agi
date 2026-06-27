@@ -260,6 +260,24 @@ async def setup_node(state: AgentState) -> AgentState:
     state.messages = messages
     state.prep_timings["prompt_build"] = time.time() - _t2
 
+    # Inject pipeline knowledge context (from BehaviorAdapter) into system prompt
+    _pipe = state.pipeline_context
+    if _pipe and _pipe.get("knowledge_prompt"):
+        _kp = _pipe["knowledge_prompt"]
+        if _kp.strip():
+            _knowledge_msg = {
+                "role": "system",
+                "content": f"[Knowledge Context]\n{_kp.strip()}",
+            }
+            # Insert after the system prompt (position 0 or 1) but before user messages
+            _insert_pos = 0
+            for _i, _m in enumerate(state.messages):
+                if _m.get("role") != "system":
+                    _insert_pos = _i
+                    break
+            state.messages.insert(max(0, _insert_pos), _knowledge_msg)
+            logger.info("[pipeline] Injected knowledge context (%d chars)", len(_kp))
+
     _t3 = time.time()
     try:
         from core.context_compactor import trim_for_context

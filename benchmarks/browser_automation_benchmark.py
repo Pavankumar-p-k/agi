@@ -708,14 +708,21 @@ async def run_task(task: BrowserTask, config_name: str, enable_planner: bool) ->
                         injected_names.append(tool_name)
 
                 # post_plan loop
-                for _ in range(5):
+                # Match the real pipeline (nodes.py): pass ALL accumulated results
+                # but only the CURRENT iteration's blocks as executed_blocks
+                # (first iteration = all blocks, subsequent = injected blocks only).
+                _pp_blocks = [tb for tb, _ in scheduled_blocks]
+                for ppi in range(5):
                     executed_results = [{"result": tr, "block_type": tb.tool_type}
                                         for tb, tr in scheduled_blocks]
                     extra, planner_ctx = _run_post_plan(executed_results,
-                                                        [tb for tb, _ in scheduled_blocks],
+                                                        _pp_blocks,
                                                         planner_ctx)
                     if not extra:
                         break
+                    logger.warning("  post_plan iter %d: injected %s", ppi,
+                                   [eb.tool_type for eb in extra])
+                    _pp_blocks = []
                     for eb in extra:
                         injected_names.append(eb.tool_type)
                         tool_name = eb.tool_type
@@ -728,6 +735,7 @@ async def run_task(task: BrowserTask, config_name: str, enable_planner: bool) ->
                                 args = {"code": eb.content} if tool_name in ("browser_evaluate",) else {"content": eb.content}
                         tool_result2 = await execute_tool(tool_name, args)
                         scheduled_blocks.append((eb, tool_result2))
+                        _pp_blocks.append(eb)
 
                 result.planner_injected.extend(injected_names)
                 result.unique_tools.update(injected_names)

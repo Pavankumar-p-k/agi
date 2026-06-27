@@ -42,18 +42,40 @@ _BROWSER_TOOLS = frozenset({
     "browser_shadow_query", "browser_evaluate",
 })
 
+# Intent groups for browser task classification.
+# Each group captures a distinct browsing intent. A match in any group triggers the intent router.
 _BROWSER_INTENT_PATTERNS = [
+    # ── Research intent ──
     r"\bsearch\s+(?:for\s+|google\s+|duckduckgo\s+|bing\s+|wikipedia\s+)",
-    r"\bsearch\s+(?:the\s+|this\s+)?(?:web|internet|site)",
-    r"\bfind\s+(?:information|details|price|pricing|review|rating|comparison)",
-    r"\b(?:look\s+up|check|get)\s+(?:price|pricing|info|details|review)",
-    r"\bopen\s+(?:the\s+)?(?:link|page|result|article)",
+    r"\bsearch\s+(?:the\s+|this\s+)?(?:web|internet|site|and\s+compile)",
+    r"\b(?:look\s+up|check|get)\s+(?:price|pricing|info|details|review|data)",
+    r"\bresearch\s",
+
+    # ── Discovery intent ──
+    r"\bfind\s+(?:\w+\s+)*(?:information|details|examples?|libraries|packages|frameworks|tools?|conferences?|resources?)",
+    r"\bdiscover\s",
+
+    # ── Collection / aggregation intent ──
+    r"\bcollect\s",
+    r"\bgather\s",
+    r"\bcompile\s",
+    r"\blist\s+(?:the\s+)?(?:top|best|latest|upcoming|all)",
+    r"\b(?:top|best|latest)\s+\d+\s",
+
+    # ── Comparison intent ──
+    r"\bcompare\s+(?:prices|products|options|features|specs?)",
+    r"\b(?:vs?\.|versus)\s",
+
+    # ── Navigation intent ──
+    r"\bopen\s+(?:the\s+)?(?:link|page|result|article|site)",
     r"\bbrowse\s",
     r"\bgo\s+to\s",
     r"\bnavigate\s+to\s",
     r"\bvisit\s",
-    r"\b(?:tutorial|article|guide|lesson)\s+on\b",
-    r"\bcompare\s+(?:prices|products|options)",
+
+    # ── Learning / reference intent ──
+    r"\b(?:tutorial|article|guide|lesson|documentation|docs)\s+on\b",
+    r"\blearn\s+(?:about|how\s+to)",
 ]
 
 
@@ -734,6 +756,21 @@ def _fsm_force_advance(fsm: Any, executed_results: list[dict], ctx: dict) -> Any
     return target
 
 
+def _extract_first_link_from_snapshot(snapshot: dict, ctx: dict) -> str | None:
+    """Extract first external link URL from snapshot headings/paragraphs."""
+    visited = set(ctx.get("visited_urls", []))
+    for key in ("headings", "paragraphs", "list_items"):
+        items = snapshot.get(key, [])
+        if not isinstance(items, list):
+            continue
+        for item in items:
+            if isinstance(item, dict):
+                link = item.get("link", "") or item.get("href", "") or item.get("url", "")
+                if isinstance(link, str) and link.startswith("http") and link not in visited:
+                    return link
+    return None
+
+
 def _fsm_state_entry_inject(fsm: Any, ctx: dict) -> list[Any]:
     """Inject appropriate tool blocks when entering a new state."""
     from core.tools._constants import ToolBlock
@@ -762,6 +799,8 @@ def _fsm_state_entry_inject(fsm: Any, ctx: dict) -> list[Any]:
     elif fsm.state == BrowserState.SEARCH_RESULTS:
         blocks.append(ToolBlock("browser_snapshot", ""))
     elif fsm.state == BrowserState.ARTICLE:
+        blocks.append(ToolBlock("browser_snapshot", ""))
+    elif fsm.state == BrowserState.EXTRACT:
         blocks.append(ToolBlock("browser_snapshot", ""))
     elif fsm.state == BrowserState.LOGIN:
         ctx["login_reported"] = True
@@ -829,30 +868,106 @@ def _fsm_handle_state(
 
     # ── SEARCH_RESULTS: click first result link, then snapshot ─
     if fsm.state == BrowserState.SEARCH_RESULTS:
-        # Check ctx flag (set by _handle_search_result_click when navigate succeeds)
-        # Do NOT scan executed_blocks — that would match router-injected navigates
         if ctx.get("result_navigated", False):
-            ctx["result_navigated"] = True
-            return None  # Navigation done, wait for snapshot/extraction next cycle
-
-        # Not navigated yet — find and click first result
-        blocks, _ = BrowserPlanner._handle_search_result_click(executed_results, executed_blocks, ctx)
-        return blocks
-
-    # ── ARTICLE: snapshot for extraction ──────────────────────
-    if fsm.state == BrowserState.ARTICLE:
-        already_snapshotted = any(
-            getattr(b, "tool_type", None) == "browser_snapshot" or (isinstance(b, dict) and b.get("name") == "browser_snapshot")
-            for b in executed_blocks
-        )
-        if already_snapshotted:
             return None
+
+        # Phase 1: try evaluate-based result link detection
+        blocks, _ = BrowserPlanner._handle_search_result_click(executed_results, executed_blocks, ctx)
+        if blocks:
+            return blocks
+
+        # Phase 2: evaluate failed — fallback via snapshot link extraction
+        if not ctx.get("result_fallback_attempted"):
+            ctx["result_fallback_attempted"] = True
+            snapshot = _extract_snapshot_dict(executed_results)
+            if snapshot:
+                fallback_url = _extract_first_link_from_snapshot(snapshot, ctx)
+                if fallback_url:
+                    decisions.append({
+                        "rule": "fsm_snapshot_fallback_click",
+                        "time": time.time(),
+                        "detail": f"clicking first snapshot link: {fallback_url[:120]}",
+                    })
+                    ctx["result_navigated"] = True
+                    ctx.setdefault("visited_urls", []).append(fallback_url)
+                    return [
+                        ToolBlock("browser_navigate", fallback_url),
+                        ToolBlock("browser_snapshot", ""),
+                    ]
+            # No links in snapshot either — force advance to ARTICLE
+            decisions.append({
+                "rule": "fsm_result_force_advance",
+                "time": time.time(),
+                "detail": "no result link found, forcing advance to ARTICLE",
+            })
+            ctx["result_navigated"] = True
+            _snapshot_eval = "() => document.body.innerText.substring(0, 5000)"
+            return [ToolBlock("browser_snapshot", ""), ToolBlock("browser_evaluate", _snapshot_eval)]
+
+    # ── ARTICLE: snapshot + auto-extract content ──────────────
+    if fsm.state == BrowserState.ARTICLE:
+        already_snapshotted = ctx.get("article_snapshotted", False)
+        if not already_snapshotted:
+            if any(
+                getattr(b, "tool_type", None) == "browser_snapshot" or (isinstance(b, dict) and b.get("name") == "browser_snapshot")
+                for b in executed_blocks
+            ):
+                ctx["article_snapshotted"] = True
+                return None
+            decisions.append({
+                "rule": "fsm_article_snapshot",
+                "time": time.time(),
+                "detail": "snapshotting article for extraction",
+            })
+            return [ToolBlock("browser_snapshot", "")]
+
+        # Snapshot done — extract content
+        if ctx.get("article_content_extracted"):
+            return None
+        ctx["article_content_extracted"] = True
         decisions.append({
-            "rule": "fsm_article_snapshot",
+            "rule": "fsm_article_extract",
             "time": time.time(),
-            "detail": "snapshotting article for extraction",
+            "detail": "extracting article content",
         })
-        return [ToolBlock("browser_snapshot", "")]
+        _extract_js = "() => { const text = document.body.innerText || ''; return text.substring(0, 10000); }"
+        return [ToolBlock("browser_evaluate", _extract_js)]
+
+    # ── EXTRACT: snapshot + content extraction ────────────────
+    if fsm.state == BrowserState.EXTRACT:
+        already_extracted = ctx.get("extract_completed", False)
+        if already_extracted:
+            return None
+        if not ctx.get("extract_snapshotted"):
+            if any(
+                getattr(b, "tool_type", None) == "browser_snapshot" or (isinstance(b, dict) and b.get("name") == "browser_snapshot")
+                for b in executed_blocks
+            ):
+                ctx["extract_snapshotted"] = True
+                return None
+            decisions.append({
+                "rule": "fsm_extract_snapshot",
+                "time": time.time(),
+                "detail": "snapshotting for extraction",
+            })
+            return [ToolBlock("browser_snapshot", "")]
+        if not ctx.get("extract_content_done"):
+            ctx["extract_content_done"] = True
+            decisions.append({
+                "rule": "fsm_extract_content",
+                "time": time.time(),
+                "detail": "extracting page content",
+            })
+            _extract_js = "() => { const text = document.body.innerText || ''; return text.substring(0, 10000); }"
+            return [ToolBlock("browser_evaluate", _extract_js)]
+        ctx["extract_completed"] = True
+        decisions.append({
+            "rule": "fsm_extract_complete",
+            "time": time.time(),
+            "detail": "extraction complete, transitioning to COMPLETE",
+        })
+        fsm.transition_to(BrowserState.COMPLETE)
+        return []
 
     # ── LOGIN: report and snapshot ────────────────────────────
     if fsm.state == BrowserState.LOGIN and not ctx.get("login_reported"):
@@ -998,6 +1113,7 @@ class BrowserPlanner:
         # Track already-recorded count to avoid double-counting
         # across post_plan loop iterations.
         recorded_count = ctx.setdefault("_fsm_recorded_count", 0)
+        _exit_happened = False
         for i in range(recorded_count, len(executed_blocks)):
             block = executed_blocks[i]
             name = getattr(block, "tool_type", None) or (block.get("name") if isinstance(block, dict) else None)
@@ -1005,27 +1121,56 @@ class BrowserPlanner:
                 history.append({"name": name, "time": time.time()})
                 result = executed_results[i].get("result", {}) if i < len(executed_results) and isinstance(executed_results[i], dict) else {}
                 fsm.record_action(name, result)
+                if fsm.handle_exit_tool(name):
+                    _exit_happened = True
         ctx["_fsm_recorded_count"] = len(executed_blocks)
 
         # ── Snapshot processing → page recognition ────────────
         # Must run BEFORE timeout/loop checks so recognized pages
         # transition to correct state (e.g. NAVIGATE→SEARCH_PAGE)
-        snapshot = _extract_snapshot_dict(executed_results)
-        if snapshot:
+        # Only consider snapshots from the current iteration to avoid
+        # stale-snapshot overrides of exit-tool-based transitions.
+        snapshot = None
+        _snap_start = len(executed_results) - len(executed_blocks)
+        for i in range(max(0, _snap_start), len(executed_results)):
+            inner = executed_results[i]
+            if isinstance(inner, dict):
+                result_data = inner.get("result", inner)
+                if not isinstance(result_data, dict):
+                    continue
+                # Navigate through nested result layers to find the actual snapshot
+                nested = result_data.get("result", None)
+                if isinstance(nested, dict) and ("headings" in nested or "inputs" in nested):
+                    snapshot = nested
+                    break
+                if isinstance(result_data, dict) and ("headings" in result_data or "title" in result_data or "forms" in result_data or "inputs" in result_data):
+                    snapshot = result_data
+                    break
+        if snapshot and not _exit_happened:
             url = snapshot.get("url", "") or ""
             recognized = recognize_page(snapshot, url)
             if recognized != fsm.state and recognized not in (BrowserState.NAVIGATE, BrowserState.START):
-                decisions.append({
-                    "rule": "fsm_page_recognition",
-                    "time": time.time(),
-                    "detail": f"recognized {recognized.value} from state {fsm.state.value}",
-                })
-                fsm.transition_to(recognized)
-                # On entering new state, inject appropriate next tool
-                injected = _fsm_state_entry_inject(fsm, ctx)
-                extra.extend(injected)
-                _save_fsm_to_ctx(fsm, fsm_data)
-                return extra, ctx
+                # Don't override an exit-tool-based transition with a stale snapshot
+                # that shows the same page as the previous state
+                prev_val = fsm.previous_state.value if fsm.previous_state else ""
+                if recognized.value == prev_val:
+                    decisions.append({
+                        "rule": "fsm_page_recognition_skipped",
+                        "time": time.time(),
+                        "detail": f"skipped recognition {recognized.value} (stale snapshot, previous state was {prev_val})",
+                    })
+                else:
+                    decisions.append({
+                        "rule": "fsm_page_recognition",
+                        "time": time.time(),
+                        "detail": f"recognized {recognized.value} from state {fsm.state.value}",
+                    })
+                    fsm.transition_to(recognized)
+                    # On entering new state, inject appropriate next tool
+                    injected = _fsm_state_entry_inject(fsm, ctx)
+                    extra.extend(injected)
+                    _save_fsm_to_ctx(fsm, fsm_data)
+                    return extra, ctx
 
         # ── FSM checks (priority order) ───────────────────────
 

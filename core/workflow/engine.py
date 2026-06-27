@@ -40,13 +40,19 @@ logger = logging.getLogger(__name__)
 
 
 class WorkflowEngine:
-    def __init__(self, store: WorkflowStore | None = None,
-                 activity_recorder: Any = None) -> None:
+    def __init__(
+        self,
+        store: WorkflowStore | None = None,
+        activity_recorder: Any = None,
+        workflow_recorder: Any = None,
+    ) -> None:
         self._store = store or WorkflowStore()
         self._context_manager = ContextManager(self._store)
         self._artifact_store = ArtifactStore(self._store)
         self._running: dict[str, asyncio.Task] = {}
         self._activity_recorder = activity_recorder
+        self._workflow_recorder = workflow_recorder
+        self._workflow_start_times: dict[str, float] = {}
 
     @property
     def store(self) -> WorkflowStore:
@@ -70,6 +76,7 @@ class WorkflowEngine:
         execution_context: dict | None = None,
         parent_workflow_id: str | None = None,
         retry_budget: int = 0,
+        start_time: float | None = None,
     ) -> WorkflowInstance:
         workflow_id = f"wf_{uuid.uuid4().hex}"
         now = datetime.utcnow()
@@ -129,7 +136,9 @@ class WorkflowEngine:
             data={"workflow_type": workflow_type, "step_count": len(steps)},
         ))
 
-        task = asyncio.create_task(self._run_workflow(wf))
+        actual_start = start_time if start_time is not None else time.monotonic()
+        self._workflow_start_times[workflow_id] = actual_start
+        task = asyncio.create_task(self._run_workflow(wf, start_time=actual_start))
         self._running[workflow_id] = task
         return wf
 
@@ -173,6 +182,10 @@ class WorkflowEngine:
         if workflow_id in self._running:
             self._running[workflow_id].cancel()
             del self._running[workflow_id]
+        self._record_workflow_outcome(
+            wf,
+            self._workflow_start_times.pop(workflow_id, None),
+        )
         return wf
 
     async def get_status(self, workflow_id: str) -> dict[str, Any] | None:
@@ -213,14 +226,16 @@ class WorkflowEngine:
             for w in workflows
         ]
 
-    async def _run_workflow(self, wf: WorkflowInstance) -> None:
+    async def _run_workflow(
+        self, wf: WorkflowInstance, start_time: float | None = None,
+    ) -> None:
         if wf.status == WorkflowStatus.COMPENSATING:
             await self._compensate_workflow(wf)
             return
 
         wf.status = WorkflowStatus.RUNNING
         self._store.update_workflow(wf)
-        start_time = time.monotonic()
+        wf_start = start_time if start_time is not None else time.monotonic()
 
         context = self._context_manager.get_context(wf.workflow_id)
         if context is None:
@@ -284,12 +299,13 @@ class WorkflowEngine:
                             "error": step.error,
                         },
                     ))
+                    self._record_workflow_outcome(wf, wf_start)
                     return
 
             wf.status = WorkflowStatus.COMPLETED
             wf.updated_at = datetime.utcnow()
             self._store.update_workflow(wf)
-            elapsed = time.monotonic() - start_time
+            elapsed = time.monotonic() - wf_start
             if self._activity_recorder:
                 self._activity_recorder.record_completion({"state": "COMPLETE", "elapsed": elapsed})
             self._store.append_event(WorkflowEvent(
@@ -298,10 +314,23 @@ class WorkflowEngine:
                 event_type=WORKFLOW_COMPLETED,
                 data={"elapsed_seconds": round(elapsed, 2)},
             ))
+            self._record_workflow_outcome(wf, wf_start)
         except asyncio.CancelledError:
             pass
         finally:
             self._running.pop(wf.workflow_id, None)
+            self._workflow_start_times.pop(wf.workflow_id, None)
+
+    def _record_workflow_outcome(
+        self, wf: WorkflowInstance, start_time: float | None = None,
+    ) -> None:
+        """Non-blocking outcome recording via WorkflowExecutionRecorder."""
+        if self._workflow_recorder is None:
+            return
+        try:
+            self._workflow_recorder.record_workflow(wf, start_time=start_time)
+        except Exception as e:
+            logger.warning("Failed to record outcome for %s: %s", wf.workflow_id, e)
 
     async def _execute_step(self, wf: WorkflowInstance, step: WorkflowStep,
                             context: ExecutionContext | None = None) -> bool:
@@ -501,6 +530,9 @@ class WorkflowEngine:
                             "error": error_text or f"exit code {exit_code}",
                         },
                     ))
+                    self._record_workflow_outcome(
+                        wf, self._workflow_start_times.pop(wf.workflow_id, None),
+                    )
                     return False
 
                 comp_step.compensated = True
@@ -538,6 +570,9 @@ class WorkflowEngine:
                     event_type=COMPENSATION_FAILED,
                     data={"step_id": comp_step.step_id, "error": str(e)},
                 ))
+                self._record_workflow_outcome(
+                    wf, self._workflow_start_times.pop(wf.workflow_id, None),
+                )
                 return False
 
         wf.status = WorkflowStatus.COMPENSATED
@@ -549,4 +584,7 @@ class WorkflowEngine:
             event_type=WORKFLOW_COMPENSATED,
             data={"compensated_steps": wf.compensated_steps},
         ))
+        self._record_workflow_outcome(
+            wf, self._workflow_start_times.pop(wf.workflow_id, None),
+        )
         return True

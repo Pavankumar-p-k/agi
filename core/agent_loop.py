@@ -14,8 +14,11 @@
 agent_loop.py
 
 Streaming agent loop for odysseus-ui.
-Delegates to a StateGraph for execution.
+Now wraps the RuntimePipeline for architecture integration.
+Every request flows through: Knowledge Injection → Planning → Strategy →
+Decision → Provider → Workflow → Activity Recording → Execution → Learning.
 Preserves the exact same stream_agent_loop signature and SSE output format.
+Legacy direct-graph execution is preserved as a safe fallback.
 """
 
 import logging
@@ -49,8 +52,12 @@ async def stream_agent_loop(
     pause_before_effectful: bool = False,
     mode: str | None = None,
     project_context: dict | None = None,
+    _disable_pipeline: bool = False,
 ) -> AsyncGenerator[str, None]:
     """Streaming agent loop generator.
+
+    Wraps the RuntimePipeline for architecture integration. Falls back
+    to direct graph execution if the pipeline is disabled or fails.
 
     Yields SSE events:
       - data: {"delta": "text"}                             (text chunks)
@@ -60,6 +67,39 @@ async def stream_agent_loop(
       - data: {"type": "metrics", "data": {...}}            (final metrics)
       - data: [DONE]                                        (end)
     """
+    # Try the unified runtime pipeline first
+    if not _disable_pipeline:
+        try:
+            from core.pipeline import RuntimePipeline
+            pipeline = RuntimePipeline()
+            async for event in pipeline.execute(
+                messages=messages,
+                endpoint_url=endpoint_url,
+                model=model,
+                headers=headers,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                prompt_type=prompt_type,
+                max_rounds=max_rounds,
+                max_tool_calls=max_tool_calls,
+                context_length=context_length,
+                active_document=active_document,
+                session_id=session_id,
+                disabled_tools=disabled_tools,
+                owner=owner,
+                relevant_tools=relevant_tools,
+                fallbacks=fallbacks,
+                _is_teacher_run=_is_teacher_run,
+                pause_before_effectful=pause_before_effectful,
+                mode=mode,
+                project_context=project_context,
+            ):
+                yield event
+            return
+        except Exception as e:
+            logger.warning("[agent_loop] Pipeline failed, falling back to legacy: %s", e)
+
+    # Legacy fallback: direct graph execution (unchanged behavior)
     graph = build_default_graph()
     state = AgentState(
         endpoint_url=endpoint_url,

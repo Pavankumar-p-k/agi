@@ -47,7 +47,8 @@ class FeedbackStore:
                 selected_provider TEXT NOT NULL DEFAULT '',
                 candidate_scores_json TEXT NOT NULL DEFAULT '[]',
                 excluded_providers_json TEXT NOT NULL DEFAULT '[]',
-                timestamp REAL NOT NULL DEFAULT 0
+                timestamp REAL NOT NULL DEFAULT 0,
+                provider_version TEXT NOT NULL DEFAULT ''
             )
         """)
         conn.execute("""
@@ -77,11 +78,12 @@ class FeedbackStore:
                 language TEXT NOT NULL DEFAULT '',
                 framework TEXT NOT NULL DEFAULT '',
                 project_size TEXT NOT NULL DEFAULT '',
+                context_json TEXT NOT NULL DEFAULT '{}',
+                provider_version TEXT NOT NULL DEFAULT '',
                 UNIQUE(provider_id, capability, language, framework, project_size)
             )
         """)
-        # Migrate old tables that don't have context columns
-        self._migrate_calibration_columns(conn)
+        self._migrate_columns(conn)
         conn.execute("""
             CREATE INDEX IF NOT EXISTS idx_outcomes_decision
             ON routing_outcomes(decision_id)
@@ -95,15 +97,36 @@ class FeedbackStore:
             ON routing_decisions(timestamp)
         """)
 
-    def _migrate_calibration_columns(self, conn: sqlite3.Connection) -> None:
-        pragma = conn.execute("PRAGMA table_info(calibration_entries)").fetchall()
+    def _migrate_columns(self, conn: sqlite3.Connection) -> None:
+        pragma = conn.execute(
+            "PRAGMA table_info(calibration_entries)"
+        ).fetchall()
         existing = {row["name"] for row in pragma}
-        for col, col_type in [("language", "TEXT NOT NULL DEFAULT ''"),
-                               ("framework", "TEXT NOT NULL DEFAULT ''"),
-                               ("project_size", "TEXT NOT NULL DEFAULT ''")]:
+
+        cal_migrations = [
+            ("language", "TEXT NOT NULL DEFAULT ''"),
+            ("framework", "TEXT NOT NULL DEFAULT ''"),
+            ("project_size", "TEXT NOT NULL DEFAULT ''"),
+            ("context_json", "TEXT NOT NULL DEFAULT '{}'"),
+            ("provider_version", "TEXT NOT NULL DEFAULT ''"),
+        ]
+        for col, col_type in cal_migrations:
             if col not in existing:
-                conn.execute(f"ALTER TABLE calibration_entries ADD COLUMN {col} {col_type}")
-                logger.info("[FeedbackStore] Added missing column: %s", col)
+                conn.execute(
+                    f"ALTER TABLE calibration_entries ADD COLUMN {col} {col_type}"
+                )
+                logger.info("[FeedbackStore] Added column calibration_entries.%s", col)
+
+        # Migrate routing_decisions for provider_version
+        dec_pragma = conn.execute(
+            "PRAGMA table_info(routing_decisions)"
+        ).fetchall()
+        dec_existing = {row["name"] for row in dec_pragma}
+        if "provider_version" not in dec_existing:
+            conn.execute(
+                "ALTER TABLE routing_decisions ADD COLUMN provider_version TEXT NOT NULL DEFAULT ''"
+            )
+            logger.info("[FeedbackStore] Added column routing_decisions.provider_version")
 
     # ── Decisions ──────────────────────────────────────────────────
 
@@ -112,8 +135,9 @@ class FeedbackStore:
         conn.execute(
             """INSERT OR REPLACE INTO routing_decisions
                (decision_id, goal, capability, task_json, selected_provider,
-                candidate_scores_json, excluded_providers_json, timestamp)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                candidate_scores_json, excluded_providers_json, timestamp,
+                provider_version)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 decision.decision_id,
                 decision.goal,
@@ -123,6 +147,7 @@ class FeedbackStore:
                 json.dumps([s.to_dict() for s in decision.candidate_scores]),
                 json.dumps(decision.excluded_providers),
                 decision.timestamp,
+                decision.provider_version,
             ),
         )
 
@@ -134,6 +159,14 @@ class FeedbackStore:
         ).fetchone()
         if not row:
             return None
+        return self._row_to_decision(row)
+
+    def _row_to_decision(self, row: sqlite3.Row) -> RoutingDecision:
+        provider_version = ""
+        try:
+            provider_version = row["provider_version"] or ""
+        except (IndexError, KeyError):
+            pass
         return RoutingDecision(
             decision_id=row["decision_id"],
             goal=row["goal"],
@@ -146,6 +179,7 @@ class FeedbackStore:
             ],
             excluded_providers=json.loads(row["excluded_providers_json"]),
             timestamp=row["timestamp"],
+            provider_version=provider_version,
         )
 
     def get_recent_decisions(self, limit: int = 50) -> list[RoutingDecision]:
@@ -154,22 +188,7 @@ class FeedbackStore:
             "SELECT * FROM routing_decisions ORDER BY timestamp DESC LIMIT ?",
             (limit,),
         ).fetchall()
-        result = []
-        for row in rows:
-            result.append(RoutingDecision(
-                decision_id=row["decision_id"],
-                goal=row["goal"],
-                capability=row["capability"],
-                task=json.loads(row["task_json"]),
-                selected_provider=row["selected_provider"],
-                candidate_scores=[
-                    ScoreBreakdown.from_dict(s)
-                    for s in json.loads(row["candidate_scores_json"])
-                ],
-                excluded_providers=json.loads(row["excluded_providers_json"]),
-                timestamp=row["timestamp"],
-            ))
-        return result
+        return [self._row_to_decision(r) for r in rows]
 
     def count_decisions(self, capability: str | None = None) -> int:
         conn = self._get_conn()
@@ -179,7 +198,9 @@ class FeedbackStore:
                 (capability,),
             ).fetchone()
         else:
-            row = conn.execute("SELECT COUNT(*) AS cnt FROM routing_decisions").fetchone()
+            row = conn.execute(
+                "SELECT COUNT(*) AS cnt FROM routing_decisions"
+            ).fetchone()
         return row["cnt"] if row else 0
 
     # ── Outcomes ───────────────────────────────────────────────────
@@ -279,13 +300,12 @@ class FeedbackStore:
             ))
         return result
 
-    # ── Calibration (context-aware) ────────────────────────────────
+    # ── Calibration (context-aware + time-aware) ───────────────────
 
     def _calibration_where(
         self, provider_id: str, capability: str,
         language: str = "", framework: str = "", project_size: str = "",
     ) -> tuple[str, list]:
-        """Build WHERE clause and params for exact calibration match."""
         return (
             "provider_id = ? AND capability = ? AND language = ? AND framework = ? AND project_size = ?",
             [provider_id, capability, language, framework, project_size],
@@ -297,8 +317,9 @@ class FeedbackStore:
             """INSERT OR REPLACE INTO calibration_entries
                (entry_id, provider_id, capability, adjustment,
                 confidence, evidence_count, last_updated,
-                language, framework, project_size)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                language, framework, project_size,
+                context_json, provider_version)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 entry.entry_id,
                 entry.provider_id,
@@ -310,6 +331,8 @@ class FeedbackStore:
                 entry.language,
                 entry.framework,
                 entry.project_size,
+                json.dumps(entry.context_json),
+                entry.provider_version,
             ),
         )
 
@@ -317,7 +340,6 @@ class FeedbackStore:
         self, provider_id: str, capability: str,
         language: str = "", framework: str = "", project_size: str = "",
     ) -> CalibrationEntry | None:
-        """Get calibration matching the exact context. Returns None if no match."""
         conn = self._get_conn()
         where, params = self._calibration_where(
             provider_id, capability, language, framework, project_size,
@@ -334,9 +356,6 @@ class FeedbackStore:
         self, provider_id: str, capability: str,
         language: str = "", framework: str = "", project_size: str = "",
     ) -> CalibrationEntry | None:
-        """Walk the fallback chain from most to least specific context.
-        Returns the first match found.
-        """
         conn = self._get_conn()
         ctx = {"language": language, "framework": framework, "project_size": project_size}
 
@@ -364,6 +383,19 @@ class FeedbackStore:
         return None
 
     def _row_to_calibration(self, row: sqlite3.Row) -> CalibrationEntry:
+        def _col(key: str, default: Any = "") -> Any:
+            try:
+                return row[key]
+            except (IndexError, KeyError):
+                return default
+
+        raw = _col("context_json", "{}") or "{}"
+        if isinstance(raw, str):
+            parsed = json.loads(raw)
+        elif isinstance(raw, dict):
+            parsed = raw
+        else:
+            parsed = {}
         return CalibrationEntry(
             entry_id=row["entry_id"],
             provider_id=row["provider_id"],
@@ -375,12 +407,15 @@ class FeedbackStore:
             language=row["language"],
             framework=row["framework"],
             project_size=row["project_size"],
+            context_json=parsed,
+            provider_version=_col("provider_version", ""),
         )
 
     def get_all_calibrations(self) -> list[CalibrationEntry]:
         conn = self._get_conn()
         rows = conn.execute(
-            "SELECT * FROM calibration_entries ORDER BY provider_id, capability, language, framework",
+            """SELECT * FROM calibration_entries
+               ORDER BY provider_id, capability, language, framework"""
         ).fetchall()
         return [self._row_to_calibration(r) for r in rows]
 
@@ -389,7 +424,9 @@ class FeedbackStore:
     def get_provider_stats(
         self, provider_id: str, capability: str | None = None,
     ) -> dict[str, Any]:
-        outcomes = self.get_all_outcomes(provider_id=provider_id, capability=capability)
+        outcomes = self.get_all_outcomes(
+            provider_id=provider_id, capability=capability,
+        )
         if not outcomes:
             return {
                 "provider_id": provider_id,
@@ -423,6 +460,7 @@ class FeedbackStore:
                 "evidence_count": e.evidence_count,
                 "language": e.language,
                 "framework": e.framework,
+                "provider_version": e.provider_version,
             }
             for e in entries
         ]

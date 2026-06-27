@@ -187,6 +187,12 @@ def recognize_page(snapshot: dict | str | None, url: str = "") -> BrowserState:
                         parts.append(str(item.get("text", "")))
                     elif isinstance(item, str):
                         parts.append(item)
+        # Include input placeholders/labels for search detection
+        for inp in snapshot.get("inputs", []):
+            if isinstance(inp, dict):
+                parts.append(str(inp.get("placeholder", "")))
+                parts.append(str(inp.get("label", "")))
+                parts.append(str(inp.get("name", "")))
         text = " ".join(parts).lower()
     else:
         return BrowserState.NAVIGATE
@@ -204,10 +210,11 @@ def recognize_page(snapshot: dict | str | None, url: str = "") -> BrowserState:
 
     # Check for search page (has search input, no results)
     has_search = any(ind in text for ind in _SEARCH_PAGE_INDICATORS)
-    has_results = any(ind in text for ind in _RESULTS_PAGE_INDICATORS)
+    has_results = sum(1 for ind in _RESULTS_PAGE_INDICATORS if ind in text)
     has_article = any(ind in text for ind in _ARTICLE_INDICATORS)
 
-    if has_results:
+    # Require 2+ result indicators to avoid false positives from generic words like "page"
+    if has_results >= 2:
         return BrowserState.SEARCH_RESULTS
     if has_article:
         return BrowserState.ARTICLE
@@ -261,10 +268,18 @@ def _extract_snapshot_text(executed_results: list[dict]) -> str | None:
 
 
 def _extract_snapshot_dict(executed_results: list[dict]) -> dict | None:
-    """Extract the structured snapshot dict from results."""
+    """Extract the structured snapshot dict from results.
+    Navigates through wrapper/navigate-result layers to find the actual snapshot.
+    """
     for r in executed_results:
         inner = r.get("result", r)
-        if isinstance(inner, dict) and ("headings" in inner or "title" in inner or "forms" in inner or "inputs" in inner):
+        if not isinstance(inner, dict):
+            continue
+        # Check if inner has a nested result that looks like a snapshot
+        nested = inner.get("result", None)
+        if isinstance(nested, dict) and ("headings" in nested or "inputs" in nested):
+            return nested
+        if "headings" in inner or "title" in inner or "forms" in inner or "inputs" in inner:
             return inner
     return None
 

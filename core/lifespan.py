@@ -699,6 +699,19 @@ async def lifespan(app: FastAPI):
         startup_status["warnings"].append(f"workflow_recovery: {e}")
         logger.warning("[WORKFLOW] Recovery init failed: %s", e)
 
+    # ── Phase 9: Knowledge Consolidator (background loop) ─────────────────
+    _consolidator_task = None
+    try:
+        from core.activity.manager import ActivityManager
+        from core.long_term_memory.consolidator import Consolidator
+        _consolidator = Consolidator()
+        _consolidator_task = asyncio.create_task(_consolidator.run())
+        app.state.consolidator = _consolidator
+        logger.info("[LIFESPAN] Knowledge consolidator started [OK]")
+    except Exception as e:
+        startup_status["warnings"].append(f"consolidator: {e}")
+        logger.warning("[LIFESPAN] Knowledge consolidator init failed: %s", e)
+
     if startup_status["warnings"]:
         logger.warning("[JARVIS] Startup completed with warnings: %s", startup_status["warnings"])
     else:
@@ -754,6 +767,9 @@ async def lifespan(app: FastAPI):
     if hasattr(app.state, "workflow_heartbeat"):
         await app.state.workflow_heartbeat.stop()
         logger.info("[SHUTDOWN] Workflow heartbeat monitor stopped")
+    if hasattr(app.state, "consolidator"):
+        app.state.consolidator.stop()
+        logger.info("[SHUTDOWN] Knowledge consolidator stopped")
     if hasattr(app.state, "audit_log"):
         app.state.audit_log.force_flush()
         logger.info("[SHUTDOWN] Audit log flushed")
