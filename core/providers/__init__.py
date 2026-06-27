@@ -1,6 +1,6 @@
 from core.providers.base import ExecutionProvider, ProviderHealth, ProviderCapabilities, ExecutionResult
 from core.providers.registry import ProviderRegistry, provider_registry
-from core.providers.memory import ProviderMemory
+from core.providers.memory import ProviderMemory, EvidenceRecord, provider_memory
 from core.providers.budget import ProviderBudgetManager
 
 __all__ = [
@@ -11,5 +11,7 @@ __all__ = [
     "ProviderRegistry",
     "provider_registry",
     "ProviderMemory",
+    "EvidenceRecord",
+    "provider_memory",
     "ProviderBudgetManager",
 ]

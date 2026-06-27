@@ -25,6 +25,11 @@ class ScoreBreakdown:
     priority_score: float = 0.0
     historical_score: float = 0.0
     benchmark_score: float = 0.0
+    health_score: float = 0.0
+    latency_score: float = 0.0
+    cost_score: float = 0.0
+    budget_score: float = 0.0
+    offline_score: float = 0.0
     calibration_adjustment: float = 0.0
     total_score: float = 0.0
 
@@ -34,6 +39,11 @@ class ScoreBreakdown:
             "priority_score": self.priority_score,
             "historical_score": self.historical_score,
             "benchmark_score": self.benchmark_score,
+            "health_score": self.health_score,
+            "latency_score": self.latency_score,
+            "cost_score": self.cost_score,
+            "budget_score": self.budget_score,
+            "offline_score": self.offline_score,
             "calibration_adjustment": self.calibration_adjustment,
             "total_score": self.total_score,
         }
@@ -45,6 +55,11 @@ class ScoreBreakdown:
             priority_score=d.get("priority_score", 0.0),
             historical_score=d.get("historical_score", 0.0),
             benchmark_score=d.get("benchmark_score", 0.0),
+            health_score=d.get("health_score", 0.0),
+            latency_score=d.get("latency_score", 0.0),
+            cost_score=d.get("cost_score", 0.0),
+            budget_score=d.get("budget_score", 0.0),
+            offline_score=d.get("offline_score", 0.0),
             calibration_adjustment=d.get("calibration_adjustment", 0.0),
             total_score=d.get("total_score", 0.0),
         )
@@ -179,6 +194,64 @@ where 0 = exclude, 1 = include exact, >1 = treat as priority ranking.
 
 Walks from most specific to least specific context.
 """
+
+
+@dataclass
+class ProviderResult:
+    """Standard result wrapper returned by every provider execution.
+
+    Unifies output from all capability providers into a single format
+    consumed by Activity Graph, Learning, Improvement, and benchmarks.
+    """
+
+    provider_id: str = ""
+    capability: str = ""
+    success: bool = False
+    duration_ms: float = 0.0
+    cost: float = 0.0
+    tokens: int = 0
+    output: str = ""
+    error: str = ""
+    artifacts: dict[str, str] = field(default_factory=dict)
+    activity_id: str = ""
+    metrics: dict[str, Any] = field(default_factory=dict)
+    execution_id: str = ""
+
+    @classmethod
+    def from_execution_result(
+        cls,
+        result: Any,
+        provider_id: str = "",
+        capability: str = "",
+    ) -> ProviderResult:
+        """Convert an ExecutionResult (or compatible dict) to ProviderResult."""
+        if hasattr(result, "success"):
+            return cls(
+                provider_id=provider_id or getattr(result, "provider_id", ""),
+                capability=capability,
+                success=result.success,
+                duration_ms=getattr(result, "duration_ms", 0.0),
+                cost=getattr(result, "metadata", {}).get("cost", 0.0) if hasattr(result, "metadata") else 0.0,
+                tokens=getattr(result, "metadata", {}).get("tokens", 0) if hasattr(result, "metadata") else 0,
+                output=getattr(result, "output", ""),
+                error=getattr(result, "error", ""),
+                artifacts=getattr(result, "artifacts", {}),
+                metrics=getattr(result, "metadata", {}) if hasattr(result, "metadata") else {},
+            )
+        if isinstance(result, dict):
+            return cls(
+                provider_id=provider_id or result.get("provider_id", ""),
+                capability=capability,
+                success=result.get("success", False),
+                duration_ms=result.get("duration_ms", 0.0),
+                cost=result.get("cost", 0.0),
+                tokens=result.get("tokens", 0),
+                output=result.get("output", ""),
+                error=result.get("error", ""),
+                artifacts=result.get("artifacts", {}),
+                metrics=result.get("metrics", result.get("metadata", {})),
+            )
+        return cls()
 
 
 def _extract_context(task: dict[str, Any] | None) -> dict[str, str]:

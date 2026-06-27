@@ -25,6 +25,7 @@ def clean_provider_state():
     from core.providers.budget import provider_budget
     from core.providers.registry import provider_registry
     provider_memory._records.clear()
+    provider_memory._legacy_records.clear()
     provider_budget._records.clear()
     provider_budget._limits.clear()
     yield
@@ -64,6 +65,7 @@ def clean_memory(temp_root):
     mem._MEMORY_DIR = mem_dir
     mem._MEMORY_FILE = mem_dir / "memory.json"
     mem._records.clear()
+    mem._legacy_records.clear()
     return mem
 
 

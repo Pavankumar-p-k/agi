@@ -12,8 +12,18 @@ logger = logging.getLogger(__name__)
 
 def register_internal_providers() -> None:
     from core.providers.adapters.forge import ForgeProvider
+    from core.providers.adapters.browser_provider import BrowserProvider
+    from core.providers.adapters.research_provider import ResearchProvider
+    from core.providers.adapters.automation_provider import AutomationProvider
+    from core.providers.adapters.messaging_provider import MessagingProvider
+    from core.providers.adapters.deployment_provider import DeploymentProvider
     provider_registry.register(ForgeProvider(), priority=10)
-    logger.info("[ProviderBootstrap] Registered internal provider: forge")
+    provider_registry.register(BrowserProvider(), priority=10)
+    provider_registry.register(ResearchProvider(), priority=10)
+    provider_registry.register(AutomationProvider(), priority=10)
+    provider_registry.register(MessagingProvider(), priority=10)
+    provider_registry.register(DeploymentProvider(), priority=10)
+    logger.info("[ProviderBootstrap] Registered internal providers: forge, browser, research, automation, messaging, deployment")
 
 
 def register_external_providers() -> None:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import inspect
 import logging
 from typing import Any
 
@@ -13,6 +14,45 @@ from core.providers.registry import ProviderRegistry, provider_registry
 logger = logging.getLogger(__name__)
 
 
+def _run_async_or_default(fn, default: float = 0.0) -> float:
+    """Call fn() and return result, handling both sync and async functions.
+
+    If already in a running event loop, returns *default* immediately
+    rather than creating an unawaited coroutine.
+    """
+    try:
+        asyncio.get_running_loop()
+        return default
+    except RuntimeError:
+        pass
+    try:
+        result = fn()
+        if asyncio.iscoroutine(result):
+            try:
+                return asyncio.run(result)
+            except RuntimeError:
+                return default
+        return float(result) if result is not None else default
+    except Exception:
+        return default
+
+_DEFAULT_WEIGHTS: dict[str, float] = {
+    "historical_success": 0.20,
+    "benchmark_quality": 0.15,
+    "health": 0.15,
+    "latency": 0.15,
+    "cost": 0.10,
+    "budget": 0.10,
+    "offline_availability": 0.05,
+    "priority": 0.10,
+}
+"""Evidence-based scoring weights configurable via self-improvement system.
+
+The priority weight provides a small tiebreaker for admin-configured provider
+preferences when evidence is scarce.  All weights should sum to 1.0.
+"""
+
+
 class ProviderRouter:
     def __init__(
         self,
@@ -20,6 +60,7 @@ class ProviderRouter:
         memory: ProviderMemory | None = None,
         budget: ProviderBudgetManager | None = None,
         calibration_engine: Any = None,
+        weights: dict[str, float] | None = None,
     ):
         self._registry = registry or provider_registry
         self._memory = memory or provider_memory
@@ -28,6 +69,9 @@ class ProviderRouter:
         self._calibration_engine = calibration_engine
         self._decision_recorder = None
         self.last_decision_id: str | None = None
+        self.weights: dict[str, float] = dict(weights or _DEFAULT_WEIGHTS)
+
+    # -- Lazy helpers -----------------------------------------------------------
 
     def _get_benchmark_store(self):
         if self._benchmark_store is None:
@@ -59,6 +103,8 @@ class ProviderRouter:
                 self._decision_recorder = False
         return self._decision_recorder if self._decision_recorder else None
 
+    # -- Selection ---------------------------------------------------------------
+
     def select(
         self,
         capability: str,
@@ -72,7 +118,7 @@ class ProviderRouter:
             logger.warning("[ProviderRouter] No providers for capability: %s", capability)
             return None
 
-        scored = []
+        scored: list[tuple[float, ExecutionProvider]] = []
         for provider in candidates:
             if not provider.enabled:
                 logger.debug("[ProviderRouter] Skipping disabled provider: %s", provider.provider_id)
@@ -86,21 +132,21 @@ class ProviderRouter:
                 logger.debug("[ProviderRouter] Skipping poor-performance provider: %s", provider.provider_id)
                 continue
 
-            health = provider.cached_health
-            if hasattr(health, '__call__'):
+            try:
+                asyncio.get_running_loop()
+                health_result = provider._health_cache
+            except RuntimeError:
                 try:
                     health_result = asyncio.run(provider.cached_health())
                 except RuntimeError:
                     health_result = provider._health_cache
-            else:
-                health_result = provider._health_cache
 
             if health_result.status == ProviderHealthStatus.DOWN:
                 logger.debug("[ProviderRouter] Skipping unhealthy provider: %s (%s)",
                              provider.provider_id, health_result.error)
                 continue
 
-            score = self._score(provider, task)
+            score = self._score(provider, task, prefer_offline=prefer_offline)
             scored.append((score, provider))
 
         if not scored:
@@ -108,7 +154,7 @@ class ProviderRouter:
 
         scored.sort(key=lambda x: x[0], reverse=True)
         best = scored[0][1]
-        logger.info("[ProviderRouter] Selected %s (score=%.2f) for capability '%s'",
+        logger.info("[ProviderRouter] Selected %s (score=%.4f) for capability '%s'",
                      best.provider_id, scored[0][0], capability)
 
         # Record decision if requested
@@ -150,14 +196,14 @@ class ProviderRouter:
             if self._memory.should_skip(provider.provider_id):
                 continue
 
-            health_result = provider.cached_health
-            if hasattr(health_result, '__call__'):
+            try:
+                asyncio.get_running_loop()
+                health_result = provider._health_cache
+            except RuntimeError:
                 try:
                     health_result = asyncio.run(provider.cached_health())
                 except RuntimeError:
                     health_result = provider._health_cache
-            else:
-                health_result = provider._health_cache
 
             if health_result.status == ProviderHealthStatus.DOWN:
                 continue
@@ -170,18 +216,25 @@ class ProviderRouter:
         )
         return scored
 
-    def _score(self, provider: ExecutionProvider, task: dict[str, Any] | None = None) -> float:
+    # -- Weighted scoring --------------------------------------------------------
+
+    def _score(
+        self,
+        provider: ExecutionProvider,
+        task: dict[str, Any] | None = None,
+        prefer_offline: bool = False,
+    ) -> float:
         pid = provider.provider_id
-        priority = self._registry.get_priority(pid)
-        performance = self._memory.get_score(pid)
+        w = self.weights
 
-        base = 0.40 * (priority / 100.0) + 0.30 * performance
+        dims = self._score_dimensions(provider, task, prefer_offline)
+        dims["priority"] = self._registry.get_priority(pid) / 100.0
 
-        benchmark_bonus = self._benchmark_score(pid, task)
-        base += 0.30 * benchmark_bonus
+        raw = sum(w.get(k, 0.0) * v for k, v in dims.items())
 
-        # Context-aware calibration adjustment
+        # Context-aware calibration adjustment (additive bonus)
         calibration = self._get_calibration_engine()
+        adj = 0.0
         if calibration:
             cap = (task or {}).get("capability", "coding")
             ctx = _extract_context(task)
@@ -191,9 +244,67 @@ class ProviderRouter:
                 framework=ctx["framework"],
                 project_size=ctx["project_size"],
             )
-            base += adj
+        return raw + adj
 
-        return base
+    def _score_dimensions(
+        self,
+        provider: ExecutionProvider,
+        task: dict[str, Any] | None = None,
+        prefer_offline: bool = False,
+    ) -> dict[str, float]:
+        """Return the 7 evidence dimensions as 0-1 values."""
+        pid = provider.provider_id
+
+        # 1. Historical success rate (Bayesian conservative lower-bound)
+        historical = self._memory.get_performance_score(pid, task)
+
+        # 2. Benchmark quality
+        benchmark = self._benchmark_score(pid, task)
+
+        # 3. Health
+        health_result = provider._health_cache
+        if health_result.status == ProviderHealthStatus.HEALTHY:
+            health = 1.0
+        elif health_result.status == ProviderHealthStatus.DEGRADED:
+            health = 0.5
+        else:
+            health = 0.5  # UNKNOWN
+
+        # 4. Latency score (lower = better, normalized to 0-1)
+        latency_ms = _run_async_or_default(lambda: provider.estimate_latency(task or {}))
+        latency = max(0.0, 1.0 - latency_ms / 10000.0)
+
+        # 5. Cost score (lower = better, normalized to 0-1)
+        cost_val = _run_async_or_default(lambda: provider.estimate_cost(task or {}))
+        cost = max(0.0, 1.0 - cost_val / 10.0)
+        cost = max(0.0, 1.0 - cost_val / 10.0)
+
+        # 6. Budget remaining
+        record = self._budget.get_record(pid)
+        if record:
+            daily_limit = getattr(self._budget, "_get_limit", lambda p, k, d: d)(pid, "daily", 10.0)
+            if daily_limit > 0:
+                budget = max(0.0, 1.0 - record.daily_cost / daily_limit)
+            else:
+                budget = 1.0
+        else:
+            budget = 1.0
+
+        # 7. Offline availability
+        if prefer_offline:
+            offline = 1.0 if provider.available() else 0.0
+        else:
+            offline = 0.5
+
+        return {
+            "historical_success": historical,
+            "benchmark_quality": benchmark,
+            "health": health,
+            "latency": latency,
+            "cost": cost,
+            "budget": budget,
+            "offline_availability": offline,
+        }
 
     def _score_with_breakdown(
         self,
@@ -205,14 +316,9 @@ class ProviderRouter:
         from core.providers.feedback.models import ScoreBreakdown
 
         pid = provider.provider_id
-        priority = self._registry.get_priority(pid)
-        performance = self._memory.get_score(pid)
-
-        priority_score = 0.40 * (priority / 100.0)
-        historical_score = 0.30 * performance
-
-        benchmark_bonus = self._benchmark_score(pid, task)
-        benchmark_score = 0.30 * benchmark_bonus
+        w = self.weights
+        dims = self._score_dimensions(provider, task)
+        dims["priority"] = self._registry.get_priority(pid) / 100.0
 
         capability = (task or {}).get("capability", "coding")
         ctx = _extract_context(task)
@@ -224,16 +330,23 @@ class ProviderRouter:
             project_size=ctx["project_size"],
         ) if calibration else 0.0
 
-        total = score or (priority_score + historical_score + benchmark_score + calibration_adjustment)
+        total = score if score is not None else (sum(w.get(k, 0.0) * v for k, v in dims.items()) + calibration_adjustment)
 
         return ScoreBreakdown(
             provider_id=pid,
-            priority_score=priority_score,
-            historical_score=historical_score,
-            benchmark_score=benchmark_score,
+            priority_score=w.get("priority", 0.0) * dims["priority"],
+            historical_score=w.get("historical_success", 0.0) * dims["historical_success"],
+            benchmark_score=w.get("benchmark_quality", 0.0) * dims["benchmark_quality"],
+            health_score=w.get("health", 0.0) * dims["health"],
+            latency_score=w.get("latency", 0.0) * dims["latency"],
+            cost_score=w.get("cost", 0.0) * dims["cost"],
+            budget_score=w.get("budget", 0.0) * dims["budget"],
+            offline_score=w.get("offline_availability", 0.0) * dims["offline_availability"],
             calibration_adjustment=calibration_adjustment,
             total_score=total,
         )
+
+    # -- Benchmark helper -------------------------------------------------------
 
     def _benchmark_score(self, provider_id: str, task: dict[str, Any] | None = None) -> float:
         store = self._get_benchmark_store()
