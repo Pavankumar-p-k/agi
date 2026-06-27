@@ -139,6 +139,9 @@ This document helps AI coding tools understand the JARVIS codebase structure, co
 | **Principle Models** | `core/generalization/models.py` (StructuralProperty, SystemProfile, PrincipleDataPoint, PrincipleCandidate, Principle, 5 enum types) |
 | **Principle Store** | `core/generalization/store.py` (PrincipleStore — SQLite persistence for data points + principles, save_candidate_as_principle promotion) |
 
+| **Decision Feedback Engine** | `core/providers/feedback/` — 9 files: models.py (RoutingDecision, RoutingOutcome, CalibrationEntry, ScoreBreakdown, context_key, _extract_context, _CONTEXT_FALLBACK_CHAIN), store.py (SQLite persistence with context-aware fallback queries), recorder.py, calibrator.py (CalibrationEngine — groups outcomes by language/framework/project_size context, per-context calibration, update_from_outcomes_for_context) |
+| **Provider Router** | `core/providers/router.py` (ProviderRouter — capability-based routing with context-aware calibration, accepts optional calibration_engine override, _score extracts task context for fallback lookup) |
+
 ## Key Architecture Rules
 
 1. **NO silent except blocks** — every `except` must log with `logger.warning()` and include `as e`. Zero remaining in live code.
@@ -389,6 +392,43 @@ Failure mode: `browser_evaluate` JS probe for result links returns null because 
 - `core/tools/browser_fsm.py` — 9-state FSM, page recognition, loop detection, metrics
 - `core/tools/browser_planner.py` — Intent Router (Rule 0), FSM integration, unconditional injection
 - `benchmarks/browser_automation_benchmark.py` — 15-task benchmark with FSM metrics
+
+## Phase A.2 — Browser FSM Deterministic Completion (June 27, 2026)
+
+Three architectural gaps prevented the FSM from completing the full browser pipeline without LLM intervention:
+
+### Gap 1: Stale snapshot page recognition overrode exit-tool transitions
+
+When a tool triggered an exit transition (e.g., `browser_press` → SEARCH_RESULTS), page recognition would find the old snapshot (still showing SEARCH_PAGE) and revert the transition. This created a ping-pong effect that kept the FSM stuck.
+
+**Fix**: Page recognition now only considers snapshots from the current post_plan loop iteration. Combined with a skip-if-stale check (`recognized == previous_state`), exit-tool-based transitions are no longer overridden.
+
+### Gap 2: Exit tool handling never wired
+
+The `handle_exit_tool()` method existed on `BrowserFSM` but was never called from `post_plan`. This meant ARTICLE→EXTRACT and EXTRACT→COMPLETE transitions never fired. The EXTRACT state was unreachable through normal flow.
+
+**Fix**: `handle_exit_tool()` is now called for every recorded action in `post_plan`, enabling ARTICLE→EXTRACT→COMPLETE sequencing.
+
+### Gap 3: SEARCH_RESULTS click was probabilistic, not deterministic
+
+The two-phase evaluate-based result link detection could fail silently (evaluate JS returns null → graceful skip → FSM stuck in SEARCH_RESULTS). No fallback mechanism existed.
+
+**Fix**: Added snapshot-based link extraction fallback (`_extract_first_link_from_snapshot`). If the evaluate probe returns no URL, the planner extracts the first external link from snapshot headings/paragraphs/list_items. If no links exist in the snapshot either, a force-advance injects a snapshot + body-text evaluate to move to ARTICLE.
+
+### New Flow (Deterministic)
+
+```
+START → NAVIGATE → SEARCH_PAGE
+  → fill(press) [exit] → SEARCH_RESULTS
+    → evaluate result URL? yes → navigate + snapshot
+    → evaluate failed? → snapshot link fallback → navigate + snapshot
+    → no links? → force advance [snapshot + evaluate]
+  → ARTICLE
+    → entry snapshot [exit] → EXTRACT
+      → snapshot + evaluate → content extracted → COMPLETE
+```
+
+All three gaps were diagnosed by tracing the FSM through the 15-task benchmark and identifying where the LLM had to intervene because the architecture was incomplete. No new tests regressed (266/266 pass, 10 pre-existing).
 
 ## Long-Horizon Execution Benchmark (June 25-26, 2026)
 

@@ -5,6 +5,7 @@ import logging
 from typing import Any
 
 from core.providers.base import ExecutionProvider, ProviderHealthStatus
+from core.providers.feedback.models import _extract_context
 from core.providers.memory import ProviderMemory, provider_memory
 from core.providers.budget import ProviderBudgetManager, provider_budget
 from core.providers.registry import ProviderRegistry, provider_registry
@@ -18,12 +19,13 @@ class ProviderRouter:
         registry: ProviderRegistry | None = None,
         memory: ProviderMemory | None = None,
         budget: ProviderBudgetManager | None = None,
+        calibration_engine: Any = None,
     ):
         self._registry = registry or provider_registry
         self._memory = memory or provider_memory
         self._budget = budget or provider_budget
         self._benchmark_store = None
-        self._calibration_engine = None
+        self._calibration_engine = calibration_engine
         self._decision_recorder = None
         self.last_decision_id: str | None = None
 
@@ -177,11 +179,17 @@ class ProviderRouter:
         benchmark_bonus = self._benchmark_score(pid, task)
         base += 0.30 * benchmark_bonus
 
-        # Calibration adjustment
+        # Context-aware calibration adjustment
         calibration = self._get_calibration_engine()
         if calibration:
             cap = (task or {}).get("capability", "coding")
-            adj = calibration.get_adjustment(pid, cap)
+            ctx = _extract_context(task)
+            adj = calibration.get_adjustment(
+                pid, cap,
+                language=ctx["language"],
+                framework=ctx["framework"],
+                project_size=ctx["project_size"],
+            )
             base += adj
 
         return base
@@ -206,8 +214,14 @@ class ProviderRouter:
         benchmark_score = 0.30 * benchmark_bonus
 
         capability = (task or {}).get("capability", "coding")
+        ctx = _extract_context(task)
         calibration = self._get_calibration_engine()
-        calibration_adjustment = calibration.get_adjustment(pid, capability) if calibration else 0.0
+        calibration_adjustment = calibration.get_adjustment(
+            pid, capability,
+            language=ctx["language"],
+            framework=ctx["framework"],
+            project_size=ctx["project_size"],
+        ) if calibration else 0.0
 
         total = score or (priority_score + historical_score + benchmark_score + calibration_adjustment)
 

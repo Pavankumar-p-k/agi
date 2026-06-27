@@ -76,6 +76,14 @@ class RoutingDecision:
             timestamp=d.get("timestamp", 0.0),
         )
 
+    @property
+    def language(self) -> str:
+        return (self.task or {}).get("language", "")
+
+    @property
+    def framework(self) -> str:
+        return (self.task or {}).get("framework", "")
+
 
 @dataclass
 class RoutingOutcome:
@@ -123,12 +131,6 @@ class RoutingOutcome:
 
     @property
     def outcome_score(self) -> float:
-        """Composite outcome quality (0.0–1.0).
-
-        Weighted from success (0.5), quality (0.3), and
-        normalized duration (0.2, only if successful).
-        Replanning penalty: -0.1 per level.
-        """
         score = 0.0
         if self.success:
             score += 0.5
@@ -139,9 +141,46 @@ class RoutingOutcome:
         return max(0.0, min(1.0, score))
 
 
+def context_key(
+    capability: str,
+    language: str = "",
+    framework: str = "",
+    project_size: str = "",
+) -> tuple[str, str, str, str]:
+    """Canonical context key for calibration lookup."""
+    return (capability, language or "", framework or "", project_size or "")
+
+
+_CONTEXT_FALLBACK_CHAIN: list[tuple[int, int, int]] = [
+    (3, 2, 1),  # (language, framework, project_size) — most specific
+    (3, 2, 0),  # language + framework
+    (3, 0, 0),  # language only
+    (0, 0, 0),  # generic (no context)
+]
+"""Fallback chain for context-aware calibration lookup.
+
+Each entry is (include_language, include_framework, include_project_size)
+where 0 = exclude, 1 = include exact, >1 = treat as priority ranking.
+
+The chain walks from most specific to least specific context.
+"""
+
+
+def _extract_context(task: dict[str, Any] | None) -> dict[str, str]:
+    """Extract context fields from a task dict."""
+    if not task:
+        return {"language": "", "framework": "", "project_size": ""}
+    return {
+        "language": task.get("language", "") or "",
+        "framework": task.get("framework", "") or "",
+        "project_size": task.get("project_size", "") or "",
+    }
+
+
 @dataclass
 class CalibrationEntry:
-    """Calibration adjustment for a (provider_id, capability) pair."""
+    """Calibration adjustment for a (provider_id, capability) pair
+    with optional context (language, framework, project_size)."""
 
     entry_id: str = field(default_factory=lambda: f"cal_{uuid4().hex[:12]}")
     provider_id: str = ""
@@ -150,6 +189,9 @@ class CalibrationEntry:
     confidence: float = 0.0
     evidence_count: int = 0
     last_updated: float = 0.0
+    language: str = ""
+    framework: str = ""
+    project_size: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -160,4 +202,22 @@ class CalibrationEntry:
             "confidence": self.confidence,
             "evidence_count": self.evidence_count,
             "last_updated": self.last_updated,
+            "language": self.language,
+            "framework": self.framework,
+            "project_size": self.project_size,
         }
+
+    @classmethod
+    def from_dict(cls, d: dict[str, Any]) -> CalibrationEntry:
+        return cls(
+            entry_id=d.get("entry_id", ""),
+            provider_id=d.get("provider_id", ""),
+            capability=d.get("capability", ""),
+            adjustment=d.get("adjustment", 0.0),
+            confidence=d.get("confidence", 0.0),
+            evidence_count=d.get("evidence_count", 0),
+            last_updated=d.get("last_updated", 0.0),
+            language=d.get("language", ""),
+            framework=d.get("framework", ""),
+            project_size=d.get("project_size", ""),
+        )

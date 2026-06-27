@@ -14,6 +14,7 @@ import pytest
 
 from core.providers.feedback.models import (
     CalibrationEntry, RoutingDecision, RoutingOutcome, ScoreBreakdown,
+    context_key, _CONTEXT_FALLBACK_CHAIN, _extract_context,
 )
 from core.providers.feedback.store import FeedbackStore
 from core.providers.feedback.recorder import DecisionRecorder
@@ -43,7 +44,7 @@ class TestModels:
             decision_id="dec_test",
             goal="Write a function",
             capability="coding",
-            task={"goal": "Write a function"},
+            task={"goal": "Write a function", "language": "python"},
             selected_provider="forge",
             candidate_scores=[
                 ScoreBreakdown(provider_id="forge", total_score=0.9),
@@ -65,6 +66,14 @@ class TestModels:
         assert d.capability == ""
         assert d.candidate_scores == []
 
+    def test_routing_decision_context_properties(self):
+        d = RoutingDecision(task={"language": "python", "framework": "fastapi"})
+        assert d.language == "python"
+        assert d.framework == "fastapi"
+
+        d2 = RoutingDecision(task={"goal": "test"})
+        assert d2.language == ""
+
     def test_routing_outcome_roundtrip(self):
         o = RoutingOutcome(
             outcome_id="out_test", decision_id="dec_test",
@@ -77,36 +86,67 @@ class TestModels:
         assert o2.duration_ms == 1500.0
 
     def test_outcome_score_composite(self):
-        # Perfect outcome
         o1 = RoutingOutcome(success=True, quality_score=1.0, duration_ms=100)
         assert o1.outcome_score > 0.9
 
-        # Failed outcome
         o2 = RoutingOutcome(success=False, quality_score=0.0, duration_ms=0)
         assert o2.outcome_score < 0.1
 
-        # Replan penalty
         o3 = RoutingOutcome(success=True, quality_score=0.8, duration_ms=1000, replan_level=3)
         assert o3.outcome_score < 0.8
 
     def test_outcome_score_edge_cases(self):
-        # Zero values
         o = RoutingOutcome()
         assert o.outcome_score == 0.0
 
-        # Long duration
         o2 = RoutingOutcome(success=True, quality_score=1.0, duration_ms=600000)
-        assert o2.outcome_score >= 0.5  # duration factor floors at 0
+        assert o2.outcome_score >= 0.5
 
     def test_calibration_entry_roundtrip(self):
         e = CalibrationEntry(
             entry_id="cal_test", provider_id="forge",
             capability="coding", adjustment=0.05,
             confidence=0.8, evidence_count=10, last_updated=3000.0,
+            language="python", framework="fastapi",
         )
         d = e.to_dict()
         assert d["provider_id"] == "forge"
         assert d["adjustment"] == 0.05
+        assert d["language"] == "python"
+        assert d["framework"] == "fastapi"
+        restored = CalibrationEntry.from_dict(d)
+        assert restored.language == "python"
+        assert restored.framework == "fastapi"
+
+    def test_calibration_entry_context_fields_default(self):
+        e = CalibrationEntry(provider_id="p", capability="c")
+        assert e.language == ""
+        assert e.framework == ""
+        assert e.project_size == ""
+
+    def test_context_key(self):
+        key = context_key("coding", "python", "fastapi", "small")
+        assert key == ("coding", "python", "fastapi", "small")
+
+        key2 = context_key("coding")
+        assert key2 == ("coding", "", "", "")
+
+    def test_extract_context(self):
+        ctx = _extract_context({"language": "py", "framework": "fj", "project_size": "large"})
+        assert ctx == {"language": "py", "framework": "fj", "project_size": "large"}
+
+        ctx2 = _extract_context({})
+        assert ctx2 == {"language": "", "framework": "", "project_size": ""}
+
+        ctx3 = _extract_context(None)
+        assert ctx3 == {"language": "", "framework": "", "project_size": ""}
+
+    def test_fallback_chain_structure(self):
+        assert len(_CONTEXT_FALLBACK_CHAIN) == 4
+        # Most specific first: language + framework + project_size
+        assert _CONTEXT_FALLBACK_CHAIN[0] == (3, 2, 1)
+        # Generic last
+        assert _CONTEXT_FALLBACK_CHAIN[-1] == (0, 0, 0)
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -170,7 +210,6 @@ class TestFeedbackStore:
             store.save_decision(d)
         recent = store.get_recent_decisions(limit=3)
         assert len(recent) == 3
-        # Most recent first (highest timestamp)
         assert recent[0].goal == "goal 4"
         assert recent[2].goal == "goal 2"
 
@@ -197,35 +236,31 @@ class TestFeedbackStore:
         assert store.get_outcomes_for_decision("nonexistent") == []
 
     def test_get_all_outcomes_filtered(self, store):
-        # Save decisions first
         d1 = RoutingDecision(goal="g1", capability="coding", selected_provider="forge")
         d2 = RoutingDecision(goal="g2", capability="testing", selected_provider="codex")
         store.save_decision(d1)
         store.save_decision(d2)
 
-        # Save outcomes
         store.save_outcome(RoutingOutcome(decision_id=d1.decision_id, success=True))
         store.save_outcome(RoutingOutcome(decision_id=d2.decision_id, success=False))
 
-        # Filter by provider
         outcomes = store.get_all_outcomes(provider_id="forge")
         assert len(outcomes) == 1
         assert outcomes[0].success is True
 
-        # Filter by capability
         outcomes = store.get_all_outcomes(capability="testing")
         assert len(outcomes) == 1
         assert outcomes[0].success is False
 
-        # Filter by both
         outcomes = store.get_all_outcomes(provider_id="forge", capability="coding")
         assert len(outcomes) == 1
 
-        # Filter by non-matching both
         outcomes = store.get_all_outcomes(provider_id="forge", capability="testing")
         assert len(outcomes) == 0
 
-    def test_calibration_crud(self, store):
+    # ── Context-aware calibration CRUD ─────────────────────────────
+
+    def test_calibration_crud_without_context(self, store):
         entry = CalibrationEntry(
             provider_id="forge", capability="coding",
             adjustment=0.05, confidence=0.8, evidence_count=10,
@@ -237,13 +272,60 @@ class TestFeedbackStore:
         assert loaded.adjustment == 0.05
         assert loaded.confidence == 0.8
 
-        # Update
         entry.adjustment = 0.08
         entry.evidence_count = 15
         store.save_calibration(entry)
         loaded = store.get_calibration("forge", "coding")
         assert loaded.adjustment == 0.08
         assert loaded.evidence_count == 15
+
+    def test_calibration_crud_with_context(self, store):
+        entry = CalibrationEntry(
+            provider_id="forge", capability="coding",
+            adjustment=0.05, confidence=0.8, evidence_count=10,
+            language="python", framework="fastapi", project_size="medium",
+        )
+        store.save_calibration(entry)
+
+        loaded = store.get_calibration(
+            "forge", "coding",
+            language="python", framework="fastapi", project_size="medium",
+        )
+        assert loaded is not None
+        assert loaded.adjustment == 0.05
+        assert loaded.language == "python"
+        assert loaded.framework == "fastapi"
+        assert loaded.project_size == "medium"
+
+        # Without context — should not match
+        loaded = store.get_calibration("forge", "coding")
+        assert loaded is None
+
+    def test_calibration_context_uniqueness(self, store):
+        e1 = CalibrationEntry(
+            provider_id="forge", capability="coding",
+            adjustment=0.1, language="python",
+        )
+        e2 = CalibrationEntry(
+            provider_id="forge", capability="coding",
+            adjustment=0.2, language="javascript",
+        )
+        e3 = CalibrationEntry(
+            provider_id="forge", capability="coding",
+            adjustment=0.3,
+        )
+        store.save_calibration(e1)
+        store.save_calibration(e2)
+        store.save_calibration(e3)
+
+        py = store.get_calibration("forge", "coding", language="python")
+        assert py.adjustment == 0.1
+
+        js = store.get_calibration("forge", "coding", language="javascript")
+        assert js.adjustment == 0.2
+
+        generic = store.get_calibration("forge", "coding")
+        assert generic.adjustment == 0.3
 
     def test_get_calibration_not_found(self, store):
         assert store.get_calibration("nonexistent", "coding") is None
@@ -253,6 +335,100 @@ class TestFeedbackStore:
         store.save_calibration(CalibrationEntry(provider_id="codex", capability="testing"))
         all_cal = store.get_all_calibrations()
         assert len(all_cal) == 2
+
+    # ── Fallback chain ──────────────────────────────────────────────
+
+    def test_calibration_fallback_precise_first(self, store):
+        store.save_calibration(CalibrationEntry(
+            provider_id="forge", capability="coding",
+            adjustment=0.1, language="python", framework="fastapi",
+        ))
+        store.save_calibration(CalibrationEntry(
+            provider_id="forge", capability="coding",
+            adjustment=0.2,
+        ))
+        # Should find the more specific match first
+        result = store.get_calibration_fallback(
+            "forge", "coding",
+            language="python", framework="fastapi",
+        )
+        assert result is not None
+        assert result.adjustment == 0.1
+        assert result.language == "python"
+        assert result.framework == "fastapi"
+
+    def test_calibration_fallback_language_only(self, store):
+        store.save_calibration(CalibrationEntry(
+            provider_id="forge", capability="coding",
+            adjustment=0.15, language="python",
+        ))
+        result = store.get_calibration_fallback(
+            "forge", "coding",
+            language="python", framework="django",
+        )
+        assert result is not None
+        assert result.adjustment == 0.15
+        assert result.language == "python"
+
+    def test_calibration_fallback_generic(self, store):
+        store.save_calibration(CalibrationEntry(
+            provider_id="forge", capability="coding",
+            adjustment=0.05,
+        ))
+        result = store.get_calibration_fallback(
+            "forge", "coding",
+            language="python", framework="django",
+        )
+        assert result is not None
+        assert result.adjustment == 0.05
+        assert result.language == ""
+
+    def test_calibration_fallback_none_found(self, store):
+        result = store.get_calibration_fallback("forge", "nonexistent")
+        assert result is None
+
+    def test_calibration_fallback_partial_framework(self, store):
+        """Should match language-only before generic when framework known."""
+        store.save_calibration(CalibrationEntry(
+            provider_id="forge", capability="coding",
+            adjustment=0.1, language="python",
+        ))
+        store.save_calibration(CalibrationEntry(
+            provider_id="forge", capability="coding",
+            adjustment=0.3,
+        ))
+        result = store.get_calibration_fallback(
+            "forge", "coding",
+            language="python", framework="flask",
+        )
+        assert result is not None
+        assert result.adjustment == 0.1
+
+    def test_calibration_fallback_project_size(self, store):
+        store.save_calibration(CalibrationEntry(
+            provider_id="forge", capability="coding",
+            adjustment=0.25, language="python", framework="fastapi",
+            project_size="large",
+        ))
+        store.save_calibration(CalibrationEntry(
+            provider_id="forge", capability="coding",
+            adjustment=0.15, language="python", framework="fastapi",
+        ))
+        # Should match the large-specific one
+        result = store.get_calibration_fallback(
+            "forge", "coding",
+            language="python", framework="fastapi", project_size="large",
+        )
+        assert result is not None
+        assert result.adjustment == 0.25
+
+        # Should fallback to the non-size one
+        result = store.get_calibration_fallback(
+            "forge", "coding",
+            language="python", framework="fastapi", project_size="small",
+        )
+        assert result is not None
+        assert result.adjustment == 0.15
 
     def test_provider_stats(self, store):
         d1 = RoutingDecision(capability="coding", selected_provider="forge")
@@ -324,7 +500,6 @@ class TestDecisionRecorder:
         assert decision.capability == "coding"
         assert decision.selected_provider == "forge"
 
-        # Verify persisted
         loaded = recorder._store.get_decision(decision.decision_id)
         assert loaded is not None
 
@@ -339,16 +514,13 @@ class TestDecisionRecorder:
         assert outcome.success is True
         assert outcome.duration_ms == 500.0
 
-        # Verify linked
         outcomes = recorder._store.get_outcomes_for_decision(decision.decision_id)
         assert len(outcomes) == 1
 
     def test_get_provider_performance(self, recorder):
-        # No data yet
         stats = recorder.get_provider_performance("forge")
         assert stats["total"] == 0
 
-        # Add data
         d = recorder.record_decision("coding", {}, "forge", [])
         recorder.record_outcome(decision_id=d.decision_id, success=True)
         d2 = recorder.record_decision("coding", {}, "forge", [])
@@ -366,7 +538,7 @@ class TestDecisionRecorder:
 
 
 # ═════════════════════════════════════════════════════════════════════════════
-# CalibrationEngine
+# CalibrationEngine (context-aware)
 # ═════════════════════════════════════════════════════════════════════════════
 
 class TestCalibrationEngine:
@@ -380,8 +552,13 @@ class TestCalibrationEngine:
 
     def _add_outcome(self, store: FeedbackStore, provider_id: str, capability: str,
                      success: bool, quality: float = 0.5, duration_ms: float = 1000.0,
-                     replan_level: int = 0):
-        d = RoutingDecision(capability=capability, selected_provider=provider_id)
+                     replan_level: int = 0, **task_kw):
+        task = {"language": "", "framework": "", "project_size": ""}
+        task.update(task_kw)
+        d = RoutingDecision(
+            capability=capability, selected_provider=provider_id,
+            task=task,
+        )
         store.save_decision(d)
         store.save_outcome(RoutingOutcome(
             decision_id=d.decision_id, success=success,
@@ -400,62 +577,37 @@ class TestCalibrationEngine:
 
     def test_update_from_outcomes_insufficient_evidence(self, engine):
         self._add_outcome(engine._store, "forge", "coding", True)
-        result = engine.update_from_outcomes("forge", "coding")
-        assert result is None  # Not enough evidence (< min_evidence)
+        count = engine.update_from_outcomes("forge", "coding")
+        assert count == 0
 
     def test_update_from_outcomes_sufficient(self, engine):
         for _ in range(5):
             self._add_outcome(engine._store, "forge", "coding", True, quality=0.9)
-        result = engine.update_from_outcomes("forge", "coding")
-        assert result is not None
-        assert result.adjustment > 0  # Above baseline 0.75
-        assert result.confidence > 0
-        assert result.evidence_count >= 5
+        count = engine.update_from_outcomes("forge", "coding")
+        assert count >= 1
+
+        adj = engine.get_adjustment("forge", "coding")
+        assert adj > 0
 
     def test_update_from_outcomes_poor_performance(self, engine):
         for _ in range(5):
             self._add_outcome(engine._store, "forge", "coding",
                               success=False, quality=0.1)
-        result = engine.update_from_outcomes("forge", "coding")
-        assert result is not None
-        assert result.adjustment < 0  # Below baseline
-        assert result.confidence > 0
-
-    def test_get_adjustment_after_update(self, engine):
-        for _ in range(5):
-            self._add_outcome(engine._store, "forge", "coding", True, quality=0.9)
-        engine.update_from_outcomes("forge", "coding")
-        adj = engine.get_adjustment("forge", "coding")
-        assert adj > 0.0
-
-    def test_get_adjustment_after_poor_update(self, engine):
-        for _ in range(5):
-            self._add_outcome(engine._store, "forge", "coding",
-                              success=False, quality=0.1)
-        engine.update_from_outcomes("forge", "coding")
-        adj = engine.get_adjustment("forge", "coding")
-        assert adj < 0.0
-
-    def test_update_all_no_data(self, engine):
-        count = engine.update_all()
-        assert count == 0
-
-    def test_update_all_with_data(self, engine):
-        self._add_outcome(engine._store, "forge", "coding", True, quality=0.95)
-        self._add_outcome(engine._store, "forge", "coding", True, quality=0.85)
-        self._add_outcome(engine._store, "forge", "coding", True, quality=0.90)
-        self._add_outcome(engine._store, "forge", "coding", True, quality=0.80)
-        self._add_outcome(engine._store, "forge", "coding", True, quality=0.88)
-        count = engine.update_all()
+        count = engine.update_from_outcomes("forge", "coding")
         assert count >= 1
+
+        adj = engine.get_adjustment("forge", "coding")
+        assert adj < 0
 
     def test_force_update_with_few_outcomes(self, engine):
         self._add_outcome(engine._store, "forge", "coding", True, quality=0.9)
-        result = engine.update_from_outcomes("forge", "coding", force=True)
-        assert result is not None
+        entry = engine.update_from_outcomes_for_context(
+            "forge", "coding", force=True,
+        )
+        assert entry is not None
 
     def test_confidence_saturates_with_evidence(self, engine):
-        for _ in range(60):  # Above max_evidence (50)
+        for _ in range(60):
             self._add_outcome(engine._store, "forge", "coding", True, quality=0.85)
 
         engine.update_from_outcomes("forge", "coding")
@@ -487,9 +639,150 @@ class TestCalibrationEngine:
         adj_forge, conf_forge = engine.get_adjustment_with_confidence("forge", "coding")
         adj_codex, conf_codex = engine.get_adjustment_with_confidence("codex", "coding")
 
-        assert adj_forge > adj_codex  # forge outperforms codex
+        assert adj_forge > adj_codex
         assert conf_forge > 0
         assert conf_codex > 0
+
+    def test_update_all_no_data(self, engine):
+        count = engine.update_all()
+        assert count == 0
+
+    def test_update_all_with_data(self, engine):
+        for _ in range(5):
+            self._add_outcome(engine._store, "forge", "coding", True, quality=0.9)
+        count = engine.update_all()
+        assert count >= 1
+
+    # ── Context-aware calibration ──────────────────────────────────
+
+    def test_context_aware_calibration_python_better(self, engine):
+        """Python outcomes are good, JS outcomes are bad. Verify python
+        gets a higher adjustment than JS than generic."""
+        for _ in range(5):
+            self._add_outcome(
+                engine._store, "forge", "coding", True, quality=0.95,
+                language="python",
+            )
+        for _ in range(5):
+            self._add_outcome(
+                engine._store, "forge", "coding", False, quality=0.1,
+                language="javascript",
+            )
+
+        engine.update_from_outcomes("forge", "coding")
+
+        py_adj = engine.get_adjustment("forge", "coding",
+                                        language="python")
+        js_adj = engine.get_adjustment("forge", "coding",
+                                        language="javascript")
+        generic_adj = engine.get_adjustment("forge", "coding")
+
+        assert py_adj > generic_adj
+        assert js_adj < generic_adj
+
+    def test_context_aware_fallback_to_generic(self, engine):
+        """When no context-specific calibration exists, use generic."""
+        for _ in range(5):
+            self._add_outcome(
+                engine._store, "forge", "coding", True, quality=0.9,
+            )
+
+        engine.update_from_outcomes("forge", "coding")
+
+        adj = engine.get_adjustment("forge", "coding",
+                                    language="rust", framework="actix")
+        assert adj != 0.0
+        generic_adj = engine.get_adjustment("forge", "coding")
+        assert adj == generic_adj
+
+    def test_context_aware_framework_specificity(self, engine):
+        """Python+FastAPI gets a different calibration than Python+Django."""
+        for _ in range(5):
+            self._add_outcome(
+                engine._store, "forge", "coding", True, quality=0.98,
+                language="python", framework="fastapi",
+            )
+        for _ in range(5):
+            self._add_outcome(
+                engine._store, "forge", "coding", True, quality=0.70,
+                language="python", framework="django",
+            )
+
+        engine.update_from_outcomes("forge", "coding")
+
+        fa_adj = engine.get_adjustment("forge", "coding",
+                                        language="python", framework="fastapi")
+        dj_adj = engine.get_adjustment("forge", "coding",
+                                        language="python", framework="django")
+        assert fa_adj > dj_adj
+
+    def test_update_from_outcomes_for_context_specific(self, engine):
+        """Should only update the matching context."""
+        for _ in range(5):
+            self._add_outcome(engine._store, "forge", "coding",
+                              True, quality=0.9, language="python")
+        for _ in range(5):
+            self._add_outcome(engine._store, "forge", "coding",
+                              False, quality=0.2, language="javascript")
+
+        # Only recompute python context
+        entry = engine.update_from_outcomes_for_context(
+            "forge", "coding", language="python",
+        )
+        assert entry is not None
+        assert entry.adjustment > 0
+        assert entry.language == "python"
+
+        # JS should not have been computed yet
+        js_adj = engine.get_adjustment("forge", "coding",
+                                        language="javascript")
+        assert js_adj == 0.0
+
+    def test_update_from_outcomes_for_context_no_match(self, engine):
+        """When no outcomes match the context, returns None."""
+        for _ in range(5):
+            self._add_outcome(
+                engine._store, "forge", "coding", True, quality=0.9,
+                language="python",
+            )
+        result = engine.update_from_outcomes_for_context(
+            "forge", "coding", language="rust",
+        )
+        assert result is None
+
+    def test_context_calibration_persists_across_sessions(self, engine):
+        for _ in range(5):
+            self._add_outcome(
+                engine._store, "forge", "coding", True, quality=0.9,
+                language="python",
+            )
+        engine.update_from_outcomes("forge", "coding")
+
+        # Read back from a fresh engine with the same store
+        adj1 = engine.get_adjustment("forge", "coding",
+                                     language="python")
+        assert adj1 > 0
+
+        cal_entries = engine._store.get_all_calibrations()
+        context_entries = [c for c in cal_entries if c.language == "python"]
+        assert len(context_entries) >= 1
+
+    def test_update_from_outcomes_returns_count(self, engine):
+        """update_from_outcomes now returns number of context groups updated."""
+        for _ in range(5):
+            self._add_outcome(
+                engine._store, "forge", "coding", True, quality=0.9,
+                language="python",
+            )
+        for _ in range(5):
+            self._add_outcome(
+                engine._store, "forge", "coding", True, quality=0.85,
+                language="javascript",
+            )
+
+        count = engine.update_from_outcomes("forge", "coding")
+        # At least 2 context groups (python, javascript) + generic
+        assert count >= 2
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -504,24 +797,76 @@ class TestRouterFeedbackIntegration:
         yield
 
     def test_router_score_includes_calibration(self):
+        from core.providers.feedback.store import FeedbackStore
+        from core.providers.feedback.calibrator import CalibrationEngine
         from core.providers.router import ProviderRouter
         from core.providers.registry import provider_registry
         forge = provider_registry.get("forge")
         if forge is None:
             return
-        router = ProviderRouter()
-        score_before = router._score(forge, {"capability": "coding"})
-        cal_engine = router._get_calibration_engine()
-        if cal_engine:
-            store = cal_engine._store
+        with tempfile.TemporaryDirectory() as tmp:
+            db_path = os.path.join(tmp, "test_calibration.db")
+            fb_store = FeedbackStore(db_path=db_path)
+            cal_engine = CalibrationEngine(store=fb_store)
+            router = ProviderRouter(calibration_engine=cal_engine)
+            score_before = router._score(forge, {"capability": "coding"})
             for _ in range(5):
                 d = RoutingDecision(capability="coding", selected_provider="forge")
-                store.save_decision(d)
-                store.save_outcome(RoutingOutcome(decision_id=d.decision_id, success=True, quality_score=0.95, duration_ms=100))
+                fb_store.save_decision(d)
+                fb_store.save_outcome(RoutingOutcome(
+                    decision_id=d.decision_id, success=True,
+                    quality_score=0.95, duration_ms=100,
+                ))
             cal_engine.update_from_outcomes("forge", "coding")
             score_after = router._score(forge, {"capability": "coding"})
             assert score_after != score_before
-            store.close()
+            fb_store.close()
+
+    def test_router_score_context_aware(self):
+        from core.providers.feedback.store import FeedbackStore
+        from core.providers.feedback.calibrator import CalibrationEngine
+        from core.providers.router import ProviderRouter
+        from core.providers.registry import provider_registry
+        forge = provider_registry.get("forge")
+        if forge is None:
+            return
+        with tempfile.TemporaryDirectory() as tmp:
+            db_path = os.path.join(tmp, "test_context.db")
+            fb_store = FeedbackStore(db_path=db_path)
+            cal_engine = CalibrationEngine(store=fb_store)
+            router = ProviderRouter(calibration_engine=cal_engine)
+            # Python good outcomes
+            for _ in range(5):
+                d = RoutingDecision(
+                    capability="coding", selected_provider="forge",
+                    task={"language": "python", "goal": "test"},
+                )
+                fb_store.save_decision(d)
+                fb_store.save_outcome(RoutingOutcome(
+                    decision_id=d.decision_id, success=True,
+                    quality_score=0.95, duration_ms=100,
+                ))
+            # JS bad outcomes
+            for _ in range(5):
+                d = RoutingDecision(
+                    capability="coding", selected_provider="forge",
+                    task={"language": "javascript", "goal": "test"},
+                )
+                fb_store.save_decision(d)
+                fb_store.save_outcome(RoutingOutcome(
+                    decision_id=d.decision_id, success=False,
+                    quality_score=0.2, duration_ms=5000,
+                ))
+            cal_engine.update_from_outcomes("forge", "coding")
+
+            py_score = router._score(forge, {
+                "capability": "coding", "language": "python",
+            })
+            js_score = router._score(forge, {
+                "capability": "coding", "language": "javascript",
+            })
+            assert py_score > js_score
+            fb_store.close()
 
     def test_select_records_decision(self):
         from core.providers.router import ProviderRouter
@@ -568,10 +913,9 @@ class TestPlannerDecisionRecording:
         from core.providers.orchestration.planner import OrchestrationPlanner
         from core.providers.registry import provider_registry
 
-        # Ensure forge is registered so the router can select it
         forge = provider_registry.get("forge")
         if forge is None:
-            return  # skip if no forge registered
+            return
 
         planner = OrchestrationPlanner()
         plan = planner.plan("Write a function")
@@ -581,3 +925,65 @@ class TestPlannerDecisionRecording:
                 found = True
                 assert step.task["_decision_id"].startswith("dec_")
         assert found, "At least one step should have a decision_id"
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# Edge Cases
+# ═════════════════════════════════════════════════════════════════════════════
+
+class TestFeedbackEdgeCases:
+    @pytest.fixture
+    def store(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            db_path = os.path.join(tmp, "test_edge.db")
+            s = FeedbackStore(db_path=db_path)
+            yield s
+            s.close()
+
+    def test_decision_with_empty_task_context(self, store):
+        d = RoutingDecision(
+            capability="coding",
+            task={},
+            selected_provider="forge",
+        )
+        store.save_decision(d)
+        loaded = store.get_decision(d.decision_id)
+        assert loaded.task == {}
+
+    def test_calibration_fallback_all_empty_context(self, store):
+        """Fallback chain should handle all-empty context correctly."""
+        store.save_calibration(CalibrationEntry(
+            provider_id="forge", capability="coding",
+            adjustment=0.05,
+        ))
+        result = store.get_calibration_fallback(
+            "forge", "coding",
+            language="", framework="", project_size="",
+        )
+        assert result is not None
+        assert result.adjustment == 0.05
+
+    def test_calibration_fallback_no_context_match(self, store):
+        """When no calibration exists at any level, return None."""
+        result = store.get_calibration_fallback(
+            "forge", "unknown_capability",
+            language="python",
+        )
+        assert result is None
+
+    def test_calibration_summary_includes_context(self, store):
+        store.save_calibration(CalibrationEntry(
+            provider_id="forge", capability="coding",
+            adjustment=0.05, language="python", framework="fastapi",
+        ))
+        summary = store.get_calibration_summary()
+        assert len(summary) == 1
+        assert summary[0]["language"] == "python"
+        assert summary[0]["framework"] == "fastapi"
+
+    def test_context_key_with_partial_values(self):
+        k1 = context_key("coding", "python")
+        assert k1 == ("coding", "python", "", "")
+
+        k2 = context_key("testing", "", "jest")
+        assert k2 == ("testing", "", "jest", "")

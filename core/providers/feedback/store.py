@@ -7,7 +7,10 @@ import sqlite3
 import time
 from typing import Any
 
-from core.providers.feedback.models import CalibrationEntry, RoutingDecision, RoutingOutcome, ScoreBreakdown
+from core.providers.feedback.models import (
+    CalibrationEntry, RoutingDecision, RoutingOutcome, ScoreBreakdown,
+    _CONTEXT_FALLBACK_CHAIN, _extract_context,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -71,21 +74,36 @@ class FeedbackStore:
                 confidence REAL NOT NULL DEFAULT 0,
                 evidence_count INTEGER NOT NULL DEFAULT 0,
                 last_updated REAL NOT NULL DEFAULT 0,
-                UNIQUE(provider_id, capability)
+                language TEXT NOT NULL DEFAULT '',
+                framework TEXT NOT NULL DEFAULT '',
+                project_size TEXT NOT NULL DEFAULT '',
+                UNIQUE(provider_id, capability, language, framework, project_size)
             )
         """)
+        # Migrate old tables that don't have context columns
+        self._migrate_calibration_columns(conn)
         conn.execute("""
             CREATE INDEX IF NOT EXISTS idx_outcomes_decision
             ON routing_outcomes(decision_id)
         """)
         conn.execute("""
             CREATE INDEX IF NOT EXISTS idx_calibration_lookup
-            ON calibration_entries(provider_id, capability)
+            ON calibration_entries(provider_id, capability, language, framework)
         """)
         conn.execute("""
             CREATE INDEX IF NOT EXISTS idx_decisions_timestamp
             ON routing_decisions(timestamp)
         """)
+
+    def _migrate_calibration_columns(self, conn: sqlite3.Connection) -> None:
+        pragma = conn.execute("PRAGMA table_info(calibration_entries)").fetchall()
+        existing = {row["name"] for row in pragma}
+        for col, col_type in [("language", "TEXT NOT NULL DEFAULT ''"),
+                               ("framework", "TEXT NOT NULL DEFAULT ''"),
+                               ("project_size", "TEXT NOT NULL DEFAULT ''")]:
+            if col not in existing:
+                conn.execute(f"ALTER TABLE calibration_entries ADD COLUMN {col} {col_type}")
+                logger.info("[FeedbackStore] Added missing column: %s", col)
 
     # ── Decisions ──────────────────────────────────────────────────
 
@@ -261,15 +279,26 @@ class FeedbackStore:
             ))
         return result
 
-    # ── Calibration ────────────────────────────────────────────────
+    # ── Calibration (context-aware) ────────────────────────────────
+
+    def _calibration_where(
+        self, provider_id: str, capability: str,
+        language: str = "", framework: str = "", project_size: str = "",
+    ) -> tuple[str, list]:
+        """Build WHERE clause and params for exact calibration match."""
+        return (
+            "provider_id = ? AND capability = ? AND language = ? AND framework = ? AND project_size = ?",
+            [provider_id, capability, language, framework, project_size],
+        )
 
     def save_calibration(self, entry: CalibrationEntry) -> None:
         conn = self._get_conn()
         conn.execute(
             """INSERT OR REPLACE INTO calibration_entries
                (entry_id, provider_id, capability, adjustment,
-                confidence, evidence_count, last_updated)
-               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                confidence, evidence_count, last_updated,
+                language, framework, project_size)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 entry.entry_id,
                 entry.provider_id,
@@ -278,19 +307,63 @@ class FeedbackStore:
                 entry.confidence,
                 entry.evidence_count,
                 entry.last_updated,
+                entry.language,
+                entry.framework,
+                entry.project_size,
             ),
         )
 
     def get_calibration(
         self, provider_id: str, capability: str,
+        language: str = "", framework: str = "", project_size: str = "",
     ) -> CalibrationEntry | None:
+        """Get calibration matching the exact context. Returns None if no match."""
         conn = self._get_conn()
+        where, params = self._calibration_where(
+            provider_id, capability, language, framework, project_size,
+        )
         row = conn.execute(
-            "SELECT * FROM calibration_entries WHERE provider_id = ? AND capability = ?",
-            (provider_id, capability),
+            f"SELECT * FROM calibration_entries WHERE {where}",
+            params,
         ).fetchone()
         if not row:
             return None
+        return self._row_to_calibration(row)
+
+    def get_calibration_fallback(
+        self, provider_id: str, capability: str,
+        language: str = "", framework: str = "", project_size: str = "",
+    ) -> CalibrationEntry | None:
+        """Walk the fallback chain from most to least specific context.
+        Returns the first match found.
+        """
+        conn = self._get_conn()
+        ctx = {"language": language, "framework": framework, "project_size": project_size}
+
+        for inc_lang, inc_fw, inc_size in _CONTEXT_FALLBACK_CHAIN:
+            where_parts = ["provider_id = ?", "capability = ?"]
+            params: list = [provider_id, capability]
+
+            lang_val = ctx["language"] if inc_lang else ""
+            fw_val = ctx["framework"] if inc_fw else ""
+            sz_val = ctx["project_size"] if inc_size else ""
+
+            where_parts.append("language = ?")
+            params.append(lang_val)
+            where_parts.append("framework = ?")
+            params.append(fw_val)
+            where_parts.append("project_size = ?")
+            params.append(sz_val)
+
+            row = conn.execute(
+                f"SELECT * FROM calibration_entries WHERE {' AND '.join(where_parts)}",
+                params,
+            ).fetchone()
+            if row:
+                return self._row_to_calibration(row)
+        return None
+
+    def _row_to_calibration(self, row: sqlite3.Row) -> CalibrationEntry:
         return CalibrationEntry(
             entry_id=row["entry_id"],
             provider_id=row["provider_id"],
@@ -299,32 +372,23 @@ class FeedbackStore:
             confidence=row["confidence"],
             evidence_count=row["evidence_count"],
             last_updated=row["last_updated"],
+            language=row["language"],
+            framework=row["framework"],
+            project_size=row["project_size"],
         )
 
     def get_all_calibrations(self) -> list[CalibrationEntry]:
         conn = self._get_conn()
         rows = conn.execute(
-            "SELECT * FROM calibration_entries ORDER BY confidence DESC",
+            "SELECT * FROM calibration_entries ORDER BY provider_id, capability, language, framework",
         ).fetchall()
-        result = []
-        for row in rows:
-            result.append(CalibrationEntry(
-                entry_id=row["entry_id"],
-                provider_id=row["provider_id"],
-                capability=row["capability"],
-                adjustment=row["adjustment"],
-                confidence=row["confidence"],
-                evidence_count=row["evidence_count"],
-                last_updated=row["last_updated"],
-            ))
-        return result
+        return [self._row_to_calibration(r) for r in rows]
 
     # ── Analytics ──────────────────────────────────────────────────
 
     def get_provider_stats(
         self, provider_id: str, capability: str | None = None,
     ) -> dict[str, Any]:
-        """Aggregate statistics for a provider across all outcomes."""
         outcomes = self.get_all_outcomes(provider_id=provider_id, capability=capability)
         if not outcomes:
             return {
@@ -357,6 +421,8 @@ class FeedbackStore:
                 "adjustment": round(e.adjustment, 4),
                 "confidence": round(e.confidence, 2),
                 "evidence_count": e.evidence_count,
+                "language": e.language,
+                "framework": e.framework,
             }
             for e in entries
         ]
