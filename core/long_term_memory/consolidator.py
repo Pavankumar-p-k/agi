@@ -71,13 +71,14 @@ class Consolidator:
         return await asyncio.to_thread(self.consolidate_once)
 
     def consolidate_once(self) -> dict[str, Any]:
-        """Run one consolidation cycle: extract → synthesize → prune.
+        """Run one consolidation cycle: extract → synthesize → improve → prune.
 
         Returns a summary dict.
         """
         result: dict[str, Any] = {
             "experiences_extracted": 0,
             "knowledge_created": 0,
+            "improvement_proposals": 0,
             "knowledge_pruned": 0,
         }
 
@@ -90,7 +91,23 @@ class Consolidator:
         new_knowledge = self._synthesizer.synthesize_from_experiences(all_experiences)
         result["knowledge_created"] = len(new_knowledge)
 
-        # 3. Prune stale, low-confidence knowledge
+        # 3. Detect improvement opportunities from accumulated knowledge
+        proposals_detected = 0
+        try:
+            from core.improvement.detector import ImprovementDetector
+            detector = ImprovementDetector(store=self._store)
+            proposals = detector.detect_all()
+            proposals_detected = len(proposals)
+            result["improvement_proposals"] = proposals_detected
+            if proposals:
+                logger.info("Consolidator: %d improvement proposal(s) detected", proposals_detected)
+                for p in proposals:
+                    logger.debug("  [proposal] %s (conf=%.2f, cat=%s)",
+                                 p.reason, p.confidence, p.category.value)
+        except Exception as e:
+            logger.debug("Consolidator: improvement detection skipped: %s", e)
+
+        # 4. Prune stale, low-confidence knowledge
         pruned = self._prune_stale()
         result["knowledge_pruned"] = pruned
 

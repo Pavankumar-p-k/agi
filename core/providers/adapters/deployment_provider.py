@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import shlex
 import time
 from typing import Any
 
@@ -157,8 +158,8 @@ class DeploymentProvider(ExecutionProvider):
         else:
             cmd = command
 
-        proc = await asyncio.create_subprocess_shell(
-            cmd,
+        proc = await asyncio.create_subprocess_exec(
+            *shlex.split(cmd),
             cwd=project_dir or None,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
@@ -196,8 +197,8 @@ class DeploymentProvider(ExecutionProvider):
         else:
             cmd = command
 
-        proc = await asyncio.create_subprocess_shell(
-            cmd,
+        proc = await asyncio.create_subprocess_exec(
+            *shlex.split(cmd),
             cwd=project_dir or None,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
@@ -237,8 +238,8 @@ class DeploymentProvider(ExecutionProvider):
         else:
             cmd = command
 
-        proc = await asyncio.create_subprocess_shell(
-            cmd,
+        proc = await asyncio.create_subprocess_exec(
+            *shlex.split(cmd),
             cwd=project_dir or None,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
@@ -279,8 +280,8 @@ class DeploymentProvider(ExecutionProvider):
         else:
             cmd = command
 
-        proc = await asyncio.create_subprocess_shell(
-            cmd,
+        proc = await asyncio.create_subprocess_exec(
+            *shlex.split(cmd),
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
