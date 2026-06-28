@@ -14,9 +14,12 @@ from __future__ import annotations
 # limitations under the License.
 
 import json
+import logging
 import os
 from collections.abc import AsyncGenerator
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 import httpx
 
@@ -60,8 +63,9 @@ class JarvisClient:
         """Gets status from /health or /api/system/status."""
         try:
             response = await self.client.get("/api/system/status")
+            response.raise_for_status()
             return response.json()
-        except:
+        except httpx.HTTPError:
             response = await self.client.get("/health")
             return response.json()
 
@@ -135,12 +139,12 @@ class JarvisClient:
 
     async def get_memory_stats(self) -> dict[str, Any]:
         """Gets memory stats from /api/memory/stats."""
-        # Some backends use /api/memory/stats, some /api/memory/{user_id}
-        # We'll stick to the common one identified in previous research
         try:
             response = await self.client.get("/api/memory/stats")
+            response.raise_for_status()
             return response.json()
-        except:
+        except httpx.HTTPError as e:
+            logger.warning("get_memory_stats failed: %s", e)
             return {"memories": []}
 
     async def get_settings(self) -> list[dict]:
@@ -162,7 +166,8 @@ class JarvisClient:
             response.raise_for_status()
             data = response.json()
             return data.get("activities", [])
-        except Exception:
+        except Exception as e:
+            logger.warning("get_activities failed: %s", e)
             return []
 
     async def get_activity_counts(self) -> dict:
@@ -171,7 +176,8 @@ class JarvisClient:
             response = await self.client.get("/api/activity/counts")
             response.raise_for_status()
             return response.json()
-        except Exception:
+        except Exception as e:
+            logger.warning("get_activity_counts failed: %s", e)
             return {}
 
     async def get_activity_tree(self, activity_id: str) -> dict:
@@ -198,6 +204,16 @@ class JarvisClient:
         response.raise_for_status()
         data = response.json()
         return data.get("timeline", [])
+
+    async def get_activity_replay(self, activity_id: str) -> dict:
+        """Get the full ReplayDAG for an activity.
+
+        Returns the complete execution DAG with timeline, decision traces,
+        provider/tool/workflow metadata, and summary metrics.
+        """
+        response = await self.client.get(f"/api/activity/{activity_id}/replay")
+        response.raise_for_status()
+        return response.json()
 
     async def pause_activity(self, activity_id: str) -> dict:
         """Suspend a running activity."""

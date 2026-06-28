@@ -11,6 +11,16 @@ for transactional consistency across systems.
 from core.activity.manager import ActivityManager
 from core.activity.models import ActivityEdge, ActivityNode, ActivityStatus
 from core.activity.recorder import ActivityRecorder
+from core.activity.replay import (
+    CandidateScore,
+    DecisionOutcome,
+    DecisionTrace,
+    ReplayAssembler,
+    ReplayDAG,
+    ReplayEdge,
+    ReplayNode,
+    TimelineEvent,
+)
 from core.activity.resume import ResumeContext, ResumeEngine
 from core.activity.storage import ActivityStore
 
@@ -21,6 +31,14 @@ __all__ = [
     "ActivityRecorder",
     "ActivityStatus",
     "ActivityStore",
+    "CandidateScore",
+    "DecisionOutcome",
+    "DecisionTrace",
+    "ReplayAssembler",
+    "ReplayDAG",
+    "ReplayEdge",
+    "ReplayNode",
     "ResumeContext",
     "ResumeEngine",
+    "TimelineEvent",
 ]

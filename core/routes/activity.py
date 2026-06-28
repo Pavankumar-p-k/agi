@@ -6,6 +6,7 @@ Enables frontends to inspect, search, and control activity execution.
 
 from __future__ import annotations
 
+import dataclasses
 import json
 import logging
 import uuid
@@ -17,6 +18,7 @@ from pydantic import BaseModel
 
 from core.activity.manager import ActivityManager
 from core.activity.models import ActivityEdge, ActivityNode, ActivityStatus
+from core.activity.replay import ReplayAssembler, ReplayDAG, ReplayNode
 from core.activity.resume import ResumeEngine
 
 logger = logging.getLogger(__name__)
@@ -159,6 +161,70 @@ def _edge_to_response(e: ActivityEdge) -> ActivityEdgeResponse:
     )
 
 
+# ── Replay DAG serialization ──────────────────────────────────────────────
+
+
+def _replay_node_to_dict(n: ReplayNode) -> dict[str, Any]:
+    """Serialize a ReplayNode to a flat JSON-safe dict with child IDs."""
+    return {
+        "node_id": n.node_id,
+        "activity_id": n.activity_id,
+        "node_type": n.node_type,
+        "label": n.label,
+        "status": n.status,
+        "depth": n.depth,
+        "parent_id": n.parent_id,
+        "agent_id": n.agent_id,
+        "workflow_id": n.workflow_id,
+        "started_at": n.started_at,
+        "completed_at": n.completed_at,
+        "duration_seconds": n.duration_seconds,
+        "tool": n.tool,
+        "provider": n.provider,
+        "model": n.model,
+        "retry_count": n.retry_count,
+        "cost": n.cost,
+        "input_preview": n.input_preview,
+        "output_preview": n.output_preview,
+        "error": n.error,
+        "children": [c.node_id for c in n.children],
+        "timeline_index": n.timeline_index,
+        "metadata": n.metadata,
+        "artifacts": n.artifacts,
+    }
+
+
+def _replay_dag_to_dict(dag: ReplayDAG) -> dict[str, Any]:
+    """Serialize a ReplayDAG to a JSON-safe dict with flat node map."""
+    return {
+        "activity_id": dag.activity_id,
+        "root_id": dag.root.node_id if dag.root else None,
+        "all_nodes": {
+            nid: _replay_node_to_dict(n)
+            for nid, n in dag.all_nodes.items()
+        },
+        "all_edges": [dataclasses.asdict(e) for e in dag.all_edges],
+        "timeline": [dataclasses.asdict(e) for e in dag.timeline],
+        "decisions": [_decision_trace_to_dict(d) for d in dag.decisions],
+        "total_nodes": dag.total_nodes,
+        "failed_nodes": dag.failed_nodes,
+        "total_duration_seconds": dag.total_duration_seconds,
+        "unique_tools": dag.unique_tools,
+        "unique_providers": dag.unique_providers,
+        "total_retries": dag.total_retries,
+        "total_cost": dag.total_cost,
+        "experience": dag.experience,
+        "knowledge": dag.knowledge,
+    }
+
+
+def _decision_trace_to_dict(d: Any) -> dict[str, Any]:
+    """Serialize a DecisionTrace to a JSON-safe dict."""
+    base = dataclasses.asdict(d)
+    base["outcome"] = dataclasses.asdict(d.outcome) if d.outcome else None
+    return base
+
+
 # ── WebSocket broadcast ─────────────────────────────────────────────────────
 
 
@@ -270,6 +336,30 @@ async def get_activity_tree(activity_id: str):
         nodes=[_node_to_response(n) for n in nodes],
         edges=[_edge_to_response(e) for e in edges],
     )
+
+
+@router.get("/{activity_id}/replay")
+async def get_activity_replay(activity_id: str):
+    """Return the full ReplayDAG produced by ReplayAssembler.
+
+    Contains the execution DAG, chronological timeline, decision traces,
+    provider/tool/workflow metadata, and summary metrics.
+    """
+    mgr = _get_manager()
+    store = mgr.store
+
+    # Verify activity exists
+    nodes = mgr.get_tree(activity_id)
+    if not nodes:
+        raise HTTPException(status_code=404, detail=f"Activity {activity_id} not found")
+
+    try:
+        assembler = ReplayAssembler(activity_store=store)
+        dag = assembler.build(activity_id)
+        return _replay_dag_to_dict(dag)
+    except Exception as e:
+        logger.error("Replay assembly failed for %s: %s", activity_id, e)
+        raise HTTPException(status_code=500, detail=f"Replay assembly failed: {e}")
 
 
 @router.get("/{activity_id}/timeline")
