@@ -41,8 +41,31 @@ This document helps AI coding tools understand the JARVIS codebase structure, co
 | **A** — Browser Execution State Machine (FSM + Intent Router + unconditional fill/press/click) | **COMPLETE** | +50% pass rate, +62.5% tool accuracy vs raw qwen2.5:7b; 0 forced transitions smoke test |
 | **B** — Long-Horizon Execution FSM (10-state deterministic multi-phase FSM, loop detection, validation, auto-advancement) | **COMPLETE** | 80/80 tests, FSM owns phase progression, auto-recovery/replan, integrated into benchmark |
 | **C** — Research Extraction FSM (10-state deterministic extraction workflow, normalization, duplicate detection) | **COMPLETE** | 112/112 tests, FSM owns extraction sequencing, normalization helpers, duplicate detection, integrated into benchmark |
+| **D** — Desktop Controller (screen capture, window management, clipboard, keystroke simulation, process detection, desktop metadata) | **COMPLETE** | **12 gates, 192 tests** — desktop provides artifacts: screenshots, clipboard, terminal_output, desktop_capture; integration tested with Permission Manager + Pipeline |
 
 **Key empirical finding: planner authority > model size.** With enforcement architecture (Phase 3.3), the same qwen2.5:7b went from 50% → 100% on the original suite + Benchmark E, without any model change.
+
+## RC1/RC2 Release Status (June 29, 2026)
+
+| Area | Status | Notes |
+|------|--------|-------|
+| Architecture freeze | **LOCKED** | No new foundational subsystems for v3 |
+| Phase A — Provider Lifecycle | ✅ Complete | Keep |
+| Phase B — Capability Graph | ✅ Complete | Keep |
+| Phase C — Permission Manager | ✅ Complete | Keep |
+| Phase D — Desktop Controller | ✅ Complete | Keep |
+| Phase E — Artifact Manager | ⏸ v4/develop | Reverted — new architecture, not RC1 |
+| B1 — Learning loop fix | **✅ FIXED** | `_FALLBACK_CHAIN` 5→9 patterns (commit `6c48f24`) |
+| B2 — Health cache in async | 🟡 Optional | Low impact for RC2 |
+| Gate 1 — Benchmarks | ✅ Complete | All benchmarks green |
+| Gate 2 — Production validation | ✅ Complete | B1 found and fixed |
+| UI stabilization | 🟡 Remaining | Web, TUI, Flutter — crashes, races, rendering |
+| Long soak | 🟡 Remaining | 2h → 6h → overnight |
+| Entry-point validation | 🟡 Remaining | CLI, Desktop, Web, TUI, Flutter, Electron |
+| Documentation | 🟡 Remaining | Architecture diagram, Provider SDK, 5-min quick start |
+| **v3.0.0-rc1** | **TAGGED** | `v3.0.0-rc1` at `c46cc38`; B1 fix on top at `6c48f24` |
+| **v3.0.0-rc2** | **NEXT** | Only: UI fixes, soak, entry-point validation, docs, B2 (optional) |
+| **v3.0.0 GA** | **After RC2** | Benchmarks green + soak clean + UI stable + no regressions
 
 ## Location of Key Files
 
@@ -142,6 +165,7 @@ This document helps AI coding tools understand the JARVIS codebase structure, co
 
 | **Decision Feedback Engine** | `core/providers/feedback/` — 9 files: models.py (RoutingDecision, RoutingOutcome, CalibrationEntry, ScoreBreakdown, context_key, _extract_context, _CONTEXT_FALLBACK_CHAIN), store.py (SQLite persistence with context-aware fallback queries), recorder.py, calibrator.py (CalibrationEngine — groups outcomes by language/framework/project_size context, per-context calibration, update_from_outcomes_for_context) |
 | **Provider Router** | `core/providers/router.py` (ProviderRouter — capability-based routing with context-aware calibration, accepts optional calibration_engine override, _score extracts task context for fallback lookup) |
+| **ProviderMemory Fallback Chain** | `core/providers/memory.py` — `_FALLBACK_CHAIN` expanded from 5 to 9 patterns (June 29, 2026). Fixes evidence retrieval when pipeline records with `tt=""` and router looks up with `tt!=""`. Patterns: exact, drop-lang, drop-model, drop-model+lang, drop-tt, drop-tt+lang (critical), drop-tt+model, capability-only, provider-wide. |
 
 ## Key Architecture Rules
 
@@ -1877,6 +1901,7 @@ FSM metrics tracked per task:
 - **Opportunity Management: 9/10** — Full pipeline: discover (17) → calibrate (17.1) → graph (19) → mine (20) → forecast (21) → bottleneck (22) → roadmap (23) (280+ tests total)
 - **Long-Horizon Execution: 8/10** — 10-state deterministic FSM, loop detection, validation, auto-recovery, auto-replan (80/80 tests, integrated into benchmark)
 - **Research FSM: 8/10** — 10-state deterministic FSM, normalization helpers, duplicate detection, loop detection (112/112 tests, integrated into benchmark)
+- **Production Integration** — Production Integration Sprint completed June 28, 2026. All 8 priorities (P1-P7): phantom WorkflowEngine removed, ProviderRouter context wired, learning loop closed (FeedbackStore + Calibration), improvement pipeline wired (ProposalEngine + ExperimentRunner), shell=True removed (0 remaining in core/), FSMs verified (BrowserFSM=PRODUCTION, LongHorizonFSM=BENCHMARK_ONLY, ExtractionFSM=BENCHMARK_ONLY). 839+ tests passing.
 
 ## Execution Controllers
 
@@ -1898,19 +1923,39 @@ Research Extraction FSM (Phase C)
 
 | Area | Score |
 |------|-------|
-| Execution Infrastructure | 95% |
-| Decision Infrastructure | 92% |
-| Browser Automation | 75% |
-| Research Quality | 75% |
-| Research FSM | 75% |
-| Long-Horizon Execution | 80% |
-| Benchmark Infrastructure | 95% |
-| UI Platform | 95% |
+| Architecture | 95% |
+| Runtime Integration (single pipeline) | 85% |
+| Learning Infrastructure | 85% |
+| Provider System | 85% |
+| Browser Architecture | 95% |
+| Research Architecture | 90% |
+| Workflow Architecture | 90% |
+| Benchmark Validation | 60% |
+| Production Readiness | 85% |
 
-## Next Roadmap
+## Architecture Freeze — June 28, 2026
 
-1. **Full Ablation Benchmark** — Run ablation across multiple models (raw, full, full-no-planner, full-no-memory, full-no-scheduler) to quantify each component's contribution
-2. **Execution Quality Improvements** — Address remaining gaps in long-horizon and research domains
-3. **Multi-Model Benchmark** — Run Phase C against multiple models (gemma, mistral, llama3.1) to confirm model-independent results
+**Architecture is frozen.** No new FSMs, routers, memories, abstractions, or orchestration layers. The limiting factor is no longer architecture — it is validation. The only acceptable changes are benchmark-driven bug fixes from here on.
 
-> **No additional architectural subsystems should be added until benchmark evidence justifies them.**
+## Remaining Roadmap
+
+### Phase 1 — Unify entry paths
+Every entry point (CLI, REST API, Scheduler, IDE, SDK, OpenCode Delegate) must enter `RuntimePipeline`. Currently only 1 of 7 paths reaches it.
+
+### Phase 2 — Complete ExperimentRunner lifecycle
+```
+detect → proposal → experiment → measure → promote → rollback
+```
+Currently: `detect → proposal → experiment_created`. `start()`, `run()`, `finish()`, promotion, and rollback are not executing. Without this, JARVIS learns manually rather than autonomously.
+
+### Phase 3 — Run every benchmark
+Browser, Long-Horizon, Research, Provider, Autonomous Workflow, Ablation, End-to-End. All must run to completion across supported models.
+
+### Phase 4 — Fix benchmark failures
+Only benchmark failures. No preemptive fixes.
+
+### Phase 5 — Freeze JARVIS v3
+Tag the branch. Lock the architecture.
+
+### Phase 6 — Start v4
+Informed by benchmark data, not speculation.
