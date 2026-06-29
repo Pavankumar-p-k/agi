@@ -196,11 +196,15 @@ def evidence_key(
 
 
 _FALLBACK_CHAIN: list[tuple[int, int, int, int]] = [
-    (3, 2, 2, 1),  # exact match
-    (3, 2, 0, 1),  # drop model
-    (3, 0, 0, 1),  # drop model + task_type
-    (3, 0, 0, 0),  # capability only
-    (0, 0, 0, 0),  # provider-wide aggregate
+    (3, 2, 2, 1),  # 1  exact match
+    (3, 2, 2, 0),  # 2  drop lang
+    (3, 2, 0, 1),  # 3  drop model
+    (3, 2, 0, 0),  # 4  drop model+lang
+    (3, 0, 2, 1),  # 5  drop task_type
+    (3, 0, 2, 0),  # 6  drop task_type+lang  (CRITICAL — pipeline records with tt="", router looks up with tt!="")
+    (3, 0, 0, 1),  # 7  drop task_type+model
+    (3, 0, 0, 0),  # 8  capability only
+    (0, 0, 0, 0),  # 9  provider-wide aggregate
 ]
 """Fallback chain for evidence lookup.
 
