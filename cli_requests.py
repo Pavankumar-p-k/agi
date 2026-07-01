@@ -17,6 +17,7 @@ from __future__ import annotations
 import asyncio
 import concurrent.futures
 import json
+import logging
 import time
 import uuid
 import urllib.error
@@ -24,6 +25,8 @@ import urllib.request
 from typing import Optional
 
 from cli_utils import colorize
+
+logger = logging.getLogger(__name__)
 from cli_state import ROOT
 
 _legacy_route_notice_shown = False
@@ -288,6 +291,7 @@ def stream_chat_ws(base_url: str, payload: dict) -> str:
 
         return asyncio.run(_stream())
     except Exception as e:
+        logger.warning("WS stream fallback to POST: %s", e)
         print(f"\n{colorize('[WS STREAM]', 'yellow')} falling back to POST: {e}")
         result = request_json(base_url, "/api/chat", payload)
         return extract_reply(result)
@@ -436,6 +440,7 @@ def stream_agent_ws(base_url: str, payload: dict, project_context: dict | None =
 
         return asyncio.run(_stream())
     except Exception as e:
+        logger.warning("WS agent stream fallback to POST: %s", e)
         print(f"\n{colorize('[WS AGENT STREAM]', 'yellow')} falling back to POST: {e}")
         result = request_json(base_url, "/api/agent/stream", payload)
         return extract_reply(result)

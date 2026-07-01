@@ -32,10 +32,12 @@ class ActivityStore:
     Thread-safe via reentrant lock (same pattern as WorkflowStore).
     """
 
-    def __init__(self, db_path: str | None = None):
+    def __init__(self, db_path: str | None = None, auto_prune_hours: int | None = None):
         self._db_path = db_path or _DEFAULT_DB
         self._lock = threading.Lock()
         self._init_db()
+        if auto_prune_hours is not None or auto_prune_hours != 0:
+            self.prune_stale_running(hours=auto_prune_hours or 24)
 
     @property
     def db_path(self) -> str:
@@ -326,6 +328,35 @@ class ActivityStore:
             ).fetchall()
             return [_row_to_node(r) for r in rows]
 
+
+    def prune_stale_running(self, hours: int = 24) -> int:
+        """Mark nodes stuck in RUNNING/PENDING older than `hours` as FAILED.
+
+        Returns count of nodes pruned.  Safe to call at startup — only
+        affects nodes with no update for the threshold duration.
+        Gracefully handles :memory: databases or missing tables.
+        """
+        import json as _json
+        from datetime import datetime, timedelta, timezone
+        cutoff = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
+        error_json = _json.dumps({"error": f"Stale - no update for >{hours}h"})
+        try:
+            with self._lock, sqlite3.connect(self._db_path) as conn:
+                cur = conn.execute(
+                    """UPDATE activity_nodes SET
+                         status='FAILED',
+                         completed_at=datetime('now'),
+                         output_json=?
+                       WHERE status IN ('RUNNING','PENDING')
+                         AND created_at < ?""",
+                    (error_json, cutoff),
+                )
+                pruned = cur.rowcount
+                if pruned:
+                    logger.warning("Pruned %d stale RUNNING/PENDING activities (>%dh)", pruned, hours)
+                return pruned
+        except sqlite3.OperationalError:
+            return 0
 
 # ── Serialization helpers ──────────────────────────────────────────────────
 

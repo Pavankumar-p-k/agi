@@ -19,8 +19,6 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from core.shared_context import SharedContext
-from core.supervisor_agent import supervisor
-from notifications.notifier import notifier
 
 logger = logging.getLogger("supervisor_routes")
 router = APIRouter(prefix="/api/supervisor", tags=["Supervisor"])
@@ -43,12 +41,24 @@ class BuildStatusResponse(BaseModel):
     tasks: int
 
 
+def _get_supervisor():
+    from core.supervisor_agent import supervisor
+    return supervisor
+
+
+def _get_notifier():
+    from notifications.notifier import notifier
+    return notifier
+
+
 @router.post("/start")
 async def start_build(req: StartBuildRequest):
+    supervisor = _get_supervisor()
     if not req.goal or len(req.goal.strip()) < 5:
         raise HTTPException(status_code=422, detail="Goal must be at least 5 characters")
     supervisor.auto_approve = req.auto_approve
     supervisor.max_parallel = min(req.max_parallel, 4)
+    notifier = _get_notifier()
     supervisor.on_notify(notifier.notify)
     build = await supervisor.start_build(req.goal, req.workspace)
     return {
@@ -63,6 +73,7 @@ async def start_build(req: StartBuildRequest):
 
 @router.get("/status/{build_id}")
 async def get_status(build_id: str):
+    supervisor = _get_supervisor()
     build = supervisor.get_status(build_id)
     if not build:
         raise HTTPException(status_code=404, detail="Build not found")
@@ -80,11 +91,13 @@ async def get_status(build_id: str):
 
 @router.get("/list")
 async def list_builds():
+    supervisor = _get_supervisor()
     return {"builds": supervisor.list_builds()}
 
 
 @router.post("/cancel/{build_id}")
 async def cancel_build(build_id: str):
+    supervisor = _get_supervisor()
     ok = supervisor.cancel_build(build_id)
     if not ok:
         raise HTTPException(status_code=404, detail="Build not found")

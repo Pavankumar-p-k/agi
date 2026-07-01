@@ -76,28 +76,65 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-try:
-    import numpy as np
-except ImportError:
-    np = None
-try:
-    import cv2
-except ImportError:
-    cv2 = None
-try:
-    import instructor
-except ImportError:
-    instructor = None
-try:
-    from openai import OpenAI
-except ImportError:
-    OpenAI = None
-try:
-    from smolagents import LiteLLMModel, ToolCallingAgent, tool
-except ImportError:
-    tool = lambda f: f
-    ToolCallingAgent = None
-    LiteLLMModel = None
+# numpy, cv2 — lazy init in _register_vision if needed
+_np = None
+_cv2 = None
+
+def _get_np():
+    global _np
+    if _np is None:
+        try:
+            import numpy as _n
+            _np = _n
+        except ImportError:
+            _np = False
+    return _np or None
+
+def _get_cv2():
+    global _cv2
+    if _cv2 is None:
+        try:
+            import cv2 as _c
+            _cv2 = _c
+        except ImportError:
+            _cv2 = False
+    return _cv2 or None
+
+# instructor — very heavy (~5s), lazy only
+_instructor = None
+def _get_instructor():
+    global _instructor
+    if _instructor is None:
+        try:
+            import instructor as _i
+            _instructor = _i
+        except ImportError:
+            _instructor = False
+    return _instructor or None
+
+# openai — lazy
+_openai = None
+def _get_openai():
+    global _openai
+    if _openai is None:
+        try:
+            from openai import OpenAI as _O
+            _openai = _O
+        except ImportError:
+            _openai = False
+    return _openai or None
+
+# smolagents — lazy
+_smolagents = None
+def _get_smolagents():
+    global _smolagents
+    if _smolagents is None:
+        try:
+            from smolagents import LiteLLMModel as _L, ToolCallingAgent as _T, tool as _t
+            _smolagents = (_L, _T, _t)
+        except ImportError:
+            _smolagents = False
+    return _smolagents or (None, None, lambda f: f)
 
 # COMPOSIO_TOOLS loaded lazily in _get_action_agent()
 _COMPOSIO_TOOLS_CACHE = None
@@ -208,19 +245,9 @@ try:
 except Exception as e:
     logger.warning("[Router] Cookbook routes not loaded: %s", e)
 
-try:
-    from api.research_routes import router as research_router
-    app.include_router(research_router)
-    logger.info("[Router] Research routes loaded")
-except Exception as e:
-    logger.warning("[Router] Research routes not loaded: %s", e)
 
-try:
-    from api.email_routes import router as email_router
-    app.include_router(email_router)
-    logger.info("[Router] Email routes loaded")
-except Exception as e:
-    logger.warning("[Router] Email routes not loaded: %s", e)
+
+# email_routes deferred to lifespan (~3s import)
 
 @app.get("/manifest.json")
 async def serve_manifest():
@@ -250,12 +277,7 @@ try:
 except Exception as e:
     logger.warning("[Router] Automation routes not loaded: %s", e)
 
-try:
-    from routers.whatsapp import router as whatsapp_router
-    app.include_router(whatsapp_router)
-    logger.info("[Router] WhatsApp webhook routes loaded [OK]")
-except Exception as e:
-    logger.warning("[Router] WhatsApp routes not loaded: %s", e)
+# whatsapp_router deferred to lifespan (~2.5s import)
 
 try:
     from automation.call_sync_server import get_fastapi_router
@@ -305,13 +327,6 @@ try:
 except Exception as e:
     logger.warning("[Router] JarvisHub route not loaded: %s", e)
 
-# three_pass chat handler (optional, used by chat routes)
-try:
-    from routers.chat import chat_handler as three_pass_handler
-except Exception as e:
-    logger.warning("[main] three_pass chat handler not loaded: %s", e)
-    three_pass_handler = None
-
 # Student AGI System
 try:
     from learning.student_agi.api.student_routes import router as student_router
@@ -328,16 +343,7 @@ try:
 except Exception as e:
     logger.warning("[Router] Agent Orchestrator routes not loaded: %s", e)
 
-# Supervisor
-try:
-    from core.supervisor_agent import supervisor
-    from notifications.notifier import notifier
-    supervisor.on_notify(notifier.notify)
-    from core.supervisor_routes import router as supervisor_router
-    app.include_router(supervisor_router)
-    logger.info("[Router] Supervisor routes loaded [OK]")
-except Exception as e:
-    logger.warning("[Router] Supervisor routes not loaded: %s", e)
+# Supervisor deferred to lifespan (~3.1s import via llm_router)
 
 # Build System
 try:
@@ -354,13 +360,7 @@ try:
 except Exception as e:
     logger.warning("[Router] Settings routes not loaded: %s", e)
 
-# JARVIS Sub-Agents
-try:
-    from api.agent_routes import router as agent_router
-    app.include_router(agent_router, prefix="/api/v1")
-    logger.info("[Router] JARVIS Sub-Agents routes loaded [OK]")
-except Exception as e:
-    logger.warning("[Router] Sub-Agents routes not loaded: %s", e)
+# JARVIS Sub-Agents (deferred to lifespan — ~4.6s import via sub_agents.registry → llm_router)
 
 # AGI routes
 # try:

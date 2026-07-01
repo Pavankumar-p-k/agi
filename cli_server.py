@@ -162,7 +162,8 @@ def ensure_ollama_running(env: dict):
             try:
                 with urllib.request.urlopen(f"{url}/api/tags", timeout=1.0):
                     continue
-            except Exception:
+            except Exception as e:
+                logger.debug("Ollama unreachable at %s: %s", url, e)
                 print(f"Starting Ollama model endpoint for {model} on {port}...")
                 spawn_background(f"Ollama-{model}", ["ollama", "serve"], cwd=ROOT, env=model_env, dry_run=False)
         env["OLLAMA_MULTI_INSTANCE"] = "1"

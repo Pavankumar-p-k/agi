@@ -102,6 +102,59 @@ async def _migrate_legacy_settings_once():
     logger.info("[startup] Legacy settings migrated to SettingsStore")
 
 
+def _init_research_routes(app):
+    """Deferred research route registration. Called from lifespan after startup."""
+    try:
+        from api.research_routes import router as research_router
+        app.include_router(research_router)
+        logger.info("[Router] Research routes loaded (deferred)")
+    except Exception as e:
+        logger.warning("[Router] Research routes not loaded: %s", e)
+
+
+def _init_email_routes(app):
+    """Deferred email route registration (~3s import)."""
+    try:
+        from api.email_routes import router as email_router
+        app.include_router(email_router)
+        logger.info("[Router] Email routes loaded (deferred)")
+    except Exception as e:
+        logger.warning("[Router] Email routes not loaded: %s", e)
+
+
+def _init_whatsapp_routes(app):
+    """Deferred WhatsApp route registration (~2.5s import)."""
+    try:
+        from routers.whatsapp import router as whatsapp_router
+        app.include_router(whatsapp_router)
+        logger.info("[Router] WhatsApp webhook routes loaded (deferred)")
+    except Exception as e:
+        logger.warning("[Router] WhatsApp routes not loaded: %s", e)
+
+
+def _init_supervisor_routes(app):
+    """Deferred supervisor route registration (~3.1s import via llm_router)."""
+    try:
+        from core.supervisor_routes import router as supervisor_router
+        from core.supervisor_agent import supervisor
+        from notifications.notifier import notifier
+        supervisor.on_notify(notifier.notify)
+        app.include_router(supervisor_router)
+        logger.info("[Router] Supervisor routes loaded (deferred)")
+    except Exception as e:
+        logger.warning("[Router] Supervisor routes not loaded: %s", e)
+
+
+def _init_agent_routes(app):
+    """Deferred sub-agent route registration (~4.6s import)."""
+    try:
+        from api.agent_routes import router as agent_router
+        app.include_router(agent_router, prefix="/api/v1")
+        logger.info("[Router] Sub-agent routes loaded (deferred)")
+    except Exception as e:
+        logger.warning("[Router] Sub-agent routes not loaded: %s", e)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("=" * 50)
@@ -136,6 +189,13 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning("[LIFESPAN] Database init failed (non-fatal): %s", e)
         startup_status["warnings"].append(f"database: {e}")
+
+    # Deferred: heavy route imports (~18s combined), fire after DB is ready
+    _init_research_routes(app)
+    _init_email_routes(app)
+    _init_whatsapp_routes(app)
+    _init_supervisor_routes(app)
+    _init_agent_routes(app)
 
     # Subagent orphan recovery
     try:

@@ -26,50 +26,59 @@ logger = logging.getLogger("jarvis")
 
 router = APIRouter(tags=["Chat"])
 
-try:
-    from routers.chat import chat_handler as three_pass_handler
-except Exception as e:
-    logger.warning("[core.routes.chat] three-pass handler import failed: %s", e)
-    three_pass_handler = None
-
-
 from ..schemas import ChatRequest
 from memory.memory_facade import memory
 
-if three_pass_handler:
-    @router.post("/api/chat")
-    async def chat_route(
-        req: ChatRequest,
-        db: AsyncSession = Depends(get_db),
-        user: User = Depends(verify_token)
-    ):
-        user_id = req.session_id or "default_user"
-        result = await three_pass_handler(req)
-        response_text = result.get("response", "")
+# Lazy getter for three_pass_handler (heavy ~2.5s import, deferred until first request)
+_three_pass_handler = None
+def _get_three_pass_handler():
+    global _three_pass_handler
+    if _three_pass_handler is None:
+        try:
+            from routers.chat import chat_handler as h
+            _three_pass_handler = h
+        except Exception as e:
+            logger.warning("[core.routes.chat] three-pass handler import failed: %s", e)
+            _three_pass_handler = False
+    return _three_pass_handler if _three_pass_handler is not False else None
 
-        # Immediate persistence to SQLite
-        from core.database import ChatHistory
-        db.add(ChatHistory(
-            user_id=user.id,
-            role="user",
-            message=req.message,
-            session_id=req.session_id,
-            intent=result.get("intent", {}).get("intent", "chat")
-        ))
-        db.add(ChatHistory(
-            user_id=user.id,
-            role="assistant",
-            message=response_text,
-            session_id=req.session_id,
-            intent=result.get("intent", {}).get("intent", "chat")
-        ))
-        await db.commit()
 
-        memory.store(
-            [{"role": "user", "content": req.message}, {"role": "assistant", "content": response_text}],
-            user_id=user_id,
-        )
-        return result
+@router.post("/api/chat")
+async def chat_route(
+    req: ChatRequest,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(verify_token)
+):
+    user_id = req.session_id or "default_user"
+    handler = _get_three_pass_handler()
+    if handler is None:
+        return {"response": "Chat handler not available."}
+    result = await handler(req)
+    response_text = result.get("response", "")
+
+    # Immediate persistence to SQLite
+    from core.database import ChatHistory
+    db.add(ChatHistory(
+        user_id=user.id,
+        role="user",
+        message=req.message,
+        session_id=req.session_id,
+        intent=result.get("intent", {}).get("intent", "chat")
+    ))
+    db.add(ChatHistory(
+        user_id=user.id,
+        role="assistant",
+        message=response_text,
+        session_id=req.session_id,
+        intent=result.get("intent", {}).get("intent", "chat")
+    ))
+    await db.commit()
+
+    memory.store(
+        [{"role": "user", "content": req.message}, {"role": "assistant", "content": response_text}],
+        user_id=user_id,
+    )
+    return result
 
 
 @router.post("/api/agent/stream")
@@ -119,8 +128,9 @@ async def openai_compat(body: dict):
     req = ChatRequest(message=last_msg, context=context)
 
     try:
-        if three_pass_handler:
-            result = await three_pass_handler(req)
+        handler = _get_three_pass_handler()
+        if handler:
+            result = await handler(req)
             content = result.get("response", "")
         else:
             from core.llm_router import complete

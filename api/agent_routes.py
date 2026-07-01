@@ -16,9 +16,12 @@ from typing import Any
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from core.sub_agents.registry import agent_registry
-
 router = APIRouter(prefix="/agents", tags=["agents"])
+
+
+def _get_registry():
+    from core.sub_agents.registry import agent_registry
+    return agent_registry
 
 class RunRequest(BaseModel):
     task: str
@@ -31,18 +34,20 @@ class RunRequest(BaseModel):
 @router.get("/")
 async def list_agents():
     """List all available sub-agents."""
-    return {"agents": agent_registry.list_agents()}
+    reg = _get_registry()
+    return {"agents": reg.list_agents()}
 
 @router.post("/{agent_name}/run")
 async def run_agent(agent_name: str, req: RunRequest):
     """Run a specific sub-agent."""
     try:
+        reg = _get_registry()
         kwargs = req.kwargs or {}
         if req.lang: kwargs["lang"] = req.lang
         if req.url: kwargs["url"] = req.url
         if req.execute: kwargs["execute"] = req.execute
 
-        result = await agent_registry.run(
+        result = await reg.run(
             agent_name.upper(), req.task,
             mode=req.mode, **kwargs
         )
@@ -55,7 +60,8 @@ async def run_agent(agent_name: str, req: RunRequest):
 @router.get("/{agent_name}/modes")
 async def agent_modes(agent_name: str):
     """Get available modes for a sub-agent."""
-    cls = agent_registry.get(agent_name.upper())
+    reg = _get_registry()
+    cls = reg.get(agent_name.upper())
     if not cls:
         raise HTTPException(status_code=404, detail=f"Agent {agent_name} not found")
     a = cls()
@@ -67,7 +73,8 @@ class ParallelRequest(BaseModel):
 @router.post("/parallel")
 async def run_parallel(req: ParallelRequest):
     """Run multiple agents in parallel."""
-    results = await agent_registry.run_parallel(req.tasks)
+    reg = _get_registry()
+    results = await reg.run_parallel(req.tasks)
     return {"results": [r.to_dict() for r in results]}
 
 # Convenience shortcuts
