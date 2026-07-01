@@ -1,0 +1,60 @@
+{
+  "timestamp": "2026-06-26T08:18:13.550914+00:00",
+  "model": "qwen2.5:7b",
+  "configs": [
+    "raw",
+    "pipeline"
+  ],
+  "tasks": [
+    {
+      "dataset_id": "python_versions",
+      "config": "raw",
+      "fact_recall": 0.0,
+      "subtopic_coverage": 0.0,
+      "contradictions_detected": 0,
+      "hallucinations": 0,
+      "duration_seconds": 53.34,
+      "error": "AttributeError: 'ResearchDataset' object has no attribute 'contraditions'",
+      "details": {}
+    },
+    {
+      "dataset_id": "python_versions",
+      "config": "pipeline",
+      "fact_recall": 0.0,
+      "subtopic_coverage": 0.0,
+      "contradictions_detected": 0,
+      "hallucinations": 0,
+      "duration_seconds": 0.07,
+      "error": "OperationalError: no such table: research_facts",
+      "details": {}
+    }
+  ],
+  "summary": {
+    "raw": {
+      "avg_fact_recall": 0.0,
+      "avg_subtopic_coverage": 0.0,
+      "total_contradictions_detected": 0,
+      "total_hallucinations": 0,
+      "avg_duration": 53.34,
+      "errors": 1,
+      "tasks_completed": 0,
+      "tasks_total": 1
+    },
+    "pipeline": {
+      "avg_fact_recall": 0.0,
+      "avg_subtopic_coverage": 0.0,
+      "total_contradictions_detected": 0,
+      "total_hallucinations": 0,
+      "avg_duration": 0.07,
+      "errors": 1,
+      "tasks_completed": 0,
+      "tasks_total": 1
+    },
+    "delta": {
+      "fact_recall": 0.0,
+      "subtopic_coverage": 0.0,
+      "hallucination_reduction": 0,
+      "contradiction_improvement": 0
+    }
+  }
+}

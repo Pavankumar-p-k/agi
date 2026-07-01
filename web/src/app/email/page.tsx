@@ -32,6 +32,7 @@ export default function EmailPage() {
   const [selectedMsg, setSelectedMsg] = useState<EmailMessage | null>(null);
   const [draftInstruction, setDraftInstruction] = useState('');
   const [draftText, setDraftText] = useState('');
+  const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
     Promise.all([
@@ -40,7 +41,10 @@ export default function EmailPage() {
     ]).then(([s, i]) => {
       setStatus(s);
       setMessages(i.messages as EmailMessage[]);
-    }).catch(() => {}).finally(() => setLoading(false));
+    }).catch((e) => {
+      console.warn('[Email] load failed', e);
+      setLoadError('Failed to load email data');
+    }).finally(() => setLoading(false));
   }, []);
 
   async function send() {
@@ -60,11 +64,17 @@ export default function EmailPage() {
 
   async function generateDraft() {
     if (!selectedMsg || !draftInstruction) return;
-    const r = await api.emails.draft(selectedMsg, draftInstruction);
-    setDraftText(r.draft);
+    try {
+      const r = await api.emails.draft(selectedMsg, draftInstruction);
+      setDraftText(r.draft);
+    } catch (e) {
+      console.warn('[Email] draft failed', e);
+      setDraftText('Failed to generate draft');
+    }
   }
 
   if (loading) return <div className="p-8 text-[var(--j-text-dim)]">Loading...</div>;
+  if (loadError) return <div className="p-8"><p className="text-xs text-red-500">{loadError}</p></div>;
 
   return (
     <div className="mx-auto max-w-4xl p-6">

@@ -29,12 +29,14 @@ const itemVariants: Variants = {
 export default function AgentsPage() {
   const [agents, setAgents] = useState<AgentInfo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   const fetchAgents = useCallback(async () => {
+    setError('');
     try {
       const data = await api.agents.list();
       setAgents((data.agents || []).map((a: { name: string; status?: string; description?: string }) => ({ id: a.name, name: a.name, description: a.description || '', status: a.status || 'idle', type: 'agent' })));
-    } catch (e) { console.warn('[Agents] fetch failed', e); } finally { setLoading(false); }
+    } catch (e) { console.warn('[Agents] fetch failed', e); setError('Failed to load agents'); } finally { setLoading(false); }
   }, []);
 
   useEffect(() => { fetchAgents(); }, [fetchAgents]);
@@ -50,6 +52,12 @@ export default function AgentsPage() {
           Deploy, monitor, and manage JARVIS sub-agents. Each agent handles a specialized domain.
         </p>
       </motion.section>
+
+      {error && (
+        <motion.div variants={itemVariants} className="border border-red-500/30 bg-red-500/5 px-5 py-3">
+          <p className="text-xs text-red-400">{error}</p>
+        </motion.div>
+      )}
 
       <motion.section variants={itemVariants}>
         <div className="hud-label mb-4">Deployed Agents</div>

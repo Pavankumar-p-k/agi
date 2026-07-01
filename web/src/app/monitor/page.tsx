@@ -88,6 +88,7 @@ export default function MonitorPage() {
   const [stats, setStats] = useState<SystemStats | null>(null);
   const [history, setHistory] = useState<DataPoint[]>([]);
   const [serverInfo, setServerInfo] = useState<{ status: string; version?: string; uptime?: string } | null>(null);
+  const [error, setError] = useState('');
   const prevNet = useRef({ in: 0, out: 0, time: 0 });
   const intRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -95,6 +96,7 @@ export default function MonitorPage() {
     try {
       const data = await api.system.stats();
       setStats(data);
+      setError('');
 
       const now = Date.now();
       const dt = prevNet.current.time ? (now - prevNet.current.time) / 1000 : 1;
@@ -112,7 +114,7 @@ export default function MonitorPage() {
         const next = [...prev, pt];
         return next.length > MAX_HISTORY ? next.slice(next.length - MAX_HISTORY) : next;
       });
-    } catch (e) { console.warn('[Monitor] stats fetch failed', e); }
+    } catch (e) { console.warn('[Monitor] stats fetch failed', e); setError('Stats unavailable'); }
   }, []);
 
   const fetchServer = useCallback(async () => {
@@ -154,6 +156,12 @@ export default function MonitorPage() {
           </div>
         </div>
       </div>
+
+      {error && (
+        <div className="border border-red-500/30 bg-red-500/5 px-5 py-3">
+          <p className="text-xs text-red-400">{error}</p>
+        </div>
+      )}
 
       {/* Gauges */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">

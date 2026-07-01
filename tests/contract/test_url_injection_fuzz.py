@@ -1,4 +1,7 @@
-import logging
+"""Property-based fuzz tests for SSRF URL injection and parsing edge cases."""
+
+from __future__ import annotations
+
 # Copyright (c) 2024-2026 JARVIS Project
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,14 +15,13 @@ import logging
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Property-based fuzz tests for SSRF URL injection and parsing edge cases."""
-
-from __future__ import annotations
+import logging
 
 import pytest
 from hypothesis import given, assume, strategies as st, settings, HealthCheck
 
 from core.ssrf import is_private_ip, resolve_and_check, assert_safe_url
+
 logger = logging.getLogger(__name__)
 
 

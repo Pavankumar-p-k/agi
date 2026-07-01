@@ -1,0 +1,5348 @@
+{
+  "benchmark_type": "capability",
+  "cycles": 500,
+  "duration_seconds": 157.3,
+  "timestamp": "2026-06-26T07:55:06.195071+00:00",
+  "baseline": {
+    "timestamp": "2026-06-26T07:51:22.783657+00:00",
+    "dimensions": {
+      "planner_health": {
+        "score": 0.7014,
+        "success_rate": 0.691,
+        "avg_prediction_accuracy": 0.636,
+        "avg_calibration_error": 0.201,
+        "total_plans": 1041
+      },
+      "strategy_diversity": {
+        "score": 0.934,
+        "strategies_tried": 6,
+        "active_strategies": 6,
+        "avg_win_rate": 0.601,
+        "win_rate_variance": 0.066
+      },
+      "system_scores": {
+        "score": 0.6479,
+        "average": 0.7756,
+        "min": 0.35,
+        "max": 0.96,
+        "systems": {
+          "execution_infrastructure": 0.96,
+          "research_infrastructure": 0.92,
+          "coding_intelligence": 0.93,
+          "memory_learning": 0.88,
+          "collaboration": 0.85,
+          "generalization": 0.86,
+          "belief_quality": 0.91,
+          "strategic_reasoning": 0.82,
+          "autonomous_improvement": 0.78,
+          "activity_scheduler": 0.85,
+          "automated_build": 0.8,
+          "build_benchmark": 0.7,
+          "self_modification": 0.45,
+          "opportunity_discovery": 0.35,
+          "browser_automation": 0.65,
+          "voice_assistant": 0.7
+        }
+      },
+      "opportunity_health": {
+        "score": 0.1365,
+        "total": 368,
+        "open": 26,
+        "in_progress": 0,
+        "completed": 151,
+        "rejected": 191,
+        "completion_rate": 0.4415,
+        "avg_score": 0.0204,
+        "calibration_accuracy": 0.0
+      },
+      "experiment_health": {
+        "score": 0.2651,
+        "total": 346,
+        "promoted": 152,
+        "rolled_back": 192,
+        "running": 0,
+        "promotion_rate": 0.4419
+      },
+      "negotiation_health": {
+        "score": 0.834,
+        "total": 984,
+        "accepted": 819,
+        "rejected": 163,
+        "open": 2,
+        "consensus_rate": 0.8340122199592668
+      },
+      "knowledge_health": {
+        "score": 0.0,
+        "knowledge_items": 0,
+        "experience_summaries": 0,
+        "principles": 0,
+        "total": 0
+      },
+      "loop_health": {
+        "score": 0.9971,
+        "total_cycles": 346,
+        "completed": 344,
+        "completion_rate": 0.9942
+      }
+    }
+  },
+  "post": {
+    "timestamp": "2026-06-26T07:55:06.078473+00:00",
+    "dimensions": {
+      "planner_health": {
+        "score": 0.698,
+        "success_rate": 0.698,
+        "avg_prediction_accuracy": 0.62,
+        "avg_calibration_error": 0.198,
+        "total_plans": 1291
+      },
+      "strategy_diversity": {
+        "score": 0.9334,
+        "strategies_tried": 6,
+        "active_strategies": 6,
+        "avg_win_rate": 0.6042,
+        "win_rate_variance": 0.0666
+      },
+      "system_scores": {
+        "score": 0.6479,
+        "average": 0.7756,
+        "min": 0.35,
+        "max": 0.96,
+        "systems": {
+          "execution_infrastructure": 0.96,
+          "research_infrastructure": 0.92,
+          "coding_intelligence": 0.93,
+          "memory_learning": 0.88,
+          "collaboration": 0.85,
+          "generalization": 0.86,
+          "belief_quality": 0.91,
+          "strategic_reasoning": 0.82,
+          "autonomous_improvement": 0.78,
+          "activity_scheduler": 0.85,
+          "automated_build": 0.8,
+          "build_benchmark": 0.7,
+          "self_modification": 0.45,
+          "opportunity_discovery": 0.35,
+          "browser_automation": 0.65,
+          "voice_assistant": 0.7
+        }
+      },
+      "opportunity_health": {
+        "score": 0.1814,
+        "total": 480,
+        "open": 13,
+        "in_progress": 0,
+        "completed": 276,
+        "rejected": 191,
+        "completion_rate": 0.591,
+        "avg_score": 0.0204,
+        "calibration_accuracy": 0.0
+      },
+      "experiment_health": {
+        "score": 0.3544,
+        "total": 471,
+        "promoted": 277,
+        "rolled_back": 192,
+        "running": 0,
+        "promotion_rate": 0.5906
+      },
+      "negotiation_health": {
+        "score": 0.8295,
+        "total": 1234,
+        "accepted": 1022,
+        "rejected": 210,
+        "open": 2,
+        "consensus_rate": 0.8295454545454546
+      },
+      "knowledge_health": {
+        "score": 0.0,
+        "knowledge_items": 0,
+        "experience_summaries": 0,
+        "principles": 0,
+        "total": 0
+      },
+      "loop_health": {
+        "score": 0.9979,
+        "total_cycles": 471,
+        "completed": 469,
+        "completion_rate": 0.9958
+      }
+    }
+  },
+  "deltas": {
+    "overall_before": 0.5645,
+    "overall_after": 0.5803,
+    "overall_delta": 0.0158,
+    "dimensions": {
+      "planner_health": {
+        "before": 0.7014,
+        "after": 0.698,
+        "delta": -0.0034,
+        "improved": false,
+        "regressed": true
+      },
+      "strategy_diversity": {
+        "before": 0.934,
+        "after": 0.9334,
+        "delta": -0.0006,
+        "improved": false,
+        "regressed": true
+      },
+      "system_scores": {
+        "before": 0.6479,
+        "after": 0.6479,
+        "delta": 0.0,
+        "improved": false,
+        "regressed": false
+      },
+      "opportunity_health": {
+        "before": 0.1365,
+        "after": 0.1814,
+        "delta": 0.0449,
+        "improved": true,
+        "regressed": false
+      },
+      "experiment_health": {
+        "before": 0.2651,
+        "after": 0.3544,
+        "delta": 0.0893,
+        "improved": true,
+        "regressed": false
+      },
+      "negotiation_health": {
+        "before": 0.834,
+        "after": 0.8295,
+        "delta": -0.0045,
+        "improved": false,
+        "regressed": true
+      },
+      "knowledge_health": {
+        "before": 0.0,
+        "after": 0.0,
+        "delta": 0.0,
+        "improved": false,
+        "regressed": false
+      },
+      "loop_health": {
+        "before": 0.9971,
+        "after": 0.9979,
+        "delta": 0.0008,
+        "improved": true,
+        "regressed": false
+      }
+    },
+    "summary": {
+      "dimensions_improved": 3,
+      "dimensions_regressed": 3,
+      "dimensions_unchanged": 2
+    }
+  },
+  "cycle_results": [
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_c96ac3792e5e",
+      "experiment_id": "exp_d54f47e533e1"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_c96ac3792e5e",
+      "experiment_id": "exp_d54f47e533e1"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_c96ac3792e5e",
+      "experiment_id": "exp_d54f47e533e1",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_d54f47e533e1"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_c96ac3792e5e",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_c96ac3792e5e",
+      "experiment_id": "exp_d54f47e533e1",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_702f9bc7e4a8",
+      "experiment_id": "exp_52f0a27ead9e"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_702f9bc7e4a8",
+      "experiment_id": "exp_52f0a27ead9e"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_702f9bc7e4a8",
+      "experiment_id": "exp_52f0a27ead9e",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_52f0a27ead9e"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_702f9bc7e4a8",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_702f9bc7e4a8",
+      "experiment_id": "exp_52f0a27ead9e",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_f73726e37a7f",
+      "experiment_id": "exp_cb5669261d0f"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_f73726e37a7f",
+      "experiment_id": "exp_cb5669261d0f"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_f73726e37a7f",
+      "experiment_id": "exp_cb5669261d0f",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_cb5669261d0f"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_f73726e37a7f",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_f73726e37a7f",
+      "experiment_id": "exp_cb5669261d0f",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_121eb6f3be4f",
+      "experiment_id": "exp_a69fef821df9"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_121eb6f3be4f",
+      "experiment_id": "exp_a69fef821df9"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_121eb6f3be4f",
+      "experiment_id": "exp_a69fef821df9",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_a69fef821df9"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_121eb6f3be4f",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_121eb6f3be4f",
+      "experiment_id": "exp_a69fef821df9",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_9d07f4ff7b89",
+      "experiment_id": "exp_882c00a12061"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_9d07f4ff7b89",
+      "experiment_id": "exp_882c00a12061"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_9d07f4ff7b89",
+      "experiment_id": "exp_882c00a12061",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_882c00a12061"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_9d07f4ff7b89",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_9d07f4ff7b89",
+      "experiment_id": "exp_882c00a12061",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_4fef40f4e3f7",
+      "experiment_id": "exp_d673891aea28"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_4fef40f4e3f7",
+      "experiment_id": "exp_d673891aea28"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_4fef40f4e3f7",
+      "experiment_id": "exp_d673891aea28",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_d673891aea28"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_4fef40f4e3f7",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_4fef40f4e3f7",
+      "experiment_id": "exp_d673891aea28",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_290754d91f51",
+      "experiment_id": "exp_cdbb3a8b25bd"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_290754d91f51",
+      "experiment_id": "exp_cdbb3a8b25bd"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_290754d91f51",
+      "experiment_id": "exp_cdbb3a8b25bd",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_cdbb3a8b25bd"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_290754d91f51",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_290754d91f51",
+      "experiment_id": "exp_cdbb3a8b25bd",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_8fda573c0c10",
+      "experiment_id": "exp_8fdd39f1a4b9"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_8fda573c0c10",
+      "experiment_id": "exp_8fdd39f1a4b9"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_8fda573c0c10",
+      "experiment_id": "exp_8fdd39f1a4b9",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_8fdd39f1a4b9"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_8fda573c0c10",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_8fda573c0c10",
+      "experiment_id": "exp_8fdd39f1a4b9",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_38d04f27de87",
+      "experiment_id": "exp_21fb71df57dc"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_38d04f27de87",
+      "experiment_id": "exp_21fb71df57dc"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_38d04f27de87",
+      "experiment_id": "exp_21fb71df57dc",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_21fb71df57dc"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_38d04f27de87",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_38d04f27de87",
+      "experiment_id": "exp_21fb71df57dc",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_09f8e1825498",
+      "experiment_id": "exp_a6c0f86af029"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_09f8e1825498",
+      "experiment_id": "exp_a6c0f86af029"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_09f8e1825498",
+      "experiment_id": "exp_a6c0f86af029",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_a6c0f86af029"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_09f8e1825498",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_09f8e1825498",
+      "experiment_id": "exp_a6c0f86af029",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_d192349c3f51",
+      "experiment_id": "exp_2a0b207a7d4f"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_d192349c3f51",
+      "experiment_id": "exp_2a0b207a7d4f"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_d192349c3f51",
+      "experiment_id": "exp_2a0b207a7d4f",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_2a0b207a7d4f"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_d192349c3f51",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_d192349c3f51",
+      "experiment_id": "exp_2a0b207a7d4f",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_dd11ce6bc763",
+      "experiment_id": "exp_8db6cc20de45"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_dd11ce6bc763",
+      "experiment_id": "exp_8db6cc20de45"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_dd11ce6bc763",
+      "experiment_id": "exp_8db6cc20de45",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_8db6cc20de45"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_dd11ce6bc763",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_dd11ce6bc763",
+      "experiment_id": "exp_8db6cc20de45",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_0f06700b36ac",
+      "experiment_id": "exp_1ef8e163a13c"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_0f06700b36ac",
+      "experiment_id": "exp_1ef8e163a13c"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_0f06700b36ac",
+      "experiment_id": "exp_1ef8e163a13c",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_1ef8e163a13c"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_0f06700b36ac",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_0f06700b36ac",
+      "experiment_id": "exp_1ef8e163a13c",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_88b8f7e3d44a",
+      "experiment_id": "exp_7cc263f4d13f"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_88b8f7e3d44a",
+      "experiment_id": "exp_7cc263f4d13f"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_88b8f7e3d44a",
+      "experiment_id": "exp_7cc263f4d13f",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_7cc263f4d13f"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_88b8f7e3d44a",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_88b8f7e3d44a",
+      "experiment_id": "exp_7cc263f4d13f",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_dcb5eb86c217",
+      "experiment_id": "exp_9c163f5093dc"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_dcb5eb86c217",
+      "experiment_id": "exp_9c163f5093dc"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_dcb5eb86c217",
+      "experiment_id": "exp_9c163f5093dc",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_9c163f5093dc"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_dcb5eb86c217",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_dcb5eb86c217",
+      "experiment_id": "exp_9c163f5093dc",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_bdaf5af00e87",
+      "experiment_id": "exp_d73fae0131ae"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_bdaf5af00e87",
+      "experiment_id": "exp_d73fae0131ae"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_bdaf5af00e87",
+      "experiment_id": "exp_d73fae0131ae",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_d73fae0131ae"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_bdaf5af00e87",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_bdaf5af00e87",
+      "experiment_id": "exp_d73fae0131ae",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_057acb22f03c",
+      "experiment_id": "exp_4d73f41162d0"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_057acb22f03c",
+      "experiment_id": "exp_4d73f41162d0"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_057acb22f03c",
+      "experiment_id": "exp_4d73f41162d0",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_4d73f41162d0"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_057acb22f03c",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_057acb22f03c",
+      "experiment_id": "exp_4d73f41162d0",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_e1c09ca6b14f",
+      "experiment_id": "exp_201bd5333b18"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_e1c09ca6b14f",
+      "experiment_id": "exp_201bd5333b18"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_e1c09ca6b14f",
+      "experiment_id": "exp_201bd5333b18",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_201bd5333b18"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_e1c09ca6b14f",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_e1c09ca6b14f",
+      "experiment_id": "exp_201bd5333b18",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_e6a1c83cf8f3",
+      "experiment_id": "exp_c4cf21e83b93"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_e6a1c83cf8f3",
+      "experiment_id": "exp_c4cf21e83b93"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_e6a1c83cf8f3",
+      "experiment_id": "exp_c4cf21e83b93",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_c4cf21e83b93"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_e6a1c83cf8f3",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_e6a1c83cf8f3",
+      "experiment_id": "exp_c4cf21e83b93",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_55e08c66c0ec",
+      "experiment_id": "exp_110ad86c084f"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_55e08c66c0ec",
+      "experiment_id": "exp_110ad86c084f"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_55e08c66c0ec",
+      "experiment_id": "exp_110ad86c084f",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_110ad86c084f"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_55e08c66c0ec",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_55e08c66c0ec",
+      "experiment_id": "exp_110ad86c084f",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_fdd76fcb5822",
+      "experiment_id": "exp_7441610dea90"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_fdd76fcb5822",
+      "experiment_id": "exp_7441610dea90"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_fdd76fcb5822",
+      "experiment_id": "exp_7441610dea90",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_7441610dea90"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_fdd76fcb5822",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_fdd76fcb5822",
+      "experiment_id": "exp_7441610dea90",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_b846169c08e0",
+      "experiment_id": "exp_052497da13eb"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_b846169c08e0",
+      "experiment_id": "exp_052497da13eb"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_b846169c08e0",
+      "experiment_id": "exp_052497da13eb",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_052497da13eb"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_b846169c08e0",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_b846169c08e0",
+      "experiment_id": "exp_052497da13eb",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_97f6883e027a",
+      "experiment_id": "exp_834299740847"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_97f6883e027a",
+      "experiment_id": "exp_834299740847"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_97f6883e027a",
+      "experiment_id": "exp_834299740847",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_834299740847"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_97f6883e027a",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_97f6883e027a",
+      "experiment_id": "exp_834299740847",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_e6ed5c0b7066",
+      "experiment_id": "exp_83d5b7506236"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_e6ed5c0b7066",
+      "experiment_id": "exp_83d5b7506236"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_e6ed5c0b7066",
+      "experiment_id": "exp_83d5b7506236",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_83d5b7506236"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_e6ed5c0b7066",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_e6ed5c0b7066",
+      "experiment_id": "exp_83d5b7506236",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_5f8cd101e08c",
+      "experiment_id": "exp_94819db2a161"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_5f8cd101e08c",
+      "experiment_id": "exp_94819db2a161"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_5f8cd101e08c",
+      "experiment_id": "exp_94819db2a161",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_94819db2a161"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_5f8cd101e08c",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_5f8cd101e08c",
+      "experiment_id": "exp_94819db2a161",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_10b5ca204f58",
+      "experiment_id": "exp_6c0050ce8fc0"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_10b5ca204f58",
+      "experiment_id": "exp_6c0050ce8fc0"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_10b5ca204f58",
+      "experiment_id": "exp_6c0050ce8fc0",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_6c0050ce8fc0"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_10b5ca204f58",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_10b5ca204f58",
+      "experiment_id": "exp_6c0050ce8fc0",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_34f9a597e151",
+      "experiment_id": "exp_23b949828123"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_34f9a597e151",
+      "experiment_id": "exp_23b949828123"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_34f9a597e151",
+      "experiment_id": "exp_23b949828123",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_23b949828123"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_34f9a597e151",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_34f9a597e151",
+      "experiment_id": "exp_23b949828123",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_6621efd02d21",
+      "experiment_id": "exp_9f936075f8c0"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_6621efd02d21",
+      "experiment_id": "exp_9f936075f8c0"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_6621efd02d21",
+      "experiment_id": "exp_9f936075f8c0",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_9f936075f8c0"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_6621efd02d21",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_6621efd02d21",
+      "experiment_id": "exp_9f936075f8c0",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_91653e4da166",
+      "experiment_id": "exp_f282f92a1d21"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_91653e4da166",
+      "experiment_id": "exp_f282f92a1d21"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_91653e4da166",
+      "experiment_id": "exp_f282f92a1d21",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_f282f92a1d21"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_91653e4da166",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_91653e4da166",
+      "experiment_id": "exp_f282f92a1d21",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_5a49a9c99b7e",
+      "experiment_id": "exp_5ecb3de087ed"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_5a49a9c99b7e",
+      "experiment_id": "exp_5ecb3de087ed"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_5a49a9c99b7e",
+      "experiment_id": "exp_5ecb3de087ed",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_5ecb3de087ed"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_5a49a9c99b7e",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_5a49a9c99b7e",
+      "experiment_id": "exp_5ecb3de087ed",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_999da98d9b65",
+      "experiment_id": "exp_749a68f3610b"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_999da98d9b65",
+      "experiment_id": "exp_749a68f3610b"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_999da98d9b65",
+      "experiment_id": "exp_749a68f3610b",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_749a68f3610b"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_999da98d9b65",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_999da98d9b65",
+      "experiment_id": "exp_749a68f3610b",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_2b2060b17a66",
+      "experiment_id": "exp_4633b073436e"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_2b2060b17a66",
+      "experiment_id": "exp_4633b073436e"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_2b2060b17a66",
+      "experiment_id": "exp_4633b073436e",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_4633b073436e"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_2b2060b17a66",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_2b2060b17a66",
+      "experiment_id": "exp_4633b073436e",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_3fa04d8c3f4f",
+      "experiment_id": "exp_7602f88a4a8b"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_3fa04d8c3f4f",
+      "experiment_id": "exp_7602f88a4a8b"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_3fa04d8c3f4f",
+      "experiment_id": "exp_7602f88a4a8b",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_7602f88a4a8b"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_3fa04d8c3f4f",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_3fa04d8c3f4f",
+      "experiment_id": "exp_7602f88a4a8b",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_dc0beadb54cd",
+      "experiment_id": "exp_a30f139b8fef"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_dc0beadb54cd",
+      "experiment_id": "exp_a30f139b8fef"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_dc0beadb54cd",
+      "experiment_id": "exp_a30f139b8fef",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_a30f139b8fef"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_dc0beadb54cd",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_dc0beadb54cd",
+      "experiment_id": "exp_a30f139b8fef",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_c86b0961094f",
+      "experiment_id": "exp_dbabf53f01a8"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_c86b0961094f",
+      "experiment_id": "exp_dbabf53f01a8"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_c86b0961094f",
+      "experiment_id": "exp_dbabf53f01a8",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_dbabf53f01a8"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_c86b0961094f",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_c86b0961094f",
+      "experiment_id": "exp_dbabf53f01a8",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_923e4fa561dc",
+      "experiment_id": "exp_87bbc442768f"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_923e4fa561dc",
+      "experiment_id": "exp_87bbc442768f"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_923e4fa561dc",
+      "experiment_id": "exp_87bbc442768f",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_87bbc442768f"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_923e4fa561dc",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_923e4fa561dc",
+      "experiment_id": "exp_87bbc442768f",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_bef95cd8be89",
+      "experiment_id": "exp_2810eedbaf7e"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_bef95cd8be89",
+      "experiment_id": "exp_2810eedbaf7e"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_bef95cd8be89",
+      "experiment_id": "exp_2810eedbaf7e",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_2810eedbaf7e"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_bef95cd8be89",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_bef95cd8be89",
+      "experiment_id": "exp_2810eedbaf7e",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_a616270afc69",
+      "experiment_id": "exp_1d46e9ffbd55"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_a616270afc69",
+      "experiment_id": "exp_1d46e9ffbd55"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_a616270afc69",
+      "experiment_id": "exp_1d46e9ffbd55",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_1d46e9ffbd55"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_a616270afc69",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_a616270afc69",
+      "experiment_id": "exp_1d46e9ffbd55",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_643d800a55f3",
+      "experiment_id": "exp_fea1d6b1cb75"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_643d800a55f3",
+      "experiment_id": "exp_fea1d6b1cb75"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_643d800a55f3",
+      "experiment_id": "exp_fea1d6b1cb75",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_fea1d6b1cb75"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_643d800a55f3",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_643d800a55f3",
+      "experiment_id": "exp_fea1d6b1cb75",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_08e8442c3eb0",
+      "experiment_id": "exp_21d96b3eff98"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_08e8442c3eb0",
+      "experiment_id": "exp_21d96b3eff98"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_08e8442c3eb0",
+      "experiment_id": "exp_21d96b3eff98",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_21d96b3eff98"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_08e8442c3eb0",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_08e8442c3eb0",
+      "experiment_id": "exp_21d96b3eff98",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_3438887afd2c",
+      "experiment_id": "exp_fa4350d38364"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_3438887afd2c",
+      "experiment_id": "exp_fa4350d38364"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_3438887afd2c",
+      "experiment_id": "exp_fa4350d38364",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_fa4350d38364"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_3438887afd2c",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_3438887afd2c",
+      "experiment_id": "exp_fa4350d38364",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_5a752a437154",
+      "experiment_id": "exp_914a4ad1e7a7"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_5a752a437154",
+      "experiment_id": "exp_914a4ad1e7a7"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_5a752a437154",
+      "experiment_id": "exp_914a4ad1e7a7",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_914a4ad1e7a7"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_5a752a437154",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_5a752a437154",
+      "experiment_id": "exp_914a4ad1e7a7",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_c22474ac4e2c",
+      "experiment_id": "exp_f26e6dac5654"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_c22474ac4e2c",
+      "experiment_id": "exp_f26e6dac5654"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_c22474ac4e2c",
+      "experiment_id": "exp_f26e6dac5654",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_f26e6dac5654"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_c22474ac4e2c",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_c22474ac4e2c",
+      "experiment_id": "exp_f26e6dac5654",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_6a6e7b326f2f",
+      "experiment_id": "exp_6657f69c8493"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_6a6e7b326f2f",
+      "experiment_id": "exp_6657f69c8493"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_6a6e7b326f2f",
+      "experiment_id": "exp_6657f69c8493",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_6657f69c8493"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_6a6e7b326f2f",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_6a6e7b326f2f",
+      "experiment_id": "exp_6657f69c8493",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_a56ab125ec1e",
+      "experiment_id": "exp_a5dcfcad48e8"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_a56ab125ec1e",
+      "experiment_id": "exp_a5dcfcad48e8"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_a56ab125ec1e",
+      "experiment_id": "exp_a5dcfcad48e8",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_a5dcfcad48e8"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_a56ab125ec1e",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_a56ab125ec1e",
+      "experiment_id": "exp_a5dcfcad48e8",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_12d362c54997",
+      "experiment_id": "exp_31f3869fb942"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_12d362c54997",
+      "experiment_id": "exp_31f3869fb942"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_12d362c54997",
+      "experiment_id": "exp_31f3869fb942",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_31f3869fb942"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_12d362c54997",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_12d362c54997",
+      "experiment_id": "exp_31f3869fb942",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_122f99a0d5c5",
+      "experiment_id": "exp_335e99a86376"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_122f99a0d5c5",
+      "experiment_id": "exp_335e99a86376"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_122f99a0d5c5",
+      "experiment_id": "exp_335e99a86376",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_335e99a86376"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_122f99a0d5c5",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_122f99a0d5c5",
+      "experiment_id": "exp_335e99a86376",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_b4469a8c4e01",
+      "experiment_id": "exp_1c02adcbd302"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_b4469a8c4e01",
+      "experiment_id": "exp_1c02adcbd302"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_b4469a8c4e01",
+      "experiment_id": "exp_1c02adcbd302",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_1c02adcbd302"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_b4469a8c4e01",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_b4469a8c4e01",
+      "experiment_id": "exp_1c02adcbd302",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_87c751bfc437",
+      "experiment_id": "exp_c8940712ad07"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_87c751bfc437",
+      "experiment_id": "exp_c8940712ad07"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_87c751bfc437",
+      "experiment_id": "exp_c8940712ad07",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_c8940712ad07"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_87c751bfc437",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_87c751bfc437",
+      "experiment_id": "exp_c8940712ad07",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_d140d1f23b09",
+      "experiment_id": "exp_898d0ad08270"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_d140d1f23b09",
+      "experiment_id": "exp_898d0ad08270"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_d140d1f23b09",
+      "experiment_id": "exp_898d0ad08270",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_898d0ad08270"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_d140d1f23b09",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_d140d1f23b09",
+      "experiment_id": "exp_898d0ad08270",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_cbf10f26aa80",
+      "experiment_id": "exp_8add75aa9a16"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_cbf10f26aa80",
+      "experiment_id": "exp_8add75aa9a16"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_cbf10f26aa80",
+      "experiment_id": "exp_8add75aa9a16",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_8add75aa9a16"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_cbf10f26aa80",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_cbf10f26aa80",
+      "experiment_id": "exp_8add75aa9a16",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_0f0a8916c79b",
+      "experiment_id": "exp_41dfcb7964a5"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_0f0a8916c79b",
+      "experiment_id": "exp_41dfcb7964a5"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_0f0a8916c79b",
+      "experiment_id": "exp_41dfcb7964a5",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_41dfcb7964a5"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_0f0a8916c79b",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_0f0a8916c79b",
+      "experiment_id": "exp_41dfcb7964a5",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_4d404bfded5f",
+      "experiment_id": "exp_3a2d6263d447"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_4d404bfded5f",
+      "experiment_id": "exp_3a2d6263d447"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_4d404bfded5f",
+      "experiment_id": "exp_3a2d6263d447",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_3a2d6263d447"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_4d404bfded5f",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_4d404bfded5f",
+      "experiment_id": "exp_3a2d6263d447",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_aa6122128445",
+      "experiment_id": "exp_e2e09954acfd"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_aa6122128445",
+      "experiment_id": "exp_e2e09954acfd"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_aa6122128445",
+      "experiment_id": "exp_e2e09954acfd",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_e2e09954acfd"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_aa6122128445",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_aa6122128445",
+      "experiment_id": "exp_e2e09954acfd",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_b8be7726c988",
+      "experiment_id": "exp_31501c403b85"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_b8be7726c988",
+      "experiment_id": "exp_31501c403b85"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_b8be7726c988",
+      "experiment_id": "exp_31501c403b85",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_31501c403b85"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_b8be7726c988",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_b8be7726c988",
+      "experiment_id": "exp_31501c403b85",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_3e6e91d905ae",
+      "experiment_id": "exp_41cb1082b445"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_3e6e91d905ae",
+      "experiment_id": "exp_41cb1082b445"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_3e6e91d905ae",
+      "experiment_id": "exp_41cb1082b445",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_41cb1082b445"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_3e6e91d905ae",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_3e6e91d905ae",
+      "experiment_id": "exp_41cb1082b445",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_aac36dca0b07",
+      "experiment_id": "exp_f9f057e680cb"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_aac36dca0b07",
+      "experiment_id": "exp_f9f057e680cb"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_aac36dca0b07",
+      "experiment_id": "exp_f9f057e680cb",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_f9f057e680cb"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_aac36dca0b07",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_aac36dca0b07",
+      "experiment_id": "exp_f9f057e680cb",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_ed8e3523ba83",
+      "experiment_id": "exp_d2cf0715e9d7"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_ed8e3523ba83",
+      "experiment_id": "exp_d2cf0715e9d7"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_ed8e3523ba83",
+      "experiment_id": "exp_d2cf0715e9d7",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_d2cf0715e9d7"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_ed8e3523ba83",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_ed8e3523ba83",
+      "experiment_id": "exp_d2cf0715e9d7",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_bf2314637014",
+      "experiment_id": "exp_906f7569dca9"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_bf2314637014",
+      "experiment_id": "exp_906f7569dca9"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_bf2314637014",
+      "experiment_id": "exp_906f7569dca9",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_906f7569dca9"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_bf2314637014",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_bf2314637014",
+      "experiment_id": "exp_906f7569dca9",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_d4d6d726aa48",
+      "experiment_id": "exp_c3345e1fca25"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_d4d6d726aa48",
+      "experiment_id": "exp_c3345e1fca25"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_d4d6d726aa48",
+      "experiment_id": "exp_c3345e1fca25",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_c3345e1fca25"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_d4d6d726aa48",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_d4d6d726aa48",
+      "experiment_id": "exp_c3345e1fca25",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_66c700652607",
+      "experiment_id": "exp_b71359551cbc"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_66c700652607",
+      "experiment_id": "exp_b71359551cbc"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_66c700652607",
+      "experiment_id": "exp_b71359551cbc",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_b71359551cbc"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_66c700652607",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_66c700652607",
+      "experiment_id": "exp_b71359551cbc",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_5b0df198b9fd",
+      "experiment_id": "exp_f81366b7747f"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_5b0df198b9fd",
+      "experiment_id": "exp_f81366b7747f"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_5b0df198b9fd",
+      "experiment_id": "exp_f81366b7747f",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_f81366b7747f"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_5b0df198b9fd",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_5b0df198b9fd",
+      "experiment_id": "exp_f81366b7747f",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_bbe6d815eff6",
+      "experiment_id": "exp_1e88bde7f358"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_bbe6d815eff6",
+      "experiment_id": "exp_1e88bde7f358"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_bbe6d815eff6",
+      "experiment_id": "exp_1e88bde7f358",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_1e88bde7f358"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_bbe6d815eff6",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_bbe6d815eff6",
+      "experiment_id": "exp_1e88bde7f358",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_46070f04e86c",
+      "experiment_id": "exp_67a78221e42f"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_46070f04e86c",
+      "experiment_id": "exp_67a78221e42f"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_46070f04e86c",
+      "experiment_id": "exp_67a78221e42f",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_67a78221e42f"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_46070f04e86c",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_46070f04e86c",
+      "experiment_id": "exp_67a78221e42f",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_faa5e072b50d",
+      "experiment_id": "exp_4efe8e9a497a"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_faa5e072b50d",
+      "experiment_id": "exp_4efe8e9a497a"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_faa5e072b50d",
+      "experiment_id": "exp_4efe8e9a497a",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_4efe8e9a497a"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_faa5e072b50d",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_faa5e072b50d",
+      "experiment_id": "exp_4efe8e9a497a",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_ba67c34fc5dd",
+      "experiment_id": "exp_ea2be5ffcef1"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_ba67c34fc5dd",
+      "experiment_id": "exp_ea2be5ffcef1"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_ba67c34fc5dd",
+      "experiment_id": "exp_ea2be5ffcef1",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_ea2be5ffcef1"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_ba67c34fc5dd",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_ba67c34fc5dd",
+      "experiment_id": "exp_ea2be5ffcef1",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_fe3961ca9a9a",
+      "experiment_id": "exp_03993d6e0f65"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_fe3961ca9a9a",
+      "experiment_id": "exp_03993d6e0f65"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_fe3961ca9a9a",
+      "experiment_id": "exp_03993d6e0f65",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_03993d6e0f65"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_fe3961ca9a9a",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_fe3961ca9a9a",
+      "experiment_id": "exp_03993d6e0f65",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_a635c48944e2",
+      "experiment_id": "exp_e29f6ff2f1d3"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_a635c48944e2",
+      "experiment_id": "exp_e29f6ff2f1d3"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_a635c48944e2",
+      "experiment_id": "exp_e29f6ff2f1d3",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_e29f6ff2f1d3"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_a635c48944e2",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_a635c48944e2",
+      "experiment_id": "exp_e29f6ff2f1d3",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_418ac2e97d8c",
+      "experiment_id": "exp_3ab5903537c3"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_418ac2e97d8c",
+      "experiment_id": "exp_3ab5903537c3"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_418ac2e97d8c",
+      "experiment_id": "exp_3ab5903537c3",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_3ab5903537c3"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_418ac2e97d8c",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_418ac2e97d8c",
+      "experiment_id": "exp_3ab5903537c3",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_beb3ea007141",
+      "experiment_id": "exp_f735aeb2b394"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_beb3ea007141",
+      "experiment_id": "exp_f735aeb2b394"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_beb3ea007141",
+      "experiment_id": "exp_f735aeb2b394",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_f735aeb2b394"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_beb3ea007141",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_beb3ea007141",
+      "experiment_id": "exp_f735aeb2b394",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_6beac02b8342",
+      "experiment_id": "exp_df2ae256a831"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_6beac02b8342",
+      "experiment_id": "exp_df2ae256a831"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_6beac02b8342",
+      "experiment_id": "exp_df2ae256a831",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_df2ae256a831"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_6beac02b8342",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_6beac02b8342",
+      "experiment_id": "exp_df2ae256a831",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_27cbeeb18687",
+      "experiment_id": "exp_243848abf314"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_27cbeeb18687",
+      "experiment_id": "exp_243848abf314"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_27cbeeb18687",
+      "experiment_id": "exp_243848abf314",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_243848abf314"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_27cbeeb18687",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_27cbeeb18687",
+      "experiment_id": "exp_243848abf314",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_b259c4ac2cb5",
+      "experiment_id": "exp_bfd0bd9a9efa"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_b259c4ac2cb5",
+      "experiment_id": "exp_bfd0bd9a9efa"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_b259c4ac2cb5",
+      "experiment_id": "exp_bfd0bd9a9efa",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_bfd0bd9a9efa"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_b259c4ac2cb5",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_b259c4ac2cb5",
+      "experiment_id": "exp_bfd0bd9a9efa",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_2e5e16d18aea",
+      "experiment_id": "exp_2185a1aecd4e"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_2e5e16d18aea",
+      "experiment_id": "exp_2185a1aecd4e"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_2e5e16d18aea",
+      "experiment_id": "exp_2185a1aecd4e",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_2185a1aecd4e"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_2e5e16d18aea",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_2e5e16d18aea",
+      "experiment_id": "exp_2185a1aecd4e",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_37eaa1c213f4",
+      "experiment_id": "exp_1f9ecf38842d"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_37eaa1c213f4",
+      "experiment_id": "exp_1f9ecf38842d"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_37eaa1c213f4",
+      "experiment_id": "exp_1f9ecf38842d",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_1f9ecf38842d"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_37eaa1c213f4",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_37eaa1c213f4",
+      "experiment_id": "exp_1f9ecf38842d",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_5e04ce7ed3cc",
+      "experiment_id": "exp_c23e8f8c54b2"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_5e04ce7ed3cc",
+      "experiment_id": "exp_c23e8f8c54b2"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_5e04ce7ed3cc",
+      "experiment_id": "exp_c23e8f8c54b2",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_c23e8f8c54b2"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_5e04ce7ed3cc",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_5e04ce7ed3cc",
+      "experiment_id": "exp_c23e8f8c54b2",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_3f4d83244020",
+      "experiment_id": "exp_42d6f4d5672e"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_3f4d83244020",
+      "experiment_id": "exp_42d6f4d5672e"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_3f4d83244020",
+      "experiment_id": "exp_42d6f4d5672e",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_42d6f4d5672e"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_3f4d83244020",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_3f4d83244020",
+      "experiment_id": "exp_42d6f4d5672e",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_bed0231a4b07",
+      "experiment_id": "exp_c1a31d9ef0d6"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_bed0231a4b07",
+      "experiment_id": "exp_c1a31d9ef0d6"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_bed0231a4b07",
+      "experiment_id": "exp_c1a31d9ef0d6",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_c1a31d9ef0d6"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_bed0231a4b07",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_bed0231a4b07",
+      "experiment_id": "exp_c1a31d9ef0d6",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_834775314b67",
+      "experiment_id": "exp_5acf3bd70fac"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_834775314b67",
+      "experiment_id": "exp_5acf3bd70fac"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_834775314b67",
+      "experiment_id": "exp_5acf3bd70fac",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_5acf3bd70fac"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_834775314b67",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_834775314b67",
+      "experiment_id": "exp_5acf3bd70fac",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_943af55b1953",
+      "experiment_id": "exp_ffdb681c1bb2"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_943af55b1953",
+      "experiment_id": "exp_ffdb681c1bb2"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_943af55b1953",
+      "experiment_id": "exp_ffdb681c1bb2",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_ffdb681c1bb2"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_943af55b1953",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_943af55b1953",
+      "experiment_id": "exp_ffdb681c1bb2",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_11908f2234a7",
+      "experiment_id": "exp_0a282fa4f2bf"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_11908f2234a7",
+      "experiment_id": "exp_0a282fa4f2bf"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_11908f2234a7",
+      "experiment_id": "exp_0a282fa4f2bf",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_0a282fa4f2bf"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_11908f2234a7",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_11908f2234a7",
+      "experiment_id": "exp_0a282fa4f2bf",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_081e66a3b391",
+      "experiment_id": "exp_d263bb5dee80"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_081e66a3b391",
+      "experiment_id": "exp_d263bb5dee80"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_081e66a3b391",
+      "experiment_id": "exp_d263bb5dee80",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_d263bb5dee80"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_081e66a3b391",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_081e66a3b391",
+      "experiment_id": "exp_d263bb5dee80",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_603291004569",
+      "experiment_id": "exp_087a12177ed9"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_603291004569",
+      "experiment_id": "exp_087a12177ed9"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_603291004569",
+      "experiment_id": "exp_087a12177ed9",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_087a12177ed9"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_603291004569",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_603291004569",
+      "experiment_id": "exp_087a12177ed9",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_376acda74f80",
+      "experiment_id": "exp_fe36a9e12346"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_376acda74f80",
+      "experiment_id": "exp_fe36a9e12346"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_376acda74f80",
+      "experiment_id": "exp_fe36a9e12346",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_fe36a9e12346"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_376acda74f80",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_376acda74f80",
+      "experiment_id": "exp_fe36a9e12346",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_a4a599e9a1e0",
+      "experiment_id": "exp_60dc3974dd91"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_a4a599e9a1e0",
+      "experiment_id": "exp_60dc3974dd91"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_a4a599e9a1e0",
+      "experiment_id": "exp_60dc3974dd91",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_60dc3974dd91"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_a4a599e9a1e0",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_a4a599e9a1e0",
+      "experiment_id": "exp_60dc3974dd91",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_10ba0f162cd7",
+      "experiment_id": "exp_c367e6177fb1"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_10ba0f162cd7",
+      "experiment_id": "exp_c367e6177fb1"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_10ba0f162cd7",
+      "experiment_id": "exp_c367e6177fb1",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_c367e6177fb1"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_10ba0f162cd7",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_10ba0f162cd7",
+      "experiment_id": "exp_c367e6177fb1",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_76fe1ad867f3",
+      "experiment_id": "exp_a82b58108dd8"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_76fe1ad867f3",
+      "experiment_id": "exp_a82b58108dd8"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_76fe1ad867f3",
+      "experiment_id": "exp_a82b58108dd8",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_a82b58108dd8"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_76fe1ad867f3",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_76fe1ad867f3",
+      "experiment_id": "exp_a82b58108dd8",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_324d963934eb",
+      "experiment_id": "exp_399a9b74283e"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_324d963934eb",
+      "experiment_id": "exp_399a9b74283e"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_324d963934eb",
+      "experiment_id": "exp_399a9b74283e",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_399a9b74283e"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_324d963934eb",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_324d963934eb",
+      "experiment_id": "exp_399a9b74283e",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_081e63ffbefb",
+      "experiment_id": "exp_d4c714ae7fdc"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_081e63ffbefb",
+      "experiment_id": "exp_d4c714ae7fdc"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_081e63ffbefb",
+      "experiment_id": "exp_d4c714ae7fdc",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_d4c714ae7fdc"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_081e63ffbefb",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_081e63ffbefb",
+      "experiment_id": "exp_d4c714ae7fdc",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_e00fd03fb00a",
+      "experiment_id": "exp_4dda9fd1ba18"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_e00fd03fb00a",
+      "experiment_id": "exp_4dda9fd1ba18"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_e00fd03fb00a",
+      "experiment_id": "exp_4dda9fd1ba18",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_4dda9fd1ba18"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_e00fd03fb00a",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_e00fd03fb00a",
+      "experiment_id": "exp_4dda9fd1ba18",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_7c24a4067d45",
+      "experiment_id": "exp_a924877682d4"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_7c24a4067d45",
+      "experiment_id": "exp_a924877682d4"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_7c24a4067d45",
+      "experiment_id": "exp_a924877682d4",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_a924877682d4"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_7c24a4067d45",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_7c24a4067d45",
+      "experiment_id": "exp_a924877682d4",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_34efda5825e4",
+      "experiment_id": "exp_b87bd06e5342"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_34efda5825e4",
+      "experiment_id": "exp_b87bd06e5342"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_34efda5825e4",
+      "experiment_id": "exp_b87bd06e5342",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_b87bd06e5342"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_34efda5825e4",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_34efda5825e4",
+      "experiment_id": "exp_b87bd06e5342",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_210ac617ae8d",
+      "experiment_id": "exp_771bacbe6037"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_210ac617ae8d",
+      "experiment_id": "exp_771bacbe6037"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_210ac617ae8d",
+      "experiment_id": "exp_771bacbe6037",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_771bacbe6037"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_210ac617ae8d",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_210ac617ae8d",
+      "experiment_id": "exp_771bacbe6037",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_aa7add76e865",
+      "experiment_id": "exp_89ce91f6533c"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_aa7add76e865",
+      "experiment_id": "exp_89ce91f6533c"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_aa7add76e865",
+      "experiment_id": "exp_89ce91f6533c",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_89ce91f6533c"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_aa7add76e865",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_aa7add76e865",
+      "experiment_id": "exp_89ce91f6533c",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_49cd9f793094",
+      "experiment_id": "exp_23dcf46de2b8"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_49cd9f793094",
+      "experiment_id": "exp_23dcf46de2b8"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_49cd9f793094",
+      "experiment_id": "exp_23dcf46de2b8",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_23dcf46de2b8"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_49cd9f793094",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_49cd9f793094",
+      "experiment_id": "exp_23dcf46de2b8",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_39c136944c20",
+      "experiment_id": "exp_7ac8605ca681"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_39c136944c20",
+      "experiment_id": "exp_7ac8605ca681"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_39c136944c20",
+      "experiment_id": "exp_7ac8605ca681",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_7ac8605ca681"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_39c136944c20",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_39c136944c20",
+      "experiment_id": "exp_7ac8605ca681",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_ab66cb2fe657",
+      "experiment_id": "exp_4699b3b4ba30"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_ab66cb2fe657",
+      "experiment_id": "exp_4699b3b4ba30"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_ab66cb2fe657",
+      "experiment_id": "exp_4699b3b4ba30",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_4699b3b4ba30"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_ab66cb2fe657",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_ab66cb2fe657",
+      "experiment_id": "exp_4699b3b4ba30",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_45a7e1c6517d",
+      "experiment_id": "exp_ea319c1e45e7"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_45a7e1c6517d",
+      "experiment_id": "exp_ea319c1e45e7"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_45a7e1c6517d",
+      "experiment_id": "exp_ea319c1e45e7",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_ea319c1e45e7"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_45a7e1c6517d",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_45a7e1c6517d",
+      "experiment_id": "exp_ea319c1e45e7",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_d8cbbe9621d6",
+      "experiment_id": "exp_47755e5f6b36"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_d8cbbe9621d6",
+      "experiment_id": "exp_47755e5f6b36"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_d8cbbe9621d6",
+      "experiment_id": "exp_47755e5f6b36",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_47755e5f6b36"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_d8cbbe9621d6",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_d8cbbe9621d6",
+      "experiment_id": "exp_47755e5f6b36",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_7ad3125e41c4",
+      "experiment_id": "exp_54ea8f0a23d1"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_7ad3125e41c4",
+      "experiment_id": "exp_54ea8f0a23d1"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_7ad3125e41c4",
+      "experiment_id": "exp_54ea8f0a23d1",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_54ea8f0a23d1"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_7ad3125e41c4",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_7ad3125e41c4",
+      "experiment_id": "exp_54ea8f0a23d1",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_f92c03d2ac68",
+      "experiment_id": "exp_1a0773d34f2a"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_f92c03d2ac68",
+      "experiment_id": "exp_1a0773d34f2a"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_f92c03d2ac68",
+      "experiment_id": "exp_1a0773d34f2a",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_1a0773d34f2a"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_f92c03d2ac68",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_f92c03d2ac68",
+      "experiment_id": "exp_1a0773d34f2a",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_dafca71a974c",
+      "experiment_id": "exp_3214c93913dd"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_dafca71a974c",
+      "experiment_id": "exp_3214c93913dd"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_dafca71a974c",
+      "experiment_id": "exp_3214c93913dd",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_3214c93913dd"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_dafca71a974c",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_dafca71a974c",
+      "experiment_id": "exp_3214c93913dd",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_e8ab055db9ff",
+      "experiment_id": "exp_dea9d2565bc4"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_e8ab055db9ff",
+      "experiment_id": "exp_dea9d2565bc4"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_e8ab055db9ff",
+      "experiment_id": "exp_dea9d2565bc4",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_dea9d2565bc4"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_e8ab055db9ff",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_e8ab055db9ff",
+      "experiment_id": "exp_dea9d2565bc4",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_320a17e19725",
+      "experiment_id": "exp_549080d329a4"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_320a17e19725",
+      "experiment_id": "exp_549080d329a4"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_320a17e19725",
+      "experiment_id": "exp_549080d329a4",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_549080d329a4"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_320a17e19725",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_320a17e19725",
+      "experiment_id": "exp_549080d329a4",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_8b9c52402e64",
+      "experiment_id": "exp_9a851d6ebb3b"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_8b9c52402e64",
+      "experiment_id": "exp_9a851d6ebb3b"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_8b9c52402e64",
+      "experiment_id": "exp_9a851d6ebb3b",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_9a851d6ebb3b"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_8b9c52402e64",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_8b9c52402e64",
+      "experiment_id": "exp_9a851d6ebb3b",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_c49dd78363d5",
+      "experiment_id": "exp_0ad35943ecc7"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_c49dd78363d5",
+      "experiment_id": "exp_0ad35943ecc7"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_c49dd78363d5",
+      "experiment_id": "exp_0ad35943ecc7",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_0ad35943ecc7"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_c49dd78363d5",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_c49dd78363d5",
+      "experiment_id": "exp_0ad35943ecc7",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_0814c3925c7f",
+      "experiment_id": "exp_6abfe272e951"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_0814c3925c7f",
+      "experiment_id": "exp_6abfe272e951"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_0814c3925c7f",
+      "experiment_id": "exp_6abfe272e951",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_6abfe272e951"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_0814c3925c7f",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_0814c3925c7f",
+      "experiment_id": "exp_6abfe272e951",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_a8b9bec6ea27",
+      "experiment_id": "exp_274b5d1557a8"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_a8b9bec6ea27",
+      "experiment_id": "exp_274b5d1557a8"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_a8b9bec6ea27",
+      "experiment_id": "exp_274b5d1557a8",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_274b5d1557a8"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_a8b9bec6ea27",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_a8b9bec6ea27",
+      "experiment_id": "exp_274b5d1557a8",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_8bbd8111ed62",
+      "experiment_id": "exp_ded3f971d176"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_8bbd8111ed62",
+      "experiment_id": "exp_ded3f971d176"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_8bbd8111ed62",
+      "experiment_id": "exp_ded3f971d176",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_ded3f971d176"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_8bbd8111ed62",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_8bbd8111ed62",
+      "experiment_id": "exp_ded3f971d176",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_d99a8717014a",
+      "experiment_id": "exp_a29927b75053"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_d99a8717014a",
+      "experiment_id": "exp_a29927b75053"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_d99a8717014a",
+      "experiment_id": "exp_a29927b75053",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_a29927b75053"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_d99a8717014a",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_d99a8717014a",
+      "experiment_id": "exp_a29927b75053",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_de422fb4a2f0",
+      "experiment_id": "exp_ba1efb584857"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_de422fb4a2f0",
+      "experiment_id": "exp_ba1efb584857"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_de422fb4a2f0",
+      "experiment_id": "exp_ba1efb584857",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_ba1efb584857"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_de422fb4a2f0",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_de422fb4a2f0",
+      "experiment_id": "exp_ba1efb584857",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_ab262cb06f69",
+      "experiment_id": "exp_b745ae035a78"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_ab262cb06f69",
+      "experiment_id": "exp_b745ae035a78"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_ab262cb06f69",
+      "experiment_id": "exp_b745ae035a78",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_b745ae035a78"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_ab262cb06f69",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_ab262cb06f69",
+      "experiment_id": "exp_b745ae035a78",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_faa90282749d",
+      "experiment_id": "exp_ca55b797589f"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_faa90282749d",
+      "experiment_id": "exp_ca55b797589f"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_faa90282749d",
+      "experiment_id": "exp_ca55b797589f",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_ca55b797589f"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_faa90282749d",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_faa90282749d",
+      "experiment_id": "exp_ca55b797589f",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_818533e2ceba",
+      "experiment_id": "exp_193e1ef3de98"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_818533e2ceba",
+      "experiment_id": "exp_193e1ef3de98"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_818533e2ceba",
+      "experiment_id": "exp_193e1ef3de98",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_193e1ef3de98"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_818533e2ceba",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_818533e2ceba",
+      "experiment_id": "exp_193e1ef3de98",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_ab91eb11f865",
+      "experiment_id": "exp_0169a72ff622"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_ab91eb11f865",
+      "experiment_id": "exp_0169a72ff622"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_ab91eb11f865",
+      "experiment_id": "exp_0169a72ff622",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_0169a72ff622"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_ab91eb11f865",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_ab91eb11f865",
+      "experiment_id": "exp_0169a72ff622",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_a437b67508a9",
+      "experiment_id": "exp_35a33e6b27c8"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_a437b67508a9",
+      "experiment_id": "exp_35a33e6b27c8"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_a437b67508a9",
+      "experiment_id": "exp_35a33e6b27c8",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_35a33e6b27c8"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_a437b67508a9",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_a437b67508a9",
+      "experiment_id": "exp_35a33e6b27c8",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_dda7f5cd8635",
+      "experiment_id": "exp_0b8122876b1e"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_dda7f5cd8635",
+      "experiment_id": "exp_0b8122876b1e"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_dda7f5cd8635",
+      "experiment_id": "exp_0b8122876b1e",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_0b8122876b1e"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_dda7f5cd8635",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_dda7f5cd8635",
+      "experiment_id": "exp_0b8122876b1e",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_52c982e974d2",
+      "experiment_id": "exp_39b4159f5077"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_52c982e974d2",
+      "experiment_id": "exp_39b4159f5077"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_52c982e974d2",
+      "experiment_id": "exp_39b4159f5077",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_39b4159f5077"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_52c982e974d2",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_52c982e974d2",
+      "experiment_id": "exp_39b4159f5077",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_db2bfac8d251",
+      "experiment_id": "exp_a7d47c8be4e0"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_db2bfac8d251",
+      "experiment_id": "exp_a7d47c8be4e0"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_db2bfac8d251",
+      "experiment_id": "exp_a7d47c8be4e0",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_a7d47c8be4e0"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_db2bfac8d251",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_db2bfac8d251",
+      "experiment_id": "exp_a7d47c8be4e0",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_6deb3c0fed84",
+      "experiment_id": "exp_4db265380127"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_6deb3c0fed84",
+      "experiment_id": "exp_4db265380127"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_6deb3c0fed84",
+      "experiment_id": "exp_4db265380127",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_4db265380127"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_6deb3c0fed84",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_6deb3c0fed84",
+      "experiment_id": "exp_4db265380127",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_e2e799a222cd",
+      "experiment_id": "exp_b7ecc4b69e3c"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_e2e799a222cd",
+      "experiment_id": "exp_b7ecc4b69e3c"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_e2e799a222cd",
+      "experiment_id": "exp_b7ecc4b69e3c",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_b7ecc4b69e3c"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_e2e799a222cd",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_e2e799a222cd",
+      "experiment_id": "exp_b7ecc4b69e3c",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_981a4dfb9efc",
+      "experiment_id": "exp_e743e59075af"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_981a4dfb9efc",
+      "experiment_id": "exp_e743e59075af"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_981a4dfb9efc",
+      "experiment_id": "exp_e743e59075af",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_e743e59075af"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_981a4dfb9efc",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_981a4dfb9efc",
+      "experiment_id": "exp_e743e59075af",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_71d6946e784d",
+      "experiment_id": "exp_36ea2fbf7613"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_71d6946e784d",
+      "experiment_id": "exp_36ea2fbf7613"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_71d6946e784d",
+      "experiment_id": "exp_36ea2fbf7613",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_36ea2fbf7613"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_71d6946e784d",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_71d6946e784d",
+      "experiment_id": "exp_36ea2fbf7613",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_e616c30d9c05",
+      "experiment_id": "exp_d304fa9a8683"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_e616c30d9c05",
+      "experiment_id": "exp_d304fa9a8683"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_e616c30d9c05",
+      "experiment_id": "exp_d304fa9a8683",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_d304fa9a8683"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_e616c30d9c05",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_e616c30d9c05",
+      "experiment_id": "exp_d304fa9a8683",
+      "improved": true
+    },
+    {
+      "action": "idle",
+      "reason": "no candidate"
+    },
+    {
+      "action": "created",
+      "opp_id": "opp_ceiling_ce44ba84d9ee",
+      "experiment_id": "exp_201ff2096664"
+    },
+    {
+      "action": "started",
+      "opp_id": "opp_ceiling_ce44ba84d9ee",
+      "experiment_id": "exp_201ff2096664"
+    },
+    {
+      "action": "completed",
+      "opp_id": "opp_ceiling_ce44ba84d9ee",
+      "experiment_id": "exp_201ff2096664",
+      "result": {
+        "overall": "improved",
+        "changes": {
+          "accuracy_change": 0.0,
+          "success_rate_change": 0.0
+        },
+        "improved": true,
+        "experiment_id": "exp_201ff2096664"
+      },
+      "calibrated": {
+        "action": "calibrated",
+        "opp_id": "opp_ceiling_ce44ba84d9ee",
+        "improved": false,
+        "delta": 0.0
+      }
+    },
+    {
+      "action": "promoted",
+      "opp_id": "opp_ceiling_ce44ba84d9ee",
+      "experiment_id": "exp_201ff2096664",
+      "improved": true
+    }
+  ],
+  "checkpoints": [
+    {
+      "cycle": 1,
+      "overall": 0.5635,
+      "planner_health": 0.698,
+      "experiment_health": 0.2651,
+      "strategy_diversity": 0.9334,
+      "system_scores": 0.6479,
+      "loop_health": 0.9957,
+      "knowledge_health": 0.0,
+      "negotiation_health": 0.8295,
+      "opportunity_health": 0.1381,
+      "promotion_rate": 0.0,
+      "rollback_rate": 0.0,
+      "experiments_created": 1,
+      "experiments_completed": 0,
+      "experiments_promoted": 0,
+      "experiments_rolled_back": 0
+    },
+    {
+      "cycle": 100,
+      "overall": 0.5674,
+      "planner_health": 0.698,
+      "experiment_health": 0.2878,
+      "strategy_diversity": 0.9334,
+      "system_scores": 0.6479,
+      "loop_health": 0.9973,
+      "knowledge_health": 0.0,
+      "negotiation_health": 0.8295,
+      "opportunity_health": 0.1455,
+      "promotion_rate": 1.0,
+      "rollback_rate": 0.0,
+      "experiments_created": 25,
+      "experiments_completed": 25,
+      "experiments_promoted": 25,
+      "experiments_rolled_back": 0
+    },
+    {
+      "cycle": 200,
+      "overall": 0.5712,
+      "planner_health": 0.698,
+      "experiment_health": 0.3076,
+      "strategy_diversity": 0.9334,
+      "system_scores": 0.6479,
+      "loop_health": 0.9975,
+      "knowledge_health": 0.0,
+      "negotiation_health": 0.8295,
+      "opportunity_health": 0.1559,
+      "promotion_rate": 1.0,
+      "rollback_rate": 0.0,
+      "experiments_created": 50,
+      "experiments_completed": 50,
+      "experiments_promoted": 50,
+      "experiments_rolled_back": 0
+    },
+    {
+      "cycle": 300,
+      "overall": 0.5751,
+      "planner_health": 0.698,
+      "experiment_health": 0.3251,
+      "strategy_diversity": 0.9334,
+      "system_scores": 0.6479,
+      "loop_health": 0.9976,
+      "knowledge_health": 0.0,
+      "negotiation_health": 0.8295,
+      "opportunity_health": 0.1695,
+      "promotion_rate": 1.0,
+      "rollback_rate": 0.0,
+      "experiments_created": 75,
+      "experiments_completed": 75,
+      "experiments_promoted": 75,
+      "experiments_rolled_back": 0
+    },
+    {
+      "cycle": 400,
+      "overall": 0.5774,
+      "planner_health": 0.698,
+      "experiment_health": 0.3405,
+      "strategy_diversity": 0.9334,
+      "system_scores": 0.6479,
+      "loop_health": 0.9978,
+      "knowledge_health": 0.0,
+      "negotiation_health": 0.8295,
+      "opportunity_health": 0.1721,
+      "promotion_rate": 1.0,
+      "rollback_rate": 0.0,
+      "experiments_created": 100,
+      "experiments_completed": 100,
+      "experiments_promoted": 100,
+      "experiments_rolled_back": 0
+    },
+    {
+      "cycle": 500,
+      "overall": 0.5803,
+      "planner_health": 0.698,
+      "experiment_health": 0.3544,
+      "strategy_diversity": 0.9334,
+      "system_scores": 0.6479,
+      "loop_health": 0.9979,
+      "knowledge_health": 0.0,
+      "negotiation_health": 0.8295,
+      "opportunity_health": 0.1814,
+      "promotion_rate": 1.0,
+      "rollback_rate": 0.0,
+      "experiments_created": 125,
+      "experiments_completed": 125,
+      "experiments_promoted": 125,
+      "experiments_rolled_back": 0
+    }
+  ]
+}

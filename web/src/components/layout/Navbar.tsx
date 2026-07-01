@@ -12,12 +12,17 @@ interface Props {
 }
 
 const PAGE_TITLES: Record<string, string> = {
-  '/': 'Dashboard',
+  '/': 'Home',
   '/chat': 'Chat',
+  '/tasks': 'Tasks',
+  '/history': 'History',
+  '/system': 'System',
+  '/system/entry-points': 'Entry Points',
   '/cli': 'CLI',
   '/monitor': 'Monitor',
   '/logs': 'Logs',
   '/backend': 'Backend',
+  '/providers': 'Providers',
   '/settings': 'Settings',
   '/settings/themes': 'Theme Studio',
   '/settings/fonts': 'Font Picker',
@@ -69,6 +74,7 @@ export default function Navbar({ onMenuClick }: Props) {
       initial={{ opacity: 0, y: -12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2 }}
+      role="banner"
       className="h-16 border-b border-[var(--j-border)] flex items-center gap-3 px-4 md:px-6 shrink-0"
       style={{ background: 'rgba(var(--j-bg-rgb), 0.86)', backdropFilter: 'blur(20px)' }}
     >
@@ -76,7 +82,8 @@ export default function Navbar({ onMenuClick }: Props) {
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
         onClick={onMenuClick}
-        className="md:hidden w-9 h-9 flex items-center justify-center border border-[var(--j-border)] text-lg text-[var(--j-text-dim)] hover:bg-[var(--j-surface-hover)]"
+        aria-label="Toggle navigation menu"
+        className="md:hidden w-9 h-9 flex items-center justify-center border border-[var(--j-border)] text-lg text-[var(--j-text-dim)] hover:bg-[var(--j-surface-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--j-sky)]"
       >
         ☰
       </motion.button>
@@ -96,10 +103,13 @@ export default function Navbar({ onMenuClick }: Props) {
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={() => { setNotifOpen(!notifOpen); if (!notifOpen) markRead(); }}
-          className="relative w-9 h-9 flex items-center justify-center border border-[var(--j-border)] transition-colors hover:bg-[var(--j-surface-hover)] hover:border-[var(--j-border-bright)]"
+          aria-label={`Notifications ${unreadCount > 0 ? `(${unreadCount} unread)` : ''}`}
+          aria-haspopup="true"
+          aria-expanded={notifOpen}
+          className="relative w-9 h-9 flex items-center justify-center border border-[var(--j-border)] transition-colors hover:bg-[var(--j-surface-hover)] hover:border-[var(--j-border-bright)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--j-sky)]"
           style={{ color: 'var(--j-text-dim)' }}
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
             <path d="M13.73 21a2 2 0 0 1-3.46 0" />
           </svg>
@@ -122,6 +132,8 @@ export default function Navbar({ onMenuClick }: Props) {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -8, scale: 0.96 }}
               transition={{ duration: 0.1 }}
+              role="dialog"
+              aria-label="Notifications"
               className="absolute right-0 top-full mt-2 w-[280px] border shadow-[0_16px_50px_rgba(0,0,0,0.35)] overflow-hidden z-40"
               style={{ background: 'var(--j-surface)', borderColor: 'var(--j-border)' }}
             >
@@ -129,12 +141,12 @@ export default function Navbar({ onMenuClick }: Props) {
                 <span className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--j-text-dim)' }}>Notifications</span>
                 <span className="text-[9px]" style={{ color: 'var(--j-text-dim)' }}>{notifs.length}</span>
               </div>
-              <div className="max-h-[240px] overflow-y-auto">
+              <div className="max-h-[240px] overflow-y-auto" role="list" aria-label="Notification list">
                 {notifs.length === 0 ? (
                   <p className="text-[11px] text-center py-6" style={{ color: 'var(--j-text-dim)' }}>No notifications</p>
                 ) : (
                   notifs.map(n => (
-                    <div key={n.id} className="px-4 py-2.5 border-b text-[11px]" style={{ borderColor: 'var(--j-border)', background: n.unread ? 'rgba(56,189,248,0.04)' : 'transparent' }}>
+                    <div key={n.id} role="listitem" className="px-4 py-2.5 border-b text-[11px]" style={{ borderColor: 'var(--j-border)', background: n.unread ? 'rgba(56,189,248,0.04)' : 'transparent' }}>
                       <div style={{ color: 'var(--j-text)' }}>{n.text}</div>
                       <div className="text-[9px] mt-0.5" style={{ color: 'var(--j-text-dim)' }}>
                         {Math.floor((Date.now() - n.time) / 60000)}m ago
@@ -177,7 +189,10 @@ function UserMenu() {
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={() => setOpen(!open)}
-        className="w-9 h-9 flex items-center justify-center text-xs font-bold transition-colors hover:bg-[var(--j-surface-hover)]"
+        aria-label="User menu"
+        aria-haspopup="true"
+        aria-expanded={open}
+        className="w-9 h-9 flex items-center justify-center text-xs font-bold transition-colors hover:bg-[var(--j-surface-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--j-sky)]"
         style={{ background: 'var(--j-bg)', color: 'var(--j-sky)', border: '1px solid var(--j-border)' }}
       >
         J

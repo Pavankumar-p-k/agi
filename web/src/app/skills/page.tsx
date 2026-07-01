@@ -29,12 +29,14 @@ const itemVariants: Variants = {
 export default function SkillsPage() {
   const [skills, setSkills] = useState<SkillInfo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   const fetchSkills = useCallback(async () => {
+    setError('');
     try {
       const data = await api.skills.list();
       setSkills(data.skills.map(s => ({ ...s, version: '1.0', triggers: [] })) || []);
-    } catch (e) { console.warn('[Skills] fetch failed', e); } finally { setLoading(false); }
+    } catch (e) { console.warn('[Skills] fetch failed', e); setError('Failed to load skills'); } finally { setLoading(false); }
   }, []);
 
   useEffect(() => { fetchSkills(); }, [fetchSkills]);
@@ -43,7 +45,7 @@ export default function SkillsPage() {
     try {
       await api.skills.toggle(name);
       setSkills(prev => prev.map(s => s.name === name ? { ...s, enabled: !enabled } : s));
-    } catch (e) { console.warn('[Skills] toggle failed', e); }
+    } catch (e) { console.warn('[Skills] toggle failed', e); setError(`Failed to toggle ${name}`); }
   };
 
   if (loading) return <div className="hud-page p-6"><Skeleton /></div>;
@@ -60,6 +62,12 @@ export default function SkillsPage() {
           <Badge variant="new">{skills.length} installed</Badge>
         </div>
       </motion.section>
+
+      {error && (
+        <motion.div variants={itemVariants} className="border border-red-500/30 bg-red-500/5 px-5 py-3">
+          <p className="text-xs text-red-400">{error}</p>
+        </motion.div>
+      )}
 
       <motion.section variants={itemVariants}>
         <div className="hud-label mb-4">Installed Skills</div>

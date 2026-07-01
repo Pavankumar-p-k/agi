@@ -62,9 +62,13 @@ export default function FilesPage() {
     const input = fileRef.current;
     if (!input || !input.files?.length) return;
     const file = input.files[0];
-    await api.files.upload(currentPath, file);
-    input.value = '';
-    loadFiles(currentPath);
+    try {
+      await api.files.upload(currentPath, file);
+      input.value = '';
+      loadFiles(currentPath);
+    } catch (e) {
+      setError('Failed to upload file');
+    }
   }
 
   return (

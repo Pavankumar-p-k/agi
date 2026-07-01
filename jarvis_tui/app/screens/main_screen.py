@@ -1,18 +1,5 @@
 from __future__ import annotations
 
-# Copyright (c) 2024-2026 JARVIS Project
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical
@@ -24,6 +11,7 @@ from jarvis_tui.app.widgets.confirm_gate import ConfirmGate
 from jarvis_tui.app.widgets.diff_pane import DiffPane
 from jarvis_tui.app.widgets.hero_banner import HeroBanner
 from jarvis_tui.app.widgets.input_bar import InputBar
+from jarvis_tui.app.widgets.navigation import Navigation
 from jarvis_tui.app.widgets.sidebar import Sidebar
 from jarvis_tui.app.widgets.status_bar import StatusBar
 from jarvis_tui.app.widgets.toast import ToastRack
@@ -49,9 +37,9 @@ class MainScreen(Screen):
                 yield InputBar(id="input-bar")
             yield WhisperChannel(id="whisper-channel")
         yield DiffPane(
-            old_content="def hello():\n    print('world')",
-            new_content="def hello():\n    print('hello world')",
-            filename="hello.py",
+            old_content="# File diffs appear here when reviewing changes",
+            new_content="# Use Ctrl+D to toggle this pane",
+            filename="",
             id="diff-pane"
         )
         yield StatusBar(id="status-bar")
@@ -70,6 +58,10 @@ class MainScreen(Screen):
     def action_toggle_diff(self) -> None:
         diff = self.query_one("#diff-pane", DiffPane)
         diff.display = not diff.display
+
+    def on_navigation_selected(self, message: Navigation.Selected) -> None:
+        """Handle navigation selection from the sidebar."""
+        self.app.handle_navigation(message.screen_name)
 
     def on_mount(self) -> None:
         self.title = "JARVIS"

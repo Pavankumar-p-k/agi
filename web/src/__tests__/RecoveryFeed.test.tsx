@@ -12,10 +12,12 @@ import {
 } from '../components/operations/RecoveryFeed';
 import type { ActivityEvent } from '@jarvis/sdk';
 
+const TS = new Date().toISOString();
+
 describe('RecoveryFeed type guards', () => {
-  const updated: ActivityEvent = { event: 'activity_updated', activity_id: 'act_1' };
-  const completed: ActivityEvent = { event: 'activity_completed', activity_id: 'act_1', status: 'COMPLETED' };
-  const resumed: ActivityEvent = { event: 'activity_resumed', activity_id: 'act_1', node_id: 'n1' };
+  const updated: ActivityEvent = { event: 'activity_updated', activity_id: 'act_1', status: 'RUNNING', timestamp: TS };
+  const completed: ActivityEvent = { event: 'activity_completed', activity_id: 'act_1', status: 'COMPLETED', timestamp: TS };
+  const resumed: ActivityEvent = { event: 'activity_resumed', activity_id: 'act_1', node_id: 'n1', status: 'RUNNING', timestamp: TS };
 
   it('detects activity_updated', () => {
     expect(isUpdated(updated)).toBe(true);
@@ -35,13 +37,13 @@ describe('RecoveryFeed type guards', () => {
 
 describe('RecoveryFeed event helpers', () => {
   it('getEventIcon returns correct icons', () => {
-    const completeOk: ActivityEvent = { event: 'activity_completed', activity_id: 'a1', status: 'COMPLETED' };
-    const completeFail: ActivityEvent = { event: 'activity_completed', activity_id: 'a1', status: 'FAILED' };
-    const resumed: ActivityEvent = { event: 'activity_resumed', activity_id: 'a1', node_id: 'n1' };
-    const updatedRunning: ActivityEvent = { event: 'activity_updated', activity_id: 'a1', status: 'RUNNING' };
-    const updated: ActivityEvent = { event: 'activity_updated', activity_id: 'a1' };
-    const triggered: ActivityEvent = { event: 'schedule_triggered', activity_id: '', schedule_id: 's1' };
-    const failed: ActivityEvent = { event: 'schedule_failed', activity_id: '', schedule_id: 's1', error: 'err' };
+    const completeOk: ActivityEvent = { event: 'activity_completed', activity_id: 'a1', status: 'COMPLETED', timestamp: TS };
+    const completeFail: ActivityEvent = { event: 'activity_completed', activity_id: 'a1', status: 'FAILED', timestamp: TS };
+    const resumed: ActivityEvent = { event: 'activity_resumed', activity_id: 'a1', node_id: 'n1', status: 'RUNNING', timestamp: TS };
+    const updatedRunning: ActivityEvent = { event: 'activity_updated', activity_id: 'a1', status: 'RUNNING', timestamp: TS };
+    const updated: ActivityEvent = { event: 'activity_updated', activity_id: 'a1', status: 'COMPLETED', timestamp: TS };
+    const triggered: ActivityEvent = { event: 'schedule_triggered', activity_id: '', schedule_id: 's1', timestamp: TS };
+    const failed: ActivityEvent = { event: 'schedule_failed', schedule_id: 's1', error: 'err', timestamp: TS };
 
     expect(getEventIcon(completeOk)).toBe('✓');
     expect(getEventIcon(completeFail)).toBe('⚠');
@@ -53,11 +55,11 @@ describe('RecoveryFeed event helpers', () => {
   });
 
   it('getEventColor returns correct colors', () => {
-    const completeOk: ActivityEvent = { event: 'activity_completed', activity_id: 'a1', status: 'COMPLETED' };
-    const completeFail: ActivityEvent = { event: 'activity_completed', activity_id: 'a1', status: 'FAILED' };
-    const resumed: ActivityEvent = { event: 'activity_resumed', activity_id: 'a1', node_id: 'n1' };
-    const triggered: ActivityEvent = { event: 'schedule_triggered', activity_id: '', schedule_id: 's1' };
-    const failed: ActivityEvent = { event: 'schedule_failed', activity_id: '', schedule_id: 's1', error: 'err' };
+    const completeOk: ActivityEvent = { event: 'activity_completed', activity_id: 'a1', status: 'COMPLETED', timestamp: TS };
+    const completeFail: ActivityEvent = { event: 'activity_completed', activity_id: 'a1', status: 'FAILED', timestamp: TS };
+    const resumed: ActivityEvent = { event: 'activity_resumed', activity_id: 'a1', node_id: 'n1', status: 'RUNNING', timestamp: TS };
+    const triggered: ActivityEvent = { event: 'schedule_triggered', activity_id: '', schedule_id: 's1', timestamp: TS };
+    const failed: ActivityEvent = { event: 'schedule_failed', schedule_id: 's1', error: 'err', timestamp: TS };
 
     expect(getEventColor(completeOk)).toBe('#22c55e');
     expect(getEventColor(completeFail)).toBe('#ef4444');
@@ -67,12 +69,12 @@ describe('RecoveryFeed event helpers', () => {
   });
 
   it('getEventDescription returns correct text', () => {
-    const completeOk: ActivityEvent = { event: 'activity_completed', activity_id: 'act_test_123456', status: 'COMPLETED' };
-    const completeErr: ActivityEvent = { event: 'activity_completed', activity_id: 'act_test_123456', status: 'FAILED', error: 'timeout' };
-    const resumed: ActivityEvent = { event: 'activity_resumed', activity_id: 'act_test_123456', node_id: 'node_target_1' };
-    const updated: ActivityEvent = { event: 'activity_updated', activity_id: 'act_test_123456', status: 'RUNNING' };
-    const triggered: ActivityEvent = { event: 'schedule_triggered', activity_id: '', schedule_id: 'sched_target_1' };
-    const failed: ActivityEvent = { event: 'schedule_failed', activity_id: '', schedule_id: 'sched_target_1', error: 'disk full' };
+    const completeOk: ActivityEvent = { event: 'activity_completed', activity_id: 'act_test_123456', status: 'COMPLETED', timestamp: TS };
+    const completeErr: ActivityEvent = { event: 'activity_completed', activity_id: 'act_test_123456', status: 'FAILED', error: 'timeout', timestamp: TS };
+    const resumed: ActivityEvent = { event: 'activity_resumed', activity_id: 'act_test_123456', node_id: 'node_target_1', status: 'RUNNING', timestamp: TS };
+    const updated: ActivityEvent = { event: 'activity_updated', activity_id: 'act_test_123456', status: 'RUNNING', timestamp: TS };
+    const triggered: ActivityEvent = { event: 'schedule_triggered', activity_id: '', schedule_id: 'sched_target_1', timestamp: TS };
+    const failed: ActivityEvent = { event: 'schedule_failed', schedule_id: 'sched_target_1', error: 'disk full', timestamp: TS };
 
     expect(getEventDescription(completeOk)).toContain('completed');
     expect(getEventDescription(completeOk)).toContain('act_test_123');
@@ -105,7 +107,7 @@ describe('RecoveryFeed component', () => {
 
   it('renders completed event', () => {
     const events: ActivityEvent[] = [
-      { event: 'activity_completed', activity_id: 'act_123', status: 'COMPLETED' },
+      { event: 'activity_completed', activity_id: 'act_123', status: 'COMPLETED', timestamp: TS },
     ];
     render(<RecoveryFeed events={events} />);
     expect(screen.getByText(/completed/)).toBeInTheDocument();
@@ -113,9 +115,9 @@ describe('RecoveryFeed component', () => {
 
   it('renders multiple events', () => {
     const events: ActivityEvent[] = [
-      { event: 'activity_updated', activity_id: 'act_1', status: 'RUNNING' },
-      { event: 'activity_completed', activity_id: 'act_2', status: 'COMPLETED' },
-      { event: 'activity_resumed', activity_id: 'act_3', node_id: 'n_1' },
+      { event: 'activity_updated', activity_id: 'act_1', status: 'RUNNING', timestamp: TS },
+      { event: 'activity_completed', activity_id: 'act_2', status: 'COMPLETED', timestamp: TS },
+      { event: 'activity_resumed', activity_id: 'act_3', node_id: 'n_1', status: 'RUNNING', timestamp: TS },
     ];
     render(<RecoveryFeed events={events} />);
     expect(screen.getByText('Event Feed')).toBeInTheDocument();
@@ -127,6 +129,7 @@ describe('RecoveryFeed component', () => {
       event: 'activity_updated' as const,
       activity_id: `act_${i}`,
       status: 'RUNNING',
+      timestamp: TS,
     }));
     render(<RecoveryFeed events={events} max={3} />);
     const items = screen.getAllByText(/RUNNING/);

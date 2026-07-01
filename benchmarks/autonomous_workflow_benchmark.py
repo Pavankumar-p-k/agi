@@ -341,9 +341,12 @@ class WorkflowExecutor:
                                 desc, result = await execute_tool_block(block=tool_block, session_id=wid, owner="dev", context=context)
                                 return result
 
-                            result = await _executor.inject_task(plan.template_id, step_name, enforce_step, context=context)
-                            enforced_tool = _executor.get_task_for_step(plan.template_id, step_name)
-                            tool_name = enforced_tool["tool"] if enforced_tool else step_name
+                            task_info = _executor.get_task_for_step(plan.template_id, step_name)
+                            if task_info:
+                                result = await enforce_step(task_info["tool"], task_info.get("default_args", {}))
+                            else:
+                                result = {"exit_code": 1, "error": f"Unknown step: {step_name}"}
+                            tool_name = task_info["tool"] if task_info else step_name
                             all_tool_calls.append({"tool": tool_name, "args": {}, "result": result, "enforced": True})
                             msg_text = str(result.get("output", result.get("result", json.dumps(result))))[:500]
                             messages.append({"role": "assistant", "content": None, "tool_calls": [{"function": {"name": tool_name, "arguments": "{}"}, "type": "function"}]})

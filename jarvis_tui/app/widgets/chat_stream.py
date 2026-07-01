@@ -60,7 +60,7 @@ class MessageWidget(Static):
                 spark = self._render_sparkline(data)
                 self.content = self.content + "\n\n" + spark.markup
             except Exception as e:
-                logger.warning(f"[SWALLOWED] {e}")
+                logger.warning(f"chat_stream sparkline render: {e}")
 
         display_text = Text.from_markup(self.content)
         if not self.expanded:

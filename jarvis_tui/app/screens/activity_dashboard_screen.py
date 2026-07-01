@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+
 from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical
@@ -8,6 +10,8 @@ from textual.widgets import Button, DataTable, Static, Header, Footer, Label, Tr
 from textual import work
 
 from jarvis_tui.app.screens.base_screen import JarvisScreen
+
+logger = logging.getLogger(__name__)
 
 
 class ActivityDashboardScreen(JarvisScreen):
@@ -97,7 +101,8 @@ class ActivityDashboardScreen(JarvisScreen):
             return None
         try:
             return table.get_row_at(row)[0]
-        except Exception:
+        except Exception as e:
+            logger.warning("_get_selected_id get_row_at failed: %s", e)
             return None
 
     def action_refresh(self) -> None:

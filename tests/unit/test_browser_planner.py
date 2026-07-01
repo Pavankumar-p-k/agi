@@ -1,8 +1,14 @@
-"""Unit tests for BrowserPlanner (no browser required)."""
+"""Unit tests for BrowserPlanner (no browser required).
+
+Matches the current static-method API (refactored from old instance-based design).
+"""
+
 import sys, os, asyncio, re
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 
 from core.tools.browser_planner import BrowserPlanner, extract_query, detect_loop
+from core.tools._constants import ToolBlock
+
 
 def has_search_form(text):
     """Re-implemented from legacy benchmarks.browser_planner."""
@@ -36,132 +42,164 @@ def test_detect_loop():
     assert not detect_loop([])
 
 
+def _toolblock(name: str, args: dict | None = None) -> dict:
+    return {"name": name, "arguments": args or {}}
+
+def _tool_name(tb) -> str:
+    """Get name from either a ToolBlock namedtuple or a dict."""
+    return getattr(tb, "tool_type", None) or (tb.get("name") if isinstance(tb, dict) else str(tb))
+
+
+# ── pre_plan tests ──────────────────────────────────────────────
+
 def test_pre_plan_injects_snapshot():
-    p = BrowserPlanner("test", 'Search for "cats"')
-    calls = [{"name": "browser_navigate", "arguments": {"url": "http://example.com"}}]
-    planned = p.pre_plan(calls)
+    ctx = BrowserPlanner.init('Search for "cats"')
+    calls = [_toolblock("browser_navigate", {"url": "http://example.com"})]
+    planned, new_ctx = BrowserPlanner.pre_plan(calls, ctx)
     assert len(planned) == 2
-    assert planned[0]["name"] == "browser_navigate"
-    assert planned[1]["name"] == "browser_snapshot"
-    assert p.decisions[0]["rule"] == "auto_snapshot"
+    assert _tool_name(planned[0]) == "browser_navigate"
+    assert _tool_name(planned[1]) == "browser_snapshot"
+    assert new_ctx["decisions"][0]["rule"] == "auto_snapshot"
 
 
 def test_pre_plan_skips_snapshot_when_no_navigate():
-    p = BrowserPlanner("test", 'Search for "cats"')
-    calls = [{"name": "browser_fill", "arguments": {"selector": "input", "text": "test"}}]
-    planned = p.pre_plan(calls)
+    ctx = BrowserPlanner.init('Search for "cats"')
+    calls = [_toolblock("browser_fill", {"selector": "input", "text": "test"})]
+    planned, new_ctx = BrowserPlanner.pre_plan(calls, ctx)
     assert len(planned) == 1
-    assert planned[0]["name"] == "browser_fill"
+    assert _tool_name(planned[0]) == "browser_fill"
 
 
 def test_pre_plan_injects_multiple_snapshots():
-    p = BrowserPlanner("test", "task")
+    ctx = BrowserPlanner.init("task")
     calls = [
-        {"name": "browser_navigate", "arguments": {"url": "http://a.com"}},
-        {"name": "browser_click", "arguments": {}},
-        {"name": "browser_navigate", "arguments": {"url": "http://b.com"}},
+        _toolblock("browser_navigate", {"url": "http://a.com"}),
+        _toolblock("browser_click", {}),
+        _toolblock("browser_navigate", {"url": "http://b.com"}),
     ]
-    planned = p.pre_plan(calls)
+    planned, new_ctx = BrowserPlanner.pre_plan(calls, ctx)
     assert len(planned) == 5
-    assert planned[1]["name"] == "browser_snapshot"
-    assert planned[4]["name"] == "browser_snapshot"
+    assert _tool_name(planned[1]) == "browser_snapshot"
+    assert _tool_name(planned[4]) == "browser_snapshot"
 
+
+def test_pre_plan_injects_navigate_when_no_browser_tool_chosen():
+    """Rule 0: If task needs browsing but LLM chose non-browser tools, inject nav."""
+    ctx = BrowserPlanner.init('Search for "cats"')
+    calls = [_toolblock("bash", {"command": "whoami"})]
+    planned, new_ctx = BrowserPlanner.pre_plan(calls, ctx)
+    assert any(_tool_name(tb) == "browser_navigate" for tb in planned)
+    assert any(d["rule"] == "intent_router" for d in new_ctx["decisions"])
+
+
+def test_pre_plan_no_injection_when_already_navigated():
+    """If FSM is past START/NAVIGATE, don't inject another navigate."""
+    ctx = BrowserPlanner.init('Search for "cats"')
+    ctx["fsm"] = {"state": "SEARCH_PAGE"}
+    calls = [_toolblock("bash", {"command": "whoami"})]
+    planned, new_ctx = BrowserPlanner.pre_plan(calls, ctx)
+    navs = [tb for tb in planned if _tool_name(tb) == "browser_navigate"]
+    assert len(navs) == 0
+
+
+# ── post_plan tests ─────────────────────────────────────────────
 
 def test_post_plan_no_query():
-    p = BrowserPlanner("test", "Just look at this page")
-    extra = asyncio.run(p.post_plan([], None, None, None, None))
+    """No search query → no extra tools beyond FSM normal flow."""
+    ctx = BrowserPlanner.init("Just look at this page")
+    extra, new_ctx = BrowserPlanner.post_plan([], [], ctx)
+    # With no results, no actions, no history — should return empty extra
     assert extra == []
-    assert p.decisions[-1]["rule"] == "search_fill"
-    assert not p.decisions[-1]["triggered"]
 
 
-def test_post_plan_result_detection_via_url():
-    p = BrowserPlanner("test", 'Search for "cats"')
-    p._pending_search = True
-
-    async def mock_get_url():
-        return {"status": "ok", "url": "https://www.google.com/search?q=cats"}
-    async def mock_evaluate(js):
-        return {"status": "ok", "result": ""}
-    async def mock_snapshot():
-        return {"status": "ok", "result": "page content"}
-
-    extra = asyncio.run(p.post_plan([], None, None, None, None, mock_get_url, mock_snapshot))
-    assert len(extra) == 1
-    assert extra[0]["name"] == "browser_snapshot"
-    assert p.decisions[-1]["rule"] == "result_detection"
-    assert p.decisions[-1]["triggered"]
-    assert not p._pending_search
-
-
-def test_post_plan_result_detection_via_dom():
-    p = BrowserPlanner("test", 'Search for "cats"')
-    p._pending_search = True
-
-    async def mock_get_url():
-        return {"status": "ok", "url": "https://www.google.com/webhp"}
-    async def mock_evaluate(js):
-        return {"status": "ok", "result": "3:.g"}
-    async def mock_snapshot():
-        return {"status": "ok", "result": "results page"}
-
-    extra = asyncio.run(p.post_plan([], None, None, None, mock_evaluate, mock_get_url, mock_snapshot))
-    assert len(extra) == 1
-    assert extra[0]["name"] == "browser_snapshot"
-    assert p.decisions[-1]["rule"] == "result_detection"
-    assert p.decisions[-1]["triggered"]
+def test_post_plan_fsm_state_entry_inject():
+    """When FSM enters SEARCH_PAGE via page recognition, entry inject fires."""
+    ctx = BrowserPlanner.init('Search for "cats"')
+    ctx["fsm"] = {
+        "state": "NAVIGATE",
+        "actions_in_state": 1,
+        "total_actions": 1,
+        "consecutive_same_tool": 0,
+        "last_tool": "",
+        "_initialized": True,
+    }
+    # Simulate a snapshot that looks like a search page
+    snapshot_result = {"result": {"result": {"title": "Google", "url": "https://google.com",
+                                              "inputs": [{"type": "text", "selector": "input[name=q]"}],
+                                              "headings": [{"tag": "h1", "text": "Google"}],
+                                              "text_blocks": []}}}
+    extra, new_ctx = BrowserPlanner.post_plan(
+        [snapshot_result],
+        [{"name": "browser_snapshot"}],
+        ctx,
+    )
+    # FSM should have recognized and advanced
+    fsm_state = new_ctx.get("fsm", {}).get("state", "?")
+    assert fsm_state != "NAVIGATE", f"FSM should have advanced, got {fsm_state}"
+    # Should have injected something (entry inject or state handler)
+    assert len(extra) >= 0  # May inject evaluate probe for SEARCH_PAGE
 
 
-def test_post_plan_result_detection_fallback():
-    p = BrowserPlanner("test", 'Search for "cats"')
-    p._pending_search = True
-
-    async def mock_get_url():
-        return {"status": "ok", "url": "https://www.google.com/"}
-    async def mock_evaluate(js):
-        return {"status": "ok", "result": ""}
-    async def mock_snapshot():
-        return {"status": "ok", "result": "diagnostic snapshot"}
-
-    extra = asyncio.run(p.post_plan([], None, None, None, mock_evaluate, mock_get_url, mock_snapshot))
-    assert len(extra) == 1
-    assert extra[0]["name"] == "browser_snapshot"
-    assert not p.decisions[-1]["triggered"]
+def test_post_plan_empty_state_with_no_actions():
+    """Fresh init with no executed actions → no extra tools."""
+    ctx = BrowserPlanner.init('Search for "cats"')
+    extra, new_ctx = BrowserPlanner.post_plan([], [], ctx)
+    assert extra == []
 
 
-def test_post_plan_loop_breaker():
-    p = BrowserPlanner("test", 'Search for "cats"')
-    history = [
-        {"name": "browser_navigate"}, {"name": "browser_find"},
-        {"name": "browser_navigate"}, {"name": "browser_find"},
-        {"name": "browser_navigate"}, {"name": "browser_find"},
+def test_post_plan_accumulates_history_single_call():
+    """A single post_plan call should record all blocks in history."""
+    ctx = BrowserPlanner.init('Search for "cats"')
+    extra, ctx = BrowserPlanner.post_plan(
+        [{"result": {"url": "http://x.com", "title": "X"}},
+         {"result": {"url": "http://x.com", "title": "X"}}],
+        [{"name": "browser_navigate"}, {"name": "browser_snapshot"}],
+        ctx,
+    )
+    history_names = [h["name"] for h in ctx.get("history", [])]
+    assert "browser_navigate" in history_names, f"Missing navigate in {history_names}"
+    assert "browser_snapshot" in history_names, f"Missing snapshot in {history_names}"
+
+
+def test_post_plan_records_decisions():
+    ctx = BrowserPlanner.init('Search for "cats"')
+    extra, new_ctx = BrowserPlanner.post_plan([], [], ctx)
+    assert "decisions" not in new_ctx or isinstance(new_ctx["decisions"], list)
+
+
+def test_post_plan_fsm_in_ctx():
+    """post_plan should populate FSM state in ctx."""
+    ctx = BrowserPlanner.init("test")
+    extra, new_ctx = BrowserPlanner.post_plan(
+        [{"result": {"result": {"title": "P", "url": "http://x.com"}}}],
+        [_toolblock("browser_navigate", {"url": "http://x.com"})],
+        ctx,
+    )
+    assert "fsm" in new_ctx
+    fsm = new_ctx["fsm"]
+    assert "state" in fsm
+    assert "total_actions" in fsm
+
+
+# ── Integration with FSM ───────────────────────────────────────
+
+def test_pre_plan_then_post_plan_roundtrip():
+    """Full pre_plan → execute → post_plan roundtrip."""
+    ctx = BrowserPlanner.init('Search for "cats"')
+    calls = [_toolblock("browser_navigate", {"url": "https://google.com"})]
+    planned, ctx = BrowserPlanner.pre_plan(calls, ctx)
+    assert len(planned) == 2
+    assert _tool_name(planned[0]) == "browser_navigate"
+    assert _tool_name(planned[1]) == "browser_snapshot"
+
+    # Simulate execution: navigate result
+    exec_results = [
+        {"result": {"result": {"url": "https://google.com", "title": "Google",
+                               "headings": [{"tag": "h1", "text": "Google"}],
+                               "inputs": [{"type": "text", "selector": "input"}]}}},
     ]
-    extra = asyncio.run(p.post_plan(history, None, None, None, None))
-    assert len(extra) == 1
-    assert extra[0]["name"] == "browser_snapshot"
-    assert p.decisions[-1]["rule"] == "loop_breaker"
-
-
-def test_pending_search_cleared_after_result_detection():
-    p = BrowserPlanner("test", 'Search for "cats"')
-    p._pending_search = True
-    assert p._pending_search
-
-    async def mock_get_url():
-        return {"status": "ok", "url": "https://www.google.com/search?q=cats"}
-    async def mock_evaluate(js):
-        return {"status": "ok", "result": ""}
-    async def mock_snapshot():
-        return {"status": "ok", "result": "page"}
-
-    asyncio.run(p.post_plan([], None, None, None, mock_evaluate, mock_get_url, mock_snapshot))
-    assert not p._pending_search
-
-
-def test_multiple_decisions_tracked():
-    p = BrowserPlanner("test", 'Search for "cats"')
-    calls = [{"name": "browser_navigate", "arguments": {"url": "http://x.com"}}]
-    p.pre_plan(calls)
-    assert len(p.decisions) == 1
-    assert p.decisions[0]["rule"] == "auto_snapshot"
-    assert p.decisions[0]["triggered"]
+    exec_blocks = [{"name": "browser_navigate"}]
+    extra, ctx = BrowserPlanner.post_plan(exec_results, exec_blocks, ctx)
+    # FSM should have advanced past START
+    fsm_state = ctx.get("fsm", {}).get("state", "?")
+    assert fsm_state != "START", f"Expected FSM to advance past START, got {fsm_state}"

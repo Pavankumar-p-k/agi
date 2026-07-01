@@ -1,0 +1,312 @@
+{
+  "timestamp": "2026-06-27T07:35:31.286971+00:00",
+  "model": "qwen2.5:7b",
+  "tasks": [
+    {
+      "task_id": "search_extract_1",
+      "category": "search_extract",
+      "config": "raw",
+      "success": false,
+      "turns": 3,
+      "tool_calls": [
+        "web_search",
+        "web_search",
+        "web_search"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "web_search"
+      ],
+      "duration_seconds": 31.46,
+      "error": "loop_detected: web_search called 3 times"
+    },
+    {
+      "task_id": "search_extract_2",
+      "category": "search_extract",
+      "config": "raw",
+      "success": false,
+      "turns": 3,
+      "tool_calls": [
+        "web_search",
+        "web_fetch"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "web_fetch",
+        "web_search"
+      ],
+      "duration_seconds": 44.09,
+      "error": ""
+    },
+    {
+      "task_id": "search_extract_1",
+      "category": "search_extract",
+      "config": "planner",
+      "success": false,
+      "turns": 2,
+      "tool_calls": [
+        "web_search"
+      ],
+      "planner_injected": [
+        "browser_navigate",
+        "browser_snapshot",
+        "browser_snapshot"
+      ],
+      "unique_tools": [
+        "browser_navigate",
+        "browser_snapshot",
+        "web_search"
+      ],
+      "duration_seconds": 16.42,
+      "error": ""
+    },
+    {
+      "task_id": "search_extract_2",
+      "category": "search_extract",
+      "config": "planner",
+      "success": false,
+      "turns": 2,
+      "tool_calls": [
+        "web_search"
+      ],
+      "planner_injected": [
+        "browser_navigate",
+        "browser_snapshot",
+        "browser_snapshot"
+      ],
+      "unique_tools": [
+        "browser_navigate",
+        "browser_snapshot",
+        "web_search"
+      ],
+      "duration_seconds": 13.45,
+      "error": ""
+    }
+  ],
+  "per_task_details": [
+    {
+      "task_id": "search_extract_1",
+      "category": "search_extract",
+      "config": "raw",
+      "success": false,
+      "turns": 3,
+      "tool_calls": [
+        "web_search",
+        "web_search",
+        "web_search"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "web_search"
+      ],
+      "duration_seconds": 31.46,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_snapshot",
+          "browser_fill",
+          "browser_press"
+        ],
+        "selected_by_llm": [],
+        "injected_by_planner": [],
+        "matched_count": 0,
+        "required_count": 4,
+        "missing": [
+          "browser_press",
+          "browser_navigate",
+          "browser_fill",
+          "browser_snapshot"
+        ],
+        "accuracy": 0.0
+      },
+      "error": "loop_detected: web_search called 3 times"
+    },
+    {
+      "task_id": "search_extract_2",
+      "category": "search_extract",
+      "config": "raw",
+      "success": false,
+      "turns": 3,
+      "tool_calls": [
+        "web_search",
+        "web_fetch"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "web_fetch",
+        "web_search"
+      ],
+      "duration_seconds": 44.09,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_fill",
+          "browser_press",
+          "browser_snapshot"
+        ],
+        "selected_by_llm": [],
+        "injected_by_planner": [],
+        "matched_count": 0,
+        "required_count": 4,
+        "missing": [
+          "browser_press",
+          "browser_navigate",
+          "browser_fill",
+          "browser_snapshot"
+        ],
+        "accuracy": 0.0
+      },
+      "error": ""
+    },
+    {
+      "task_id": "search_extract_1",
+      "category": "search_extract",
+      "config": "planner",
+      "success": false,
+      "turns": 2,
+      "tool_calls": [
+        "web_search"
+      ],
+      "planner_injected": [
+        "browser_navigate",
+        "browser_snapshot",
+        "browser_snapshot"
+      ],
+      "unique_tools": [
+        "browser_navigate",
+        "browser_snapshot",
+        "web_search"
+      ],
+      "duration_seconds": 16.42,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_snapshot",
+          "browser_fill",
+          "browser_press"
+        ],
+        "selected_by_llm": [],
+        "injected_by_planner": [
+          "browser_navigate",
+          "browser_snapshot"
+        ],
+        "matched_count": 2,
+        "required_count": 4,
+        "missing": [
+          "browser_press",
+          "browser_fill"
+        ],
+        "accuracy": 0.5
+      },
+      "error": ""
+    },
+    {
+      "task_id": "search_extract_2",
+      "category": "search_extract",
+      "config": "planner",
+      "success": false,
+      "turns": 2,
+      "tool_calls": [
+        "web_search"
+      ],
+      "planner_injected": [
+        "browser_navigate",
+        "browser_snapshot",
+        "browser_snapshot"
+      ],
+      "unique_tools": [
+        "browser_navigate",
+        "browser_snapshot",
+        "web_search"
+      ],
+      "duration_seconds": 13.45,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_fill",
+          "browser_press",
+          "browser_snapshot"
+        ],
+        "selected_by_llm": [],
+        "injected_by_planner": [
+          "browser_navigate",
+          "browser_snapshot"
+        ],
+        "matched_count": 2,
+        "required_count": 4,
+        "missing": [
+          "browser_press",
+          "browser_fill"
+        ],
+        "accuracy": 0.5
+      },
+      "error": ""
+    }
+  ],
+  "summary": {
+    "by_config": {
+      "raw": {
+        "total_tasks": 2,
+        "successes": 0,
+        "success_rate": 0.0,
+        "avg_turns": 3.0,
+        "avg_duration_seconds": 37.78,
+        "avg_tool_selection_accuracy": 0.0,
+        "avg_matched_tools": 0.0,
+        "total_tool_calls": 5,
+        "total_planner_injections": 0,
+        "unique_tools_count": 2,
+        "tool_frequency": {
+          "web_search": 4,
+          "web_fetch": 1
+        },
+        "errors": [
+          "loop_detected: web_search called 3 times"
+        ],
+        "fsm_metrics": {
+          "total_transitions": 0,
+          "total_loops_prevented": 0,
+          "total_page_recognitions": 0,
+          "total_timeouts": 0,
+          "total_forced_transitions": 0,
+          "final_states": {}
+        }
+      },
+      "planner": {
+        "total_tasks": 2,
+        "successes": 0,
+        "success_rate": 0.0,
+        "avg_turns": 2.0,
+        "avg_duration_seconds": 14.94,
+        "avg_tool_selection_accuracy": 0.5,
+        "avg_matched_tools": 2.0,
+        "total_tool_calls": 2,
+        "total_planner_injections": 6,
+        "unique_tools_count": 3,
+        "tool_frequency": {
+          "browser_snapshot": 4,
+          "web_search": 2,
+          "browser_navigate": 2
+        },
+        "errors": [],
+        "fsm_metrics": {
+          "total_transitions": 4,
+          "total_loops_prevented": 0,
+          "total_page_recognitions": 0,
+          "total_timeouts": 0,
+          "total_forced_transitions": 0,
+          "final_states": {
+            "ARTICLE": 2
+          }
+        }
+      }
+    },
+    "deltas": {
+      "planner": {
+        "delta_success_rate": 0.0,
+        "delta_tool_selection_accuracy": 0.5,
+        "delta_avg_turns": 1.0
+      }
+    }
+  }
+}

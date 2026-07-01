@@ -82,11 +82,21 @@ export default function ClientShell({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('keydown', handler);
   }, []);
 
+  const isWelcome = pathname === '/welcome';
+
   return (
     <ThemeProvider>
       <AuthProvider>
-        <div className="jarvis-cursor" />
-        <div className="jarvis-cursor-ring" />
+        {/* Skip link for keyboard users */}
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:text-sm focus:font-mono focus:uppercase focus:tracking-[0.12em]"
+          style={{ background: 'var(--j-bg)', color: 'var(--j-sky)', border: '1px solid var(--j-sky)' }}
+        >
+          Skip to main content
+        </a>
+        <div className="jarvis-cursor" aria-hidden="true" />
+        <div className="jarvis-cursor-ring" aria-hidden="true" />
         <div
           className="relative flex h-screen overflow-hidden"
           style={{
@@ -94,11 +104,16 @@ export default function ClientShell({ children }: { children: ReactNode }) {
             color: 'var(--j-text)',
           }}
         >
-          <div className="hud-grid pointer-events-none absolute inset-0 opacity-80" />
-          <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-          <main className="relative z-[1] flex-1 flex flex-col min-w-0 overflow-hidden">
-            <Navbar onMenuClick={() => setSidebarOpen(true)} />
-            <div className="flex-1 overflow-y-auto p-4 md:p-6">
+          <div className="hud-grid pointer-events-none absolute inset-0 opacity-80" aria-hidden="true" />
+          {!isWelcome && <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />}
+          <main
+            id="main-content"
+            role="main"
+            className="relative z-[1] flex-1 flex flex-col min-w-0 overflow-hidden"
+            tabIndex={-1}
+          >
+            {!isWelcome && <Navbar onMenuClick={() => setSidebarOpen(true)} />}
+            <div className={`flex-1 overflow-y-auto ${isWelcome ? '' : 'p-4 md:p-6'}`}>
               <ErrorBoundary>
                 <AnimatePresence mode="wait">
                   <motion.div
@@ -108,16 +123,18 @@ export default function ClientShell({ children }: { children: ReactNode }) {
                     animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
                     exit={{ opacity: 0, y: -12, filter: 'blur(3px)' }}
                     transition={{ duration: 0.34, ease: [0.16, 1, 0.3, 1] }}
+                    role="region"
+                    aria-label="Page content"
                   >
                     {children}
                   </motion.div>
                 </AnimatePresence>
               </ErrorBoundary>
             </div>
-            <StatusBar />
+            {!isWelcome && <StatusBar />}
           </main>
         </div>
-        <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
+        {!isWelcome && <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />}
         <ToastContainer />
       </AuthProvider>
     </ThemeProvider>

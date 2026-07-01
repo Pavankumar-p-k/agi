@@ -4,10 +4,10 @@
     "label": "Agent Router Correctness",
     "passed": true,
     "agents_used": [
-      "email",
-      "research",
       "build",
-      "test"
+      "test",
+      "email",
+      "research"
     ],
     "total_tasks": 7,
     "all_valid": true,
@@ -72,11 +72,11 @@
     "total_steps": 4,
     "failed_steps": 0,
     "artifacts": {
-      "build_log": "art_1c11bb87be414370b81032b0c5151e80",
-      "report": "art_c48dc1f701f745018d896932609ec554",
-      "apk": "art_7cb4f5846ab84433be76ceb5a8ff3dc9",
-      "test_result": "art_419d0895cf9741d79f2d26900ccc7e6a",
-      "email_sent": "art_4555a12938b84924a6bdcf049854194a"
+      "build_log": "art_fcd191a9a6224e018780bfdf11b1edf6",
+      "report": "art_ba7f312539ae4784900dfa4c55df02db",
+      "apk": "art_8e72997aba764c60989579383c8ce72a",
+      "test_result": "art_ba7db3c0d42c41a49d9576bf97866e2b",
+      "email_sent": "art_084d28087ac2431897818c1a5e2eac6c"
     }
   },
   {
@@ -115,7 +115,7 @@
     "has_notify": true,
     "has_artifacts": true,
     "error": null,
-    "elapsed_s": 23.19
+    "elapsed_s": 32.22
   },
   {
     "benchmark": "G5",

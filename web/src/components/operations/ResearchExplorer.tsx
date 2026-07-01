@@ -55,15 +55,17 @@ export function ResearchExplorer() {
   // Search results
   const [searchResults, setSearchResults] = useState<ResearchFact[] | null>(null);
 
+  const [fetchError, setFetchError] = useState<string | null>(null);
+
   const loadStats = useCallback(() => {
-    research.statistics().then(setStats).catch(() => {});
+    research.statistics().then(setStats).catch(() => setFetchError('Failed to load stats'));
   }, []);
 
   const loadSessions = useCallback(() => {
     setSLoading(true);
     research.listSessions(50)
       .then((r) => setSessions(r.sessions))
-      .catch(() => {})
+      .catch(() => setFetchError('Failed to load sessions'))
       .finally(() => setSLoading(false));
   }, []);
 
@@ -71,7 +73,7 @@ export function ResearchExplorer() {
     setFLoading(true);
     research.listFacts({ limit: 50 })
       .then((r) => setFacts(r.facts))
-      .catch(() => {})
+      .catch(() => setFetchError('Failed to load facts'))
       .finally(() => setFLoading(false));
   }, []);
 
@@ -79,7 +81,7 @@ export function ResearchExplorer() {
     setCLoading(true);
     research.listContradictions(50)
       .then((r) => setContradictions(r.contradictions))
-      .catch(() => {})
+      .catch(() => setFetchError('Failed to load contradictions'))
       .finally(() => setCLoading(false));
   }, []);
 
@@ -92,7 +94,7 @@ export function ResearchExplorer() {
     if (!searchQuery.trim()) { setSearchResults(null); return; }
     research.search(searchQuery.trim(), 30)
       .then((r) => setSearchResults(r.facts))
-      .catch(() => setSearchResults([]));
+      .catch(() => { setSearchResults([]); setFetchError('Search failed'); });
   }, [searchQuery]);
 
   const openSession = useCallback(async (activityId: string) => {
@@ -103,6 +105,7 @@ export function ResearchExplorer() {
       setSessionDetail(detail);
     } catch {
       setSessionDetail(null);
+      setFetchError('Failed to load session details');
     } finally {
       setDetailLoading(false);
     }
@@ -260,6 +263,13 @@ export function ResearchExplorer() {
   return (
     <div className="hud-panel" style={{ padding: 24 }}>
       <h2 className="hud-title" style={{ marginBottom: 16 }}>Research Explorer</h2>
+
+      {fetchError && (
+        <div style={{ padding: '8px 12px', marginBottom: 12, borderRadius: 4, background: 'rgba(245,66,66,0.1)', border: '1px solid rgba(245,66,66,0.3)', color: '#f54242', fontSize: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span>{fetchError}</span>
+          <button onClick={() => setFetchError(null)} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#f54242', cursor: 'pointer', opacity: 0.7, fontSize: 14 }}>&times;</button>
+        </div>
+      )}
 
       {renderStats()}
 

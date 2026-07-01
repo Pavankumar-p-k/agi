@@ -1,0 +1,124 @@
+{
+  "timestamp": "2026-06-27T17:10:25.326640+00:00",
+  "model": "qwen2.5:7b",
+  "level": "1",
+  "tasks": [
+    {
+      "task_id": "research_1",
+      "category": "research",
+      "config": "raw",
+      "success": true,
+      "turns": 15,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_wait_text",
+        "browser_snapshot",
+        "vision_browser",
+        "vision_browser",
+        "vision_browser",
+        "vision_browser",
+        "vision_browser",
+        "vision_browser",
+        "vision_browser",
+        "vision_browser",
+        "vision_browser",
+        "vision_browser",
+        "vision_browser",
+        "vision_browser",
+        "vision_browser",
+        "vision_browser",
+        "vision_browser"
+      ],
+      "unique_tools": [
+        "browser_navigate",
+        "vision_browser",
+        "browser_wait_text",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 131.44,
+      "error": "max_turns (15) exceeded"
+    },
+    {
+      "task_id": "research_1",
+      "category": "research",
+      "config": "full",
+      "success": true,
+      "turns": 15,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_wait_text",
+        "browser_snapshot",
+        "vision_browser",
+        "vision_browser",
+        "vision_browser",
+        "vision_browser",
+        "vision_browser",
+        "vision_browser",
+        "vision_browser",
+        "vision_browser",
+        "vision_browser",
+        "vision_browser",
+        "vision_browser",
+        "vision_browser",
+        "vision_browser",
+        "vision_browser",
+        "vision_browser"
+      ],
+      "unique_tools": [
+        "browser_navigate",
+        "vision_browser",
+        "browser_wait_text",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 100.77,
+      "error": "max_turns (15) exceeded"
+    }
+  ],
+  "summary": {
+    "by_config": {
+      "raw": {
+        "total_tasks": 1,
+        "successes": 1,
+        "success_rate": 1.0,
+        "avg_turns": 15.0,
+        "avg_duration_seconds": 131.44,
+        "total_tool_calls": 18,
+        "unique_tools": 4,
+        "tool_frequency": {
+          "vision_browser": 15,
+          "browser_navigate": 1,
+          "browser_wait_text": 1,
+          "browser_snapshot": 1
+        },
+        "errors": [
+          "max_turns (15) exceeded"
+        ]
+      },
+      "full": {
+        "total_tasks": 1,
+        "successes": 1,
+        "success_rate": 1.0,
+        "avg_turns": 15.0,
+        "avg_duration_seconds": 100.77,
+        "total_tool_calls": 18,
+        "unique_tools": 4,
+        "tool_frequency": {
+          "vision_browser": 15,
+          "browser_navigate": 1,
+          "browser_wait_text": 1,
+          "browser_snapshot": 1
+        },
+        "errors": [
+          "max_turns (15) exceeded"
+        ]
+      }
+    },
+    "deltas": {
+      "full": {
+        "delta_success_rate": 0.0,
+        "delta_avg_turns": 0.0,
+        "delta_avg_duration": 30.7
+      }
+    }
+  }
+}

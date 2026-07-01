@@ -73,6 +73,10 @@ experimental/**/out/
 experimental/**/dist/
 experimental/**/*.lock
 
+# Package node_modules
+packages/**/node_modules/
+packages/**/package-lock.json
+
 # Archive cleanup artifacts (keep comparison docs, remove generated audit)
 archive/cleanup_20260602/
 archive/legacy_memory/

@@ -32,6 +32,7 @@
   --j-font-display: 'Bebas Neue', sans-serif;
   --j-radius-sm: 2px;
   --j-radius-md: 4px;
+  --j-green: #4ade80;
   --j-radius-lg: 6px;
 }
 
@@ -299,7 +300,7 @@ button, a, select, input, textarea { font: inherit; }
 /* ── Prose overrides ── */
 .prose { max-width: none; }
 .prose p { margin: 0.4em 0; }
-.prose pre { margin: 0.6em 0; background: transparent !important; padding: 0 !important; }
+.prose pre { margin: 0.6em 0; background: transparent !important; padding: 0 !important; overflow-x: auto; max-width: 100%; }
 .prose code { font-size: 0.85em; }
 .prose img { max-width: 100%; border-radius: var(--j-radius-sm); }
 .prose a { color: var(--j-sky); text-decoration: underline; }

@@ -7,6 +7,7 @@ import { renderMarkdown } from '@/lib/md';
 import VoiceInput from '@/components/chat/VoiceInput';
 import ModelSelector from '@/components/chat/ModelSelector';
 import FileUpload from '@/components/chat/FileUpload';
+import PipelineIndicator from '@/components/chat/PipelineIndicator';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import { api } from '@/lib/api';
@@ -229,10 +230,8 @@ export default function ChatPage() {
             {(isWaiting || (isStreaming && !isLastStreaming)) && (
               <div className="flex gap-3">
                 <div className="flex h-8 w-8 items-center justify-center border border-[var(--j-border-bright)] bg-[rgba(var(--j-sky-rgb),0.09)] font-mono text-xs text-[var(--j-sky)]">J</div>
-                <div className="border border-[var(--j-border)] bg-[var(--j-surface)] px-5 py-3">
-                  <div className="waveform">
-                    <span className="wave-bar" /><span className="wave-bar" /><span className="wave-bar" /><span className="wave-bar" /><span className="wave-bar" /><span className="wave-bar" />
-                  </div>
+                <div className="flex-1 max-w-[82%]">
+                  <PipelineIndicator phase={isWaiting ? 'waiting' : 'streaming'} />
                 </div>
               </div>
             )}

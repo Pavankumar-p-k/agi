@@ -6,10 +6,13 @@
   "types": "src/index.ts",
   "scripts": {
     "generate": "node scripts/generate-types.js",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
-  "dependencies": {},
   "devDependencies": {
-    "typescript": "^5.4.0"
+    "@types/node": "^26.0.1",
+    "typescript": "^5.4.0",
+    "vitest": "^4.1.9"
   }
 }

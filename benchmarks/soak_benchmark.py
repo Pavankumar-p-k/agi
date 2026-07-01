@@ -296,6 +296,15 @@ class MetricsCollector:
 
 # ── System exercises ─────────────────────────────────────────────────────────
 
+class NullCallback:
+    """Async callable that accepts a cache dict and does nothing.
+    Replaces AsyncMock() to avoid unbounded call-history memory growth
+    in long-running soak tests (https://bugs.python.org/issue45150).
+    """
+    async def __call__(self, cache: dict) -> None:
+        pass
+
+
 class SoakExerciser:
     """Periodically exercises the system under test."""
 
@@ -313,7 +322,7 @@ class SoakExerciser:
             if kind == "open_subscribers":
                 # Open 5 simulated screens
                 for i in range(5):
-                    cb = AsyncMock()
+                    cb = NullCallback()
                     self.svc.subscribe(cb)
                     self.callbacks.append(cb)
                 return ExerciseEvent(
@@ -362,7 +371,7 @@ class SoakExerciser:
                 # 50 subscribers in rapid succession
                 burst = []
                 for i in range(50):
-                    cb = AsyncMock()
+                    cb = NullCallback()
                     self.svc.subscribe(cb)
                     burst.append(cb)
                 await asyncio.sleep(0.1)

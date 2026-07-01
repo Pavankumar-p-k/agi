@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
+import { Skeleton } from '@/components/ui/Skeleton';
 import { api } from '@/lib/api';
 
 interface ServiceStatus {
@@ -35,8 +36,11 @@ export default function BackendPage() {
   const [stats, setStats] = useState<{ cpu: { percent: number }; memory: { percent: number } } | null>(null);
   const [diagnostics, setDiagnostics] = useState<any>(null);
   const [plugins, setPlugins] = useState<{ plugins: { name: string }[] } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   const fetchAll = useCallback(async () => {
+    setError('');
     try {
       const [h, s, p, d] = await Promise.all([
         api.health().catch(() => null),
@@ -49,7 +53,10 @@ export default function BackendPage() {
       if (p) setPlugins(p as unknown as { plugins: { name: string }[] });
       if (d) setDiagnostics(d);
     } catch (e) {
+      setError('Failed to fetch backend data');
       console.warn('[Backend] fetchAll failed', e);
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -58,6 +65,8 @@ export default function BackendPage() {
     const t = setInterval(fetchAll, 15000);
     return () => clearInterval(t);
   }, [fetchAll]);
+
+  if (loading) return <div className="hud-page p-6"><Skeleton /></div>;
 
   const isHealthy = health?.status === 'healthy' || health?.status === 'ok';
   
@@ -103,6 +112,12 @@ export default function BackendPage() {
           </div>
         </div>
       </section>
+
+      {error && (
+        <section className="border border-red-500/30 bg-red-500/5 px-5 py-3">
+          <p className="text-xs text-red-400">{error}</p>
+        </section>
+      )}
 
       <section className="grid grid-cols-2 gap-px bg-[var(--j-border)] md:grid-cols-4">
         {[

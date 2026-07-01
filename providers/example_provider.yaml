@@ -1,0 +1,24 @@
+provider_id: example_search
+name: Example Search Provider
+version: 1.0.0
+description: An example provider that demonstrates the SDK manifest format
+author: JARVIS Team
+capabilities:
+  - search
+  - web_search
+  - knowledge_retrieval
+features:
+  - web_search
+  - cached_search
+languages:
+  - Python
+  - TypeScript
+adapter: examples/example_provider.py
+adapter_type: python
+priority: 80
+health_endpoint: ""
+settings_schema: {}
+dependencies: ["httpx>=0.27"]
+tags: ["search", "example", "sdk-demo"]
+homepage: "https://github.com/jarvis/providers/example"
+license: "Apache-2.0"

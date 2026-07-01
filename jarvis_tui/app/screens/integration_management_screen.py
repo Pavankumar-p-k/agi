@@ -22,6 +22,10 @@ class IntegrationManagementScreen(JarvisScreen):
     """
     TUI Integration Management UI.
     """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._integrations: list[dict] = []
+
     def compose_main(self) -> ComposeResult:
         yield Label("# INTEGRATIONS", id="screen-title")
         yield Label("Connect JARVIS to external platforms.")
@@ -44,8 +48,8 @@ class IntegrationManagementScreen(JarvisScreen):
         table.clear()
         try:
             data = await self.app.jarvis_client.get_integrations()
-            integrations = data.get("integrations", [])
-            for i in integrations:
+            self._integrations = data.get("integrations", [])
+            for i in self._integrations:
                 connected = i.get("connected", False)
                 status_str = "✅ CONNECTED" if connected else "❌ DISCONNECTED"
                 health = i.get("status", {}).get("healthy", False)
@@ -57,5 +61,18 @@ class IntegrationManagementScreen(JarvisScreen):
     async def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn-refresh":
             await self.refresh_integrations()
-        else:
-            self.app.notify("Action not yet implemented", severity="warning")
+        elif event.button.id == "btn-connect":
+            table = self.query_one("#integrations-table", DataTable)
+            if table.cursor_row is not None and table.cursor_row < len(self._integrations):
+                name = self._integrations[table.cursor_row].get("name", "")
+                self.app.notify(f"Connect {name}: credentials input not implemented in TUI. Use Settings > Integrations in Web UI.", severity="warning")
+        elif event.button.id == "btn-disconnect":
+            table = self.query_one("#integrations-table", DataTable)
+            if table.cursor_row is not None and table.cursor_row < len(self._integrations):
+                name = self._integrations[table.cursor_row].get("name", "")
+                try:
+                    await self.app.jarvis_client.disconnect_integration(name)
+                    self.app.notify(f"Disconnected {name}", severity="information")
+                    await self.refresh_integrations()
+                except Exception as e:
+                    self.app.notify(f"Disconnect failed: {e}", severity="error")

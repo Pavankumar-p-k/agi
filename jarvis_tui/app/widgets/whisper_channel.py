@@ -13,22 +13,34 @@ from __future__ import annotations
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
+import json
+import logging
+from typing import Any
+
 from textual.app import ComposeResult
 from textual.containers import Vertical
 from textual.widget import Widget
 from textual.widgets import Label, Static
 
+logger = logging.getLogger(__name__)
+
 
 class WhisperChannel(Widget):
     """
     Internal monologue/agent-to-agent channel (Ctrl+W toggle).
+    Shows real agent events from the backend activity stream.
     """
+    def __init__(self, jarvis_client: Any | None = None, **kwargs):
+        super().__init__(**kwargs)
+        self._client = jarvis_client
+        self._messages: list[str] = []
+
     def compose(self) -> ComposeResult:
         with Vertical():
             yield Label("[bold magenta]AGENT WHISPER CHANNEL[/bold magenta]")
-            yield Static("NEXUS -> FORGE: 'I found the relevant API keys.'", classes="whisper")
-            yield Static("FORGE -> NEXUS: 'Proceeding with code generation.'", classes="whisper")
-            yield Static("SYSTEM: 'Optimizing token usage for session #42'", classes="whisper")
+            yield Static("Waiting for agent activity...", id="whisper-status", classes="whisper")
 
     def on_mount(self) -> None:
         self.display = False
@@ -37,6 +49,41 @@ class WhisperChannel(Widget):
         self.styles.background = "#2a1a2a"
         self.styles.border_left = ("solid", "#4a2a4a")
         self.styles.padding = 1
+        self._load_recent_activity()
+
+    def _load_recent_activity(self) -> None:
+        if not self._client:
+            return
+        try:
+            activities = self._client.get_activities(limit=10)
+            if isinstance(activities, dict):
+                items = activities.get("items", activities.get("activities", []))
+            elif isinstance(activities, list):
+                items = activities
+            else:
+                items = []
+            for act in items:
+                agent = act.get("agent_name", act.get("name", "AGENT"))
+                status = act.get("status", act.get("state", "idle"))
+                goal = act.get("goal", act.get("description", ""))
+                msg = f"{agent} -> {status.upper()}: '{goal}'"
+                self._messages.append(msg)
+                self.mount(Static(msg, classes="whisper"))
+            status = self.query_one("#whisper-status", Static)
+            if self._messages:
+                status.display = False
+        except Exception as e:
+            logger.warning("WhisperChannel load: %s", e)
+
+    def add_message(self, sender: str, target: str, message: str) -> None:
+        msg = f"{sender} -> {target}: '{message}'"
+        self._messages.append(msg)
+        try:
+            self.mount(Static(msg, classes="whisper"))
+            status = self.query_one("#whisper-status", Static)
+            status.display = False
+        except Exception as e:
+            logger.warning("WhisperChannel add: %s", e)
 
     def toggle(self) -> None:
         self.display = not self.display

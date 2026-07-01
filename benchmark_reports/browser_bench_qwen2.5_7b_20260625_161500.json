@@ -1,0 +1,219 @@
+{
+  "timestamp": "2026-06-25T10:44:06.389881+00:00",
+  "model": "qwen2.5:7b",
+  "tasks": [
+    {
+      "task_id": "search_extract_1",
+      "category": "search_extract",
+      "config": "raw",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [],
+      "planner_injected": [],
+      "unique_tools": [],
+      "duration_seconds": 9.67,
+      "error": ""
+    },
+    {
+      "task_id": "search_extract_2",
+      "category": "search_extract",
+      "config": "raw",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [],
+      "planner_injected": [],
+      "unique_tools": [],
+      "duration_seconds": 9.67,
+      "error": ""
+    },
+    {
+      "task_id": "search_extract_1",
+      "category": "search_extract",
+      "config": "planner",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [],
+      "planner_injected": [],
+      "unique_tools": [],
+      "duration_seconds": 9.69,
+      "error": ""
+    },
+    {
+      "task_id": "search_extract_2",
+      "category": "search_extract",
+      "config": "planner",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [],
+      "planner_injected": [],
+      "unique_tools": [],
+      "duration_seconds": 9.76,
+      "error": ""
+    }
+  ],
+  "per_task_details": [
+    {
+      "task_id": "search_extract_1",
+      "category": "search_extract",
+      "config": "raw",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [],
+      "planner_injected": [],
+      "unique_tools": [],
+      "duration_seconds": 9.67,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_snapshot",
+          "browser_fill",
+          "browser_press"
+        ],
+        "selected_by_llm": [],
+        "injected_by_planner": [],
+        "matched_count": 0,
+        "required_count": 4,
+        "missing": [
+          "browser_navigate",
+          "browser_snapshot",
+          "browser_press",
+          "browser_fill"
+        ],
+        "accuracy": 0.0
+      },
+      "error": ""
+    },
+    {
+      "task_id": "search_extract_2",
+      "category": "search_extract",
+      "config": "raw",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [],
+      "planner_injected": [],
+      "unique_tools": [],
+      "duration_seconds": 9.67,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_fill",
+          "browser_press",
+          "browser_snapshot"
+        ],
+        "selected_by_llm": [],
+        "injected_by_planner": [],
+        "matched_count": 0,
+        "required_count": 4,
+        "missing": [
+          "browser_navigate",
+          "browser_snapshot",
+          "browser_press",
+          "browser_fill"
+        ],
+        "accuracy": 0.0
+      },
+      "error": ""
+    },
+    {
+      "task_id": "search_extract_1",
+      "category": "search_extract",
+      "config": "planner",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [],
+      "planner_injected": [],
+      "unique_tools": [],
+      "duration_seconds": 9.69,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_snapshot",
+          "browser_fill",
+          "browser_press"
+        ],
+        "selected_by_llm": [],
+        "injected_by_planner": [],
+        "matched_count": 0,
+        "required_count": 4,
+        "missing": [
+          "browser_navigate",
+          "browser_snapshot",
+          "browser_press",
+          "browser_fill"
+        ],
+        "accuracy": 0.0
+      },
+      "error": ""
+    },
+    {
+      "task_id": "search_extract_2",
+      "category": "search_extract",
+      "config": "planner",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [],
+      "planner_injected": [],
+      "unique_tools": [],
+      "duration_seconds": 9.76,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_fill",
+          "browser_press",
+          "browser_snapshot"
+        ],
+        "selected_by_llm": [],
+        "injected_by_planner": [],
+        "matched_count": 0,
+        "required_count": 4,
+        "missing": [
+          "browser_navigate",
+          "browser_snapshot",
+          "browser_press",
+          "browser_fill"
+        ],
+        "accuracy": 0.0
+      },
+      "error": ""
+    }
+  ],
+  "summary": {
+    "by_config": {
+      "raw": {
+        "total_tasks": 2,
+        "successes": 0,
+        "success_rate": 0.0,
+        "avg_turns": 1.0,
+        "avg_duration_seconds": 9.67,
+        "avg_tool_selection_accuracy": 0.0,
+        "avg_matched_tools": 0.0,
+        "total_tool_calls": 0,
+        "total_planner_injections": 0,
+        "unique_tools_count": 0,
+        "tool_frequency": {},
+        "errors": []
+      },
+      "planner": {
+        "total_tasks": 2,
+        "successes": 0,
+        "success_rate": 0.0,
+        "avg_turns": 1.0,
+        "avg_duration_seconds": 9.72,
+        "avg_tool_selection_accuracy": 0.0,
+        "avg_matched_tools": 0.0,
+        "total_tool_calls": 0,
+        "total_planner_injections": 0,
+        "unique_tools_count": 0,
+        "tool_frequency": {},
+        "errors": []
+      }
+    },
+    "deltas": {
+      "planner": {
+        "delta_success_rate": 0.0,
+        "delta_tool_selection_accuracy": 0.0,
+        "delta_avg_turns": 0.0
+      }
+    }
+  }
+}

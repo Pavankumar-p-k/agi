@@ -76,6 +76,12 @@ export default function FeaturesPage() {
         </motion.div>
       )}
 
+      {features.length === 0 && !error && (
+        <motion.div variants={itemVariants} className="bg-[var(--j-surface)] p-8 text-center text-sm text-[var(--j-text-dim)]">
+          No features registered.
+        </motion.div>
+      )}
+
       {categories.map(cat => (
         <motion.section key={cat} variants={itemVariants}>
           <div className="hud-label mb-4 flex items-center gap-3 before:h-px before:w-6 before:bg-[var(--j-sky)]">{cat}</div>

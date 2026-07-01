@@ -1,18 +1,5 @@
 from __future__ import annotations
 
-# Copyright (c) 2024-2026 JARVIS Project
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 from textual.app import ComposeResult
 from textual.containers import Vertical, Horizontal
 from textual.widgets import Label, Static, Button, DataTable
@@ -35,7 +22,35 @@ class MemoryDashboardScreen(JarvisScreen):
     async def on_mount(self) -> None:
         table = self.query_one("#memory-table", DataTable)
         table.add_columns("Type", "Entries", "Description")
-        table.add_row("FAILURE MEMORY", "12", "Automated repair logs and retry histories.")
-        table.add_row("ARCHITECTURAL MEMORY", "5", "Codebase patterns and structural insights.")
-        table.add_row("USER PREFERENCES", "24", "Learned habits and preferred models.")
-        table.add_row("SKILL ACQUISITION", "8", "Newly learned tool usage patterns.")
+        await self.refresh_memories()
+
+    async def refresh_memories(self) -> None:
+        table = self.query_one("#memory-table", DataTable)
+        table.clear()
+        try:
+            stats = await self.app.jarvis_client.get_memory_stats()
+            memories = stats.get("memories", stats.get("stats", stats.get("data", [])))
+            if not memories:
+                table.add_row("(no data)", "—", "Memory stats unavailable from backend")
+                return
+            if isinstance(memories, dict):
+                for k, v in memories.items():
+                    label = k.upper().replace("_", " ")
+                    if isinstance(v, dict):
+                        table.add_row(label, str(v.get("count", v.get("entries", "—"))), v.get("description", str(v)))
+                    else:
+                        table.add_row(label, str(v), "")
+            elif isinstance(memories, list):
+                for m in memories:
+                    label = m.get("type", m.get("name", "Unknown")).upper()
+                    count = str(m.get("count", m.get("entries", m.get("value", "—"))))
+                    desc = m.get("description", m.get("summary", ""))
+                    table.add_row(label, count, desc)
+        except Exception as e:
+            table.add_row("(error)", "—", f"Could not load memory stats: {e}")
+
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "btn-refresh":
+            await self.refresh_memories()
+        elif event.button.id == "btn-prune":
+            self.app.notify("Prune from CLI: jarvis advanced memory prune", severity="information")

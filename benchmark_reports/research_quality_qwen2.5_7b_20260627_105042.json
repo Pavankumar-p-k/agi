@@ -1,0 +1,985 @@
+{
+  "timestamp": "2026-06-27T10:50:42.882273+00:00",
+  "model": "qwen2.5:7b",
+  "configs": [
+    "raw",
+    "pipeline",
+    "pipeline+fsm"
+  ],
+  "tasks": [
+    {
+      "dataset_id": "python_versions",
+      "config": "raw",
+      "fact_recall": 0.875,
+      "subtopic_coverage": 0.25,
+      "contradictions_detected": 0,
+      "hallucinations": 38,
+      "duration_seconds": 35.78,
+      "error": "",
+      "details": {
+        "fact_recall": 0.875,
+        "facts_correct": 7,
+        "facts_total": 8,
+        "subtopic_coverage": 0.25,
+        "subtopics_covered": 1,
+        "subtopics_total": 4,
+        "contradictions_detected": 0,
+        "contradictions_total": 1,
+        "hallucinated_entities": 38,
+        "output_length": 2177
+      },
+      "efsm_transitions": 0,
+      "efsm_forced_transitions": 0,
+      "efsm_loops_prevented": 0,
+      "efsm_timeouts": 0,
+      "efsm_final_state": "",
+      "efsm_entities_found": 0,
+      "efsm_attributes_extracted": 0,
+      "efsm_relations_extracted": 0,
+      "efsm_normalizations_applied": 0,
+      "efsm_validation_checks": 0,
+      "efsm_duplicates_removed": 0,
+      "efsm_stored_facts": 0
+    },
+    {
+      "dataset_id": "docker_vs_podman",
+      "config": "raw",
+      "fact_recall": 0.4,
+      "subtopic_coverage": 0.8,
+      "contradictions_detected": 0,
+      "hallucinations": 26,
+      "duration_seconds": 41.04,
+      "error": "",
+      "details": {
+        "fact_recall": 0.4,
+        "facts_correct": 4,
+        "facts_total": 10,
+        "subtopic_coverage": 0.8,
+        "subtopics_covered": 4,
+        "subtopics_total": 5,
+        "contradictions_detected": 0,
+        "contradictions_total": 1,
+        "hallucinated_entities": 26,
+        "output_length": 3002
+      },
+      "efsm_transitions": 0,
+      "efsm_forced_transitions": 0,
+      "efsm_loops_prevented": 0,
+      "efsm_timeouts": 0,
+      "efsm_final_state": "",
+      "efsm_entities_found": 0,
+      "efsm_attributes_extracted": 0,
+      "efsm_relations_extracted": 0,
+      "efsm_normalizations_applied": 0,
+      "efsm_validation_checks": 0,
+      "efsm_duplicates_removed": 0,
+      "efsm_stored_facts": 0
+    },
+    {
+      "dataset_id": "python_versions",
+      "config": "pipeline",
+      "fact_recall": 0.375,
+      "subtopic_coverage": 0.0,
+      "contradictions_detected": 1,
+      "hallucinations": 0,
+      "duration_seconds": 0.15,
+      "error": "",
+      "details": {
+        "fact_recall": 0.375,
+        "facts_correct": 3,
+        "facts_total": 8,
+        "subtopic_coverage": 0.0,
+        "subtopics_covered": 0,
+        "subtopics_total": 4,
+        "contradictions_detected": 1,
+        "contradictions_matched": 0,
+        "contradictions_total": 1,
+        "facts_extracted": 13,
+        "facts_retrieved": 7,
+        "overall_confidence": 0.66,
+        "pipeline_data": {
+          "facts": [
+            {
+              "claim": "Python 3.11 was released in October 2022.",
+              "category": "technical",
+              "source": "https://docs.python.org/3/whatsnew/3.11.html",
+              "confidence": 0.85
+            },
+            {
+              "claim": "Key features include exception groups and fine-grained error locations in tracebacks.",
+              "category": "general",
+              "source": "https://docs.python.org/3/whatsnew/3.11.html",
+              "confidence": 0.5
+            },
+            {
+              "claim": "Python 3.12 was released in October 2023.",
+              "category": "technical",
+              "source": "https://docs.python.org/3/whatsnew/3.12.html",
+              "confidence": 0.85
+            },
+            {
+              "claim": "It includes improved f-strings syntax, support for the Linux perf profiler, and is approximately 5-10% faster than Python 3.11.",
+              "category": "comparison",
+              "source": "https://docs.python.org/3/whatsnew/3.12.html",
+              "confidence": 0.7
+            },
+            {
+              "claim": "Python 3.13 was released in October 2024.",
+              "category": "technical",
+              "source": "https://docs.python.org/3/whatsnew/3.13.html",
+              "confidence": 0.85
+            },
+            {
+              "claim": "The headline feature is an experimental free-threaded build mode (PEP 703), which allows the GIL to be disabled.",
+              "category": "pricing",
+              "source": "https://docs.python.org/3/whatsnew/3.13.html",
+              "confidence": 0.7
+            },
+            {
+              "claim": "An experimental JIT compiler is also included.",
+              "category": "general",
+              "source": "https://docs.python.org/3/whatsnew/3.13.html",
+              "confidence": 0.5
+            },
+            {
+              "claim": "PEP 703 proposes making the Global Interpreter Lock (GIL) optional in CPython.",
+              "category": "general",
+              "source": "https://peps.python.org/pep-0703/",
+              "confidence": 0.75
+            },
+            {
+              "claim": "As of Python 3.13, free-threaded execution is available as an experimental build configuration.",
+              "category": "pricing",
+              "source": "https://peps.python.org/pep-0703/",
+              "confidence": 0.65
+            },
+            {
+              "claim": "The GIL is not removed by default.",
+              "category": "general",
+              "source": "https://peps.python.org/pep-0703/",
+              "confidence": 0.5
+            },
+            {
+              "claim": "Python 3.13 ships with optional free-threading.",
+              "category": "pricing",
+              "source": "https://blog.python.org/2024/10/python-313-free-threaded.html",
+              "confidence": 0.65
+            },
+            {
+              "claim": "The GIL can be disabled at build time, but remains enabled by default.",
+              "category": "general",
+              "source": "https://blog.python.org/2024/10/python-313-free-threaded.html",
+              "confidence": 0.5
+            },
+            {
+              "claim": "This is NOT a complete GIL removal.",
+              "category": "general",
+              "source": "https://blog.python.org/2024/10/python-313-free-threaded.html",
+              "confidence": 0.5
+            }
+          ],
+          "retrieved": [
+            {
+              "claim": "Python 3.13 was released in October 2024.",
+              "category": "technical",
+              "confidence": 0.85
+            },
+            {
+              "claim": "Python 3.12 was released in October 2023.",
+              "category": "technical",
+              "confidence": 0.85
+            },
+            {
+              "claim": "Python 3.11 was released in October 2022.",
+              "category": "technical",
+              "confidence": 0.85
+            },
+            {
+              "claim": "PEP 703 proposes making the Global Interpreter Lock (GIL) optional in CPython.",
+              "category": "general",
+              "confidence": 0.75
+            },
+            {
+              "claim": "It includes improved f-strings syntax, support for the Linux perf profiler, and is approximately 5-10% faster than Python 3.11.",
+              "category": "comparison",
+              "confidence": 0.7
+            },
+            {
+              "claim": "Python 3.13 ships with optional free-threading.",
+              "category": "pricing",
+              "confidence": 0.65
+            },
+            {
+              "claim": "As of Python 3.13, free-threaded execution is available as an experimental build configuration.",
+              "category": "pricing",
+              "confidence": 0.65
+            }
+          ],
+          "comparison": {
+            "contradictions": [
+              {
+                "entity": "Python",
+                "attribute": "released",
+                "values": [
+                  "3.13",
+                  "3.12",
+                  "3.11"
+                ]
+              }
+            ],
+            "agreements": [],
+            "gaps": [
+              {
+                "question": "What is the correct released for Python?"
+              }
+            ]
+          },
+          "report": {
+            "summary": "Research on 'What are the key differences between Python 3.11, 3.12, and 3.13?' covered 7 facts from 5 sources. Conflict detected: Contradiction about 'Python' (released): 3.13, 3.12, 3.11 from 3 sources Notable unique finding: Unique claim: 'PEP' unknown = '703' (only from https://peps.python.org/pep-0703/) Information corroborated across 5 sources.",
+            "agreements": [],
+            "conflicts": [
+              "Contradiction about 'Python' (released): 3.13, 3.12, 3.11 from 3 sources"
+            ],
+            "gaps": [
+              "Gap: What is the correct released for Python?"
+            ],
+            "overall_confidence": 0.66,
+            "recommendations": [
+              "Resolve contradictions by consulting primary/official sources for: Python",
+              "Address 1 knowledge gaps with targeted follow-up research.",
+              "Verify unique high-confidence claim: Unique claim: 'PEP' unknown = '703' (only from https://peps.python.org/pep-0703/)"
+            ]
+          }
+        }
+      },
+      "efsm_transitions": 0,
+      "efsm_forced_transitions": 0,
+      "efsm_loops_prevented": 0,
+      "efsm_timeouts": 0,
+      "efsm_final_state": "",
+      "efsm_entities_found": 0,
+      "efsm_attributes_extracted": 0,
+      "efsm_relations_extracted": 0,
+      "efsm_normalizations_applied": 0,
+      "efsm_validation_checks": 0,
+      "efsm_duplicates_removed": 0,
+      "efsm_stored_facts": 0
+    },
+    {
+      "dataset_id": "docker_vs_podman",
+      "config": "pipeline",
+      "fact_recall": 0.2,
+      "subtopic_coverage": 0.4,
+      "contradictions_detected": 0,
+      "hallucinations": 0,
+      "duration_seconds": 0.11,
+      "error": "",
+      "details": {
+        "fact_recall": 0.2,
+        "facts_correct": 2,
+        "facts_total": 10,
+        "subtopic_coverage": 0.4,
+        "subtopics_covered": 2,
+        "subtopics_total": 5,
+        "contradictions_detected": 0,
+        "contradictions_matched": 0,
+        "contradictions_total": 1,
+        "facts_extracted": 13,
+        "facts_retrieved": 12,
+        "overall_confidence": 0.53,
+        "pipeline_data": {
+          "facts": [
+            {
+              "claim": "Podman is a daemonless container engine that uses a fork-exec model.",
+              "category": "general",
+              "source": "https://podman.io/whatis",
+              "confidence": 0.5
+            },
+            {
+              "claim": "It does not require a running daemon and containers run as regular processes.",
+              "category": "general",
+              "source": "https://podman.io/whatis",
+              "confidence": 0.5
+            },
+            {
+              "claim": "Rootless execution is default.",
+              "category": "general",
+              "source": "https://podman.io/whatis",
+              "confidence": 0.5
+            },
+            {
+              "claim": "Docker uses a client-server architecture with a background daemon (dockerd).",
+              "category": "general",
+              "source": "https://docs.docker.com/get-started/overview/",
+              "confidence": 0.5
+            },
+            {
+              "claim": "The Docker daemon manages containers, images, networks, and storage volumes.",
+              "category": "general",
+              "source": "https://docs.docker.com/get-started/overview/",
+              "confidence": 0.6
+            },
+            {
+              "claim": "Docker typically requires root privileges.",
+              "category": "general",
+              "source": "https://docs.docker.com/get-started/overview/",
+              "confidence": 0.5
+            },
+            {
+              "claim": "Podman is designed to be mostly CLI-compatible with Docker.",
+              "category": "general",
+              "source": "https://podman.io/compatibility",
+              "confidence": 0.5
+            },
+            {
+              "claim": "The podman-docker package provides a docker alias.",
+              "category": "general",
+              "source": "https://podman.io/compatibility",
+              "confidence": 0.5
+            },
+            {
+              "claim": "Both Docker and Podman containers can run on Kubernetes.",
+              "category": "general",
+              "source": "https://kubernetes.io/docs/tasks/",
+              "confidence": 0.6
+            },
+            {
+              "claim": "Podman can generate Kubernetes YAML directly from pods.",
+              "category": "general",
+              "source": "https://kubernetes.io/docs/tasks/",
+              "confidence": 0.5
+            },
+            {
+              "claim": "Docker images are OCI-compatible.",
+              "category": "general",
+              "source": "https://kubernetes.io/docs/tasks/",
+              "confidence": 0.5
+            },
+            {
+              "claim": "Podman supports pods (groups of containers sharing resources), similar to Kubernetes.",
+              "category": "general",
+              "source": "https://www.redhat.com/en/topics/containers/what-is-podman",
+              "confidence": 0.5
+            },
+            {
+              "claim": "Podman Compose is available as an alternative to Docker Compose.",
+              "category": "comparison",
+              "source": "https://www.redhat.com/en/topics/containers/what-is-podman",
+              "confidence": 0.6
+            }
+          ],
+          "retrieved": [
+            {
+              "claim": "Podman Compose is available as an alternative to Docker Compose.",
+              "category": "comparison",
+              "confidence": 0.6
+            },
+            {
+              "claim": "Both Docker and Podman containers can run on Kubernetes.",
+              "category": "general",
+              "confidence": 0.6
+            },
+            {
+              "claim": "The Docker daemon manages containers, images, networks, and storage volumes.",
+              "category": "general",
+              "confidence": 0.6
+            },
+            {
+              "claim": "It does not require a running daemon and containers run as regular processes.",
+              "category": "general",
+              "confidence": 0.5
+            },
+            {
+              "claim": "Podman supports pods (groups of containers sharing resources), similar to Kubernetes.",
+              "category": "general",
+              "confidence": 0.5
+            },
+            {
+              "claim": "Podman can generate Kubernetes YAML directly from pods.",
+              "category": "general",
+              "confidence": 0.5
+            },
+            {
+              "claim": "Podman is designed to be mostly CLI-compatible with Docker.",
+              "category": "general",
+              "confidence": 0.5
+            },
+            {
+              "claim": "The podman-docker package provides a docker alias.",
+              "category": "general",
+              "confidence": 0.5
+            },
+            {
+              "claim": "Podman is a daemonless container engine that uses a fork-exec model.",
+              "category": "general",
+              "confidence": 0.5
+            },
+            {
+              "claim": "Docker images are OCI-compatible.",
+              "category": "general",
+              "confidence": 0.5
+            },
+            {
+              "claim": "Docker uses a client-server architecture with a background daemon (dockerd).",
+              "category": "general",
+              "confidence": 0.5
+            },
+            {
+              "claim": "Docker typically requires root privileges.",
+              "category": "general",
+              "confidence": 0.5
+            }
+          ],
+          "comparison": {
+            "contradictions": [],
+            "agreements": [],
+            "gaps": []
+          },
+          "report": {
+            "summary": "Research on 'How does Podman compare to Docker for container management?' covered 12 facts from 5 sources. Information corroborated across 5 sources.",
+            "agreements": [],
+            "conflicts": [],
+            "gaps": [],
+            "overall_confidence": 0.53,
+            "recommendations": [
+              "High confidence in findings \u2014 proceed with decision-making."
+            ]
+          }
+        }
+      },
+      "efsm_transitions": 0,
+      "efsm_forced_transitions": 0,
+      "efsm_loops_prevented": 0,
+      "efsm_timeouts": 0,
+      "efsm_final_state": "",
+      "efsm_entities_found": 0,
+      "efsm_attributes_extracted": 0,
+      "efsm_relations_extracted": 0,
+      "efsm_normalizations_applied": 0,
+      "efsm_validation_checks": 0,
+      "efsm_duplicates_removed": 0,
+      "efsm_stored_facts": 0
+    },
+    {
+      "dataset_id": "python_versions",
+      "config": "pipeline+fsm",
+      "fact_recall": 0.375,
+      "subtopic_coverage": 0.0,
+      "contradictions_detected": 1,
+      "hallucinations": 0,
+      "duration_seconds": 0.12,
+      "error": "",
+      "details": {
+        "fact_recall": 0.375,
+        "facts_correct": 3,
+        "facts_total": 8,
+        "subtopic_coverage": 0.0,
+        "subtopics_covered": 0,
+        "subtopics_total": 4,
+        "contradictions_detected": 1,
+        "contradictions_matched": 0,
+        "contradictions_total": 1,
+        "facts_extracted": 13,
+        "facts_retrieved": 7,
+        "overall_confidence": 0.66,
+        "pipeline_data": {
+          "facts": [
+            {
+              "claim": "Python 3.11 was released in October 2022.",
+              "category": "technical",
+              "source": "https://docs.python.org/3/whatsnew/3.11.html",
+              "confidence": 0.85
+            },
+            {
+              "claim": "Key features include exception groups and fine-grained error locations in tracebacks.",
+              "category": "general",
+              "source": "https://docs.python.org/3/whatsnew/3.11.html",
+              "confidence": 0.5
+            },
+            {
+              "claim": "Python 3.12 was released in October 2023.",
+              "category": "technical",
+              "source": "https://docs.python.org/3/whatsnew/3.12.html",
+              "confidence": 0.85
+            },
+            {
+              "claim": "It includes improved f-strings syntax, support for the Linux perf profiler, and is approximately 5-10% faster than Python 3.11.",
+              "category": "comparison",
+              "source": "https://docs.python.org/3/whatsnew/3.12.html",
+              "confidence": 0.7
+            },
+            {
+              "claim": "Python 3.13 was released in October 2024.",
+              "category": "technical",
+              "source": "https://docs.python.org/3/whatsnew/3.13.html",
+              "confidence": 0.85
+            },
+            {
+              "claim": "The headline feature is an experimental free-threaded build mode (PEP 703), which allows the GIL to be disabled.",
+              "category": "pricing",
+              "source": "https://docs.python.org/3/whatsnew/3.13.html",
+              "confidence": 0.7
+            },
+            {
+              "claim": "An experimental JIT compiler is also included.",
+              "category": "general",
+              "source": "https://docs.python.org/3/whatsnew/3.13.html",
+              "confidence": 0.5
+            },
+            {
+              "claim": "PEP 703 proposes making the Global Interpreter Lock (GIL) optional in CPython.",
+              "category": "general",
+              "source": "https://peps.python.org/pep-0703/",
+              "confidence": 0.75
+            },
+            {
+              "claim": "As of Python 3.13, free-threaded execution is available as an experimental build configuration.",
+              "category": "pricing",
+              "source": "https://peps.python.org/pep-0703/",
+              "confidence": 0.65
+            },
+            {
+              "claim": "The GIL is not removed by default.",
+              "category": "general",
+              "source": "https://peps.python.org/pep-0703/",
+              "confidence": 0.5
+            },
+            {
+              "claim": "Python 3.13 ships with optional free-threading.",
+              "category": "pricing",
+              "source": "https://blog.python.org/2024/10/python-313-free-threaded.html",
+              "confidence": 0.65
+            },
+            {
+              "claim": "The GIL can be disabled at build time, but remains enabled by default.",
+              "category": "general",
+              "source": "https://blog.python.org/2024/10/python-313-free-threaded.html",
+              "confidence": 0.5
+            },
+            {
+              "claim": "This is NOT a complete GIL removal.",
+              "category": "general",
+              "source": "https://blog.python.org/2024/10/python-313-free-threaded.html",
+              "confidence": 0.5
+            }
+          ],
+          "retrieved": [
+            {
+              "claim": "Python 3.13 was released in October 2024.",
+              "category": "technical",
+              "confidence": 0.85
+            },
+            {
+              "claim": "Python 3.12 was released in October 2023.",
+              "category": "technical",
+              "confidence": 0.85
+            },
+            {
+              "claim": "Python 3.11 was released in October 2022.",
+              "category": "technical",
+              "confidence": 0.85
+            },
+            {
+              "claim": "PEP 703 proposes making the Global Interpreter Lock (GIL) optional in CPython.",
+              "category": "general",
+              "confidence": 0.75
+            },
+            {
+              "claim": "It includes improved f-strings syntax, support for the Linux perf profiler, and is approximately 5-10% faster than Python 3.11.",
+              "category": "comparison",
+              "confidence": 0.7
+            },
+            {
+              "claim": "Python 3.13 ships with optional free-threading.",
+              "category": "pricing",
+              "confidence": 0.65
+            },
+            {
+              "claim": "As of Python 3.13, free-threaded execution is available as an experimental build configuration.",
+              "category": "pricing",
+              "confidence": 0.65
+            }
+          ],
+          "comparison": {
+            "contradictions": [
+              {
+                "entity": "Python",
+                "attribute": "released",
+                "values": [
+                  "3.13",
+                  "3.12",
+                  "3.11"
+                ]
+              }
+            ],
+            "agreements": [],
+            "gaps": [
+              {
+                "question": "What is the correct released for Python?"
+              }
+            ]
+          },
+          "report": {
+            "summary": "Research on 'What are the key differences between Python 3.11, 3.12, and 3.13?' covered 7 facts from 5 sources. Conflict detected: Contradiction about 'Python' (released): 3.13, 3.12, 3.11 from 3 sources Notable unique finding: Unique claim: 'PEP' unknown = '703' (only from https://peps.python.org/pep-0703/) Information corroborated across 5 sources.",
+            "agreements": [],
+            "conflicts": [
+              "Contradiction about 'Python' (released): 3.13, 3.12, 3.11 from 3 sources"
+            ],
+            "gaps": [
+              "Gap: What is the correct released for Python?"
+            ],
+            "overall_confidence": 0.66,
+            "recommendations": [
+              "Resolve contradictions by consulting primary/official sources for: Python",
+              "Address 1 knowledge gaps with targeted follow-up research.",
+              "Verify unique high-confidence claim: Unique claim: 'PEP' unknown = '703' (only from https://peps.python.org/pep-0703/)"
+            ]
+          }
+        },
+        "efsm_metrics": {
+          "efsm_final_state": "COMPLETE",
+          "efsm_transitions": 3,
+          "efsm_forced_transitions": 1,
+          "efsm_loops_prevented": 2,
+          "efsm_timeouts": 0,
+          "efsm_validation_failures": 0,
+          "efsm_total_actions": 51,
+          "efsm_entities_found": 13,
+          "efsm_attributes_extracted": 13,
+          "efsm_relations_extracted": 11,
+          "efsm_normalizations_applied": 8,
+          "efsm_validation_checks": 26,
+          "efsm_validation_failures_count": 0,
+          "efsm_duplicates_removed": 13,
+          "efsm_transition_log": [
+            {
+              "from": "START",
+              "to": "DETECT_ENTITIES",
+              "forced": false,
+              "time": 1782557519.9774117,
+              "actions_in_state": 0,
+              "entities_found": 0,
+              "attributes_found": 0,
+              "relations_found": 0
+            },
+            {
+              "from": "DETECT_ENTITIES",
+              "to": "SPLIT_ENTITIES",
+              "forced": true,
+              "time": 1782557520.0399506,
+              "actions_in_state": 5,
+              "entities_found": 10,
+              "attributes_found": 0,
+              "relations_found": 0
+            },
+            {
+              "from": "SPLIT_ENTITIES",
+              "to": "COMPLETE",
+              "forced": false,
+              "time": 1782557520.0711753,
+              "actions_in_state": 46,
+              "entities_found": 13,
+              "attributes_found": 13,
+              "relations_found": 11
+            }
+          ],
+          "efsm_stored_facts": 13
+        }
+      },
+      "efsm_transitions": 3,
+      "efsm_forced_transitions": 1,
+      "efsm_loops_prevented": 2,
+      "efsm_timeouts": 0,
+      "efsm_final_state": "COMPLETE",
+      "efsm_entities_found": 13,
+      "efsm_attributes_extracted": 13,
+      "efsm_relations_extracted": 11,
+      "efsm_normalizations_applied": 8,
+      "efsm_validation_checks": 26,
+      "efsm_duplicates_removed": 13,
+      "efsm_stored_facts": 13
+    },
+    {
+      "dataset_id": "docker_vs_podman",
+      "config": "pipeline+fsm",
+      "fact_recall": 0.2,
+      "subtopic_coverage": 0.4,
+      "contradictions_detected": 0,
+      "hallucinations": 0,
+      "duration_seconds": 0.12,
+      "error": "",
+      "details": {
+        "fact_recall": 0.2,
+        "facts_correct": 2,
+        "facts_total": 10,
+        "subtopic_coverage": 0.4,
+        "subtopics_covered": 2,
+        "subtopics_total": 5,
+        "contradictions_detected": 0,
+        "contradictions_matched": 0,
+        "contradictions_total": 1,
+        "facts_extracted": 13,
+        "facts_retrieved": 12,
+        "overall_confidence": 0.53,
+        "pipeline_data": {
+          "facts": [
+            {
+              "claim": "Podman is a daemonless container engine that uses a fork-exec model.",
+              "category": "general",
+              "source": "https://podman.io/whatis",
+              "confidence": 0.5
+            },
+            {
+              "claim": "It does not require a running daemon and containers run as regular processes.",
+              "category": "general",
+              "source": "https://podman.io/whatis",
+              "confidence": 0.5
+            },
+            {
+              "claim": "Rootless execution is default.",
+              "category": "general",
+              "source": "https://podman.io/whatis",
+              "confidence": 0.5
+            },
+            {
+              "claim": "Docker uses a client-server architecture with a background daemon (dockerd).",
+              "category": "general",
+              "source": "https://docs.docker.com/get-started/overview/",
+              "confidence": 0.5
+            },
+            {
+              "claim": "The Docker daemon manages containers, images, networks, and storage volumes.",
+              "category": "general",
+              "source": "https://docs.docker.com/get-started/overview/",
+              "confidence": 0.6
+            },
+            {
+              "claim": "Docker typically requires root privileges.",
+              "category": "general",
+              "source": "https://docs.docker.com/get-started/overview/",
+              "confidence": 0.5
+            },
+            {
+              "claim": "Podman is designed to be mostly CLI-compatible with Docker.",
+              "category": "general",
+              "source": "https://podman.io/compatibility",
+              "confidence": 0.5
+            },
+            {
+              "claim": "The podman-docker package provides a docker alias.",
+              "category": "general",
+              "source": "https://podman.io/compatibility",
+              "confidence": 0.5
+            },
+            {
+              "claim": "Both Docker and Podman containers can run on Kubernetes.",
+              "category": "general",
+              "source": "https://kubernetes.io/docs/tasks/",
+              "confidence": 0.6
+            },
+            {
+              "claim": "Podman can generate Kubernetes YAML directly from pods.",
+              "category": "general",
+              "source": "https://kubernetes.io/docs/tasks/",
+              "confidence": 0.5
+            },
+            {
+              "claim": "Docker images are OCI-compatible.",
+              "category": "general",
+              "source": "https://kubernetes.io/docs/tasks/",
+              "confidence": 0.5
+            },
+            {
+              "claim": "Podman supports pods (groups of containers sharing resources), similar to Kubernetes.",
+              "category": "general",
+              "source": "https://www.redhat.com/en/topics/containers/what-is-podman",
+              "confidence": 0.5
+            },
+            {
+              "claim": "Podman Compose is available as an alternative to Docker Compose.",
+              "category": "comparison",
+              "source": "https://www.redhat.com/en/topics/containers/what-is-podman",
+              "confidence": 0.6
+            }
+          ],
+          "retrieved": [
+            {
+              "claim": "Podman Compose is available as an alternative to Docker Compose.",
+              "category": "comparison",
+              "confidence": 0.6
+            },
+            {
+              "claim": "Both Docker and Podman containers can run on Kubernetes.",
+              "category": "general",
+              "confidence": 0.6
+            },
+            {
+              "claim": "The Docker daemon manages containers, images, networks, and storage volumes.",
+              "category": "general",
+              "confidence": 0.6
+            },
+            {
+              "claim": "It does not require a running daemon and containers run as regular processes.",
+              "category": "general",
+              "confidence": 0.5
+            },
+            {
+              "claim": "Podman supports pods (groups of containers sharing resources), similar to Kubernetes.",
+              "category": "general",
+              "confidence": 0.5
+            },
+            {
+              "claim": "Podman can generate Kubernetes YAML directly from pods.",
+              "category": "general",
+              "confidence": 0.5
+            },
+            {
+              "claim": "Podman is designed to be mostly CLI-compatible with Docker.",
+              "category": "general",
+              "confidence": 0.5
+            },
+            {
+              "claim": "The podman-docker package provides a docker alias.",
+              "category": "general",
+              "confidence": 0.5
+            },
+            {
+              "claim": "Podman is a daemonless container engine that uses a fork-exec model.",
+              "category": "general",
+              "confidence": 0.5
+            },
+            {
+              "claim": "Docker images are OCI-compatible.",
+              "category": "general",
+              "confidence": 0.5
+            },
+            {
+              "claim": "Docker uses a client-server architecture with a background daemon (dockerd).",
+              "category": "general",
+              "confidence": 0.5
+            },
+            {
+              "claim": "Docker typically requires root privileges.",
+              "category": "general",
+              "confidence": 0.5
+            }
+          ],
+          "comparison": {
+            "contradictions": [],
+            "agreements": [],
+            "gaps": []
+          },
+          "report": {
+            "summary": "Research on 'How does Podman compare to Docker for container management?' covered 12 facts from 5 sources. Information corroborated across 5 sources.",
+            "agreements": [],
+            "conflicts": [],
+            "gaps": [],
+            "overall_confidence": 0.53,
+            "recommendations": [
+              "High confidence in findings \u2014 proceed with decision-making."
+            ]
+          }
+        },
+        "efsm_metrics": {
+          "efsm_final_state": "COMPLETE",
+          "efsm_transitions": 3,
+          "efsm_forced_transitions": 1,
+          "efsm_loops_prevented": 2,
+          "efsm_timeouts": 0,
+          "efsm_validation_failures": 0,
+          "efsm_total_actions": 41,
+          "efsm_entities_found": 13,
+          "efsm_attributes_extracted": 13,
+          "efsm_relations_extracted": 9,
+          "efsm_normalizations_applied": 0,
+          "efsm_validation_checks": 26,
+          "efsm_validation_failures_count": 0,
+          "efsm_duplicates_removed": 13,
+          "efsm_transition_log": [
+            {
+              "from": "START",
+              "to": "DETECT_ENTITIES",
+              "forced": false,
+              "time": 1782557520.09281,
+              "actions_in_state": 0,
+              "entities_found": 0,
+              "attributes_found": 0,
+              "relations_found": 0
+            },
+            {
+              "from": "DETECT_ENTITIES",
+              "to": "SPLIT_ENTITIES",
+              "forced": true,
+              "time": 1782557520.1639163,
+              "actions_in_state": 5,
+              "entities_found": 11,
+              "attributes_found": 0,
+              "relations_found": 0
+            },
+            {
+              "from": "SPLIT_ENTITIES",
+              "to": "COMPLETE",
+              "forced": false,
+              "time": 1782557520.1877806,
+              "actions_in_state": 36,
+              "entities_found": 13,
+              "attributes_found": 13,
+              "relations_found": 9
+            }
+          ],
+          "efsm_stored_facts": 13
+        }
+      },
+      "efsm_transitions": 3,
+      "efsm_forced_transitions": 1,
+      "efsm_loops_prevented": 2,
+      "efsm_timeouts": 0,
+      "efsm_final_state": "COMPLETE",
+      "efsm_entities_found": 13,
+      "efsm_attributes_extracted": 13,
+      "efsm_relations_extracted": 9,
+      "efsm_normalizations_applied": 0,
+      "efsm_validation_checks": 26,
+      "efsm_duplicates_removed": 13,
+      "efsm_stored_facts": 13
+    }
+  ],
+  "summary": {
+    "raw": {
+      "avg_fact_recall": 0.6375,
+      "avg_subtopic_coverage": 0.525,
+      "total_contradictions_detected": 0,
+      "total_hallucinations": 64,
+      "avg_duration": 38.41,
+      "errors": 0,
+      "tasks_completed": 2,
+      "tasks_total": 2
+    },
+    "pipeline": {
+      "avg_fact_recall": 0.2875,
+      "avg_subtopic_coverage": 0.2,
+      "total_contradictions_detected": 1,
+      "total_hallucinations": 0,
+      "avg_duration": 0.13,
+      "errors": 0,
+      "tasks_completed": 2,
+      "tasks_total": 2
+    },
+    "pipeline+fsm": {
+      "avg_fact_recall": 0.2875,
+      "avg_subtopic_coverage": 0.2,
+      "total_contradictions_detected": 1,
+      "total_hallucinations": 0,
+      "avg_duration": 0.12,
+      "errors": 0,
+      "tasks_completed": 2,
+      "tasks_total": 2
+    },
+    "delta": {
+      "fact_recall": -0.35,
+      "subtopic_coverage": -0.325,
+      "hallucination_reduction": 64,
+      "contradiction_improvement": 1
+    }
+  }
+}

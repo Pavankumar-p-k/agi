@@ -15,6 +15,13 @@ import pytest
 from unittest.mock import MagicMock, AsyncMock, patch
 
 
+# Auth tests need DEV_MODE=False so the auth middleware actually enforces auth.
+@pytest.fixture(autouse=True)
+def _patch_dev_mode():
+    with patch("core.config.DEV_MODE", False):
+        yield
+
+
 class TestAuthExemptPaths:
     def test_exempt_paths_defined(self):
         from core.main import AUTH_EXEMPT_PREFIXES, AUTH_EXEMPT_PATHS
@@ -65,6 +72,7 @@ class TestAuthMiddleware:
             return "" if key == "Authorization" else default
 
         mock_request.headers.get = header_get
+        mock_request.cookies.get = lambda key, default=None: default
 
         async def call_next(req):
             return JSONResponse(content={"ok": True})

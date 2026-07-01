@@ -1,0 +1,1181 @@
+{
+  "timestamp": "2026-06-25T11:47:20.379970+00:00",
+  "model": "qwen2.5:7b",
+  "tasks": [
+    {
+      "task_id": "search_extract_1",
+      "category": "search_extract",
+      "config": "raw",
+      "success": false,
+      "turns": 4,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_snapshot",
+        "browser_snapshot",
+        "browser_snapshot"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "browser_snapshot",
+        "browser_navigate"
+      ],
+      "duration_seconds": 19.0,
+      "error": "loop_detected: browser_snapshot called 4 times"
+    },
+    {
+      "task_id": "search_extract_2",
+      "category": "search_extract",
+      "config": "raw",
+      "success": false,
+      "turns": 4,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_snapshot",
+        "browser_navigate",
+        "browser_snapshot"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "browser_snapshot",
+        "browser_navigate"
+      ],
+      "duration_seconds": 24.26,
+      "error": "max_turns (4) exceeded"
+    },
+    {
+      "task_id": "search_extract_3",
+      "category": "search_extract",
+      "config": "raw",
+      "success": true,
+      "turns": 4,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_snapshot",
+        "browser_navigate",
+        "browser_snapshot"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "browser_snapshot",
+        "browser_navigate"
+      ],
+      "duration_seconds": 25.07,
+      "error": "max_turns (4) exceeded"
+    },
+    {
+      "task_id": "search_extract_4",
+      "category": "search_extract",
+      "config": "raw",
+      "success": false,
+      "turns": 3,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_fill",
+        "browser_press",
+        "browser_wait_text",
+        "browser_find",
+        "browser_find",
+        "browser_find"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "browser_press",
+        "browser_fill",
+        "browser_find",
+        "browser_wait_text",
+        "browser_navigate"
+      ],
+      "duration_seconds": 22.1,
+      "error": "loop_detected: browser_find called 5 times"
+    },
+    {
+      "task_id": "multi_page_1",
+      "category": "multi_page",
+      "config": "raw",
+      "success": false,
+      "turns": 3,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_wait_text",
+        "browser_find_interactive",
+        "browser_click",
+        "browser_wait_text",
+        "browser_snapshot",
+        "vision_browser",
+        "vision_browser",
+        "vision_browser"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "browser_snapshot",
+        "vision_browser",
+        "browser_find_interactive",
+        "browser_wait_text",
+        "browser_click",
+        "browser_navigate"
+      ],
+      "duration_seconds": 24.79,
+      "error": "loop_detected: vision_browser called 5 times"
+    },
+    {
+      "task_id": "search_extract_1",
+      "category": "search_extract",
+      "config": "planner",
+      "success": false,
+      "turns": 3,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_navigate",
+        "browser_navigate"
+      ],
+      "planner_injected": [
+        "browser_snapshot",
+        "browser_evaluate",
+        "browser_evaluate",
+        "browser_snapshot"
+      ],
+      "unique_tools": [
+        "browser_snapshot",
+        "browser_evaluate",
+        "browser_navigate"
+      ],
+      "duration_seconds": 17.06,
+      "error": "loop_detected: browser_navigate called 3 times"
+    },
+    {
+      "task_id": "search_extract_2",
+      "category": "search_extract",
+      "config": "planner",
+      "success": false,
+      "turns": 3,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_navigate",
+        "browser_navigate"
+      ],
+      "planner_injected": [
+        "browser_snapshot",
+        "browser_evaluate",
+        "browser_evaluate",
+        "browser_snapshot"
+      ],
+      "unique_tools": [
+        "browser_snapshot",
+        "browser_evaluate",
+        "browser_navigate"
+      ],
+      "duration_seconds": 16.96,
+      "error": "loop_detected: browser_navigate called 3 times"
+    },
+    {
+      "task_id": "search_extract_3",
+      "category": "search_extract",
+      "config": "planner",
+      "success": false,
+      "turns": 4,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_find",
+        "browser_navigate",
+        "browser_navigate",
+        "browser_navigate"
+      ],
+      "planner_injected": [
+        "browser_snapshot",
+        "browser_evaluate",
+        "browser_evaluate",
+        "browser_snapshot",
+        "browser_snapshot"
+      ],
+      "unique_tools": [
+        "browser_snapshot",
+        "browser_evaluate",
+        "browser_find",
+        "browser_navigate"
+      ],
+      "duration_seconds": 28.13,
+      "error": "loop_detected: browser_navigate called 5 times"
+    },
+    {
+      "task_id": "search_extract_4",
+      "category": "search_extract",
+      "config": "planner",
+      "success": false,
+      "turns": 4,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_fill",
+        "browser_click",
+        "browser_wait_text",
+        "browser_snapshot",
+        "browser_navigate",
+        "browser_navigate",
+        "browser_navigate"
+      ],
+      "planner_injected": [
+        "browser_evaluate",
+        "browser_evaluate",
+        "browser_snapshot",
+        "browser_snapshot"
+      ],
+      "unique_tools": [
+        "browser_snapshot",
+        "browser_fill",
+        "browser_wait_text",
+        "browser_click",
+        "browser_evaluate",
+        "browser_navigate"
+      ],
+      "duration_seconds": 29.32,
+      "error": "loop_detected: browser_navigate called 5 times"
+    },
+    {
+      "task_id": "multi_page_1",
+      "category": "multi_page",
+      "config": "planner",
+      "success": false,
+      "turns": 4,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_find_interactive",
+        "browser_click",
+        "browser_snapshot",
+        "browser_fill",
+        "browser_press",
+        "browser_press",
+        "browser_press"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "browser_press",
+        "browser_fill",
+        "browser_snapshot",
+        "browser_find_interactive",
+        "browser_click",
+        "browser_navigate"
+      ],
+      "duration_seconds": 27.31,
+      "error": "loop_detected: browser_press called 5 times"
+    },
+    {
+      "task_id": "search_extract_1",
+      "category": "search_extract",
+      "config": "full",
+      "success": false,
+      "turns": 3,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_navigate",
+        "browser_navigate"
+      ],
+      "planner_injected": [
+        "browser_snapshot",
+        "browser_evaluate",
+        "browser_evaluate",
+        "browser_snapshot"
+      ],
+      "unique_tools": [
+        "browser_snapshot",
+        "browser_evaluate",
+        "browser_navigate"
+      ],
+      "duration_seconds": 16.76,
+      "error": "loop_detected: browser_navigate called 3 times"
+    },
+    {
+      "task_id": "search_extract_2",
+      "category": "search_extract",
+      "config": "full",
+      "success": false,
+      "turns": 3,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_navigate",
+        "browser_navigate"
+      ],
+      "planner_injected": [
+        "browser_snapshot",
+        "browser_evaluate",
+        "browser_evaluate",
+        "browser_snapshot"
+      ],
+      "unique_tools": [
+        "browser_snapshot",
+        "browser_evaluate",
+        "browser_navigate"
+      ],
+      "duration_seconds": 16.8,
+      "error": "loop_detected: browser_navigate called 3 times"
+    },
+    {
+      "task_id": "search_extract_3",
+      "category": "search_extract",
+      "config": "full",
+      "success": false,
+      "turns": 3,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_navigate",
+        "browser_navigate"
+      ],
+      "planner_injected": [
+        "browser_snapshot",
+        "browser_evaluate",
+        "browser_evaluate",
+        "browser_snapshot"
+      ],
+      "unique_tools": [
+        "browser_snapshot",
+        "browser_evaluate",
+        "browser_navigate"
+      ],
+      "duration_seconds": 20.74,
+      "error": "loop_detected: browser_navigate called 3 times"
+    },
+    {
+      "task_id": "search_extract_4",
+      "category": "search_extract",
+      "config": "full",
+      "success": false,
+      "turns": 4,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_fill",
+        "browser_click",
+        "browser_wait_text",
+        "browser_snapshot",
+        "browser_navigate",
+        "browser_navigate",
+        "browser_navigate"
+      ],
+      "planner_injected": [
+        "browser_evaluate",
+        "browser_evaluate",
+        "browser_snapshot",
+        "browser_snapshot"
+      ],
+      "unique_tools": [
+        "browser_snapshot",
+        "browser_fill",
+        "browser_wait_text",
+        "browser_click",
+        "browser_evaluate",
+        "browser_navigate"
+      ],
+      "duration_seconds": 29.16,
+      "error": "loop_detected: browser_navigate called 5 times"
+    },
+    {
+      "task_id": "multi_page_1",
+      "category": "multi_page",
+      "config": "full",
+      "success": false,
+      "turns": 4,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_find_interactive",
+        "browser_click",
+        "browser_snapshot",
+        "browser_fill",
+        "browser_press",
+        "browser_press",
+        "browser_press"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "browser_press",
+        "browser_fill",
+        "browser_snapshot",
+        "browser_find_interactive",
+        "browser_click",
+        "browser_navigate"
+      ],
+      "duration_seconds": 27.07,
+      "error": "loop_detected: browser_press called 5 times"
+    }
+  ],
+  "per_task_details": [
+    {
+      "task_id": "search_extract_1",
+      "category": "search_extract",
+      "config": "raw",
+      "success": false,
+      "turns": 4,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_snapshot",
+        "browser_snapshot",
+        "browser_snapshot"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "browser_snapshot",
+        "browser_navigate"
+      ],
+      "duration_seconds": 19.0,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_snapshot",
+          "browser_fill",
+          "browser_press"
+        ],
+        "selected_by_llm": [
+          "browser_snapshot",
+          "browser_navigate"
+        ],
+        "injected_by_planner": [],
+        "matched_count": 2,
+        "required_count": 4,
+        "missing": [
+          "browser_press",
+          "browser_fill"
+        ],
+        "accuracy": 0.5
+      },
+      "error": "loop_detected: browser_snapshot called 4 times"
+    },
+    {
+      "task_id": "search_extract_2",
+      "category": "search_extract",
+      "config": "raw",
+      "success": false,
+      "turns": 4,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_snapshot",
+        "browser_navigate",
+        "browser_snapshot"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "browser_snapshot",
+        "browser_navigate"
+      ],
+      "duration_seconds": 24.26,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_fill",
+          "browser_press",
+          "browser_snapshot"
+        ],
+        "selected_by_llm": [
+          "browser_snapshot",
+          "browser_navigate"
+        ],
+        "injected_by_planner": [],
+        "matched_count": 2,
+        "required_count": 4,
+        "missing": [
+          "browser_press",
+          "browser_fill"
+        ],
+        "accuracy": 0.5
+      },
+      "error": "max_turns (4) exceeded"
+    },
+    {
+      "task_id": "search_extract_3",
+      "category": "search_extract",
+      "config": "raw",
+      "success": true,
+      "turns": 4,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_snapshot",
+        "browser_navigate",
+        "browser_snapshot"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "browser_snapshot",
+        "browser_navigate"
+      ],
+      "duration_seconds": 25.07,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_snapshot"
+        ],
+        "selected_by_llm": [
+          "browser_snapshot",
+          "browser_navigate"
+        ],
+        "injected_by_planner": [],
+        "matched_count": 2,
+        "required_count": 2,
+        "missing": [],
+        "accuracy": 1.0
+      },
+      "error": "max_turns (4) exceeded"
+    },
+    {
+      "task_id": "search_extract_4",
+      "category": "search_extract",
+      "config": "raw",
+      "success": false,
+      "turns": 3,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_fill",
+        "browser_press",
+        "browser_wait_text",
+        "browser_find",
+        "browser_find",
+        "browser_find"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "browser_press",
+        "browser_fill",
+        "browser_find",
+        "browser_wait_text",
+        "browser_navigate"
+      ],
+      "duration_seconds": 22.1,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_fill",
+          "browser_press",
+          "browser_snapshot"
+        ],
+        "selected_by_llm": [
+          "browser_press",
+          "browser_fill",
+          "browser_navigate"
+        ],
+        "injected_by_planner": [],
+        "matched_count": 3,
+        "required_count": 4,
+        "missing": [
+          "browser_snapshot"
+        ],
+        "accuracy": 0.75
+      },
+      "error": "loop_detected: browser_find called 5 times"
+    },
+    {
+      "task_id": "multi_page_1",
+      "category": "multi_page",
+      "config": "raw",
+      "success": false,
+      "turns": 3,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_wait_text",
+        "browser_find_interactive",
+        "browser_click",
+        "browser_wait_text",
+        "browser_snapshot",
+        "vision_browser",
+        "vision_browser",
+        "vision_browser"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "browser_snapshot",
+        "vision_browser",
+        "browser_find_interactive",
+        "browser_wait_text",
+        "browser_click",
+        "browser_navigate"
+      ],
+      "duration_seconds": 24.79,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_snapshot",
+          "browser_click"
+        ],
+        "selected_by_llm": [
+          "browser_snapshot",
+          "browser_click",
+          "browser_navigate"
+        ],
+        "injected_by_planner": [],
+        "matched_count": 3,
+        "required_count": 3,
+        "missing": [],
+        "accuracy": 1.0
+      },
+      "error": "loop_detected: vision_browser called 5 times"
+    },
+    {
+      "task_id": "search_extract_1",
+      "category": "search_extract",
+      "config": "planner",
+      "success": false,
+      "turns": 3,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_navigate",
+        "browser_navigate"
+      ],
+      "planner_injected": [
+        "browser_snapshot",
+        "browser_evaluate",
+        "browser_evaluate",
+        "browser_snapshot"
+      ],
+      "unique_tools": [
+        "browser_snapshot",
+        "browser_evaluate",
+        "browser_navigate"
+      ],
+      "duration_seconds": 17.06,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_snapshot",
+          "browser_fill",
+          "browser_press"
+        ],
+        "selected_by_llm": [
+          "browser_navigate"
+        ],
+        "injected_by_planner": [
+          "browser_snapshot"
+        ],
+        "matched_count": 2,
+        "required_count": 4,
+        "missing": [
+          "browser_press",
+          "browser_fill"
+        ],
+        "accuracy": 0.5
+      },
+      "error": "loop_detected: browser_navigate called 3 times"
+    },
+    {
+      "task_id": "search_extract_2",
+      "category": "search_extract",
+      "config": "planner",
+      "success": false,
+      "turns": 3,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_navigate",
+        "browser_navigate"
+      ],
+      "planner_injected": [
+        "browser_snapshot",
+        "browser_evaluate",
+        "browser_evaluate",
+        "browser_snapshot"
+      ],
+      "unique_tools": [
+        "browser_snapshot",
+        "browser_evaluate",
+        "browser_navigate"
+      ],
+      "duration_seconds": 16.96,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_fill",
+          "browser_press",
+          "browser_snapshot"
+        ],
+        "selected_by_llm": [
+          "browser_navigate"
+        ],
+        "injected_by_planner": [
+          "browser_snapshot"
+        ],
+        "matched_count": 2,
+        "required_count": 4,
+        "missing": [
+          "browser_press",
+          "browser_fill"
+        ],
+        "accuracy": 0.5
+      },
+      "error": "loop_detected: browser_navigate called 3 times"
+    },
+    {
+      "task_id": "search_extract_3",
+      "category": "search_extract",
+      "config": "planner",
+      "success": false,
+      "turns": 4,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_find",
+        "browser_navigate",
+        "browser_navigate",
+        "browser_navigate"
+      ],
+      "planner_injected": [
+        "browser_snapshot",
+        "browser_evaluate",
+        "browser_evaluate",
+        "browser_snapshot",
+        "browser_snapshot"
+      ],
+      "unique_tools": [
+        "browser_snapshot",
+        "browser_evaluate",
+        "browser_find",
+        "browser_navigate"
+      ],
+      "duration_seconds": 28.13,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_snapshot"
+        ],
+        "selected_by_llm": [
+          "browser_navigate"
+        ],
+        "injected_by_planner": [
+          "browser_snapshot"
+        ],
+        "matched_count": 2,
+        "required_count": 2,
+        "missing": [],
+        "accuracy": 1.0
+      },
+      "error": "loop_detected: browser_navigate called 5 times"
+    },
+    {
+      "task_id": "search_extract_4",
+      "category": "search_extract",
+      "config": "planner",
+      "success": false,
+      "turns": 4,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_fill",
+        "browser_click",
+        "browser_wait_text",
+        "browser_snapshot",
+        "browser_navigate",
+        "browser_navigate",
+        "browser_navigate"
+      ],
+      "planner_injected": [
+        "browser_evaluate",
+        "browser_evaluate",
+        "browser_snapshot",
+        "browser_snapshot"
+      ],
+      "unique_tools": [
+        "browser_snapshot",
+        "browser_fill",
+        "browser_wait_text",
+        "browser_click",
+        "browser_evaluate",
+        "browser_navigate"
+      ],
+      "duration_seconds": 29.32,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_fill",
+          "browser_press",
+          "browser_snapshot"
+        ],
+        "selected_by_llm": [
+          "browser_snapshot",
+          "browser_fill",
+          "browser_navigate"
+        ],
+        "injected_by_planner": [
+          "browser_snapshot"
+        ],
+        "matched_count": 3,
+        "required_count": 4,
+        "missing": [
+          "browser_press"
+        ],
+        "accuracy": 0.75
+      },
+      "error": "loop_detected: browser_navigate called 5 times"
+    },
+    {
+      "task_id": "multi_page_1",
+      "category": "multi_page",
+      "config": "planner",
+      "success": false,
+      "turns": 4,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_find_interactive",
+        "browser_click",
+        "browser_snapshot",
+        "browser_fill",
+        "browser_press",
+        "browser_press",
+        "browser_press"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "browser_press",
+        "browser_fill",
+        "browser_snapshot",
+        "browser_find_interactive",
+        "browser_click",
+        "browser_navigate"
+      ],
+      "duration_seconds": 27.31,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_snapshot",
+          "browser_click"
+        ],
+        "selected_by_llm": [
+          "browser_snapshot",
+          "browser_click",
+          "browser_navigate"
+        ],
+        "injected_by_planner": [],
+        "matched_count": 3,
+        "required_count": 3,
+        "missing": [],
+        "accuracy": 1.0
+      },
+      "error": "loop_detected: browser_press called 5 times"
+    },
+    {
+      "task_id": "search_extract_1",
+      "category": "search_extract",
+      "config": "full",
+      "success": false,
+      "turns": 3,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_navigate",
+        "browser_navigate"
+      ],
+      "planner_injected": [
+        "browser_snapshot",
+        "browser_evaluate",
+        "browser_evaluate",
+        "browser_snapshot"
+      ],
+      "unique_tools": [
+        "browser_snapshot",
+        "browser_evaluate",
+        "browser_navigate"
+      ],
+      "duration_seconds": 16.76,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_snapshot",
+          "browser_fill",
+          "browser_press"
+        ],
+        "selected_by_llm": [
+          "browser_navigate"
+        ],
+        "injected_by_planner": [
+          "browser_snapshot"
+        ],
+        "matched_count": 2,
+        "required_count": 4,
+        "missing": [
+          "browser_press",
+          "browser_fill"
+        ],
+        "accuracy": 0.5
+      },
+      "error": "loop_detected: browser_navigate called 3 times"
+    },
+    {
+      "task_id": "search_extract_2",
+      "category": "search_extract",
+      "config": "full",
+      "success": false,
+      "turns": 3,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_navigate",
+        "browser_navigate"
+      ],
+      "planner_injected": [
+        "browser_snapshot",
+        "browser_evaluate",
+        "browser_evaluate",
+        "browser_snapshot"
+      ],
+      "unique_tools": [
+        "browser_snapshot",
+        "browser_evaluate",
+        "browser_navigate"
+      ],
+      "duration_seconds": 16.8,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_fill",
+          "browser_press",
+          "browser_snapshot"
+        ],
+        "selected_by_llm": [
+          "browser_navigate"
+        ],
+        "injected_by_planner": [
+          "browser_snapshot"
+        ],
+        "matched_count": 2,
+        "required_count": 4,
+        "missing": [
+          "browser_press",
+          "browser_fill"
+        ],
+        "accuracy": 0.5
+      },
+      "error": "loop_detected: browser_navigate called 3 times"
+    },
+    {
+      "task_id": "search_extract_3",
+      "category": "search_extract",
+      "config": "full",
+      "success": false,
+      "turns": 3,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_navigate",
+        "browser_navigate"
+      ],
+      "planner_injected": [
+        "browser_snapshot",
+        "browser_evaluate",
+        "browser_evaluate",
+        "browser_snapshot"
+      ],
+      "unique_tools": [
+        "browser_snapshot",
+        "browser_evaluate",
+        "browser_navigate"
+      ],
+      "duration_seconds": 20.74,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_snapshot"
+        ],
+        "selected_by_llm": [
+          "browser_navigate"
+        ],
+        "injected_by_planner": [
+          "browser_snapshot"
+        ],
+        "matched_count": 2,
+        "required_count": 2,
+        "missing": [],
+        "accuracy": 1.0
+      },
+      "error": "loop_detected: browser_navigate called 3 times"
+    },
+    {
+      "task_id": "search_extract_4",
+      "category": "search_extract",
+      "config": "full",
+      "success": false,
+      "turns": 4,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_fill",
+        "browser_click",
+        "browser_wait_text",
+        "browser_snapshot",
+        "browser_navigate",
+        "browser_navigate",
+        "browser_navigate"
+      ],
+      "planner_injected": [
+        "browser_evaluate",
+        "browser_evaluate",
+        "browser_snapshot",
+        "browser_snapshot"
+      ],
+      "unique_tools": [
+        "browser_snapshot",
+        "browser_fill",
+        "browser_wait_text",
+        "browser_click",
+        "browser_evaluate",
+        "browser_navigate"
+      ],
+      "duration_seconds": 29.16,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_fill",
+          "browser_press",
+          "browser_snapshot"
+        ],
+        "selected_by_llm": [
+          "browser_snapshot",
+          "browser_fill",
+          "browser_navigate"
+        ],
+        "injected_by_planner": [
+          "browser_snapshot"
+        ],
+        "matched_count": 3,
+        "required_count": 4,
+        "missing": [
+          "browser_press"
+        ],
+        "accuracy": 0.75
+      },
+      "error": "loop_detected: browser_navigate called 5 times"
+    },
+    {
+      "task_id": "multi_page_1",
+      "category": "multi_page",
+      "config": "full",
+      "success": false,
+      "turns": 4,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_find_interactive",
+        "browser_click",
+        "browser_snapshot",
+        "browser_fill",
+        "browser_press",
+        "browser_press",
+        "browser_press"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "browser_press",
+        "browser_fill",
+        "browser_snapshot",
+        "browser_find_interactive",
+        "browser_click",
+        "browser_navigate"
+      ],
+      "duration_seconds": 27.07,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_snapshot",
+          "browser_click"
+        ],
+        "selected_by_llm": [
+          "browser_snapshot",
+          "browser_click",
+          "browser_navigate"
+        ],
+        "injected_by_planner": [],
+        "matched_count": 3,
+        "required_count": 3,
+        "missing": [],
+        "accuracy": 1.0
+      },
+      "error": "loop_detected: browser_press called 5 times"
+    }
+  ],
+  "summary": {
+    "by_config": {
+      "raw": {
+        "total_tasks": 5,
+        "successes": 1,
+        "success_rate": 0.2,
+        "avg_turns": 3.6,
+        "avg_duration_seconds": 23.04,
+        "avg_tool_selection_accuracy": 0.75,
+        "avg_matched_tools": 2.4,
+        "total_tool_calls": 28,
+        "total_planner_injections": 0,
+        "unique_tools_count": 9,
+        "tool_frequency": {
+          "browser_snapshot": 8,
+          "browser_navigate": 7,
+          "browser_wait_text": 3,
+          "browser_find": 3,
+          "vision_browser": 3,
+          "browser_fill": 1,
+          "browser_press": 1,
+          "browser_find_interactive": 1,
+          "browser_click": 1
+        },
+        "errors": [
+          "loop_detected: browser_snapshot called 4 times",
+          "max_turns (4) exceeded",
+          "max_turns (4) exceeded",
+          "loop_detected: browser_find called 5 times",
+          "loop_detected: vision_browser called 5 times"
+        ]
+      },
+      "planner": {
+        "total_tasks": 5,
+        "successes": 0,
+        "success_rate": 0.0,
+        "avg_turns": 3.6,
+        "avg_duration_seconds": 23.76,
+        "avg_tool_selection_accuracy": 0.75,
+        "avg_matched_tools": 2.4,
+        "total_tool_calls": 27,
+        "total_planner_injections": 17,
+        "unique_tools_count": 9,
+        "tool_frequency": {
+          "browser_navigate": 15,
+          "browser_snapshot": 11,
+          "browser_evaluate": 8,
+          "browser_press": 3,
+          "browser_fill": 2,
+          "browser_click": 2,
+          "browser_find": 1,
+          "browser_wait_text": 1,
+          "browser_find_interactive": 1
+        },
+        "errors": [
+          "loop_detected: browser_navigate called 3 times",
+          "loop_detected: browser_navigate called 3 times",
+          "loop_detected: browser_navigate called 5 times",
+          "loop_detected: browser_navigate called 5 times",
+          "loop_detected: browser_press called 5 times"
+        ]
+      },
+      "full": {
+        "total_tasks": 5,
+        "successes": 0,
+        "success_rate": 0.0,
+        "avg_turns": 3.4,
+        "avg_duration_seconds": 22.11,
+        "avg_tool_selection_accuracy": 0.75,
+        "avg_matched_tools": 2.4,
+        "total_tool_calls": 25,
+        "total_planner_injections": 16,
+        "unique_tools_count": 8,
+        "tool_frequency": {
+          "browser_navigate": 14,
+          "browser_snapshot": 10,
+          "browser_evaluate": 8,
+          "browser_press": 3,
+          "browser_fill": 2,
+          "browser_click": 2,
+          "browser_wait_text": 1,
+          "browser_find_interactive": 1
+        },
+        "errors": [
+          "loop_detected: browser_navigate called 3 times",
+          "loop_detected: browser_navigate called 3 times",
+          "loop_detected: browser_navigate called 3 times",
+          "loop_detected: browser_navigate called 5 times",
+          "loop_detected: browser_press called 5 times"
+        ]
+      }
+    },
+    "deltas": {
+      "planner": {
+        "delta_success_rate": -0.2,
+        "delta_tool_selection_accuracy": 0.0,
+        "delta_avg_turns": 0.0
+      },
+      "full": {
+        "delta_success_rate": -0.2,
+        "delta_tool_selection_accuracy": 0.0,
+        "delta_avg_turns": 0.2
+      }
+    }
+  }
+}

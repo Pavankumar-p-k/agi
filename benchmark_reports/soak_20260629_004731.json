@@ -1,0 +1,27 @@
+{
+  "benchmark": "soak",
+  "status": "PASS",
+  "duration_seconds": 60.01332449913025,
+  "total_samples": 12,
+  "warmup_samples": 5,
+  "peak_memory_rss_mb": 29.09765625,
+  "peak_cpu": 0.0,
+  "max_task_count": 2,
+  "max_subscriber_count": 5,
+  "avg_poll_latency_ms": 31.314543315342494,
+  "max_poll_latency_ms": 43.07842254638672,
+  "median_poll_latency_ms": 34.24429893493652,
+  "total_exceptions": 0,
+  "recovery_events": 0,
+  "threshold_failures": [],
+  "exercises": [
+    {
+      "type": "open_subscribers",
+      "timestamp": 1782674191.1982374,
+      "detail": "opened 5 subscribers (total: 5)",
+      "success": true
+    }
+  ],
+  "start_time": "2026-06-28T19:16:31.096863+00:00",
+  "end_time": "2026-06-28T19:17:31.110188+00:00"
+}

@@ -1,0 +1,74 @@
+{
+  "timestamp": "2026-06-24T18:25:40.655451+00:00",
+  "model": "qwen2.5:7b",
+  "level": "1",
+  "tasks": [
+    {
+      "task_id": "research_1",
+      "category": "research",
+      "config": "raw",
+      "success": false,
+      "turns": 2,
+      "tool_calls": [
+        "web_search"
+      ],
+      "unique_tools": [
+        "web_search"
+      ],
+      "duration_seconds": 10.43,
+      "error": ""
+    },
+    {
+      "task_id": "research_1",
+      "category": "research",
+      "config": "full",
+      "success": false,
+      "turns": 2,
+      "tool_calls": [
+        "web_search"
+      ],
+      "unique_tools": [
+        "web_search"
+      ],
+      "duration_seconds": 9.81,
+      "error": ""
+    }
+  ],
+  "summary": {
+    "by_config": {
+      "raw": {
+        "total_tasks": 1,
+        "successes": 0,
+        "success_rate": 0.0,
+        "avg_turns": 2.0,
+        "avg_duration_seconds": 10.43,
+        "total_tool_calls": 1,
+        "unique_tools": 1,
+        "tool_frequency": {
+          "web_search": 1
+        },
+        "errors": []
+      },
+      "full": {
+        "total_tasks": 1,
+        "successes": 0,
+        "success_rate": 0.0,
+        "avg_turns": 2.0,
+        "avg_duration_seconds": 9.81,
+        "total_tool_calls": 1,
+        "unique_tools": 1,
+        "tool_frequency": {
+          "web_search": 1
+        },
+        "errors": []
+      }
+    },
+    "deltas": {
+      "full": {
+        "delta_success_rate": 0.0,
+        "delta_avg_turns": 0.0,
+        "delta_avg_duration": 0.6
+      }
+    }
+  }
+}

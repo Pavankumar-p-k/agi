@@ -13,10 +13,14 @@ from __future__ import annotations
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
+
 from textual.app import ComposeResult
 from textual.containers import Vertical
 from textual.widget import Widget
 from textual.widgets import Input, Label, ListItem, ListView, Static
+
+logger = logging.getLogger(__name__)
 
 
 class CommandPalette(Widget):
@@ -90,7 +94,8 @@ class CommandPalette(Widget):
         cmd_text = event.item.query_one(Label).renderable
         try:
             toast_rack = self.screen.query_one("#toast-rack")
-        except Exception:
+        except Exception as e:
+            logger.warning("cmd_palette toast query failed: %s", e)
             toast_rack = None
 
         if "/theme" in cmd_text:

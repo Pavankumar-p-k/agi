@@ -22,8 +22,10 @@ export default function VoiceSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [providers, setProviders] = useState<string[]>([]);
   const [diagnostics, setDiagnostics] = useState<any>(null);
+  const [error, setError] = useState('');
 
   const fetchAll = useCallback(async () => {
+    setError('');
     try {
       const [s, p, d] = await Promise.all([
         api.voice.settings().catch(() => []),
@@ -35,6 +37,7 @@ export default function VoiceSettingsPage() {
       setDiagnostics(d);
     } catch (e) {
       console.warn('[VoiceSettings] fetch failed', e);
+      setError('Failed to load voice settings');
     } finally {
       setLoading(false);
     }
@@ -47,7 +50,7 @@ export default function VoiceSettingsPage() {
       await api.settings.update(key, value);
       setSettings(prev => prev.map(s => s.key === key ? { ...s, value } : s));
     } catch (e) {
-      alert('Failed to update setting: ' + e);
+      setError(`Failed to update ${key}`);
     }
   };
 
@@ -62,6 +65,12 @@ export default function VoiceSettingsPage() {
           Configure speech-to-text, text-to-speech, wake word detection, and audio processing.
         </p>
       </motion.section>
+
+      {error && (
+        <motion.div variants={itemVariants} className="border border-red-500/30 bg-red-500/5 px-5 py-3">
+          <p className="text-xs text-red-400">{error}</p>
+        </motion.div>
+      )}
 
       <motion.section variants={itemVariants} className="grid grid-cols-1 gap-px bg-[var(--j-border)] lg:grid-cols-2">
         <div className="bg-[var(--j-surface)] p-6 space-y-6">

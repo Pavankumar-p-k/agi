@@ -17,9 +17,9 @@
     "benchmark": "H2",
     "label": "Parallel Speedup \u2014 4 nodes parallel vs sequential",
     "passed": true,
-    "parallel_elapsed_s": 0.203,
-    "sequential_elapsed_s": 0.844,
-    "speedup_x": 4.16,
+    "parallel_elapsed_s": 0.219,
+    "sequential_elapsed_s": 0.828,
+    "speedup_x": 3.78,
     "nodes": 4
   },
   {
@@ -46,6 +46,6 @@
     "has_build": true,
     "has_notify": true,
     "error": null,
-    "elapsed_s": 0.83
+    "elapsed_s": 0.91
   }
 ]

@@ -1,0 +1,206 @@
+{
+  "timestamp": "2026-06-25T12:03:12.559110+00:00",
+  "model": "qwen2.5:7b",
+  "tasks": [
+    {
+      "task_id": "build_test_1",
+      "category": "build_test",
+      "config": "raw",
+      "success": false,
+      "turns": 4,
+      "tool_calls": [
+        "build_project",
+        "repair_project",
+        "run_tests",
+        "runtime_validate",
+        "runtime_validate",
+        "runtime_validate",
+        "runtime_validate"
+      ],
+      "unique_tools": [
+        "run_tests",
+        "repair_project",
+        "runtime_validate",
+        "build_project"
+      ],
+      "phases_completed": [],
+      "phases_required": [
+        "build",
+        "test",
+        "repair",
+        "retest"
+      ],
+      "injections": 0,
+      "re_plans": 0,
+      "duration_seconds": 24.08,
+      "error": "loop_detected: runtime_validate called 6 times"
+    },
+    {
+      "task_id": "build_test_1",
+      "category": "build_test",
+      "config": "workflow",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [
+        "build_project"
+      ],
+      "unique_tools": [
+        "build_project"
+      ],
+      "phases_completed": [],
+      "phases_required": [
+        "build",
+        "test",
+        "repair",
+        "retest"
+      ],
+      "injections": 0,
+      "re_plans": 0,
+      "duration_seconds": 9.03,
+      "error": "NameError: name 'self' is not defined"
+    }
+  ],
+  "per_task_details": [
+    {
+      "task_id": "build_test_1",
+      "category": "build_test",
+      "config": "raw",
+      "success": false,
+      "turns": 4,
+      "tool_calls": [
+        "build_project",
+        "repair_project",
+        "run_tests",
+        "runtime_validate",
+        "runtime_validate",
+        "runtime_validate",
+        "runtime_validate"
+      ],
+      "unique_tools": [
+        "run_tests",
+        "repair_project",
+        "runtime_validate",
+        "build_project"
+      ],
+      "phases_completed": [],
+      "phases_required": [
+        "build",
+        "test",
+        "repair",
+        "retest"
+      ],
+      "phase_completion": {
+        "required_phases": [
+          "build",
+          "test",
+          "repair",
+          "retest"
+        ],
+        "completed_phases": [],
+        "missing_phases": [
+          "test",
+          "build",
+          "repair",
+          "retest"
+        ],
+        "completion_rate": 0.0,
+        "min_met": false
+      },
+      "injections": 0,
+      "re_plans": 0,
+      "duration_seconds": 24.08,
+      "error": "loop_detected: runtime_validate called 6 times"
+    },
+    {
+      "task_id": "build_test_1",
+      "category": "build_test",
+      "config": "workflow",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [
+        "build_project"
+      ],
+      "unique_tools": [
+        "build_project"
+      ],
+      "phases_completed": [],
+      "phases_required": [
+        "build",
+        "test",
+        "repair",
+        "retest"
+      ],
+      "phase_completion": {
+        "required_phases": [
+          "build",
+          "test",
+          "repair",
+          "retest"
+        ],
+        "completed_phases": [],
+        "missing_phases": [
+          "test",
+          "build",
+          "repair",
+          "retest"
+        ],
+        "completion_rate": 0.0,
+        "min_met": false
+      },
+      "injections": 0,
+      "re_plans": 0,
+      "duration_seconds": 9.03,
+      "error": "NameError: name 'self' is not defined"
+    }
+  ],
+  "summary": {
+    "by_config": {
+      "raw": {
+        "total_tasks": 1,
+        "successes": 0,
+        "success_rate": 0.0,
+        "avg_turns": 4.0,
+        "avg_duration_seconds": 24.08,
+        "phase_completion_rate": 0.0,
+        "total_phases_completed": 0,
+        "total_phases_required": 4,
+        "total_injections": 0,
+        "total_replans": 0,
+        "tools_by_frequency": {
+          "runtime_validate": 4,
+          "build_project": 1,
+          "repair_project": 1,
+          "run_tests": 1
+        },
+        "errors": [
+          "loop_detected: runtime_validate called 6 times"
+        ]
+      },
+      "workflow": {
+        "total_tasks": 1,
+        "successes": 0,
+        "success_rate": 0.0,
+        "avg_turns": 1.0,
+        "avg_duration_seconds": 9.03,
+        "phase_completion_rate": 0.0,
+        "total_phases_completed": 0,
+        "total_phases_required": 4,
+        "total_injections": 0,
+        "total_replans": 0,
+        "tools_by_frequency": {
+          "build_project": 1
+        },
+        "errors": [
+          "NameError: name 'self' is not defined"
+        ]
+      }
+    },
+    "deltas": {
+      "workflow": {
+        "delta_success_rate": 0.0,
+        "delta_phase_completion": 0.0,
+        "delta_avg_turns": 3.0
+      }
+    }
+  }
+}

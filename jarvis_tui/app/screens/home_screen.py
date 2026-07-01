@@ -1,22 +1,13 @@
 from __future__ import annotations
 
-# Copyright (c) 2024-2026 JARVIS Project
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+import logging
 
 from textual.app import ComposeResult
 from textual.widgets import Label, Static, Markdown
 from jarvis_tui.app.screens.base_screen import JarvisScreen
 from jarvis_tui.app.widgets.hero_banner import HeroBanner
+
+logger = logging.getLogger(__name__)
 
 
 class HomeScreen(JarvisScreen):
@@ -25,6 +16,7 @@ class HomeScreen(JarvisScreen):
     """
     def compose_main(self) -> ComposeResult:
         yield HeroBanner(id="hero-banner")
+        yield Static("", id="system-status")
         yield Markdown("""
 # Welcome to JARVIS
 
@@ -38,5 +30,21 @@ Use the navigation on the left to explore:
 * **Diagnostics**: Check system health and performance.
 
 ### System Status
-Everything is running normally.
         """)
+
+    async def on_mount(self) -> None:
+        await self.refresh_status()
+
+    async def refresh_status(self) -> None:
+        try:
+            status = await self.app.jarvis_client.get_status()
+            label = self.query_one("#system-status", Static)
+            healthy = status.get("healthy", status.get("status", "")) 
+            if healthy in (True, "healthy", "ok", "running"):
+                label.update("[bold green]● SYSTEM HEALTHY — All systems nominal[/bold green]")
+            else:
+                label.update(f"[bold red]● SYSTEM DEGRADED — {healthy}[/bold red]")
+        except Exception as e:
+            logger.warning("refresh_status backend error: %s", e)
+            label = self.query_one("#system-status", Static)
+            label.update("[bold red]● SYSTEM OFFLINE — Cannot reach backend[/bold red]")

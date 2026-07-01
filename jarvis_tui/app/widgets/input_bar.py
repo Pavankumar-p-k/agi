@@ -56,7 +56,7 @@ class InputBar(Widget):
                 badge.styles.background = "#3e3e3c"
                 badge.styles.color = "#c2c0b6"
         except Exception as e:
-            logger.warning(f"[SWALLOWED] {e}")
+            logger.warning(f"input_bar watch_mode: {e}")
 
     def watch_is_code(self, is_code: bool) -> None:
         badge = self.query_one("#code-badge", Label)
@@ -107,7 +107,7 @@ class InputBar(Widget):
             label = self.query_one("#ghost-label", Label)
             label.update(self.ghost_text)
         except Exception as e:
-            logger.warning(f"[SWALLOWED] {e}")
+            logger.warning(f"input_bar ghost text update: {e}")
 
     def _on_key(self, event: events.Key) -> None:
         """Handle global triggers even when input is focused."""
@@ -127,7 +127,7 @@ class InputBar(Widget):
                 chat.add_message("YOU", msg, msg_type="user")
                 self.run_worker(self.send_to_backend(msg))
             except Exception as e:
-                logger.warning(f"[SWALLOWED] {e}")
+                logger.warning(f"input_bar on_submitted: {e}")
 
             inp = self.query_one("#chat-input", Input)
             inp.value = ""
@@ -141,14 +141,14 @@ class InputBar(Widget):
                 try:
                     chat = self.screen.query_one("#chat-stream")
                     chat.add_message("JARVIS", reply, msg_type="agent")
-                except Exception as e:
-                    logger.warning(f"[SWALLOWED] {e}")
+                except Exception as chat_err:
+                    logger.warning(f"input_bar add_message: {chat_err}")
         except Exception as e:
             try:
                 chat = self.screen.query_one("#chat-stream")
                 chat.add_message("SYSTEM", f"Error: {str(e)}", msg_type="agent")
-            except Exception as e:
-                logger.warning(f"[SWALLOWED] {e}")
+            except Exception as display_err:
+                logger.warning(f"input_bar display_error: {display_err}")
 
     def action_accept_ghost(self) -> None:
         if self.ghost_text:

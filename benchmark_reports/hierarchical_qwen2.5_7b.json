@@ -6,19 +6,19 @@
     "results": [
       {
         "format": "Sentence-list",
-        "top_level_components": 5,
+        "top_level_components": 4,
         "components_with_children": 1,
         "build_leaves": 5,
-        "email_leaves": 2,
+        "email_leaves": 1,
         "features_clean": true,
         "max_depth": 2
       },
       {
         "format": "Requirements",
-        "top_level_components": 5,
+        "top_level_components": 4,
         "components_with_children": 1,
         "build_leaves": 5,
-        "email_leaves": 2,
+        "email_leaves": 1,
         "features_clean": true,
         "max_depth": 2
       }
@@ -29,15 +29,14 @@
     "label": "Hierarchical Project Execution",
     "passed": true,
     "goal": "Build a coffee shop platform. Android app with UI, payments,",
-    "elapsed": 48.76500000001397,
+    "elapsed": 41.625,
     "artifacts": {
-      "email_sent": "art_3682307df207485bbe706e4d1221ae87"
+      "email_sent": "art_43389089c0074ce2847597cd427860f4"
     },
     "tool_names": [
+      "build_project",
       "browser_navigate",
-      "build_project",
       "run_tests",
-      "build_project",
       "send_email"
     ],
     "hallucinated_tools": [],

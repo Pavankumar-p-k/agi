@@ -29,12 +29,14 @@ const itemVariants: Variants = {
 export default function AutomationPage() {
   const [jobs, setJobs] = useState<JobInfo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   const fetchJobs = useCallback(async () => {
+    setError('');
     try {
       const data = await api.automation.jobs();
       setJobs((data.jobs || []).map((j: { id: string; name?: string; schedule?: string; status?: string; last_run?: string | null; next_run?: string | null }) => ({ id: j.id, name: j.name || j.id, schedule: j.schedule || '', status: j.status || 'unknown', last_run: j.last_run || null, next_run: j.next_run || null })));
-    } catch (e) { console.warn('[Automation] fetch failed', e); } finally { setLoading(false); }
+    } catch (e) { console.warn('[Automation] fetch failed', e); setError('Failed to load jobs'); } finally { setLoading(false); }
   }, []);
 
   useEffect(() => { fetchJobs(); }, [fetchJobs]);
@@ -53,6 +55,12 @@ export default function AutomationPage() {
           <Badge variant="new">{jobs.length} jobs</Badge>
         </div>
       </motion.section>
+
+      {error && (
+        <motion.div variants={itemVariants} className="border border-red-500/30 bg-red-500/5 px-5 py-3">
+          <p className="text-xs text-red-400">{error}</p>
+        </motion.div>
+      )}
 
       <motion.section variants={itemVariants}>
         <div className="hud-label mb-4">Scheduled Jobs</div>

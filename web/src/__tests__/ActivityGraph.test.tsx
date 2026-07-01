@@ -21,22 +21,32 @@ function makeNode(overrides: Partial<ActivityNode> = {}): ActivityNode {
     label: 'Root',
     status: 'RUNNING',
     depth: 0,
+    parent_id: null,
+    agent_id: null,
+    origin_node_id: null,
+    artifacts: {},
+    workflow_id: null,
+    started_at: null,
+    completed_at: null,
+    created_at: null,
+    metadata: {},
     ...overrides,
-  } as ActivityNode;
+  };
 }
 
 const emptyTree: ActivityTree = { nodes: [], edges: [] };
 
+const BASE_NODE = { agent_id: null, origin_node_id: null, artifacts: {} as Record<string, string>, workflow_id: null, started_at: null, completed_at: null, created_at: null, metadata: {} as Record<string, unknown> };
 const sampleTree: ActivityTree = {
   nodes: [
-    { node_id: 'n1', activity_id: 'act_1', node_type: 'goal', label: 'Root', status: 'RUNNING', depth: 0 },
-    { node_id: 'n2', activity_id: 'act_1', node_type: 'subgoal', label: 'Sub A', status: 'PENDING', depth: 1, parent_id: 'n1' },
-    { node_id: 'n3', activity_id: 'act_1', node_type: 'agent_call', label: 'Agent 1', status: 'RUNNING', depth: 2, parent_id: 'n2', agent_id: 'builder' },
-    { node_id: 'n4', activity_id: 'act_1', node_type: 'subgoal', label: 'Sub B', status: 'COMPLETED', depth: 1, parent_id: 'n1' },
+    { node_id: 'n1', activity_id: 'act_1', node_type: 'goal', label: 'Root', status: 'RUNNING', depth: 0, parent_id: null, ...BASE_NODE },
+    { node_id: 'n2', activity_id: 'act_1', node_type: 'subgoal', label: 'Sub A', status: 'PENDING', depth: 1, parent_id: 'n1', ...BASE_NODE },
+    { node_id: 'n3', activity_id: 'act_1', node_type: 'agent_call', label: 'Agent 1', status: 'RUNNING', depth: 2, parent_id: 'n2', agent_id: 'builder', ...BASE_NODE },
+    { node_id: 'n4', activity_id: 'act_1', node_type: 'subgoal', label: 'Sub B', status: 'COMPLETED', depth: 1, parent_id: 'n1', ...BASE_NODE },
   ],
   edges: [
-    { edge_id: 'e1', from_node_id: 'n1', to_node_id: 'n2', edge_type: 'contains' },
-    { edge_id: 'e2', from_node_id: 'n1', to_node_id: 'n4', edge_type: 'contains' },
+    { edge_id: 'e1', from_node_id: 'n1', to_node_id: 'n2', edge_type: 'contains', created_at: null },
+    { edge_id: 'e2', from_node_id: 'n1', to_node_id: 'n4', edge_type: 'contains', created_at: null },
   ],
 };
 
@@ -57,10 +67,10 @@ describe('ActivityGraph component', () => {
     expect(await screen.findByText('Network error')).toBeInTheDocument();
   });
 
-  it('shows error when tree is empty', async () => {
+  it('shows empty state when tree is empty', async () => {
     mockedTree.mockResolvedValue(emptyTree);
     render(<ActivityGraph activityId="act_1" />);
-    expect(await screen.findByText('No data')).toBeInTheDocument();
+    expect(await screen.findByText('(0 nodes)')).toBeInTheDocument();
   });
 
   it('renders tree nodes', async () => {
@@ -81,7 +91,8 @@ describe('ActivityGraph component', () => {
   it('renders edge badges', async () => {
     mockedTree.mockResolvedValue(sampleTree);
     render(<ActivityGraph activityId="act_1" />);
-    expect(await screen.findByText(/contains/)).toBeInTheDocument();
+    expect(await screen.findByText('contains: n1 → n2')).toBeInTheDocument();
+    expect(screen.getByText('contains: n1 → n4')).toBeInTheDocument();
   });
 
   it('renders color legend', async () => {

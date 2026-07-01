@@ -36,8 +36,10 @@ export default function MemoryPage() {
   const [stats, setStats] = useState<MemoryStats | null>(null);
   const [entries, setEntries] = useState<MemoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   const fetchAll = useCallback(async () => {
+    setError('');
     try {
       const [s, e] = await Promise.all([
         api.memory.stats().catch(() => null),
@@ -45,7 +47,7 @@ export default function MemoryPage() {
       ]);
       if (s) setStats(s as unknown as MemoryStats);
       if (e && e.length > 0) setEntries(e.map((item: { id: string; type?: string; content?: string; timestamp?: string }) => ({ id: item.id, type: item.type || 'memory', summary: item.content || '', timestamp: item.timestamp || '' })));
-    } catch (e) { console.warn('[Memory] fetch failed', e); } finally { setLoading(false); }
+    } catch (e) { console.warn('[Memory] fetch failed', e); setError('Failed to load memory'); } finally { setLoading(false); }
   }, []);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
@@ -61,6 +63,12 @@ export default function MemoryPage() {
           Vector, episodic, and semantic memory stores powering context-aware interactions.
         </p>
       </motion.section>
+
+      {error && (
+        <motion.div variants={itemVariants} className="border border-red-500/30 bg-red-500/5 px-5 py-3">
+          <p className="text-xs text-red-400">{error}</p>
+        </motion.div>
+      )}
 
       {stats && (
         <motion.section variants={itemVariants}>

@@ -28,12 +28,14 @@ const itemVariants: Variants = {
 export default function DiagnosticsPage() {
   const [result, setResult] = useState<DiagnosticsResult | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   const fetchDiagnostics = useCallback(async () => {
+    setError('');
     try {
       const data = await api.diagnostics.all();
       setResult(data as unknown as DiagnosticsResult);
-    } catch (e) { console.warn('[Diagnostics] fetch failed', e); } finally { setLoading(false); }
+    } catch (e) { console.warn('[Diagnostics] fetch failed', e); setError('Failed to load diagnostics'); } finally { setLoading(false); }
   }, []);
 
   useEffect(() => { fetchDiagnostics(); }, [fetchDiagnostics]);
@@ -55,6 +57,12 @@ export default function DiagnosticsPage() {
           Full platform health scan: models, integrations, voice pipeline, features, and environment.
         </p>
       </motion.section>
+
+      {error && (
+        <motion.div variants={itemVariants} className="border border-red-500/30 bg-red-500/5 px-5 py-3">
+          <p className="text-xs text-red-400">{error}</p>
+        </motion.div>
+      )}
 
       {result && (
         <>

@@ -29,12 +29,14 @@ const itemVariants: Variants = {
 export default function ModelsPage() {
   const [models, setModels] = useState<ModelInfo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   const fetchModels = useCallback(async () => {
+    setError('');
     try {
       const data = await api.models.list();
       setModels((data.models || []).map((m: { id: string; name: string; provider: string; size?: string }) => ({ id: m.id, name: m.name, provider: m.provider, status: 'ready', type: m.size || 'local' })));
-    } catch (e) { console.warn('[Models] fetch failed', e); } finally { setLoading(false); }
+    } catch (e) { console.warn('[Models] fetch failed', e); setError('Could not reach the server. Check that JARVIS is running and try again.'); } finally { setLoading(false); }
   }, []);
 
   useEffect(() => { fetchModels(); }, [fetchModels]);
@@ -50,6 +52,25 @@ export default function ModelsPage() {
           Local, cloud, and hybrid model configurations. Assign providers, set priority, and toggle per-task routing.
         </p>
       </motion.section>
+
+      {error && (
+        <motion.div variants={itemVariants} className="border border-red-500/30 bg-red-500/5 px-5 py-3">
+          <div className="flex items-center justify-between gap-4">
+            <p className="text-xs text-red-400">{error}</p>
+            <button
+              onClick={fetchModels}
+              className="text-[9px] font-mono uppercase tracking-[0.12em] px-2 py-1 transition-all hover:opacity-80 shrink-0"
+              style={{
+                border: '1px solid var(--j-border)',
+                borderRadius: 'var(--j-radius-sm)',
+                color: 'var(--j-text-dim)',
+              }}
+            >
+              Retry
+            </button>
+          </div>
+        </motion.div>
+      )}
 
       <motion.section variants={itemVariants}>
         <div className="hud-label mb-4 flex items-center gap-3 before:h-px before:w-6 before:bg-[var(--j-sky)]">Available Models</div>

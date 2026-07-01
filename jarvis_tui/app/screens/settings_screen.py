@@ -1,21 +1,12 @@
 from __future__ import annotations
 
-# Copyright (c) 2024-2026 JARVIS Project
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+import logging
 
 from textual.app import ComposeResult
 from textual.widgets import Label, Static, Button, DataTable
 from jarvis_tui.app.screens.base_screen import JarvisScreen
+
+logger = logging.getLogger(__name__)
 
 class SettingsScreen(JarvisScreen):
     """
@@ -33,14 +24,38 @@ class SettingsScreen(JarvisScreen):
         table.add_columns("Key", "Value")
         try:
             settings = await self.app.jarvis_client.get_settings()
-            # Flatten settings for display
             if isinstance(settings, dict):
                 for k, v in settings.items():
                     table.add_row(k, str(v))
             elif isinstance(settings, list):
                 for s in settings:
                     table.add_row(s.get("key", "N/A"), str(s.get("value", "N/A")))
-        except Exception:
-            table.add_row("API_URL", self.app.jarvis_client.base_url)
-            table.add_row("AUTO_REPAIR", "True")
-            table.add_row("VOICE_ENABLED", "True")
+            else:
+                table.add_row("(unexpected format)", str(type(settings)))
+        except Exception as e:
+            logger.warning("Failed to load settings: %s", e)
+            table.add_row("(error loading settings)", str(e))
+            self.app.notify(f"Could not load settings: {e}", severity="error")
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "btn-save":
+            table = self.query_one("#settings-table", DataTable)
+            saved = 0
+            errors = 0
+            for row in table.rows:
+                cells = row._cells
+                if len(cells) >= 2:
+                    k, v = cells[0], cells[1]
+                    if k.startswith("("):
+                        continue
+                    try:
+                        self.app.jarvis_client.update_setting(k, v)
+                        saved += 1
+                    except Exception as e:
+                        logger.warning("Failed to save setting %s: %s", k, e)
+                        errors += 1
+                        self.app.notify(f"Failed to save {k}", severity="error")
+            if errors:
+                self.app.notify(f"Saved {saved} setting(s), {errors} failed", severity="warning")
+            else:
+                self.app.notify(f"Saved {saved} setting(s)", severity="information")

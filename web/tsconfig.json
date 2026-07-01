@@ -16,9 +16,11 @@
     "plugins": [{ "name": "next" }],
     "paths": {
       "@/*": ["./src/*"],
-      "@jarvis/sdk": ["../packages/sdk/src"]
+      "@jarvis/sdk": ["../packages/sdk/src"],
+      "@jarvis/ui": ["../packages/ui/src"]
     },
-    "baseUrl": ".",
+    "baseUrl": "."
+  },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
   "exclude": ["node_modules"]
 }

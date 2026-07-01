@@ -28,12 +28,14 @@ const itemVariants: Variants = {
 export default function PluginsPage() {
   const [plugins, setPlugins] = useState<PluginInfo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   const fetchPlugins = useCallback(async () => {
+    setError('');
     try {
       const data = await api.plugins.list();
       setPlugins((data.plugins || []).map(p => ({ name: p.name, version: p.version, description: p.description, enabled: p.enabled !== undefined ? p.enabled : true })));
-    } catch (e) { console.warn('[Plugins] fetch failed', e); } finally { setLoading(false); }
+    } catch (e) { console.warn('[Plugins] fetch failed', e); setError('Failed to load plugins'); } finally { setLoading(false); }
   }, []);
 
   useEffect(() => { fetchPlugins(); }, [fetchPlugins]);
@@ -42,7 +44,7 @@ export default function PluginsPage() {
     try {
       await api.plugins.toggle(name);
       setPlugins(prev => prev.map(p => p.name === name ? { ...p, enabled: !enabled } : p));
-    } catch (e) { console.warn('[Plugins] toggle failed', e); }
+    } catch (e) { console.warn('[Plugins] toggle failed', e); setError(`Failed to toggle ${name}`); }
   };
 
   if (loading) return <div className="hud-page p-6"><Skeleton /></div>;
@@ -59,6 +61,12 @@ export default function PluginsPage() {
           <Badge variant="new">{plugins.length} plugins</Badge>
         </div>
       </motion.section>
+
+      {error && (
+        <motion.div variants={itemVariants} className="border border-red-500/30 bg-red-500/5 px-5 py-3">
+          <p className="text-xs text-red-400">{error}</p>
+        </motion.div>
+      )}
 
       <motion.section variants={itemVariants}>
         <div className="hud-label mb-4">Installed Plugins</div>

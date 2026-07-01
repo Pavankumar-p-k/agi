@@ -6,6 +6,9 @@ import type { ActivityNode, Agent, ActivityEvent } from '@jarvis/sdk';
 
 type StatusCounts = Record<string, number>;
 
+const BASE_POLL_MS = 15000;
+const MAX_POLL_MS = 120000;
+
 export function useOperationsData() {
   const [activities, setActivities] = useState<ActivityNode[]>([]);
   const [agentList, setAgentList] = useState<Agent[]>([]);
@@ -15,30 +18,51 @@ export function useOperationsData() {
   const [counts, setCounts] = useState<StatusCounts>({});
   const streamRef = useRef<ActivityStream | null>(null);
 
-  // ── Initial data load ──────────────────────────────────────────────────
+  const mountedRef = useRef(true);
+  const backoffRef = useRef(1);
+  const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const loadData = useCallback(async () => {
+  // ── Poll with exponential backoff ─────────────────────────────────────
+
+  const poll = useCallback(async () => {
+    if (!mountedRef.current) return;
     try {
       const [acts, agts] = await Promise.all([
-        activity.list().catch(() => []),
-        agents.list().catch(() => []),
+        activity.list(),
+        agents.list().catch(() => [] as Agent[]),
       ]);
+      if (!mountedRef.current) return;
       setActivities(acts);
       setAgentList(agts);
 
-      // Compute counts
       const c: StatusCounts = {};
       for (const a of acts) {
         c[a.status] = (c[a.status] || 0) + 1;
       }
       setCounts(c);
       setError(null);
+      backoffRef.current = 1;
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load operations data');
-    } finally {
+      backoffRef.current = Math.min(backoffRef.current * 2, MAX_POLL_MS / BASE_POLL_MS);
+    }
+    if (mountedRef.current) {
       setLoading(false);
+      const ms = Math.min(BASE_POLL_MS * backoffRef.current, MAX_POLL_MS);
+      pollTimerRef.current = setTimeout(poll, ms);
     }
   }, []);
+
+  // ── Exposed refresh (reset backoff) ───────────────────────────────────
+
+  const refresh = useCallback(async () => {
+    backoffRef.current = 1;
+    await poll();
+  }, [poll]);
+
+  // ── Initial data load (alias for type clarity) ────────────────────────
+
+  const loadData = refresh;
 
   // ── Activity actions ──────────────────────────────────────────────────
 
@@ -69,7 +93,8 @@ export function useOperationsData() {
   // ── WebSocket stream ──────────────────────────────────────────────────
 
   useEffect(() => {
-    loadData();
+    mountedRef.current = true;
+    poll();
 
     const stream = new ActivityStream();
     streamRef.current = stream;
@@ -77,7 +102,6 @@ export function useOperationsData() {
     stream.onUpdated((e) => {
       setActivities((prev) => {
         if (!('status' in e)) return prev;
-        // Update the matching node in-place
         const updateNode = (nodes: ActivityNode[]): ActivityNode[] =>
           nodes.map((n) => {
             if (n.node_id === (e as any).node_id) {
@@ -87,7 +111,6 @@ export function useOperationsData() {
           });
         return updateNode(prev);
       });
-      // Recompute counts
       setActivities((prev) => {
         const c: StatusCounts = {};
         for (const a of prev) {
@@ -100,14 +123,13 @@ export function useOperationsData() {
 
     stream.onCompleted((e) => {
       setEvents((prev) => [e as ActivityEvent, ...prev].slice(0, 100));
-      loadData(); // Refresh full list
+      backoffRef.current = 1;
     });
 
     stream.onResumed((e) => {
       setEvents((prev) => [e as ActivityEvent, ...prev].slice(0, 100));
     });
 
-    // Catch all events — schedule_triggered, schedule_failed, etc.
     stream.on('_message', (e) => {
       if (e.event === 'schedule_triggered' || e.event === 'schedule_failed') {
         setEvents((prev) => [e as ActivityEvent, ...prev].slice(0, 100));
@@ -116,14 +138,12 @@ export function useOperationsData() {
 
     stream.connect();
 
-    // Polling fallback every 15s
-    const pollInterval = setInterval(loadData, 15000);
-
     return () => {
+      mountedRef.current = false;
+      if (pollTimerRef.current !== null) clearTimeout(pollTimerRef.current);
       stream.disconnect();
-      clearInterval(pollInterval);
     };
-  }, [loadData]);
+  }, [poll]);
 
   return {
     activities,

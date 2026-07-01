@@ -1,0 +1,27 @@
+[
+  {
+    "benchmark": "C",
+    "label": "Long Running Recovery",
+    "goal": "Research modern bookstore design trends, then build a bookstore project, run tests, and validate runtime.",
+    "elapsed": 56.79600000008941,
+    "status": "COMPLETED",
+    "tool_calls_before_crash": 7,
+    "recovery_time_s": 0.08,
+    "duplicate_execution": false,
+    "duplicate_execution_count": 0,
+    "duplicate_emails": 0,
+    "duplicate_artifacts": [],
+    "recovered": true,
+    "hallucinated_tools": [
+      "trigger_research"
+    ],
+    "loop_count": 0,
+    "artifacts_produced": [
+      "email_sent"
+    ],
+    "artifacts_consumed": [
+      "email_sent"
+    ],
+    "artifacts_orphaned": []
+  }
+]

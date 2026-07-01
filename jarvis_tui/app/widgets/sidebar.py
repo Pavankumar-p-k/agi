@@ -70,20 +70,20 @@ class Sidebar(Widget):
                 color = "green" if status == "busy" else "yellow"
                 container.mount(Static(f"● [bold {color}]{agent['name'].upper()}[/bold {color}] [dim]{status}[/dim]"))
         except Exception as e:
-            logger.warning(f"[SWALLOWED] {e}")
+            logger.warning(f"sidebar watch_agents: {e}")
 
     def watch_model_name(self, name: str) -> None:
         try:
             self.query_one("#model-selector", Static).update(f" {name} ▾")
         except Exception as e:
-            logger.warning(f"[SWALLOWED] {e}")
+            logger.warning(f"sidebar watch_model_name: {e}")
 
     def watch_context_pct(self, pct: int) -> None:
         try:
             self.query_one("#ctx-progress", ProgressBar).progress = pct
             self.query_one("#ctx-label", Static).update(f"{pct}% [{(pct*1280):.0f} / 128k]")
         except Exception as e:
-            logger.warning(f"[SWALLOWED] {e}")
+            logger.warning(f"sidebar watch_context_pct: {e}")
 
     def watch_cpu_usage(self, val: int) -> None:
         self._update_stat("#cpu-stat", "CPU", val)
@@ -99,7 +99,7 @@ class Sidebar(Widget):
             chars = "█" * (val // 10) + "░" * (10 - (val // 10))
             self.query_one(selector, Static).update(f"{label} {chars} [{val}%]")
         except Exception as e:
-            logger.warning(f"[SWALLOWED] {e}")
+            logger.warning(f"sidebar _update_stat: {e}")
 
     def on_mount(self) -> None:
         # Wait for backend sync

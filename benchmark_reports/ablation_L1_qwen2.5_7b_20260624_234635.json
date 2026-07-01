@@ -1,0 +1,78 @@
+{
+  "timestamp": "2026-06-24T18:15:49.963903+00:00",
+  "model": "qwen2.5:7b",
+  "level": "1",
+  "tasks": [
+    {
+      "task_id": "research_1",
+      "category": "research",
+      "config": "raw",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [
+        "web_search"
+      ],
+      "unique_tools": [
+        "web_search"
+      ],
+      "duration_seconds": 33.98,
+      "error": "UnboundLocalError: cannot access local variable 'data' where it is not associated with a value"
+    },
+    {
+      "task_id": "research_1",
+      "category": "research",
+      "config": "full",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [
+        "web_search"
+      ],
+      "unique_tools": [
+        "web_search"
+      ],
+      "duration_seconds": 10.07,
+      "error": "UnboundLocalError: cannot access local variable 'data' where it is not associated with a value"
+    }
+  ],
+  "summary": {
+    "by_config": {
+      "raw": {
+        "total_tasks": 1,
+        "successes": 0,
+        "success_rate": 0.0,
+        "avg_turns": 1.0,
+        "avg_duration_seconds": 33.98,
+        "total_tool_calls": 1,
+        "unique_tools": 1,
+        "tool_frequency": {
+          "web_search": 1
+        },
+        "errors": [
+          "UnboundLocalError: cannot access local variable 'data' where it is not associated with a value"
+        ]
+      },
+      "full": {
+        "total_tasks": 1,
+        "successes": 0,
+        "success_rate": 0.0,
+        "avg_turns": 1.0,
+        "avg_duration_seconds": 10.07,
+        "total_tool_calls": 1,
+        "unique_tools": 1,
+        "tool_frequency": {
+          "web_search": 1
+        },
+        "errors": [
+          "UnboundLocalError: cannot access local variable 'data' where it is not associated with a value"
+        ]
+      }
+    },
+    "deltas": {
+      "full": {
+        "delta_success_rate": 0.0,
+        "delta_avg_turns": 0.0,
+        "delta_avg_duration": 23.9
+      }
+    }
+  }
+}

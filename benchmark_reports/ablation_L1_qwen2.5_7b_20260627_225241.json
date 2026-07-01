@@ -1,0 +1,190 @@
+{
+  "timestamp": "2026-06-27T17:15:03.718127+00:00",
+  "model": "qwen2.5:7b",
+  "level": "1",
+  "tasks": [
+    {
+      "task_id": "research_1",
+      "category": "research",
+      "config": "raw",
+      "success": true,
+      "turns": 15,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_wait_text",
+        "browser_find",
+        "browser_snapshot",
+        "browser_evaluate",
+        "browser_evaluate",
+        "browser_evaluate",
+        "browser_evaluate",
+        "browser_evaluate",
+        "browser_evaluate",
+        "browser_evaluate",
+        "browser_evaluate",
+        "browser_evaluate",
+        "browser_evaluate",
+        "browser_evaluate",
+        "browser_evaluate",
+        "browser_evaluate",
+        "browser_evaluate",
+        "browser_evaluate"
+      ],
+      "unique_tools": [
+        "browser_evaluate",
+        "browser_navigate",
+        "browser_find",
+        "browser_snapshot",
+        "browser_wait_text"
+      ],
+      "duration_seconds": 173.79,
+      "error": "max_turns (15) exceeded"
+    },
+    {
+      "task_id": "research_2",
+      "category": "research",
+      "config": "raw",
+      "success": true,
+      "turns": 15,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_navigate",
+        "browser_navigate",
+        "browser_navigate",
+        "browser_navigate",
+        "browser_navigate",
+        "browser_navigate",
+        "browser_navigate",
+        "browser_navigate",
+        "browser_navigate",
+        "browser_navigate",
+        "browser_navigate",
+        "browser_navigate",
+        "browser_navigate",
+        "browser_navigate"
+      ],
+      "unique_tools": [
+        "browser_navigate"
+      ],
+      "duration_seconds": 105.99,
+      "error": "max_turns (15) exceeded"
+    },
+    {
+      "task_id": "research_3",
+      "category": "research",
+      "config": "raw",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [],
+      "unique_tools": [],
+      "duration_seconds": 24.14,
+      "error": ""
+    },
+    {
+      "task_id": "research_1",
+      "category": "research",
+      "config": "full",
+      "success": true,
+      "turns": 15,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_wait_text",
+        "browser_find",
+        "browser_snapshot",
+        "browser_snapshot",
+        "browser_snapshot",
+        "browser_snapshot",
+        "browser_snapshot",
+        "browser_snapshot",
+        "browser_snapshot",
+        "browser_snapshot",
+        "browser_snapshot",
+        "browser_snapshot",
+        "browser_snapshot",
+        "browser_snapshot",
+        "browser_snapshot",
+        "browser_snapshot",
+        "browser_snapshot"
+      ],
+      "unique_tools": [
+        "browser_navigate",
+        "browser_find",
+        "browser_snapshot",
+        "browser_wait_text"
+      ],
+      "duration_seconds": 103.55,
+      "error": "max_turns (15) exceeded"
+    },
+    {
+      "task_id": "research_2",
+      "category": "research",
+      "config": "full",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [],
+      "unique_tools": [],
+      "duration_seconds": 20.18,
+      "error": ""
+    },
+    {
+      "task_id": "research_3",
+      "category": "research",
+      "config": "full",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [],
+      "unique_tools": [],
+      "duration_seconds": 27.18,
+      "error": ""
+    }
+  ],
+  "summary": {
+    "by_config": {
+      "raw": {
+        "total_tasks": 3,
+        "successes": 2,
+        "success_rate": 0.667,
+        "avg_turns": 10.3,
+        "avg_duration_seconds": 101.31,
+        "total_tool_calls": 34,
+        "unique_tools": 5,
+        "tool_frequency": {
+          "browser_navigate": 16,
+          "browser_evaluate": 15,
+          "browser_wait_text": 1,
+          "browser_find": 1,
+          "browser_snapshot": 1
+        },
+        "errors": [
+          "max_turns (15) exceeded",
+          "max_turns (15) exceeded"
+        ]
+      },
+      "full": {
+        "total_tasks": 3,
+        "successes": 1,
+        "success_rate": 0.333,
+        "avg_turns": 5.7,
+        "avg_duration_seconds": 50.3,
+        "total_tool_calls": 18,
+        "unique_tools": 4,
+        "tool_frequency": {
+          "browser_snapshot": 15,
+          "browser_navigate": 1,
+          "browser_wait_text": 1,
+          "browser_find": 1
+        },
+        "errors": [
+          "max_turns (15) exceeded"
+        ]
+      }
+    },
+    "deltas": {
+      "full": {
+        "delta_success_rate": -0.334,
+        "delta_avg_turns": 4.6,
+        "delta_avg_duration": 51.0
+      }
+    }
+  }
+}

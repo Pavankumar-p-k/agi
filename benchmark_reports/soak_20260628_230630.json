@@ -1,0 +1,77 @@
+{
+  "benchmark": "soak",
+  "status": "FAIL",
+  "duration_seconds": 300.016699552536,
+  "total_samples": 58,
+  "warmup_samples": 5,
+  "peak_memory_rss_mb": 43.46484375,
+  "peak_cpu": 14.3,
+  "max_task_count": 2,
+  "max_subscriber_count": 5,
+  "avg_poll_latency_ms": 130.22750445774622,
+  "max_poll_latency_ms": 783.266544342041,
+  "median_poll_latency_ms": 31.022071838378906,
+  "total_exceptions": 0,
+  "recovery_events": 1,
+  "threshold_failures": [
+    "Memory growth 40.0% exceeds threshold 15.0% (early: 31.0MB, late: 43.3MB)"
+  ],
+  "exercises": [
+    {
+      "type": "open_subscribers",
+      "timestamp": 1782667890.8703918,
+      "detail": "opened 5 subscribers (total: 5)",
+      "success": true
+    },
+    {
+      "type": "backend_fail",
+      "timestamp": 1782667951.0139642,
+      "detail": "backend failing for 10s",
+      "success": true
+    },
+    {
+      "type": "backend_restore",
+      "timestamp": 1782667981.0186498,
+      "detail": "backend restored (fail_until cleared)",
+      "success": true
+    },
+    {
+      "type": "close_subscribers",
+      "timestamp": 1782668011.0793655,
+      "detail": "closed 5 subscribers (total: 0)",
+      "success": true
+    },
+    {
+      "type": "subscriber_burst",
+      "timestamp": 1782668011.623466,
+      "detail": "50 subscribers opened/closed",
+      "success": true
+    },
+    {
+      "type": "high_latency",
+      "timestamp": 1782668071.698448,
+      "detail": "latency set to 500ms",
+      "success": true
+    },
+    {
+      "type": "normal_latency",
+      "timestamp": 1782668101.7271905,
+      "detail": "latency restored to 10ms",
+      "success": true
+    },
+    {
+      "type": "empty_cache",
+      "timestamp": 1782668101.7320418,
+      "detail": "emptied cache",
+      "success": true
+    },
+    {
+      "type": "close_subscribers",
+      "timestamp": 1782668131.7671685,
+      "detail": "closed 0 subscribers (total: 0)",
+      "success": true
+    }
+  ],
+  "start_time": "2026-06-28T17:31:30.719480+00:00",
+  "end_time": "2026-06-28T17:36:30.736179+00:00"
+}

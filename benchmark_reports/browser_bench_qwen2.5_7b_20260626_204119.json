@@ -1,0 +1,3007 @@
+{
+  "timestamp": "2026-06-26T14:40:08.593290+00:00",
+  "model": "qwen2.5:7b",
+  "tasks": [
+    {
+      "task_id": "search_extract_1",
+      "category": "search_extract",
+      "config": "raw",
+      "success": false,
+      "turns": 3,
+      "tool_calls": [
+        "web_search",
+        "web_search",
+        "web_search"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "web_search"
+      ],
+      "duration_seconds": 35.12,
+      "error": "loop_detected: web_search called 3 times"
+    },
+    {
+      "task_id": "search_extract_2",
+      "category": "search_extract",
+      "config": "raw",
+      "success": false,
+      "turns": 3,
+      "tool_calls": [
+        "web_search",
+        "web_fetch"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "web_search",
+        "web_fetch"
+      ],
+      "duration_seconds": 54.82,
+      "error": ""
+    },
+    {
+      "task_id": "search_extract_3",
+      "category": "search_extract",
+      "config": "raw",
+      "success": true,
+      "turns": 3,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_wait_text",
+        "browser_snapshot",
+        "browser_fill",
+        "browser_press"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "browser_navigate",
+        "browser_press",
+        "browser_fill",
+        "browser_wait_text",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 89.1,
+      "error": ""
+    },
+    {
+      "task_id": "search_extract_4",
+      "category": "search_extract",
+      "config": "raw",
+      "success": false,
+      "turns": 2,
+      "tool_calls": [
+        "web_search"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "web_search"
+      ],
+      "duration_seconds": 18.1,
+      "error": ""
+    },
+    {
+      "task_id": "multi_page_1",
+      "category": "multi_page",
+      "config": "raw",
+      "success": true,
+      "turns": 3,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_find_interactive",
+        "browser_click",
+        "browser_snapshot"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "browser_find_interactive",
+        "browser_navigate",
+        "browser_snapshot",
+        "browser_click"
+      ],
+      "duration_seconds": 49.12,
+      "error": ""
+    },
+    {
+      "task_id": "multi_page_2",
+      "category": "multi_page",
+      "config": "raw",
+      "success": true,
+      "turns": 6,
+      "tool_calls": [
+        "web_search",
+        "web_search",
+        "web_search",
+        "browser_navigate",
+        "browser_snapshot",
+        "browser_find"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "web_search",
+        "browser_navigate",
+        "browser_snapshot",
+        "browser_find"
+      ],
+      "duration_seconds": 82.6,
+      "error": ""
+    },
+    {
+      "task_id": "multi_page_3",
+      "category": "multi_page",
+      "config": "raw",
+      "success": true,
+      "turns": 4,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_snapshot",
+        "browser_find_interactive"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "browser_find_interactive",
+        "browser_navigate",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 37.99,
+      "error": ""
+    },
+    {
+      "task_id": "form_fill_1",
+      "category": "form_fill",
+      "config": "raw",
+      "success": true,
+      "turns": 5,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_wait_text",
+        "browser_snapshot",
+        "web_search",
+        "browser_fill",
+        "browser_press",
+        "browser_click",
+        "browser_snapshot"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "web_search",
+        "browser_navigate",
+        "browser_press",
+        "browser_fill",
+        "browser_wait_text",
+        "browser_snapshot",
+        "browser_click"
+      ],
+      "duration_seconds": 100.38,
+      "error": ""
+    },
+    {
+      "task_id": "form_fill_2",
+      "category": "form_fill",
+      "config": "raw",
+      "success": false,
+      "turns": 3,
+      "tool_calls": [
+        "web_search",
+        "browser_navigate",
+        "browser_wait_text",
+        "browser_snapshot",
+        "web_fetch"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "web_search",
+        "browser_navigate",
+        "web_fetch",
+        "browser_wait_text",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 52.46,
+      "error": ""
+    },
+    {
+      "task_id": "form_fill_3",
+      "category": "form_fill",
+      "config": "raw",
+      "success": false,
+      "turns": 4,
+      "tool_calls": [
+        "web_search",
+        "browser_navigate",
+        "browser_navigate"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "web_search",
+        "browser_navigate"
+      ],
+      "duration_seconds": 45.67,
+      "error": ""
+    },
+    {
+      "task_id": "workflow_1",
+      "category": "workflow",
+      "config": "raw",
+      "success": false,
+      "turns": 3,
+      "tool_calls": [
+        "browser_navigate",
+        "web_fetch",
+        "browser_snapshot"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "browser_navigate",
+        "browser_snapshot",
+        "web_fetch"
+      ],
+      "duration_seconds": 53.13,
+      "error": ""
+    },
+    {
+      "task_id": "workflow_2",
+      "category": "workflow",
+      "config": "raw",
+      "success": false,
+      "turns": 6,
+      "tool_calls": [
+        "web_search",
+        "browser_navigate",
+        "browser_navigate",
+        "browser_snapshot",
+        "web_search",
+        "web_search"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "web_search",
+        "browser_navigate",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 121.48,
+      "error": "max_turns (6) exceeded"
+    },
+    {
+      "task_id": "data_collect_1",
+      "category": "data_collect",
+      "config": "raw",
+      "success": false,
+      "turns": 2,
+      "tool_calls": [
+        "web_search",
+        "web_search",
+        "web_search"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "web_search"
+      ],
+      "duration_seconds": 26.98,
+      "error": "loop_detected: web_search called 3 times"
+    },
+    {
+      "task_id": "data_collect_2",
+      "category": "data_collect",
+      "config": "raw",
+      "success": false,
+      "turns": 3,
+      "tool_calls": [
+        "web_search",
+        "web_search",
+        "web_search"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "web_search"
+      ],
+      "duration_seconds": 24.48,
+      "error": "loop_detected: web_search called 3 times"
+    },
+    {
+      "task_id": "data_collect_3",
+      "category": "data_collect",
+      "config": "raw",
+      "success": false,
+      "turns": 3,
+      "tool_calls": [
+        "web_search",
+        "web_search",
+        "web_search"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "web_search"
+      ],
+      "duration_seconds": 38.9,
+      "error": "loop_detected: web_search called 3 times"
+    },
+    {
+      "task_id": "search_extract_1",
+      "category": "search_extract",
+      "config": "planner",
+      "success": false,
+      "turns": 3,
+      "tool_calls": [
+        "web_search",
+        "browser_navigate"
+      ],
+      "planner_injected": [
+        "browser_navigate",
+        "browser_snapshot",
+        "browser_snapshot"
+      ],
+      "unique_tools": [
+        "web_search",
+        "browser_navigate",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 29.72,
+      "error": ""
+    },
+    {
+      "task_id": "search_extract_2",
+      "category": "search_extract",
+      "config": "planner",
+      "success": false,
+      "turns": 3,
+      "tool_calls": [
+        "web_search",
+        "web_search"
+      ],
+      "planner_injected": [
+        "browser_navigate",
+        "browser_navigate",
+        "browser_snapshot"
+      ],
+      "unique_tools": [
+        "web_search",
+        "browser_navigate",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 33.32,
+      "error": ""
+    },
+    {
+      "task_id": "search_extract_3",
+      "category": "search_extract",
+      "config": "planner",
+      "success": false,
+      "turns": 2,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_wait_text",
+        "browser_snapshot",
+        "browser_fill",
+        "browser_press"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "browser_navigate",
+        "browser_press",
+        "browser_fill",
+        "browser_wait_text",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 37.12,
+      "error": "AttributeError: 'list' object has no attribute 'tool_type'"
+    },
+    {
+      "task_id": "search_extract_4",
+      "category": "search_extract",
+      "config": "planner",
+      "success": false,
+      "turns": 2,
+      "tool_calls": [
+        "web_search",
+        "browser_snapshot"
+      ],
+      "planner_injected": [
+        "browser_navigate"
+      ],
+      "unique_tools": [
+        "web_search",
+        "browser_navigate",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 14.38,
+      "error": "AttributeError: 'list' object has no attribute 'tool_type'"
+    },
+    {
+      "task_id": "multi_page_1",
+      "category": "multi_page",
+      "config": "planner",
+      "success": true,
+      "turns": 4,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_find_interactive",
+        "browser_find"
+      ],
+      "planner_injected": [
+        "browser_snapshot"
+      ],
+      "unique_tools": [
+        "browser_find_interactive",
+        "browser_navigate",
+        "browser_snapshot",
+        "browser_find"
+      ],
+      "duration_seconds": 66.16,
+      "error": ""
+    },
+    {
+      "task_id": "multi_page_2",
+      "category": "multi_page",
+      "config": "planner",
+      "success": true,
+      "turns": 3,
+      "tool_calls": [
+        "web_search",
+        "browser_navigate"
+      ],
+      "planner_injected": [
+        "browser_navigate",
+        "browser_snapshot",
+        "browser_snapshot"
+      ],
+      "unique_tools": [
+        "web_search",
+        "browser_navigate",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 24.81,
+      "error": ""
+    },
+    {
+      "task_id": "multi_page_3",
+      "category": "multi_page",
+      "config": "planner",
+      "success": true,
+      "turns": 2,
+      "tool_calls": [
+        "browser_navigate"
+      ],
+      "planner_injected": [
+        "browser_snapshot"
+      ],
+      "unique_tools": [
+        "browser_navigate",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 40.32,
+      "error": ""
+    },
+    {
+      "task_id": "form_fill_1",
+      "category": "form_fill",
+      "config": "planner",
+      "success": false,
+      "turns": 2,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_wait_text",
+        "browser_snapshot",
+        "web_search",
+        "browser_fill",
+        "browser_press"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "web_search",
+        "browser_navigate",
+        "browser_press",
+        "browser_fill",
+        "browser_wait_text",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 37.25,
+      "error": "AttributeError: 'list' object has no attribute 'tool_type'"
+    },
+    {
+      "task_id": "form_fill_2",
+      "category": "form_fill",
+      "config": "planner",
+      "success": false,
+      "turns": 2,
+      "tool_calls": [
+        "web_search",
+        "browser_fill",
+        "browser_click",
+        "browser_wait_text",
+        "browser_snapshot"
+      ],
+      "planner_injected": [
+        "browser_navigate"
+      ],
+      "unique_tools": [
+        "web_search",
+        "browser_navigate",
+        "browser_fill",
+        "browser_wait_text",
+        "browser_snapshot",
+        "browser_click"
+      ],
+      "duration_seconds": 29.08,
+      "error": "AttributeError: 'list' object has no attribute 'tool_type'"
+    },
+    {
+      "task_id": "form_fill_3",
+      "category": "form_fill",
+      "config": "planner",
+      "success": false,
+      "turns": 3,
+      "tool_calls": [
+        "web_search",
+        "browser_navigate"
+      ],
+      "planner_injected": [
+        "browser_snapshot",
+        "browser_snapshot"
+      ],
+      "unique_tools": [
+        "web_search",
+        "browser_navigate",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 47.46,
+      "error": ""
+    },
+    {
+      "task_id": "workflow_1",
+      "category": "workflow",
+      "config": "planner",
+      "success": false,
+      "turns": 3,
+      "tool_calls": [
+        "browser_navigate",
+        "web_fetch",
+        "web_search"
+      ],
+      "planner_injected": [
+        "browser_snapshot",
+        "browser_navigate",
+        "browser_snapshot"
+      ],
+      "unique_tools": [
+        "web_search",
+        "browser_navigate",
+        "browser_snapshot",
+        "web_fetch"
+      ],
+      "duration_seconds": 41.77,
+      "error": ""
+    },
+    {
+      "task_id": "workflow_2",
+      "category": "workflow",
+      "config": "planner",
+      "success": false,
+      "turns": 3,
+      "tool_calls": [
+        "web_search",
+        "browser_navigate"
+      ],
+      "planner_injected": [
+        "browser_navigate",
+        "browser_snapshot",
+        "browser_snapshot"
+      ],
+      "unique_tools": [
+        "web_search",
+        "browser_navigate",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 56.93,
+      "error": ""
+    },
+    {
+      "task_id": "data_collect_1",
+      "category": "data_collect",
+      "config": "planner",
+      "success": false,
+      "turns": 3,
+      "tool_calls": [
+        "web_search",
+        "web_search",
+        "web_search"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "web_search"
+      ],
+      "duration_seconds": 26.19,
+      "error": "loop_detected: web_search called 3 times"
+    },
+    {
+      "task_id": "data_collect_2",
+      "category": "data_collect",
+      "config": "planner",
+      "success": false,
+      "turns": 3,
+      "tool_calls": [
+        "web_search",
+        "web_search",
+        "web_search"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "web_search"
+      ],
+      "duration_seconds": 24.95,
+      "error": "loop_detected: web_search called 3 times"
+    },
+    {
+      "task_id": "data_collect_3",
+      "category": "data_collect",
+      "config": "planner",
+      "success": false,
+      "turns": 3,
+      "tool_calls": [
+        "web_search",
+        "browser_navigate"
+      ],
+      "planner_injected": [
+        "browser_navigate",
+        "browser_snapshot",
+        "browser_snapshot"
+      ],
+      "unique_tools": [
+        "web_search",
+        "browser_navigate",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 41.77,
+      "error": ""
+    },
+    {
+      "task_id": "search_extract_1",
+      "category": "search_extract",
+      "config": "full",
+      "success": false,
+      "turns": 3,
+      "tool_calls": [
+        "web_search",
+        "browser_navigate"
+      ],
+      "planner_injected": [
+        "browser_navigate",
+        "browser_snapshot",
+        "browser_snapshot"
+      ],
+      "unique_tools": [
+        "web_search",
+        "browser_navigate",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 39.55,
+      "error": ""
+    },
+    {
+      "task_id": "search_extract_2",
+      "category": "search_extract",
+      "config": "full",
+      "success": false,
+      "turns": 2,
+      "tool_calls": [
+        "web_search",
+        "browser_snapshot"
+      ],
+      "planner_injected": [
+        "browser_navigate"
+      ],
+      "unique_tools": [
+        "web_search",
+        "browser_navigate",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 11.24,
+      "error": "AttributeError: 'list' object has no attribute 'tool_type'"
+    },
+    {
+      "task_id": "search_extract_3",
+      "category": "search_extract",
+      "config": "full",
+      "success": false,
+      "turns": 2,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_snapshot",
+        "browser_fill",
+        "browser_press"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "browser_press",
+        "browser_navigate",
+        "browser_snapshot",
+        "browser_fill"
+      ],
+      "duration_seconds": 28.0,
+      "error": "AttributeError: 'list' object has no attribute 'tool_type'"
+    },
+    {
+      "task_id": "search_extract_4",
+      "category": "search_extract",
+      "config": "full",
+      "success": true,
+      "turns": 4,
+      "tool_calls": [
+        "web_search",
+        "browser_navigate",
+        "browser_fill",
+        "browser_press"
+      ],
+      "planner_injected": [
+        "browser_navigate",
+        "browser_snapshot",
+        "browser_snapshot"
+      ],
+      "unique_tools": [
+        "web_search",
+        "browser_navigate",
+        "browser_press",
+        "browser_fill",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 38.89,
+      "error": ""
+    },
+    {
+      "task_id": "multi_page_1",
+      "category": "multi_page",
+      "config": "full",
+      "success": false,
+      "turns": 2,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_click"
+      ],
+      "planner_injected": [
+        "browser_snapshot"
+      ],
+      "unique_tools": [
+        "browser_navigate",
+        "browser_snapshot",
+        "browser_click"
+      ],
+      "duration_seconds": 16.5,
+      "error": "AttributeError: 'list' object has no attribute 'tool_type'"
+    },
+    {
+      "task_id": "multi_page_2",
+      "category": "multi_page",
+      "config": "full",
+      "success": false,
+      "turns": 2,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_wait_text",
+        "browser_snapshot",
+        "browser_fill",
+        "browser_press",
+        "browser_wait_visible",
+        "browser_snapshot",
+        "browser_click"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "browser_navigate",
+        "browser_press",
+        "browser_fill",
+        "browser_wait_visible",
+        "browser_wait_text",
+        "browser_snapshot",
+        "browser_click"
+      ],
+      "duration_seconds": 55.37,
+      "error": "AttributeError: 'list' object has no attribute 'tool_type'"
+    },
+    {
+      "task_id": "multi_page_3",
+      "category": "multi_page",
+      "config": "full",
+      "success": false,
+      "turns": 2,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_click"
+      ],
+      "planner_injected": [
+        "browser_snapshot"
+      ],
+      "unique_tools": [
+        "browser_navigate",
+        "browser_snapshot",
+        "browser_click"
+      ],
+      "duration_seconds": 24.62,
+      "error": "AttributeError: 'list' object has no attribute 'tool_type'"
+    },
+    {
+      "task_id": "form_fill_1",
+      "category": "form_fill",
+      "config": "full",
+      "success": true,
+      "turns": 4,
+      "tool_calls": [
+        "web_search",
+        "browser_navigate",
+        "browser_snapshot",
+        "browser_fill",
+        "browser_press"
+      ],
+      "planner_injected": [
+        "browser_snapshot"
+      ],
+      "unique_tools": [
+        "web_search",
+        "browser_navigate",
+        "browser_press",
+        "browser_fill",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 36.51,
+      "error": ""
+    },
+    {
+      "task_id": "form_fill_2",
+      "category": "form_fill",
+      "config": "full",
+      "success": false,
+      "turns": 2,
+      "tool_calls": [
+        "browser_navigate",
+        "web_search",
+        "browser_snapshot",
+        "browser_fill",
+        "browser_press"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "web_search",
+        "browser_navigate",
+        "browser_press",
+        "browser_fill",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 34.38,
+      "error": "AttributeError: 'list' object has no attribute 'tool_type'"
+    },
+    {
+      "task_id": "form_fill_3",
+      "category": "form_fill",
+      "config": "full",
+      "success": false,
+      "turns": 3,
+      "tool_calls": [
+        "web_search",
+        "browser_navigate",
+        "browser_snapshot"
+      ],
+      "planner_injected": [
+        "browser_snapshot"
+      ],
+      "unique_tools": [
+        "web_search",
+        "browser_navigate",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 30.59,
+      "error": ""
+    },
+    {
+      "task_id": "workflow_1",
+      "category": "workflow",
+      "config": "full",
+      "success": false,
+      "turns": 2,
+      "tool_calls": [
+        "browser_navigate",
+        "web_search",
+        "browser_snapshot"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "web_search",
+        "browser_navigate",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 33.6,
+      "error": ""
+    },
+    {
+      "task_id": "workflow_2",
+      "category": "workflow",
+      "config": "full",
+      "success": true,
+      "turns": 4,
+      "tool_calls": [
+        "web_search",
+        "browser_navigate",
+        "browser_fill",
+        "browser_press"
+      ],
+      "planner_injected": [
+        "browser_navigate",
+        "browser_snapshot",
+        "browser_snapshot"
+      ],
+      "unique_tools": [
+        "web_search",
+        "browser_navigate",
+        "browser_press",
+        "browser_fill",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 34.5,
+      "error": ""
+    },
+    {
+      "task_id": "data_collect_1",
+      "category": "data_collect",
+      "config": "full",
+      "success": false,
+      "turns": 2,
+      "tool_calls": [
+        "web_search",
+        "web_search",
+        "web_search"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "web_search"
+      ],
+      "duration_seconds": 32.97,
+      "error": "loop_detected: web_search called 3 times"
+    },
+    {
+      "task_id": "data_collect_2",
+      "category": "data_collect",
+      "config": "full",
+      "success": false,
+      "turns": 3,
+      "tool_calls": [
+        "web_search",
+        "web_search",
+        "web_search"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "web_search"
+      ],
+      "duration_seconds": 20.64,
+      "error": "loop_detected: web_search called 3 times"
+    },
+    {
+      "task_id": "data_collect_3",
+      "category": "data_collect",
+      "config": "full",
+      "success": true,
+      "turns": 4,
+      "tool_calls": [
+        "web_search",
+        "browser_navigate",
+        "browser_snapshot",
+        "browser_fill"
+      ],
+      "planner_injected": [
+        "browser_navigate",
+        "browser_snapshot"
+      ],
+      "unique_tools": [
+        "web_search",
+        "browser_navigate",
+        "browser_snapshot",
+        "browser_fill"
+      ],
+      "duration_seconds": 33.86,
+      "error": ""
+    }
+  ],
+  "per_task_details": [
+    {
+      "task_id": "search_extract_1",
+      "category": "search_extract",
+      "config": "raw",
+      "success": false,
+      "turns": 3,
+      "tool_calls": [
+        "web_search",
+        "web_search",
+        "web_search"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "web_search"
+      ],
+      "duration_seconds": 35.12,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_snapshot",
+          "browser_fill",
+          "browser_press"
+        ],
+        "selected_by_llm": [],
+        "injected_by_planner": [],
+        "matched_count": 0,
+        "required_count": 4,
+        "missing": [
+          "browser_fill",
+          "browser_navigate",
+          "browser_snapshot",
+          "browser_press"
+        ],
+        "accuracy": 0.0
+      },
+      "error": "loop_detected: web_search called 3 times"
+    },
+    {
+      "task_id": "search_extract_2",
+      "category": "search_extract",
+      "config": "raw",
+      "success": false,
+      "turns": 3,
+      "tool_calls": [
+        "web_search",
+        "web_fetch"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "web_search",
+        "web_fetch"
+      ],
+      "duration_seconds": 54.82,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_fill",
+          "browser_press",
+          "browser_snapshot"
+        ],
+        "selected_by_llm": [],
+        "injected_by_planner": [],
+        "matched_count": 0,
+        "required_count": 4,
+        "missing": [
+          "browser_fill",
+          "browser_navigate",
+          "browser_snapshot",
+          "browser_press"
+        ],
+        "accuracy": 0.0
+      },
+      "error": ""
+    },
+    {
+      "task_id": "search_extract_3",
+      "category": "search_extract",
+      "config": "raw",
+      "success": true,
+      "turns": 3,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_wait_text",
+        "browser_snapshot",
+        "browser_fill",
+        "browser_press"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "browser_navigate",
+        "browser_press",
+        "browser_fill",
+        "browser_wait_text",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 89.1,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_snapshot"
+        ],
+        "selected_by_llm": [
+          "browser_navigate",
+          "browser_snapshot"
+        ],
+        "injected_by_planner": [],
+        "matched_count": 2,
+        "required_count": 2,
+        "missing": [],
+        "accuracy": 1.0
+      },
+      "error": ""
+    },
+    {
+      "task_id": "search_extract_4",
+      "category": "search_extract",
+      "config": "raw",
+      "success": false,
+      "turns": 2,
+      "tool_calls": [
+        "web_search"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "web_search"
+      ],
+      "duration_seconds": 18.1,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_fill",
+          "browser_press",
+          "browser_snapshot"
+        ],
+        "selected_by_llm": [],
+        "injected_by_planner": [],
+        "matched_count": 0,
+        "required_count": 4,
+        "missing": [
+          "browser_fill",
+          "browser_navigate",
+          "browser_snapshot",
+          "browser_press"
+        ],
+        "accuracy": 0.0
+      },
+      "error": ""
+    },
+    {
+      "task_id": "multi_page_1",
+      "category": "multi_page",
+      "config": "raw",
+      "success": true,
+      "turns": 3,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_find_interactive",
+        "browser_click",
+        "browser_snapshot"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "browser_find_interactive",
+        "browser_navigate",
+        "browser_snapshot",
+        "browser_click"
+      ],
+      "duration_seconds": 49.12,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_snapshot",
+          "browser_click"
+        ],
+        "selected_by_llm": [
+          "browser_navigate",
+          "browser_snapshot",
+          "browser_click"
+        ],
+        "injected_by_planner": [],
+        "matched_count": 3,
+        "required_count": 3,
+        "missing": [],
+        "accuracy": 1.0
+      },
+      "error": ""
+    },
+    {
+      "task_id": "multi_page_2",
+      "category": "multi_page",
+      "config": "raw",
+      "success": true,
+      "turns": 6,
+      "tool_calls": [
+        "web_search",
+        "web_search",
+        "web_search",
+        "browser_navigate",
+        "browser_snapshot",
+        "browser_find"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "web_search",
+        "browser_navigate",
+        "browser_snapshot",
+        "browser_find"
+      ],
+      "duration_seconds": 82.6,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_snapshot"
+        ],
+        "selected_by_llm": [
+          "browser_navigate",
+          "browser_snapshot"
+        ],
+        "injected_by_planner": [],
+        "matched_count": 2,
+        "required_count": 2,
+        "missing": [],
+        "accuracy": 1.0
+      },
+      "error": ""
+    },
+    {
+      "task_id": "multi_page_3",
+      "category": "multi_page",
+      "config": "raw",
+      "success": true,
+      "turns": 4,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_snapshot",
+        "browser_find_interactive"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "browser_find_interactive",
+        "browser_navigate",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 37.99,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_snapshot",
+          "browser_click"
+        ],
+        "selected_by_llm": [
+          "browser_navigate",
+          "browser_snapshot"
+        ],
+        "injected_by_planner": [],
+        "matched_count": 2,
+        "required_count": 3,
+        "missing": [
+          "browser_click"
+        ],
+        "accuracy": 0.6666666666666666
+      },
+      "error": ""
+    },
+    {
+      "task_id": "form_fill_1",
+      "category": "form_fill",
+      "config": "raw",
+      "success": true,
+      "turns": 5,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_wait_text",
+        "browser_snapshot",
+        "web_search",
+        "browser_fill",
+        "browser_press",
+        "browser_click",
+        "browser_snapshot"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "web_search",
+        "browser_navigate",
+        "browser_press",
+        "browser_fill",
+        "browser_wait_text",
+        "browser_snapshot",
+        "browser_click"
+      ],
+      "duration_seconds": 100.38,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_fill",
+          "browser_press",
+          "browser_snapshot"
+        ],
+        "selected_by_llm": [
+          "browser_fill",
+          "browser_navigate",
+          "browser_snapshot",
+          "browser_press"
+        ],
+        "injected_by_planner": [],
+        "matched_count": 4,
+        "required_count": 4,
+        "missing": [],
+        "accuracy": 1.0
+      },
+      "error": ""
+    },
+    {
+      "task_id": "form_fill_2",
+      "category": "form_fill",
+      "config": "raw",
+      "success": false,
+      "turns": 3,
+      "tool_calls": [
+        "web_search",
+        "browser_navigate",
+        "browser_wait_text",
+        "browser_snapshot",
+        "web_fetch"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "web_search",
+        "browser_navigate",
+        "web_fetch",
+        "browser_wait_text",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 52.46,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_fill",
+          "browser_press",
+          "browser_snapshot",
+          "browser_click"
+        ],
+        "selected_by_llm": [
+          "browser_navigate",
+          "browser_snapshot"
+        ],
+        "injected_by_planner": [],
+        "matched_count": 2,
+        "required_count": 5,
+        "missing": [
+          "browser_click",
+          "browser_fill",
+          "browser_press"
+        ],
+        "accuracy": 0.4
+      },
+      "error": ""
+    },
+    {
+      "task_id": "form_fill_3",
+      "category": "form_fill",
+      "config": "raw",
+      "success": false,
+      "turns": 4,
+      "tool_calls": [
+        "web_search",
+        "browser_navigate",
+        "browser_navigate"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "web_search",
+        "browser_navigate"
+      ],
+      "duration_seconds": 45.67,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_fill",
+          "browser_press",
+          "browser_snapshot"
+        ],
+        "selected_by_llm": [
+          "browser_navigate"
+        ],
+        "injected_by_planner": [],
+        "matched_count": 1,
+        "required_count": 4,
+        "missing": [
+          "browser_fill",
+          "browser_snapshot",
+          "browser_press"
+        ],
+        "accuracy": 0.25
+      },
+      "error": ""
+    },
+    {
+      "task_id": "workflow_1",
+      "category": "workflow",
+      "config": "raw",
+      "success": false,
+      "turns": 3,
+      "tool_calls": [
+        "browser_navigate",
+        "web_fetch",
+        "browser_snapshot"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "browser_navigate",
+        "browser_snapshot",
+        "web_fetch"
+      ],
+      "duration_seconds": 53.13,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_snapshot",
+          "browser_fill",
+          "browser_press"
+        ],
+        "selected_by_llm": [
+          "browser_navigate",
+          "browser_snapshot"
+        ],
+        "injected_by_planner": [],
+        "matched_count": 2,
+        "required_count": 4,
+        "missing": [
+          "browser_fill",
+          "browser_press"
+        ],
+        "accuracy": 0.5
+      },
+      "error": ""
+    },
+    {
+      "task_id": "workflow_2",
+      "category": "workflow",
+      "config": "raw",
+      "success": false,
+      "turns": 6,
+      "tool_calls": [
+        "web_search",
+        "browser_navigate",
+        "browser_navigate",
+        "browser_snapshot",
+        "web_search",
+        "web_search"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "web_search",
+        "browser_navigate",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 121.48,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_fill",
+          "browser_press",
+          "browser_snapshot",
+          "browser_click"
+        ],
+        "selected_by_llm": [
+          "browser_navigate",
+          "browser_snapshot"
+        ],
+        "injected_by_planner": [],
+        "matched_count": 2,
+        "required_count": 5,
+        "missing": [
+          "browser_click",
+          "browser_fill",
+          "browser_press"
+        ],
+        "accuracy": 0.4
+      },
+      "error": "max_turns (6) exceeded"
+    },
+    {
+      "task_id": "data_collect_1",
+      "category": "data_collect",
+      "config": "raw",
+      "success": false,
+      "turns": 2,
+      "tool_calls": [
+        "web_search",
+        "web_search",
+        "web_search"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "web_search"
+      ],
+      "duration_seconds": 26.98,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_fill",
+          "browser_press",
+          "browser_snapshot"
+        ],
+        "selected_by_llm": [],
+        "injected_by_planner": [],
+        "matched_count": 0,
+        "required_count": 4,
+        "missing": [
+          "browser_fill",
+          "browser_navigate",
+          "browser_snapshot",
+          "browser_press"
+        ],
+        "accuracy": 0.0
+      },
+      "error": "loop_detected: web_search called 3 times"
+    },
+    {
+      "task_id": "data_collect_2",
+      "category": "data_collect",
+      "config": "raw",
+      "success": false,
+      "turns": 3,
+      "tool_calls": [
+        "web_search",
+        "web_search",
+        "web_search"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "web_search"
+      ],
+      "duration_seconds": 24.48,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_snapshot"
+        ],
+        "selected_by_llm": [],
+        "injected_by_planner": [],
+        "matched_count": 0,
+        "required_count": 2,
+        "missing": [
+          "browser_navigate",
+          "browser_snapshot"
+        ],
+        "accuracy": 0.0
+      },
+      "error": "loop_detected: web_search called 3 times"
+    },
+    {
+      "task_id": "data_collect_3",
+      "category": "data_collect",
+      "config": "raw",
+      "success": false,
+      "turns": 3,
+      "tool_calls": [
+        "web_search",
+        "web_search",
+        "web_search"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "web_search"
+      ],
+      "duration_seconds": 38.9,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_fill",
+          "browser_press",
+          "browser_snapshot"
+        ],
+        "selected_by_llm": [],
+        "injected_by_planner": [],
+        "matched_count": 0,
+        "required_count": 4,
+        "missing": [
+          "browser_fill",
+          "browser_navigate",
+          "browser_snapshot",
+          "browser_press"
+        ],
+        "accuracy": 0.0
+      },
+      "error": "loop_detected: web_search called 3 times"
+    },
+    {
+      "task_id": "search_extract_1",
+      "category": "search_extract",
+      "config": "planner",
+      "success": false,
+      "turns": 3,
+      "tool_calls": [
+        "web_search",
+        "browser_navigate"
+      ],
+      "planner_injected": [
+        "browser_navigate",
+        "browser_snapshot",
+        "browser_snapshot"
+      ],
+      "unique_tools": [
+        "web_search",
+        "browser_navigate",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 29.72,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_snapshot",
+          "browser_fill",
+          "browser_press"
+        ],
+        "selected_by_llm": [
+          "browser_navigate"
+        ],
+        "injected_by_planner": [
+          "browser_navigate",
+          "browser_snapshot"
+        ],
+        "matched_count": 2,
+        "required_count": 4,
+        "missing": [
+          "browser_fill",
+          "browser_press"
+        ],
+        "accuracy": 0.5
+      },
+      "error": ""
+    },
+    {
+      "task_id": "search_extract_2",
+      "category": "search_extract",
+      "config": "planner",
+      "success": false,
+      "turns": 3,
+      "tool_calls": [
+        "web_search",
+        "web_search"
+      ],
+      "planner_injected": [
+        "browser_navigate",
+        "browser_navigate",
+        "browser_snapshot"
+      ],
+      "unique_tools": [
+        "web_search",
+        "browser_navigate",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 33.32,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_fill",
+          "browser_press",
+          "browser_snapshot"
+        ],
+        "selected_by_llm": [],
+        "injected_by_planner": [
+          "browser_navigate",
+          "browser_snapshot"
+        ],
+        "matched_count": 2,
+        "required_count": 4,
+        "missing": [
+          "browser_fill",
+          "browser_press"
+        ],
+        "accuracy": 0.5
+      },
+      "error": ""
+    },
+    {
+      "task_id": "search_extract_3",
+      "category": "search_extract",
+      "config": "planner",
+      "success": false,
+      "turns": 2,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_wait_text",
+        "browser_snapshot",
+        "browser_fill",
+        "browser_press"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "browser_navigate",
+        "browser_press",
+        "browser_fill",
+        "browser_wait_text",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 37.12,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_snapshot"
+        ],
+        "selected_by_llm": [
+          "browser_navigate",
+          "browser_snapshot"
+        ],
+        "injected_by_planner": [],
+        "matched_count": 2,
+        "required_count": 2,
+        "missing": [],
+        "accuracy": 1.0
+      },
+      "error": "AttributeError: 'list' object has no attribute 'tool_type'"
+    },
+    {
+      "task_id": "search_extract_4",
+      "category": "search_extract",
+      "config": "planner",
+      "success": false,
+      "turns": 2,
+      "tool_calls": [
+        "web_search",
+        "browser_snapshot"
+      ],
+      "planner_injected": [
+        "browser_navigate"
+      ],
+      "unique_tools": [
+        "web_search",
+        "browser_navigate",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 14.38,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_fill",
+          "browser_press",
+          "browser_snapshot"
+        ],
+        "selected_by_llm": [
+          "browser_snapshot"
+        ],
+        "injected_by_planner": [
+          "browser_navigate"
+        ],
+        "matched_count": 2,
+        "required_count": 4,
+        "missing": [
+          "browser_fill",
+          "browser_press"
+        ],
+        "accuracy": 0.5
+      },
+      "error": "AttributeError: 'list' object has no attribute 'tool_type'"
+    },
+    {
+      "task_id": "multi_page_1",
+      "category": "multi_page",
+      "config": "planner",
+      "success": true,
+      "turns": 4,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_find_interactive",
+        "browser_find"
+      ],
+      "planner_injected": [
+        "browser_snapshot"
+      ],
+      "unique_tools": [
+        "browser_find_interactive",
+        "browser_navigate",
+        "browser_snapshot",
+        "browser_find"
+      ],
+      "duration_seconds": 66.16,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_snapshot",
+          "browser_click"
+        ],
+        "selected_by_llm": [
+          "browser_navigate"
+        ],
+        "injected_by_planner": [
+          "browser_snapshot"
+        ],
+        "matched_count": 2,
+        "required_count": 3,
+        "missing": [
+          "browser_click"
+        ],
+        "accuracy": 0.6666666666666666
+      },
+      "error": ""
+    },
+    {
+      "task_id": "multi_page_2",
+      "category": "multi_page",
+      "config": "planner",
+      "success": true,
+      "turns": 3,
+      "tool_calls": [
+        "web_search",
+        "browser_navigate"
+      ],
+      "planner_injected": [
+        "browser_navigate",
+        "browser_snapshot",
+        "browser_snapshot"
+      ],
+      "unique_tools": [
+        "web_search",
+        "browser_navigate",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 24.81,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_snapshot"
+        ],
+        "selected_by_llm": [
+          "browser_navigate"
+        ],
+        "injected_by_planner": [
+          "browser_navigate",
+          "browser_snapshot"
+        ],
+        "matched_count": 2,
+        "required_count": 2,
+        "missing": [],
+        "accuracy": 1.0
+      },
+      "error": ""
+    },
+    {
+      "task_id": "multi_page_3",
+      "category": "multi_page",
+      "config": "planner",
+      "success": true,
+      "turns": 2,
+      "tool_calls": [
+        "browser_navigate"
+      ],
+      "planner_injected": [
+        "browser_snapshot"
+      ],
+      "unique_tools": [
+        "browser_navigate",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 40.32,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_snapshot",
+          "browser_click"
+        ],
+        "selected_by_llm": [
+          "browser_navigate"
+        ],
+        "injected_by_planner": [
+          "browser_snapshot"
+        ],
+        "matched_count": 2,
+        "required_count": 3,
+        "missing": [
+          "browser_click"
+        ],
+        "accuracy": 0.6666666666666666
+      },
+      "error": ""
+    },
+    {
+      "task_id": "form_fill_1",
+      "category": "form_fill",
+      "config": "planner",
+      "success": false,
+      "turns": 2,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_wait_text",
+        "browser_snapshot",
+        "web_search",
+        "browser_fill",
+        "browser_press"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "web_search",
+        "browser_navigate",
+        "browser_press",
+        "browser_fill",
+        "browser_wait_text",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 37.25,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_fill",
+          "browser_press",
+          "browser_snapshot"
+        ],
+        "selected_by_llm": [
+          "browser_fill",
+          "browser_navigate",
+          "browser_snapshot",
+          "browser_press"
+        ],
+        "injected_by_planner": [],
+        "matched_count": 4,
+        "required_count": 4,
+        "missing": [],
+        "accuracy": 1.0
+      },
+      "error": "AttributeError: 'list' object has no attribute 'tool_type'"
+    },
+    {
+      "task_id": "form_fill_2",
+      "category": "form_fill",
+      "config": "planner",
+      "success": false,
+      "turns": 2,
+      "tool_calls": [
+        "web_search",
+        "browser_fill",
+        "browser_click",
+        "browser_wait_text",
+        "browser_snapshot"
+      ],
+      "planner_injected": [
+        "browser_navigate"
+      ],
+      "unique_tools": [
+        "web_search",
+        "browser_navigate",
+        "browser_fill",
+        "browser_wait_text",
+        "browser_snapshot",
+        "browser_click"
+      ],
+      "duration_seconds": 29.08,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_fill",
+          "browser_press",
+          "browser_snapshot",
+          "browser_click"
+        ],
+        "selected_by_llm": [
+          "browser_click",
+          "browser_snapshot",
+          "browser_fill"
+        ],
+        "injected_by_planner": [
+          "browser_navigate"
+        ],
+        "matched_count": 4,
+        "required_count": 5,
+        "missing": [
+          "browser_press"
+        ],
+        "accuracy": 0.8
+      },
+      "error": "AttributeError: 'list' object has no attribute 'tool_type'"
+    },
+    {
+      "task_id": "form_fill_3",
+      "category": "form_fill",
+      "config": "planner",
+      "success": false,
+      "turns": 3,
+      "tool_calls": [
+        "web_search",
+        "browser_navigate"
+      ],
+      "planner_injected": [
+        "browser_snapshot",
+        "browser_snapshot"
+      ],
+      "unique_tools": [
+        "web_search",
+        "browser_navigate",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 47.46,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_fill",
+          "browser_press",
+          "browser_snapshot"
+        ],
+        "selected_by_llm": [
+          "browser_navigate"
+        ],
+        "injected_by_planner": [
+          "browser_snapshot"
+        ],
+        "matched_count": 2,
+        "required_count": 4,
+        "missing": [
+          "browser_fill",
+          "browser_press"
+        ],
+        "accuracy": 0.5
+      },
+      "error": ""
+    },
+    {
+      "task_id": "workflow_1",
+      "category": "workflow",
+      "config": "planner",
+      "success": false,
+      "turns": 3,
+      "tool_calls": [
+        "browser_navigate",
+        "web_fetch",
+        "web_search"
+      ],
+      "planner_injected": [
+        "browser_snapshot",
+        "browser_navigate",
+        "browser_snapshot"
+      ],
+      "unique_tools": [
+        "web_search",
+        "browser_navigate",
+        "browser_snapshot",
+        "web_fetch"
+      ],
+      "duration_seconds": 41.77,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_snapshot",
+          "browser_fill",
+          "browser_press"
+        ],
+        "selected_by_llm": [
+          "browser_navigate"
+        ],
+        "injected_by_planner": [
+          "browser_navigate",
+          "browser_snapshot"
+        ],
+        "matched_count": 2,
+        "required_count": 4,
+        "missing": [
+          "browser_fill",
+          "browser_press"
+        ],
+        "accuracy": 0.5
+      },
+      "error": ""
+    },
+    {
+      "task_id": "workflow_2",
+      "category": "workflow",
+      "config": "planner",
+      "success": false,
+      "turns": 3,
+      "tool_calls": [
+        "web_search",
+        "browser_navigate"
+      ],
+      "planner_injected": [
+        "browser_navigate",
+        "browser_snapshot",
+        "browser_snapshot"
+      ],
+      "unique_tools": [
+        "web_search",
+        "browser_navigate",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 56.93,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_fill",
+          "browser_press",
+          "browser_snapshot",
+          "browser_click"
+        ],
+        "selected_by_llm": [
+          "browser_navigate"
+        ],
+        "injected_by_planner": [
+          "browser_navigate",
+          "browser_snapshot"
+        ],
+        "matched_count": 2,
+        "required_count": 5,
+        "missing": [
+          "browser_click",
+          "browser_fill",
+          "browser_press"
+        ],
+        "accuracy": 0.4
+      },
+      "error": ""
+    },
+    {
+      "task_id": "data_collect_1",
+      "category": "data_collect",
+      "config": "planner",
+      "success": false,
+      "turns": 3,
+      "tool_calls": [
+        "web_search",
+        "web_search",
+        "web_search"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "web_search"
+      ],
+      "duration_seconds": 26.19,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_fill",
+          "browser_press",
+          "browser_snapshot"
+        ],
+        "selected_by_llm": [],
+        "injected_by_planner": [],
+        "matched_count": 0,
+        "required_count": 4,
+        "missing": [
+          "browser_fill",
+          "browser_navigate",
+          "browser_snapshot",
+          "browser_press"
+        ],
+        "accuracy": 0.0
+      },
+      "error": "loop_detected: web_search called 3 times"
+    },
+    {
+      "task_id": "data_collect_2",
+      "category": "data_collect",
+      "config": "planner",
+      "success": false,
+      "turns": 3,
+      "tool_calls": [
+        "web_search",
+        "web_search",
+        "web_search"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "web_search"
+      ],
+      "duration_seconds": 24.95,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_snapshot"
+        ],
+        "selected_by_llm": [],
+        "injected_by_planner": [],
+        "matched_count": 0,
+        "required_count": 2,
+        "missing": [
+          "browser_navigate",
+          "browser_snapshot"
+        ],
+        "accuracy": 0.0
+      },
+      "error": "loop_detected: web_search called 3 times"
+    },
+    {
+      "task_id": "data_collect_3",
+      "category": "data_collect",
+      "config": "planner",
+      "success": false,
+      "turns": 3,
+      "tool_calls": [
+        "web_search",
+        "browser_navigate"
+      ],
+      "planner_injected": [
+        "browser_navigate",
+        "browser_snapshot",
+        "browser_snapshot"
+      ],
+      "unique_tools": [
+        "web_search",
+        "browser_navigate",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 41.77,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_fill",
+          "browser_press",
+          "browser_snapshot"
+        ],
+        "selected_by_llm": [
+          "browser_navigate"
+        ],
+        "injected_by_planner": [
+          "browser_navigate",
+          "browser_snapshot"
+        ],
+        "matched_count": 2,
+        "required_count": 4,
+        "missing": [
+          "browser_fill",
+          "browser_press"
+        ],
+        "accuracy": 0.5
+      },
+      "error": ""
+    },
+    {
+      "task_id": "search_extract_1",
+      "category": "search_extract",
+      "config": "full",
+      "success": false,
+      "turns": 3,
+      "tool_calls": [
+        "web_search",
+        "browser_navigate"
+      ],
+      "planner_injected": [
+        "browser_navigate",
+        "browser_snapshot",
+        "browser_snapshot"
+      ],
+      "unique_tools": [
+        "web_search",
+        "browser_navigate",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 39.55,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_snapshot",
+          "browser_fill",
+          "browser_press"
+        ],
+        "selected_by_llm": [
+          "browser_navigate"
+        ],
+        "injected_by_planner": [
+          "browser_navigate",
+          "browser_snapshot"
+        ],
+        "matched_count": 2,
+        "required_count": 4,
+        "missing": [
+          "browser_fill",
+          "browser_press"
+        ],
+        "accuracy": 0.5
+      },
+      "error": ""
+    },
+    {
+      "task_id": "search_extract_2",
+      "category": "search_extract",
+      "config": "full",
+      "success": false,
+      "turns": 2,
+      "tool_calls": [
+        "web_search",
+        "browser_snapshot"
+      ],
+      "planner_injected": [
+        "browser_navigate"
+      ],
+      "unique_tools": [
+        "web_search",
+        "browser_navigate",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 11.24,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_fill",
+          "browser_press",
+          "browser_snapshot"
+        ],
+        "selected_by_llm": [
+          "browser_snapshot"
+        ],
+        "injected_by_planner": [
+          "browser_navigate"
+        ],
+        "matched_count": 2,
+        "required_count": 4,
+        "missing": [
+          "browser_fill",
+          "browser_press"
+        ],
+        "accuracy": 0.5
+      },
+      "error": "AttributeError: 'list' object has no attribute 'tool_type'"
+    },
+    {
+      "task_id": "search_extract_3",
+      "category": "search_extract",
+      "config": "full",
+      "success": false,
+      "turns": 2,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_snapshot",
+        "browser_fill",
+        "browser_press"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "browser_press",
+        "browser_navigate",
+        "browser_snapshot",
+        "browser_fill"
+      ],
+      "duration_seconds": 28.0,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_snapshot"
+        ],
+        "selected_by_llm": [
+          "browser_navigate",
+          "browser_snapshot"
+        ],
+        "injected_by_planner": [],
+        "matched_count": 2,
+        "required_count": 2,
+        "missing": [],
+        "accuracy": 1.0
+      },
+      "error": "AttributeError: 'list' object has no attribute 'tool_type'"
+    },
+    {
+      "task_id": "search_extract_4",
+      "category": "search_extract",
+      "config": "full",
+      "success": true,
+      "turns": 4,
+      "tool_calls": [
+        "web_search",
+        "browser_navigate",
+        "browser_fill",
+        "browser_press"
+      ],
+      "planner_injected": [
+        "browser_navigate",
+        "browser_snapshot",
+        "browser_snapshot"
+      ],
+      "unique_tools": [
+        "web_search",
+        "browser_navigate",
+        "browser_press",
+        "browser_fill",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 38.89,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_fill",
+          "browser_press",
+          "browser_snapshot"
+        ],
+        "selected_by_llm": [
+          "browser_navigate",
+          "browser_fill",
+          "browser_press"
+        ],
+        "injected_by_planner": [
+          "browser_navigate",
+          "browser_snapshot"
+        ],
+        "matched_count": 4,
+        "required_count": 4,
+        "missing": [],
+        "accuracy": 1.0
+      },
+      "error": ""
+    },
+    {
+      "task_id": "multi_page_1",
+      "category": "multi_page",
+      "config": "full",
+      "success": false,
+      "turns": 2,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_click"
+      ],
+      "planner_injected": [
+        "browser_snapshot"
+      ],
+      "unique_tools": [
+        "browser_navigate",
+        "browser_snapshot",
+        "browser_click"
+      ],
+      "duration_seconds": 16.5,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_snapshot",
+          "browser_click"
+        ],
+        "selected_by_llm": [
+          "browser_navigate",
+          "browser_click"
+        ],
+        "injected_by_planner": [
+          "browser_snapshot"
+        ],
+        "matched_count": 3,
+        "required_count": 3,
+        "missing": [],
+        "accuracy": 1.0
+      },
+      "error": "AttributeError: 'list' object has no attribute 'tool_type'"
+    },
+    {
+      "task_id": "multi_page_2",
+      "category": "multi_page",
+      "config": "full",
+      "success": false,
+      "turns": 2,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_wait_text",
+        "browser_snapshot",
+        "browser_fill",
+        "browser_press",
+        "browser_wait_visible",
+        "browser_snapshot",
+        "browser_click"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "browser_navigate",
+        "browser_press",
+        "browser_fill",
+        "browser_wait_visible",
+        "browser_wait_text",
+        "browser_snapshot",
+        "browser_click"
+      ],
+      "duration_seconds": 55.37,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_snapshot"
+        ],
+        "selected_by_llm": [
+          "browser_navigate",
+          "browser_snapshot"
+        ],
+        "injected_by_planner": [],
+        "matched_count": 2,
+        "required_count": 2,
+        "missing": [],
+        "accuracy": 1.0
+      },
+      "error": "AttributeError: 'list' object has no attribute 'tool_type'"
+    },
+    {
+      "task_id": "multi_page_3",
+      "category": "multi_page",
+      "config": "full",
+      "success": false,
+      "turns": 2,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_click"
+      ],
+      "planner_injected": [
+        "browser_snapshot"
+      ],
+      "unique_tools": [
+        "browser_navigate",
+        "browser_snapshot",
+        "browser_click"
+      ],
+      "duration_seconds": 24.62,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_snapshot",
+          "browser_click"
+        ],
+        "selected_by_llm": [
+          "browser_navigate",
+          "browser_click"
+        ],
+        "injected_by_planner": [
+          "browser_snapshot"
+        ],
+        "matched_count": 3,
+        "required_count": 3,
+        "missing": [],
+        "accuracy": 1.0
+      },
+      "error": "AttributeError: 'list' object has no attribute 'tool_type'"
+    },
+    {
+      "task_id": "form_fill_1",
+      "category": "form_fill",
+      "config": "full",
+      "success": true,
+      "turns": 4,
+      "tool_calls": [
+        "web_search",
+        "browser_navigate",
+        "browser_snapshot",
+        "browser_fill",
+        "browser_press"
+      ],
+      "planner_injected": [
+        "browser_snapshot"
+      ],
+      "unique_tools": [
+        "web_search",
+        "browser_navigate",
+        "browser_press",
+        "browser_fill",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 36.51,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_fill",
+          "browser_press",
+          "browser_snapshot"
+        ],
+        "selected_by_llm": [
+          "browser_fill",
+          "browser_navigate",
+          "browser_snapshot",
+          "browser_press"
+        ],
+        "injected_by_planner": [
+          "browser_snapshot"
+        ],
+        "matched_count": 4,
+        "required_count": 4,
+        "missing": [],
+        "accuracy": 1.0
+      },
+      "error": ""
+    },
+    {
+      "task_id": "form_fill_2",
+      "category": "form_fill",
+      "config": "full",
+      "success": false,
+      "turns": 2,
+      "tool_calls": [
+        "browser_navigate",
+        "web_search",
+        "browser_snapshot",
+        "browser_fill",
+        "browser_press"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "web_search",
+        "browser_navigate",
+        "browser_press",
+        "browser_fill",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 34.38,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_fill",
+          "browser_press",
+          "browser_snapshot",
+          "browser_click"
+        ],
+        "selected_by_llm": [
+          "browser_navigate",
+          "browser_fill",
+          "browser_snapshot",
+          "browser_press"
+        ],
+        "injected_by_planner": [],
+        "matched_count": 4,
+        "required_count": 5,
+        "missing": [
+          "browser_click"
+        ],
+        "accuracy": 0.8
+      },
+      "error": "AttributeError: 'list' object has no attribute 'tool_type'"
+    },
+    {
+      "task_id": "form_fill_3",
+      "category": "form_fill",
+      "config": "full",
+      "success": false,
+      "turns": 3,
+      "tool_calls": [
+        "web_search",
+        "browser_navigate",
+        "browser_snapshot"
+      ],
+      "planner_injected": [
+        "browser_snapshot"
+      ],
+      "unique_tools": [
+        "web_search",
+        "browser_navigate",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 30.59,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_fill",
+          "browser_press",
+          "browser_snapshot"
+        ],
+        "selected_by_llm": [
+          "browser_navigate",
+          "browser_snapshot"
+        ],
+        "injected_by_planner": [
+          "browser_snapshot"
+        ],
+        "matched_count": 2,
+        "required_count": 4,
+        "missing": [
+          "browser_fill",
+          "browser_press"
+        ],
+        "accuracy": 0.5
+      },
+      "error": ""
+    },
+    {
+      "task_id": "workflow_1",
+      "category": "workflow",
+      "config": "full",
+      "success": false,
+      "turns": 2,
+      "tool_calls": [
+        "browser_navigate",
+        "web_search",
+        "browser_snapshot"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "web_search",
+        "browser_navigate",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 33.6,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_snapshot",
+          "browser_fill",
+          "browser_press"
+        ],
+        "selected_by_llm": [
+          "browser_navigate",
+          "browser_snapshot"
+        ],
+        "injected_by_planner": [],
+        "matched_count": 2,
+        "required_count": 4,
+        "missing": [
+          "browser_fill",
+          "browser_press"
+        ],
+        "accuracy": 0.5
+      },
+      "error": ""
+    },
+    {
+      "task_id": "workflow_2",
+      "category": "workflow",
+      "config": "full",
+      "success": true,
+      "turns": 4,
+      "tool_calls": [
+        "web_search",
+        "browser_navigate",
+        "browser_fill",
+        "browser_press"
+      ],
+      "planner_injected": [
+        "browser_navigate",
+        "browser_snapshot",
+        "browser_snapshot"
+      ],
+      "unique_tools": [
+        "web_search",
+        "browser_navigate",
+        "browser_press",
+        "browser_fill",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 34.5,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_fill",
+          "browser_press",
+          "browser_snapshot",
+          "browser_click"
+        ],
+        "selected_by_llm": [
+          "browser_press",
+          "browser_navigate",
+          "browser_fill"
+        ],
+        "injected_by_planner": [
+          "browser_navigate",
+          "browser_snapshot"
+        ],
+        "matched_count": 4,
+        "required_count": 5,
+        "missing": [
+          "browser_click"
+        ],
+        "accuracy": 0.8
+      },
+      "error": ""
+    },
+    {
+      "task_id": "data_collect_1",
+      "category": "data_collect",
+      "config": "full",
+      "success": false,
+      "turns": 2,
+      "tool_calls": [
+        "web_search",
+        "web_search",
+        "web_search"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "web_search"
+      ],
+      "duration_seconds": 32.97,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_fill",
+          "browser_press",
+          "browser_snapshot"
+        ],
+        "selected_by_llm": [],
+        "injected_by_planner": [],
+        "matched_count": 0,
+        "required_count": 4,
+        "missing": [
+          "browser_fill",
+          "browser_navigate",
+          "browser_snapshot",
+          "browser_press"
+        ],
+        "accuracy": 0.0
+      },
+      "error": "loop_detected: web_search called 3 times"
+    },
+    {
+      "task_id": "data_collect_2",
+      "category": "data_collect",
+      "config": "full",
+      "success": false,
+      "turns": 3,
+      "tool_calls": [
+        "web_search",
+        "web_search",
+        "web_search"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "web_search"
+      ],
+      "duration_seconds": 20.64,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_snapshot"
+        ],
+        "selected_by_llm": [],
+        "injected_by_planner": [],
+        "matched_count": 0,
+        "required_count": 2,
+        "missing": [
+          "browser_navigate",
+          "browser_snapshot"
+        ],
+        "accuracy": 0.0
+      },
+      "error": "loop_detected: web_search called 3 times"
+    },
+    {
+      "task_id": "data_collect_3",
+      "category": "data_collect",
+      "config": "full",
+      "success": true,
+      "turns": 4,
+      "tool_calls": [
+        "web_search",
+        "browser_navigate",
+        "browser_snapshot",
+        "browser_fill"
+      ],
+      "planner_injected": [
+        "browser_navigate",
+        "browser_snapshot"
+      ],
+      "unique_tools": [
+        "web_search",
+        "browser_navigate",
+        "browser_snapshot",
+        "browser_fill"
+      ],
+      "duration_seconds": 33.86,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_fill",
+          "browser_press",
+          "browser_snapshot"
+        ],
+        "selected_by_llm": [
+          "browser_navigate",
+          "browser_snapshot",
+          "browser_fill"
+        ],
+        "injected_by_planner": [
+          "browser_navigate",
+          "browser_snapshot"
+        ],
+        "matched_count": 3,
+        "required_count": 4,
+        "missing": [
+          "browser_press"
+        ],
+        "accuracy": 0.75
+      },
+      "error": ""
+    }
+  ],
+  "summary": {
+    "by_config": {
+      "raw": {
+        "total_tasks": 15,
+        "successes": 5,
+        "success_rate": 0.333,
+        "avg_turns": 3.5,
+        "avg_duration_seconds": 55.36,
+        "avg_tool_selection_accuracy": 0.414,
+        "avg_matched_tools": 1.33,
+        "total_tool_calls": 58,
+        "total_planner_injections": 0,
+        "unique_tools_count": 10,
+        "tool_frequency": {
+          "web_search": 23,
+          "browser_navigate": 11,
+          "browser_snapshot": 9,
+          "web_fetch": 3,
+          "browser_wait_text": 3,
+          "browser_fill": 2,
+          "browser_press": 2,
+          "browser_find_interactive": 2,
+          "browser_click": 2,
+          "browser_find": 1
+        },
+        "errors": [
+          "loop_detected: web_search called 3 times",
+          "max_turns (6) exceeded",
+          "loop_detected: web_search called 3 times",
+          "loop_detected: web_search called 3 times",
+          "loop_detected: web_search called 3 times"
+        ],
+        "fsm_metrics": {
+          "total_transitions": 0,
+          "total_loops_prevented": 0,
+          "total_page_recognitions": 0,
+          "total_timeouts": 0,
+          "total_forced_transitions": 0,
+          "final_states": {}
+        }
+      },
+      "planner": {
+        "total_tasks": 15,
+        "successes": 3,
+        "success_rate": 0.2,
+        "avg_turns": 2.7,
+        "avg_duration_seconds": 36.75,
+        "avg_tool_selection_accuracy": 0.569,
+        "avg_matched_tools": 2.0,
+        "total_tool_calls": 43,
+        "total_planner_injections": 24,
+        "unique_tools_count": 10,
+        "tool_frequency": {
+          "browser_navigate": 19,
+          "browser_snapshot": 19,
+          "web_search": 17,
+          "browser_wait_text": 3,
+          "browser_fill": 3,
+          "browser_press": 2,
+          "browser_find_interactive": 1,
+          "browser_find": 1,
+          "browser_click": 1,
+          "web_fetch": 1
+        },
+        "errors": [
+          "AttributeError: 'list' object has no attribute 'tool_type'",
+          "AttributeError: 'list' object has no attribute 'tool_type'",
+          "AttributeError: 'list' object has no attribute 'tool_type'",
+          "AttributeError: 'list' object has no attribute 'tool_type'",
+          "loop_detected: web_search called 3 times",
+          "loop_detected: web_search called 3 times"
+        ],
+        "fsm_metrics": {
+          "total_transitions": 26,
+          "total_loops_prevented": 0,
+          "total_page_recognitions": 0,
+          "total_timeouts": 15,
+          "total_forced_transitions": 15,
+          "final_states": {
+            "SEARCH_RESULTS": 7,
+            "FAIL": 8
+          }
+        }
+      },
+      "full": {
+        "total_tasks": 15,
+        "successes": 4,
+        "success_rate": 0.267,
+        "avg_turns": 2.7,
+        "avg_duration_seconds": 31.41,
+        "avg_tool_selection_accuracy": 0.69,
+        "avg_matched_tools": 2.47,
+        "total_tool_calls": 54,
+        "total_planner_injections": 16,
+        "unique_tools_count": 8,
+        "tool_frequency": {
+          "browser_snapshot": 20,
+          "browser_navigate": 17,
+          "web_search": 15,
+          "browser_fill": 7,
+          "browser_press": 6,
+          "browser_click": 3,
+          "browser_wait_text": 1,
+          "browser_wait_visible": 1
+        },
+        "errors": [
+          "AttributeError: 'list' object has no attribute 'tool_type'",
+          "AttributeError: 'list' object has no attribute 'tool_type'",
+          "AttributeError: 'list' object has no attribute 'tool_type'",
+          "AttributeError: 'list' object has no attribute 'tool_type'",
+          "AttributeError: 'list' object has no attribute 'tool_type'",
+          "AttributeError: 'list' object has no attribute 'tool_type'",
+          "loop_detected: web_search called 3 times",
+          "loop_detected: web_search called 3 times"
+        ],
+        "fsm_metrics": {
+          "total_transitions": 27,
+          "total_loops_prevented": 0,
+          "total_page_recognitions": 0,
+          "total_timeouts": 15,
+          "total_forced_transitions": 15,
+          "final_states": {
+            "SEARCH_RESULTS": 6,
+            "FAIL": 9
+          }
+        }
+      }
+    },
+    "deltas": {
+      "planner": {
+        "delta_success_rate": -0.133,
+        "delta_tool_selection_accuracy": 0.155,
+        "delta_avg_turns": 0.8
+      },
+      "full": {
+        "delta_success_rate": -0.066,
+        "delta_tool_selection_accuracy": 0.276,
+        "delta_avg_turns": 0.8
+      }
+    }
+  }
+}

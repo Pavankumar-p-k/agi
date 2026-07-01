@@ -1,0 +1,936 @@
+{
+  "timestamp": "2026-06-25T11:09:10.636306+00:00",
+  "model": "llama3.1",
+  "tasks": [
+    {
+      "task_id": "search_extract_1",
+      "category": "search_extract",
+      "config": "raw",
+      "success": false,
+      "turns": 2,
+      "tool_calls": [
+        "browser_navigate"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "browser_navigate"
+      ],
+      "duration_seconds": 10.76,
+      "error": ""
+    },
+    {
+      "task_id": "search_extract_2",
+      "category": "search_extract",
+      "config": "raw",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [],
+      "planner_injected": [],
+      "unique_tools": [],
+      "duration_seconds": 6.92,
+      "error": ""
+    },
+    {
+      "task_id": "search_extract_3",
+      "category": "search_extract",
+      "config": "raw",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [],
+      "planner_injected": [],
+      "unique_tools": [],
+      "duration_seconds": 7.3,
+      "error": ""
+    },
+    {
+      "task_id": "search_extract_4",
+      "category": "search_extract",
+      "config": "raw",
+      "success": false,
+      "turns": 3,
+      "tool_calls": [
+        "browser_navigate",
+        "web_search"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "web_search",
+        "browser_navigate"
+      ],
+      "duration_seconds": 22.24,
+      "error": ""
+    },
+    {
+      "task_id": "multi_page_1",
+      "category": "multi_page",
+      "config": "raw",
+      "success": true,
+      "turns": 4,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_snapshot",
+        "browser_click"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "browser_click",
+        "browser_navigate",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 15.43,
+      "error": ""
+    },
+    {
+      "task_id": "search_extract_1",
+      "category": "search_extract",
+      "config": "planner",
+      "success": false,
+      "turns": 2,
+      "tool_calls": [
+        "browser_navigate"
+      ],
+      "planner_injected": [
+        "browser_snapshot",
+        "browser_evaluate",
+        "browser_evaluate",
+        "browser_evaluate",
+        "browser_snapshot",
+        "browser_evaluate"
+      ],
+      "unique_tools": [
+        "browser_navigate",
+        "browser_evaluate",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 9.73,
+      "error": ""
+    },
+    {
+      "task_id": "search_extract_2",
+      "category": "search_extract",
+      "config": "planner",
+      "success": false,
+      "turns": 2,
+      "tool_calls": [
+        "browser_evaluate"
+      ],
+      "planner_injected": [
+        "browser_evaluate",
+        "browser_evaluate",
+        "browser_snapshot",
+        "browser_evaluate",
+        "browser_evaluate"
+      ],
+      "unique_tools": [
+        "browser_evaluate",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 15.55,
+      "error": ""
+    },
+    {
+      "task_id": "search_extract_3",
+      "category": "search_extract",
+      "config": "planner",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [],
+      "planner_injected": [],
+      "unique_tools": [],
+      "duration_seconds": 6.91,
+      "error": ""
+    },
+    {
+      "task_id": "search_extract_4",
+      "category": "search_extract",
+      "config": "planner",
+      "success": false,
+      "turns": 2,
+      "tool_calls": [
+        "browser_navigate"
+      ],
+      "planner_injected": [
+        "browser_snapshot",
+        "browser_evaluate",
+        "browser_evaluate",
+        "browser_evaluate",
+        "browser_snapshot",
+        "browser_evaluate"
+      ],
+      "unique_tools": [
+        "browser_navigate",
+        "browser_evaluate",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 25.55,
+      "error": ""
+    },
+    {
+      "task_id": "multi_page_1",
+      "category": "multi_page",
+      "config": "planner",
+      "success": true,
+      "turns": 2,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_click",
+        "browser_snapshot"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "browser_click",
+        "browser_navigate",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 14.02,
+      "error": ""
+    },
+    {
+      "task_id": "search_extract_1",
+      "category": "search_extract",
+      "config": "full",
+      "success": false,
+      "turns": 2,
+      "tool_calls": [
+        "browser_navigate"
+      ],
+      "planner_injected": [
+        "browser_snapshot",
+        "browser_evaluate",
+        "browser_evaluate",
+        "browser_evaluate",
+        "browser_snapshot",
+        "browser_evaluate"
+      ],
+      "unique_tools": [
+        "browser_navigate",
+        "browser_evaluate",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 10.36,
+      "error": ""
+    },
+    {
+      "task_id": "search_extract_2",
+      "category": "search_extract",
+      "config": "full",
+      "success": false,
+      "turns": 2,
+      "tool_calls": [
+        "browser_evaluate"
+      ],
+      "planner_injected": [
+        "browser_evaluate",
+        "browser_evaluate",
+        "browser_snapshot",
+        "browser_evaluate",
+        "browser_evaluate"
+      ],
+      "unique_tools": [
+        "browser_evaluate",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 14.51,
+      "error": ""
+    },
+    {
+      "task_id": "search_extract_3",
+      "category": "search_extract",
+      "config": "full",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [],
+      "planner_injected": [],
+      "unique_tools": [],
+      "duration_seconds": 6.56,
+      "error": ""
+    },
+    {
+      "task_id": "search_extract_4",
+      "category": "search_extract",
+      "config": "full",
+      "success": false,
+      "turns": 2,
+      "tool_calls": [
+        "browser_navigate"
+      ],
+      "planner_injected": [
+        "browser_snapshot",
+        "browser_evaluate",
+        "browser_evaluate",
+        "browser_evaluate",
+        "browser_snapshot",
+        "browser_evaluate"
+      ],
+      "unique_tools": [
+        "browser_navigate",
+        "browser_evaluate",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 19.18,
+      "error": ""
+    },
+    {
+      "task_id": "multi_page_1",
+      "category": "multi_page",
+      "config": "full",
+      "success": true,
+      "turns": 2,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_click",
+        "browser_snapshot"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "browser_click",
+        "browser_navigate",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 14.25,
+      "error": ""
+    }
+  ],
+  "per_task_details": [
+    {
+      "task_id": "search_extract_1",
+      "category": "search_extract",
+      "config": "raw",
+      "success": false,
+      "turns": 2,
+      "tool_calls": [
+        "browser_navigate"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "browser_navigate"
+      ],
+      "duration_seconds": 10.76,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_snapshot",
+          "browser_fill",
+          "browser_press"
+        ],
+        "selected_by_llm": [
+          "browser_navigate"
+        ],
+        "injected_by_planner": [],
+        "matched_count": 1,
+        "required_count": 4,
+        "missing": [
+          "browser_fill",
+          "browser_snapshot",
+          "browser_press"
+        ],
+        "accuracy": 0.25
+      },
+      "error": ""
+    },
+    {
+      "task_id": "search_extract_2",
+      "category": "search_extract",
+      "config": "raw",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [],
+      "planner_injected": [],
+      "unique_tools": [],
+      "duration_seconds": 6.92,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_fill",
+          "browser_press",
+          "browser_snapshot"
+        ],
+        "selected_by_llm": [],
+        "injected_by_planner": [],
+        "matched_count": 0,
+        "required_count": 4,
+        "missing": [
+          "browser_navigate",
+          "browser_fill",
+          "browser_snapshot",
+          "browser_press"
+        ],
+        "accuracy": 0.0
+      },
+      "error": ""
+    },
+    {
+      "task_id": "search_extract_3",
+      "category": "search_extract",
+      "config": "raw",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [],
+      "planner_injected": [],
+      "unique_tools": [],
+      "duration_seconds": 7.3,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_snapshot"
+        ],
+        "selected_by_llm": [],
+        "injected_by_planner": [],
+        "matched_count": 0,
+        "required_count": 2,
+        "missing": [
+          "browser_navigate",
+          "browser_snapshot"
+        ],
+        "accuracy": 0.0
+      },
+      "error": ""
+    },
+    {
+      "task_id": "search_extract_4",
+      "category": "search_extract",
+      "config": "raw",
+      "success": false,
+      "turns": 3,
+      "tool_calls": [
+        "browser_navigate",
+        "web_search"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "web_search",
+        "browser_navigate"
+      ],
+      "duration_seconds": 22.24,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_fill",
+          "browser_press",
+          "browser_snapshot"
+        ],
+        "selected_by_llm": [
+          "browser_navigate"
+        ],
+        "injected_by_planner": [],
+        "matched_count": 1,
+        "required_count": 4,
+        "missing": [
+          "browser_fill",
+          "browser_snapshot",
+          "browser_press"
+        ],
+        "accuracy": 0.25
+      },
+      "error": ""
+    },
+    {
+      "task_id": "multi_page_1",
+      "category": "multi_page",
+      "config": "raw",
+      "success": true,
+      "turns": 4,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_snapshot",
+        "browser_click"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "browser_click",
+        "browser_navigate",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 15.43,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_snapshot",
+          "browser_click"
+        ],
+        "selected_by_llm": [
+          "browser_click",
+          "browser_navigate",
+          "browser_snapshot"
+        ],
+        "injected_by_planner": [],
+        "matched_count": 3,
+        "required_count": 3,
+        "missing": [],
+        "accuracy": 1.0
+      },
+      "error": ""
+    },
+    {
+      "task_id": "search_extract_1",
+      "category": "search_extract",
+      "config": "planner",
+      "success": false,
+      "turns": 2,
+      "tool_calls": [
+        "browser_navigate"
+      ],
+      "planner_injected": [
+        "browser_snapshot",
+        "browser_evaluate",
+        "browser_evaluate",
+        "browser_evaluate",
+        "browser_snapshot",
+        "browser_evaluate"
+      ],
+      "unique_tools": [
+        "browser_navigate",
+        "browser_evaluate",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 9.73,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_snapshot",
+          "browser_fill",
+          "browser_press"
+        ],
+        "selected_by_llm": [
+          "browser_navigate"
+        ],
+        "injected_by_planner": [
+          "browser_snapshot"
+        ],
+        "matched_count": 2,
+        "required_count": 4,
+        "missing": [
+          "browser_fill",
+          "browser_press"
+        ],
+        "accuracy": 0.5
+      },
+      "error": ""
+    },
+    {
+      "task_id": "search_extract_2",
+      "category": "search_extract",
+      "config": "planner",
+      "success": false,
+      "turns": 2,
+      "tool_calls": [
+        "browser_evaluate"
+      ],
+      "planner_injected": [
+        "browser_evaluate",
+        "browser_evaluate",
+        "browser_snapshot",
+        "browser_evaluate",
+        "browser_evaluate"
+      ],
+      "unique_tools": [
+        "browser_evaluate",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 15.55,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_fill",
+          "browser_press",
+          "browser_snapshot"
+        ],
+        "selected_by_llm": [],
+        "injected_by_planner": [
+          "browser_snapshot"
+        ],
+        "matched_count": 1,
+        "required_count": 4,
+        "missing": [
+          "browser_navigate",
+          "browser_fill",
+          "browser_press"
+        ],
+        "accuracy": 0.25
+      },
+      "error": ""
+    },
+    {
+      "task_id": "search_extract_3",
+      "category": "search_extract",
+      "config": "planner",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [],
+      "planner_injected": [],
+      "unique_tools": [],
+      "duration_seconds": 6.91,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_snapshot"
+        ],
+        "selected_by_llm": [],
+        "injected_by_planner": [],
+        "matched_count": 0,
+        "required_count": 2,
+        "missing": [
+          "browser_navigate",
+          "browser_snapshot"
+        ],
+        "accuracy": 0.0
+      },
+      "error": ""
+    },
+    {
+      "task_id": "search_extract_4",
+      "category": "search_extract",
+      "config": "planner",
+      "success": false,
+      "turns": 2,
+      "tool_calls": [
+        "browser_navigate"
+      ],
+      "planner_injected": [
+        "browser_snapshot",
+        "browser_evaluate",
+        "browser_evaluate",
+        "browser_evaluate",
+        "browser_snapshot",
+        "browser_evaluate"
+      ],
+      "unique_tools": [
+        "browser_navigate",
+        "browser_evaluate",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 25.55,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_fill",
+          "browser_press",
+          "browser_snapshot"
+        ],
+        "selected_by_llm": [
+          "browser_navigate"
+        ],
+        "injected_by_planner": [
+          "browser_snapshot"
+        ],
+        "matched_count": 2,
+        "required_count": 4,
+        "missing": [
+          "browser_fill",
+          "browser_press"
+        ],
+        "accuracy": 0.5
+      },
+      "error": ""
+    },
+    {
+      "task_id": "multi_page_1",
+      "category": "multi_page",
+      "config": "planner",
+      "success": true,
+      "turns": 2,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_click",
+        "browser_snapshot"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "browser_click",
+        "browser_navigate",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 14.02,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_snapshot",
+          "browser_click"
+        ],
+        "selected_by_llm": [
+          "browser_click",
+          "browser_navigate",
+          "browser_snapshot"
+        ],
+        "injected_by_planner": [],
+        "matched_count": 3,
+        "required_count": 3,
+        "missing": [],
+        "accuracy": 1.0
+      },
+      "error": ""
+    },
+    {
+      "task_id": "search_extract_1",
+      "category": "search_extract",
+      "config": "full",
+      "success": false,
+      "turns": 2,
+      "tool_calls": [
+        "browser_navigate"
+      ],
+      "planner_injected": [
+        "browser_snapshot",
+        "browser_evaluate",
+        "browser_evaluate",
+        "browser_evaluate",
+        "browser_snapshot",
+        "browser_evaluate"
+      ],
+      "unique_tools": [
+        "browser_navigate",
+        "browser_evaluate",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 10.36,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_snapshot",
+          "browser_fill",
+          "browser_press"
+        ],
+        "selected_by_llm": [
+          "browser_navigate"
+        ],
+        "injected_by_planner": [
+          "browser_snapshot"
+        ],
+        "matched_count": 2,
+        "required_count": 4,
+        "missing": [
+          "browser_fill",
+          "browser_press"
+        ],
+        "accuracy": 0.5
+      },
+      "error": ""
+    },
+    {
+      "task_id": "search_extract_2",
+      "category": "search_extract",
+      "config": "full",
+      "success": false,
+      "turns": 2,
+      "tool_calls": [
+        "browser_evaluate"
+      ],
+      "planner_injected": [
+        "browser_evaluate",
+        "browser_evaluate",
+        "browser_snapshot",
+        "browser_evaluate",
+        "browser_evaluate"
+      ],
+      "unique_tools": [
+        "browser_evaluate",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 14.51,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_fill",
+          "browser_press",
+          "browser_snapshot"
+        ],
+        "selected_by_llm": [],
+        "injected_by_planner": [
+          "browser_snapshot"
+        ],
+        "matched_count": 1,
+        "required_count": 4,
+        "missing": [
+          "browser_navigate",
+          "browser_fill",
+          "browser_press"
+        ],
+        "accuracy": 0.25
+      },
+      "error": ""
+    },
+    {
+      "task_id": "search_extract_3",
+      "category": "search_extract",
+      "config": "full",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [],
+      "planner_injected": [],
+      "unique_tools": [],
+      "duration_seconds": 6.56,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_snapshot"
+        ],
+        "selected_by_llm": [],
+        "injected_by_planner": [],
+        "matched_count": 0,
+        "required_count": 2,
+        "missing": [
+          "browser_navigate",
+          "browser_snapshot"
+        ],
+        "accuracy": 0.0
+      },
+      "error": ""
+    },
+    {
+      "task_id": "search_extract_4",
+      "category": "search_extract",
+      "config": "full",
+      "success": false,
+      "turns": 2,
+      "tool_calls": [
+        "browser_navigate"
+      ],
+      "planner_injected": [
+        "browser_snapshot",
+        "browser_evaluate",
+        "browser_evaluate",
+        "browser_evaluate",
+        "browser_snapshot",
+        "browser_evaluate"
+      ],
+      "unique_tools": [
+        "browser_navigate",
+        "browser_evaluate",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 19.18,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_fill",
+          "browser_press",
+          "browser_snapshot"
+        ],
+        "selected_by_llm": [
+          "browser_navigate"
+        ],
+        "injected_by_planner": [
+          "browser_snapshot"
+        ],
+        "matched_count": 2,
+        "required_count": 4,
+        "missing": [
+          "browser_fill",
+          "browser_press"
+        ],
+        "accuracy": 0.5
+      },
+      "error": ""
+    },
+    {
+      "task_id": "multi_page_1",
+      "category": "multi_page",
+      "config": "full",
+      "success": true,
+      "turns": 2,
+      "tool_calls": [
+        "browser_navigate",
+        "browser_click",
+        "browser_snapshot"
+      ],
+      "planner_injected": [],
+      "unique_tools": [
+        "browser_click",
+        "browser_navigate",
+        "browser_snapshot"
+      ],
+      "duration_seconds": 14.25,
+      "tool_selection": {
+        "required": [
+          "browser_navigate",
+          "browser_snapshot",
+          "browser_click"
+        ],
+        "selected_by_llm": [
+          "browser_click",
+          "browser_navigate",
+          "browser_snapshot"
+        ],
+        "injected_by_planner": [],
+        "matched_count": 3,
+        "required_count": 3,
+        "missing": [],
+        "accuracy": 1.0
+      },
+      "error": ""
+    }
+  ],
+  "summary": {
+    "by_config": {
+      "raw": {
+        "total_tasks": 5,
+        "successes": 1,
+        "success_rate": 0.2,
+        "avg_turns": 2.2,
+        "avg_duration_seconds": 12.53,
+        "avg_tool_selection_accuracy": 0.3,
+        "avg_matched_tools": 1.0,
+        "total_tool_calls": 6,
+        "total_planner_injections": 0,
+        "unique_tools_count": 4,
+        "tool_frequency": {
+          "browser_navigate": 3,
+          "web_search": 1,
+          "browser_snapshot": 1,
+          "browser_click": 1
+        },
+        "errors": []
+      },
+      "planner": {
+        "total_tasks": 5,
+        "successes": 1,
+        "success_rate": 0.2,
+        "avg_turns": 1.8,
+        "avg_duration_seconds": 14.35,
+        "avg_tool_selection_accuracy": 0.45,
+        "avg_matched_tools": 1.6,
+        "total_tool_calls": 6,
+        "total_planner_injections": 17,
+        "unique_tools_count": 4,
+        "tool_frequency": {
+          "browser_evaluate": 13,
+          "browser_snapshot": 6,
+          "browser_navigate": 3,
+          "browser_click": 1
+        },
+        "errors": []
+      },
+      "full": {
+        "total_tasks": 5,
+        "successes": 1,
+        "success_rate": 0.2,
+        "avg_turns": 1.8,
+        "avg_duration_seconds": 12.97,
+        "avg_tool_selection_accuracy": 0.45,
+        "avg_matched_tools": 1.6,
+        "total_tool_calls": 6,
+        "total_planner_injections": 17,
+        "unique_tools_count": 4,
+        "tool_frequency": {
+          "browser_evaluate": 13,
+          "browser_snapshot": 6,
+          "browser_navigate": 3,
+          "browser_click": 1
+        },
+        "errors": []
+      }
+    },
+    "deltas": {
+      "planner": {
+        "delta_success_rate": 0.0,
+        "delta_tool_selection_accuracy": 0.15,
+        "delta_avg_turns": 0.4
+      },
+      "full": {
+        "delta_success_rate": 0.0,
+        "delta_tool_selection_accuracy": 0.15,
+        "delta_avg_turns": 0.4
+      }
+    }
+  }
+}

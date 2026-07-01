@@ -287,9 +287,12 @@ async def benchmark_f2(goal, model=None, ollama_url=None) -> dict:
                             desc, result = await execute_tool_block(block=tb, session_id=wid, owner="dev", context=context)
                             return result
 
-                        result = await _executor.inject_task(plan.template_id, step_name, enforce_step, context=context)
-                        info = _executor.get_task_for_step(plan.template_id, step_name)
-                        tn = info["tool"] if info else step_name
+                        task_info = _executor.get_task_for_step(plan.template_id, step_name)
+                        if task_info:
+                            result = await enforce_step(task_info["tool"], task_info.get("default_args", {}))
+                        else:
+                            result = {"exit_code": 1, "error": f"Unknown step: {step_name}"}
+                        tn = task_info["tool"] if task_info else step_name
                         all_tool_calls.append({"tool": tn, "args": {}, "result": result, "enforced": True})
                         msg = str(result.get("output", result.get("result", json.dumps(result))))[:500]
                         messages.append({"role": "assistant", "content": None, "tool_calls": [{"function": {"name": tn, "arguments": "{}"}, "type": "function"}]})

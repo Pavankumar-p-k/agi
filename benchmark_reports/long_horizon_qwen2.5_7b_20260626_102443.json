@@ -1,0 +1,1104 @@
+{
+  "timestamp": "2026-06-26T04:51:16.492764+00:00",
+  "model": "qwen2.5:7b",
+  "tasks": [
+    {
+      "task_id": "build_test_1",
+      "category": "build_test",
+      "config": "raw",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [],
+      "unique_tools": [],
+      "phases_completed": [],
+      "phases_required": [
+        "build",
+        "test",
+        "repair",
+        "retest"
+      ],
+      "injections": 0,
+      "re_plans": 0,
+      "duration_seconds": 10.62,
+      "error": ""
+    },
+    {
+      "task_id": "build_test_2",
+      "category": "build_test",
+      "config": "raw",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [],
+      "unique_tools": [],
+      "phases_completed": [],
+      "phases_required": [
+        "build",
+        "test",
+        "repair",
+        "retest"
+      ],
+      "injections": 0,
+      "re_plans": 0,
+      "duration_seconds": 10.41,
+      "error": ""
+    },
+    {
+      "task_id": "build_test_3",
+      "category": "build_test",
+      "config": "raw",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [],
+      "unique_tools": [],
+      "phases_completed": [],
+      "phases_required": [
+        "build",
+        "test",
+        "repair",
+        "retest"
+      ],
+      "injections": 0,
+      "re_plans": 0,
+      "duration_seconds": 10.41,
+      "error": ""
+    },
+    {
+      "task_id": "research_synth_1",
+      "category": "research_synth",
+      "config": "raw",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [],
+      "unique_tools": [],
+      "phases_completed": [],
+      "phases_required": [
+        "research",
+        "plan",
+        "deliver"
+      ],
+      "injections": 0,
+      "re_plans": 0,
+      "duration_seconds": 10.04,
+      "error": ""
+    },
+    {
+      "task_id": "research_synth_2",
+      "category": "research_synth",
+      "config": "raw",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [],
+      "unique_tools": [],
+      "phases_completed": [],
+      "phases_required": [
+        "research",
+        "plan",
+        "deliver"
+      ],
+      "injections": 0,
+      "re_plans": 0,
+      "duration_seconds": 10.43,
+      "error": ""
+    },
+    {
+      "task_id": "full_pipeline_1",
+      "category": "full_pipeline",
+      "config": "raw",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [],
+      "unique_tools": [],
+      "phases_completed": [],
+      "phases_required": [
+        "research",
+        "plan",
+        "build",
+        "test",
+        "repair",
+        "retest",
+        "deliver"
+      ],
+      "injections": 0,
+      "re_plans": 0,
+      "duration_seconds": 10.6,
+      "error": ""
+    },
+    {
+      "task_id": "build_test_1",
+      "category": "build_test",
+      "config": "workflow",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [],
+      "unique_tools": [],
+      "phases_completed": [],
+      "phases_required": [
+        "build",
+        "test",
+        "repair",
+        "retest"
+      ],
+      "injections": 0,
+      "re_plans": 0,
+      "duration_seconds": 10.62,
+      "error": ""
+    },
+    {
+      "task_id": "build_test_2",
+      "category": "build_test",
+      "config": "workflow",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [],
+      "unique_tools": [],
+      "phases_completed": [],
+      "phases_required": [
+        "build",
+        "test",
+        "repair",
+        "retest"
+      ],
+      "injections": 0,
+      "re_plans": 0,
+      "duration_seconds": 10.35,
+      "error": ""
+    },
+    {
+      "task_id": "build_test_3",
+      "category": "build_test",
+      "config": "workflow",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [],
+      "unique_tools": [],
+      "phases_completed": [],
+      "phases_required": [
+        "build",
+        "test",
+        "repair",
+        "retest"
+      ],
+      "injections": 0,
+      "re_plans": 0,
+      "duration_seconds": 10.34,
+      "error": ""
+    },
+    {
+      "task_id": "research_synth_1",
+      "category": "research_synth",
+      "config": "workflow",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [],
+      "unique_tools": [],
+      "phases_completed": [],
+      "phases_required": [
+        "research",
+        "plan",
+        "deliver"
+      ],
+      "injections": 0,
+      "re_plans": 0,
+      "duration_seconds": 10.32,
+      "error": ""
+    },
+    {
+      "task_id": "research_synth_2",
+      "category": "research_synth",
+      "config": "workflow",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [],
+      "unique_tools": [],
+      "phases_completed": [],
+      "phases_required": [
+        "research",
+        "plan",
+        "deliver"
+      ],
+      "injections": 0,
+      "re_plans": 0,
+      "duration_seconds": 10.29,
+      "error": ""
+    },
+    {
+      "task_id": "full_pipeline_1",
+      "category": "full_pipeline",
+      "config": "workflow",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [],
+      "unique_tools": [],
+      "phases_completed": [],
+      "phases_required": [
+        "research",
+        "plan",
+        "build",
+        "test",
+        "repair",
+        "retest",
+        "deliver"
+      ],
+      "injections": 0,
+      "re_plans": 0,
+      "duration_seconds": 10.16,
+      "error": ""
+    },
+    {
+      "task_id": "build_test_1",
+      "category": "build_test",
+      "config": "full",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [],
+      "unique_tools": [],
+      "phases_completed": [],
+      "phases_required": [
+        "build",
+        "test",
+        "repair",
+        "retest"
+      ],
+      "injections": 0,
+      "re_plans": 0,
+      "duration_seconds": 10.05,
+      "error": ""
+    },
+    {
+      "task_id": "build_test_2",
+      "category": "build_test",
+      "config": "full",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [],
+      "unique_tools": [],
+      "phases_completed": [],
+      "phases_required": [
+        "build",
+        "test",
+        "repair",
+        "retest"
+      ],
+      "injections": 0,
+      "re_plans": 0,
+      "duration_seconds": 9.99,
+      "error": ""
+    },
+    {
+      "task_id": "build_test_3",
+      "category": "build_test",
+      "config": "full",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [],
+      "unique_tools": [],
+      "phases_completed": [],
+      "phases_required": [
+        "build",
+        "test",
+        "repair",
+        "retest"
+      ],
+      "injections": 0,
+      "re_plans": 0,
+      "duration_seconds": 10.1,
+      "error": ""
+    },
+    {
+      "task_id": "research_synth_1",
+      "category": "research_synth",
+      "config": "full",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [],
+      "unique_tools": [],
+      "phases_completed": [],
+      "phases_required": [
+        "research",
+        "plan",
+        "deliver"
+      ],
+      "injections": 0,
+      "re_plans": 0,
+      "duration_seconds": 10.47,
+      "error": ""
+    },
+    {
+      "task_id": "research_synth_2",
+      "category": "research_synth",
+      "config": "full",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [],
+      "unique_tools": [],
+      "phases_completed": [],
+      "phases_required": [
+        "research",
+        "plan",
+        "deliver"
+      ],
+      "injections": 0,
+      "re_plans": 0,
+      "duration_seconds": 10.4,
+      "error": ""
+    },
+    {
+      "task_id": "full_pipeline_1",
+      "category": "full_pipeline",
+      "config": "full",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [],
+      "unique_tools": [],
+      "phases_completed": [],
+      "phases_required": [
+        "research",
+        "plan",
+        "build",
+        "test",
+        "repair",
+        "retest",
+        "deliver"
+      ],
+      "injections": 0,
+      "re_plans": 0,
+      "duration_seconds": 10.33,
+      "error": ""
+    }
+  ],
+  "per_task_details": [
+    {
+      "task_id": "build_test_1",
+      "category": "build_test",
+      "config": "raw",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [],
+      "unique_tools": [],
+      "phases_completed": [],
+      "phases_required": [
+        "build",
+        "test",
+        "repair",
+        "retest"
+      ],
+      "phase_completion": {
+        "required_phases": [
+          "build",
+          "test",
+          "repair",
+          "retest"
+        ],
+        "completed_phases": [],
+        "missing_phases": [
+          "retest",
+          "test",
+          "build",
+          "repair"
+        ],
+        "completion_rate": 0.0,
+        "min_met": false
+      },
+      "injections": 0,
+      "re_plans": 0,
+      "duration_seconds": 10.62,
+      "error": ""
+    },
+    {
+      "task_id": "build_test_2",
+      "category": "build_test",
+      "config": "raw",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [],
+      "unique_tools": [],
+      "phases_completed": [],
+      "phases_required": [
+        "build",
+        "test",
+        "repair",
+        "retest"
+      ],
+      "phase_completion": {
+        "required_phases": [
+          "build",
+          "test",
+          "repair",
+          "retest"
+        ],
+        "completed_phases": [],
+        "missing_phases": [
+          "retest",
+          "test",
+          "build",
+          "repair"
+        ],
+        "completion_rate": 0.0,
+        "min_met": false
+      },
+      "injections": 0,
+      "re_plans": 0,
+      "duration_seconds": 10.41,
+      "error": ""
+    },
+    {
+      "task_id": "build_test_3",
+      "category": "build_test",
+      "config": "raw",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [],
+      "unique_tools": [],
+      "phases_completed": [],
+      "phases_required": [
+        "build",
+        "test",
+        "repair",
+        "retest"
+      ],
+      "phase_completion": {
+        "required_phases": [
+          "build",
+          "test",
+          "repair",
+          "retest"
+        ],
+        "completed_phases": [],
+        "missing_phases": [
+          "retest",
+          "test",
+          "build",
+          "repair"
+        ],
+        "completion_rate": 0.0,
+        "min_met": false
+      },
+      "injections": 0,
+      "re_plans": 0,
+      "duration_seconds": 10.41,
+      "error": ""
+    },
+    {
+      "task_id": "research_synth_1",
+      "category": "research_synth",
+      "config": "raw",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [],
+      "unique_tools": [],
+      "phases_completed": [],
+      "phases_required": [
+        "research",
+        "plan",
+        "deliver"
+      ],
+      "phase_completion": {
+        "required_phases": [
+          "research",
+          "plan",
+          "deliver"
+        ],
+        "completed_phases": [],
+        "missing_phases": [
+          "research",
+          "plan",
+          "deliver"
+        ],
+        "completion_rate": 0.0,
+        "min_met": false
+      },
+      "injections": 0,
+      "re_plans": 0,
+      "duration_seconds": 10.04,
+      "error": ""
+    },
+    {
+      "task_id": "research_synth_2",
+      "category": "research_synth",
+      "config": "raw",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [],
+      "unique_tools": [],
+      "phases_completed": [],
+      "phases_required": [
+        "research",
+        "plan",
+        "deliver"
+      ],
+      "phase_completion": {
+        "required_phases": [
+          "research",
+          "plan",
+          "deliver"
+        ],
+        "completed_phases": [],
+        "missing_phases": [
+          "research",
+          "plan",
+          "deliver"
+        ],
+        "completion_rate": 0.0,
+        "min_met": false
+      },
+      "injections": 0,
+      "re_plans": 0,
+      "duration_seconds": 10.43,
+      "error": ""
+    },
+    {
+      "task_id": "full_pipeline_1",
+      "category": "full_pipeline",
+      "config": "raw",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [],
+      "unique_tools": [],
+      "phases_completed": [],
+      "phases_required": [
+        "research",
+        "plan",
+        "build",
+        "test",
+        "repair",
+        "retest",
+        "deliver"
+      ],
+      "phase_completion": {
+        "required_phases": [
+          "research",
+          "plan",
+          "build",
+          "test",
+          "repair",
+          "retest",
+          "deliver"
+        ],
+        "completed_phases": [],
+        "missing_phases": [
+          "research",
+          "retest",
+          "plan",
+          "build",
+          "deliver",
+          "test",
+          "repair"
+        ],
+        "completion_rate": 0.0,
+        "min_met": false
+      },
+      "injections": 0,
+      "re_plans": 0,
+      "duration_seconds": 10.6,
+      "error": ""
+    },
+    {
+      "task_id": "build_test_1",
+      "category": "build_test",
+      "config": "workflow",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [],
+      "unique_tools": [],
+      "phases_completed": [],
+      "phases_required": [
+        "build",
+        "test",
+        "repair",
+        "retest"
+      ],
+      "phase_completion": {
+        "required_phases": [
+          "build",
+          "test",
+          "repair",
+          "retest"
+        ],
+        "completed_phases": [],
+        "missing_phases": [
+          "retest",
+          "test",
+          "build",
+          "repair"
+        ],
+        "completion_rate": 0.0,
+        "min_met": false
+      },
+      "injections": 0,
+      "re_plans": 0,
+      "duration_seconds": 10.62,
+      "error": ""
+    },
+    {
+      "task_id": "build_test_2",
+      "category": "build_test",
+      "config": "workflow",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [],
+      "unique_tools": [],
+      "phases_completed": [],
+      "phases_required": [
+        "build",
+        "test",
+        "repair",
+        "retest"
+      ],
+      "phase_completion": {
+        "required_phases": [
+          "build",
+          "test",
+          "repair",
+          "retest"
+        ],
+        "completed_phases": [],
+        "missing_phases": [
+          "retest",
+          "test",
+          "build",
+          "repair"
+        ],
+        "completion_rate": 0.0,
+        "min_met": false
+      },
+      "injections": 0,
+      "re_plans": 0,
+      "duration_seconds": 10.35,
+      "error": ""
+    },
+    {
+      "task_id": "build_test_3",
+      "category": "build_test",
+      "config": "workflow",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [],
+      "unique_tools": [],
+      "phases_completed": [],
+      "phases_required": [
+        "build",
+        "test",
+        "repair",
+        "retest"
+      ],
+      "phase_completion": {
+        "required_phases": [
+          "build",
+          "test",
+          "repair",
+          "retest"
+        ],
+        "completed_phases": [],
+        "missing_phases": [
+          "retest",
+          "test",
+          "build",
+          "repair"
+        ],
+        "completion_rate": 0.0,
+        "min_met": false
+      },
+      "injections": 0,
+      "re_plans": 0,
+      "duration_seconds": 10.34,
+      "error": ""
+    },
+    {
+      "task_id": "research_synth_1",
+      "category": "research_synth",
+      "config": "workflow",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [],
+      "unique_tools": [],
+      "phases_completed": [],
+      "phases_required": [
+        "research",
+        "plan",
+        "deliver"
+      ],
+      "phase_completion": {
+        "required_phases": [
+          "research",
+          "plan",
+          "deliver"
+        ],
+        "completed_phases": [],
+        "missing_phases": [
+          "research",
+          "plan",
+          "deliver"
+        ],
+        "completion_rate": 0.0,
+        "min_met": false
+      },
+      "injections": 0,
+      "re_plans": 0,
+      "duration_seconds": 10.32,
+      "error": ""
+    },
+    {
+      "task_id": "research_synth_2",
+      "category": "research_synth",
+      "config": "workflow",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [],
+      "unique_tools": [],
+      "phases_completed": [],
+      "phases_required": [
+        "research",
+        "plan",
+        "deliver"
+      ],
+      "phase_completion": {
+        "required_phases": [
+          "research",
+          "plan",
+          "deliver"
+        ],
+        "completed_phases": [],
+        "missing_phases": [
+          "research",
+          "plan",
+          "deliver"
+        ],
+        "completion_rate": 0.0,
+        "min_met": false
+      },
+      "injections": 0,
+      "re_plans": 0,
+      "duration_seconds": 10.29,
+      "error": ""
+    },
+    {
+      "task_id": "full_pipeline_1",
+      "category": "full_pipeline",
+      "config": "workflow",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [],
+      "unique_tools": [],
+      "phases_completed": [],
+      "phases_required": [
+        "research",
+        "plan",
+        "build",
+        "test",
+        "repair",
+        "retest",
+        "deliver"
+      ],
+      "phase_completion": {
+        "required_phases": [
+          "research",
+          "plan",
+          "build",
+          "test",
+          "repair",
+          "retest",
+          "deliver"
+        ],
+        "completed_phases": [],
+        "missing_phases": [
+          "research",
+          "retest",
+          "plan",
+          "build",
+          "deliver",
+          "test",
+          "repair"
+        ],
+        "completion_rate": 0.0,
+        "min_met": false
+      },
+      "injections": 0,
+      "re_plans": 0,
+      "duration_seconds": 10.16,
+      "error": ""
+    },
+    {
+      "task_id": "build_test_1",
+      "category": "build_test",
+      "config": "full",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [],
+      "unique_tools": [],
+      "phases_completed": [],
+      "phases_required": [
+        "build",
+        "test",
+        "repair",
+        "retest"
+      ],
+      "phase_completion": {
+        "required_phases": [
+          "build",
+          "test",
+          "repair",
+          "retest"
+        ],
+        "completed_phases": [],
+        "missing_phases": [
+          "retest",
+          "test",
+          "build",
+          "repair"
+        ],
+        "completion_rate": 0.0,
+        "min_met": false
+      },
+      "injections": 0,
+      "re_plans": 0,
+      "duration_seconds": 10.05,
+      "error": ""
+    },
+    {
+      "task_id": "build_test_2",
+      "category": "build_test",
+      "config": "full",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [],
+      "unique_tools": [],
+      "phases_completed": [],
+      "phases_required": [
+        "build",
+        "test",
+        "repair",
+        "retest"
+      ],
+      "phase_completion": {
+        "required_phases": [
+          "build",
+          "test",
+          "repair",
+          "retest"
+        ],
+        "completed_phases": [],
+        "missing_phases": [
+          "retest",
+          "test",
+          "build",
+          "repair"
+        ],
+        "completion_rate": 0.0,
+        "min_met": false
+      },
+      "injections": 0,
+      "re_plans": 0,
+      "duration_seconds": 9.99,
+      "error": ""
+    },
+    {
+      "task_id": "build_test_3",
+      "category": "build_test",
+      "config": "full",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [],
+      "unique_tools": [],
+      "phases_completed": [],
+      "phases_required": [
+        "build",
+        "test",
+        "repair",
+        "retest"
+      ],
+      "phase_completion": {
+        "required_phases": [
+          "build",
+          "test",
+          "repair",
+          "retest"
+        ],
+        "completed_phases": [],
+        "missing_phases": [
+          "retest",
+          "test",
+          "build",
+          "repair"
+        ],
+        "completion_rate": 0.0,
+        "min_met": false
+      },
+      "injections": 0,
+      "re_plans": 0,
+      "duration_seconds": 10.1,
+      "error": ""
+    },
+    {
+      "task_id": "research_synth_1",
+      "category": "research_synth",
+      "config": "full",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [],
+      "unique_tools": [],
+      "phases_completed": [],
+      "phases_required": [
+        "research",
+        "plan",
+        "deliver"
+      ],
+      "phase_completion": {
+        "required_phases": [
+          "research",
+          "plan",
+          "deliver"
+        ],
+        "completed_phases": [],
+        "missing_phases": [
+          "research",
+          "plan",
+          "deliver"
+        ],
+        "completion_rate": 0.0,
+        "min_met": false
+      },
+      "injections": 0,
+      "re_plans": 0,
+      "duration_seconds": 10.47,
+      "error": ""
+    },
+    {
+      "task_id": "research_synth_2",
+      "category": "research_synth",
+      "config": "full",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [],
+      "unique_tools": [],
+      "phases_completed": [],
+      "phases_required": [
+        "research",
+        "plan",
+        "deliver"
+      ],
+      "phase_completion": {
+        "required_phases": [
+          "research",
+          "plan",
+          "deliver"
+        ],
+        "completed_phases": [],
+        "missing_phases": [
+          "research",
+          "plan",
+          "deliver"
+        ],
+        "completion_rate": 0.0,
+        "min_met": false
+      },
+      "injections": 0,
+      "re_plans": 0,
+      "duration_seconds": 10.4,
+      "error": ""
+    },
+    {
+      "task_id": "full_pipeline_1",
+      "category": "full_pipeline",
+      "config": "full",
+      "success": false,
+      "turns": 1,
+      "tool_calls": [],
+      "unique_tools": [],
+      "phases_completed": [],
+      "phases_required": [
+        "research",
+        "plan",
+        "build",
+        "test",
+        "repair",
+        "retest",
+        "deliver"
+      ],
+      "phase_completion": {
+        "required_phases": [
+          "research",
+          "plan",
+          "build",
+          "test",
+          "repair",
+          "retest",
+          "deliver"
+        ],
+        "completed_phases": [],
+        "missing_phases": [
+          "research",
+          "retest",
+          "plan",
+          "build",
+          "deliver",
+          "test",
+          "repair"
+        ],
+        "completion_rate": 0.0,
+        "min_met": false
+      },
+      "injections": 0,
+      "re_plans": 0,
+      "duration_seconds": 10.33,
+      "error": ""
+    }
+  ],
+  "summary": {
+    "by_config": {
+      "raw": {
+        "total_tasks": 6,
+        "successes": 0,
+        "success_rate": 0.0,
+        "avg_turns": 1.0,
+        "avg_duration_seconds": 10.42,
+        "phase_completion_rate": 0.0,
+        "total_phases_completed": 0,
+        "total_phases_required": 25,
+        "total_injections": 0,
+        "total_replans": 0,
+        "tools_by_frequency": {},
+        "errors": []
+      },
+      "workflow": {
+        "total_tasks": 6,
+        "successes": 0,
+        "success_rate": 0.0,
+        "avg_turns": 1.0,
+        "avg_duration_seconds": 10.35,
+        "phase_completion_rate": 0.0,
+        "total_phases_completed": 0,
+        "total_phases_required": 25,
+        "total_injections": 0,
+        "total_replans": 0,
+        "tools_by_frequency": {},
+        "errors": []
+      },
+      "full": {
+        "total_tasks": 6,
+        "successes": 0,
+        "success_rate": 0.0,
+        "avg_turns": 1.0,
+        "avg_duration_seconds": 10.22,
+        "phase_completion_rate": 0.0,
+        "total_phases_completed": 0,
+        "total_phases_required": 25,
+        "total_injections": 0,
+        "total_replans": 0,
+        "tools_by_frequency": {},
+        "errors": []
+      }
+    },
+    "deltas": {
+      "workflow": {
+        "delta_success_rate": 0.0,
+        "delta_phase_completion": 0.0,
+        "delta_avg_turns": 0.0
+      },
+      "full": {
+        "delta_success_rate": 0.0,
+        "delta_phase_completion": 0.0,
+        "delta_avg_turns": 0.0
+      }
+    }
+  }
+}

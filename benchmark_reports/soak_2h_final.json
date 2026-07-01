@@ -1,0 +1,1029 @@
+{
+  "benchmark": "soak",
+  "status": "PASS",
+  "duration_seconds": 7200.101132631302,
+  "total_samples": 1382,
+  "warmup_samples": 138,
+  "peak_memory_rss_mb": 29.00390625,
+  "peak_cpu": 14.3,
+  "max_task_count": 2,
+  "max_subscriber_count": 60,
+  "avg_poll_latency_ms": 85.67371230194534,
+  "max_poll_latency_ms": 785.5098247528076,
+  "median_poll_latency_ms": 33.13088417053223,
+  "total_exceptions": 0,
+  "recovery_events": 36,
+  "threshold_failures": [],
+  "exercises": [
+    {
+      "type": "open_subscribers",
+      "timestamp": 1782710694.3130884,
+      "detail": "opened 5 subscribers (total: 5)",
+      "success": true
+    },
+    {
+      "type": "open_subscribers",
+      "timestamp": 1782710724.3348927,
+      "detail": "opened 5 subscribers (total: 10)",
+      "success": true
+    },
+    {
+      "type": "open_subscribers",
+      "timestamp": 1782710754.370121,
+      "detail": "opened 5 subscribers (total: 15)",
+      "success": true
+    },
+    {
+      "type": "open_subscribers",
+      "timestamp": 1782710784.4418972,
+      "detail": "opened 5 subscribers (total: 20)",
+      "success": true
+    },
+    {
+      "type": "open_subscribers",
+      "timestamp": 1782710814.5292423,
+      "detail": "opened 5 subscribers (total: 25)",
+      "success": true
+    },
+    {
+      "type": "open_subscribers",
+      "timestamp": 1782710844.6064868,
+      "detail": "opened 5 subscribers (total: 30)",
+      "success": true
+    },
+    {
+      "type": "open_subscribers",
+      "timestamp": 1782710874.6676526,
+      "detail": "opened 5 subscribers (total: 35)",
+      "success": true
+    },
+    {
+      "type": "open_subscribers",
+      "timestamp": 1782710904.6827497,
+      "detail": "opened 5 subscribers (total: 40)",
+      "success": true
+    },
+    {
+      "type": "open_subscribers",
+      "timestamp": 1782710934.7259462,
+      "detail": "opened 5 subscribers (total: 45)",
+      "success": true
+    },
+    {
+      "type": "open_subscribers",
+      "timestamp": 1782710964.813902,
+      "detail": "opened 5 subscribers (total: 50)",
+      "success": true
+    },
+    {
+      "type": "open_subscribers",
+      "timestamp": 1782710994.8999398,
+      "detail": "opened 5 subscribers (total: 55)",
+      "success": true
+    },
+    {
+      "type": "open_subscribers",
+      "timestamp": 1782711024.9675305,
+      "detail": "opened 5 subscribers (total: 60)",
+      "success": true
+    },
+    {
+      "type": "backend_fail",
+      "timestamp": 1782712136.9513607,
+      "detail": "backend failing for 10s",
+      "success": true
+    },
+    {
+      "type": "backend_fail",
+      "timestamp": 1782712167.0140293,
+      "detail": "backend failing for 10s",
+      "success": true
+    },
+    {
+      "type": "backend_fail",
+      "timestamp": 1782712197.2312179,
+      "detail": "backend failing for 10s",
+      "success": true
+    },
+    {
+      "type": "backend_fail",
+      "timestamp": 1782712227.255241,
+      "detail": "backend failing for 10s",
+      "success": true
+    },
+    {
+      "type": "backend_fail",
+      "timestamp": 1782712257.3224537,
+      "detail": "backend failing for 10s",
+      "success": true
+    },
+    {
+      "type": "backend_fail",
+      "timestamp": 1782712287.357073,
+      "detail": "backend failing for 10s",
+      "success": true
+    },
+    {
+      "type": "backend_fail",
+      "timestamp": 1782712317.4297018,
+      "detail": "backend failing for 10s",
+      "success": true
+    },
+    {
+      "type": "backend_fail",
+      "timestamp": 1782712347.5317268,
+      "detail": "backend failing for 10s",
+      "success": true
+    },
+    {
+      "type": "backend_fail",
+      "timestamp": 1782712377.560451,
+      "detail": "backend failing for 10s",
+      "success": true
+    },
+    {
+      "type": "backend_fail",
+      "timestamp": 1782712407.65438,
+      "detail": "backend failing for 10s",
+      "success": true
+    },
+    {
+      "type": "backend_fail",
+      "timestamp": 1782712437.722876,
+      "detail": "backend failing for 10s",
+      "success": true
+    },
+    {
+      "type": "backend_fail",
+      "timestamp": 1782712467.8151052,
+      "detail": "backend failing for 10s",
+      "success": true
+    },
+    {
+      "type": "backend_restore",
+      "timestamp": 1782712858.4803455,
+      "detail": "backend restored (fail_until cleared)",
+      "success": true
+    },
+    {
+      "type": "backend_restore",
+      "timestamp": 1782712888.5427876,
+      "detail": "backend restored (fail_until cleared)",
+      "success": true
+    },
+    {
+      "type": "backend_restore",
+      "timestamp": 1782712918.5641105,
+      "detail": "backend restored (fail_until cleared)",
+      "success": true
+    },
+    {
+      "type": "backend_restore",
+      "timestamp": 1782712948.6167173,
+      "detail": "backend restored (fail_until cleared)",
+      "success": true
+    },
+    {
+      "type": "backend_restore",
+      "timestamp": 1782712978.7150383,
+      "detail": "backend restored (fail_until cleared)",
+      "success": true
+    },
+    {
+      "type": "backend_restore",
+      "timestamp": 1782713008.7341654,
+      "detail": "backend restored (fail_until cleared)",
+      "success": true
+    },
+    {
+      "type": "backend_restore",
+      "timestamp": 1782713038.7795656,
+      "detail": "backend restored (fail_until cleared)",
+      "success": true
+    },
+    {
+      "type": "backend_restore",
+      "timestamp": 1782713068.863448,
+      "detail": "backend restored (fail_until cleared)",
+      "success": true
+    },
+    {
+      "type": "backend_restore",
+      "timestamp": 1782713098.9359736,
+      "detail": "backend restored (fail_until cleared)",
+      "success": true
+    },
+    {
+      "type": "backend_restore",
+      "timestamp": 1782713129.0062764,
+      "detail": "backend restored (fail_until cleared)",
+      "success": true
+    },
+    {
+      "type": "backend_restore",
+      "timestamp": 1782713159.078425,
+      "detail": "backend restored (fail_until cleared)",
+      "success": true
+    },
+    {
+      "type": "backend_restore",
+      "timestamp": 1782713189.1237075,
+      "detail": "backend restored (fail_until cleared)",
+      "success": true
+    },
+    {
+      "type": "backend_restore",
+      "timestamp": 1782713219.1876059,
+      "detail": "backend restored (fail_until cleared)",
+      "success": true
+    },
+    {
+      "type": "backend_restore",
+      "timestamp": 1782713249.2008612,
+      "detail": "backend restored (fail_until cleared)",
+      "success": true
+    },
+    {
+      "type": "backend_restore",
+      "timestamp": 1782713279.3094504,
+      "detail": "backend restored (fail_until cleared)",
+      "success": true
+    },
+    {
+      "type": "backend_restore",
+      "timestamp": 1782713309.34079,
+      "detail": "backend restored (fail_until cleared)",
+      "success": true
+    },
+    {
+      "type": "backend_restore",
+      "timestamp": 1782713339.3988326,
+      "detail": "backend restored (fail_until cleared)",
+      "success": true
+    },
+    {
+      "type": "backend_restore",
+      "timestamp": 1782713369.4490492,
+      "detail": "backend restored (fail_until cleared)",
+      "success": true
+    },
+    {
+      "type": "backend_restore",
+      "timestamp": 1782713399.5440464,
+      "detail": "backend restored (fail_until cleared)",
+      "success": true
+    },
+    {
+      "type": "backend_restore",
+      "timestamp": 1782713429.560433,
+      "detail": "backend restored (fail_until cleared)",
+      "success": true
+    },
+    {
+      "type": "backend_restore",
+      "timestamp": 1782713459.6632307,
+      "detail": "backend restored (fail_until cleared)",
+      "success": true
+    },
+    {
+      "type": "backend_restore",
+      "timestamp": 1782713489.7352965,
+      "detail": "backend restored (fail_until cleared)",
+      "success": true
+    },
+    {
+      "type": "backend_restore",
+      "timestamp": 1782713519.775167,
+      "detail": "backend restored (fail_until cleared)",
+      "success": true
+    },
+    {
+      "type": "backend_restore",
+      "timestamp": 1782713549.8336372,
+      "detail": "backend restored (fail_until cleared)",
+      "success": true
+    },
+    {
+      "type": "close_subscribers",
+      "timestamp": 1782713579.8476365,
+      "detail": "closed 60 subscribers (total: 0)",
+      "success": true
+    },
+    {
+      "type": "subscriber_burst",
+      "timestamp": 1782713579.9590015,
+      "detail": "50 subscribers opened/closed",
+      "success": true
+    },
+    {
+      "type": "close_subscribers",
+      "timestamp": 1782713610.0419216,
+      "detail": "closed 0 subscribers (total: 0)",
+      "success": true
+    },
+    {
+      "type": "subscriber_burst",
+      "timestamp": 1782713610.1525874,
+      "detail": "50 subscribers opened/closed",
+      "success": true
+    },
+    {
+      "type": "close_subscribers",
+      "timestamp": 1782713640.1830726,
+      "detail": "closed 0 subscribers (total: 0)",
+      "success": true
+    },
+    {
+      "type": "subscriber_burst",
+      "timestamp": 1782713640.2972925,
+      "detail": "50 subscribers opened/closed",
+      "success": true
+    },
+    {
+      "type": "close_subscribers",
+      "timestamp": 1782713670.3305278,
+      "detail": "closed 0 subscribers (total: 0)",
+      "success": true
+    },
+    {
+      "type": "subscriber_burst",
+      "timestamp": 1782713670.4399137,
+      "detail": "50 subscribers opened/closed",
+      "success": true
+    },
+    {
+      "type": "close_subscribers",
+      "timestamp": 1782713700.483401,
+      "detail": "closed 0 subscribers (total: 0)",
+      "success": true
+    },
+    {
+      "type": "subscriber_burst",
+      "timestamp": 1782713700.5942943,
+      "detail": "50 subscribers opened/closed",
+      "success": true
+    },
+    {
+      "type": "close_subscribers",
+      "timestamp": 1782713730.7027776,
+      "detail": "closed 0 subscribers (total: 0)",
+      "success": true
+    },
+    {
+      "type": "subscriber_burst",
+      "timestamp": 1782713730.814447,
+      "detail": "50 subscribers opened/closed",
+      "success": true
+    },
+    {
+      "type": "close_subscribers",
+      "timestamp": 1782713760.897788,
+      "detail": "closed 0 subscribers (total: 0)",
+      "success": true
+    },
+    {
+      "type": "subscriber_burst",
+      "timestamp": 1782713761.008957,
+      "detail": "50 subscribers opened/closed",
+      "success": true
+    },
+    {
+      "type": "close_subscribers",
+      "timestamp": 1782713791.038483,
+      "detail": "closed 0 subscribers (total: 0)",
+      "success": true
+    },
+    {
+      "type": "subscriber_burst",
+      "timestamp": 1782713791.1490974,
+      "detail": "50 subscribers opened/closed",
+      "success": true
+    },
+    {
+      "type": "close_subscribers",
+      "timestamp": 1782713821.2231886,
+      "detail": "closed 0 subscribers (total: 0)",
+      "success": true
+    },
+    {
+      "type": "subscriber_burst",
+      "timestamp": 1782713821.3341954,
+      "detail": "50 subscribers opened/closed",
+      "success": true
+    },
+    {
+      "type": "close_subscribers",
+      "timestamp": 1782713851.3414645,
+      "detail": "closed 0 subscribers (total: 0)",
+      "success": true
+    },
+    {
+      "type": "subscriber_burst",
+      "timestamp": 1782713851.453379,
+      "detail": "50 subscribers opened/closed",
+      "success": true
+    },
+    {
+      "type": "close_subscribers",
+      "timestamp": 1782713881.4762938,
+      "detail": "closed 0 subscribers (total: 0)",
+      "success": true
+    },
+    {
+      "type": "subscriber_burst",
+      "timestamp": 1782713881.5892653,
+      "detail": "50 subscribers opened/closed",
+      "success": true
+    },
+    {
+      "type": "close_subscribers",
+      "timestamp": 1782713911.6821418,
+      "detail": "closed 0 subscribers (total: 0)",
+      "success": true
+    },
+    {
+      "type": "subscriber_burst",
+      "timestamp": 1782713911.7931979,
+      "detail": "50 subscribers opened/closed",
+      "success": true
+    },
+    {
+      "type": "open_subscribers",
+      "timestamp": 1782713941.8395066,
+      "detail": "opened 5 subscribers (total: 5)",
+      "success": true
+    },
+    {
+      "type": "open_subscribers",
+      "timestamp": 1782713971.9357376,
+      "detail": "opened 5 subscribers (total: 10)",
+      "success": true
+    },
+    {
+      "type": "open_subscribers",
+      "timestamp": 1782714002.0051308,
+      "detail": "opened 5 subscribers (total: 15)",
+      "success": true
+    },
+    {
+      "type": "open_subscribers",
+      "timestamp": 1782714032.0928438,
+      "detail": "opened 5 subscribers (total: 20)",
+      "success": true
+    },
+    {
+      "type": "open_subscribers",
+      "timestamp": 1782714062.1746364,
+      "detail": "opened 5 subscribers (total: 25)",
+      "success": true
+    },
+    {
+      "type": "open_subscribers",
+      "timestamp": 1782714092.2047055,
+      "detail": "opened 5 subscribers (total: 30)",
+      "success": true
+    },
+    {
+      "type": "open_subscribers",
+      "timestamp": 1782714122.2453818,
+      "detail": "opened 5 subscribers (total: 35)",
+      "success": true
+    },
+    {
+      "type": "open_subscribers",
+      "timestamp": 1782714152.311974,
+      "detail": "opened 5 subscribers (total: 40)",
+      "success": true
+    },
+    {
+      "type": "open_subscribers",
+      "timestamp": 1782714182.3784602,
+      "detail": "opened 5 subscribers (total: 45)",
+      "success": true
+    },
+    {
+      "type": "open_subscribers",
+      "timestamp": 1782714212.4527352,
+      "detail": "opened 5 subscribers (total: 50)",
+      "success": true
+    },
+    {
+      "type": "open_subscribers",
+      "timestamp": 1782714242.485697,
+      "detail": "opened 5 subscribers (total: 55)",
+      "success": true
+    },
+    {
+      "type": "open_subscribers",
+      "timestamp": 1782714272.486114,
+      "detail": "opened 5 subscribers (total: 60)",
+      "success": true
+    },
+    {
+      "type": "high_latency",
+      "timestamp": 1782715024.121445,
+      "detail": "latency set to 500ms",
+      "success": true
+    },
+    {
+      "type": "high_latency",
+      "timestamp": 1782715054.1215677,
+      "detail": "latency set to 500ms",
+      "success": true
+    },
+    {
+      "type": "high_latency",
+      "timestamp": 1782715084.22341,
+      "detail": "latency set to 500ms",
+      "success": true
+    },
+    {
+      "type": "high_latency",
+      "timestamp": 1782715114.2821348,
+      "detail": "latency set to 500ms",
+      "success": true
+    },
+    {
+      "type": "high_latency",
+      "timestamp": 1782715144.3801408,
+      "detail": "latency set to 500ms",
+      "success": true
+    },
+    {
+      "type": "high_latency",
+      "timestamp": 1782715174.451164,
+      "detail": "latency set to 500ms",
+      "success": true
+    },
+    {
+      "type": "high_latency",
+      "timestamp": 1782715204.5010002,
+      "detail": "latency set to 500ms",
+      "success": true
+    },
+    {
+      "type": "high_latency",
+      "timestamp": 1782715234.5704813,
+      "detail": "latency set to 500ms",
+      "success": true
+    },
+    {
+      "type": "high_latency",
+      "timestamp": 1782715265.357599,
+      "detail": "latency set to 500ms",
+      "success": true
+    },
+    {
+      "type": "high_latency",
+      "timestamp": 1782715295.3789437,
+      "detail": "latency set to 500ms",
+      "success": true
+    },
+    {
+      "type": "high_latency",
+      "timestamp": 1782715325.430228,
+      "detail": "latency set to 500ms",
+      "success": true
+    },
+    {
+      "type": "high_latency",
+      "timestamp": 1782715355.4403987,
+      "detail": "latency set to 500ms",
+      "success": true
+    },
+    {
+      "type": "big_cache",
+      "timestamp": 1782715385.4920573,
+      "detail": "inflated cache to 500 activities",
+      "success": true
+    },
+    {
+      "type": "big_cache",
+      "timestamp": 1782715415.5498629,
+      "detail": "inflated cache to 500 activities",
+      "success": true
+    },
+    {
+      "type": "big_cache",
+      "timestamp": 1782715445.624806,
+      "detail": "inflated cache to 500 activities",
+      "success": true
+    },
+    {
+      "type": "big_cache",
+      "timestamp": 1782715475.7187169,
+      "detail": "inflated cache to 500 activities",
+      "success": true
+    },
+    {
+      "type": "big_cache",
+      "timestamp": 1782715505.768608,
+      "detail": "inflated cache to 500 activities",
+      "success": true
+    },
+    {
+      "type": "big_cache",
+      "timestamp": 1782715535.7950404,
+      "detail": "inflated cache to 500 activities",
+      "success": true
+    },
+    {
+      "type": "big_cache",
+      "timestamp": 1782715565.8290553,
+      "detail": "inflated cache to 500 activities",
+      "success": true
+    },
+    {
+      "type": "big_cache",
+      "timestamp": 1782715595.915573,
+      "detail": "inflated cache to 500 activities",
+      "success": true
+    },
+    {
+      "type": "big_cache",
+      "timestamp": 1782715625.9815416,
+      "detail": "inflated cache to 500 activities",
+      "success": true
+    },
+    {
+      "type": "big_cache",
+      "timestamp": 1782715655.9938374,
+      "detail": "inflated cache to 500 activities",
+      "success": true
+    },
+    {
+      "type": "big_cache",
+      "timestamp": 1782715686.0058212,
+      "detail": "inflated cache to 500 activities",
+      "success": true
+    },
+    {
+      "type": "big_cache",
+      "timestamp": 1782715716.1144366,
+      "detail": "inflated cache to 500 activities",
+      "success": true
+    },
+    {
+      "type": "normal_latency",
+      "timestamp": 1782715746.158915,
+      "detail": "latency restored to 10ms",
+      "success": true
+    },
+    {
+      "type": "empty_cache",
+      "timestamp": 1782715746.158915,
+      "detail": "emptied cache",
+      "success": true
+    },
+    {
+      "type": "normal_latency",
+      "timestamp": 1782715776.1840882,
+      "detail": "latency restored to 10ms",
+      "success": true
+    },
+    {
+      "type": "empty_cache",
+      "timestamp": 1782715776.1840882,
+      "detail": "emptied cache",
+      "success": true
+    },
+    {
+      "type": "normal_latency",
+      "timestamp": 1782715806.2503862,
+      "detail": "latency restored to 10ms",
+      "success": true
+    },
+    {
+      "type": "empty_cache",
+      "timestamp": 1782715806.2503862,
+      "detail": "emptied cache",
+      "success": true
+    },
+    {
+      "type": "normal_latency",
+      "timestamp": 1782715836.301286,
+      "detail": "latency restored to 10ms",
+      "success": true
+    },
+    {
+      "type": "empty_cache",
+      "timestamp": 1782715836.3025918,
+      "detail": "emptied cache",
+      "success": true
+    },
+    {
+      "type": "normal_latency",
+      "timestamp": 1782715866.3148022,
+      "detail": "latency restored to 10ms",
+      "success": true
+    },
+    {
+      "type": "empty_cache",
+      "timestamp": 1782715866.3148022,
+      "detail": "emptied cache",
+      "success": true
+    },
+    {
+      "type": "normal_latency",
+      "timestamp": 1782715896.4138725,
+      "detail": "latency restored to 10ms",
+      "success": true
+    },
+    {
+      "type": "empty_cache",
+      "timestamp": 1782715896.4138725,
+      "detail": "emptied cache",
+      "success": true
+    },
+    {
+      "type": "normal_latency",
+      "timestamp": 1782715926.472904,
+      "detail": "latency restored to 10ms",
+      "success": true
+    },
+    {
+      "type": "empty_cache",
+      "timestamp": 1782715926.4749138,
+      "detail": "emptied cache",
+      "success": true
+    },
+    {
+      "type": "normal_latency",
+      "timestamp": 1782715956.4769883,
+      "detail": "latency restored to 10ms",
+      "success": true
+    },
+    {
+      "type": "empty_cache",
+      "timestamp": 1782715956.4802842,
+      "detail": "emptied cache",
+      "success": true
+    },
+    {
+      "type": "normal_latency",
+      "timestamp": 1782715986.551358,
+      "detail": "latency restored to 10ms",
+      "success": true
+    },
+    {
+      "type": "empty_cache",
+      "timestamp": 1782715986.551358,
+      "detail": "emptied cache",
+      "success": true
+    },
+    {
+      "type": "normal_latency",
+      "timestamp": 1782716016.555457,
+      "detail": "latency restored to 10ms",
+      "success": true
+    },
+    {
+      "type": "empty_cache",
+      "timestamp": 1782716016.555457,
+      "detail": "emptied cache",
+      "success": true
+    },
+    {
+      "type": "normal_latency",
+      "timestamp": 1782716046.5673325,
+      "detail": "latency restored to 10ms",
+      "success": true
+    },
+    {
+      "type": "empty_cache",
+      "timestamp": 1782716046.5711467,
+      "detail": "emptied cache",
+      "success": true
+    },
+    {
+      "type": "normal_latency",
+      "timestamp": 1782716076.6377945,
+      "detail": "latency restored to 10ms",
+      "success": true
+    },
+    {
+      "type": "empty_cache",
+      "timestamp": 1782716076.6377945,
+      "detail": "emptied cache",
+      "success": true
+    },
+    {
+      "type": "restore_normal",
+      "timestamp": 1782716106.7118723,
+      "detail": "restored normal mock behavior",
+      "success": true
+    },
+    {
+      "type": "restore_normal",
+      "timestamp": 1782716136.753124,
+      "detail": "restored normal mock behavior",
+      "success": true
+    },
+    {
+      "type": "restore_normal",
+      "timestamp": 1782716166.9154582,
+      "detail": "restored normal mock behavior",
+      "success": true
+    },
+    {
+      "type": "restore_normal",
+      "timestamp": 1782716197.0171735,
+      "detail": "restored normal mock behavior",
+      "success": true
+    },
+    {
+      "type": "restore_normal",
+      "timestamp": 1782716227.078462,
+      "detail": "restored normal mock behavior",
+      "success": true
+    },
+    {
+      "type": "restore_normal",
+      "timestamp": 1782716257.158462,
+      "detail": "restored normal mock behavior",
+      "success": true
+    },
+    {
+      "type": "restore_normal",
+      "timestamp": 1782716287.2595172,
+      "detail": "restored normal mock behavior",
+      "success": true
+    },
+    {
+      "type": "restore_normal",
+      "timestamp": 1782716317.2760017,
+      "detail": "restored normal mock behavior",
+      "success": true
+    },
+    {
+      "type": "restore_normal",
+      "timestamp": 1782716347.2986603,
+      "detail": "restored normal mock behavior",
+      "success": true
+    },
+    {
+      "type": "restore_normal",
+      "timestamp": 1782716377.3863761,
+      "detail": "restored normal mock behavior",
+      "success": true
+    },
+    {
+      "type": "restore_normal",
+      "timestamp": 1782716407.3959746,
+      "detail": "restored normal mock behavior",
+      "success": true
+    },
+    {
+      "type": "restore_normal",
+      "timestamp": 1782716437.4798257,
+      "detail": "restored normal mock behavior",
+      "success": true
+    },
+    {
+      "type": "close_subscribers",
+      "timestamp": 1782716467.5576441,
+      "detail": "closed 60 subscribers (total: 0)",
+      "success": true
+    },
+    {
+      "type": "close_subscribers",
+      "timestamp": 1782716497.5621364,
+      "detail": "closed 0 subscribers (total: 0)",
+      "success": true
+    },
+    {
+      "type": "close_subscribers",
+      "timestamp": 1782716527.62515,
+      "detail": "closed 0 subscribers (total: 0)",
+      "success": true
+    },
+    {
+      "type": "close_subscribers",
+      "timestamp": 1782716557.6378276,
+      "detail": "closed 0 subscribers (total: 0)",
+      "success": true
+    },
+    {
+      "type": "close_subscribers",
+      "timestamp": 1782716587.7265768,
+      "detail": "closed 0 subscribers (total: 0)",
+      "success": true
+    },
+    {
+      "type": "close_subscribers",
+      "timestamp": 1782716617.7795062,
+      "detail": "closed 0 subscribers (total: 0)",
+      "success": true
+    },
+    {
+      "type": "close_subscribers",
+      "timestamp": 1782716647.7936673,
+      "detail": "closed 0 subscribers (total: 0)",
+      "success": true
+    },
+    {
+      "type": "close_subscribers",
+      "timestamp": 1782716677.8919888,
+      "detail": "closed 0 subscribers (total: 0)",
+      "success": true
+    },
+    {
+      "type": "close_subscribers",
+      "timestamp": 1782716707.97514,
+      "detail": "closed 0 subscribers (total: 0)",
+      "success": true
+    },
+    {
+      "type": "close_subscribers",
+      "timestamp": 1782716738.0166345,
+      "detail": "closed 0 subscribers (total: 0)",
+      "success": true
+    },
+    {
+      "type": "close_subscribers",
+      "timestamp": 1782716768.1731293,
+      "detail": "closed 0 subscribers (total: 0)",
+      "success": true
+    },
+    {
+      "type": "close_subscribers",
+      "timestamp": 1782716798.2511585,
+      "detail": "closed 0 subscribers (total: 0)",
+      "success": true
+    },
+    {
+      "type": "close_subscribers",
+      "timestamp": 1782716828.3603487,
+      "detail": "closed 0 subscribers (total: 0)",
+      "success": true
+    },
+    {
+      "type": "close_subscribers",
+      "timestamp": 1782716858.4384267,
+      "detail": "closed 0 subscribers (total: 0)",
+      "success": true
+    },
+    {
+      "type": "close_subscribers",
+      "timestamp": 1782716888.4398408,
+      "detail": "closed 0 subscribers (total: 0)",
+      "success": true
+    },
+    {
+      "type": "close_subscribers",
+      "timestamp": 1782716918.481643,
+      "detail": "closed 0 subscribers (total: 0)",
+      "success": true
+    },
+    {
+      "type": "close_subscribers",
+      "timestamp": 1782716948.4922595,
+      "detail": "closed 0 subscribers (total: 0)",
+      "success": true
+    },
+    {
+      "type": "close_subscribers",
+      "timestamp": 1782716978.493453,
+      "detail": "closed 0 subscribers (total: 0)",
+      "success": true
+    },
+    {
+      "type": "close_subscribers",
+      "timestamp": 1782717008.5075452,
+      "detail": "closed 0 subscribers (total: 0)",
+      "success": true
+    },
+    {
+      "type": "close_subscribers",
+      "timestamp": 1782717038.614081,
+      "detail": "closed 0 subscribers (total: 0)",
+      "success": true
+    },
+    {
+      "type": "close_subscribers",
+      "timestamp": 1782717068.6263852,
+      "detail": "closed 0 subscribers (total: 0)",
+      "success": true
+    },
+    {
+      "type": "close_subscribers",
+      "timestamp": 1782717098.7041032,
+      "detail": "closed 0 subscribers (total: 0)",
+      "success": true
+    },
+    {
+      "type": "close_subscribers",
+      "timestamp": 1782717128.7862089,
+      "detail": "closed 0 subscribers (total: 0)",
+      "success": true
+    },
+    {
+      "type": "close_subscribers",
+      "timestamp": 1782717158.8635705,
+      "detail": "closed 0 subscribers (total: 0)",
+      "success": true
+    }
+  ],
+  "start_time": "2026-06-29T05:24:54.211395+00:00",
+  "end_time": "2026-06-29T07:24:54.311037+00:00"
+}

@@ -22,6 +22,7 @@ export { knowledge } from './knowledge';
 export { research } from './research';
 export { plans } from './plans';
 export { analytics } from './analytics';
+export { audio } from './audio';
 export { improvements } from './improvements';
 export { negotiations } from './negotiations';
 export { opportunities } from './opportunities';

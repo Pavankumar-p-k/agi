@@ -33,38 +33,46 @@ export default function NotesPage() {
 
   useEffect(() => {
     Promise.all([
-      api.notes.list().catch(() => []),
-      api.reminders.list().catch(() => []),
+      api.notes.list().catch(() => [] as Note[]),
+      api.reminders.list().catch(() => [] as Reminder[]),
     ]).then(([n, r]) => {
-      setNotes(n as Note[]);
-      setReminders(r as Reminder[]);
+      setNotes(n);
+      setReminders(r);
     }).catch(() => setError('Failed to load')).finally(() => setLoading(false));
   }, []);
 
   async function createNote() {
     if (!newTitle.trim()) return;
-    const n = await api.notes.create({ title: newTitle, content: newContent });
-    setNotes(prev => [...prev, { id: n.id, title: n.title, content: newContent, tags: [], updated_at: new Date().toISOString() }]);
-    setNewTitle('');
-    setNewContent('');
+    try {
+      const n = await api.notes.create({ title: newTitle, content: newContent });
+      setNotes(prev => [...prev, { id: n.id, title: n.title, content: newContent, tags: [], updated_at: new Date().toISOString() }]);
+      setNewTitle('');
+      setNewContent('');
+    } catch { setError('Failed to create note'); }
   }
 
   async function deleteNote(id: number) {
-    await api.notes.delete(id);
-    setNotes(prev => prev.filter(n => n.id !== id));
+    try {
+      await api.notes.delete(id);
+      setNotes(prev => prev.filter(n => n.id !== id));
+    } catch { setError('Failed to delete note'); }
   }
 
   async function createReminder() {
     if (!newReminderTitle.trim() || !newRemindAt) return;
-    const r = await api.reminders.create({ title: newReminderTitle, remind_at: newRemindAt });
-    setReminders(prev => [...prev, { id: r.id, title: r.title, remind_at: r.remind_at }]);
-    setNewReminderTitle('');
-    setNewRemindAt('');
+    try {
+      const r = await api.reminders.create({ title: newReminderTitle, remind_at: newRemindAt });
+      setReminders(prev => [...prev, { id: r.id, title: r.title, remind_at: r.remind_at }]);
+      setNewReminderTitle('');
+      setNewRemindAt('');
+    } catch { setError('Failed to create reminder'); }
   }
 
   async function deleteReminder(id: number) {
-    await api.reminders.delete(id);
-    setReminders(prev => prev.filter(r => r.id !== id));
+    try {
+      await api.reminders.delete(id);
+      setReminders(prev => prev.filter(r => r.id !== id));
+    } catch { setError('Failed to delete reminder'); }
   }
 
   if (loading) return <div className="p-8 text-[var(--j-text-dim)]">Loading...</div>;

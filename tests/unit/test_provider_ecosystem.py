@@ -572,6 +572,75 @@ class TestProviderMemory:
         record = mem2.get_record("test_p")
         assert record.total_executions == 1
 
+    def test_execution_log_sized(self, clean_memory):
+        """Execution log is capped at MAX_EXECUTION_LOG entries."""
+        from core.providers.memory import MAX_EXECUTION_LOG, evidence_key
+        mem = clean_memory
+        for i in range(MAX_EXECUTION_LOG + 50):
+            mem.record_execution(provider_id="test_p", success=True, duration_ms=1.0, capability="coding")
+        key = evidence_key("test_p", "coding")
+        rec = mem._records.get(key)
+        assert rec is not None
+        assert len(rec._execution_log) == MAX_EXECUTION_LOG
+        # Oldest entries are pruned (first entry timestamp > 0)
+        first_ts = rec._execution_log[0]["ts"]
+        assert first_ts > 0
+
+    def test_time_decay_weights_recent(self, clean_memory):
+        """Time-decayed counts favour recent executions."""
+        from core.providers.memory import evidence_key
+        mem = clean_memory
+        mem.record_execution(provider_id="test_p", success=False, duration_ms=1.0, capability="coding")
+        mem.record_execution(provider_id="test_p", success=False, duration_ms=1.0, capability="coding")
+        mem.record_execution(provider_id="test_p", success=True, duration_ms=1.0, capability="coding")
+        key = evidence_key("test_p", "coding")
+        rec = mem._records[key]
+        # All recent → time weight ≈ 1.0 for all → effective ≈ 1/2
+        eff_s, eff_f = rec._weighted_counts()
+        assert eff_s > 0.5, f"Expected effective successes ~1, got {eff_s}"
+        assert eff_f > 0.5, f"Expected effective failures ~2, got {eff_f}"
+
+    def test_time_decay_ages_old_entries(self, clean_memory):
+        """Time-decayed counts reduce contribution of very old entries."""
+        import time
+        from core.providers.memory import evidence_key, EvidenceRecord
+        mem = clean_memory
+        key = evidence_key("test_old")
+        rec = EvidenceRecord(provider_id="test_old")
+        # Bypass record_outcome to inject old timestamps directly
+        now = time.time()
+        for _ in range(5):
+            rec._execution_log.append({"ts": now - 1_000_000_000, "ok": True, "dur": 1.0, "cost": 0.0})  # ~30 years
+        rec._execution_log.append({"ts": now, "ok": False, "dur": 1.0, "cost": 0.0})
+        rec.successes = 5
+        rec.failures = 1
+        rec.executions = 6
+        eff_s, eff_f = rec._weighted_counts()
+        # Old entries have weight near 0 → effective successes should be near 0
+        assert eff_s < 0.1, f"Expected effective successes near 0, got {eff_s}"
+        # Recent failure should dominate
+        assert eff_f > 0.5, f"Expected effective failures ~1, got {eff_f}"
+
+    def test_confidence_scales_with_evidence(self, clean_memory):
+        """Confidence grows with evidence count."""
+        from core.providers.memory import evidence_key, EvidenceRecord
+        mem = clean_memory
+        # 0 evidence → confidence = 0.0
+        key = evidence_key("test_conf")
+        rec = EvidenceRecord(provider_id="test_conf")
+        mem._records[key] = rec
+        assert mem.get_confidence("test_conf") == 0.0
+        # 1 → ~0.5
+        rec.record_outcome(success=True, duration_ms=100)
+        c1 = mem.get_confidence("test_conf")
+        assert 0.3 < c1 < 0.7, f"Expected ~0.5, got {c1}"
+        # 100 → ~0.91
+        for _ in range(99):
+            rec.record_outcome(success=True, duration_ms=100)
+        c100 = mem.get_confidence("test_conf")
+        assert c100 > 0.85, f"Expected >0.85, got {c100}"
+        assert c100 > c1, "Confidence must increase with evidence"
+
     def test_record_execution_retry_and_repair(self, clean_memory):
         mem = clean_memory
         mem.record_execution(provider_id="test_p", success=True, duration_ms=100,
@@ -694,6 +763,47 @@ class TestProviderRouter:
         selected = clean_router.select(capability="coding")
         assert selected is p
 
+    def test_exploration_high_confidence_greedy(self, clean_router, clean_registry, clean_memory):
+        """Confidence ≥0.95 → always picks highest-scored provider."""
+        import asyncio, random
+        p1 = self._make_provider("high")
+        p2 = self._make_provider("low")
+        clean_registry.register(p1, priority=90)
+        clean_registry.register(p2, priority=10)
+        asyncio.run(p1.health())
+        asyncio.run(p2.health())
+        # Give "high" enough evidence for confidence ≥0.95 (need 361+ success)
+        for _ in range(400):
+            clean_memory.record_execution(provider_id="high", success=True)
+        seed = 0
+        for _ in range(20):
+            random.seed(seed)
+            assert clean_router.select(capability="coding").provider_id == "high"
+            seed += 1
+
+    def test_exploration_low_confidence_epsilon_greedy(self, clean_router, clean_registry, clean_memory):
+        """Confidence < 0.60 → 10% chance to pick second-ranked."""
+        import asyncio, random
+        p1 = self._make_provider("high")
+        p2 = self._make_provider("low")
+        clean_registry.register(p1, priority=90)
+        clean_registry.register(p2, priority=10)
+        asyncio.run(p1.health())
+        asyncio.run(p2.health())
+        # No evidence → confidence = 0.0
+        selected_high = 0
+        selected_low = 0
+        for seed in range(100):
+            random.seed(seed)
+            sel = clean_router.select(capability="coding").provider_id
+            if sel == "high":
+                selected_high += 1
+            else:
+                selected_low += 1
+        # With epsilon=0.10, expect ~10 low picks out of 100 (± ~3σ = 10±9)
+        assert selected_low >= 1, "Expected at least one exploration pick in 100 trials"
+        assert selected_high >= 80, "High should still dominate even with exploration"
+
     def test_select_none_available(self, clean_router):
         assert clean_router.select(capability="nonexistent") is None
 
@@ -782,6 +892,9 @@ class TestProviderRouter:
         asyncio.run(low.health())
         # 0.5 * (90/100) + 0.5 * 0.5 = 0.45 + 0.25 = 0.70 (high)
         # 0.5 * (10/100) + 0.5 * 0.5 = 0.05 + 0.25 = 0.30 (low)
+        # Seed random to avoid epsilon-greedy exploration picking second-ranked
+        import random
+        random.seed(42)
         selected = clean_router.select(capability="coding")
         assert selected is high
 
@@ -1156,6 +1269,7 @@ class TestProviderE2E:
 
     def test_full_pipeline_selects_best(self, clean_registry, clean_router, clean_memory):
         import asyncio
+        import random
         from core.capability.registry import CapabilityRegistry
         cap = CapabilityRegistry(registry=clean_registry)
 
@@ -1169,6 +1283,8 @@ class TestProviderE2E:
         providers = cap.get_providers("coding")
         assert len(providers) == 2
 
+        # Seed to avoid epsilon-greedy picking second-ranked
+        random.seed(42)
         selected = clean_router.select(capability="coding")
         assert selected is not None
         # High priority gets higher score

@@ -1,0 +1,2428 @@
+{
+  "timestamp": "2026-06-25T12:05:48.562517+00:00",
+  "model": "qwen2.5:7b",
+  "tasks": [
+    {
+      "task_id": "build_test_1",
+      "category": "build_test",
+      "config": "raw",
+      "success": false,
+      "turns": 4,
+      "tool_calls": [
+        "build_project",
+        "repair_project",
+        "run_tests",
+        "runtime_validate",
+        "runtime_validate",
+        "runtime_validate",
+        "runtime_validate"
+      ],
+      "unique_tools": [
+        "build_project",
+        "repair_project",
+        "runtime_validate",
+        "run_tests"
+      ],
+      "phases_completed": [],
+      "phases_required": [
+        "build",
+        "test",
+        "repair",
+        "retest"
+      ],
+      "injections": 0,
+      "re_plans": 0,
+      "duration_seconds": 26.93,
+      "error": "loop_detected: runtime_validate called 6 times"
+    },
+    {
+      "task_id": "build_test_2",
+      "category": "build_test",
+      "config": "raw",
+      "success": false,
+      "turns": 4,
+      "tool_calls": [
+        "build_project",
+        "build_project",
+        "build_project",
+        "build_project"
+      ],
+      "unique_tools": [
+        "build_project"
+      ],
+      "phases_completed": [],
+      "phases_required": [
+        "build",
+        "test",
+        "repair",
+        "retest"
+      ],
+      "injections": 0,
+      "re_plans": 0,
+      "duration_seconds": 23.34,
+      "error": "loop_detected: build_project called 4 times"
+    },
+    {
+      "task_id": "build_test_3",
+      "category": "build_test",
+      "config": "raw",
+      "success": false,
+      "turns": 4,
+      "tool_calls": [
+        "build_project",
+        "run_tests",
+        "runtime_validate",
+        "python",
+        "build_project",
+        "repair_project",
+        "runtime_validate",
+        "runtime_validate",
+        "runtime_validate",
+        "runtime_validate"
+      ],
+      "unique_tools": [
+        "build_project",
+        "repair_project",
+        "python",
+        "runtime_validate",
+        "run_tests"
+      ],
+      "phases_completed": [],
+      "phases_required": [
+        "build",
+        "test",
+        "repair",
+        "retest"
+      ],
+      "injections": 0,
+      "re_plans": 0,
+      "duration_seconds": 38.64,
+      "error": "loop_detected: runtime_validate called 6 times"
+    },
+    {
+      "task_id": "research_synth_1",
+      "category": "research_synth",
+      "config": "raw",
+      "success": false,
+      "turns": 4,
+      "tool_calls": [
+        "build_project",
+        "build_project",
+        "build_project",
+        "build_project"
+      ],
+      "unique_tools": [
+        "build_project"
+      ],
+      "phases_completed": [],
+      "phases_required": [
+        "research",
+        "plan",
+        "deliver"
+      ],
+      "injections": 0,
+      "re_plans": 0,
+      "duration_seconds": 23.64,
+      "error": "loop_detected: build_project called 4 times"
+    },
+    {
+      "task_id": "research_synth_2",
+      "category": "research_synth",
+      "config": "raw",
+      "success": false,
+      "turns": 4,
+      "tool_calls": [
+        "build_project",
+        "build_project",
+        "build_project",
+        "build_project"
+      ],
+      "unique_tools": [
+        "build_project"
+      ],
+      "phases_completed": [],
+      "phases_required": [
+        "research",
+        "plan",
+        "deliver"
+      ],
+      "injections": 0,
+      "re_plans": 0,
+      "duration_seconds": 56.62,
+      "error": "loop_detected: build_project called 4 times"
+    },
+    {
+      "task_id": "full_pipeline_1",
+      "category": "full_pipeline",
+      "config": "raw",
+      "success": false,
+      "turns": 4,
+      "tool_calls": [
+        "build_project",
+        "build_project",
+        "build_project",
+        "build_project"
+      ],
+      "unique_tools": [
+        "build_project"
+      ],
+      "phases_completed": [],
+      "phases_required": [
+        "research",
+        "plan",
+        "build",
+        "test",
+        "repair",
+        "retest",
+        "deliver"
+      ],
+      "injections": 0,
+      "re_plans": 0,
+      "duration_seconds": 23.22,
+      "error": "loop_detected: build_project called 4 times"
+    },
+    {
+      "task_id": "build_test_1",
+      "category": "build_test",
+      "config": "workflow",
+      "success": false,
+      "turns": 4,
+      "tool_calls": [
+        "build_project",
+        "repair_project",
+        "read_file",
+        "run_tests",
+        "runtime_validate",
+        "runtime_validate",
+        "runtime_validate",
+        "runtime_validate"
+      ],
+      "unique_tools": [
+        "build_project",
+        "repair_project",
+        "runtime_validate",
+        "read_file",
+        "run_tests"
+      ],
+      "phases_completed": [
+        "build",
+        "repair",
+        "test",
+        "retest"
+      ],
+      "phases_required": [
+        "build",
+        "test",
+        "repair",
+        "retest"
+      ],
+      "injections": 1,
+      "re_plans": 0,
+      "duration_seconds": 28.04,
+      "error": "loop_detected: runtime_validate called 6 times"
+    },
+    {
+      "task_id": "build_test_2",
+      "category": "build_test",
+      "config": "workflow",
+      "success": false,
+      "turns": 20,
+      "tool_calls": [
+        "build_project",
+        "python",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "run_tests",
+        "runtime_validate",
+        "run_tests",
+        "runtime_validate",
+        "run_tests",
+        "runtime_validate",
+        "run_tests",
+        "runtime_validate",
+        "run_tests",
+        "runtime_validate",
+        "run_tests",
+        "runtime_validate",
+        "run_tests",
+        "runtime_validate",
+        "run_tests",
+        "runtime_validate",
+        "run_tests",
+        "runtime_validate",
+        "run_tests",
+        "runtime_validate",
+        "run_tests",
+        "runtime_validate",
+        "run_tests",
+        "runtime_validate",
+        "run_tests",
+        "runtime_validate",
+        "run_tests",
+        "runtime_validate",
+        "run_tests",
+        "runtime_validate",
+        "run_tests",
+        "runtime_validate",
+        "run_tests",
+        "runtime_validate",
+        "run_tests",
+        "runtime_validate",
+        "run_tests",
+        "runtime_validate",
+        "run_tests",
+        "runtime_validate",
+        "run_tests"
+      ],
+      "unique_tools": [
+        "build_project",
+        "runtime_validate",
+        "python",
+        "run_tests"
+      ],
+      "phases_completed": [
+        "build",
+        "test",
+        "retest"
+      ],
+      "phases_required": [
+        "build",
+        "test",
+        "repair",
+        "retest"
+      ],
+      "injections": 22,
+      "re_plans": 0,
+      "duration_seconds": 198.48,
+      "error": "max_turns (20) exceeded"
+    },
+    {
+      "task_id": "build_test_3",
+      "category": "build_test",
+      "config": "workflow",
+      "success": false,
+      "turns": 20,
+      "tool_calls": [
+        "build_project",
+        "run_tests",
+        "runtime_validate",
+        "run_tests",
+        "python",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests"
+      ],
+      "unique_tools": [
+        "build_project",
+        "python",
+        "runtime_validate",
+        "run_tests"
+      ],
+      "phases_completed": [
+        "build",
+        "test",
+        "retest"
+      ],
+      "phases_required": [
+        "build",
+        "test",
+        "repair",
+        "retest"
+      ],
+      "injections": 22,
+      "re_plans": 20,
+      "duration_seconds": 145.9,
+      "error": "max_turns (20) exceeded"
+    },
+    {
+      "task_id": "research_synth_1",
+      "category": "research_synth",
+      "config": "workflow",
+      "success": false,
+      "turns": 20,
+      "tool_calls": [
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search"
+      ],
+      "unique_tools": [
+        "build_project",
+        "web_search"
+      ],
+      "phases_completed": [
+        "research"
+      ],
+      "phases_required": [
+        "research",
+        "plan",
+        "deliver"
+      ],
+      "injections": 20,
+      "re_plans": 0,
+      "duration_seconds": 117.89,
+      "error": "max_turns (20) exceeded"
+    },
+    {
+      "task_id": "research_synth_2",
+      "category": "research_synth",
+      "config": "workflow",
+      "success": false,
+      "turns": 20,
+      "tool_calls": [
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search"
+      ],
+      "unique_tools": [
+        "build_project",
+        "web_search"
+      ],
+      "phases_completed": [
+        "research"
+      ],
+      "phases_required": [
+        "research",
+        "plan",
+        "deliver"
+      ],
+      "injections": 20,
+      "re_plans": 0,
+      "duration_seconds": 162.07,
+      "error": "max_turns (20) exceeded"
+    },
+    {
+      "task_id": "full_pipeline_1",
+      "category": "full_pipeline",
+      "config": "workflow",
+      "success": false,
+      "turns": 20,
+      "tool_calls": [
+        "build_project",
+        "web_search",
+        "run_tests",
+        "write_file",
+        "repair_project",
+        "read_file",
+        "runtime_validate",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file"
+      ],
+      "unique_tools": [
+        "build_project",
+        "repair_project",
+        "write_file",
+        "web_search",
+        "runtime_validate",
+        "vision_browser",
+        "read_file",
+        "run_tests"
+      ],
+      "phases_completed": [
+        "research",
+        "build",
+        "repair",
+        "plan",
+        "deliver",
+        "test",
+        "retest"
+      ],
+      "phases_required": [
+        "research",
+        "plan",
+        "build",
+        "test",
+        "repair",
+        "retest",
+        "deliver"
+      ],
+      "injections": 24,
+      "re_plans": 0,
+      "duration_seconds": 127.58,
+      "error": "max_turns (20) exceeded"
+    },
+    {
+      "task_id": "build_test_1",
+      "category": "build_test",
+      "config": "full",
+      "success": false,
+      "turns": 4,
+      "tool_calls": [
+        "build_project",
+        "repair_project",
+        "read_file",
+        "run_tests",
+        "runtime_validate",
+        "runtime_validate",
+        "runtime_validate",
+        "runtime_validate"
+      ],
+      "unique_tools": [
+        "build_project",
+        "repair_project",
+        "runtime_validate",
+        "read_file",
+        "run_tests"
+      ],
+      "phases_completed": [
+        "build",
+        "repair",
+        "test",
+        "retest"
+      ],
+      "phases_required": [
+        "build",
+        "test",
+        "repair",
+        "retest"
+      ],
+      "injections": 1,
+      "re_plans": 0,
+      "duration_seconds": 22.51,
+      "error": "loop_detected: runtime_validate called 6 times"
+    },
+    {
+      "task_id": "build_test_2",
+      "category": "build_test",
+      "config": "full",
+      "success": false,
+      "turns": 20,
+      "tool_calls": [
+        "build_project",
+        "build_project",
+        "run_tests",
+        "browser_navigate",
+        "run_tests",
+        "browser_navigate",
+        "run_tests",
+        "browser_navigate",
+        "run_tests",
+        "browser_navigate",
+        "run_tests",
+        "browser_navigate",
+        "run_tests",
+        "browser_navigate",
+        "run_tests",
+        "browser_navigate",
+        "run_tests",
+        "browser_navigate",
+        "run_tests",
+        "browser_navigate",
+        "run_tests",
+        "browser_navigate",
+        "run_tests",
+        "browser_navigate",
+        "run_tests",
+        "browser_navigate",
+        "run_tests",
+        "browser_navigate",
+        "run_tests",
+        "browser_navigate",
+        "run_tests",
+        "browser_navigate",
+        "run_tests",
+        "browser_navigate",
+        "run_tests",
+        "browser_navigate",
+        "run_tests",
+        "browser_navigate",
+        "run_tests",
+        "browser_navigate",
+        "run_tests",
+        "browser_navigate",
+        "run_tests"
+      ],
+      "unique_tools": [
+        "build_project",
+        "browser_navigate",
+        "run_tests"
+      ],
+      "phases_completed": [
+        "build",
+        "test",
+        "retest"
+      ],
+      "phases_required": [
+        "build",
+        "test",
+        "repair",
+        "retest"
+      ],
+      "injections": 21,
+      "re_plans": 20,
+      "duration_seconds": 120.04,
+      "error": "max_turns (20) exceeded"
+    },
+    {
+      "task_id": "build_test_3",
+      "category": "build_test",
+      "config": "full",
+      "success": false,
+      "turns": 20,
+      "tool_calls": [
+        "build_project",
+        "run_tests",
+        "runtime_validate",
+        "run_tests",
+        "python",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests"
+      ],
+      "unique_tools": [
+        "build_project",
+        "python",
+        "runtime_validate",
+        "run_tests"
+      ],
+      "phases_completed": [
+        "build",
+        "test",
+        "retest"
+      ],
+      "phases_required": [
+        "build",
+        "test",
+        "repair",
+        "retest"
+      ],
+      "injections": 22,
+      "re_plans": 20,
+      "duration_seconds": 130.53,
+      "error": "max_turns (20) exceeded"
+    },
+    {
+      "task_id": "research_synth_1",
+      "category": "research_synth",
+      "config": "full",
+      "success": false,
+      "turns": 20,
+      "tool_calls": [
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search"
+      ],
+      "unique_tools": [
+        "build_project",
+        "web_search"
+      ],
+      "phases_completed": [
+        "research"
+      ],
+      "phases_required": [
+        "research",
+        "plan",
+        "deliver"
+      ],
+      "injections": 20,
+      "re_plans": 0,
+      "duration_seconds": 117.67,
+      "error": "max_turns (20) exceeded"
+    },
+    {
+      "task_id": "research_synth_2",
+      "category": "research_synth",
+      "config": "full",
+      "success": false,
+      "turns": 20,
+      "tool_calls": [
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search"
+      ],
+      "unique_tools": [
+        "build_project",
+        "web_search"
+      ],
+      "phases_completed": [
+        "research"
+      ],
+      "phases_required": [
+        "research",
+        "plan",
+        "deliver"
+      ],
+      "injections": 20,
+      "re_plans": 0,
+      "duration_seconds": 207.58,
+      "error": "max_turns (20) exceeded"
+    },
+    {
+      "task_id": "full_pipeline_1",
+      "category": "full_pipeline",
+      "config": "full",
+      "success": false,
+      "turns": 20,
+      "tool_calls": [
+        "build_project",
+        "web_search",
+        "run_tests",
+        "write_file",
+        "repair_project",
+        "read_file",
+        "runtime_validate",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file"
+      ],
+      "unique_tools": [
+        "build_project",
+        "repair_project",
+        "write_file",
+        "web_search",
+        "runtime_validate",
+        "vision_browser",
+        "read_file",
+        "run_tests"
+      ],
+      "phases_completed": [
+        "research",
+        "build",
+        "repair",
+        "plan",
+        "deliver",
+        "test",
+        "retest"
+      ],
+      "phases_required": [
+        "research",
+        "plan",
+        "build",
+        "test",
+        "repair",
+        "retest",
+        "deliver"
+      ],
+      "injections": 24,
+      "re_plans": 0,
+      "duration_seconds": 127.15,
+      "error": "max_turns (20) exceeded"
+    }
+  ],
+  "per_task_details": [
+    {
+      "task_id": "build_test_1",
+      "category": "build_test",
+      "config": "raw",
+      "success": false,
+      "turns": 4,
+      "tool_calls": [
+        "build_project",
+        "repair_project",
+        "run_tests",
+        "runtime_validate",
+        "runtime_validate",
+        "runtime_validate",
+        "runtime_validate"
+      ],
+      "unique_tools": [
+        "build_project",
+        "repair_project",
+        "runtime_validate",
+        "run_tests"
+      ],
+      "phases_completed": [],
+      "phases_required": [
+        "build",
+        "test",
+        "repair",
+        "retest"
+      ],
+      "phase_completion": {
+        "required_phases": [
+          "build",
+          "test",
+          "repair",
+          "retest"
+        ],
+        "completed_phases": [],
+        "missing_phases": [
+          "test",
+          "repair",
+          "retest",
+          "build"
+        ],
+        "completion_rate": 0.0,
+        "min_met": false
+      },
+      "injections": 0,
+      "re_plans": 0,
+      "duration_seconds": 26.93,
+      "error": "loop_detected: runtime_validate called 6 times"
+    },
+    {
+      "task_id": "build_test_2",
+      "category": "build_test",
+      "config": "raw",
+      "success": false,
+      "turns": 4,
+      "tool_calls": [
+        "build_project",
+        "build_project",
+        "build_project",
+        "build_project"
+      ],
+      "unique_tools": [
+        "build_project"
+      ],
+      "phases_completed": [],
+      "phases_required": [
+        "build",
+        "test",
+        "repair",
+        "retest"
+      ],
+      "phase_completion": {
+        "required_phases": [
+          "build",
+          "test",
+          "repair",
+          "retest"
+        ],
+        "completed_phases": [],
+        "missing_phases": [
+          "test",
+          "repair",
+          "retest",
+          "build"
+        ],
+        "completion_rate": 0.0,
+        "min_met": false
+      },
+      "injections": 0,
+      "re_plans": 0,
+      "duration_seconds": 23.34,
+      "error": "loop_detected: build_project called 4 times"
+    },
+    {
+      "task_id": "build_test_3",
+      "category": "build_test",
+      "config": "raw",
+      "success": false,
+      "turns": 4,
+      "tool_calls": [
+        "build_project",
+        "run_tests",
+        "runtime_validate",
+        "python",
+        "build_project",
+        "repair_project",
+        "runtime_validate",
+        "runtime_validate",
+        "runtime_validate",
+        "runtime_validate"
+      ],
+      "unique_tools": [
+        "build_project",
+        "repair_project",
+        "python",
+        "runtime_validate",
+        "run_tests"
+      ],
+      "phases_completed": [],
+      "phases_required": [
+        "build",
+        "test",
+        "repair",
+        "retest"
+      ],
+      "phase_completion": {
+        "required_phases": [
+          "build",
+          "test",
+          "repair",
+          "retest"
+        ],
+        "completed_phases": [],
+        "missing_phases": [
+          "test",
+          "repair",
+          "retest",
+          "build"
+        ],
+        "completion_rate": 0.0,
+        "min_met": false
+      },
+      "injections": 0,
+      "re_plans": 0,
+      "duration_seconds": 38.64,
+      "error": "loop_detected: runtime_validate called 6 times"
+    },
+    {
+      "task_id": "research_synth_1",
+      "category": "research_synth",
+      "config": "raw",
+      "success": false,
+      "turns": 4,
+      "tool_calls": [
+        "build_project",
+        "build_project",
+        "build_project",
+        "build_project"
+      ],
+      "unique_tools": [
+        "build_project"
+      ],
+      "phases_completed": [],
+      "phases_required": [
+        "research",
+        "plan",
+        "deliver"
+      ],
+      "phase_completion": {
+        "required_phases": [
+          "research",
+          "plan",
+          "deliver"
+        ],
+        "completed_phases": [],
+        "missing_phases": [
+          "plan",
+          "deliver",
+          "research"
+        ],
+        "completion_rate": 0.0,
+        "min_met": false
+      },
+      "injections": 0,
+      "re_plans": 0,
+      "duration_seconds": 23.64,
+      "error": "loop_detected: build_project called 4 times"
+    },
+    {
+      "task_id": "research_synth_2",
+      "category": "research_synth",
+      "config": "raw",
+      "success": false,
+      "turns": 4,
+      "tool_calls": [
+        "build_project",
+        "build_project",
+        "build_project",
+        "build_project"
+      ],
+      "unique_tools": [
+        "build_project"
+      ],
+      "phases_completed": [],
+      "phases_required": [
+        "research",
+        "plan",
+        "deliver"
+      ],
+      "phase_completion": {
+        "required_phases": [
+          "research",
+          "plan",
+          "deliver"
+        ],
+        "completed_phases": [],
+        "missing_phases": [
+          "plan",
+          "deliver",
+          "research"
+        ],
+        "completion_rate": 0.0,
+        "min_met": false
+      },
+      "injections": 0,
+      "re_plans": 0,
+      "duration_seconds": 56.62,
+      "error": "loop_detected: build_project called 4 times"
+    },
+    {
+      "task_id": "full_pipeline_1",
+      "category": "full_pipeline",
+      "config": "raw",
+      "success": false,
+      "turns": 4,
+      "tool_calls": [
+        "build_project",
+        "build_project",
+        "build_project",
+        "build_project"
+      ],
+      "unique_tools": [
+        "build_project"
+      ],
+      "phases_completed": [],
+      "phases_required": [
+        "research",
+        "plan",
+        "build",
+        "test",
+        "repair",
+        "retest",
+        "deliver"
+      ],
+      "phase_completion": {
+        "required_phases": [
+          "research",
+          "plan",
+          "build",
+          "test",
+          "repair",
+          "retest",
+          "deliver"
+        ],
+        "completed_phases": [],
+        "missing_phases": [
+          "test",
+          "repair",
+          "deliver",
+          "build",
+          "plan",
+          "research",
+          "retest"
+        ],
+        "completion_rate": 0.0,
+        "min_met": false
+      },
+      "injections": 0,
+      "re_plans": 0,
+      "duration_seconds": 23.22,
+      "error": "loop_detected: build_project called 4 times"
+    },
+    {
+      "task_id": "build_test_1",
+      "category": "build_test",
+      "config": "workflow",
+      "success": false,
+      "turns": 4,
+      "tool_calls": [
+        "build_project",
+        "repair_project",
+        "read_file",
+        "run_tests",
+        "runtime_validate",
+        "runtime_validate",
+        "runtime_validate",
+        "runtime_validate"
+      ],
+      "unique_tools": [
+        "build_project",
+        "repair_project",
+        "runtime_validate",
+        "read_file",
+        "run_tests"
+      ],
+      "phases_completed": [
+        "build",
+        "repair",
+        "test",
+        "retest"
+      ],
+      "phases_required": [
+        "build",
+        "test",
+        "repair",
+        "retest"
+      ],
+      "phase_completion": {
+        "required_phases": [
+          "build",
+          "test",
+          "repair",
+          "retest"
+        ],
+        "completed_phases": [
+          "test",
+          "repair",
+          "build",
+          "retest"
+        ],
+        "missing_phases": [],
+        "completion_rate": 1.0,
+        "min_met": true
+      },
+      "injections": 1,
+      "re_plans": 0,
+      "duration_seconds": 28.04,
+      "error": "loop_detected: runtime_validate called 6 times"
+    },
+    {
+      "task_id": "build_test_2",
+      "category": "build_test",
+      "config": "workflow",
+      "success": false,
+      "turns": 20,
+      "tool_calls": [
+        "build_project",
+        "python",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "run_tests",
+        "runtime_validate",
+        "run_tests",
+        "runtime_validate",
+        "run_tests",
+        "runtime_validate",
+        "run_tests",
+        "runtime_validate",
+        "run_tests",
+        "runtime_validate",
+        "run_tests",
+        "runtime_validate",
+        "run_tests",
+        "runtime_validate",
+        "run_tests",
+        "runtime_validate",
+        "run_tests",
+        "runtime_validate",
+        "run_tests",
+        "runtime_validate",
+        "run_tests",
+        "runtime_validate",
+        "run_tests",
+        "runtime_validate",
+        "run_tests",
+        "runtime_validate",
+        "run_tests",
+        "runtime_validate",
+        "run_tests",
+        "runtime_validate",
+        "run_tests",
+        "runtime_validate",
+        "run_tests",
+        "runtime_validate",
+        "run_tests",
+        "runtime_validate",
+        "run_tests",
+        "runtime_validate",
+        "run_tests",
+        "runtime_validate",
+        "run_tests"
+      ],
+      "unique_tools": [
+        "build_project",
+        "runtime_validate",
+        "python",
+        "run_tests"
+      ],
+      "phases_completed": [
+        "build",
+        "test",
+        "retest"
+      ],
+      "phases_required": [
+        "build",
+        "test",
+        "repair",
+        "retest"
+      ],
+      "phase_completion": {
+        "required_phases": [
+          "build",
+          "test",
+          "repair",
+          "retest"
+        ],
+        "completed_phases": [
+          "test",
+          "build",
+          "retest"
+        ],
+        "missing_phases": [
+          "repair"
+        ],
+        "completion_rate": 0.75,
+        "min_met": true
+      },
+      "injections": 22,
+      "re_plans": 0,
+      "duration_seconds": 198.48,
+      "error": "max_turns (20) exceeded"
+    },
+    {
+      "task_id": "build_test_3",
+      "category": "build_test",
+      "config": "workflow",
+      "success": false,
+      "turns": 20,
+      "tool_calls": [
+        "build_project",
+        "run_tests",
+        "runtime_validate",
+        "run_tests",
+        "python",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests"
+      ],
+      "unique_tools": [
+        "build_project",
+        "python",
+        "runtime_validate",
+        "run_tests"
+      ],
+      "phases_completed": [
+        "build",
+        "test",
+        "retest"
+      ],
+      "phases_required": [
+        "build",
+        "test",
+        "repair",
+        "retest"
+      ],
+      "phase_completion": {
+        "required_phases": [
+          "build",
+          "test",
+          "repair",
+          "retest"
+        ],
+        "completed_phases": [
+          "test",
+          "build",
+          "retest"
+        ],
+        "missing_phases": [
+          "repair"
+        ],
+        "completion_rate": 0.75,
+        "min_met": true
+      },
+      "injections": 22,
+      "re_plans": 20,
+      "duration_seconds": 145.9,
+      "error": "max_turns (20) exceeded"
+    },
+    {
+      "task_id": "research_synth_1",
+      "category": "research_synth",
+      "config": "workflow",
+      "success": false,
+      "turns": 20,
+      "tool_calls": [
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search"
+      ],
+      "unique_tools": [
+        "build_project",
+        "web_search"
+      ],
+      "phases_completed": [
+        "research"
+      ],
+      "phases_required": [
+        "research",
+        "plan",
+        "deliver"
+      ],
+      "phase_completion": {
+        "required_phases": [
+          "research",
+          "plan",
+          "deliver"
+        ],
+        "completed_phases": [
+          "research"
+        ],
+        "missing_phases": [
+          "plan",
+          "deliver"
+        ],
+        "completion_rate": 0.3333333333333333,
+        "min_met": false
+      },
+      "injections": 20,
+      "re_plans": 0,
+      "duration_seconds": 117.89,
+      "error": "max_turns (20) exceeded"
+    },
+    {
+      "task_id": "research_synth_2",
+      "category": "research_synth",
+      "config": "workflow",
+      "success": false,
+      "turns": 20,
+      "tool_calls": [
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search"
+      ],
+      "unique_tools": [
+        "build_project",
+        "web_search"
+      ],
+      "phases_completed": [
+        "research"
+      ],
+      "phases_required": [
+        "research",
+        "plan",
+        "deliver"
+      ],
+      "phase_completion": {
+        "required_phases": [
+          "research",
+          "plan",
+          "deliver"
+        ],
+        "completed_phases": [
+          "research"
+        ],
+        "missing_phases": [
+          "plan",
+          "deliver"
+        ],
+        "completion_rate": 0.3333333333333333,
+        "min_met": false
+      },
+      "injections": 20,
+      "re_plans": 0,
+      "duration_seconds": 162.07,
+      "error": "max_turns (20) exceeded"
+    },
+    {
+      "task_id": "full_pipeline_1",
+      "category": "full_pipeline",
+      "config": "workflow",
+      "success": false,
+      "turns": 20,
+      "tool_calls": [
+        "build_project",
+        "web_search",
+        "run_tests",
+        "write_file",
+        "repair_project",
+        "read_file",
+        "runtime_validate",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file"
+      ],
+      "unique_tools": [
+        "build_project",
+        "repair_project",
+        "write_file",
+        "web_search",
+        "runtime_validate",
+        "vision_browser",
+        "read_file",
+        "run_tests"
+      ],
+      "phases_completed": [
+        "research",
+        "build",
+        "repair",
+        "plan",
+        "deliver",
+        "test",
+        "retest"
+      ],
+      "phases_required": [
+        "research",
+        "plan",
+        "build",
+        "test",
+        "repair",
+        "retest",
+        "deliver"
+      ],
+      "phase_completion": {
+        "required_phases": [
+          "research",
+          "plan",
+          "build",
+          "test",
+          "repair",
+          "retest",
+          "deliver"
+        ],
+        "completed_phases": [
+          "test",
+          "repair",
+          "plan",
+          "research",
+          "deliver",
+          "build",
+          "retest"
+        ],
+        "missing_phases": [],
+        "completion_rate": 1.0,
+        "min_met": true
+      },
+      "injections": 24,
+      "re_plans": 0,
+      "duration_seconds": 127.58,
+      "error": "max_turns (20) exceeded"
+    },
+    {
+      "task_id": "build_test_1",
+      "category": "build_test",
+      "config": "full",
+      "success": false,
+      "turns": 4,
+      "tool_calls": [
+        "build_project",
+        "repair_project",
+        "read_file",
+        "run_tests",
+        "runtime_validate",
+        "runtime_validate",
+        "runtime_validate",
+        "runtime_validate"
+      ],
+      "unique_tools": [
+        "build_project",
+        "repair_project",
+        "runtime_validate",
+        "read_file",
+        "run_tests"
+      ],
+      "phases_completed": [
+        "build",
+        "repair",
+        "test",
+        "retest"
+      ],
+      "phases_required": [
+        "build",
+        "test",
+        "repair",
+        "retest"
+      ],
+      "phase_completion": {
+        "required_phases": [
+          "build",
+          "test",
+          "repair",
+          "retest"
+        ],
+        "completed_phases": [
+          "test",
+          "repair",
+          "build",
+          "retest"
+        ],
+        "missing_phases": [],
+        "completion_rate": 1.0,
+        "min_met": true
+      },
+      "injections": 1,
+      "re_plans": 0,
+      "duration_seconds": 22.51,
+      "error": "loop_detected: runtime_validate called 6 times"
+    },
+    {
+      "task_id": "build_test_2",
+      "category": "build_test",
+      "config": "full",
+      "success": false,
+      "turns": 20,
+      "tool_calls": [
+        "build_project",
+        "build_project",
+        "run_tests",
+        "browser_navigate",
+        "run_tests",
+        "browser_navigate",
+        "run_tests",
+        "browser_navigate",
+        "run_tests",
+        "browser_navigate",
+        "run_tests",
+        "browser_navigate",
+        "run_tests",
+        "browser_navigate",
+        "run_tests",
+        "browser_navigate",
+        "run_tests",
+        "browser_navigate",
+        "run_tests",
+        "browser_navigate",
+        "run_tests",
+        "browser_navigate",
+        "run_tests",
+        "browser_navigate",
+        "run_tests",
+        "browser_navigate",
+        "run_tests",
+        "browser_navigate",
+        "run_tests",
+        "browser_navigate",
+        "run_tests",
+        "browser_navigate",
+        "run_tests",
+        "browser_navigate",
+        "run_tests",
+        "browser_navigate",
+        "run_tests",
+        "browser_navigate",
+        "run_tests",
+        "browser_navigate",
+        "run_tests",
+        "browser_navigate",
+        "run_tests"
+      ],
+      "unique_tools": [
+        "build_project",
+        "browser_navigate",
+        "run_tests"
+      ],
+      "phases_completed": [
+        "build",
+        "test",
+        "retest"
+      ],
+      "phases_required": [
+        "build",
+        "test",
+        "repair",
+        "retest"
+      ],
+      "phase_completion": {
+        "required_phases": [
+          "build",
+          "test",
+          "repair",
+          "retest"
+        ],
+        "completed_phases": [
+          "test",
+          "build",
+          "retest"
+        ],
+        "missing_phases": [
+          "repair"
+        ],
+        "completion_rate": 0.75,
+        "min_met": true
+      },
+      "injections": 21,
+      "re_plans": 20,
+      "duration_seconds": 120.04,
+      "error": "max_turns (20) exceeded"
+    },
+    {
+      "task_id": "build_test_3",
+      "category": "build_test",
+      "config": "full",
+      "success": false,
+      "turns": 20,
+      "tool_calls": [
+        "build_project",
+        "run_tests",
+        "runtime_validate",
+        "run_tests",
+        "python",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests",
+        "build_project",
+        "run_tests"
+      ],
+      "unique_tools": [
+        "build_project",
+        "python",
+        "runtime_validate",
+        "run_tests"
+      ],
+      "phases_completed": [
+        "build",
+        "test",
+        "retest"
+      ],
+      "phases_required": [
+        "build",
+        "test",
+        "repair",
+        "retest"
+      ],
+      "phase_completion": {
+        "required_phases": [
+          "build",
+          "test",
+          "repair",
+          "retest"
+        ],
+        "completed_phases": [
+          "test",
+          "build",
+          "retest"
+        ],
+        "missing_phases": [
+          "repair"
+        ],
+        "completion_rate": 0.75,
+        "min_met": true
+      },
+      "injections": 22,
+      "re_plans": 20,
+      "duration_seconds": 130.53,
+      "error": "max_turns (20) exceeded"
+    },
+    {
+      "task_id": "research_synth_1",
+      "category": "research_synth",
+      "config": "full",
+      "success": false,
+      "turns": 20,
+      "tool_calls": [
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search"
+      ],
+      "unique_tools": [
+        "build_project",
+        "web_search"
+      ],
+      "phases_completed": [
+        "research"
+      ],
+      "phases_required": [
+        "research",
+        "plan",
+        "deliver"
+      ],
+      "phase_completion": {
+        "required_phases": [
+          "research",
+          "plan",
+          "deliver"
+        ],
+        "completed_phases": [
+          "research"
+        ],
+        "missing_phases": [
+          "plan",
+          "deliver"
+        ],
+        "completion_rate": 0.3333333333333333,
+        "min_met": false
+      },
+      "injections": 20,
+      "re_plans": 0,
+      "duration_seconds": 117.67,
+      "error": "max_turns (20) exceeded"
+    },
+    {
+      "task_id": "research_synth_2",
+      "category": "research_synth",
+      "config": "full",
+      "success": false,
+      "turns": 20,
+      "tool_calls": [
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search",
+        "build_project",
+        "web_search"
+      ],
+      "unique_tools": [
+        "build_project",
+        "web_search"
+      ],
+      "phases_completed": [
+        "research"
+      ],
+      "phases_required": [
+        "research",
+        "plan",
+        "deliver"
+      ],
+      "phase_completion": {
+        "required_phases": [
+          "research",
+          "plan",
+          "deliver"
+        ],
+        "completed_phases": [
+          "research"
+        ],
+        "missing_phases": [
+          "plan",
+          "deliver"
+        ],
+        "completion_rate": 0.3333333333333333,
+        "min_met": false
+      },
+      "injections": 20,
+      "re_plans": 0,
+      "duration_seconds": 207.58,
+      "error": "max_turns (20) exceeded"
+    },
+    {
+      "task_id": "full_pipeline_1",
+      "category": "full_pipeline",
+      "config": "full",
+      "success": false,
+      "turns": 20,
+      "tool_calls": [
+        "build_project",
+        "web_search",
+        "run_tests",
+        "write_file",
+        "repair_project",
+        "read_file",
+        "runtime_validate",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file",
+        "vision_browser",
+        "read_file"
+      ],
+      "unique_tools": [
+        "build_project",
+        "repair_project",
+        "write_file",
+        "web_search",
+        "runtime_validate",
+        "vision_browser",
+        "read_file",
+        "run_tests"
+      ],
+      "phases_completed": [
+        "research",
+        "build",
+        "repair",
+        "plan",
+        "deliver",
+        "test",
+        "retest"
+      ],
+      "phases_required": [
+        "research",
+        "plan",
+        "build",
+        "test",
+        "repair",
+        "retest",
+        "deliver"
+      ],
+      "phase_completion": {
+        "required_phases": [
+          "research",
+          "plan",
+          "build",
+          "test",
+          "repair",
+          "retest",
+          "deliver"
+        ],
+        "completed_phases": [
+          "test",
+          "repair",
+          "plan",
+          "research",
+          "deliver",
+          "build",
+          "retest"
+        ],
+        "missing_phases": [],
+        "completion_rate": 1.0,
+        "min_met": true
+      },
+      "injections": 24,
+      "re_plans": 0,
+      "duration_seconds": 127.15,
+      "error": "max_turns (20) exceeded"
+    }
+  ],
+  "summary": {
+    "by_config": {
+      "raw": {
+        "total_tasks": 6,
+        "successes": 0,
+        "success_rate": 0.0,
+        "avg_turns": 4.0,
+        "avg_duration_seconds": 32.06,
+        "phase_completion_rate": 0.0,
+        "total_phases_completed": 0,
+        "total_phases_required": 25,
+        "total_injections": 0,
+        "total_replans": 0,
+        "tools_by_frequency": {
+          "build_project": 19,
+          "runtime_validate": 9,
+          "repair_project": 2,
+          "run_tests": 2,
+          "python": 1
+        },
+        "errors": [
+          "loop_detected: runtime_validate called 6 times",
+          "loop_detected: build_project called 4 times",
+          "loop_detected: runtime_validate called 6 times",
+          "loop_detected: build_project called 4 times",
+          "loop_detected: build_project called 4 times",
+          "loop_detected: build_project called 4 times"
+        ]
+      },
+      "workflow": {
+        "total_tasks": 6,
+        "successes": 0,
+        "success_rate": 0.0,
+        "avg_turns": 17.3,
+        "avg_duration_seconds": 129.99,
+        "phase_completion_rate": 0.76,
+        "total_phases_completed": 19,
+        "total_phases_required": 25,
+        "total_injections": 109,
+        "total_replans": 20,
+        "tools_by_frequency": {
+          "build_project": 65,
+          "run_tests": 48,
+          "web_search": 41,
+          "runtime_validate": 26,
+          "read_file": 23,
+          "vision_browser": 20,
+          "repair_project": 2,
+          "python": 2,
+          "write_file": 1
+        },
+        "errors": [
+          "loop_detected: runtime_validate called 6 times",
+          "max_turns (20) exceeded",
+          "max_turns (20) exceeded",
+          "max_turns (20) exceeded",
+          "max_turns (20) exceeded",
+          "max_turns (20) exceeded"
+        ]
+      },
+      "full": {
+        "total_tasks": 6,
+        "successes": 0,
+        "success_rate": 0.0,
+        "avg_turns": 17.3,
+        "avg_duration_seconds": 120.91,
+        "phase_completion_rate": 0.76,
+        "total_phases_completed": 19,
+        "total_phases_required": 25,
+        "total_injections": 108,
+        "total_replans": 40,
+        "tools_by_frequency": {
+          "build_project": 65,
+          "run_tests": 46,
+          "web_search": 41,
+          "read_file": 23,
+          "browser_navigate": 20,
+          "vision_browser": 20,
+          "runtime_validate": 6,
+          "repair_project": 2,
+          "python": 1,
+          "write_file": 1
+        },
+        "errors": [
+          "loop_detected: runtime_validate called 6 times",
+          "max_turns (20) exceeded",
+          "max_turns (20) exceeded",
+          "max_turns (20) exceeded",
+          "max_turns (20) exceeded",
+          "max_turns (20) exceeded"
+        ]
+      }
+    },
+    "deltas": {
+      "workflow": {
+        "delta_success_rate": 0.0,
+        "delta_phase_completion": 0.76,
+        "delta_avg_turns": -13.3
+      },
+      "full": {
+        "delta_success_rate": 0.0,
+        "delta_phase_completion": 0.76,
+        "delta_avg_turns": -13.3
+      }
+    }
+  }
+}

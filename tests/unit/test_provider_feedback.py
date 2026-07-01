@@ -19,6 +19,8 @@ from core.providers.feedback.models import (
 from core.providers.feedback.store import FeedbackStore
 from core.providers.feedback.recorder import DecisionRecorder
 from core.providers.feedback.calibrator import CalibrationEngine
+from core.providers.feedback.models import ProviderResult as _ProviderResult
+from core.providers.memory import provider_memory
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -1205,3 +1207,85 @@ class TestFeedbackEdgeCases:
 
         k2 = context_key("testing", "", "jest")
         assert k2 == ("testing", "", "jest", "")
+
+
+class TestFeedbackLoopIntegration:
+    """RC2 integration: pipeline record → ProviderMemory → Router lookup → scoring.
+
+    Verifies the complete loop that was broken by the fallback chain gap.
+    """
+
+    TEST_PID = "test_feedback_loop_provider"
+
+    def _cleanup(self):
+        """Remove any test keys left in the shared singleton."""
+        to_delete = [k for k in provider_memory._records if k[0] == self.TEST_PID]
+        for k in to_delete:
+            del provider_memory._records[k]
+
+    def test_pipeline_record_router_retrieve(self):
+        """Pipeline records feedback (tt=''), Router retrieves it (tt='agent')."""
+        self._cleanup()
+
+        # Phase 1: Pipeline records execution feedback with model but no task_type
+        provider_memory.record(_ProviderResult(
+            provider_id=self.TEST_PID,
+            capability="coding",
+            success=True,
+            duration_ms=1200.0,
+            tokens=450,
+            metrics={"model": "test_model_v2", "mode": "agent", "rounds": 3},
+        ))
+
+        # Phase 2: Router looks up with task_type + model populated
+        rec = provider_memory.get_distribution(
+            self.TEST_PID, "coding", "agent", "test_model_v2",
+        )
+        assert rec is not None, "Evidence should be retrievable via fallback chain"
+        assert rec.executions >= 1, f"Expected >=1 executions, got {rec.executions}"
+        assert rec.successes == 1, f"Expected 1 success, got {rec.successes}"
+
+        # Phase 3: Score reflects evidence (10th percentile lower bound of Beta(2,1))
+        score = provider_memory.get_performance_score(
+            self.TEST_PID,
+            {"capability": "coding", "task_type": "agent", "model": "test_model_v2"},
+        )
+        # Beta(2,1) lower bound at p=0.10 ≈ 0.365 — distinct from prior 0.5
+        assert score > 0.30, f"Expected score >0.30 for 1/1 evidence, got {score}"
+
+        # Phase 4: Confidence reflects evidence
+        conf = provider_memory.get_confidence(
+            self.TEST_PID, "coding", "agent", "test_model_v2",
+        )
+        assert conf > 0, f"Expected confidence >0 after evidence, got {conf}"
+
+        self._cleanup()
+
+    def test_no_evidence_returns_prior(self):
+        """Without evidence, score = 0.5 (uniform prior)."""
+        self._cleanup()
+
+        score = provider_memory.get_performance_score(
+            "nonexistent_provider",
+            {"capability": "coding", "task_type": "agent", "model": "any"},
+        )
+        assert score == 0.5, f"Expected prior 0.5, got {score}"
+
+    def test_legacy_record_still_retrievable(self):
+        """Backward compat: record_execution still reachable via fallback."""
+        self._cleanup()
+
+        provider_memory.record_execution(
+            provider_id=self.TEST_PID,
+            success=True, duration_ms=500.0,
+            capability="coding",
+        )
+
+        # Router lookup with model
+        rec = provider_memory.get_distribution(
+            self.TEST_PID, "coding", "", "qwen2.5:7b",
+        )
+        assert rec is not None, "Legacy evidence should be retrievable via fallback"
+        assert rec.executions >= 1, f"Expected >=1 executions, got {rec.executions}"
+
+        self._cleanup()

@@ -29,12 +29,14 @@ const itemVariants: Variants = {
 export default function IntegrationsPage() {
   const [integrations, setIntegrations] = useState<IntegrationInfo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   const fetchIntegrations = useCallback(async () => {
+    setError('');
     try {
       const data = await api.integrations.list();
       setIntegrations((data.integrations || []).map((ix: { name: string; connected: boolean; status?: Record<string, unknown> }) => ({ name: ix.name, enabled: ix.connected, connected: ix.connected, label: ix.name.charAt(0).toUpperCase() + ix.name.slice(1) })));
-    } catch (e) { console.warn('[Integrations] fetch failed', e); } finally { setLoading(false); }
+    } catch (e) { console.warn('[Integrations] fetch failed', e); setError('Failed to load integrations'); } finally { setLoading(false); }
   }, []);
 
   useEffect(() => { fetchIntegrations(); }, [fetchIntegrations]);
@@ -43,7 +45,7 @@ export default function IntegrationsPage() {
     try {
       await api.integrations.connect(name);
       setIntegrations(prev => prev.map(i => i.name === name ? { ...i, connected: true } : i));
-    } catch (e) { console.warn('[Integrations] connect failed', e); }
+    } catch (e) { console.warn('[Integrations] connect failed', e); setError(`Failed to connect ${name}`); }
   };
 
   if (loading) return <div className="hud-page p-6"><Skeleton /></div>;
@@ -57,6 +59,12 @@ export default function IntegrationsPage() {
           Connect JARVIS to Gmail, Telegram, WhatsApp, Discord, Slack, GitHub, and Google Drive.
         </p>
       </motion.section>
+
+      {error && (
+        <motion.div variants={itemVariants} className="border border-red-500/30 bg-red-500/5 px-5 py-3">
+          <p className="text-xs text-red-400">{error}</p>
+        </motion.div>
+      )}
 
       <motion.section variants={itemVariants}>
         <div className="hud-label mb-4">Connected Services</div>

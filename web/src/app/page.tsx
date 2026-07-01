@@ -1,341 +1,360 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { motion, type Variants } from 'framer-motion';
-import Card from '@/components/ui/Card';
-import Pill from '@/components/ui/Pill';
-import Badge from '@/components/ui/Badge';
-import Button from '@/components/ui/Button';
-import { api, type SystemStats, type HealthStatus } from '@/lib/api';
+import { useRouter } from 'next/navigation';
+import { api, type SystemStats, type HealthStatus, type SetupStatus } from '@/lib/api';
+
+/* ── Helpers ─────────────────────────────────────────── */
 
 function fmtBytes(v: number): string {
-  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const u = ['B', 'KB', 'MB', 'GB', 'TB'];
   let i = 0;
-  while (v >= 1024 && i < units.length - 1) { v /= 1024; i++; }
-  return `${v.toFixed(1)} ${units[i]}`;
+  while (v >= 1024 && i < u.length - 1) { v /= 1024; i++; }
+  return `${v.toFixed(1)} ${u[i]}`;
 }
 
-const containerVariants: Variants = {
-  hidden: { opacity: 1 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.08, delayChildren: 0.08 },
-  },
-};
+function fmtTime(ts: string): string {
+  const d = new Date(ts);
+  const now = new Date();
+  const diff = now.getTime() - d.getTime();
+  if (diff < 60000) return 'Just now';
+  if (diff < 3600000) return `${Math.floor(diff / 60000)} min ago`;
+  if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+  return d.toLocaleDateString();
+}
 
-const itemVariants: Variants = {
-  hidden: { opacity: 1, y: 0 },
-  visible: { opacity: 1, y: 0 },
-};
+/* ── Types ───────────────────────────────────────────── */
 
-export default function DashboardPage() {
+interface ActivityItem {
+  type: string;
+  description: string;
+  ts: string;
+}
+
+/* ── Home Page ───────────────────────────────────────── */
+
+const QUICK_TASKS = [
+  { label: 'Build a portfolio', query: 'Build a portfolio website with HTML, CSS, and JS' },
+  { label: 'Research a topic', query: 'Research a topic and summarize findings' },
+  { label: 'Analyze a repository', query: 'Analyze this repository and suggest improvements' },
+  { label: 'Deploy to GitHub Pages', query: 'Deploy this project to GitHub Pages' },
+];
+
+const READY_NOW: { id: string; label: string; check?: string }[] = [
+  { id: 'chat', label: 'Chat', check: undefined },
+  { id: 'coding', label: 'Coding', check: undefined },
+  { id: 'research', label: 'Research', check: 'models' },
+  { id: 'build', label: 'Build', check: undefined },
+];
+
+const NEEDS_SETUP: { id: string; label: string; check: string }[] = [
+  { id: 'browser', label: 'Browser', check: 'playwright' },
+  { id: 'email', label: 'Email', check: 'api_keys' },
+  { id: 'voice', label: 'Voice', check: 'api_keys' },
+];
+
+export default function HomePage() {
+  const router = useRouter();
+  const [input, setInput] = useState('');
   const [stats, setStats] = useState<SystemStats | null>(null);
   const [health, setHealth] = useState<HealthStatus | null>(null);
-  const [plugins, setPlugins] = useState<{ plugins: { name: string }[] } | null>(null);
+  const [activity, setActivity] = useState<ActivityItem[]>([]);
+  const [running, setRunning] = useState<{ id: string; label: string; status: string; ts: string }[]>([]);
+  const [setup, setSetup] = useState<SetupStatus | null>(null);
+
+  /* ── Redirect if setup incomplete ── */
+  useEffect(() => {
+    api.setup.status().then(s => {
+      setSetup(s);
+      if (s.phase !== 'complete') router.replace('/welcome');
+    }).catch(() => {});
+  }, [router]);
+
+  /* ── Fetch all data ── */
   const fetchAll = useCallback(async () => {
-    const ac = new AbortController();
-    const timer = setTimeout(() => ac.abort(), 5000);
-    try {
-      const [s, h, p] = await Promise.all([
-        api.system.stats(ac.signal).catch(() => null),
-        api.health(ac.signal).catch(() => null),
-        api.plugins.list(ac.signal).catch(() => null),
-      ]);
-      if (s) setStats(s);
-      if (h) setHealth(h);
-      if (p) setPlugins(p);
-    } catch (e) {
-      console.warn('[Dashboard] fetchAll failed', e);
-    } finally {
-      clearTimeout(timer);
+    const [statsResult, healthResult, actResult, queueResult] = await Promise.all([
+      api.system.stats().catch(() => null),
+      api.health().catch(() => null),
+      api.dashboard.activity.today().catch(() => [] as ActivityItem[]),
+      api.build.queue().catch(() => ({ projects: [] })),
+    ]);
+    if (statsResult) setStats(statsResult);
+    if (healthResult) setHealth(healthResult);
+    if (Array.isArray(actResult)) setActivity(actResult);
+    if (queueResult?.projects) {
+      setRunning(queueResult.projects.slice(0, 5).map((n: any) => ({
+        id: n.name || n.id || `task-${Math.random().toString(36).slice(2, 6)}`,
+        label: n.name || n.goal || 'Task',
+        status: n.status || 'running',
+        ts: n.started_at || '',
+      })));
     }
   }, []);
 
   useEffect(() => {
     fetchAll();
-    const interval = setInterval(fetchAll, 10000);
-    return () => clearInterval(interval);
+    const iv = setInterval(fetchAll, 15000);
+    return () => clearInterval(iv);
   }, [fetchAll]);
 
-  const isHealthy = health?.status === 'healthy' || health?.status === 'ok';
+  const handleSubmit = (query?: string) => {
+    const q = encodeURIComponent(query || input);
+    if (q) router.push(`/chat?q=${q}`);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') handleSubmit();
+  };
+
+  const healthy = health?.status === 'healthy' || health?.status === 'ok';
   const memUsed = stats ? stats.memory.total - stats.memory.available : 0;
-  const pluginCount = plugins?.plugins.length ?? 0;
+  const hasRecentActivity = activity.length > 0;
+  const hasRunningTasks = running.length > 0;
 
   return (
-    <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-8 pb-8">
-      <motion.section
-        variants={itemVariants}
-        className="relative min-h-[520px] overflow-hidden border border-[var(--j-border)] bg-[rgba(var(--j-bg-rgb),0.64)] px-5 py-12 md:px-10 md:py-16"
-      >
-        <div className="hud-grid absolute inset-0" />
-        <div className="absolute left-1/2 top-[-240px] h-[720px] w-[720px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(var(--j-sky-rgb),0.10),transparent_68%)]" />
-        <div className="absolute bottom-[-220px] right-[-160px] h-[520px] w-[520px] rounded-full bg-[radial-gradient(circle,rgba(var(--j-gold-rgb),0.08),transparent_70%)]" />
+    <div className="mx-auto max-w-3xl space-y-10 pb-12">
 
-        <div className="relative z-[1] mx-auto flex max-w-5xl flex-col items-center text-center">
-          <motion.div variants={itemVariants} className="hud-label mb-6">
-            Just A Rather Very Intelligent System
-          </motion.div>
-          <motion.h1
-            variants={itemVariants}
-            className="hud-title bg-gradient-to-br from-white via-[#b0d8f5] to-[var(--j-sky)] bg-clip-text text-[clamp(76px,13vw,150px)] text-transparent"
-          >
-            JARVIS
-          </motion.h1>
-          <motion.div variants={itemVariants} className="my-5 flex items-center justify-center gap-4">
-            <span className="h-px w-14 bg-gradient-to-r from-transparent to-[var(--j-sky)] md:w-24" />
-            <span className="font-mono text-[11px] uppercase tracking-[0.24em] text-[var(--j-text-dim)]">
-              Production Web UI
-            </span>
-            <span className="h-px w-14 bg-gradient-to-r from-[var(--j-sky)] to-transparent md:w-24" />
-          </motion.div>
-          <motion.p variants={itemVariants} className="max-w-2xl text-base leading-8 text-[var(--j-text-dim)] md:text-lg">
-            Full-stack AI dashboard with multi-theme control, live backend operations, voice-ready chat,
-            real-time telemetry, and cinematic HUD interaction patterns.
-          </motion.p>
-
-          <motion.div variants={itemVariants} className="mt-10 flex flex-wrap justify-center gap-3">
-            <Button variant="primary" size="md" onClick={() => window.location.href = '/chat'}>Open Chat</Button>
-            <Button variant="ghost" size="md" onClick={() => window.location.href = '/cli'}>CLI Mode</Button>
-            <Button variant="ghost" size="md" onClick={() => window.location.href = '/monitor'}>Monitor System</Button>
-          </motion.div>
-
-          <motion.div variants={containerVariants} className="mt-12 grid w-full grid-cols-2 gap-px border border-[var(--j-border)] bg-[var(--j-border)] md:grid-cols-4">
-            <HeroStat label="System" value={isHealthy ? 'ONLINE' : 'OFFLINE'} accent={isHealthy ? '#00ff88' : '#ff4757'} />
-            <HeroStat label="CPU Load" value={stats ? `${stats.cpu.percent.toFixed(0)}%` : '--'} />
-            <HeroStat label="Active Plugins" value={`${pluginCount}`} />
-            <HeroStat label="Version" value={health?.version ? `v${health.version}` : 'v1.0'} gold />
-          </motion.div>
+      {/* ── Hero: command input ── */}
+      <section>
+        <div className="text-center mb-6">
+          <h1 className="text-lg font-light tracking-[0.12em] uppercase" style={{ color: 'var(--j-text-dim)' }}>
+            What would you like JARVIS to do?
+          </h1>
         </div>
-      </motion.section>
 
-      {stats && (
-        <motion.section variants={itemVariants}>
-          <SectionTitle label="Live Telemetry" title="System Pulse" />
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-            <MetricCard label="CPU" value={stats.cpu.percent} detail={`${stats.cpu.count} cores`} />
-            <MetricCard label="Memory" value={stats.memory.percent} detail={`${fmtBytes(memUsed)} / ${fmtBytes(stats.memory.total)}`} gold />
-            <MetricCard label="Disk" value={stats.disk.percent} detail={`${fmtBytes(stats.disk.total - stats.disk.free)} / ${fmtBytes(stats.disk.total)}`} />
-          </div>
-        </motion.section>
-      )}
+        <div
+          className="flex items-center gap-3 px-5 py-3 transition-all duration-200 focus-within:shadow-[0_0_24px_rgba(0,210,255,0.08)]"
+          style={{
+            border: '1px solid var(--j-border)',
+            borderRadius: 'var(--j-radius-md)',
+            background: 'rgba(var(--j-bg-rgb),0.6)',
+          }}
+        >
+          <input
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Ask anything..."
+            className="flex-1 bg-transparent text-sm outline-none"
+            style={{ color: 'var(--j-text)', fontFamily: 'var(--j-font-sans)' }}
+          />
+          <button
+            onClick={() => handleSubmit()}
+            disabled={!input.trim()}
+            className="text-xs tracking-[0.12em] uppercase px-4 py-1.5 transition-all duration-200 disabled:opacity-30"
+            style={{
+              background: 'var(--j-sky)',
+              color: '#020406',
+              border: 'none',
+              borderRadius: 'var(--j-radius-sm)',
+              fontFamily: 'var(--j-font-mono)',
+            }}
+          >
+            Ask
+          </button>
+        </div>
 
-      <motion.section variants={itemVariants}>
-        <SectionTitle label="Architecture" title="Core Modules" />
-        <motion.div variants={containerVariants} className="grid grid-cols-1 gap-px bg-[var(--j-border)] md:grid-cols-2 xl:grid-cols-3">
-          {MODULES.map((m, index) => (
-            <motion.div key={m.title} variants={itemVariants}>
-              <Card variant={m.gold ? 'deep' : 'sky'} onClick={() => window.location.href = m.href} className="h-full min-h-[230px] rounded-none">
-                <div className="absolute right-6 top-5 font-display text-6xl leading-none tracking-[0.04em] text-[rgba(var(--j-sky-rgb),0.10)] group-hover:text-[rgba(var(--j-sky-rgb),0.20)]">
-                  {String(index + 1).padStart(2, '0')}
-                </div>
-                <div
-                  className="mb-8 h-0.5 w-8 shadow-[0_0_10px_currentColor]"
-                  style={{ background: m.gold ? 'var(--j-gold)' : 'var(--j-sky)', color: m.gold ? 'var(--j-gold)' : 'var(--j-sky)' }}
-                />
-                <Badge variant={m.gold ? 'hot' : 'default'}>{m.tag}</Badge>
-                <h3 className="mt-4 font-display text-3xl tracking-[0.08em] text-[var(--j-text)]">{m.title}</h3>
-                <p className="mt-3 text-sm leading-7 text-[var(--j-text-dim)]">{m.desc}</p>
-                <div className="mt-6 flex flex-wrap gap-2">
-                  {m.tags.map(tag => <Pill key={tag}>{tag}</Pill>)}
-                </div>
-              </Card>
-            </motion.div>
+        {/* Quick task chips */}
+        <div className="flex flex-wrap gap-2 mt-4">
+          {QUICK_TASKS.map(t => (
+            <button
+              key={t.label}
+              onClick={() => handleSubmit(t.query)}
+              className="text-xs px-3 py-1.5 transition-all duration-200 cursor-pointer"
+              style={{
+                border: '1px solid var(--j-border)',
+                borderRadius: 'var(--j-radius-sm)',
+                color: 'var(--j-text-dim)',
+                background: 'rgba(255,255,255,0.02)',
+                fontFamily: 'var(--j-font-mono)',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--j-sky)'; e.currentTarget.style.color = 'var(--j-sky)'; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--j-border)'; e.currentTarget.style.color = 'var(--j-text-dim)'; }}
+            >
+              {t.label}
+            </button>
           ))}
-        </motion.div>
-      </motion.section>
+        </div>
+      </section>
 
-      <motion.section variants={itemVariants} className="grid grid-cols-1 gap-px bg-[var(--j-border)] lg:grid-cols-[1fr_1.2fr]">
-        <div className="bg-[var(--j-surface)] p-6 md:p-8">
-          <SectionTitle label="Operations" title="Backend Control" compact />
-          <div className="mt-8 grid grid-cols-1 gap-px bg-[var(--j-border)] sm:grid-cols-2">
-            {BACKEND.map(item => (
-              <button
-                key={item.title}
-                onClick={() => window.location.href = item.href}
-                className="bg-[var(--j-surface-hover)] p-5 text-left transition-colors hover:bg-[rgba(var(--j-sky-rgb),0.08)] group"
+      {/* ── System Readiness ── */}
+      <section>
+        <div className="flex items-center gap-2 mb-4">
+          <h2 className="text-xs tracking-[0.12em] uppercase" style={{ color: 'var(--j-text-muted)' }}>System</h2>
+          <span className="h-px flex-1" style={{ background: 'var(--j-border)' }} />
+        </div>
+
+        <div
+          className="grid grid-cols-2 md:grid-cols-4 gap-px"
+          style={{ border: '1px solid var(--j-border)', borderRadius: 'var(--j-radius-md)', overflow: 'hidden' }}
+        >
+          {([
+            { label: 'Server', value: healthy ? 'Healthy' : 'Offline', ok: healthy },
+            { label: 'CPU', value: stats ? `${stats.cpu.percent.toFixed(0)}%` : '--' },
+            { label: 'Memory', value: stats ? fmtBytes(memUsed) : '--' },
+            { label: 'Running Tasks', value: `${running.length}` },
+          ] as const).map(item => (
+            <div
+              key={item.label}
+              className="px-4 py-3 text-center"
+              style={{ background: 'rgba(var(--j-bg-rgb),0.4)' }}
+            >
+              <div className="text-xs font-mono" style={{ color: 'var(--j-text-muted)' }}>{item.label}</div>
+              <div
+                className="text-sm font-mono mt-1"
+                style={{ color: 'ok' in item && item.ok !== undefined ? (item.ok ? 'var(--j-green)' : '#ff4757') : 'var(--j-text)' }}
               >
-                <div className="hud-label mb-3 group-hover:text-[var(--j-sky)]">{item.kicker}</div>
-                <div className="font-display text-2xl tracking-[0.08em]">{item.title}</div>
-                <p className="mt-2 text-xs leading-6 text-[var(--j-text-dim)]">{item.desc}</p>
-              </button>
+                {item.value}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── Ready Now + Capabilities ── */}
+      <section>
+        <div className="flex items-center gap-2 mb-4">
+          <h2 className="text-xs tracking-[0.12em] uppercase" style={{ color: 'var(--j-text-muted)' }}>Ready Now</h2>
+          <span className="h-px flex-1" style={{ background: 'var(--j-border)' }} />
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          {READY_NOW.map(c => (
+            <div
+              key={c.id}
+              className="flex items-center gap-2 px-3 py-2"
+              style={{
+                border: '1px solid rgba(74,222,128,0.15)',
+                borderRadius: 'var(--j-radius-sm)',
+                background: 'rgba(74,222,128,0.04)',
+              }}
+            >
+              <div
+                className="w-1.5 h-1.5 rounded-full shrink-0"
+                style={{ background: 'var(--j-green)', boxShadow: '0 0 6px rgba(74,222,128,0.5)' }}
+              />
+              <span className="text-xs" style={{ color: 'var(--j-text)' }}>{c.label}</span>
+            </div>
+          ))}
+          {NEEDS_SETUP.filter(c => !setup || setup.checks[c.check] !== 'ok').map(c => (
+            <div
+              key={c.id}
+              className="flex items-center gap-2 px-3 py-2"
+              style={{
+                border: '1px solid var(--j-border)',
+                borderRadius: 'var(--j-radius-sm)',
+              }}
+            >
+              <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: 'var(--j-text-muted)' }} />
+              <span className="text-xs flex-1" style={{ color: 'var(--j-text-dim)' }}>{c.label}</span>
+              {c.id === 'browser' && (
+                <button
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    try {
+                      await api.setup.install('playwright');
+                      const updated = await api.setup.status();
+                      setSetup(updated);
+                    } catch { /* non-blocking */ }
+                  }}
+                  className="text-[8px] font-mono uppercase tracking-[0.12em] px-2 py-0.5 transition-all"
+                  style={{
+                    border: '1px solid var(--j-sky)',
+                    borderRadius: 'var(--j-radius-sm)',
+                    color: 'var(--j-sky)',
+                  }}
+                >
+                  Install
+                </button>
+              )}
+              {c.id !== 'browser' && (
+                <a
+                  href="/settings/keys"
+                  className="text-[8px] font-mono uppercase tracking-[0.12em] no-underline"
+                  style={{ color: 'var(--j-text-muted)' }}
+                >
+                  Configure
+                </a>
+              )}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── Running Tasks ── */}
+      {hasRunningTasks && (
+        <section>
+          <div className="flex items-center gap-2 mb-4">
+            <h2 className="text-xs tracking-[0.12em] uppercase m-0" style={{ color: 'var(--j-text-muted)' }}>Running</h2>
+            <span className="h-px flex-1" style={{ background: 'var(--j-border)' }} />
+          </div>
+
+          <div className="space-y-2">
+            {running.map(t => (
+              <div
+                key={t.id}
+                className="flex items-center gap-3 px-4 py-2.5"
+                style={{
+                  border: '1px solid var(--j-border)',
+                  borderRadius: 'var(--j-radius-md)',
+                }}
+              >
+                <div
+                  className="w-1.5 h-1.5 rounded-full shrink-0 animate-pulse"
+                  style={{ background: 'var(--j-gold)', boxShadow: '0 0 8px rgba(245,200,66,0.4)' }}
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm truncate" style={{ color: 'var(--j-text)' }}>{t.label}</div>
+                  <div className="text-xs mt-0.5" style={{ color: 'var(--j-text-muted)' }}>{t.status}</div>
+                </div>
+                {t.ts && (
+                  <div className="text-xs shrink-0" style={{ color: 'var(--j-text-muted)' }}>{fmtTime(t.ts)}</div>
+                )}
+              </div>
             ))}
           </div>
+        </section>
+      )}
+
+      {/* ── Recent Work ── */}
+      <section>
+        <div className="flex items-center gap-2 mb-4">
+          <h2 className="text-xs tracking-[0.12em] uppercase m-0" style={{ color: 'var(--j-text-muted)' }}>Recent Work</h2>
+          <span className="h-px flex-1" style={{ background: 'var(--j-border)' }} />
         </div>
-        <TerminalPanel health={health} stats={stats} />
-      </motion.section>
-    </motion.div>
-  );
-}
 
-function HeroStat({ label, value, gold = false, accent }: { label: string; value: string; gold?: boolean; accent?: string }) {
-  return (
-    <motion.div variants={itemVariants} className="bg-[rgba(var(--j-bg-rgb),0.84)] px-4 py-5 text-center">
-      <div className="font-display text-4xl leading-none tracking-[0.08em]" style={{ color: accent || (gold ? 'var(--j-gold)' : 'var(--j-text)') }}>
-        {value}
-      </div>
-      <div className="mt-2 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--j-text-muted)]">{label}</div>
-    </motion.div>
-  );
-}
+        {hasRecentActivity ? (
+          <div className="space-y-2">
+            {activity.slice(0, 8).map((a, i) => (
+              <div
+                key={i}
+                className="flex items-center gap-3 px-4 py-2.5"
+                style={{
+                  border: '1px solid var(--j-border)',
+                  borderRadius: 'var(--j-radius-md)',
+                }}
+              >
+                <div
+                  className="w-1.5 h-1.5 rounded-full shrink-0"
+                  style={{ background: 'var(--j-sky)', boxShadow: '0 0 6px rgba(0,210,255,0.3)' }}
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm truncate" style={{ color: 'var(--j-text)' }}>{a.description}</div>
+                  <div className="text-xs mt-0.5" style={{ color: 'var(--j-text-muted)' }}>{a.type}</div>
+                </div>
+                <div className="text-xs shrink-0" style={{ color: 'var(--j-text-muted)' }}>{fmtTime(a.ts)}</div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <p className="text-xs" style={{ color: 'var(--j-text-muted)' }}>
+              No activity yet. Ask JARVIS to do something.
+            </p>
+          </div>
+        )}
+      </section>
 
-function SectionTitle({ label, title, compact = false }: { label: string; title: string; compact?: boolean }) {
-  return (
-    <div className={compact ? '' : 'mb-8'}>
-      <div className="hud-label flex items-center gap-3 before:h-px before:w-6 before:bg-[var(--j-sky)]">{label}</div>
-      <h2 className="hud-title mt-3 text-5xl text-[var(--j-text)] md:text-6xl">
-        {title.split(' ')[0]} <span className="text-[var(--j-sky)]">{title.split(' ').slice(1).join(' ')}</span>
-      </h2>
     </div>
   );
 }
-
-function MetricCard({ label, value, detail, gold = false }: { label: string; value: number; detail: string; gold?: boolean }) {
-  const color = gold ? 'var(--j-gold)' : 'var(--j-sky)';
-  return (
-    <Card variant={gold ? 'deep' : 'sky'} className="rounded-none">
-      <div className="flex items-center justify-between">
-        <span className="hud-label">{label}</span>
-        <span className="font-display text-4xl leading-none tracking-[0.08em]" style={{ color }}>{value.toFixed(0)}%</span>
-      </div>
-      <div className="mt-5 h-1.5 bg-[rgba(var(--j-sky-rgb),0.08)]">
-        <motion.div
-          initial={false}
-          animate={{ width: `${Math.min(value, 100)}%` }}
-          transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
-          className="h-full shadow-[0_0_14px_currentColor]"
-          style={{ background: color, color }}
-        />
-      </div>
-      <div className="mt-3 font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--j-text-muted)]">{detail}</div>
-    </Card>
-  );
-}
-
-function TerminalPanel({ health, stats }: { health: HealthStatus | null; stats: SystemStats | null }) {
-  const [diagnostics, setDiagnostics] = useState<any>(null);
-  useEffect(() => {
-    api.diagnostics.all().then(setDiagnostics).catch(() => null);
-  }, []);
-
-  const isHealthy = health?.status === 'healthy' || health?.status === 'ok';
-  const ollamaOk = diagnostics?.data?.environment?.ollama_available;
-  const modelsOk = diagnostics?.data?.models && Object.keys(diagnostics.data.models).length > 0;
-
-  return (
-    <div className="bg-[#020a0f] p-6 font-mono text-xs leading-7 text-[var(--j-text-dim)] md:p-8">
-      <div className="mb-5 flex items-center gap-2 border-b border-[var(--j-border)] pb-4">
-        <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" />
-        <span className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
-        <span className="h-2.5 w-2.5 rounded-full bg-[#28c840]" />
-        <span className="ml-2 text-[10px] uppercase tracking-[0.18em] text-[var(--j-text-muted)]">jarvis-core</span>
-      </div>
-      <TermLine prompt cmd="status --all" />
-      <div className="mt-3">
-        <StatusLine ok={isHealthy} label="api-server" value={health?.status || 'connecting...'} />
-        <StatusLine ok={ollamaOk} label="ollama-host" value={ollamaOk ? 'active' : 'offline'} />
-        <StatusLine ok={modelsOk} label="model-router" value={modelsOk ? 'ready' : 'no models'} />
-        <StatusLine ok label="web-ui" value="hud active" />
-      </div>
-      <div className="mt-5">
-        <TermLine prompt cmd="system --pulse" />
-        <div className="mt-2 grid grid-cols-2 gap-x-5">
-          <span>CPU</span><span className="text-[var(--j-sky)]">{stats ? `${stats.cpu.percent.toFixed(1)}%` : '--'}</span>
-          <span>DISK</span><span className="text-[var(--j-sky)]">{stats ? `${stats.disk.percent.toFixed(1)}%` : '--'}</span>
-          <span>UPTIME</span><span className="text-[var(--j-gold)]">{health?.version || 'v1.0'}</span>
-        </div>
-      </div>
-      <div className="mt-5 flex items-center gap-2">
-        <span className="text-[var(--j-sky)]">jarvis@core:~$</span>
-        <span className="h-4 w-2 bg-[var(--j-sky)] animate-[blink-block_1s_step-end_infinite]" />
-      </div>
-    </div>
-  );
-}
-
-function TermLine({ prompt, cmd }: { prompt: boolean; cmd: string }) {
-  return (
-    <div className="flex gap-3">
-      {prompt && <span className="text-[var(--j-sky)]">jarvis@core:~$</span>}
-      <span className="text-[var(--j-text)]">{cmd}</span>
-    </div>
-  );
-}
-
-function StatusLine({ label, value, ok = false, warn = false }: { label: string; value: string; ok?: boolean; warn?: boolean }) {
-  return (
-    <div className="flex gap-3">
-      <span className={ok ? 'text-[#28c840]' : warn ? 'text-[var(--j-gold)]' : 'text-[var(--j-text-muted)]'}>{ok ? 'OK' : warn ? 'WRN' : '--'}</span>
-      <span className="min-w-24">{label}</span>
-      <span className={warn ? 'text-[var(--j-gold)]' : 'text-[var(--j-text-dim)]'}>{value}</span>
-    </div>
-  );
-}
-
-const MODULES = [
-  {
-    tag: 'Module 01',
-    title: 'AI Core Interface',
-    desc: 'Chat panel, streaming responses, voice input, markdown rendering, model controls, and context-aware command flow.',
-    tags: ['Voice', 'Streaming', 'Models'],
-    href: '/chat',
-  },
-  {
-    tag: 'Module 02',
-    title: 'Backend Control',
-    desc: 'Service controls, health checks, environment configuration, API key vault surfaces, scheduler, and process management.',
-    tags: ['Services', 'Config', 'Vault'],
-    href: '/backend',
-  },
-  {
-    tag: 'Module 03',
-    title: 'Real-time Monitor',
-    desc: 'Live CPU, memory, disk, and network telemetry with animated system pulse indicators and fast operational scanning.',
-    tags: ['CPU', 'Memory', 'Network'],
-    href: '/monitor',
-    gold: true,
-  },
-  {
-    tag: 'Module 04',
-    title: 'Log Viewer',
-    desc: 'Streaming log console with filtering, severity reading, and browser-native operational visibility.',
-    tags: ['Logs', 'Filter', 'Trace'],
-    href: '/logs',
-  },
-  {
-    tag: 'Module 05',
-    title: 'CLI Control Plane',
-    desc: 'Interactive terminal chat, slash commands, nine agent shortcuts, web launcher, diagnostics, and plugin operations.',
-    tags: ['Agents', 'REPL', 'Commands'],
-    href: '/cli',
-  },
-  {
-    tag: 'Module 06',
-    title: 'Theme Studio',
-    desc: 'Theme engine, font switching, CSS variable controls, and visual identity presets for the full web UI.',
-    tags: ['Themes', 'Fonts', 'Tokens'],
-    href: '/settings/themes',
-  },
-  {
-    tag: 'Module 07',
-    title: 'Auth Console',
-    desc: 'Local sign-in surface, guarded app routes, and clean account controls for the browser shell.',
-    tags: ['Session', 'Access', 'Local'],
-    href: '/auth/login',
-    gold: true,
-  },
-  {
-    tag: 'Module 08',
-    title: 'Autonomous Build',
-    desc: 'Deploy JARVIS to autonomously build, test, and repair software with real-time progress tracking.',
-    tags: ['Loops', 'Repair', 'Build'],
-    href: '/build',
-    gold: true,
-  },
-];
-
-const BACKEND = [
-  { kicker: 'Services', title: 'Process Manager', desc: 'Start, stop, restart, and inspect JARVIS services from the browser.', href: '/backend' },
-  { kicker: 'Config', title: 'Env Control', desc: 'Review runtime settings and prepare safe configuration changes.', href: '/settings' },
-  { kicker: 'Security', title: 'Key Vault', desc: 'Keep API key operations visible without exposing raw secrets.', href: '/settings/keys' },
-  { kicker: 'Scheduler', title: 'Cron Jobs', desc: 'Track recurring jobs, automation hooks, and background tasks.', href: '/automation' },
-];

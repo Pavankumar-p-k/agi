@@ -1,0 +1,466 @@
+{
+  "timestamp": "2026-06-26T18:24:08.554199+00:00",
+  "model": "qwen2.5:7b",
+  "configs": [
+    "raw",
+    "pipeline",
+    "pipeline+fsm"
+  ],
+  "tasks": [
+    {
+      "dataset_id": "python_versions",
+      "config": "raw",
+      "fact_recall": 0.625,
+      "subtopic_coverage": 0.25,
+      "contradictions_detected": 0,
+      "hallucinations": 35,
+      "duration_seconds": 42.24,
+      "error": "",
+      "details": {
+        "fact_recall": 0.625,
+        "facts_correct": 5,
+        "facts_total": 8,
+        "subtopic_coverage": 0.25,
+        "subtopics_covered": 1,
+        "subtopics_total": 4,
+        "contradictions_detected": 0,
+        "contradictions_total": 1,
+        "hallucinated_entities": 35,
+        "output_length": 2480
+      },
+      "efsm_transitions": 0,
+      "efsm_forced_transitions": 0,
+      "efsm_loops_prevented": 0,
+      "efsm_timeouts": 0,
+      "efsm_final_state": "",
+      "efsm_entities_found": 0,
+      "efsm_attributes_extracted": 0,
+      "efsm_relations_extracted": 0,
+      "efsm_normalizations_applied": 0,
+      "efsm_validation_checks": 0,
+      "efsm_duplicates_removed": 0,
+      "efsm_stored_facts": 0
+    },
+    {
+      "dataset_id": "python_versions",
+      "config": "pipeline",
+      "fact_recall": 0.375,
+      "subtopic_coverage": 0.0,
+      "contradictions_detected": 1,
+      "hallucinations": 0,
+      "duration_seconds": 0.15,
+      "error": "",
+      "details": {
+        "fact_recall": 0.375,
+        "facts_correct": 3,
+        "facts_total": 8,
+        "subtopic_coverage": 0.0,
+        "subtopics_covered": 0,
+        "subtopics_total": 4,
+        "contradictions_detected": 1,
+        "contradictions_matched": 0,
+        "contradictions_total": 1,
+        "facts_extracted": 11,
+        "facts_retrieved": 5,
+        "overall_confidence": 0.68,
+        "pipeline_data": {
+          "facts": [
+            {
+              "claim": "Python 3.11 was released in October 2022.",
+              "category": "technical",
+              "source": "https://docs.python.org/3/whatsnew/3.11.html",
+              "confidence": 0.85
+            },
+            {
+              "claim": "Key features include exception groups and fine-grained error locations in tracebacks.",
+              "category": "general",
+              "source": "https://docs.python.org/3/whatsnew/3.11.html",
+              "confidence": 0.5
+            },
+            {
+              "claim": "Python 3.12 was released in October 2023.",
+              "category": "technical",
+              "source": "https://docs.python.org/3/whatsnew/3.12.html",
+              "confidence": 0.85
+            },
+            {
+              "claim": "It includes improved f-strings syntax, support for the Linux perf profiler, and is approximately 5-10% faster than Python 3.11.",
+              "category": "comparison",
+              "source": "https://docs.python.org/3/whatsnew/3.12.html",
+              "confidence": 0.7
+            },
+            {
+              "claim": "Python 3.13 was released in October 2024.",
+              "category": "technical",
+              "source": "https://docs.python.org/3/whatsnew/3.13.html",
+              "confidence": 0.85
+            },
+            {
+              "claim": "The headline feature is an experimental free-threaded build mode (PEP 703), which allows the GIL to be disabled.",
+              "category": "pricing",
+              "source": "https://docs.python.org/3/whatsnew/3.13.html",
+              "confidence": 0.7
+            },
+            {
+              "claim": "An experimental JIT compiler is also included.",
+              "category": "general",
+              "source": "https://docs.python.org/3/whatsnew/3.13.html",
+              "confidence": 0.5
+            },
+            {
+              "claim": "As of Python 3.13, free-threaded execution is available as an experimental build configuration.",
+              "category": "pricing",
+              "source": "https://peps.python.org/pep-0703/",
+              "confidence": 0.65
+            },
+            {
+              "claim": "The GIL is not removed by default.",
+              "category": "general",
+              "source": "https://peps.python.org/pep-0703/",
+              "confidence": 0.5
+            },
+            {
+              "claim": "The GIL can be disabled at build time, but remains enabled by default.",
+              "category": "general",
+              "source": "https://blog.python.org/2024/10/python-313-free-threaded.html",
+              "confidence": 0.5
+            },
+            {
+              "claim": "This is NOT a complete GIL removal.",
+              "category": "general",
+              "source": "https://blog.python.org/2024/10/python-313-free-threaded.html",
+              "confidence": 0.5
+            }
+          ],
+          "retrieved": [
+            {
+              "claim": "Python 3.13 was released in October 2024.",
+              "category": "technical",
+              "confidence": 0.85
+            },
+            {
+              "claim": "Python 3.12 was released in October 2023.",
+              "category": "technical",
+              "confidence": 0.85
+            },
+            {
+              "claim": "Python 3.11 was released in October 2022.",
+              "category": "technical",
+              "confidence": 0.85
+            },
+            {
+              "claim": "It includes improved f-strings syntax, support for the Linux perf profiler, and is approximately 5-10% faster than Python 3.11.",
+              "category": "comparison",
+              "confidence": 0.7
+            },
+            {
+              "claim": "As of Python 3.13, free-threaded execution is available as an experimental build configuration.",
+              "category": "pricing",
+              "confidence": 0.65
+            }
+          ],
+          "comparison": {
+            "contradictions": [
+              {
+                "entity": "Python",
+                "attribute": "released",
+                "values": [
+                  "3.13",
+                  "3.12",
+                  "3.11"
+                ]
+              }
+            ],
+            "agreements": [],
+            "gaps": [
+              {
+                "question": "What is the correct released for Python?"
+              }
+            ]
+          },
+          "report": {
+            "summary": "Research on 'What are the key differences between Python 3.11, 3.12, and 3.13?' covered 5 facts from 4 sources. Conflict detected: Contradiction about 'Python' (released): 3.13, 3.12, 3.11 from 3 sources Information corroborated across 4 sources.",
+            "agreements": [],
+            "conflicts": [
+              "Contradiction about 'Python' (released): 3.13, 3.12, 3.11 from 3 sources"
+            ],
+            "gaps": [
+              "Gap: What is the correct released for Python?"
+            ],
+            "overall_confidence": 0.68,
+            "recommendations": [
+              "Resolve contradictions by consulting primary/official sources for: Python",
+              "Address 1 knowledge gaps with targeted follow-up research."
+            ]
+          }
+        }
+      },
+      "efsm_transitions": 0,
+      "efsm_forced_transitions": 0,
+      "efsm_loops_prevented": 0,
+      "efsm_timeouts": 0,
+      "efsm_final_state": "",
+      "efsm_entities_found": 0,
+      "efsm_attributes_extracted": 0,
+      "efsm_relations_extracted": 0,
+      "efsm_normalizations_applied": 0,
+      "efsm_validation_checks": 0,
+      "efsm_duplicates_removed": 0,
+      "efsm_stored_facts": 0
+    },
+    {
+      "dataset_id": "python_versions",
+      "config": "pipeline+fsm",
+      "fact_recall": 0.375,
+      "subtopic_coverage": 0.0,
+      "contradictions_detected": 1,
+      "hallucinations": 0,
+      "duration_seconds": 0.1,
+      "error": "",
+      "details": {
+        "fact_recall": 0.375,
+        "facts_correct": 3,
+        "facts_total": 8,
+        "subtopic_coverage": 0.0,
+        "subtopics_covered": 0,
+        "subtopics_total": 4,
+        "contradictions_detected": 1,
+        "contradictions_matched": 0,
+        "contradictions_total": 1,
+        "facts_extracted": 11,
+        "facts_retrieved": 5,
+        "overall_confidence": 0.68,
+        "pipeline_data": {
+          "facts": [
+            {
+              "claim": "Python 3.11 was released in October 2022.",
+              "category": "technical",
+              "source": "https://docs.python.org/3/whatsnew/3.11.html",
+              "confidence": 0.85
+            },
+            {
+              "claim": "Key features include exception groups and fine-grained error locations in tracebacks.",
+              "category": "general",
+              "source": "https://docs.python.org/3/whatsnew/3.11.html",
+              "confidence": 0.5
+            },
+            {
+              "claim": "Python 3.12 was released in October 2023.",
+              "category": "technical",
+              "source": "https://docs.python.org/3/whatsnew/3.12.html",
+              "confidence": 0.85
+            },
+            {
+              "claim": "It includes improved f-strings syntax, support for the Linux perf profiler, and is approximately 5-10% faster than Python 3.11.",
+              "category": "comparison",
+              "source": "https://docs.python.org/3/whatsnew/3.12.html",
+              "confidence": 0.7
+            },
+            {
+              "claim": "Python 3.13 was released in October 2024.",
+              "category": "technical",
+              "source": "https://docs.python.org/3/whatsnew/3.13.html",
+              "confidence": 0.85
+            },
+            {
+              "claim": "The headline feature is an experimental free-threaded build mode (PEP 703), which allows the GIL to be disabled.",
+              "category": "pricing",
+              "source": "https://docs.python.org/3/whatsnew/3.13.html",
+              "confidence": 0.7
+            },
+            {
+              "claim": "An experimental JIT compiler is also included.",
+              "category": "general",
+              "source": "https://docs.python.org/3/whatsnew/3.13.html",
+              "confidence": 0.5
+            },
+            {
+              "claim": "As of Python 3.13, free-threaded execution is available as an experimental build configuration.",
+              "category": "pricing",
+              "source": "https://peps.python.org/pep-0703/",
+              "confidence": 0.65
+            },
+            {
+              "claim": "The GIL is not removed by default.",
+              "category": "general",
+              "source": "https://peps.python.org/pep-0703/",
+              "confidence": 0.5
+            },
+            {
+              "claim": "The GIL can be disabled at build time, but remains enabled by default.",
+              "category": "general",
+              "source": "https://blog.python.org/2024/10/python-313-free-threaded.html",
+              "confidence": 0.5
+            },
+            {
+              "claim": "This is NOT a complete GIL removal.",
+              "category": "general",
+              "source": "https://blog.python.org/2024/10/python-313-free-threaded.html",
+              "confidence": 0.5
+            }
+          ],
+          "retrieved": [
+            {
+              "claim": "Python 3.13 was released in October 2024.",
+              "category": "technical",
+              "confidence": 0.85
+            },
+            {
+              "claim": "Python 3.12 was released in October 2023.",
+              "category": "technical",
+              "confidence": 0.85
+            },
+            {
+              "claim": "Python 3.11 was released in October 2022.",
+              "category": "technical",
+              "confidence": 0.85
+            },
+            {
+              "claim": "It includes improved f-strings syntax, support for the Linux perf profiler, and is approximately 5-10% faster than Python 3.11.",
+              "category": "comparison",
+              "confidence": 0.7
+            },
+            {
+              "claim": "As of Python 3.13, free-threaded execution is available as an experimental build configuration.",
+              "category": "pricing",
+              "confidence": 0.65
+            }
+          ],
+          "comparison": {
+            "contradictions": [
+              {
+                "entity": "Python",
+                "attribute": "released",
+                "values": [
+                  "3.13",
+                  "3.12",
+                  "3.11"
+                ]
+              }
+            ],
+            "agreements": [],
+            "gaps": [
+              {
+                "question": "What is the correct released for Python?"
+              }
+            ]
+          },
+          "report": {
+            "summary": "Research on 'What are the key differences between Python 3.11, 3.12, and 3.13?' covered 5 facts from 4 sources. Conflict detected: Contradiction about 'Python' (released): 3.13, 3.12, 3.11 from 3 sources Information corroborated across 4 sources.",
+            "agreements": [],
+            "conflicts": [
+              "Contradiction about 'Python' (released): 3.13, 3.12, 3.11 from 3 sources"
+            ],
+            "gaps": [
+              "Gap: What is the correct released for Python?"
+            ],
+            "overall_confidence": 0.68,
+            "recommendations": [
+              "Resolve contradictions by consulting primary/official sources for: Python",
+              "Address 1 knowledge gaps with targeted follow-up research."
+            ]
+          }
+        },
+        "efsm_metrics": {
+          "efsm_final_state": "COMPLETE",
+          "efsm_transitions": 3,
+          "efsm_forced_transitions": 1,
+          "efsm_loops_prevented": 2,
+          "efsm_timeouts": 0,
+          "efsm_validation_failures": 0,
+          "efsm_total_actions": 42,
+          "efsm_entities_found": 11,
+          "efsm_attributes_extracted": 11,
+          "efsm_relations_extracted": 7,
+          "efsm_normalizations_applied": 6,
+          "efsm_validation_checks": 22,
+          "efsm_validation_failures_count": 0,
+          "efsm_duplicates_removed": 11,
+          "efsm_transition_log": [
+            {
+              "from": "START",
+              "to": "DETECT_ENTITIES",
+              "forced": false,
+              "time": 1782498290.9599926,
+              "actions_in_state": 0,
+              "entities_found": 0,
+              "attributes_found": 0,
+              "relations_found": 0
+            },
+            {
+              "from": "DETECT_ENTITIES",
+              "to": "SPLIT_ENTITIES",
+              "forced": true,
+              "time": 1782498291.0180743,
+              "actions_in_state": 5,
+              "entities_found": 9,
+              "attributes_found": 0,
+              "relations_found": 0
+            },
+            {
+              "from": "SPLIT_ENTITIES",
+              "to": "COMPLETE",
+              "forced": false,
+              "time": 1782498291.0469377,
+              "actions_in_state": 37,
+              "entities_found": 11,
+              "attributes_found": 11,
+              "relations_found": 7
+            }
+          ],
+          "efsm_stored_facts": 11
+        }
+      },
+      "efsm_transitions": 3,
+      "efsm_forced_transitions": 1,
+      "efsm_loops_prevented": 2,
+      "efsm_timeouts": 0,
+      "efsm_final_state": "COMPLETE",
+      "efsm_entities_found": 11,
+      "efsm_attributes_extracted": 11,
+      "efsm_relations_extracted": 7,
+      "efsm_normalizations_applied": 6,
+      "efsm_validation_checks": 22,
+      "efsm_duplicates_removed": 11,
+      "efsm_stored_facts": 11
+    }
+  ],
+  "summary": {
+    "raw": {
+      "avg_fact_recall": 0.625,
+      "avg_subtopic_coverage": 0.25,
+      "total_contradictions_detected": 0,
+      "total_hallucinations": 35,
+      "avg_duration": 42.24,
+      "errors": 0,
+      "tasks_completed": 1,
+      "tasks_total": 1
+    },
+    "pipeline": {
+      "avg_fact_recall": 0.375,
+      "avg_subtopic_coverage": 0.0,
+      "total_contradictions_detected": 1,
+      "total_hallucinations": 0,
+      "avg_duration": 0.15,
+      "errors": 0,
+      "tasks_completed": 1,
+      "tasks_total": 1
+    },
+    "pipeline+fsm": {
+      "avg_fact_recall": 0.375,
+      "avg_subtopic_coverage": 0.0,
+      "total_contradictions_detected": 1,
+      "total_hallucinations": 0,
+      "avg_duration": 0.1,
+      "errors": 0,
+      "tasks_completed": 1,
+      "tasks_total": 1
+    },
+    "delta": {
+      "fact_recall": -0.25,
+      "subtopic_coverage": -0.25,
+      "hallucination_reduction": 35,
+      "contradiction_improvement": 1
+    }
+  }
+}

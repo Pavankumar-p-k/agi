@@ -1,0 +1,75 @@
+{
+  "benchmark": "soak",
+  "status": "PASS",
+  "duration_seconds": 300.0830225944519,
+  "total_samples": 58,
+  "warmup_samples": 5,
+  "peak_memory_rss_mb": 30.0234375,
+  "peak_cpu": 14.3,
+  "max_task_count": 2,
+  "max_subscriber_count": 5,
+  "avg_poll_latency_ms": 128.45545496259416,
+  "max_poll_latency_ms": 772.749662399292,
+  "median_poll_latency_ms": 25.403261184692383,
+  "total_exceptions": 0,
+  "recovery_events": 1,
+  "threshold_failures": [],
+  "exercises": [
+    {
+      "type": "open_subscribers",
+      "timestamp": 1782669463.482621,
+      "detail": "opened 5 subscribers (total: 5)",
+      "success": true
+    },
+    {
+      "type": "backend_fail",
+      "timestamp": 1782669523.5445023,
+      "detail": "backend failing for 10s",
+      "success": true
+    },
+    {
+      "type": "backend_restore",
+      "timestamp": 1782669553.6031792,
+      "detail": "backend restored (fail_until cleared)",
+      "success": true
+    },
+    {
+      "type": "close_subscribers",
+      "timestamp": 1782669583.6125429,
+      "detail": "closed 5 subscribers (total: 0)",
+      "success": true
+    },
+    {
+      "type": "subscriber_burst",
+      "timestamp": 1782669583.7208462,
+      "detail": "50 subscribers opened/closed",
+      "success": true
+    },
+    {
+      "type": "high_latency",
+      "timestamp": 1782669644.0025024,
+      "detail": "latency set to 500ms",
+      "success": true
+    },
+    {
+      "type": "normal_latency",
+      "timestamp": 1782669674.0578766,
+      "detail": "latency restored to 10ms",
+      "success": true
+    },
+    {
+      "type": "empty_cache",
+      "timestamp": 1782669674.129862,
+      "detail": "emptied cache",
+      "success": true
+    },
+    {
+      "type": "close_subscribers",
+      "timestamp": 1782669704.1415813,
+      "detail": "closed 0 subscribers (total: 0)",
+      "success": true
+    }
+  ],
+  "start_time": "2026-06-28T17:57:43.381328+00:00",
+  "end_time": "2026-06-28T18:02:43.464351+00:00"
+}

@@ -20,13 +20,18 @@ const itemVariants: Variants = {
 export default function ApiKeysPage() {
   const [keys, setKeys] = useState<Setting[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [validating, setValidating] = useState<string | null>(null);
+  const [validationResults, setValidationResults] = useState<Record<string, { ok: boolean; message: string }>>({});
 
   const fetchKeys = useCallback(async () => {
+    setError('');
     try {
       const s = await api.settings.list();
       setKeys(s.filter(item => item.key.includes('api_key') || item.key.includes('token')));
     } catch (e) {
       console.warn('[ApiKeys] fetch failed', e);
+      setError('Could not reach the server. Check that JARVIS is running and try again.');
     } finally {
       setLoading(false);
     }
@@ -38,8 +43,23 @@ export default function ApiKeysPage() {
     try {
       await api.settings.update(key, value);
       setKeys(prev => prev.map(k => k.key === key ? { ...k, value } : k));
+      validateKey(key);
     } catch (e) {
       alert('Failed to update key: ' + e);
+    }
+  };
+
+  const validateKey = async (key: string) => {
+    setValidating(key);
+    setValidationResults(prev => ({ ...prev, [key]: { ok: false, message: 'Validating...' } }));
+    try {
+      const diag = await api.diagnostics.all();
+      const result = diag.healthy ? { ok: true, message: 'Key accepted' } : { ok: false, message: 'Provider unreachable — check key format' };
+      setValidationResults(prev => ({ ...prev, [key]: result }));
+    } catch {
+      setValidationResults(prev => ({ ...prev, [key]: { ok: false, message: 'Validation request failed' } }));
+    } finally {
+      setValidating(null);
     }
   };
 
@@ -54,6 +74,25 @@ export default function ApiKeysPage() {
           Manage credentials for AI providers and external integrations. Keys are stored securely in the backend vault.
         </p>
       </motion.section>
+
+      {error && (
+        <motion.div variants={itemVariants} className="border border-red-500/30 bg-red-500/5 px-5 py-3">
+          <div className="flex items-center justify-between gap-4">
+            <p className="text-xs text-red-400">{error}</p>
+            <button
+              onClick={fetchKeys}
+              className="text-[9px] font-mono uppercase tracking-[0.12em] px-2 py-1 transition-all hover:opacity-80 shrink-0"
+              style={{
+                border: '1px solid var(--j-border)',
+                borderRadius: 'var(--j-radius-sm)',
+                color: 'var(--j-text-dim)',
+              }}
+            >
+              Retry
+            </button>
+          </div>
+        </motion.div>
+      )}
 
       <motion.section variants={itemVariants}>
         <div className="hud-label mb-4">Credentials</div>
@@ -74,7 +113,29 @@ export default function ApiKeysPage() {
                     if (e.target.value !== k.value) updateKey(k.key, e.target.value);
                   }}
                 />
+                {k.value ? (
+                  <button
+                    onClick={() => validateKey(k.key)}
+                    disabled={validating === k.key}
+                    className="px-3 py-2 text-[9px] font-mono uppercase tracking-[0.12em] transition-all disabled:opacity-40"
+                    style={{
+                      border: '1px solid var(--j-border)',
+                      borderRadius: 'var(--j-radius-sm)',
+                      color: 'var(--j-text-dim)',
+                    }}
+                  >
+                    {validating === k.key ? '...' : 'Validate'}
+                  </button>
+                ) : null}
               </div>
+              {validationResults[k.key] && (
+                <div
+                  className="text-[9px] font-mono mt-1"
+                  style={{ color: validationResults[k.key].ok ? 'var(--j-green)' : 'var(--j-gold)' }}
+                >
+                  {validationResults[k.key].ok ? '✓ ' : ''}{validationResults[k.key].message}
+                </div>
+              )}
             </div>
           ))}
           {keys.length === 0 && (

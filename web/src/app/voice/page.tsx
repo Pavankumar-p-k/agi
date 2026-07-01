@@ -36,8 +36,10 @@ export default function VoicePage() {
   const [config, setConfig] = useState<VoiceConfig | null>(null);
   const [health, setHealth] = useState<VoiceHealth | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   const fetchAll = useCallback(async () => {
+    setError('');
     try {
       const [c, h] = await Promise.all([
         api.voice.settings().catch(() => null),
@@ -51,7 +53,7 @@ export default function VoicePage() {
         setConfig(cfg as unknown as VoiceConfig);
       }
       if (h) setHealth(h as unknown as VoiceHealth);
-    } catch (e) { console.warn('[Voice] fetch failed', e); } finally { setLoading(false); }
+    } catch (e) { console.warn('[Voice] fetch failed', e); setError('Failed to load voice data'); } finally { setLoading(false); }
   }, []);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
@@ -67,6 +69,12 @@ export default function VoicePage() {
           STT, TTS, wake word detection, and emotion analysis pipeline.
         </p>
       </motion.section>
+
+      {error && (
+        <motion.div variants={itemVariants} className="border border-red-500/30 bg-red-500/5 px-5 py-3">
+          <p className="text-xs text-red-400">{error}</p>
+        </motion.div>
+      )}
 
       <motion.section variants={itemVariants}>
         <div className="hud-label mb-4">Pipeline Status</div>

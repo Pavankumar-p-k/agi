@@ -1,0 +1,144 @@
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+WARNING ActivityUpdateService poll: Simulated backend outage
+
+==========================================================
+  SOAK BENCHMARK REPORT --- PASS
+==========================================================
+  Duration:           7200s
+  Samples collected:  1382 (138 warmup)
+  Exercises executed: 168
+
+  -- Resource Usage --
+  Peak memory:        29.0 MB
+  Peak CPU:           14.3%
+  Max async tasks:    2
+  Max subscribers:    60
+
+  -- Latency --
+  Average:            85.7 ms
+  Median:             33.1 ms
+  Maximum:            785.5 ms
+
+  -- Health --
+  Exceptions:         0
+  Recovery events:    36
+
+==========================================================

@@ -22,6 +22,10 @@ class FeatureRegistryScreen(JarvisScreen):
     """
     TUI Feature Registry UI.
     """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._features: list[dict] = []
+
     def compose_main(self) -> ComposeResult:
         yield Label("# FEATURE REGISTRY", id="screen-title")
         yield Label("Manage JARVIS runtime features and capabilities.")
@@ -44,8 +48,8 @@ class FeatureRegistryScreen(JarvisScreen):
         table.clear()
         try:
             data = await self.app.jarvis_client.get_features()
-            features = data.get("features", [])
-            for f in features:
+            self._features = data.get("features", [])
+            for f in self._features:
                 table.add_row(
                     f.get("name", "N/A"),
                     f.get("status", "N/A"),
@@ -61,7 +65,13 @@ class FeatureRegistryScreen(JarvisScreen):
             await self.refresh_features()
         elif event.button.id == "btn-toggle":
             table = self.query_one("#feature-table", DataTable)
-            if table.cursor_row is not None:
-                # In a real impl, we'd need a mapping from row index to feature slug
-                # For brevity in this TUI prototype, we'll assume we can find it
-                self.app.notify("Feature toggling not yet implemented for DataTable selection", severity="warning")
+            if table.cursor_row is not None and table.cursor_row < len(self._features):
+                slug = self._features[table.cursor_row].get("slug")
+                enabled = self._features[table.cursor_row].get("enabled", False)
+                if slug:
+                    try:
+                        await self.app.jarvis_client.toggle_feature(slug, not enabled)
+                        self.app.notify(f"Toggled {slug}", severity="information")
+                        await self.refresh_features()
+                    except Exception as e:
+                        self.app.notify(f"Toggle failed: {e}", severity="error")

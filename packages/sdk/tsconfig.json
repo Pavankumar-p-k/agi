@@ -9,8 +9,9 @@
     "declarationMap": true,
     "sourceMap": true,
     "outDir": "dist",
-    "rootDir": "src",
+    "rootDir": ".",
     "skipLibCheck": true
   },
-  "include": ["src/**/*.ts", "generated/**/*.ts"]
+  "include": ["src/**/*.ts", "generated/**/*.ts"],
+  "exclude": ["src/__tests__/**/*.ts"]
 }

@@ -265,6 +265,48 @@ export const api = {
   models: {
     list: () => request<ModelListResponse>('/api/models'),
     groups: () => request<{ groups: Record<string, string> }>('/api/models/groups'),
+    pull: (modelId: string, onProgress?: (pct: number | null, status: string) => void) =>
+      new Promise<{ success: boolean; model: string; message: string }>((resolve, reject) => {
+        const url = `${API}/api/setup/pull-model`;
+        const token = getToken();
+        fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({ model_id: modelId }),
+        }).then(async (res) => {
+          if (!res.ok) {
+            const text = await res.text().catch(() => '');
+            reject(new Error(text || `HTTP ${res.status}`));
+            return;
+          }
+          const reader = res.body?.getReader();
+          if (!reader) { reject(new Error('No response body')); return; }
+          const decoder = new TextDecoder();
+          let buffer = '';
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                try {
+                  const data = JSON.parse(line.slice(6));
+                  if (data.percent !== undefined && onProgress) onProgress(data.percent, data.status || '');
+                  if (data.success !== undefined) {
+                    resolve({ success: data.success, model: data.model || modelId, message: data.message || '' });
+                    return;
+                  }
+                } catch { /* skip parse errors */ }
+              }
+            }
+          }
+        }).catch(reject);
+      }),
   },
 
   plugins: {
@@ -355,8 +397,8 @@ export const api = {
   },
 
   diagnostics: {
-    all: () => request<DiagnosticsResult>('/api/diagnostics'),
-    models: () => request<{ providers: { name: string; available: boolean }[] }>('/api/diagnostics/models'),
+    all: (signal?: AbortSignal) => request<DiagnosticsResult>('/api/diagnostics', { signal }),
+    models: () => request<{ providers: { name: string; available: boolean; healthy: boolean; latency_ms: number; error: string | null; model: string | null }[] }>('/api/diagnostics/models'),
     integrations: () => request<{ integrations: Integration[] }>('/api/diagnostics/integrations'),
     voice: () => request<VoiceDiagnostics>('/api/diagnostics/voice'),
     environment: () => request<{ disk_free_gb: number; memory_free_mb: number; ollama_available: boolean }>('/api/diagnostics/environment'),
@@ -480,7 +522,10 @@ export const api = {
       restore: (path: string) =>
         request<Record<string, unknown>>('/api/backup/restore', { method: 'POST', body: JSON.stringify({ path }) }),
     },
-    failover: () => request<{ enabled: boolean; profiles: { name: string; healthy: boolean }[] }>('/api/failover/status'),
+    failover: () => request<{
+      enabled: boolean;
+      profiles: { name: string; provider: string; priority: number; healthy: boolean; cooldown_remaining_s: number; failures: number }[];
+    }>('/api/failover/status'),
     daemon: (action: 'start' | 'stop' | 'install' | 'uninstall' | 'status') =>
       request<{ status: string }>('/api/build/daemon', { method: 'POST', body: JSON.stringify({ action }) }),
   },
@@ -562,4 +607,143 @@ export const api = {
     send: (to: string, subject: string, body: string) =>
       request<{ sent: boolean }>('/email/send', { method: 'POST', body: JSON.stringify({ to, subject, body }) }),
   },
+
+  activity: {
+    replay: (id: string) =>
+      request<ReplayDAG>(`/api/activity/${encodeURIComponent(id)}/replay`),
+  },
+
+  setup: {
+    status: () => request<SetupStatus>('/api/setup/status'),
+    install: (component: string) =>
+      request<{ success: boolean; component: string; detail: string }>('/api/setup/install', {
+        method: 'POST',
+        body: JSON.stringify({ component }),
+      }),
+    demo: () =>
+      request<{ success: boolean; duration_ms: number; artifact_path: string; detail: string }>('/api/setup/demo', {
+        method: 'POST',
+      }),
+    complete: () => request<{ success: boolean; phase: string }>('/api/setup/complete', { method: 'POST' }),
+  },
 };
+
+/* ── Explain / ReplayDAG types ────────────────────────── */
+
+export interface ReplayNode {
+  node_id: string;
+  activity_id: string;
+  node_type: string;
+  label: string;
+  status: string;
+  depth: number;
+  parent_id: string | null;
+  agent_id: string | null;
+  workflow_id: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  duration_seconds: number | null;
+  tool: string | null;
+  provider: string | null;
+  model: string | null;
+  retry_count: number;
+  cost: number;
+  input_preview: string;
+  output_preview: string;
+  error: string | null;
+  children: ReplayNode[];
+  timeline_index: number | null;
+  metadata: Record<string, unknown>;
+  artifacts: Record<string, string>;
+}
+
+export interface ReplayEdge {
+  edge_id: string;
+  from_node_id: string;
+  to_node_id: string;
+  edge_type: string;
+  label: string;
+  metadata: Record<string, unknown>;
+}
+
+export interface TimelineEvent {
+  timestamp: number;
+  label: string;
+  node_id: string;
+  node_type: string;
+  status: string;
+  duration_seconds: number | null;
+  detail: string;
+}
+
+export interface CandidateScore {
+  provider_id: string;
+  total_score: number;
+  priority_score: number;
+  historical_score: number;
+  benchmark_score: number;
+  health_score: number;
+  latency_score: number;
+  cost_score: number;
+  budget_score: number;
+  offline_score: number;
+  calibration_adjustment: number;
+}
+
+export interface DecisionOutcome {
+  success: boolean;
+  duration_ms: number;
+  quality_score: number;
+  cost: number;
+  retries: number;
+  error: string | null;
+}
+
+export interface DecisionTrace {
+  decision_id: string;
+  capability: string;
+  selected_provider: string;
+  candidates: CandidateScore[];
+  reasons: string[];
+  outcome: DecisionOutcome | null;
+}
+
+export interface ReplayDAG {
+  activity_id: string;
+  root_id: string | null;
+  all_nodes: Record<string, ReplayNode>;
+  all_edges: ReplayEdge[];
+  timeline: TimelineEvent[];
+  decisions: DecisionTrace[];
+  total_nodes: number;
+  failed_nodes: number;
+  total_duration_seconds: number;
+  unique_tools: string[];
+  unique_providers: string[];
+  total_retries: number;
+  total_cost: number;
+  experience: Record<string, unknown> | null;
+  knowledge: Record<string, unknown>[];
+}
+
+export interface SetupStatus {
+  phase: string;
+  has_been_run: boolean;
+  demo_ran: boolean;
+  installed_models: string[];
+  configured_ollama: boolean;
+  configured_playwright: boolean;
+  hardware: {
+    ram_gb: number;
+    gpu_type: string;
+    gpu_name: string;
+    os: string;
+  };
+  checks: Record<string, string>;
+  recommended_model: {
+    id: string;
+    name: string;
+    size_gb: number;
+  };
+  local_ready: boolean;
+}

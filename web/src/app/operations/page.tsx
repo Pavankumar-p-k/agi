@@ -53,12 +53,12 @@ export default function OperationsCenter() {
       variants={containerVariants}
       initial="hidden"
       animate="visible"
-      className="hud-page"
+      className="hud-page ops-container"
       style={{ padding: '24px 32px', maxWidth: 1400, margin: '0 auto' }}
     >
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <motion.div variants={itemVariants} style={{ marginBottom: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div className="ops-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
             <h1 className="hud-title" style={{ fontSize: 28, margin: 0 }}>Operations Center</h1>
             <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--j-text-dim)' }}>
@@ -98,8 +98,8 @@ export default function OperationsCenter() {
             )}
           </div>
         </div>
-        {Object.keys(counts).length > 0 && (
-          <div style={{ display: 'flex', gap: 16, marginTop: 12, fontSize: 12 }}>
+          {Object.keys(counts).length > 0 && (
+          <div className="ops-status-pills" style={{ display: 'flex', gap: 16, marginTop: 12, fontSize: 12 }}>
             {Object.entries(counts).map(([status, count]) => (
               <span key={status} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                 <span
@@ -152,7 +152,7 @@ export default function OperationsCenter() {
       {/* ── Loading state ───────────────────────────────────────────────── */}
       {loading && (
         <motion.div variants={itemVariants}>
-          <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: 16 }}>
+          <div className="ops-grid-loading" style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: 16 }}>
             <div className="hud-panel" style={{ height: 200 }}>
               <div className="hud-skeleton" style={{ width: '60%', height: 16, margin: 24 }} />
               <div className="hud-skeleton" style={{ width: '90%', height: 48, margin: '8px 24px' }} />
@@ -168,7 +168,7 @@ export default function OperationsCenter() {
 
       {/* ── Main grid ───────────────────────────────────────────────────── */}
       {!loading && (
-        <motion.div variants={itemVariants} style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: 16, marginBottom: 16 }}>
+        <motion.div variants={itemVariants} className="ops-grid-main" style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: 16, marginBottom: 16 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <ActiveGoals
               activities={activities}
@@ -187,6 +187,7 @@ export default function OperationsCenter() {
       {!loading && showGraph && selectedActivity && (
         <motion.div
           variants={itemVariants}
+          className="ops-grid-graph"
           style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}
         >
           <ActivityGraph
@@ -318,6 +319,17 @@ export default function OperationsCenter() {
           </div>
         </motion.div>
       )}
+
+      <style>{`
+        @media (max-width: 767px) {
+          .ops-grid-main { grid-template-columns: 1fr !important; }
+          .ops-grid-graph { grid-template-columns: 1fr !important; }
+          .ops-grid-loading { grid-template-columns: 1fr !important; }
+          .ops-header { flex-wrap: wrap !important; gap: 12px !important; }
+          .ops-status-pills { flex-wrap: wrap !important; gap: 8px !important; }
+          .ops-container { padding: 16px !important; }
+        }
+      `}</style>
 
       {/* ── Activity actions ────────────────────────────────────────────── */}
       {selectedActivity && (selectedActivity.status === 'RUNNING' || selectedActivity.status === 'SUSPENDED') && (

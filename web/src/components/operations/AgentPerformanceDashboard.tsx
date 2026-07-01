@@ -19,12 +19,13 @@ function fmt(v: number | null | undefined, d = '—'): string {
 
 // ── Sub-components ─────────────────────────────────────────────────────────
 
-function MetricCard({ label, value, color, sub }: { label: string; value: string; color?: string; sub?: string }) {
+function MetricCard({ label, value, color, sub, children }: { label: string; value: string; color?: string; sub?: string; children?: React.ReactNode }) {
   return (
     <div style={{ borderRadius: 4, border: '1px solid var(--j-border)', background: 'var(--j-bg)', padding: '14px 16px' }}>
       <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--j-text-dim)', marginBottom: 4 }}>{label}</div>
       <div style={{ fontSize: 22, fontWeight: 700, color: color || 'var(--j-text)' }}>{value}</div>
       {sub && <div style={{ fontSize: 10, color: 'var(--j-text-dim)', marginTop: 2 }}>{sub}</div>}
+      {children && <div style={{ marginTop: 4 }}>{children}</div>}
     </div>
   );
 }
@@ -177,27 +178,21 @@ export function AgentPerformanceDashboard() {
               )}
             </>
           ) : (
-            <div style={{ fontSize: 11, color: 'var(--j-text-dim)' }}>{durAcc.message || 'No data'}</div>
+            <div style={{ fontSize: 11, color: 'var(--j-text-dim)' }}>No data</div>
           )}
         </div>
 
         <div style={{ borderRadius: 4, border: '1px solid var(--j-border)', background: 'var(--j-bg)', padding: '12px 14px' }}>
           <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--j-text-dim)', marginBottom: 8 }}>Risk Accuracy</div>
-          {riskAcc.status !== 'no_data' ? (
-            <>
-              <div style={{ fontSize: 11, marginBottom: 4 }}>
-                Discrimination: <span style={{ color: riskAcc.discrimination_quality === 'good' ? '#22c55e' : '#f5c842', fontWeight: 600 }}>{riskAcc.discrimination_quality}</span>
-              </div>
-              <div style={{ fontSize: 10, color: 'var(--j-text-dim)' }}>
-                High-risk fail rate: {Math.round(riskAcc.high_risk_failure_rate * 100)}% ({riskAcc.high_risk_plans} plans)
-              </div>
-              <div style={{ fontSize: 10, color: 'var(--j-text-dim)' }}>
-                Low-risk fail rate: {Math.round(riskAcc.low_risk_failure_rate * 100)}% ({riskAcc.low_risk_plans} plans)
-              </div>
-            </>
-          ) : (
-            <div style={{ fontSize: 11, color: 'var(--j-text-dim)' }}>{riskAcc.message || 'No data'}</div>
-          )}
+          <div style={{ fontSize: 11, marginBottom: 4 }}>
+            Discrimination: <span style={{ color: riskAcc.discrimination_quality === 'good' ? '#22c55e' : '#f5c842', fontWeight: 600 }}>{riskAcc.discrimination_quality}</span>
+          </div>
+          <div style={{ fontSize: 10, color: 'var(--j-text-dim)' }}>
+            High-risk fail rate: {Math.round(riskAcc.high_risk_failure_rate * 100)}% ({riskAcc.high_risk_plans} plans)
+          </div>
+          <div style={{ fontSize: 10, color: 'var(--j-text-dim)' }}>
+            Low-risk fail rate: {Math.round(riskAcc.low_risk_failure_rate * 100)}% ({riskAcc.low_risk_plans} plans)
+          </div>
         </div>
       </div>
 

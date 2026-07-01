@@ -28,12 +28,14 @@ const itemVariants: Variants = {
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<ProjectInfo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   const fetchProjects = useCallback(async () => {
+    setError('');
     try {
       const data = await api.projects.list();
       setProjects((data.projects || []).map((p: { id: string; name: string; status?: string; description?: string }) => ({ name: p.name, path: p.id, type: p.status || 'active', last_modified: null })));
-    } catch (e) { console.warn('[Projects] fetch failed', e); } finally { setLoading(false); }
+    } catch (e) { console.warn('[Projects] fetch failed', e); setError('Failed to load projects'); } finally { setLoading(false); }
   }, []);
 
   useEffect(() => { fetchProjects(); }, [fetchProjects]);
@@ -52,6 +54,12 @@ export default function ProjectsPage() {
           <Badge variant="new">{projects.length} projects</Badge>
         </div>
       </motion.section>
+
+      {error && (
+        <motion.div variants={itemVariants} className="border border-red-500/30 bg-red-500/5 px-5 py-3">
+          <p className="text-xs text-red-400">{error}</p>
+        </motion.div>
+      )}
 
       <motion.section variants={itemVariants}>
         <div className="hud-label mb-4">All Projects</div>

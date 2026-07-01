@@ -24,7 +24,7 @@ def reset_jobs():
 
 @pytest.mark.asyncio
 async def test_launch_returns_job_id():
-    with patch("core.tools.bg_jobs.asyncio.create_subprocess_shell", new_callable=AsyncMock) as mock_proc:
+    with patch("core.tools.bg_jobs.asyncio.create_subprocess_exec", new_callable=AsyncMock) as mock_proc:
         mock_process = MagicMock()
         mock_process.communicate = AsyncMock(return_value=(b"out", b"err"))
         mock_process.returncode = 0

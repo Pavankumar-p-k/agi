@@ -1,0 +1,217 @@
+{
+  "timestamp": "2026-06-26T08:00:08.236446+00:00",
+  "model": "qwen2.5:7b",
+  "tasks": [
+    {
+      "task_id": "build_test_1",
+      "category": "build_test",
+      "config": "raw",
+      "success": false,
+      "turns": 2,
+      "tool_calls": [
+        "create_document",
+        "build_project",
+        "run_tests",
+        "edit_document",
+        "build_project",
+        "run_tests"
+      ],
+      "unique_tools": [
+        "create_document",
+        "build_project",
+        "run_tests",
+        "edit_document"
+      ],
+      "phases_completed": [],
+      "phases_required": [
+        "build",
+        "test",
+        "repair",
+        "retest"
+      ],
+      "injections": 0,
+      "re_plans": 0,
+      "duration_seconds": 121.9,
+      "error": ""
+    },
+    {
+      "task_id": "build_test_1",
+      "category": "build_test",
+      "config": "workflow",
+      "success": false,
+      "turns": 2,
+      "tool_calls": [
+        "create_document",
+        "write_file",
+        "build_project"
+      ],
+      "unique_tools": [
+        "create_document",
+        "build_project",
+        "write_file"
+      ],
+      "phases_completed": [
+        "build",
+        "repair"
+      ],
+      "phases_required": [
+        "build",
+        "test",
+        "repair",
+        "retest"
+      ],
+      "injections": 1,
+      "re_plans": 0,
+      "duration_seconds": 79.48,
+      "error": ""
+    }
+  ],
+  "per_task_details": [
+    {
+      "task_id": "build_test_1",
+      "category": "build_test",
+      "config": "raw",
+      "success": false,
+      "turns": 2,
+      "tool_calls": [
+        "create_document",
+        "build_project",
+        "run_tests",
+        "edit_document",
+        "build_project",
+        "run_tests"
+      ],
+      "unique_tools": [
+        "create_document",
+        "build_project",
+        "run_tests",
+        "edit_document"
+      ],
+      "phases_completed": [],
+      "phases_required": [
+        "build",
+        "test",
+        "repair",
+        "retest"
+      ],
+      "phase_completion": {
+        "required_phases": [
+          "build",
+          "test",
+          "repair",
+          "retest"
+        ],
+        "completed_phases": [],
+        "missing_phases": [
+          "build",
+          "test",
+          "repair",
+          "retest"
+        ],
+        "completion_rate": 0.0,
+        "min_met": false
+      },
+      "injections": 0,
+      "re_plans": 0,
+      "duration_seconds": 121.9,
+      "error": ""
+    },
+    {
+      "task_id": "build_test_1",
+      "category": "build_test",
+      "config": "workflow",
+      "success": false,
+      "turns": 2,
+      "tool_calls": [
+        "create_document",
+        "write_file",
+        "build_project"
+      ],
+      "unique_tools": [
+        "create_document",
+        "build_project",
+        "write_file"
+      ],
+      "phases_completed": [
+        "build",
+        "repair"
+      ],
+      "phases_required": [
+        "build",
+        "test",
+        "repair",
+        "retest"
+      ],
+      "phase_completion": {
+        "required_phases": [
+          "build",
+          "test",
+          "repair",
+          "retest"
+        ],
+        "completed_phases": [
+          "build",
+          "repair"
+        ],
+        "missing_phases": [
+          "test",
+          "retest"
+        ],
+        "completion_rate": 0.5,
+        "min_met": false
+      },
+      "injections": 1,
+      "re_plans": 0,
+      "duration_seconds": 79.48,
+      "error": ""
+    }
+  ],
+  "summary": {
+    "by_config": {
+      "raw": {
+        "total_tasks": 1,
+        "successes": 0,
+        "success_rate": 0.0,
+        "avg_turns": 2.0,
+        "avg_duration_seconds": 121.9,
+        "phase_completion_rate": 0.0,
+        "total_phases_completed": 0,
+        "total_phases_required": 4,
+        "total_injections": 0,
+        "total_replans": 0,
+        "tools_by_frequency": {
+          "build_project": 2,
+          "run_tests": 2,
+          "create_document": 1,
+          "edit_document": 1
+        },
+        "errors": []
+      },
+      "workflow": {
+        "total_tasks": 1,
+        "successes": 0,
+        "success_rate": 0.0,
+        "avg_turns": 2.0,
+        "avg_duration_seconds": 79.48,
+        "phase_completion_rate": 0.5,
+        "total_phases_completed": 2,
+        "total_phases_required": 4,
+        "total_injections": 1,
+        "total_replans": 0,
+        "tools_by_frequency": {
+          "create_document": 1,
+          "write_file": 1,
+          "build_project": 1
+        },
+        "errors": []
+      }
+    },
+    "deltas": {
+      "workflow": {
+        "delta_success_rate": 0.0,
+        "delta_phase_completion": 0.5,
+        "delta_avg_turns": 0.0
+      }
+    }
+  }
+}

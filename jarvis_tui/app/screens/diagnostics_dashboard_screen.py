@@ -1,22 +1,18 @@
 from __future__ import annotations
 
-# Copyright (c) 2024-2026 JARVIS Project
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 from textual.app import ComposeResult
 from textual.containers import Vertical, Horizontal
 from textual.widgets import Label, Static, Button, DataTable
 from jarvis_tui.app.screens.base_screen import JarvisScreen
+
+COMPONENT_LABELS = {
+    "models": "MODELS",
+    "integrations": "INTEGRATIONS",
+    "voice": "VOICE",
+    "features": "FEATURES",
+    "environment": "ENVIRONMENT",
+    "system": "SYSTEM",
+}
 
 class DiagnosticsDashboardScreen(JarvisScreen):
     """
@@ -48,6 +44,7 @@ class DiagnosticsDashboardScreen(JarvisScreen):
         try:
             data = await self.app.jarvis_client.get_diagnostics()
             diag_data = data.get("data", {})
+            healthy = data.get("healthy", False)
             
             e_table = self.query_one("#env-table", DataTable)
             e_table.clear()
@@ -55,13 +52,46 @@ class DiagnosticsDashboardScreen(JarvisScreen):
             e_table.add_row("Disk Free", f"{env.get('disk_free_gb', 'N/A')} GB")
             e_table.add_row("Memory Free", f"{env.get('memory_free_mb', 'N/A')} MB")
             e_table.add_row("Ollama", "ONLINE" if env.get("ollama_available") else "OFFLINE")
+            e_table.add_row("Network", "REACHABLE" if env.get("network_reachable") else "UNREACHABLE")
+            sys_info = diag_data.get("system", {})
+            if sys_info:
+                e_table.add_row("Uptime", f"{sys_info.get('uptime_seconds', 'N/A')}s")
+                e_table.add_row("Platform", sys_info.get("platform", "N/A"))
             
             h_table = self.query_one("#health-table", DataTable)
             h_table.clear()
-            # Placeholder for component health mapping
-            h_table.add_row("CORE", "💚 HEALTHY", "All systems nominal")
-            h_table.add_row("MODELS", "💚 HEALTHY", f"{len(diag_data.get('models', {}))} models verified")
-            h_table.add_row("INTEGRATIONS", "💛 WARNING", "Slack connection latent")
+            h_table.add_row("CORE", "💚 HEALTHY" if healthy else "❤️ DEGRADED", "All nominal" if healthy else "Some subsystems reporting errors")
+            
+            models = diag_data.get("models", {})
+            models_healthy = all(m.get("healthy", False) for m in (models.values() if isinstance(models, dict) else models))
+            h_table.add_row(
+                "MODELS",
+                "💚 HEALTHY" if models_healthy else "❤️ DEGRADED",
+                f"{len(models.values() if isinstance(models, dict) else models)} provider(s) verified" if models else "No model data"
+            )
+            
+            integrations = diag_data.get("integrations", {})
+            if isinstance(integrations, dict):
+                connected = sum(1 for v in integrations.values() if isinstance(v, dict) and v.get("connected", v.get("healthy", False)))
+                total = len(integrations)
+                int_status = "💚 HEALTHY" if connected == total else "💛 WARNING" if connected > 0 else "❤️ DEGRADED"
+                int_msg = f"{connected}/{total} connected"
+            elif isinstance(integrations, list):
+                int_status = "💚 HEALTHY" if integrations else "💛 WARNING"
+                int_msg = f"{len(integrations)} integration(s)"
+            else:
+                int_status = "—"
+                int_msg = str(integrations) if integrations else "No integration data"
+            h_table.add_row("INTEGRATIONS", int_status, int_msg)
+            
+            voice = diag_data.get("voice", {})
+            if voice:
+                v_ok = voice.get("stt_available", False) or voice.get("tts_available", False) or voice.get("wake_word_available", False)
+                h_table.add_row(
+                    "VOICE",
+                    "💚 HEALTHY" if v_ok else "❤️ DEGRADED",
+                    f"STT={'✓' if voice.get('stt_available') else '✗'} TTS={'✓' if voice.get('tts_available') else '✗'} Wake={'✓' if voice.get('wake_word_available') else '✗'}"
+                )
             
         except Exception as e:
             self.app.notify(f"Error fetching diagnostics: {e}", severity="error")

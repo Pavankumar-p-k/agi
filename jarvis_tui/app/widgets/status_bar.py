@@ -51,22 +51,22 @@ class StatusBar(Widget):
     def watch_session_id(self, val: str) -> None:
         try: self.query_one("#status-session", Label).update(f" session:{val} ")
         except Exception as e:
-            logger.warning(f"[SWALLOWED] {e}")
+            logger.warning(f"status_bar watch_session_id: {e}")
 
     def watch_tokens(self, val: str) -> None:
         try: self.query_one("#status-tokens", Label).update(f" tokens:{val} ")
         except Exception as e:
-            logger.warning(f"[SWALLOWED] {e}")
+            logger.warning(f"status_bar watch_tokens: {e}")
 
     def watch_agents_count(self, val: int) -> None:
         try: self.query_one("#status-agents", Label).update(f" agents:{val} ")
         except Exception as e:
-            logger.warning(f"[SWALLOWED] {e}")
+            logger.warning(f"status_bar watch_agents_count: {e}")
 
     def watch_git_branch(self, val: str) -> None:
         try: self.query_one("#status-git", Label).update(f" git:{val}✓ ")
         except Exception as e:
-            logger.warning(f"[SWALLOWED] {e}")
+            logger.warning(f"status_bar watch_git_branch: {e}")
 
     def on_mount(self) -> None:
         self.set_interval(1.0, self.update_time)
@@ -99,4 +99,4 @@ class StatusBar(Widget):
             else:
                 label.styles.color = "#ee8884"
         except Exception as e:
-            logger.warning(f"[SWALLOWED] {e}")
+            logger.warning(f"status_bar watch_latency: {e}")
