@@ -41,6 +41,8 @@ class OllamaProvider(ModelProvider):
         from core.llm_providers import _build_ollama_payload, _parse_ollama_response
         start = time.time()
         resolved = self._resolve_model(model)
+        kwargs.setdefault("temperature", 0.7)
+        kwargs.setdefault("max_tokens", 4096)
         payload = _build_ollama_payload(resolved, messages, **kwargs)
         async with httpx.AsyncClient(timeout=60.0) as client:
             resp = await client.post(f"{self._base_url}/api/chat", json=payload)

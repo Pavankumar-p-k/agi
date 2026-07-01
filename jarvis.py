@@ -12,7 +12,10 @@ from typing import Any, Callable
 
 if sys.stdout.encoding and sys.stdout.encoding.lower() in ("cp1252", "latin-1", "ansi"):
     os.environ["PYTHONIOENCODING"] = "utf-8"
-    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="backslashreplace")
+    except Exception:
+        pass
 
 logger = logging.getLogger(__name__)
 
@@ -133,7 +136,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = subparsers.add_parser("activity", help="View and manage the activity graph")
     p.add_argument("action", nargs="?", default="list",
-                   choices=["list", "tree", "get", "summary", "watch"])
+                   choices=["list", "tree", "get", "summary", "watch", "cleanup"])
     p.add_argument("args", nargs=argparse.REMAINDER)
     p.set_defaults(func=cmd_activity)
 
@@ -180,8 +183,11 @@ def _run_cli_setup(engine: SetupEngine | None = None) -> bool:
         print(msg)
 
     def on_confirm(prompt: str) -> bool:
-        response = input(f"{prompt} ").strip().lower()
-        return not response or response.startswith("y")
+        try:
+            response = input(f"{prompt} ").strip().lower()
+            return not response or response.startswith("y")
+        except (EOFError, KeyboardInterrupt):
+            return False
 
     def on_choice(question: str, options: list[str]) -> str | None:
         print(f"\n{question}")

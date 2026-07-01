@@ -144,6 +144,8 @@ def get_hardware_info() -> dict:
         pass
     if not gpu_info:
         try:
+            import warnings
+            warnings.filterwarnings("ignore", message="The pynvml package is deprecated")
             from pynvml import nvmlInit, nvmlDeviceGetHandleByIndex, nvmlDeviceGetName, nvmlDeviceGetMemoryInfo
             nvmlInit()
             count = 0

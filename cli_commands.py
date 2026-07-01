@@ -198,6 +198,11 @@ def cmd_server(args: argparse.Namespace) -> int:
     if is_server_reachable(base_url):
         print(f"JARVIS backend already running at {base_url}")
         return 0
+    if args.dry_run:
+        cmd = backend_server_cmd(args.host, args.port, not args.no_reload)
+        print(f"[DRY RUN] Would start server: {' '.join(cmd)}")
+        print(f"[DRY RUN] URL: {base_url}")
+        return 0
     if args.multi_model:
         for model, port in MODEL_PORTS:
             env = common_env()
@@ -360,8 +365,18 @@ def cmd_models(args: argparse.Namespace) -> int:
         from core.model_providers.hybrid import get_platform
         from cli_visuals_new import print_system_msg
         platform = get_platform()
-        print_system_msg(f"Testing provider: {args.provider or 'all'}...", "info")
-        result = asyncio.run(platform.test_model(args.provider, args.model))
+        rest = getattr(args, "args", [])
+        provider_str = rest[0] if rest else None
+        provider = None
+        model = None
+        if provider_str and "/" in provider_str:
+            parts = provider_str.split("/", 1)
+            provider = parts[0]
+            model = parts[1] if len(parts) > 1 else None
+        else:
+            provider = provider_str
+        print_system_msg(f"Testing provider: {provider_str or 'all'}...", "info")
+        result = asyncio.run(platform.test_model(provider, model))
         from rich.console import Console
         console = Console()
         if result.status == "healthy":
@@ -376,8 +391,10 @@ def cmd_models(args: argparse.Namespace) -> int:
         from rich.table import Table
         from rich.console import Console
         console = Console()
-        print_system_msg(f"Benchmarking provider: {args.provider or 'all'}...", "info")
-        results = asyncio.run(get_platform().benchmark(args.provider))
+        rest = getattr(args, "args", [])
+        provider = rest[0] if rest else None
+        print_system_msg(f"Benchmarking provider: {provider or 'all'}...", "info")
+        results = asyncio.run(get_platform().benchmark(provider))
         table = Table(title="Benchmark Results", border_style="blue")
         table.add_column("Provider")
         table.add_column("Model")
@@ -399,7 +416,9 @@ def cmd_models(args: argparse.Namespace) -> int:
     if models_cmd == "switch":
         from core.model_providers.hybrid import get_platform
         platform = get_platform()
-        msg = platform.set_mode_from_string(args.mode)
+        rest = getattr(args, "args", [])
+        mode = rest[0] if rest else "local"
+        msg = platform.set_mode_from_string(mode)
         from cli_visuals_new import print_system_msg
         print_system_msg(msg, "success")
         return 0
@@ -407,12 +426,22 @@ def cmd_models(args: argparse.Namespace) -> int:
     if models_cmd == "start":
         server_args = argparse.Namespace(
             multi_model=True,
-            host=args.host,
-            port=args.port,
-            no_reload=args.no_reload,
-            dry_run=args.dry_run,
+            host=getattr(args, "host", "127.0.0.1"),
+            port=getattr(args, "port", 8000),
+            no_reload=getattr(args, "no_reload", False),
+            dry_run=getattr(args, "dry_run", False),
         )
         return cmd_server(server_args)
+
+    if models_cmd == "apikeys":
+        rest = getattr(args, "args", [])
+        ext_args = argparse.Namespace(
+            models_command="apikeys",
+            key_action=rest[0] if rest else "list",
+            provider_name=rest[1] if len(rest) > 1 else None,
+            key_value=rest[2] if len(rest) > 2 else None,
+        )
+        return cmd_models_extended(ext_args)
     return 0
 
 
@@ -592,7 +621,9 @@ def cmd_settings(args: argparse.Namespace) -> int:
             logger.warning("Failed to set config registry key '%s': %s", key, e)
             return False
 
-    if args.settings_command == "get":
+    settings_cmd = getattr(args, "action", "")
+
+    if settings_cmd == "get":
         try:
             val = store.get(args.key)
             print(val)
@@ -603,7 +634,7 @@ def cmd_settings(args: argparse.Namespace) -> int:
             else:
                 print(f"Error: Setting '{args.key}' not found.")
                 return 1
-    elif args.settings_command == "set":
+    elif settings_cmd == "set":
         parsed_val = _parse_setting_value(args.value)
         try:
             if store.set(args.key, parsed_val):
@@ -621,17 +652,17 @@ def cmd_settings(args: argparse.Namespace) -> int:
             else:
                 print(f"Failed to set {args.key}")
                 return 1
-    elif args.settings_command == "reset":
+    elif settings_cmd == "reset":
         store.reset(args.key)
         if args.key:
             print(f"Reset {args.key} to default.")
         else:
             print("Reset all settings to defaults.")
-    elif args.settings_command == "export":
+    elif settings_cmd == "export":
         data = store.export()
         import json as _json2
         print(_json2.dumps(data, indent=2))
-    elif args.settings_command == "import":
+    elif settings_cmd == "import":
         if store.import_from_json(args.file):
             print(f"Successfully imported settings from {args.file}")
         else:
@@ -2763,6 +2794,7 @@ def _cmd_activity(args, _store=None):
         print("  get <id>               Show activity details")
         print("  summary [id]           Show activity summary")
         print("  watch                  Live activity feed (Ctrl+C to stop)")
+        print("  cleanup [hours]        Mark stale RUNNING activities as FAILED (default: 24h)")
         return 0
 
     store = _store or ActivityStore()
@@ -2914,6 +2946,29 @@ def _cmd_activity(args, _store=None):
                 time.sleep(3)
         except KeyboardInterrupt:
             print("\nStopped.")
+        return 0
+
+    elif cmd_name == "cleanup":
+        from datetime import datetime, timedelta, timezone
+        hours = int(rest[0]) if rest else 24
+        cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
+        activities = mgr.get_active_activities()
+        stale = []
+        for a in activities:
+            if not a.created_at:
+                continue
+            created = a.created_at
+            if created.tzinfo is None:
+                created = created.replace(tzinfo=timezone.utc)
+            if created < cutoff:
+                stale.append(a)
+        if not stale:
+            print(f"No stale RUNNING activities older than {hours}h found.")
+            return 0
+        for a in stale:
+            mgr.mark_failed(a.node_id, error=f"Stale (no update for >{hours}h)")
+            print(f"  FAILED {a.node_id[:16]} {a.label[:50]} (created {a.created_at})")
+        print(f"\nMarked {len(stale)} stale activities as FAILED.")
         return 0
 
     else:

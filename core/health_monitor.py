@@ -134,6 +134,8 @@ class HealthMonitor:
     def _check_gpu(self) -> tuple[bool, str]:
         """Check GPU memory via pynvml."""
         try:
+            import warnings
+            warnings.filterwarnings("ignore", message="The pynvml package is deprecated")
             from pynvml import nvmlDeviceGetHandleByIndex, nvmlDeviceGetMemoryInfo, nvmlInit
             nvmlInit()
             handle = nvmlDeviceGetHandleByIndex(0)

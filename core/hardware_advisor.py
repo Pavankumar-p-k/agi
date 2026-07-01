@@ -66,6 +66,8 @@ def scan_hardware() -> dict[str, Any]:
 
     # Try pynvml (NVIDIA)
     try:
+        import warnings
+        warnings.filterwarnings("ignore", message="The pynvml package is deprecated")
         import pynvml
         pynvml.nvmlInit()
         handle = pynvml.nvmlDeviceGetHandleByIndex(0)
