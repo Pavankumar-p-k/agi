@@ -74,40 +74,21 @@ JARVIS is an all-in-one **AI assistant** that runs on your machine. Unlike cloud
 
 ## 🚀 Quick Start
 
-### Docker (Recommended)
-
-```bash
-git clone https://github.com/Pavankumar-p-k/agi.git
-cd agi
-cp .env.example .env
-docker compose up --build -d
-```
-
-Open [http://localhost:8000](http://localhost:8000) and start talking to JARVIS.
-
-### Native Install
-
 ```bash
 # Prerequisites: Python 3.11+, Ollama running locally
 git clone https://github.com/Pavankumar-p-k/agi.git
 cd agi
 pip install -e .
-python jarvis.py setup   # Run the setup wizard
-python jarvis.py         # Launch the interactive CLI
+python jarvis.py doctor   # One-time setup & diagnostics
+python jarvis.py chat     # Start talking
 ```
 
-### Configuration
+See the **[5-Minute Quick Start](docs/quick_start.md)** for details — covers
+all 11 CLI commands, model selection, project analysis, and troubleshooting.
 
-```env
-# Model Selection
-CHAT_MODEL=ollama/llama3.1:8b
-CODE_MODEL=ollama/qwen2.5-coder:3b
-REASONING_MODEL=ollama/deepseek-r1:1.5b
-
-# API Keys (only if using cloud models)
-OPENAI_API_KEY=sk-...
-ANTHROPIC_API_KEY=sk-...
-```
+Also see:
+- [Architecture overview](ARCHITECTURE.md)
+- [Provider SDK](docs/providers/create_a_provider.md)
 
 ---
 

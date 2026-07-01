@@ -55,6 +55,40 @@ class ForgeProvider(ExecutionProvider):
             last_checked=time.time(),
         )
 
+    _FORGE_TOOLS = frozenset({
+        "bash", "python", "write_file", "edit_file", "read_file",
+        "glob", "grep", "build_project", "repair_project", "run_tests",
+        "create_document", "update_document",
+    })
+
+    async def handle_tool(
+        self, tool_type: str, content: str, **kwargs: Any,
+    ) -> ExecutionResult | None:
+        if tool_type not in self._FORGE_TOOLS:
+            return None
+        from core.tools.execution import execute_tool_block
+        from core.tools._constants import ToolBlock
+        block = ToolBlock(tool_type=tool_type, content=content)
+        try:
+            _desc, result = await execute_tool_block(
+                block, session_id=kwargs.get("session_id", ""),
+            )
+            success = result.get("success", result.get("exit_code", 0) == 0 if "exit_code" in result else True)
+            output = str(result.get("output", result.get("stdout", result.get("results", ""))))
+            error = result.get("error", "") or result.get("stderr", "")
+            return ExecutionResult(
+                success=success,
+                output=output[:10000],
+                error=error,
+                exit_code=result.get("exit_code", 0),
+                metadata={"provider": "forge", "tool_type": tool_type},
+            )
+        except Exception as e:
+            return ExecutionResult(
+                success=False, output="", error=str(e), exit_code=1,
+                metadata={"provider": "forge", "tool_type": tool_type},
+            )
+
     async def execute(
         self, task: dict[str, Any], context: dict[str, Any] | None = None
     ) -> ExecutionResult:

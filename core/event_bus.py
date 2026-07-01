@@ -53,14 +53,19 @@ class EventBus:
         for handler in all_handlers:
             try:
                 if inspect.iscoroutinefunction(handler):
+                    async def _safe_handler():
+                        try:
+                            await handler(channel, payload)
+                        except Exception as err:
+                            logger.error("EventBus handler error for %s: %s", channel, err)
                     try:
                         loop = asyncio.get_event_loop()
                         if loop.is_running():
-                            asyncio.ensure_future(handler(channel, payload))
+                            asyncio.ensure_future(_safe_handler())
                         else:
-                            loop.run_until_complete(handler(channel, payload))
+                            loop.run_until_complete(_safe_handler())
                     except RuntimeError:
-                        asyncio.create_task(handler(channel, payload))
+                        asyncio.create_task(_safe_handler())
                 else:
                     handler(channel, payload)
             except Exception as err:

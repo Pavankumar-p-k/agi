@@ -13,6 +13,7 @@
 import asyncio
 import logging
 import os
+import shlex
 import sys
 from pathlib import Path
 
@@ -36,8 +37,8 @@ async def delegate_to_opencode(
 
         if is_cmd:
             cmd = f'"{opencode_exe}" run "{task}" --dir "{workspace}" --dangerously-skip-permissions'
-            proc = await asyncio.create_subprocess_shell(
-                cmd,
+            proc = await asyncio.create_subprocess_exec(
+                *shlex.split(cmd),
                 cwd=workspace,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,

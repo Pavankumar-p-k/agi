@@ -52,6 +52,25 @@ from core.tools._constants import TOOL_TAGS, ToolBlock
 from core.tools.browser_planner import BrowserPlanner
 from core.tools.security import blocked_tools_for_owner
 
+_TOOL_PROVIDER_MAP: dict[str, str] = {
+    "browser_": "browser",
+    "build_": "forge",
+    "bash": "forge",
+    "python": "forge",
+    "write_file": "forge",
+    "edit_file": "forge",
+    "read_file": "forge",
+    "create_document": "forge",
+    "update_document": "forge",
+    "glob": "forge",
+    "grep": "forge",
+    "web_search": "research",
+    "web_fetch": "research",
+    "send_email": "messaging",
+    "manage_": "forge",
+}
+provider_memory = None
+
 logger = logging.getLogger(__name__)
 
 
@@ -726,6 +745,43 @@ async def route_node(state: AgentState) -> AgentState:
     return state
 
 
+def _get_provider_id(tool_type: str) -> str:
+    for prefix, pid in _TOOL_PROVIDER_MAP.items():
+        if tool_type.startswith(prefix):
+            return pid
+    return "forge"
+
+
+def _record_tool_results(results: list[dict], state: AgentState) -> None:
+    global provider_memory
+    try:
+        if provider_memory is None:
+            from core.providers.memory import provider_memory as _pm
+            provider_memory = _pm
+        for r in results:
+            block = r["block"]
+            result = r["result"]
+            provider_id = _get_provider_id(block.tool_type)
+            success = result.get("success", result.get("exit_code", 0) == 0 if "exit_code" in result else True)
+            error = result.get("error", "") or result.get("stderr", "")
+            if isinstance(error, bytes):
+                error = error.decode("utf-8", errors="replace")
+            if not error and not success:
+                error = result.get("output", "")[:200]
+            from core.providers.feedback.models import ProviderResult
+            pr = ProviderResult(
+                provider_id=provider_id,
+                capability=block.tool_type,
+                success=success,
+                output=r["output_text"],
+                error=error,
+                metrics={"tool_type": block.tool_type, "round": state.round_num},
+            )
+            provider_memory.record(pr)
+    except Exception as e:
+        logger.debug("[provider-memory] record skipped: %s", e)
+
+
 async def _execute_one_tool(
     state: AgentState, block: ToolBlock, idx: int,
 ) -> dict:
@@ -740,6 +796,26 @@ async def _execute_one_tool(
 
     async def _run():
         try:
+            provider = None
+            ctx = state.pipeline_context or {}
+            p = ctx.get("provider")
+            if p is not None and hasattr(p, "handle_tool"):
+                pr_result = await p.handle_tool(
+                    block.tool_type, block.content,
+                    session_id=state.session_id,
+                )
+                if pr_result is not None:
+                    return (
+                        f"({block.tool_type})",
+                        {
+                            "success": pr_result.success,
+                            "output": pr_result.output,
+                            "error": pr_result.error,
+                            "exit_code": pr_result.exit_code,
+                            "provider": p.provider_id,
+                            "duration_ms": pr_result.duration_ms,
+                        },
+                    )
             return await execute_tool_block(
                 block, session_id=state.session_id,
                 disabled_tools=state.disabled_tools_set,
@@ -992,6 +1068,8 @@ async def tool_call_node(state: AgentState) -> AgentState:
             _save_snap(state)
         except Exception as _e:
             logger.debug("[session-db] snapshot save skipped: %s", _e)
+
+    _record_tool_results(results, state)
 
     state.phase = AgentPhase.THINKING
     return state

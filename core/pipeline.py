@@ -213,11 +213,22 @@ class RuntimePipeline:
             logger.debug("[PIPELINE] Decision skipped: %s", e)
 
         # ── Phase A.5: Provider Selection ────────────────────────────────
+        selected_capability = ""
         try:
+            task_ctx = {
+                "capability": "",
+                "goal": goal,
+                "model": model,
+                "task_type": mode or "",
+                "language": "",
+                "framework": "",
+            }
             for cap in capabilities:
-                p = self._provider_router.select(cap)
+                task_ctx["capability"] = cap
+                p = self._provider_router.select(cap, task=task_ctx, record_decision=True)
                 if p:
                     provider = p
+                    selected_capability = cap
                     logger.info("[PIPELINE] Provider: %s for capability=%s", p.provider_id, cap)
                     break
         except Exception as e:
@@ -268,6 +279,7 @@ class RuntimePipeline:
                         steps=step_defs,
                         session_id=session_id or "",
                         owner=owner or "dev",
+                        launch_background=False,
                     )
                     logger.info("[PIPELINE] Workflow created: %s", workflow.workflow_id)
                     if activity:
@@ -402,7 +414,7 @@ class RuntimePipeline:
                 from core.providers.memory import provider_memory
                 pr = ProviderResult(
                     provider_id=provider.provider_id,
-                    capability=capabilities[0] if capabilities else "coding",
+                    capability=selected_capability or (capabilities[0] if capabilities else "coding"),
                     success=success,
                     duration_ms=(time.time() - state.total_start) * 1000 if state.total_start else 0.0,
                     error=state.error or "",
@@ -418,6 +430,25 @@ class RuntimePipeline:
                 provider_memory.record(pr)
                 logger.info("[PIPELINE] Provider memory recorded for %s (success=%s)",
                             provider.provider_id, success)
+
+                # Wire outcome into FeedbackStore + CalibrationEngine
+                try:
+                    decision_id = getattr(self._provider_router, "last_decision_id", None)
+                    if decision_id:
+                        recorder = self._provider_router._get_decision_recorder()
+                        if recorder:
+                            recorder.record_outcome(
+                                decision_id=decision_id,
+                                success=success,
+                                duration_ms=pr.duration_ms,
+                                cost=getattr(pr, "cost", 0.0),
+                                error=pr.error or "",
+                            )
+                        calibrator = self._provider_router._get_calibration_engine()
+                        if calibrator:
+                            calibrator.update_from_outcomes(provider.provider_id, selected_capability)
+                except Exception as cal_err:
+                    logger.debug("[PIPELINE] Calibration update skipped: %s", cal_err)
         except Exception as e:
             logger.debug("[PIPELINE] Provider memory feedback skipped: %s", e)
 
@@ -425,7 +456,12 @@ class RuntimePipeline:
         try:
             from core.long_term_memory.consolidator import Consolidator
             consolidator = Consolidator()
-            asyncio.create_task(consolidator.consolidate_once_async())
+            async def _consolidate_with_timeout():
+                try:
+                    await asyncio.wait_for(consolidator.consolidate_once_async(), timeout=120)
+                except asyncio.TimeoutError:
+                    logger.warning("[PIPELINE] Consolidation timed out after 120s")
+            asyncio.create_task(_consolidate_with_timeout())
             logger.info("[PIPELINE] Learning feedback triggered")
         except Exception as e:
             logger.debug("[PIPELINE] Learning feedback skipped: %s", e)

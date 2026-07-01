@@ -69,6 +69,16 @@ ALWAYS_AVAILABLE = frozenset({
     # Workflow engine — durable multi-step execution
     "workflow_start", "workflow_resume", "workflow_cancel",
     "workflow_status", "workflow_list",
+    # Workspace awareness — desktop context
+    "workspace_snapshot", "workspace_active_window", "workspace_clipboard",
+    "workspace_processes", "workspace_system_stats",
+    # GitHub provider — version control
+    "github_status", "github_clone", "github_pull", "github_push",
+    "github_branch", "github_commit", "github_log", "github_diff",
+    "github_pr_list", "github_pr_create", "github_pr_merge",
+    "github_issue_list", "github_release",
+    # Email provider
+    "email_send",
 })
 
 # Tools that the Personal Assistant always has access to during scheduled
@@ -204,6 +214,29 @@ BUILTIN_TOOL_DESCRIPTIONS: dict[str, str] = {
     "workflow_cancel": "Cancel a running workflow by ID. Marks it CANCELLED in the store and cancels any in-flight step execution. Accepts: workflow_id.",
     "workflow_status": "Get the current status of a workflow: workflow_id, type, status, current_step, total_steps, progress, artifacts, timestamps. Accepts: workflow_id.",
     "workflow_list": "List workflows with optional status filter and limit. Returns workflow_id, type, status, step progress, timestamps, and owner. Accepts: status (optional filter), limit (default 50).",
+    # Workspace awareness tools
+    "workspace_snapshot": "Capture a full desktop snapshot: active window info, open windows, browser state (URL/title/tabs), clipboard contents, process list, and system resource stats (CPU, memory, disk). Use to understand what the user is looking at or what's running on their desktop.",
+    "workspace_active_window": "Get the currently active/focused window on the desktop. Returns title, position, and size. Use to check which application or tab the user is currently interacting with.",
+    "workspace_clipboard": "Read the current clipboard text content. Use to get whatever the user has copied, or to check clipboard state.",
+    "workspace_processes": "List running processes, optionally filtered by name. Returns PID, process name, CPU percentage, memory usage, and status. Use to find specific running programs or check resource usage.",
+    "workspace_system_stats": "Get system resource statistics: CPU usage, memory usage/available, disk usage/free, and system boot time. Use for system health checks and resource monitoring.",
+    # GitHub provider tools
+    "github_status": "Show the current git repository status: branch, staged/unstaged changes, untracked files. Equivalent to 'git status --short --branch'. Use to check what's changed before committing or pushing.",
+    "github_clone": "Clone a git repository from a URL. Performs a shallow clone (--depth 1) for speed. Use to download a remote repository for analysis or build.",
+    "github_pull": "Pull latest changes from a git remote. Fetches and merges from origin/<branch>. Use to sync a local repository with remote changes.",
+    "github_push": "Push local commits to the remote repository. Pushes the specified branch to origin. Use to publish committed changes.",
+    "github_branch": "List all git branches (local and remote). Shows branch names with current branch highlighted. Use to understand repository branching structure.",
+    "github_commit": "Stage all changes and commit with a message. Runs 'git add -A' then 'git commit -m <message>'. Use to save working changes to the local repository.",
+    "github_log": "Show recent commit history. Returns a graph of recent commits with hash, message, and branch info. Use to review what's been changed recently.",
+    "github_diff": "Show unstaged and staged file differences. With optional ref argument, shows diff against that reference. Use to review changes before committing.",
+    "github_pr_list": "List open (or specified state) pull requests via the gh CLI. Returns PR number, title, state, head branch, and base branch. Use to check active PRs.",
+    "github_pr_create": "Create a new pull request via the gh CLI. Requires gh CLI to be installed and authenticated. Specify title, body, head branch, and base branch.",
+    "github_pr_merge": "Merge a pull request by number via the gh CLI. Uses merge commit strategy. Use to complete a reviewed PR.",
+    "github_issue_list": "List open (or specified state) issues via the gh CLI. Returns issue number, title, state, and labels. Use to check tracked issues.",
+    "github_release": "Create a new GitHub release with a tag name and release notes. Uses gh CLI. Use to tag and publish a release.",
+    # Email provider tools
+    "email_send": "Send an email via the MCP email server. Provide recipient (to), subject, body, and optional attachments. Use instead of send_email when you need structured email delivery through the email provider.",
+    "email_send_email": "Alias for email_send. Send an email via the MCP email server.",
 }
 
 

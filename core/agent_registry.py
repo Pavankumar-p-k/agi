@@ -23,6 +23,7 @@ New agents should implement ExecutionProvider (core/providers/base.py).
 import asyncio
 import logging
 import os
+import shlex
 import shutil
 import subprocess
 import warnings
@@ -65,10 +66,8 @@ class Agent:
             return True
         logger.info(f"[AGENTS] Installing {self.label} via: {self.install_cmd}")
         try:
-            # Use create_subprocess_shell for better compatibility with npm on Windows
-            # and to handle command strings directly without complex splitting.
-            proc = await asyncio.create_subprocess_shell(
-                self.install_cmd,
+            proc = await asyncio.create_subprocess_exec(
+                *shlex.split(self.install_cmd),
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
             )

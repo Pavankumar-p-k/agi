@@ -95,6 +95,8 @@ class Consolidator:
         proposals_detected = 0
         try:
             from core.improvement.detector import ImprovementDetector
+            from core.improvement.proposals import ProposalEngine
+            from core.improvement.experiment import ExperimentRunner
             detector = ImprovementDetector(store=self._store)
             proposals = detector.detect_all()
             proposals_detected = len(proposals)
@@ -104,6 +106,27 @@ class Consolidator:
                 for p in proposals:
                     logger.debug("  [proposal] %s (conf=%.2f, cat=%s)",
                                  p.reason, p.confidence, p.category.value)
+                # Wire ProposalEngine + ExperimentRunner
+                try:
+                    prop_engine = ProposalEngine()
+                    changes = prop_engine.evaluate_all(proposals)
+                    if changes:
+                        logger.info("Consolidator: %d knob change(s) proposed", len(changes))
+                        for c in changes:
+                            logger.debug("  [knob] %s = %s (%s)", c.knob_name, c.new_value, c.reason[:60])
+                        exp_runner = ExperimentRunner()
+                        for change in changes:
+                            try:
+                                exp = exp_runner.create_experiment(
+                                    proposal_id=p.proposal_id if hasattr(p, 'proposal_id') else "auto",
+                                    changes=[change],
+                                )
+                                logger.info("Consolidator: experiment %s created for %s",
+                                            exp.experiment_id, change.knob_name)
+                            except Exception as exp_err:
+                                logger.debug("Consolidator: experiment creation skipped: %s", exp_err)
+                except Exception as prop_err:
+                    logger.debug("Consolidator: proposal evaluation skipped: %s", prop_err)
         except Exception as e:
             logger.debug("Consolidator: improvement detection skipped: %s", e)
 

@@ -25,7 +25,8 @@ if _FASTAPI:
         try:
             from core.model_providers.base import health_check_all as models_health
             results["models"] = {}
-            for name, status in (await models_health()).items():
+            raw = await asyncio.wait_for(models_health(), timeout=5.0)
+            for name, status in raw.items():
                 results["models"][name] = {
                     "available": status.available,
                     "healthy": status.healthy,
@@ -33,13 +34,15 @@ if _FASTAPI:
                     "error": getattr(status, "error", None),
                     "model": getattr(status, "model", None),
                 }
+        except asyncio.TimeoutError:
+            errors["models"] = "timeout"
         except Exception as e:
             errors["models"] = str(e)
 
         # Integration health
         try:
             from core.integration_manager import health_check_all as int_health
-            raw = await int_health()
+            raw = await asyncio.wait_for(int_health(), timeout=5.0)
             results["integrations"] = {
                 name: {
                     "connected": s.get("connected", False),
@@ -49,13 +52,15 @@ if _FASTAPI:
                 }
                 for name, s in raw.items()
             }
+        except asyncio.TimeoutError:
+            errors["integrations"] = "timeout"
         except Exception as e:
             errors["integrations"] = str(e)
 
         # Voice health
         try:
             from assistant.voice_pipeline import health_check as voice_health
-            voice_status = await voice_health()
+            voice_status = await asyncio.wait_for(voice_health(), timeout=3.0)
             results["voice"] = {
                 "enabled": voice_status.get("enabled", False),
                 "stt_available": voice_status.get("stt_available", False),
@@ -63,6 +68,8 @@ if _FASTAPI:
                 "wake_word_available": voice_status.get("wake_word_available", False),
                 "error": voice_status.get("error", None),
             }
+        except asyncio.TimeoutError:
+            errors["voice"] = "timeout"
         except Exception as e:
             errors["voice"] = str(e)
 
@@ -76,7 +83,10 @@ if _FASTAPI:
         # Environment
         try:
             from core.environment_monitor import environment_monitor
-            env = environment_monitor.check()
+            env = await asyncio.wait_for(
+                asyncio.get_event_loop().run_in_executor(None, environment_monitor.check),
+                timeout=5.0,
+            )
             results["environment"] = {
                 "disk_free_gb": round(env.disk_free_gb, 1),
                 "memory_free_mb": round(env.memory_free_mb, 0),
@@ -84,6 +94,8 @@ if _FASTAPI:
                 "ollama_latency_ms": round(env.ollama_latency_ms, 1),
                 "network_reachable": env.network_reachable,
             }
+        except asyncio.TimeoutError:
+            errors["environment"] = "timeout"
         except Exception as e:
             errors["environment"] = str(e)
 
@@ -107,7 +119,10 @@ if _FASTAPI:
     @router.get("/api/diagnostics/models")
     async def get_model_diagnostics():
         from core.model_providers.base import health_check_all
-        results = await health_check_all()
+        try:
+            results = await asyncio.wait_for(health_check_all(), timeout=5.0)
+        except asyncio.TimeoutError:
+            results = {}
         return {
             "providers": [
                 {
@@ -125,7 +140,10 @@ if _FASTAPI:
     @router.get("/api/diagnostics/integrations")
     async def get_integration_diagnostics():
         from core.integration_manager import health_check_all
-        results = await health_check_all()
+        try:
+            results = await asyncio.wait_for(health_check_all(), timeout=5.0)
+        except asyncio.TimeoutError:
+            results = {}
         return {
             "integrations": [
                 {"name": name, **s}

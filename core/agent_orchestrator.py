@@ -11,6 +11,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import shlex
 import subprocess
 import sys
 import time
@@ -256,8 +257,8 @@ class AgentOrchestrator:
         """Run a shell command and return structured result."""
         start = time.monotonic()
         try:
-            proc = await asyncio.create_subprocess_shell(
-                command,
+            proc = await asyncio.create_subprocess_exec(
+                *shlex.split(command),
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
                 cwd=cwd,

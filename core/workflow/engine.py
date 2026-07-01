@@ -77,6 +77,7 @@ class WorkflowEngine:
         parent_workflow_id: str | None = None,
         retry_budget: int = 0,
         start_time: float | None = None,
+        launch_background: bool = True,
     ) -> WorkflowInstance:
         workflow_id = f"wf_{uuid.uuid4().hex}"
         now = datetime.utcnow()
@@ -138,8 +139,9 @@ class WorkflowEngine:
 
         actual_start = start_time if start_time is not None else time.monotonic()
         self._workflow_start_times[workflow_id] = actual_start
-        task = asyncio.create_task(self._run_workflow(wf, start_time=actual_start))
-        self._running[workflow_id] = task
+        if launch_background:
+            task = asyncio.create_task(self._run_workflow(wf, start_time=actual_start))
+            self._running[workflow_id] = task
         return wf
 
     async def resume_workflow(self, workflow_id: str) -> WorkflowInstance | None:
@@ -320,6 +322,20 @@ class WorkflowEngine:
         finally:
             self._running.pop(wf.workflow_id, None)
             self._workflow_start_times.pop(wf.workflow_id, None)
+            if wf.status in (WorkflowStatus.COMPLETED, WorkflowStatus.FAILED):
+                self._trigger_improvement_detection()
+
+    def _trigger_improvement_detection(self) -> None:
+        try:
+            from core.long_term_memory.store import KnowledgeStore
+            from core.improvement.detector import ImprovementDetector
+            detector = ImprovementDetector(store=KnowledgeStore())
+            proposals = detector.detect_all()
+            if proposals:
+                for p in proposals[:5]:
+                    logger.info("[improvement] proposal: %s (confidence=%.2f)", p.reason, p.confidence)
+        except Exception as e:
+            logger.debug("[improvement] detection skipped: %s", e)
 
     def _record_workflow_outcome(
         self, wf: WorkflowInstance, start_time: float | None = None,

@@ -11,10 +11,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Background job management for long-running bash commands (#!bg marker)."""
+from __future__ import annotations
+
 import asyncio
 import logging
+import shlex
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional
 
 logger = logging.getLogger(__name__)
@@ -29,6 +32,7 @@ class BackgroundJob:
     stderr: str = ""
     returncode: Optional[int] = None
     done: bool = False
+    watch_task: Optional[asyncio.Task] = None
 
 _jobs: dict[str, BackgroundJob] = {}
 _job_counter: int = 0
@@ -38,8 +42,8 @@ async def launch(command: str, cwd: Optional[str] = None, env: Optional[dict] = 
     global _job_counter
     _job_counter += 1
     job_id = f"bg_{int(time.time())}_{_job_counter}"
-    proc = await asyncio.create_subprocess_shell(
-        command,
+    proc = await asyncio.create_subprocess_exec(
+        *shlex.split(command),
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
         cwd=cwd,
@@ -47,7 +51,7 @@ async def launch(command: str, cwd: Optional[str] = None, env: Optional[dict] = 
     )
     job = BackgroundJob(id=job_id, command=command, start_time=time.time(), process=proc)
     _jobs[job_id] = job
-    asyncio.create_task(_watch_job(job_id))
+    job.watch_task = asyncio.create_task(_watch_job(job_id))
     return job_id
 
 
@@ -85,4 +89,6 @@ def cleanup_old_jobs(max_age_seconds: int = 3600):
     now = time.time()
     stale = [jid for jid, j in _jobs.items() if now - j.start_time > max_age_seconds]
     for jid in stale:
-        _jobs.pop(jid, None)
+        job = _jobs.pop(jid, None)
+        if job and job.watch_task and not job.watch_task.done():
+            job.watch_task.cancel()

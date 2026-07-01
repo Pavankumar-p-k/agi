@@ -151,9 +151,12 @@ def make_agent_execute_fn(
                     "AgentDrivenExecutor: enforcing missing steps: %s", missing
                 )
                 for step_name in missing:
-                    result = await executor.inject_task(
-                        plan_id, step_name, _agent_enforce, context=None,
-                    )
+                    task_info = executor.get_task_for_step(plan_id, step_name)
+                    if task_info:
+                        result = await _agent_enforce(task_info["tool"], task_info.get("default_args", {}))
+                        executor.record_step(plan_id, step_name, result.get("exit_code", -1) == 0 or result.get("sent") is True)
+                    else:
+                        result = {"exit_code": 1, "error": f"Unknown step: {step_name}"}
                     enforced_artifacts = result.get("_artifacts", {})
                     if enforced_artifacts:
                         all_artifacts.update(enforced_artifacts)
@@ -265,7 +268,7 @@ def make_parallel_agent_execute_fn(
                 )
                 for step_name in missing:
                     result = await executor.inject_task(
-                        plan_id, step_name, _agent_enforce, context=None,
+                        plan_id, step_name, overrides=None, context=None,
                     )
                     enforced_artifacts = result.get("_artifacts", {})
                     if enforced_artifacts:

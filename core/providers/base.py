@@ -69,6 +69,13 @@ class ExecutionProvider(ABC):
     async def execute(self, task: dict[str, Any], context: dict[str, Any] | None = None) -> ExecutionResult:
         ...
 
+    async def handle_tool(
+        self, tool_type: str, content: str, **kwargs: Any,
+    ) -> ExecutionResult | None:
+        """Handle an individual tool execution.  Return ``None`` to fall
+        through to the default ``execute_tool_block`` dispatch."""
+        return None
+
     async def stream(self, task: dict[str, Any], context: dict[str, Any] | None = None) -> AsyncIterator[str]:
         yield ""
         raise NotImplementedError(f"{self.provider_id} does not support streaming")

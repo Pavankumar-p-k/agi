@@ -19,6 +19,7 @@ import asyncio
 import logging
 import os
 import re
+import shlex
 import shutil
 import sys
 from collections.abc import Callable
@@ -236,8 +237,8 @@ class AgentLauncher:
                     cmd_str = shell_args[0] if len(shell_args) == 1 else " ".join(
                         f'"{a}"' if " " in a else a for a in shell_args
                     )
-                    proc = await asyncio.create_subprocess_shell(
-                        cmd_str,
+                    proc = await asyncio.create_subprocess_exec(
+                        *shlex.split(cmd_str),
                         stdout=asyncio.subprocess.PIPE,
                         stderr=asyncio.subprocess.PIPE,
                         stdin=asyncio.subprocess.PIPE,

@@ -63,7 +63,17 @@ TOOL_TAGS = {"bash", "python", "web_search", "web_fetch", "read_file", "write_fi
                # Build automation tools
                 "build_project", "repair_project", "run_tests", "runtime_validate", "cancel_build",
                # Workflow engine tools
-               "workflow_start", "workflow_resume", "workflow_cancel",
-               "workflow_status", "workflow_list"}
+                "workflow_start", "workflow_resume", "workflow_cancel",
+                "workflow_status", "workflow_list",
+                # Workspace awareness tools
+                "workspace_snapshot", "workspace_active_window", "workspace_clipboard",
+                "workspace_processes", "workspace_system_stats",
+                # GitHub provider tools
+                "github_status", "github_clone", "github_pull", "github_push",
+                "github_branch", "github_commit", "github_log", "github_diff",
+                "github_pr_list", "github_pr_create", "github_pr_merge",
+                "github_issue_list", "github_release",
+                # Email provider tools
+                "email_send", "email_send_email"}
 
 ToolBlock = namedtuple("ToolBlock", ["tool_type", "content"])

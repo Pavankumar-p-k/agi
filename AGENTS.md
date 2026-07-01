@@ -59,8 +59,10 @@ This document helps AI coding tools understand the JARVIS codebase structure, co
 | B2 — Health cache in async | 🟡 Optional | Low impact for RC2 |
 | Gate 1 — Benchmarks | ✅ Complete | All benchmarks green |
 | Gate 2 — Production validation | ✅ Complete | B1 found and fixed |
+| B1 — Learning loop fix | **✅ FIXED** | `_FALLBACK_CHAIN` 5→9 patterns (commit `6c48f24`) |
+| 2-hour soak | ✅ Complete | 0.3% memory growth, 0 exceptions, 36/36 fault recoveries, 85.7ms avg latency — no threshold violations |
 | UI stabilization | 🟡 Remaining | Web, TUI, Flutter — crashes, races, rendering |
-| Long soak | 🟡 Remaining | 2h → 6h → overnight |
+| Longer soak | 🟡 Remaining | 6h → 12h overnight recommended before GA |
 | Entry-point validation | 🟡 Remaining | CLI, Desktop, Web, TUI, Flutter, Electron |
 | Documentation | 🟡 Remaining | Architecture diagram, Provider SDK, 5-min quick start |
 | **v3.0.0-rc1** | **TAGGED** | `v3.0.0-rc1` at `c46cc38`; B1 fix on top at `6c48f24` |

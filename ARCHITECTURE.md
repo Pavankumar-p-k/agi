@@ -16,25 +16,81 @@ The JARVIS Brain always owns planning, reasoning, decision-making, orchestration
 
 ### Law 2 — One Pipeline
 
-```
-User
-  ↓
-Planner
-  ↓
-Decision
-  ↓
-Capability
-  ↓
-Provider
-  ↓
-Workflow
-  ↓
-Learning
-  ↓
-Memory
-```
+```mermaid
+flowchart TB
+    subgraph Entry["Entry Points"]
+        CLI["CLI (jarvis.py)"]
+        REST["REST (core/main.py)"]
+        TUI["TUI (jarvis_tui/main.py)"]
+        Sched["Scheduler"]
+        IDE["IDE / SDK"]
+    end
 
-Every request follows this pipeline.
+    subgraph Brain["JARVIS Brain — Planning & Control"]
+        Pipe["Runtime Pipeline\n(core/pipeline.py)"]
+        Planner["Planner\n(core/planner/executor.py)"]
+        Decision["Decision Engine\n(core/decision/)"]
+        Strategy["Strategic Reasoning\n(core/strategy/)"]
+        AgentLoop["Agent Loop\n(core/agent_loop.py)"]
+        Tools["Tool Execution\n(core/tools/execution.py)"]
+    end
+
+    subgraph Capabilities["Capability Layer"]
+        Router["Provider Router\n(core/providers/router.py)"]
+        Registry["Capability Registry\n(core/providers/)"]
+        Providers["Provider Adapters\n(build, browser, email, voice, code, deploy...)"]
+    end
+
+    subgraph Execution["Workflow & Activity"]
+        WfEngine["Workflow Engine\n(core/workflow/engine.py)"]
+        ActivityGraph["Activity Graph\n(core/activity/)"]
+        SchedQueue["Scheduler Queue\n(core/scheduler/)"]
+    end
+
+    subgraph Memory["Memory & Learning"]
+        Knowledge["Knowledge Store\n(core/long_term_memory/)"]
+        Consolidator["Consolidator"]
+        Calibration["Calibration Engine\n(core/providers/feedback/)"]
+        Improvement["Improvement System\n(core/improvement/)"]
+        Generalization["Principle Discovery\n(core/generalization/)"]
+        EventBus["Event Bus\n(core/event_bus.py)"]
+    end
+
+    CLI --> Pipe
+    REST --> Pipe
+    TUI --> Pipe
+    Sched --> Pipe
+    IDE --> Pipe
+
+    Pipe --> Planner
+    Planner --> Strategy
+    Strategy --> Decision
+    Decision --> Router
+    Router --> Registry
+    Registry --> Providers
+
+    Providers --> AgentLoop
+    AgentLoop --> Tools
+    Tools --> WfEngine
+
+    WfEngine --> ActivityGraph
+    WfEngine --> Calibration
+    ActivityGraph --> SchedQueue
+    SchedQueue --> Sched
+
+    Tools -.-> EventBus
+    EventBus -.-> Knowledge
+    Knowledge --> Consolidator
+    Consolidator --> Improvement
+    Improvement --> Generalization
+    Generalization -.-> Decision
+
+    style Entry fill:#e1f5fe,stroke:#0288d1
+    style Brain fill:#f3e5f5,stroke:#7b1fa2
+    style Capabilities fill:#e8f5e9,stroke:#388e3c
+    style Execution fill:#fff3e0,stroke:#f57c00
+    style Memory fill:#fce4ec,stroke:#c62828
+```
 
 ### Law 3 — Capability, Never Provider
 

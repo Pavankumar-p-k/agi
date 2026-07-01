@@ -117,7 +117,10 @@ async def list_plugins(request: Request):
     plugins = []
     for name, plugin in registry.plugins.items():
         try:
-            health = await plugin.health_check()
+            health = await asyncio.wait_for(plugin.health_check(), timeout=3.0)
+        except asyncio.TimeoutError:
+            health = {"healthy": False, "error": "timeout"}
+            logger.warning("[core.routes.operations] plugin %s health check timed out", name)
         except Exception as e:
             logger.warning("[core.routes.operations] plugin health check failed: %s", e)
             health = {"healthy": False}
