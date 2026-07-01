@@ -57,6 +57,7 @@ dependencies = [
     "pyotp",
     "python-socketio>=5.0.0",
     "rich>=13.0.0",
+    "alembic>=1.12.0",
 ]
 
 [project.optional-dependencies]
@@ -123,6 +124,7 @@ include = [
     "skills*",
     "tools*",
     "utils*",
+    "alembic*",
 ]
 exclude = [
     "tests*",

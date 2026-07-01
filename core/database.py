@@ -16,6 +16,7 @@ core/database.py â€” All SQLAlchemy models + async DB engine
 """
 import logging
 from datetime import datetime
+from pathlib import Path
 
 from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
@@ -47,7 +48,12 @@ async def init_db():
 
     from alembic import command
 
-    alembic_cfg = Config("alembic.ini")
+    _here = Path(__file__).resolve().parent.parent
+    _ini = _here / "alembic.ini"
+    if not _ini.exists():
+        logger.warning("[DB] alembic.ini not found at %s — skipping migrations", _ini)
+        return
+    alembic_cfg = Config(str(_ini))
     command.upgrade(alembic_cfg, "head")
     print("[DB] Database initialized (alembic upgrade head)")
 

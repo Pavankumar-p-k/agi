@@ -131,7 +131,11 @@ async def lifespan(app: FastAPI):
     from core.auth import AuthManager, init_firebase
     from core.database import init_db
 
-    await init_db()
+    try:
+        await init_db()
+    except Exception as e:
+        logger.warning("[LIFESPAN] Database init failed (non-fatal): %s", e)
+        startup_status["warnings"].append(f"database: {e}")
 
     # Subagent orphan recovery
     try:

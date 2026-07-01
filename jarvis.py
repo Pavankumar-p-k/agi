@@ -198,7 +198,7 @@ def main() -> int:
     parser = build_parser()
     args = parser.parse_args()
 
-    _SETUP_SKIP = {"version", "demo", "doctor", "setup", None}
+    _SETUP_SKIP = {"version", "demo", "doctor", "setup", "server", "web", None}
     if args.subcommand not in _SETUP_SKIP:
         engine = SetupEngine()
 
