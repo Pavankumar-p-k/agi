@@ -16,12 +16,15 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import os
 import subprocess
 import sys
 import time
 
 from cli_helpers import build_cli_context, is_agentic_prompt, print_plan_preview
+
+logger = logging.getLogger(__name__)
 from cli_requests import (
     extract_reply,
     is_limited_mode_reply,
@@ -189,6 +192,7 @@ def cmd_cli(args: argparse.Namespace) -> int:
 
 
 def cmd_server(args: argparse.Namespace) -> int:
+    from cli_server import ensure_server_running
     check_host = "127.0.0.1" if args.host == "0.0.0.0" else args.host
     base_url = f"http://{check_host}:{args.port}"
     if is_server_reachable(base_url):
@@ -212,17 +216,17 @@ def cmd_server(args: argparse.Namespace) -> int:
             spawn_background(f"Ollama-{model}", ["ollama", "serve"], cwd=ROOT, env=env, dry_run=args.dry_run)
         if not args.dry_run:
             time.sleep(2)
-
-    env = common_env()
-    if args.multi_model:
+        env = common_env()
         env["OLLAMA_MULTI_INSTANCE"] = "1"
         env["OLLAMA_MODEL_ENDPOINTS"] = ";".join(f"{model}=http://127.0.0.1:{port}" for model, port in MODEL_PORTS)
-    return run_command(
-        backend_server_cmd(args.host, args.port, not args.no_reload),
-        cwd=BACKEND,
-        env=env,
-        dry_run=args.dry_run,
-    )
+        return run_command(
+            backend_server_cmd(args.host, args.port, not args.no_reload),
+            cwd=BACKEND, env=env, dry_run=args.dry_run,
+        )
+
+    ensure_server_running(base_url, str(args.host), int(args.port))
+    print(f"JARVIS backend ready at {base_url}")
+    return 0
 
 
 def cmd_restart(args: argparse.Namespace) -> int:
@@ -239,8 +243,10 @@ def cmd_restart(args: argparse.Namespace) -> int:
 
 
 def cmd_gui(args: argparse.Namespace) -> int:
+    from cli_server import ensure_server_running
     api_url = args.api_url or f"http://{args.host}:{args.port}"
     ws_url = args.ws_url or f"ws://{args.host}:{args.port}/ws"
+    ensure_server_running(api_url, str(args.host), int(args.port))
     cmd = [
         "flutter",
         "run",
@@ -464,26 +470,17 @@ def cmd_web(args: argparse.Namespace) -> int:
         return 0
 
     import webbrowser
+    from cli_server import ensure_server_running
     host = args.host or "127.0.0.1"
     port = args.port or 8000
-    url = f"http://{host}:{port}/chat"
-    print(f"Starting JARVIS server + web UI at {url}")
-
-    if not args.no_open:
-        webbrowser.open(url)
-
+    url = f"http://{host}:{port}/"
     check_host = "127.0.0.1" if host == "0.0.0.0" else host
     base_url = f"http://{check_host}:{port}"
-    if is_server_reachable(base_url):
-        print(f"JARVIS backend already running at {base_url}")
-        return 0
-    env = common_env()
-    return run_command(
-        backend_server_cmd(host, port, reload_enabled=not args.no_reload),
-        cwd=BACKEND,
-        env=env,
-        dry_run=args.dry_run,
-    )
+    ensure_server_running(base_url, host, port)
+    print(f"JARVIS server + web UI at {url}")
+    if not args.no_open:
+        webbrowser.open(url)
+    return 0
 
 
 def cmd_os(args: argparse.Namespace) -> int:
@@ -591,7 +588,8 @@ def cmd_settings(args: argparse.Namespace) -> int:
             from core.config_registry import config as _cfg
             _cfg.set(key, val)
             return True
-        except Exception:
+        except Exception as e:
+            logger.warning("Failed to set config registry key '%s': %s", key, e)
             return False
 
     if args.settings_command == "get":
@@ -616,7 +614,8 @@ def cmd_settings(args: argparse.Namespace) -> int:
                 else:
                     print(f"Failed to set {args.key}")
                     return 1
-        except Exception:
+        except Exception as e:
+            logger.warning("Settings store failed for '%s': %s", args.key, e)
             if _set_config_registry(args.key, parsed_val):
                 print(f"Successfully set {args.key} = {parsed_val}")
             else:
@@ -697,6 +696,14 @@ def cmd_plugin(args):
         return 0
     elif args.plugin_action == "install":
         pkg = args.id
+        import re
+        if not re.match(r'^[a-zA-Z][-a-zA-Z0-9_.]+$', pkg):
+            print(f"JARVIS > Invalid package name: {pkg}")
+            return 1
+        confirm = input(f"Install plugin '{pkg}' from PyPI? [y/N] ").strip().lower()
+        if confirm != 'y':
+            print("JARVIS > Installation cancelled.")
+            return 0
         print(f"JARVIS > Installing plugin package: {pkg}")
         try:
             subprocess.check_call([sys.executable, "-m", "pip", "install", pkg])
@@ -1324,95 +1331,31 @@ def cmd_index(args: argparse.Namespace) -> int:
 
 def cmd_setup(args: argparse.Namespace) -> int:
     """Interactive setup wizard for first-time JARVIS configuration."""
-    print("=" * 60)
-    print("  JARVIS Setup Wizard")
-    print("=" * 60)
-    print()
+    from core.setup.engine import SetupEngine
 
-    checks = 0
-    passed = 0
+    engine = SetupEngine()
 
-    # 1. Python version
-    checks += 1
-    py_ok = sys.version_info >= (3, 10)
-    print(f"  [{chr(0x221A) if py_ok else 'x'}] Python {sys.version_info.major}.{sys.version_info.minor} {'OK' if py_ok else '(3.10+ required)'}")
-    if py_ok:
-        passed += 1
+    def on_message(msg: str) -> None:
+        print(msg)
 
-    # 2. Config file
-    checks += 1
-    try:
-        from core.config_schema import JarvisConfig
-        cfg = JarvisConfig.load()
-        config_ok = True
-        print(f"  [{chr(0x221A)}] Config loaded: {cfg.__class__.__name__}")
-        passed += 1
-    except Exception as e:
-        config_ok = False
-        print(f"  [x] Config error: {e}")
+    def on_confirm(prompt: str) -> bool:
+        response = input(f"{prompt} ").strip().lower()
+        return not response or response.startswith("y")
 
-    # 3. Required packages
-    checks += 1
-    required = ["fastapi", "uvicorn", "httpx", "litellm", "prompt_toolkit", "pygments"]
-    missing = []
-    for mod in required:
+    def on_choice(question: str, options: list[str]) -> str | None:
+        print(f"\n{question}")
+        for i, opt in enumerate(options, 1):
+            print(f"  {i}. {opt}")
         try:
-            __import__(mod)
-        except ImportError:
-            missing.append(mod)
-    deps_ok = len(missing) == 0
-    if deps_ok:
-        print(f"  [{chr(0x221A)}] All required packages installed")
-        passed += 1
-    else:
-        print(f"  [x] Missing packages: {', '.join(missing)}")
+            idx = int(input(f"Choice (1-{len(options)}): ").strip())
+            if 1 <= idx <= len(options):
+                return options[idx - 1]
+        except (ValueError, EOFError):
+            pass
+        return None
 
-    # 4. API keys
-    checks += 1
-    key_vars = {"OPENAI_API_KEY": "OpenAI", "ANTHROPIC_API_KEY": "Anthropic", "GEMINI_API_KEY": "Gemini"}
-    found_keys = [v for k, v in key_vars.items() if os.getenv(k)]
-    if found_keys:
-        print(f"  [{chr(0x221A)}] API keys detected: {', '.join(found_keys)}")
-        passed += 1
-    else:
-        print("  [i] No API keys found. Set OPENAI_API_KEY or ANTHROPIC_API_KEY in your environment.")
-        checks -= 1
-
-    # 5. Docker
-    checks += 1
-    try:
-        r = subprocess.run(["docker", "info"], capture_output=True, timeout=5)
-        docker_ok = r.returncode == 0
-        print(f"  [{chr(0x221A) if docker_ok else 'i'}] Docker {'available' if docker_ok else 'not found (sandboxing unavailable)'}")
-        if docker_ok:
-            passed += 1
-    except (FileNotFoundError, subprocess.TimeoutExpired):
-        print("  [i] Docker not found (sandboxing unavailable)")
-
-    # 6. Git repo
-    checks += 1
-    try:
-        r = subprocess.run(["git", "rev-parse", "--is-inside-work-tree"], capture_output=True, timeout=5)
-        git_ok = r.returncode == 0
-        print(f"  [{chr(0x221A) if git_ok else 'i'}] Git repository {'detected' if git_ok else 'not detected'}")
-        if git_ok:
-            passed += 1
-    except (FileNotFoundError, subprocess.TimeoutExpired):
-        print("  [i] Git not found")
-
-    # Summary
-    print()
-    print("-" * 60)
-    print(f"  {passed}/{checks} checks passed")
-    if passed < checks:
-        print()
-        print("  Quick fixes:")
-        if missing:
-            print(f"    pip install {' '.join(missing)}")
-        if not found_keys:
-            print("    set OPENAI_API_KEY=your_key_here")
-    print("=" * 60)
-    return 0 if passed >= min(checks, 4) else 1
+    engine.run_full_setup(on_message=on_message, on_confirm=on_confirm, on_choice=on_choice)
+    return 0
 
 
 def cmd_debug(args: argparse.Namespace) -> int:
@@ -1466,7 +1409,8 @@ def cmd_status(args: argparse.Namespace) -> int:
             print_system_msg(f"Backend Core: ONLINE ({base_url})", "success")
         else:
             print_system_msg(f"Backend Core: DEGRADED ({resp.status_code})", "warning")
-    except Exception:
+    except Exception as e:
+        logger.warning("Backend health check failed: %s", e)
         print_system_msg(f"Backend Core: OFFLINE", "error")
         
     return 0
@@ -1481,6 +1425,26 @@ def cmd_doctor(args):
 
     console = Console()
     print_system_msg("Running JARVIS Production Doctor...", "info")
+
+    # Setup status
+    try:
+        from core.setup.engine import SetupEngine
+        engine = SetupEngine()
+        s = engine.status()
+        phase = s["phase"]
+        phase_style = {"complete": "green", "in_progress": "yellow", "failed": "red", "not_started": "dim"}
+        style = phase_style.get(phase, "white")
+        lines = [
+            f"[bold]Phase:[/] [{style}]{phase}[/]",
+            f"[bold]Default model:[/] {s['recommended_model']['name']}",
+            f"[bold]Hardware:[/] {s['hardware']['ram_gb']}GB RAM / {s['hardware']['gpu_name'] or 'No GPU'} / {s['hardware']['os']}",
+        ]
+        for name, status in s["checks"].items():
+            icon = "✓" if status == "ok" else ("○" if status == "missing" else "x")
+            lines.append(f"  {icon} {name}: {status}")
+        console.print(Panel("\n".join(lines), title="Setup", border_style="cyan"))
+    except Exception as e:
+        console.print(f"[dim]Setup status unavailable: {e}[/]")
 
     try:
         from core.feature_registry import get_feature_report
@@ -1620,16 +1584,16 @@ def cmd_doctor(args):
                 filled = int(bar_len * healthy_count / max(total, 1))
                 bar = "█" * filled + "░" * (bar_len - filled)
                 console.print(f"  [bold]{cap:15s}[/] {bar} {healthy_count}/{total}")
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("Capability coverage check failed: %s", e)
 
     if getattr(args, 'json', False):
         import json as _json
         try:
             from core.feature_registry import get_feature_report
             console.print(_json.dumps(get_feature_report(), indent=2))
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("JSON feature report failed: %s", e)
 
     print_system_msg("Doctor complete.", "success")
     return 0
@@ -1772,8 +1736,8 @@ def cmd_home(args):
             f"Issues: {len(diag.issues)}\n"
             f"Capability Gaps: {len(diag.capability_gaps)}",
             title="Diagnostics", border_style="green" if diag.status == "ok" else "yellow"))
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("Diagnostics import failed: %s", e)
 
     try:
         from core.model_providers.hybrid import get_platform
@@ -1786,8 +1750,8 @@ def cmd_home(args):
             f"Mode: [bold]{mode}[/]\n"
             f"Providers: {len(models)} total, [green]{healthy} healthy[/]",
             title="Models", border_style="blue"))
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("Models import failed: %s", e)
 
     try:
         from core.integration_manager import get_integration_manager
@@ -1797,8 +1761,8 @@ def cmd_home(args):
         console.print(Panel(
             f"Integrations: {len(integrations)} total, [green]{connected} connected[/]",
             title="Integrations", border_style="magenta"))
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("Integrations import failed: %s", e)
 
     try:
         from core.sub_agents.registry import agent_registry
@@ -1806,8 +1770,8 @@ def cmd_home(args):
         console.print(Panel(
             f"Agents: [bold]{len(agents)}[/] registered",
             title="Agents", border_style="yellow"))
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("Agent registry import failed: %s", e)
 
     try:
         mem_mgr = _get_memory_manager()
@@ -1815,8 +1779,8 @@ def cmd_home(args):
         console.print(Panel(
             f"Memory entries: [bold]{entries}[/]",
             title="Memory", border_style="green"))
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("Memory manager import failed: %s", e)
 
     print_system_msg("Use /help for available commands, or run a subcommand like 'jarvis models list'", "info")
     return 0
@@ -1834,7 +1798,8 @@ def _get_memory_count(mgr=None) -> int:
         mgr = _get_memory_manager()
     try:
         return len(mgr.load_all())
-    except Exception:
+    except Exception as e:
+        logger.warning("Memory count failed: %s", e)
         return 0
 
 
@@ -1980,7 +1945,8 @@ def cmd_voice(args):
             f"Input devices: {len(input_devs)}\n"
             f"Output devices: {len(output_devs)}",
             title="Audio Hardware", border_style="blue"))
-    except Exception:
+    except Exception as e:
+        logger.warning("sounddevice query failed: %s", e)
         console.print("[yellow]sounddevice not available[/]")
 
     if args.voice_command == "test":
@@ -2250,7 +2216,8 @@ def cmd_integrations(args):
             try:
                 status = asyncio.run(mgr.health_check(name))
                 healthy = "✅" if status.healthy else "❌"
-            except Exception:
+            except Exception as ex:
+                logger.warning("Integration health check failed for '%s': %s", name, ex)
                 healthy = "?"
             table.add_row(name, icon, healthy)
         console.print(table)
@@ -2586,41 +2553,20 @@ def cmd_mcp(args):
     return 0
 
 
-def cmd_remind(args): return 0
-def cmd_note(args): return 0
-def cmd_document(args): return 0
-def cmd_vision(args): return 0
-
-
-def cmd_goal(args): return 0
-def cmd_plan(args): return 0
-def cmd_develop(args): return 0
-def cmd_generate_ui(args): return 0
-def cmd_opencode(args): return 0
-def cmd_tools(args): return 0
-
-
 def cmd_tui(args):
     from cli_server import ensure_server_running
     from cli_utils import common_env
     env = common_env()
     base_url = env.get("JARVIS_SERVER", "http://127.0.0.1:8000")
     ensure_server_running(base_url)
-    from jarvis_tui.main import JarvisApp
+    try:
+        from jarvis_tui.main import JarvisApp
+    except ImportError:
+        print("TUI not installed. Run: pip install -e .[tui]")
+        return 1
     app = JarvisApp()
     app.run()
     return 0
-def cmd_gui_electron(args): return 0
-
-
-def cmd_boot(args): return 0
-def cmd_cli_design(args): return 0
-def cmd_cli_frames(args): return 0
-def cmd_autonomy_logs(args): return 0
-def cmd_autonomy_clear(args): return 0
-def cmd_design(args): return 0
-
-
 def _cmd_scheduler(args):
     """Handle scheduler sub-commands from the CLI."""
     import asyncio
@@ -2979,7 +2925,6 @@ def _cmd_activity(args, _store=None):
 cmd_activity = _cmd_activity
 
 
-def cmd_frames(args): return 0
 
 
 # ── Primary Commands (Phase 7 CLI) ─────────────────────────────────────────
@@ -3264,9 +3209,7 @@ _ADVANCED_COMMANDS = {
     "setup": "Run setup wizard for first-time configuration",
     "debug": "Inspect runtime state",
     "cleanup-audit": "Map active modules and orphan candidates",
-    "boot": "Show the animated boot screen",
     "status": "Show current JARVIS autonomous status",
-    "design": "Show the CLI animation and build plan",
     "scheduler": "Autonomous scheduler: start, stop, pause, resume, submit, list, status, cancel, set-priority, tick",
 }
 
@@ -3301,9 +3244,7 @@ def cmd_advanced(args):
     cmd_setup = getattr(_mod, 'cmd_setup', lambda a: 0)
     cmd_debug = getattr(_mod, 'cmd_debug', lambda a: 0)
     cmd_cleanup_audit = getattr(_mod, 'cmd_cleanup_audit', lambda a: 0)
-    cmd_boot = getattr(_mod, 'cmd_boot', lambda a: 0)
     cmd_status = getattr(_mod, 'cmd_status', lambda a: 0)
-    cmd_design = getattr(_mod, 'cmd_design', lambda a: 0)
     from rich.console import Console
     from rich.table import Table
 
@@ -3337,7 +3278,7 @@ def cmd_advanced(args):
         "cloud": cmd_cloud, "extension": cmd_extension,
         "index": cmd_index, "setup": cmd_setup,
         "debug": cmd_debug, "cleanup-audit": cmd_cleanup_audit,
-        "boot": cmd_boot, "status": cmd_status, "design": cmd_design,
+        "status": cmd_status,
         "scheduler": _cmd_scheduler,
     }
 
@@ -3351,18 +3292,19 @@ def cmd_advanced(args):
 
     handler = handler_map.get(cmd_name)
     if handler:
-        if cmd_name in ("server", "restart", "gui", "up"):
-            for attr, default in (
-                ("host", "127.0.0.1"), ("port", 8000),
-                ("multi_model", False), ("dry_run", False),
-                ("no_reload", False), ("api_url", None),
-                ("ws_url", None), ("device", "windows"),
-                ("google_api_key", None), ("droq_api_key", None),
-                ("background", False), ("with_models", False),
-                ("forward", []),
-            ):
-                if not hasattr(args, attr):
-                    setattr(args, attr, default)
+        _DEFAULTS = [
+            ("host", "127.0.0.1"), ("port", 8000),
+            ("multi_model", False), ("dry_run", False),
+            ("no_reload", False), ("api_url", None),
+            ("ws_url", None), ("device", "windows"),
+            ("google_api_key", None), ("droq_api_key", None),
+            ("background", False), ("with_models", False),
+            ("forward", []), ("id", None), ("name", None),
+            ("goal", ""), ("task", ""), ("mode", None), ("lang", "auto"),
+        ]
+        for attr, default in _DEFAULTS:
+            if not hasattr(args, attr):
+                setattr(args, attr, default)
         return handler(args)
 
     print(f"Unknown advanced command: {cmd_name}")
@@ -3381,3 +3323,16 @@ def _cmd_advanced_agent(args):
         return cmd_agent_run(a)
     print("Usage: jarvis advanced agent list|run <name> <task>")
     return 1
+
+
+def cmd_version(args: argparse.Namespace) -> int:
+    """Show JARVIS version information."""
+    from core.version import version_string
+    print(version_string())
+    return 0
+
+
+def cmd_demo(args: argparse.Namespace) -> int:
+    """Run quick system demo (smoke test)."""
+    from demo.quick_demo import main as demo_main
+    return demo_main()

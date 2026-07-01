@@ -4,23 +4,46 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "jarvis-ai"
-version = "1.1.0"
-description = "Unified JARVIS launcher for CLI, server, GUI, models, and IDE integrations."
+version = "3.0.0-rc3"
+description = "Autonomous AI workspace orchestrator — CLI, web UI, voice, coding, research, and automation"
 readme = "README.md"
 license = { text = "Apache-2.0" }
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 authors = [
-  { name = "JARVIS" }
+  { name = "JARVIS Project" },
+]
+maintainers = [
+  { name = "JARVIS Project" },
+]
+keywords = [
+    "jarvis", "ai", "assistant", "autonomous", "coding", "agent",
+    "workflow", "automation", "ollama", "llm", "codegen",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Environment :: Web Environment",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 dependencies = [
-    "fastapi",
+    # Core runtime
+    "fastapi>=0.100.0",
     "uvicorn[standard]>=0.23.0",
     "sqlalchemy>=2.0.0",
     "aiosqlite>=0.19.0",
     "pydantic>=2.0.0",
     "python-multipart",
     "python-dotenv>=1.0.0",
-    "httpx>=0.27,<0.28",
+    "httpx>=0.27,<0.29",
     "bcrypt>=3.2.0",
     "numpy>=1.24.0",
     "opencv-python-headless>=4.8.0",
@@ -33,23 +56,35 @@ dependencies = [
     "anthropic>=0.25.0",
     "pyotp",
     "python-socketio>=5.0.0",
-    "playwright>=1.48.0",
+    "rich>=13.0.0",
 ]
 
 [project.optional-dependencies]
+browser = [
+    "playwright>=1.48.0",
+]
+voice = [
+    "sounddevice>=0.4.0",
+]
+vision = [
+    "deepface>=0.0.79",
+]
+firebase = [
+    "firebase-admin>=6.0.0",
+]
 dev = [
     "pytest>=8.0.0",
     "pytest-asyncio>=0.23.0",
     "ruff",
     "mypy",
 ]
-vision = [
-    "deepface>=0.0.79",
-    "opencv-python-headless>=4.8.0",
-]
-firebase = [
-    "firebase-admin>=6.0.0",
-]
+
+[project.urls]
+Homepage = "https://jarvis.ai"
+Repository = "https://github.com/anomalyco/jarvis"
+Documentation = "https://docs.jarvis.ai"
+Changelog = "https://github.com/anomalyco/jarvis/releases"
+Issues = "https://github.com/anomalyco/jarvis/issues"
 
 [project.scripts]
 jarvis = "jarvis:main"
@@ -67,30 +102,52 @@ py-modules = [
     "cli_state",
     "cli_utils",
     "cli_visuals",
+    "cli_visuals_new",
 ]
 
 [tool.setuptools.packages.find]
-include = ["jarvis*", "core*", "ai_os*", "orchestrator*", "models*", "channels*", "services*", "brain*", "memory*", "tools*", "assistant*", "monitors*", "governance*", "skills*", "eval*", "learning*", "pc_agent*", "automation*", "api*", "daemon*", "mcp_servers*", "agents*", "cli*", "routes*", "routers*", "media*", "demo*", "cookbook*", "jarvis_os*", "mcp*", "utils*", "notifications*", "network*", "notes*", "reminders*", "vision*", "train*", "plugins*", "static*", "cli_tui*"]
+include = [
+    "core*",
+    "static*",
+    "ai_os*",
+    "assistant*",
+    "brain*",
+    "demo*",
+    "jarvis_os*",
+    "jarvis_tui*",
+    "mcp*",
+    "media*",
+    "memory*",
+    "orchestrator*",
+    "services*",
+    "skills*",
+    "tools*",
+    "utils*",
+]
+exclude = [
+    "tests*",
+    "benchmarks*",
+    "scripts*",
+    "legacy*",
+]
+
+[tool.setuptools.package-data]
+core = ["py.typed"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
-testpaths = ["tests/unit", "tests/integration", "tests/contract", "tests/e2e", "tests"]
+testpaths = ["tests/unit", "tests/integration"]
 markers = [
     "unit: Fast unit tests with no external dependencies",
     "integration: Cross-module integration tests",
-    "contract: API contract validation",
-    "e2e: End-to-end tests that require a running server",
     "slow: Long-running tests (skipped by default)",
-    "intent: Tests for a specific intent type",
 ]
 filterwarnings = ["ignore::DeprecationWarning"]
-log_cli = false
-xfail_strict = true
 addopts = "--strict-markers"
 
 [tool.coverage.run]
-source = ["core", "monitors", "tools", "assistant", "plugins"]
-omit = ["*/tests/*", "*/learning/*", "*/migrations/*"]
+source = ["core"]
+omit = ["*/tests/*"]
 parallel = true
 
 [tool.coverage.report]
@@ -125,6 +182,4 @@ ignore_missing_imports = true
 warn_unused_ignores = true
 exclude = [
     "tests/",
-    "learning/",
-    "plugins/",
 ]

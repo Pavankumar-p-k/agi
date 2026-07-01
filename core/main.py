@@ -29,7 +29,9 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 _LOG_LEVEL = os.getenv("JARVIS_LOG_LEVEL", "INFO").upper()
-_LOG_DIR = Path("data/logs")
+_JARVIS_DIR = Path.home() / ".jarvis"
+_JARVIS_DIR.mkdir(parents=True, exist_ok=True)
+_LOG_DIR = _JARVIS_DIR / "logs"
 _LOG_DIR.mkdir(parents=True, exist_ok=True)
 _LOG_FILE = _LOG_DIR / "jarvis.log"
 _LOG_MAX_BYTES = 10 * 1024 * 1024  # 10 MB
@@ -48,9 +50,13 @@ if not logger.handlers:
     fh.setFormatter(fmt)
     logger.addHandler(fh)
 
-# Load .env before any config initialization
-_env_path = Path(__file__).resolve().parents[1] / ".env"
-load_dotenv(_env_path)
+# Load .env from ~/.jarvis/.env or package root
+_pkg_root = Path(__file__).resolve().parents[1]
+_env_path = _JARVIS_DIR / ".env"
+if not _env_path.exists():
+    _env_path = _pkg_root / ".env"
+if _env_path.exists():
+    load_dotenv(_env_path)
 
 # Initialize config registry before any jarvis imports
 from core.config_init import init_config
@@ -67,7 +73,7 @@ from fastapi import (
     Request,
 )
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 try:
@@ -138,7 +144,7 @@ async def rate_limit_middleware(request, call_next):
 AUTH_EXEMPT_PREFIXES = (
     "/health", "/docs", "/openapi.json", "/redoc", "/static",
     "/assets", "/manifest.json", "/sw.js", "/api/auth", "/auth",
-    "/api/setup", "/api/chat", "/api/whatsapp",
+    "/api/setup", "/api/whatsapp",
     "/icons", "/_next", "/ws",
 )
 AUTH_EXEMPT_PATHS = {"/"}
@@ -277,6 +283,13 @@ try:
     logger.info("[Router] Setup wizard routes loaded [OK]")
 except Exception as e:
     logger.warning("[Router] Setup wizard routes not loaded: %s", e)
+
+try:
+    from core.routes.setup import router as setup_engine_router
+    app.include_router(setup_engine_router)
+    logger.info("[Router] Setup engine routes loaded [OK]")
+except Exception as e:
+    logger.warning("[Router] Setup engine routes not loaded: %s", e)
 
 try:
     from routers.dot_routes import router as dot_router
@@ -589,28 +602,32 @@ except Exception as e:
 
 # ── Static mounts ──
 
-app.mount("/assets", StaticFiles(directory="static/assets"), name="assets")
-app.mount("/static", StaticFiles(directory="static"), name="static")
+_STATIC_DIR = _pkg_root / "static"
+if not _STATIC_DIR.is_dir():
+    _STATIC_DIR = Path("static")  # fallback to CWD
+
+if _STATIC_DIR.is_dir():
+    app.mount("/assets", StaticFiles(directory=str(_STATIC_DIR / "assets")), name="assets")
+    app.mount("/static", StaticFiles(directory=str(_STATIC_DIR)), name="static")
 
 # Mount the Next.js web UI export if built
-_NEXT_OUT = Path("web/out")
+_NEXT_OUT = _pkg_root / "web" / "out"
+if not _NEXT_OUT.is_dir():
+    _NEXT_OUT = Path("web/out")  # fallback to CWD
 if _NEXT_OUT.is_dir():
     app.mount("/_next", StaticFiles(directory=str(_NEXT_OUT / "_next")), name="web_next")
     app.mount("/icons", StaticFiles(directory=str(_NEXT_OUT / "icons")), name="web_icons")
 
     async def _serve_next_static(path: str):
         """Serve a Next.js static export file from web/out/."""
-        # Try exact file
         file_candidate = _NEXT_OUT / path
         if file_candidate.is_file():
             return FileResponse(str(file_candidate))
 
-        # Try path/index.html (Next.js trailing slash export)
         dir_candidate = _NEXT_OUT / path / "index.html"
         if dir_candidate.is_file():
             return FileResponse(str(dir_candidate))
 
-        # Try path.html
         html_candidate = _NEXT_OUT / f"{path}.html"
         if html_candidate.is_file():
             return FileResponse(str(html_candidate))
@@ -622,11 +639,12 @@ if _NEXT_OUT.is_dir():
         result = await _serve_next_static("index.html")
         if result:
             return result
-        return FileResponse("static/index.html")
+        if _STATIC_DIR.is_dir():
+            return FileResponse(str(_STATIC_DIR / "index.html"))
+        return HTMLResponse("<h1>JARVIS</h1><p>Web UI not available.</p>")
 
     @app.get("/{path:path}")
     async def web_ui(request: Request, path: str):
-        # API/WS/email/v1 paths that reached here have no matching handler
         if path.startswith(("api/", "ws/", "email/", "v1/")):
             return JSONResponse(status_code=404, content={"detail": "Not found"})
 
@@ -634,12 +652,17 @@ if _NEXT_OUT.is_dir():
         if result:
             return result
 
-        # Fallback to old static UI
-        return FileResponse("static/index.html")
+        if _STATIC_DIR.is_dir():
+            return FileResponse(str(_STATIC_DIR / "index.html"))
+        return JSONResponse(status_code=404, content={"detail": "Not found"})
+elif _STATIC_DIR.is_dir():
+    @app.get("/")
+    async def root():
+        return FileResponse(str(_STATIC_DIR / "index.html"))
 else:
     @app.get("/")
     async def root():
-        return FileResponse("static/index.html")
+        return HTMLResponse("<h1>JARVIS</h1><p>Running. Web UI not installed.</p>")
 
 
 # ── Voice routes ──
