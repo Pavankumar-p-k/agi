@@ -25,7 +25,7 @@ from cli_commands import (
     cmd_understand, cmd_workspace, cmd_code, cmd_build, cmd_run,
     cmd_advanced, cmd_activity, cmd_provider, cmd_orchestrate,
     cmd_tui, cmd_web, cmd_gui, cmd_server, cmd_setup,
-    cmd_demo, cmd_version,
+    cmd_demo, cmd_version, cmd_benchmark,
 )
 from core.version import VERSION
 from core.setup.detector import is_first_run
@@ -153,6 +153,10 @@ def build_parser() -> argparse.ArgumentParser:
     p = subparsers.add_parser("demo", help="Run quick system demo (smoke test)")
     p.set_defaults(func=cmd_demo)
 
+    p = subparsers.add_parser("benchmark", help="Run performance baselines (RC3.4)")
+    p.add_argument("--json", action="store_true", help="Output raw JSON only")
+    p.set_defaults(func=cmd_benchmark)
+
     p = subparsers.add_parser("orchestrate", help="Multi-provider orchestration: compose teams of providers")
     p.add_argument("goal", nargs="?", default="",
                    help="The goal to orchestrate across multiple providers")
@@ -198,7 +202,7 @@ def main() -> int:
     parser = build_parser()
     args = parser.parse_args()
 
-    _SETUP_SKIP = {"version", "demo", "doctor", "setup", "server", "web", None}
+    _SETUP_SKIP = {"version", "demo", "doctor", "setup", "server", "web", "benchmark", None}
     if args.subcommand not in _SETUP_SKIP:
         engine = SetupEngine()
 

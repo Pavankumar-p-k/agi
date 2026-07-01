@@ -25,6 +25,7 @@ Runs a series of module-level smoke tests:
 """
 from __future__ import annotations
 
+import os
 import sys
 import time
 
@@ -78,7 +79,8 @@ def main() -> int:
         deps = sum(1 for v in report.optional_dependencies.values() if v)
         failures += _check(True, f"Status: {status} — {total} py files, {tests} tests, {deps} deps found")
         for issue in report.issues[:3]:
-            print(f"    ⚠  [{issue.severity}] {issue.path}: {issue.message}")
+            icon = "!" if os.name == "nt" else "\u26a0"
+            print(f"    {icon}  [{issue.severity}] {issue.path}: {issue.message}")
         if len(report.issues) > 3:
             print(f"    ... and {len(report.issues) - 3} more issues")
     except Exception as e:

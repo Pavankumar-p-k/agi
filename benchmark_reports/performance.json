@@ -1,0 +1,41 @@
+{
+  "hardware": {
+    "platform": "Windows-10-10.0.26200-SP0",
+    "python_version": "3.11.9",
+    "processor": "AMD64 Family 25 Model 68 Stepping 1, AuthenticAMD",
+    "cpu_count": 16,
+    "ram_gb": 15.7,
+    "gpus": [
+      {
+        "name": "NVIDIA GeForce RTX 4050 Laptop GPU",
+        "memory_mb": 6141.0
+      }
+    ]
+  },
+  "timestamp": "2026-07-01T14:02:01",
+  "jarvis_version": "3.0.0-rc3",
+  "cold_start_seconds": 0.328,
+  "import_times": {
+    "jarvis": 0.344,
+    "core.version": 0.078,
+    "core.diagnostics": 0.109,
+    "demo.quick_demo": 0.078,
+    "core.main": 12.969
+  },
+  "provider_discovery_seconds": 3.547,
+  "provider_count": 0,
+  "demo": {
+    "demo_duration_seconds": 12.1,
+    "exit_code": 1
+  },
+  "server": {
+    "server_startup_seconds": 47.7,
+    "ready": true,
+    "port": 18998
+  },
+  "memory": {
+    "rss_mb": 213.1,
+    "vms_mb": 673.7,
+    "cpu_percent": 0.0
+  }
+}

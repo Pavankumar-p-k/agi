@@ -3336,3 +3336,9 @@ def cmd_demo(args: argparse.Namespace) -> int:
     """Run quick system demo (smoke test)."""
     from demo.quick_demo import main as demo_main
     return demo_main()
+
+
+def cmd_benchmark(args: argparse.Namespace) -> int:
+    """Run performance baselines for RC3.4."""
+    from core.benchmark.perf_baseline import main as benchmark_main
+    return benchmark_main()
