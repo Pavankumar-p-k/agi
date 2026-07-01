@@ -1,0 +1,8 @@
+﻿# Copy this file to key.properties and fill in your release keystore details.
+# The key.properties file is excluded from version control (see .gitignore).
+# Generate a keystore with:
+#   keytool -genkey -v -keystore release.keystore -alias upload -keyalg RSA -keysize 2048 -validity 10000
+storeFile=../release.keystore
+storePassword=your_store_password
+keyAlias=upload
+keyPassword=your_key_password
