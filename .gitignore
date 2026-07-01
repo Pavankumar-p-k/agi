@@ -14,7 +14,7 @@ venv/
 # Environment & secrets
 .env
 .env.local
-.env.template
+.env.*
 firebase-credentials.json
 google-services.json
 
@@ -68,6 +68,10 @@ coverage/
 electron/node_modules/
 electron/out/
 electron/dist/
+experimental/**/node_modules/
+experimental/**/out/
+experimental/**/dist/
+experimental/**/*.lock
 
 # Archive cleanup artifacts (keep comparison docs, remove generated audit)
 archive/cleanup_20260602/
