@@ -10,14 +10,26 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Jarvis Governance Layer — policies, circuit breaking, runtime enforcement."""
+"""Jarvis Governance Layer — policies, circuit breaking, runtime enforcement.
+
+Architecture layers:
+  1. Input:    GovernanceValidator — keyword blocklist + LLM semantic classification
+  2. Runtime:  RuntimeGovernanceLayer — request budget, concurrency limits, circuit breaker
+  3. Rate:     core/rate_limiter.py — per-IP/scope sliding window
+  4. Auth:     core/auth.py — loopback bypass (dev mode)
+  5. Desktop:  core/desktop/safety.py — emergency stop, mouse/keyboard rate limits
+  6. Execution: core/sandbox/ — Docker isolation
+  7. Loop:     MetaGovernor — continuous observe→analyze→decide→act→learn (EXPERIMENTAL)
+"""
 from governance.exceptions import GovernanceViolation
 from governance.RuntimeGovernanceLayer import RuntimeGovernanceLayer, runtime_governance
 from governance.GovernanceValidator import GovernanceValidator
+from governance.MetaGovernor import MetaGovernor
 
 __all__ = [
     "GovernanceViolation",
     "RuntimeGovernanceLayer", 
     "runtime_governance",
     "GovernanceValidator",
+    "MetaGovernor",
 ]

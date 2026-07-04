@@ -1,0 +1,28 @@
+## Goal
+Fix web UI hanging on load (sidebar never renders, stuck on "loading").
+
+## Root Cause
+The dashboard page (`/`) makes **11 API calls** on load. Three endpoints had no server-side timeouts and could hang indefinitely:
+
+| Endpoint | Problem | Fix |
+|----------|---------|-----|
+| `GET /api/plugins` | `plugin.health_check()` called **sequentially** on ALL plugins with no timeout → 1 slow plugin hangs the whole endpoint | Added `asyncio.wait_for(plugin.health_check(), timeout=3.0)` |
+| `GET /api/diagnostics` | 5 sequential health checks (models, integrations, voice, features, environment) with **no timeouts** → any one hanging blocks all | Added `asyncio.wait_for()` with 3-5s timeout per check |
+| `GET /api/diagnostics/models` | `health_check_all()` had no timeout → Ollama ping could hang | Added `asyncio.wait_for(..., timeout=5.0)` |
+| `GET /api/diagnostics/integrations` | Same pattern | Added `asyncio.wait_for(..., timeout=5.0)` |
+| `TerminalPanel` `api.diagnostics.all()` | Client-side had **no abort signal** | Added 5s AbortController timeout |
+| `StatusBar` | 5 sequential calls blocked each other; no abort on 4/5 | Changed to parallel `Promise.allSettled` with per-call `Promise.race` timeouts |
+| `api.diagnostics.all()` in api.ts | Didn't accept `AbortSignal` | Added optional `signal` parameter |
+
+## Changed Files
+- `core/routes/operations.py:118-131` — plugin health_check timeout
+- `core/routes/diagnostics.py:19-105` — all 5 diagnostic checks wrapped in `asyncio.wait_for`
+- `core/routes/diagnostics.py:107-134` — models/integrations endpoints with timeout
+- `web/src/app/page.tsx:223-231` — TerminalPanel 5s abort on diagnostics.all()
+- `web/src/components/layout/StatusBar.tsx:28-70` — parallel with per-call timeouts
+- `web/src/lib/api.ts:358` — diagnostics.all() accepts AbortSignal
+
+## Next Steps
+- Rebuild web UI: `jarvis web --rebuild` (for TSX/TS changes to take effect)
+- Restart server: `jarvis server` picks up Python changes immediately
+- If still slow, check individual plugin health_check implementations for hangs

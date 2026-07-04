@@ -91,7 +91,7 @@ class TieredMemory:
                 }
                 self.mem0 = Mem0Memory.from_config(config)
             except Exception as e:
-                print(f"[MEMORY] Qdrant unavailable — running without vector store: {e}")
+                logger.warning("Qdrant unavailable, running without vector store: %s", e, exc_info=True)
                 self.mem0 = None
 
     def remember(self, content: str, importance: float = 0.5, metadata: Dict = None, user_id: str | None = None):
@@ -113,7 +113,7 @@ class TieredMemory:
             try:
                 self.mem0.add(content, user_id=uid, metadata=metadata or {})
             except Exception as e:
-                print(f"[MEMORY] mem0 persist failed: {e}")
+                logger.warning("mem0 persist failed: %s", e, exc_info=True)
 
         # If very important, store in semantic memory immediately
         if importance > 0.8 and self._embedding is not None:
@@ -147,7 +147,7 @@ class TieredMemory:
         # Phase 3: Emit hook (fire-and-forget — recall is synchronous)
         try:
             import asyncio
-            from core.plugins.events import PluginEventBus
+            from brain.events import PluginEventBus
             asyncio.create_task(PluginEventBus.instance().emit("on_memory_recall", query=query, results=results))
         except Exception as exc:
             logger.debug("PluginEventBus.on_memory_recall failed: %s", exc)
@@ -158,7 +158,7 @@ class TieredMemory:
                 mem0_results = self.mem0.search(query, filters={'user_id': uid}, limit=limit)
                 results.extend(mem0_results)
             except Exception as e:
-                print(f"[WARN] Mem0 search failed: {e}")
+                logger.warning("Mem0 search failed: %s", e, exc_info=True)
 
         # 3. Search Semantic tier
         if self._embedding is None:

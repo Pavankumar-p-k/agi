@@ -33,6 +33,147 @@ from core.result import Err, Ok, Result
 
 logger = logging.getLogger(__name__)
 
+# ── Merged from core/model_router.py ─────────────────────────────────────
+
+import re as _re
+
+def _ollama_url() -> str:
+    return os.getenv("OLLAMA_URL") or _jarvis_config.get("ollama.base_url")
+
+DEFAULT_MODEL_ENDPOINTS: dict[str, str] = {
+    "tinyllama": _ollama_url(),
+    "deepseek-r1:1.5b": _ollama_url(),
+    "qwen2.5-coder:3b": _ollama_url(),
+    "qwen3:4b": _ollama_url(),
+    "qwen2.5:7b": _ollama_url(),
+    "mistral:7b": _ollama_url(),
+    "llama3.1:8b": _ollama_url(),
+    "phi3:mini": _ollama_url(),
+    "moondream": _ollama_url(),
+    "gemma4:e4b": _ollama_url(),
+}
+
+MODEL_ALIASES: dict[str, str] = {
+    "llama3.1:latest": "llama3.1:8b",
+    "llama3.1": "llama3.1:8b",
+    "llama3": "llama3.1:8b",
+    "tinyllama:latest": "tinyllama",
+    "tinyllama:1.1b": "tinyllama",
+    "moondream": "moondream:latest",
+    "moondream:latest": "moondream:latest",
+    "gemma4": "gemma4:e4b",
+    "gemma4:latest": "gemma4:e4b",
+    "qwen3": "qwen3:4b",
+    "qwen2.5": "qwen2.5:7b",
+}
+
+ROLE_TO_GROUP: dict[str, str] = {
+    "chat": "chat", "analysis": "analysis", "reasoning": "reasoning",
+    "planning": "chat", "code": "code", "automation": "code",
+    "build": "code", "creative": "chat", "vision": "vision",
+    "classifier": "chat", "emotion": "chat", "quality": "grader",
+    "deep": "nim-deep", "nim-code": "nim-code", "fallback": "chat",
+}
+ROLE_TO_ROUTER_GROUP = ROLE_TO_GROUP
+
+ROLE_MODELS: dict[str, str] = {
+    "chat": "llama3.1:8b", "analysis": "qwen2.5:7b",
+    "reasoning": "deepseek-r1:1.5b", "planning": "qwen3:4b",
+    "code": "qwen2.5:7b", "automation": "qwen2.5:7b",
+    "creative": "mistral:7b", "vision": "moondream:latest",
+    "classifier": "tinyllama", "emotion": "tinyllama",
+    "quality": "phi3:mini", "deep": "qwen2.5:7b",
+    "fallback": "tinyllama",
+}
+
+MODEL_FALLBACKS: dict[str, list[str]] = {
+    "llama3.1:8b": ["qwen2.5:7b", "qwen2.5-coder:3b"],
+    "qwen2.5:7b": ["llama3.1:8b", "qwen2.5-coder:3b"],
+    "qwen2.5-coder:3b": ["qwen2.5:7b", "llama3.1:8b"],
+    "gemma4:e4b": ["moondream", "llama3.1:8b"],
+    "moondream": ["llama3.1:8b"],
+    "mistral:7b": ["qwen2.5:7b", "llama3.1:8b"],
+    "deepseek-r1:1.5b": ["qwen2.5:7b", "llama3.1:8b"],
+    "tinyllama": [], "phi3:mini": ["tinyllama"], "qwen3:4b": ["tinyllama"],
+}
+
+_CACHED_ENDPOINTS: dict[str, str] | None = None
+
+def resolve_model(name: str) -> str:
+    key = (name or "").strip()
+    if not key:
+        return "chat"
+    return MODEL_ALIASES.get(key, key)
+
+def _parse_model_endpoints(raw: str) -> dict[str, str]:
+    endpoints: dict[str, str] = {}
+    for item in _re.split(r"[;\n,]+", raw or ""):
+        item = item.strip()
+        if not item or "=" not in item:
+            continue
+        model, url = item.split("=", 1)
+        model = resolve_model(model.strip())
+        url = url.strip()
+        if url and not url.startswith("http"):
+            url = "http://" + url
+        if model and url:
+            endpoints[model] = url
+    return endpoints
+
+def _load_endpoints() -> dict[str, str]:
+    raw = os.getenv("OLLAMA_MODEL_ENDPOINTS", "").strip()
+    multi = os.getenv("OLLAMA_MULTI_INSTANCE", "").lower() in {"1", "true", "yes", "on"}
+    if raw:
+        return _parse_model_endpoints(raw)
+    if multi:
+        return DEFAULT_MODEL_ENDPOINTS.copy()
+    return {}
+
+def model_endpoints() -> dict[str, str]:
+    global _CACHED_ENDPOINTS
+    if _CACHED_ENDPOINTS is None:
+        _CACHED_ENDPOINTS = _load_endpoints()
+    return _CACHED_ENDPOINTS
+
+def is_multi_instance() -> bool:
+    return bool(model_endpoints())
+
+def get_ollama_url(model: str | None = None) -> str:
+    endpoints = model_endpoints()
+    default_url = _ollama_url()
+    if not endpoints or not model:
+        return default_url
+    model = resolve_model(model)
+    return endpoints.get(model, default_url)
+
+def group_for_role(role: str) -> str:
+    return ROLE_TO_GROUP.get(role, "chat")
+
+def model_for_role(role: str) -> str:
+    model = os.getenv(f"{role.upper()}_MODEL", "")
+    if not model:
+        config_key = {
+            "chat": "llm.chat_model", "code": "llm.code_model",
+            "analysis": "llm.analysis_model", "reasoning": "llm.reasoning_model",
+            "vision": "llm.vision_model", "embedding": "llm.embedding_model",
+            "grader": "llm.grader_model",
+        }.get(role)
+        if config_key:
+            model = _jarvis_config.get(config_key)
+        if not model:
+            model = ROLE_MODELS.get(role, "llama3.1:8b")
+    if "/" in model:
+        model = model.split("/", 1)[1]
+    return model
+
+get_router_model = group_for_role
+
+def get_fallbacks(model: str) -> list[str]:
+    model = resolve_model(model)
+    return [resolve_model(m) for m in MODEL_FALLBACKS.get(model, [])]
+
+# ── End merged from model_router.py ─────────────────────────────────────
+
 def _model_config(env_var: str, default: str) -> dict:
     """
     Parse provider/model from env var. 

@@ -776,7 +776,7 @@ async def generate_site_async(
 
     # Phase 3: Emit hook
     try:
-        from core.plugins.events import PluginEventBus
+        from brain.events import PluginEventBus
         asyncio.create_task(PluginEventBus.instance().emit(
             "on_website_generate", 
             topic=topic, 

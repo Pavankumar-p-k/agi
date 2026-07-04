@@ -393,7 +393,8 @@ async def execute_tool(tool_name: str, arguments: dict, task_id: str = "", confi
                 return await result
             return result
         except Exception as e:
-            return {"error": str(e)}
+            logging.getLogger(__name__).error("Benchmark task failed: %s", e, exc_info=True)
+            return {"error": "Benchmark task failed"}
 
     if tool_name == "write_file":
         return await _mock_write_file(arguments.get("path", ""), arguments.get("content", ""))

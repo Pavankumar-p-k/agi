@@ -81,7 +81,8 @@ async def delegate_to_opencode(
             "stderr": stderr_str,
         }
     except Exception as e:
-        return {"error": str(e), "success": False}
+        logger.error("OpenCode delegate failed: %s", e, exc_info=True)
+        return {"error": "Operation failed", "success": False}
 
 
 def _opencode_available() -> bool:

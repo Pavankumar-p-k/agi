@@ -44,23 +44,22 @@ class ActionEngine:
         return await self._execute_via_block(action, params, session_id)
 
     async def open_url(self, url: str) -> dict:
-        """Open a URL in the browser using the automation module."""
+        """Open a URL in the default browser via DesktopController."""
         try:
-            from automation.pc_automation import browser
-            success = browser.open(url)
-            return self._format_result(success, "open_url", result=f"Opened {url}" if success else None)
+            from core.desktop.controller import desktop_controller
+            result = desktop_controller.open_url(url)
+            return self._format_result(result.success, "open_url", result=f"Opened {url}" if result.success else None)
         except Exception as e:
             return self._format_result(False, "open_url", error=str(e))
 
     async def launch_app(self, app_name: str) -> dict:
-        """Launch a system application using the automation module."""
+        """Launch a system application via DesktopController."""
         try:
-            from automation.pc_automation import launch_app
-            res = launch_app(app_name)
-            success = res.get("success", False)
-            return self._format_result(success, "launch_app", 
-                                     result=f"Launched {app_name}" if success else None,
-                                     error=res.get("error"))
+            from core.desktop.controller import desktop_controller
+            result = desktop_controller.launch_app(app_name)
+            return self._format_result(result.success, "launch_app", 
+                                     result=f"Launched {app_name}" if result.success else None,
+                                     error=result.error)
         except Exception as e:
             return self._format_result(False, "launch_app", error=str(e))
 

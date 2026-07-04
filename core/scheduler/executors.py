@@ -94,7 +94,8 @@ async def email_executor(
         return {"sent": True, "to": to, "subject": subject, "result": result}
     except Exception as e:
         logger.error("email_executor: failed for %s: %s", activity_id, e)
-        return {"error": str(e), "activity_id": activity_id}
+        logger.error("Executor failed: %s", e, exc_info=True)
+            return {"error": "Operation failed", "activity_id": activity_id}
 
 
 async def benchmark_executor(
@@ -177,4 +178,5 @@ async def default_executor(
         return {"tool": tool_type, "result": result}
     except Exception as e:
         logger.error("default_executor: failed for %s: %s", activity_id, e)
-        return {"error": str(e)}
+        logger.error("Executor failed: %s", e, exc_info=True)
+        return {"error": "Operation failed"}

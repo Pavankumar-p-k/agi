@@ -100,7 +100,7 @@ class JarvisFileAgent:
         try:
             import asyncio
 
-            from core.plugins.events import PluginEventBus
+            from brain.events import PluginEventBus
             asyncio.create_task(PluginEventBus.instance().emit("on_file_saved", path=path, size=len(content)))
         except Exception as _e:
             logger.debug("file_agent emit hook failed: %s", _e)
@@ -333,7 +333,8 @@ class JarvisFileAgent:
         except subprocess.TimeoutExpired:
             return {"error": f"Command timed out after {timeout}s", "stdout": "", "stderr": "", "returncode": -1}
         except Exception as e:
-            return {"error": str(e), "stdout": "", "stderr": "", "returncode": -1}
+            logger.error("File agent failed: %s", e, exc_info=True)
+            return {"error": "Operation failed", "stdout": "", "stderr": "", "returncode": -1}
 
     # ── Organize folder (existing, enhanced) ──
 

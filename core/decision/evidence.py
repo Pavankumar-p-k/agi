@@ -236,7 +236,7 @@ class DecisionEvidence:
             )
 
         try:
-            from core.strategy_v2.models import StrategyCandidate
+            from core.strategy.v2.models import StrategyCandidate
 
             candidate = StrategyCandidate(
                 strategy_id=f"template_{template_id}",

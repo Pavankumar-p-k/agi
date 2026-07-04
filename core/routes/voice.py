@@ -135,7 +135,7 @@ async def tts_stream_websocket(ws: WebSocket):
     except WebSocketDisconnect:
         pass
     except Exception as e:
-        print(f"[TTS Stream] Error: {e}")
+        logger.warning("TTS Stream error: %s", e, exc_info=True)
         try:
             await ws.close()
         except Exception as _e:
@@ -161,5 +161,5 @@ async def voice_websocket(ws: WebSocket):
     except WebSocketDisconnect:
         pass
     except Exception as e:
-        print(f"[Voice WS] Error: {e}")
+        logger.warning("Voice WS error: %s", e, exc_info=True)
         await ws.close()

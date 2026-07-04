@@ -132,7 +132,7 @@ class SubAgent(ABC):
 
             # Phase 3: Emit hook
             try:
-                from core.plugins.events import PluginEventBus
+                from brain.events import PluginEventBus
                 asyncio.create_task(PluginEventBus.instance().emit("on_agent_reply", result=self._result))
             except Exception as hook_exc:
                 logger.debug("on_agent_reply hook failed: %s", hook_exc)

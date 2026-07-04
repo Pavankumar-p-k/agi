@@ -173,7 +173,7 @@ def build_cleanup_audit(root: Path = ROOT) -> CleanupAudit:
     root_clutter = []
     for path in sorted(root.iterdir()):
         if path.is_file() and path.suffix in {".py", ".txt", ".log", ".err", ".html", ".json"}:
-            if path.name not in ROOT_SCRIPT_ALLOWLIST and path.name not in {"README.md", "pyproject.toml", "requirements.txt", "uv.lock"}:
+            if path.name not in ROOT_SCRIPT_ALLOWLIST and path.name not in {"pyproject.toml", "requirements.txt", "uv.lock"}:
                 root_clutter.append(path.name)
 
     basenames: dict[str, list[str]] = defaultdict(list)

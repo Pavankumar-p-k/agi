@@ -19,7 +19,7 @@ from pydantic import BaseModel, Field
 
 
 class LLMSettings(BaseModel):
-    default_model: str = "claude-sonnet-4-20250514"
+    default_model: str = "ollama/qwen2.5:7b"
     ollama_host: str = "http://127.0.0.1:11434"
     planner_model: str = "qwen2.5:7b"
     reasoning_model: str = "llama3.1:8b"

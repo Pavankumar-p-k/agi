@@ -10,7 +10,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""core/context_builder.py — Unified context gathering for all chat entry points."""
+"""core/context_builder.py — Unified context gathering for all chat entry points.
+
+Canonical persistent store: ChatHistory (SQLAlchemy, core/database.py).
+ConversationManager (JSON files) is a legacy fallback.
+"""
 
 import asyncio
 import logging
@@ -23,17 +27,44 @@ from tools.ragflow_tool import format_rag_context, ragflow_search
 logger = logging.getLogger("jarvis.context")
 
 
+async def _load_chat_history(session_id: str, last_n: int = 10) -> str:
+    """Load recent messages from ChatHistory (SQLAlchemy)."""
+    try:
+        import sqlalchemy as sa
+        from .database import ChatHistory as ChatHistoryModel, get_db
+        async for db in get_db():
+            stmt = (
+                sa.select(ChatHistoryModel)
+                .where(ChatHistoryModel.session_id == session_id)
+                .order_by(ChatHistoryModel.timestamp.desc())
+                .limit(last_n)
+            )
+            rows = (await db.execute(stmt)).scalars().all()
+            if rows:
+                history = []
+                for r in reversed(rows):
+                    history.append({"role": r.role, "content": r.message})
+                return "\n".join(f"{m['role']}: {m['content']}" for m in history)
+    except Exception as e:
+        logger.debug("[context_builder] ChatHistory read failed: %s", e)
+    return ""
+
+
 async def build_unified_context(message: str, session_id: str, extra_context: str = "") -> str:
     """Gather linear history, semantic memory, and RAG into a single context string."""
     
-    # 1. Linear History
-    cm = ConversationManager(session_id=session_id)
-    history_context = ""
-    if cm.path.exists():
-        cm.load()
-        history = cm.get_context(last_n=10)
-        history_str = "\n".join([f"{m['role']}: {m['content']}" for m in history])
-        history_context = f"## Recent Conversation History:\n{history_str}"
+    # 1. Linear History — ChatHistory (canonical) with ConversationManager fallback
+    history_context = await _load_chat_history(session_id, last_n=10)
+    if not history_context:
+        try:
+            cm = ConversationManager(session_id=session_id)
+            if cm.path.exists():
+                cm.load()
+                history = cm.get_context(last_n=10)
+                history_str = "\n".join([f"{m['role']}: {m['content']}" for m in history])
+                history_context = f"## Recent Conversation History:\n{history_str}"
+        except Exception as e:
+            logger.debug("[context_builder] ConversationManager fallback failed: %s", e)
 
     # 2. Semantic Memory (Recall) — run in thread to avoid blocking event loop
     loop = asyncio.get_event_loop()
@@ -47,7 +78,7 @@ async def build_unified_context(message: str, session_id: str, extra_context: st
     # 4. Combine
     parts = []
     if history_context:
-        parts.append(history_context)
+        parts.append(f"## Recent Conversation History:\n{history_context}")
     if memory_context:
         parts.append(memory_context)
     if rag_context:

@@ -333,7 +333,7 @@ class TestDecisionEvidence:
 
     def test_collect_strategy(self):
         """Wired strategy predictor should produce strategy_alignment."""
-        from core.strategy_v2.models import StrategyCandidate
+        from core.strategy.v2.models import StrategyCandidate
 
         strat_pred = MagicMock()
         strat_pred.predict.return_value = StrategyCandidate(
@@ -418,7 +418,7 @@ class TestStrategyBridge:
         """Without wired components, should return sensible defaults."""
         from core.decision.bridge import StrategyBridge
         bridge = StrategyBridge()
-        from core.strategy_v2.models import StrategyCandidate
+        from core.strategy.v2.models import StrategyCandidate
         candidate = StrategyCandidate(
             strategy_id="test", name="test", description="test",
             proposal_ids=[], impact_by_dimension={},
@@ -433,7 +433,7 @@ class TestStrategyBridge:
     def test_dimension_with_predictor(self):
         """Wired predictor should produce meaningful score."""
         from core.decision.bridge import StrategyBridge
-        from core.strategy_v2.models import StrategyCandidate
+        from core.strategy.v2.models import StrategyCandidate
 
         predictor = MagicMock()
         predictor.predict.return_value = StrategyCandidate(
@@ -457,7 +457,7 @@ class TestStrategyBridge:
     def test_tradeoff_insufficient_candidates(self):
         """With fewer than 2 candidates, tradeoff returns default."""
         from core.decision.bridge import StrategyBridge
-        from core.strategy_v2.models import StrategyCandidate
+        from core.strategy.v2.models import StrategyCandidate
         bridge = StrategyBridge()
         dim = bridge.dimension_for_tradeoff([])
         assert dim.name == "tradeoff_fitness"
@@ -467,8 +467,8 @@ class TestStrategyBridge:
     def test_tradeoff_with_wired_engine(self):
         """With TradeoffEngine wired, should produce meaningful score."""
         from core.decision.bridge import StrategyBridge
-        from core.strategy_v2.models import StrategyCandidate
-        from core.strategy_v2.tradeoffs import TradeoffEngine
+        from core.strategy.v2.models import StrategyCandidate
+        from core.strategy.v2.tradeoffs import TradeoffEngine
 
         engine = TradeoffEngine()
         bridge = StrategyBridge(tradeoff_engine=engine)

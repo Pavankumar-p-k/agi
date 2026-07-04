@@ -220,7 +220,7 @@ async def main():
     print(f"{'='*70}\n")
 
     report = _generate_report(metrics)
-    report_path = _ROOT / "BROWSER_E2E_REPORT.md"
+    report_path = _ROOT / "docs" / "BROWSER_E2E_REPORT.md"
     report_path.write_text(report, encoding="utf-8")
     print(f"Report: {report_path}")
 

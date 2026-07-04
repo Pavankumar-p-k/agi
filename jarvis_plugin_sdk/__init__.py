@@ -20,7 +20,7 @@ T = TypeVar("T", bound=Callable[..., Any])
 try:
     from core.plugins.base import Plugin as _CorePlugin, PluginManifest as _PluginManifest
     from core.plugins.base import PluginRegistry
-    from core.plugins.events import PluginEventBus
+    from brain.events import PluginEventBus
     _HAVE_CORE = True
 except ImportError:
     _HAVE_CORE = False
@@ -40,8 +40,8 @@ def get_registry() -> Any | None:
 
 def get_event_bus() -> Any | None:
     if _HAVE_CORE:
-        from core.plugins.events import PluginEventBus
-        return PluginEventBus.instance()
+            from brain.events import PluginEventBus
+            return PluginEventBus.instance()
     return None
 
 

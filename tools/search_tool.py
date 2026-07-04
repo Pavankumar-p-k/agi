@@ -168,7 +168,7 @@ class SearXNGSearch:
                 elif s.get("success") and s.get("markdown"):
                     contents.append(f"SOURCE: {s['url']}\nCONTENT: {s['markdown'][:3000]}")
         except Exception as e:
-            print(f"[Search] Crawl4AI scrape failed, falling back to trafilatura: {e}")
+            logger.warning("Crawl4AI scrape failed, falling back: %s", e, exc_info=True)
 
         if len(contents) < n:
             for r in results[:n]:

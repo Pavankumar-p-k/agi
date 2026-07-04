@@ -333,7 +333,8 @@ class VectorRAG:
             }
         except Exception as e:
             logger.error(f"get_stats failed: {e}")
-            return {"error": str(e), "healthy": False}
+            logger.error("RAG vector health check failed: %s", e, exc_info=True)
+            return {"error": "Health check failed", "healthy": False}
 
     # ------------------------------------------------------------------
     # Directory indexing

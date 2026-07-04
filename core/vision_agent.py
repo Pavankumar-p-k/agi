@@ -221,8 +221,8 @@ class VisionAgent:
 
         except Exception as e:
             task.status = "failed"
-            task.error  = str(e)
-            print(f"[Vision] ✗ {e}")
+            task.error  = "Operation failed"
+            logger.error("Vision task failed: %s", e, exc_info=True)
 
         self._history.append(task)
         return task

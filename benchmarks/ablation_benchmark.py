@@ -461,7 +461,8 @@ async def execute_tool(tool_name: str, arguments: dict) -> dict:
         result = await execute_tool_block(block)
         return result if isinstance(result, dict) else {"result": str(result)}
     except Exception as e:
-        return {"error": str(e)}
+        logging.getLogger(__name__).error("Benchmark task failed: %s", e, exc_info=True)
+        return {"error": "Benchmark task failed"}
 
 
 # ── Task Runner ──────────────────────────────────────────────────────────────

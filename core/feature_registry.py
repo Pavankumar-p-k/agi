@@ -168,7 +168,7 @@ FEATURES: dict[str, Feature] = {
         status=FeatureStatus.STABLE,
         description="Command-line interface with 45+ subcommands and slash commands",
         category="core",
-        docs_path="README.md",
+        docs_path="docs/README.md",
     ),
     "server_api": Feature(
         name="FastAPI Server",

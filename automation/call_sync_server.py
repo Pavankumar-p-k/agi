@@ -24,32 +24,44 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-try:
-    import plyer; _has_notif = True
-except Exception as e:
-    logger.warning("[automation.call_sync_server] plyer import failed: %s", e)
-    _has_notif = False
-
-try:
-    import pyttsx3
-    _tts = pyttsx3.init()
-    _tts.setProperty('rate', 160)
-    _has_tts = True
-except Exception as e:
-    logger.warning("[automation.call_sync_server] pyttsx3 init failed: %s", e)
-    _has_tts = False
-
-
 PORT     = 9001
 DB_FILE  = "data/call_records_pc.db"
 HOST     = "0.0.0.0"
 
-Path("data").mkdir(exist_ok=True)
+# ── Lazy notification + TTS (deferred init to avoid startup cost) ──
+_has_notif = None
+_has_tts = None
+_tts = None
+
+def _get_notif():
+    global _has_notif
+    if _has_notif is None:
+        try:
+            import plyer
+            _has_notif = True
+        except Exception as e:
+            logger.warning("[automation.call_sync_server] plyer import failed: %s", e)
+            _has_notif = False
+    return _has_notif
+
+def _get_tts():
+    global _has_tts, _tts
+    if _has_tts is None:
+        try:
+            import pyttsx3
+            _tts = pyttsx3.init()
+            _tts.setProperty('rate', 160)
+            _has_tts = True
+        except Exception as e:
+            logger.warning("[automation.call_sync_server] pyttsx3 init failed: %s", e)
+            _has_tts = False
+    return _has_tts, _tts
 
 
 # ── Database ─────────────────────────────────────────────
 
 def init_db():
+    Path("data").mkdir(parents=True, exist_ok=True)
     con = sqlite3.connect(DB_FILE)
     con.execute("""
         CREATE TABLE IF NOT EXISTS call_records (
@@ -97,21 +109,25 @@ def notify_desktop(caller: str, platform: str, transcript: str, important: bool)
     title = "JARVIS - IMPORTANT" if important else "JARVIS - Missed Call"
     msg   = f"{platform} | {caller}\n{transcript[:100]}" if transcript else f"{platform} | {caller}"
 
-    if _has_notif:
+    if _get_notif():
         try:
+            import plyer
             plyer.notification.notify(
                 title=title, message=msg,
                 app_name="JARVIS", timeout=10)
         except Exception as e:
-            print(f"[Notif] {e}")
+            import logging
+            logging.getLogger(__name__).warning("Notification failed: %s", e, exc_info=True)
+            print("[Notif] Notification failed. Check logs for details.")
 
-    if _has_tts and important:
+    has_tts, tts = _get_tts()
+    if has_tts and important:
         try:
             speech = f"Important message from {caller} via {platform}. {transcript[:80]}"
-            _tts.say(speech)
-            _tts.runAndWait()
+            tts.say(speech)
+            tts.runAndWait()
         except Exception as e:
-            print(f"[TTS] {e}")
+            logger.warning("TTS failed: %s", e, exc_info=True)
 
 
 # ── TCP Server ───────────────────────────────────────────
@@ -145,7 +161,7 @@ def handle_client(conn, addr):
                 conn.sendall(json.dumps({"status":"ok","id":rid}).encode())
 
     except Exception as e:
-        print(f"[Server] Error: {e}")
+        logger.warning("Server error: %s", e, exc_info=True)
     finally:
         conn.close()
 

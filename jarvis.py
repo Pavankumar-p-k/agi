@@ -23,12 +23,18 @@ ROOT = Path(__file__).resolve().parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+_EXPORT_CLI = str(ROOT / "jarvis-export" / "cli")
+_EXPORT_ROOT = str(ROOT / "jarvis-export")
+if _EXPORT_CLI not in sys.path:
+    sys.path.insert(0, _EXPORT_CLI)
+    sys.path.insert(0, _EXPORT_ROOT)
+
 from cli_commands import (
     cmd_cli, cmd_doctor, cmd_models, cmd_settings,
     cmd_understand, cmd_workspace, cmd_code, cmd_build, cmd_run,
     cmd_advanced, cmd_activity, cmd_provider, cmd_orchestrate,
     cmd_tui, cmd_web, cmd_gui, cmd_server, cmd_setup,
-    cmd_demo, cmd_version, cmd_benchmark,
+    cmd_demo, cmd_version, cmd_benchmark, cmd_dev,
 )
 from core.version import VERSION
 from core.setup.detector import is_first_run
@@ -46,20 +52,8 @@ def _promote(handler: Callable, **defaults: Any) -> Callable:
     return wrapper
 
 
-def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        prog="jarvis",
-        description="JARVIS — Autonomous Coding Agent\n\nPrimary commands:\n  chat          Interactive terminal session\n  code <task>   Autonomous coding: plan -> build -> test -> repair -> verify\n  build         Build project with auto-repair\n  run           Run the project\n  server        Start the backend server\n  web           Build & serve web UI\n  gui           Launch Flutter desktop GUI\n  tui           Launch Textual TUI\n  understand    Analyze repository structure\n  workspace     Show workspace status\n  doctor        Run diagnostics\n  models        Manage AI models\n  settings      Manage configuration\n  setup         Interactive first-run setup wizard\n  activity      View & manage the activity graph\n  provider      Manage execution providers\n  orchestrate   Multi-provider orchestration\n  advanced      All other commands (agents, voice, etc.)",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
-    subparsers = parser.add_subparsers(dest="subcommand")
-
-    p = subparsers.add_parser("chat", help="Interactive terminal session")
-    p.add_argument("--new-session", action="store_true")
-    p.add_argument("--session", default=None)
-    p.add_argument("--debug", action="store_true")
-    p.set_defaults(func=cmd_cli)
-
+def _add_dev_parsers(subparsers: argparse._SubParsersAction) -> None:
+    """Add developer-only subparsers."""
     p = subparsers.add_parser("code", help="Autonomous coding: plan -> build -> test -> repair -> verify")
     p.add_argument("task", nargs="?", default="Understand and improve this project")
     p.add_argument("--path", default=str(Path.cwd()))
@@ -84,10 +78,6 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("path", nargs="?", default=str(Path.cwd()))
     p.set_defaults(func=cmd_workspace)
 
-    p = subparsers.add_parser("doctor", help="Run system diagnostics")
-    p.add_argument("--json", action="store_true")
-    p.set_defaults(func=cmd_doctor)
-
     p = subparsers.add_parser("models", help="Manage AI models")
     p.add_argument("action", nargs="?", default="list", choices=["list", "test", "benchmark", "switch", "start", "apikeys"])
     p.add_argument("args", nargs=argparse.REMAINDER)
@@ -99,7 +89,6 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("value", nargs="?")
     p.set_defaults(func=cmd_settings)
 
-    # --- Promoted advanced commands ---
     p = subparsers.add_parser("server", help="Start the FastAPI backend server")
     p.add_argument("--host", default="127.0.0.1", help="Bind address")
     p.add_argument("--port", type=int, default=8000, help="Port number")
@@ -107,16 +96,6 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--multi-model", action="store_true", help="Start multi-model instances")
     p.add_argument("--dry-run", action="store_true", help="Print commands without running")
     p.set_defaults(func=_promote(cmd_server))
-
-    p = subparsers.add_parser("web", help="Build & serve the JARVIS web UI")
-    p.add_argument("--host", default="127.0.0.1", help="Bind address")
-    p.add_argument("--port", type=int, default=8000, help="Port number")
-    p.add_argument("--rebuild", action="store_true", help="Force rebuild")
-    p.add_argument("--build-only", action="store_true", help="Build without serving")
-    p.add_argument("--no-open", action="store_true", help="Don't open browser")
-    p.add_argument("--no-reload", action="store_true", help="Disable auto-reload")
-    p.add_argument("--dry-run", action="store_true", help="Print commands without running")
-    p.set_defaults(func=_promote(cmd_web))
 
     p = subparsers.add_parser("gui", help="Launch the Flutter Windows GUI")
     p.add_argument("--host", default="127.0.0.1", help="Backend host")
@@ -147,15 +126,6 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("args", nargs=argparse.REMAINDER)
     p.set_defaults(func=cmd_provider)
 
-    p = subparsers.add_parser("setup", help="Run the interactive setup wizard (re-runs safely)")
-    p.set_defaults(func=cmd_setup)
-
-    p = subparsers.add_parser("version", help="Show version information")
-    p.set_defaults(func=cmd_version)
-
-    p = subparsers.add_parser("demo", help="Run quick system demo (smoke test)")
-    p.set_defaults(func=cmd_demo)
-
     p = subparsers.add_parser("benchmark", help="Run performance baselines (RC3.4)")
     p.add_argument("--json", action="store_true", help="Output raw JSON only")
     p.set_defaults(func=cmd_benchmark)
@@ -170,6 +140,74 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--framework", default="",
                    help="Framework for the task")
     p.set_defaults(func=cmd_orchestrate)
+
+
+_DEV_COMMAND_NAMES = {
+    "code", "build", "run", "understand", "workspace",
+    "models", "settings", "server", "gui", "tui",
+    "advanced", "activity", "provider", "orchestrate", "benchmark",
+}
+
+
+class _JarvisParser(argparse.ArgumentParser):
+    def error(self, message: str) -> None:
+        if "invalid choice" in message and "'" in message:
+            for cmd in _DEV_COMMAND_NAMES:
+                if cmd in message:
+                    print(f"`{cmd}` is a developer command.")
+                    print("Run `jarvis dev on` to enable developer mode and unlock all commands.")
+                    raise SystemExit(1)
+        super().error(message)
+
+
+def build_parser() -> argparse.ArgumentParser:
+    from core.dev_mode import is_enabled
+    dev_mode = is_enabled()
+
+    parser = _JarvisParser(
+        prog="jarvis",
+        usage="jarvis [-h] {chat,web,doctor,dev,...}" if not dev_mode else None,
+        description="JARVIS — Autonomous AI Assistant\n\nUser commands:\n  chat          Interactive AI session\n  web           Start web UI (browser interface)\n  doctor        Run diagnostics & health check\n  dev           Toggle developer mode on/off\n\nRun `jarvis dev on` to unlock developer commands (code, build, models, etc.)",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    subparsers = parser.add_subparsers(dest="subcommand")
+
+    p = subparsers.add_parser("chat", help="Interactive terminal session")
+    p.add_argument("--new-session", action="store_true")
+    p.add_argument("--session", default=None)
+    p.add_argument("--debug", action="store_true")
+    p.set_defaults(func=cmd_cli)
+
+    p = subparsers.add_parser("doctor", help="Run system diagnostics")
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(func=cmd_doctor)
+
+    p = subparsers.add_parser("web", help="Build & serve the JARVIS web UI")
+    p.add_argument("--host", default="127.0.0.1", help="Bind address")
+    p.add_argument("--port", type=int, default=8000, help="Port number")
+    p.add_argument("--rebuild", action="store_true", help="Force rebuild")
+    p.add_argument("--build-only", action="store_true", help="Build without serving")
+    p.add_argument("--no-open", action="store_true", help="Don't open browser")
+    p.add_argument("--no-reload", action="store_true", help="Disable auto-reload")
+    p.add_argument("--dry-run", action="store_true", help="Print commands without running")
+    p.set_defaults(func=_promote(cmd_web))
+
+    p = subparsers.add_parser("setup", help="Run the interactive setup wizard (re-runs safely)")
+    p.set_defaults(func=cmd_setup)
+
+    p = subparsers.add_parser("dev", help="Toggle developer mode on/off")
+    p.add_argument("action", nargs="?", default="status",
+                   choices=["on", "off", "status", "deps-install"])
+    p.set_defaults(func=cmd_dev)
+
+    p = subparsers.add_parser("version", help="Show version information")
+    p.set_defaults(func=cmd_version)
+
+    p = subparsers.add_parser("demo", help="Run quick system demo (smoke test)")
+    p.set_defaults(func=cmd_demo)
+
+    if dev_mode:
+        _add_dev_parsers(subparsers)
 
     return parser
 
@@ -204,9 +242,26 @@ def _run_cli_setup(engine: SetupEngine | None = None) -> bool:
     return engine.run_full_setup(on_message=on_message, on_confirm=on_confirm, on_choice=on_choice)
 
 
+_USER_COMMANDS = {"chat", "web", "doctor", "dev", "setup", "version", "demo", None}
+
+_DEV_COMMANDS = {
+    "code", "build", "run", "understand", "workspace",
+    "models", "settings", "server", "gui", "tui",
+    "advanced", "activity", "provider", "orchestrate", "benchmark",
+}
+
+
 def main() -> int:
     parser = build_parser()
     args = parser.parse_args()
+
+    # Dev-mode gate
+    if args.subcommand in _DEV_COMMANDS:
+        from core.dev_mode import is_enabled
+        if not is_enabled():
+            print(f"`{args.subcommand}` is a developer command.")
+            print("Run `jarvis dev on` to enable developer mode and unlock all commands.")
+            return 1
 
     _SETUP_SKIP = {"version", "demo", "doctor", "setup", "server", "web", "benchmark", None}
     if args.subcommand not in _SETUP_SKIP:

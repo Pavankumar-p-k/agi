@@ -8,10 +8,12 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
+from .base import MemoryProvider
+
 logger = logging.getLogger(__name__)
 
 
-class TaskMemory:
+class TaskMemory(MemoryProvider):
     """Task memory — stores execution traces: every action attempted, its observation, and success.
 
     Used for learning which action sequences tend to succeed in which contexts.
@@ -180,6 +182,16 @@ class TaskMemory:
         if total == 0:
             return 0.0
         return successes / total
+
+    def clear(self) -> int:
+        with self._lock:
+            conn = sqlite3.connect(self._db_path)
+            row = conn.execute("SELECT COUNT(*) FROM task_memories").fetchone()
+            conn.execute("DELETE FROM task_memories")
+            conn.commit()
+            conn.close()
+        logger.info("[TaskMemory] cleared %d traces", row[0])
+        return row[0]
 
     def count(self) -> int:
         with self._lock:

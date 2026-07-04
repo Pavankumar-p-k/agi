@@ -11,10 +11,12 @@ from typing import Any
 
 from core.memory import get_text_similarity
 
+from .base import MemoryProvider
+
 logger = logging.getLogger(__name__)
 
 
-class EpisodicMemory:
+class EpisodicMemory(MemoryProvider):
     """Episodic memory — stores task episodes as sequences of actions with context and outcomes.
 
     Each episode captures a complete goal-driven interaction: what was attempted,
@@ -196,6 +198,19 @@ class EpisodicMemory:
             conn.close()
         logger.info("[EpisodicMemory] summarized %d old episodes", len(rows))
         return len(rows)
+
+    def clear(self) -> int:
+        with self._lock:
+            conn = sqlite3.connect(self._db_path)
+            row = conn.execute("SELECT COUNT(*) FROM episodic_memories").fetchone()
+            conn.execute("DELETE FROM episodic_memories")
+            conn.commit()
+            conn.close()
+        logger.info("[EpisodicMemory] cleared %d episodes", row[0])
+        return row[0]
+
+    def maintenance(self) -> int:
+        return self.summarize_old()
 
     def count(self) -> int:
         with self._lock:

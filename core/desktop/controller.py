@@ -179,6 +179,50 @@ class DesktopController:
         except Exception as e:
             return self._error(DesktopActionType.KEYBOARD_HOTKEY, str(e))
 
+    # ── App & URL Launchers ──────────────────────────────────────────────
+
+    def open_url(self, url: str) -> DesktopAction:
+        """Open a URL in the default browser."""
+        try:
+            import webbrowser
+            webbrowser.open(url)
+            node = desktop_replay.record("open_url", {"url": url})
+            return DesktopAction(
+                action_type=DesktopActionType.MOUSE_CLICK,
+                success=True,
+                details={"url": url},
+                replay_node_id=node.node_id,
+            )
+        except Exception as e:
+            return self._error(DesktopActionType.MOUSE_CLICK, str(e))
+
+    def launch_app(self, app_name: str) -> DesktopAction:
+        """Launch a system application."""
+        import shutil
+        import subprocess
+        import sys as _sys
+        exe = shutil.which(app_name)
+        if not exe:
+            candidates = {
+                "notepad": "notepad.exe", "calculator": "calc.exe",
+                "cmd": "cmd.exe", "terminal": "cmd.exe",
+                "explorer": "explorer.exe", "chrome": "chrome.exe",
+                "firefox": "firefox.exe", "code": "code.cmd",
+            }
+            exe = candidates.get(app_name.lower(), app_name)
+        try:
+            kwargs = {"shell": True} if _sys.platform == "win32" else {}
+            subprocess.Popen([exe] if not kwargs else exe, **kwargs)
+            node = desktop_replay.record("launch_app", {"app": app_name})
+            return DesktopAction(
+                action_type=DesktopActionType.KEYBOARD_HOTKEY,
+                success=True,
+                details={"app": app_name},
+                replay_node_id=node.node_id,
+            )
+        except Exception as e:
+            return self._error(DesktopActionType.KEYBOARD_HOTKEY, str(e))
+
     # ── Helpers ───────────────────────────────────────────────────────────
 
     def _reject(self, action_type: DesktopActionType, reason: str) -> DesktopAction:

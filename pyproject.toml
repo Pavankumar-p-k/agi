@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "jarvis-ai"
 version = "3.0.0-rc3"
 description = "Autonomous AI workspace orchestrator — CLI, web UI, voice, coding, research, and automation"
-readme = "README.md"
+readme = "docs/README.md"
 license = { text = "Apache-2.0" }
 requires-python = ">=3.10"
 authors = [
@@ -93,17 +93,6 @@ jarvis = "jarvis:main"
 [tool.setuptools]
 py-modules = [
     "jarvis",
-    "cli_commands",
-    "cli_completer",
-    "cli_config",
-    "cli_helpers",
-    "cli_requests",
-    "cli_server",
-    "cli_slash_commands",
-    "cli_state",
-    "cli_utils",
-    "cli_visuals",
-    "cli_visuals_new",
 ]
 
 [tool.setuptools.packages.find]
@@ -115,7 +104,6 @@ include = [
     "brain*",
     "demo*",
     "jarvis_os*",
-    "jarvis_tui*",
     "mcp*",
     "media*",
     "memory*",

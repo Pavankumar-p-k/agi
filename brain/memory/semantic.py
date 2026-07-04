@@ -11,10 +11,12 @@ from typing import Any
 
 from core.memory import get_text_similarity
 
+from .base import MemoryProvider
+
 logger = logging.getLogger(__name__)
 
 
-class SemanticMemory:
+class SemanticMemory(MemoryProvider):
     """Semantic memory — stores facts, knowledge, and concepts extracted from experience.
 
     Facts are stored with confidence scores and tracked by access patterns.
@@ -212,6 +214,22 @@ class SemanticMemory:
         if affected:
             logger.debug("[SemanticMemory] applied decay to %d facts", affected)
         return affected
+
+    def get_recent(self, limit: int = 20) -> list[dict]:
+        return self.get_all_facts(limit)
+
+    def clear(self) -> int:
+        with self._lock:
+            conn = sqlite3.connect(self._db_path)
+            row = conn.execute("SELECT COUNT(*) FROM semantic_memories").fetchone()
+            conn.execute("DELETE FROM semantic_memories")
+            conn.commit()
+            conn.close()
+        logger.info("[SemanticMemory] cleared %d facts", row[0])
+        return row[0]
+
+    def maintenance(self) -> int:
+        return self.decay()
 
     def count(self) -> int:
         with self._lock:

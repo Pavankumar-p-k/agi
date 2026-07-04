@@ -47,7 +47,7 @@ class DatabaseConfig:
 @dataclass
 class OllamaConfig:
     url: str = "http://localhost:11434"
-    default_model: str = "llama3"
+    default_model: str = "qwen2.5:7b"
     ports: dict[str, int] = field(default_factory=lambda: {
         "tinyllama": 11434,
         "deepseek-r1:1.5b": 11434,
@@ -109,7 +109,7 @@ class LLMConfig:
     vision_model: str = "ollama/moondream:latest"
 
     default_endpoint_id: str = "ollama"
-    default_model: str = "qwen2.5:7b"
+    default_model: str = "ollama/qwen2.5:7b"
     default_model_fallbacks: list[LLMFallback] = field(default_factory=list)
 
     utility_endpoint_id: str = "ollama"

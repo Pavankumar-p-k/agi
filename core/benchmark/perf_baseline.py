@@ -9,7 +9,7 @@ import sys
 import time
 from pathlib import Path
 
-_REPORTS_DIR = Path("benchmark_reports")
+_REPORTS_DIR = Path("docs/benchmark_reports")
 
 
 async def measure_cold_start() -> dict:

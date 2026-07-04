@@ -146,8 +146,8 @@ def _tool_path_roots() -> list[str]:
 
     # Opt-in extra roots from settings.
     try:
-        from core.settings import get_setting
-        extra = get_setting("tool_path_extra_roots")
+        from core.configuration import configuration
+        extra = configuration.get("tool_path_extra_roots")
         if isinstance(extra, list):
             roots.extend(str(r) for r in extra if r)
     except Exception as _e:
@@ -969,8 +969,8 @@ async def do_edit_file(content: str, owner: str | None = None) -> dict:
             return {"error": "Cannot determine file path from unified diff", "exit_code": 1}
         try:
             file_path = _resolve_tool_path(raw_path)
-        except ValueError as e:
-            return {"error": str(e), "exit_code": 1}
+        except ValueError:
+            return {"error": "Invalid file path", "exit_code": 1}
     else:
         file_path = first_line
         if not file_path:
@@ -979,8 +979,8 @@ async def do_edit_file(content: str, owner: str | None = None) -> dict:
 
     try:
         resolved = _resolve_tool_path(file_path)
-    except ValueError as e:
-        return {"error": str(e), "exit_code": 1}
+    except ValueError:
+        return {"error": "Invalid file path", "exit_code": 1}
     path = Path(resolved)
 
     if not path.exists():
@@ -1173,7 +1173,8 @@ async def do_refactor(content: str, owner: str | None = None) -> dict:
                 try:
                     original = fp.read_text(encoding="utf-8")
                 except Exception as e:
-                    results.append({"file": fp_str, "error": str(e)})
+                    logger.debug("Read error for %s: %s", fp_str, e)
+                    results.append({"file": fp_str, "error": "Failed to read file"})
                     continue
                 current = _normalize_text(original)
                 applied = 0
@@ -1292,7 +1293,8 @@ async def do_batch_edit_file(content: str) -> dict:
         try:
             original = fp.read_text(encoding="utf-8", errors="replace")
         except Exception as e:
-            results.append({"path": str(fp), "error": str(e)})
+            logger.debug("Read error for %s: %s", fp, e)
+            results.append({"path": str(fp), "error": "Failed to read file"})
             continue
 
         current = _normalize_text(original)
@@ -1316,7 +1318,8 @@ async def do_batch_edit_file(content: str) -> dict:
         try:
             fp.write_text(current, encoding="utf-8")
         except Exception as e:
-            results.append({"path": str(fp), "error": str(e)})
+            logger.debug("Write error for %s: %s", fp, e)
+            results.append({"path": str(fp), "error": "Failed to write file"})
             continue
 
         total_applied += applied
@@ -1607,8 +1610,8 @@ async def execute_tool_block(
         start_line = int(parts[2]) if len(parts) > 2 and parts[2].strip() else -1
         try:
             rpath = _resolve_tool_path(path_str)
-        except ValueError as e:
-            return f"watch_file: {e}", {"error": str(e), "exit_code": 1}
+        except ValueError:
+            return "watch_file: invalid path", {"error": "Invalid file path", "exit_code": 1}
 
         # Read file, return lines after start_line
         try:
@@ -1618,8 +1621,8 @@ async def execute_tool_block(
             data = await asyncio.to_thread(_read)
         except FileNotFoundError:
             return "watch_file: not found", {"error": f"File not found: {rpath}", "exit_code": 1}
-        except OSError as e:
-            return f"watch_file: {e}", {"error": str(e), "exit_code": 1}
+        except OSError:
+            return "watch_file: read error", {"error": "Failed to read file", "exit_code": 1}
 
         lines = data.split("\n")
         total = len(lines)

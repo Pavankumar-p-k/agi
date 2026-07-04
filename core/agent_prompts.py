@@ -657,8 +657,8 @@ def _build_system_prompt(
         _inject_style = any(tok in _last_user_text for tok in ("email", "mail", "reply", "send", "inbox"))
     if _inject_style:
         try:
-            from core.settings_legacy import load_settings as _load_settings
-            _style = (_load_settings().get("email_writing_style", "") or "").strip()
+            from core.configuration import configuration
+            _style = (configuration.get("email_writing_style", "") or "").strip()
             if _style:
                 agent_prompt += (
                     "\n\n📧 EMAIL WRITING STYLE AND IDENTITY\n"
@@ -728,7 +728,7 @@ def _build_system_prompt(
         if last_user and _skills_on:
             from core.constants import DATA_DIR
             from core.prompt_security import untrusted_context_message
-            from core.settings_legacy import get_setting
+            from core.configuration import configuration
             from services.memory.skills import SkillsManager
 
             sm = SkillsManager(DATA_DIR)
@@ -738,13 +738,13 @@ def _build_system_prompt(
                 try:
                     _skill_min_conf = float(_prefs.get(
                         "skill_min_confidence",
-                        get_setting("skill_autosave_min_confidence", 0.85)))
+                        configuration.get("skill_autosave_min_confidence", 0.85)))
                 except (TypeError, ValueError):
                     _skill_min_conf = 0.85
             try:
                 _skill_max_injected = int(_prefs.get(
                     "skill_max_injected",
-                    get_setting("skill_max_injected", 3)))
+                    configuration.get("skill_max_injected", 3)))
             except (TypeError, ValueError):
                 _skill_max_injected = 3
             _skill_max_injected = max(0, min(12, _skill_max_injected))

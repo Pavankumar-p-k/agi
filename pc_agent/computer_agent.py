@@ -12,6 +12,9 @@
 # limitations under the License.
 
 import logging
+import warnings
+warnings.warn("pc_agent/ is EXPERIMENTAL and will be replaced by core/desktop/", DeprecationWarning, stacklevel=2)
+
 import asyncio
 import os
 import re

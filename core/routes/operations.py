@@ -29,8 +29,8 @@ router = APIRouter(tags=["Operations"])
 
 
 def _get_config(key: str) -> str:
-    from core.config_registry import config as _c
-    return _c.get(key)
+    from core.configuration import configuration
+    return configuration.get(key) or ""
 
 
 @router.get("/health")

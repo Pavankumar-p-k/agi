@@ -4,6 +4,7 @@ import logging
 import os
 from typing import Any
 
+from .base import MemoryProvider
 from .episodic import EpisodicMemory
 from .semantic import SemanticMemory
 from .task import TaskMemory
@@ -13,10 +14,11 @@ logger = logging.getLogger(__name__)
 
 
 class MemoryManager:
-    """Orchestrates all four memory subsystems.
+    """Orchestrates all memory subsystems.
 
     Provides a unified API for storing, retrieving, and managing
-    episodic, semantic, task, and decision memories.
+    episodic, semantic, task, and decision memories. External providers
+    can be registered via register_provider().
     """
 
     def __init__(self, db_path: str | None = None):
@@ -33,7 +35,23 @@ class MemoryManager:
         self.semantic = SemanticMemory(db_path)
         self.task = TaskMemory(db_path)
         self.decision = DecisionMemory(db_path)
+        self._providers: dict[str, MemoryProvider] = {
+            "episodic": self.episodic,
+            "semantic": self.semantic,
+            "task": self.task,
+            "decision": self.decision,
+        }
         logger.info("[MemoryManager] initialized at %s", db_path)
+
+    @property
+    def providers(self) -> dict[str, MemoryProvider]:
+        return dict(self._providers)
+
+    def register_provider(self, name: str, provider: MemoryProvider):
+        """Register an external memory provider."""
+        self._providers[name] = provider
+        setattr(self, name, provider)
+        logger.info("[MemoryManager] registered provider: %s", name)
 
     def store_episode(self, goal: str, actions: list[dict],
                       context: dict | None = None,

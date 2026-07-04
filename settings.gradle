@@ -1,5 +1,0 @@
-include ':app'
-
-allprojects {
-    // Project configuration using allprojects block
-}

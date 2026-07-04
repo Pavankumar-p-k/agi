@@ -1,26 +1,3 @@
-# Copyright (c) 2024-2026 JARVIS Project
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-"""
-core/config_registry.py — Config singleton with priority-chain resolution.
-
-Priority: env var > settings.json > config.yaml > code default
-
-Usage:
-    from core.config_registry import config
-    model = config.get("llm.chat_model")
-    config.set("llm.chat_model", "ollama/mistral:7b")
-"""
-
 from __future__ import annotations
 
 import json
@@ -170,10 +147,9 @@ _REGISTRY: list[ConfigEntry] = [
 _REGISTRY_MAP: dict[str, ConfigEntry] = {e.key: e for e in _REGISTRY}
 
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
+# ── Helpers (data-only, used by settings API routes) ─────────────────────────
 
 def all_categories() -> list[str]:
-    """Return all unique category names."""
     seen: set[str] = set()
     result: list[str] = []
     for e in _REGISTRY:
@@ -193,7 +169,7 @@ def get_entry(key: str) -> ConfigEntry:
     return _REGISTRY_MAP[key]
 
 
-# ── Type coercion ─────────────────────────────────────────────────────────────
+# ── Type coercion (used by settings API routes) ─────────────────────────────
 
 def _coerce(value: Any, target_type: str, entry: ConfigEntry) -> Any:
     if value is None:
@@ -217,205 +193,118 @@ def _coerce(value: Any, target_type: str, entry: ConfigEntry) -> Any:
     return str(value)
 
 
-# ── Priority-chain resolver ───────────────────────────────────────────────────
+# ── Backward-compat dict (kept for any code still checking _CONFIG_SOURCES) ─
 
 _CONFIG_SOURCES = {
-    "env": {},         # Populated from environment variables
-    "overrides": {},   # In-memory overrides (set via config.set())
-    "settings": {},    # From data/settings.json
-    "yaml": {},        # From config.yaml
+    "env": {},
+    "overrides": {},
+    "settings": {},
+    "yaml": {},
 }
 
 
+# ── Config singleton — delegates to ConfigurationService with legacy fallback ─
+
+def _init_sources(config_yaml_path: str, settings_path: str):
+    """Populate _CONFIG_SOURCES for the legacy fallback path."""
+    yaml_path = Path(config_yaml_path)
+    if yaml_path.exists():
+        try:
+            import yaml
+            with open(yaml_path, encoding="utf-8") as f:
+                data = yaml.safe_load(f) or {}
+            _CONFIG_SOURCES["yaml"] = _flatten_dot(data)
+        except Exception as e:
+            logger.warning("[Config] Failed to load yaml %s: %s", yaml_path, e)
+    settings_path_obj = Path(settings_path)
+    if settings_path_obj.exists():
+        try:
+            with open(settings_path_obj, encoding="utf-8") as f:
+                data = json.load(f)
+            _CONFIG_SOURCES["settings"] = data
+        except Exception as e:
+            logger.warning("[Config] Failed to load settings %s: %s", settings_path_obj, e)
+    for entry in _REGISTRY:
+        if entry.env_var:
+            val = os.environ.get(entry.env_var)
+            if val is not None:
+                _CONFIG_SOURCES["env"][entry.key] = val
+
+
+def _flatten_dot(data: dict, prefix: str = "") -> dict:
+    result = {}
+    for key, value in data.items():
+        full_key = f"{prefix}.{key}" if prefix else key
+        if isinstance(value, dict):
+            result.update(_flatten_dot(value, full_key))
+        else:
+            result[full_key] = value
+    return result
+
+
 class Config:
-    """
-    Singleton config with priority-chain resolution.
-
-    Priority (highest wins):
-        1. In-memory overrides (config.set())
-        2. Environment variables
-        3. data/settings.json
-        4. config.yaml
-        5. Code default from ConfigEntry
-    """
-
     def __init__(self):
         self._loaded = False
 
     def load(self, config_yaml_path: str = "./config.yaml", settings_path: str = "./data/settings.json"):
-        """Load settings from yaml + json files."""
-        # Load yaml
-        yaml_path = Path(config_yaml_path)
-        if yaml_path.exists():
-            try:
-                import yaml
-                with open(yaml_path, encoding="utf-8") as f:
-                    data = yaml.safe_load(f) or {}
-                _CONFIG_SOURCES["yaml"] = self._flatten(data)
-                logger.debug(f"[Config] Loaded yaml: {yaml_path}")
-            except Exception as e:
-                logger.warning(f"[Config] Failed to load yaml {yaml_path}: {e}")
-
-        # Load settings.json
-        settings_path_obj = Path(settings_path)
-        if settings_path_obj.exists():
-            try:
-                with open(settings_path_obj, encoding="utf-8") as f:
-                    data = json.load(f)
-                _CONFIG_SOURCES["settings"] = data
-                logger.debug(f"[Config] Loaded settings: {settings_path_obj}")
-            except Exception as e:
-                logger.warning(f"[Config] Failed to load settings {settings_path_obj}: {e}")
-
-        # Scan environment variables for registered keys
-        for entry in _REGISTRY:
-            if entry.env_var:
-                val = os.environ.get(entry.env_var)
-                if val is not None:
-                    _CONFIG_SOURCES["env"][entry.key] = val
-
+        _init_sources(config_yaml_path, settings_path)
+        try:
+            from core.configuration import configuration
+            configuration.load(config_yaml_path, settings_path)
+        except ImportError:
+            pass
         self._loaded = True
 
-    def _flatten(self, data: dict, prefix: str = "") -> dict:
-        """Flatten nested dict to dot-separated keys."""
-        result = {}
-        for key, value in data.items():
-            full_key = f"{prefix}.{key}" if prefix else key
-            if isinstance(value, dict):
-                result.update(self._flatten(value, full_key))
-            else:
-                result[full_key] = value
-        return result
-
     def get(self, key: str, default: Any = None) -> Any:
-        """Resolve a config value by priority chain."""
-        # 1. In-memory overrides
+        try:
+            from core.configuration import configuration
+            return configuration.get(key, default)
+        except (ImportError, AttributeError):
+            pass
+        # Legacy fallback during import-time circular deps
         if key in _CONFIG_SOURCES["overrides"]:
             return _CONFIG_SOURCES["overrides"][key]
-
         entry = _REGISTRY_MAP.get(key)
-
-        # 2. Environment variable (pre-scanned)
-        if entry and entry.env_var:
-            env_val = _CONFIG_SOURCES["env"].get(key)
-            if env_val is not None:
-                return _coerce(env_val, entry.type, entry)
-
-        # 3. settings.json
+        if entry and entry.env_var and key in _CONFIG_SOURCES["env"]:
+            return _coerce(_CONFIG_SOURCES["env"][key], entry.type, entry)
         if key in _CONFIG_SOURCES["settings"]:
             val = _CONFIG_SOURCES["settings"][key]
-            if entry:
-                return _coerce(val, entry.type, entry)
-            return val
-
-        # 4. config.yaml
+            return _coerce(val, entry.type, entry) if entry else val
         if key in _CONFIG_SOURCES["yaml"]:
             val = _CONFIG_SOURCES["yaml"][key]
-            if entry:
-                return _coerce(val, entry.type, entry)
-            return val
-
-        # 5. Code default (from entry or caller's default)
+            return _coerce(val, entry.type, entry) if entry else val
         if entry:
             return entry.default
-        if default is not None:
-            return default
-        raise KeyError(f"Unknown config key: {key} — not in registry and no default provided")
+        return default
 
     def set(self, key: str, value: Any, persist: bool = True):
-        """
-        Set a config value in memory. Persists to settings.json if persist=True.
-        """
-        entry = _REGISTRY_MAP.get(key)
-        if entry:
-            value = _coerce(value, entry.type, entry)
-
         _CONFIG_SOURCES["overrides"][key] = value
-
-        if persist:
-            settings_path = os.environ.get(
-                "JARVIS_SETTINGS_FILE",
-                str(Path(os.environ.get("JARVIS_DATA_DIR", "data")) / "settings.json")
-            )
-            settings_obj = Path(settings_path)
-            try:
-                current = {}
-                if settings_obj.exists():
-                    with open(settings_obj, encoding="utf-8") as f:
-                        current = json.load(f)
-                current[key] = value
-                settings_obj.parent.mkdir(parents=True, exist_ok=True)
-                with open(settings_obj, "w", encoding="utf-8") as f:
-                    json.dump(current, f, indent=2, default=str)
-            except Exception as e:
-                logger.warning(f"[Config] Failed to persist {key}={value}: {e}")
-
-        # Fire on_change callback
-        if entry:
-            self._fire_on_change(key, value)
+        try:
+            from core.configuration import configuration
+            configuration.set(key, value, persist=persist)
+        except ImportError:
+            pass
 
     def reset(self, key: str):
-        """Remove in-memory override for a key (falls back to env/json/yaml/default)."""
-        _CONFIG_SOURCES["overrides"].pop(key, None)
+        from core.configuration import configuration
+        configuration.reset(key)
 
     def reset_all(self):
-        """Clear all in-memory overrides."""
-        _CONFIG_SOURCES["overrides"].clear()
+        from core.configuration import configuration
+        configuration.reset_all()
 
     def as_dict(self, category: Optional[str] = None) -> dict:
-        """Return all resolved values as a flat dict, optionally filtered by category."""
-        result = {}
-        for entry in _REGISTRY:
-            if category and entry.category != category:
-                continue
-            result[entry.key] = self.get(entry.key)
-        return result
-
-    def _mask_secret(self, value: Any) -> Any:
-        if value and isinstance(value, str) and len(value) > 8:
-            return value[:4] + "****" + value[-4:]
-        return value
+        from core.configuration import configuration
+        return configuration.as_dict(category)
 
     def as_api_dict(self, category: Optional[str] = None) -> list[dict]:
-        """Return all settings with metadata for the REST API. Secrets are masked."""
-        result = []
-        for entry in _REGISTRY:
-            if category and entry.category != category:
-                continue
-            is_overridden = entry.key in _CONFIG_SOURCES["overrides"]
-            resolved = self.get(entry.key)
-            display_value = self._mask_secret(resolved) if entry.secret else resolved
-            result.append({
-                "key": entry.key,
-                "value": display_value,
-                "default": entry.default,
-                "type": entry.type,
-                "category": entry.category,
-                "description": entry.description,
-                "ui": entry.ui,
-                "options": entry.options,
-                "options_provider": entry.options_provider,
-                "restart_required": entry.restart_required,
-                "min_value": entry.min_value,
-                "max_value": entry.max_value,
-                "env_var": entry.env_var,
-                "is_overridden": is_overridden,
-            })
-        return result
-
-    def _fire_on_change(self, key: str, value: Any):
-        """Call registered on_change callbacks."""
-        for cb in _ON_CHANGE_CALLBACKS.get(key, []):
-            try:
-                cb(value)
-            except Exception as e:
-                logger.warning(f"[Config] on_change callback failed for {key}: {e}")
+        from core.configuration import configuration
+        return configuration.as_api_dict(category)
 
     def on_change(self, key: str, callback):
-        """Register a callback for when a key changes."""
-        _ON_CHANGE_CALLBACKS.setdefault(key, []).append(callback)
+        from core.configuration import configuration
+        configuration.on_change(key, callback)
 
-    # ── Backward-compatible dot access ────────────────────────────────────────
     class _Proxy:
         def __init__(self, config, prefix):
             self._config = config
@@ -423,10 +312,10 @@ class Config:
 
         def __getattr__(self, name):
             full_key = f"{self._prefix}.{name}" if self._prefix else name
-            try:
-                return self._config.get(full_key)
-            except KeyError:
+            val = self._config.get(full_key)
+            if val is None:
                 raise AttributeError(f"Config has no key: {full_key}")
+            return val
 
         def __setattr__(self, name, value):
             if name.startswith("_"):
@@ -441,9 +330,5 @@ class Config:
         return self._Proxy(self, name)
 
 
-# Callbacks registry
-_ON_CHANGE_CALLBACKS: dict[str, list] = {}
-
-# Singleton
+# Singleton — NO auto-load at import time. Call config.load() explicitly.
 config = Config()
-config.load()

@@ -165,7 +165,7 @@ class PluginLoader:
                     instance = plugin_class()
 
                     # Subscribe hooks to event bus
-                    from .events import PluginEventBus
+                    from brain.events import PluginEventBus
                     bus = PluginEventBus.instance()
                     for attr_name in dir(instance):
                         attr = getattr(instance, attr_name)

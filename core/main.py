@@ -279,11 +279,8 @@ except Exception as e:
 
 # whatsapp_router deferred to lifespan (~2.5s import)
 
-try:
-    from automation.call_sync_server import get_fastapi_router
-    app.include_router(get_fastapi_router())
-except Exception as e:
-    logger.warning("[Router] Call sync routes not loaded: %s", e)
+# call_sync_server deferred to lifespan (~210ms import — pyttsx3 init made lazy)
+# Registered in lifespan._init_call_sync_routes()
 
 # try:
 #     from api.hybrid_integration import setup_hybrid_routes
@@ -370,13 +367,8 @@ except Exception as e:
 # except Exception as e:
 #     logger.warning("[Router] AGI routes not loaded: %s", e)
 
-# Website Generator routes
-try:
-    from api.website_routes import router as website_router
-    app.include_router(website_router)
-    logger.info("[Router] Website Generator routes loaded [OK]")
-except Exception as e:
-    logger.warning("[Router] Website Generator routes not loaded: %s", e)
+# Website Generator routes (deferred to lifespan — ~500ms import)
+# Registered in lifespan._init_website_routes()
 
 # Plugin System routes
 try:
@@ -600,6 +592,22 @@ except Exception as e:
     logger.warning("[Router] Negotiation routes not loaded: %s", e)
 
 
+# ── MJ v3 routes ────────────────────────────────────────────────────────────
+
+try:
+    from core.routes.inbox import router as inbox_router
+    app.include_router(inbox_router)
+    logger.info("[Router] Inbox routes loaded [OK]")
+except Exception as e:
+    logger.warning("[Router] Inbox routes not loaded: %s", e)
+
+try:
+    from core.routes.progress import router as progress_router
+    app.include_router(progress_router)
+    logger.info("[Router] Progress routes loaded [OK]")
+except Exception as e:
+    logger.warning("[Router] Progress routes not loaded: %s", e)
+
 # ── Static mounts ──
 
 _STATIC_DIR = _pkg_root / "static"
@@ -743,12 +751,13 @@ async def execute_action(intent_data: dict, message: str = "", session_id: str =
                 result = await route_intent(message, params)
                 return {"executed": True, "action": "Message processed", "result": result}
             except Exception as e:
-                return {"executed": False, "action": "", "result": {}, "error": str(e)}
+                logger.warning("[execute_action] %s failed: %s", intent, e)
+                return {"executed": False, "action": "", "result": {}, "error": "Action failed"}
         else:
             return {"executed": False, "action": "", "result": {}, "error": None}
     except Exception as e:
         logger.warning("[execute_action] %s failed: %s", intent, e)
-        return {"executed": False, "action": "", "result": {}, "error": str(e)}
+        return {"executed": False, "action": "", "result": {}, "error": "Action failed"}
 
 
 # ── Vision routes ──
@@ -790,7 +799,7 @@ async def not_implemented_error_handler(request, exc: NotImplementedError):
         status_code=501,
         content={
             "code": "NOT_IMPLEMENTED",
-            "message": str(exc),
+            "message": "This feature is not yet available.",
             "data": None,
         }
     )

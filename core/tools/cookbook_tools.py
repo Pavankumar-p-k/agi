@@ -459,7 +459,7 @@ async def do_download_model(content: str, owner: str | None = None) -> dict:
             return {"output": f"Download started: {repo_id} on {where} (session: {sid}){note}{default_note}", "session_id": sid, "host": host, "exit_code": 0}
         return {"error": data.get("error", "Download failed"), "exit_code": 1}
     except Exception as e:
-        return {"error": str(e), "exit_code": 1}
+        return {"error": "Operation failed", "exit_code": 1}
 
 
 async def do_serve_model(content: str, owner: str | None = None) -> dict:
@@ -503,7 +503,7 @@ async def do_serve_model(content: str, owner: str | None = None) -> dict:
             return {"output": f"Serving {repo_id} (session: {sid}){note}", "session_id": sid, "exit_code": 0}
         return {"error": data.get("error", "Serve failed"), "exit_code": 1}
     except Exception as e:
-        return {"error": str(e), "exit_code": 1}
+        return {"error": "Operation failed", "exit_code": 1}
 
 
 async def do_list_served_models(content: str, owner: str | None = None) -> dict:
@@ -645,7 +645,7 @@ async def _cookbook_kill_session(session_id: str, *, remote_host: str = "",
         suffix = " (was already gone)" if already_gone else ""
         return {"output": f"{verb} {target_label}{suffix}", "exit_code": 0}
     except Exception as e:
-        return {"error": str(e), "exit_code": 1}
+        return {"error": "Operation failed", "exit_code": 1}
 
 
 async def do_stop_served_model(content: str, owner: str | None = None) -> dict:
@@ -683,7 +683,7 @@ async def do_list_downloads(content: str, owner: str | None = None) -> dict:
             lines.append(f"- {model}: {phase}{pct_str} ({t.get('remote', 'local')}, session: {t.get('session_id', '?')})")
         return {"output": "\n".join(lines), "downloads": tasks, "exit_code": 0}
     except Exception as e:
-        return {"error": str(e), "exit_code": 1}
+        return {"error": "Operation failed", "exit_code": 1}
 
 
 async def do_cancel_download(content: str, owner: str | None = None) -> dict:
@@ -740,7 +740,7 @@ async def do_search_hf_models(content: str, owner: str | None = None) -> dict:
                 lines.append(f"- {m}")
         return {"output": "\n".join(lines), "models": models, "exit_code": 0}
     except Exception as e:
-        return {"error": str(e), "exit_code": 1}
+        return {"error": "Operation failed", "exit_code": 1}
 
 
 async def do_adopt_served_model(content: str, owner: str | None = None) -> dict:
@@ -776,7 +776,7 @@ async def do_adopt_served_model(content: str, owner: str | None = None) -> dict:
             err = (data.get("stderr") or data.get("error") or r.text[:200]).strip()
             return {"error": f"tmux session {sess!r} not found on {host or 'local'}: {err}", "exit_code": 1}
     except Exception as e:
-        return {"error": f"verify failed: {e}", "exit_code": 1}
+        return {"error": "Verify failed", "exit_code": 1}
 
     if host:
         health_cmd = f"ssh -o ConnectTimeout=5 {shlex.quote(host)} 'curl -s -m 3 http://localhost:{int(port)}/v1/models'"
@@ -797,7 +797,7 @@ async def do_adopt_served_model(content: str, owner: str | None = None) -> dict:
             r = await client.get(f"{_COOKBOOK_BASE}/api/cookbook/state", headers=headers)
             state = r.json() if r.headers.get("content-type", "").startswith("application/json") else {}
     except Exception as e:
-        return {"error": f"could not read cookbook state: {e}", "exit_code": 1}
+        return {"error": "Could not read cookbook state", "exit_code": 1}
     if not isinstance(state, dict):
         state = {}
     tasks = state.get("tasks") if isinstance(state.get("tasks"), list) else []
@@ -832,7 +832,7 @@ async def do_adopt_served_model(content: str, owner: str | None = None) -> dict:
                 await client.post(f"{_COOKBOOK_BASE}/api/cookbook/state",
                                   json=state, headers=headers)
         except Exception as e:
-            return {"error": f"could not save cookbook state: {e}", "exit_code": 1}
+            return {"error": "Could not save cookbook state", "exit_code": 1}
 
     endpoint_msg = ""
     if add_endpoint:
@@ -856,7 +856,7 @@ async def do_adopt_served_model(content: str, owner: str | None = None) -> dict:
                 else:
                     endpoint_msg = f" Endpoint registration skipped: {(ep_result or {}).get('error', 'unknown')}"
             except Exception as e:
-                endpoint_msg = f" Endpoint registration failed: {e}"
+                endpoint_msg = " Endpoint registration failed"
 
     return {
         "output": (
@@ -900,7 +900,7 @@ async def do_list_serve_presets(content: str, owner: str | None = None) -> dict:
                                     headers=_internal_headers())
             state = resp.json() or {}
     except Exception as e:
-        return {"error": f"Failed to fetch cookbook state: {e}", "exit_code": 1}
+        return {"error": "Failed to fetch cookbook state", "exit_code": 1}
 
     presets = state.get("presets") or []
     if not presets:
@@ -944,7 +944,7 @@ async def do_serve_preset(content: str, owner: str | None = None) -> dict:
                                     headers=_internal_headers())
             state = resp.json() or {}
     except Exception as e:
-        return {"error": f"Failed to fetch cookbook state: {e}", "exit_code": 1}
+        return {"error": "Failed to fetch cookbook state", "exit_code": 1}
 
     presets = state.get("presets") or []
     chosen = None
@@ -993,7 +993,7 @@ async def do_serve_preset(content: str, owner: str | None = None) -> dict:
             return {"output": f"Launched preset {chosen.get('name')!r}: {repo_id} on {host or 'local'} (session: {sid}){note}", "session_id": sid, "exit_code": 0}
         return {"error": data.get("error", "Serve failed"), "exit_code": 1}
     except Exception as e:
-        return {"error": str(e), "exit_code": 1}
+        return {"error": "Operation failed", "exit_code": 1}
 
 
 async def do_list_cached_models(content: str, owner: str | None = None) -> dict:
@@ -1055,7 +1055,7 @@ async def do_list_cached_models(content: str, owner: str | None = None) -> dict:
             lines.append(f"- {name}{kind} — {sz}{inc}")
         return {"output": "\n".join(lines), "models": models, "exit_code": 0}
     except Exception as e:
-        return {"error": str(e), "exit_code": 1}
+        return {"error": "Operation failed", "exit_code": 1}
 
 
 async def do_edit_image(content: str, owner: str | None = None) -> dict:
@@ -1081,7 +1081,7 @@ async def do_edit_image(content: str, owner: str | None = None) -> dict:
             return {"output": f"Image edited ({action}). New image ID: {data.get('id', '?')}", "exit_code": 0}
         return {"error": data.get("error", f"{action} failed"), "exit_code": 1}
     except Exception as e:
-        return {"error": str(e), "exit_code": 1}
+        return {"error": "Operation failed", "exit_code": 1}
 
 
 async def do_manage_research(content: str, owner: str | None = None) -> dict:
@@ -1196,7 +1196,7 @@ async def do_trigger_research(content: str, owner: str | None = None) -> dict:
             "exit_code": 0,
         }
     except Exception as e:
-        return {"error": str(e), "exit_code": 1}
+        return {"error": "Operation failed", "exit_code": 1}
 
 
 async def do_resolve_contact(content: str, owner: str | None = None) -> dict:
@@ -1306,7 +1306,7 @@ async def do_manage_contact(content: str, owner: str | None = None) -> dict:
 
         return {"error": f"Unknown action '{action}'. Use list, add, update, or delete.", "exit_code": 1}
     except Exception as e:
-        return {"error": f"Contact operation failed: {e}", "exit_code": 1}
+        return {"error": "Contact operation failed", "exit_code": 1}
 
 
 def _load_vault_config() -> dict:

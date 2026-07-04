@@ -46,6 +46,9 @@ build/
 Thumbs.db
 Desktop.ini
 
+# Export directory — UI code moved out of main repo
+jarvis-export/
+
 # Runtime state
 *.log
 *.tmp

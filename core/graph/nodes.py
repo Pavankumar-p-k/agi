@@ -47,7 +47,7 @@ from core.agent_tools import (
 from core.graph.state import THINK_RE, AgentPhase, AgentState, RoundState
 from core.llm_core import _is_ollama_native_url, stream_llm_with_fallback
 from core.model_context import estimate_tokens
-from core.settings_legacy import get_setting
+from core.configuration import configuration
 from core.tools._constants import TOOL_TAGS, ToolBlock
 from core.tools.browser_planner import BrowserPlanner
 from core.tools.security import blocked_tools_for_owner
@@ -302,11 +302,11 @@ async def setup_node(state: AgentState) -> AgentState:
         from core.context_compactor import trim_for_context
 
         from core.context_budget import TokenBudget, compute_input_token_budget
-        soft_budget = int(get_setting("agent_input_token_budget", 6000) or 0)
+        soft_budget = int(configuration.get("agent_input_token_budget", 6000) or 0)
         if soft_budget > 0:
             before_trim_tokens = estimate_tokens(state.messages)
             try:
-                hard_max = int(get_setting("agent_input_token_hard_max", 24000) or 24000)
+                hard_max = int(configuration.get("agent_input_token_hard_max", 24000) or 24000)
             except (TypeError, ValueError):
                 hard_max = 24000
             if hard_max <= 0:
@@ -405,7 +405,7 @@ async def think_node(state: AgentState) -> AgentState:
                 and t.get("name") not in state.disabled_tools_set
             ]
 
-    agent_stream_timeout = int(get_setting("agent_stream_timeout_seconds", 300) or 300)
+    agent_stream_timeout = int(configuration.get("agent_stream_timeout_seconds", 300) or 300)
     _tool_names_sent = [t.get("function", {}).get("name") for t in (all_tool_schemas or []) if t.get("function")]
     logger.info(
         f"[agent-debug] round={round_num} model={state.model} "
@@ -658,7 +658,7 @@ async def route_node(state: AgentState) -> AgentState:
         if (state.effectful_used and not state.force_answer
                 and _claimed_done
                 and state.verifier_rounds < _VERIFIER_MAX_ROUNDS
-                and get_setting("agent_verifier_subagent", False)):
+                and configuration.get("agent_verifier_subagent", False)):
             state.phase = AgentPhase.VERIFYING
             state.events.append(
                 f'data: {json.dumps({"type": "agent_step", "round": state.round_num})}\n\n'

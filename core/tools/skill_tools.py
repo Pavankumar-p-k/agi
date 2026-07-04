@@ -72,7 +72,7 @@ def _do_search_chats_sync(query: str, limit: int = 20, owner: str | None = None)
         return {"results": "\n".join(lines)}
     except Exception as e:
         logger.error(f"search_chats failed: {e}")
-        return {"error": str(e), "exit_code": 1}
+        return {"error": "Operation failed", "exit_code": 1}
     finally:
         db.close()
 
@@ -255,7 +255,7 @@ async def do_manage_skills(content: str, owner: str | None = None) -> dict:
                 f"a duplicate. View or edit it with action='view', name='{entry['name']}'."
             )}
         try:
-            from core.event_bus import fire_event
+            from brain.events import fire_event
             fire_event("skill_added", owner)
         except Exception as _e:
             logger.debug("skill_added event dispatch failed: %s", _e)
@@ -547,7 +547,7 @@ async def do_manage_tasks(content: str, owner: str | None = None) -> dict:
             if owner and task.owner and task.owner != owner:
                 return {"error": "Access denied", "exit_code": 1}
 
-            from core.event_bus import get_task_scheduler
+            from brain.events import get_task_scheduler
             scheduler = get_task_scheduler()
             if scheduler:
                 started = await scheduler.run_task_now(task_id)
@@ -562,6 +562,6 @@ async def do_manage_tasks(content: str, owner: str | None = None) -> dict:
 
     except Exception as e:
         logger.error(f"manage_tasks error: {e}")
-        return {"error": str(e), "exit_code": 1}
+        return {"error": "Operation failed", "exit_code": 1}
     finally:
         db.close()

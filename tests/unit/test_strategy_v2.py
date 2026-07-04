@@ -1,6 +1,6 @@
 """Phase 15.1–15.2 tests — Strategic Reasoning Layer.
 
-Tests cover all 9 files in core/strategy_v2/:
+Tests cover all 9 files in core/strategy/v2/:
   models, planner, predictor, tradeoffs, evaluator, selector,
   memory_adapter, executor, portfolio
 """
@@ -18,7 +18,7 @@ from unittest import TestCase
 
 class TestStrategyModels(TestCase):
     def test_01_strategy_candidate_creation(self):
-        from core.strategy_v2.models import StrategyCandidate, TimeHorizon
+        from core.strategy.v2.models import StrategyCandidate, TimeHorizon
         sc = StrategyCandidate(
             strategy_id="strat_001",
             name="Add verification to browser_tool",
@@ -35,7 +35,7 @@ class TestStrategyModels(TestCase):
         self.assertEqual(sc.time_horizon, TimeHorizon.SHORT_TERM)
 
     def test_02_strategy_candidate_to_dict(self):
-        from core.strategy_v2.models import StrategyCandidate
+        from core.strategy.v2.models import StrategyCandidate
         sc = StrategyCandidate(
             strategy_id="strat_001",
             name="Test strategy",
@@ -53,7 +53,7 @@ class TestStrategyModels(TestCase):
         self.assertEqual(d["proposal_ids"], ["prp_001"])
 
     def test_03_strategic_decision_creation(self):
-        from core.strategy_v2.models import StrategicDecision, StrategyStatus
+        from core.strategy.v2.models import StrategicDecision, StrategyStatus
         sd = StrategicDecision(
             decision_id="dec_001",
             chosen_strategy_id="strat_001",
@@ -65,7 +65,7 @@ class TestStrategyModels(TestCase):
         self.assertEqual(len(sd.alternative_strategy_ids), 2)
 
     def test_04_tradeoff_analysis_creation(self):
-        from core.strategy_v2.models import TradeoffAnalysis
+        from core.strategy.v2.models import TradeoffAnalysis
         ta = TradeoffAnalysis(
             strategy_id="strat_001",
             net_utility=0.42,
@@ -77,7 +77,7 @@ class TestStrategyModels(TestCase):
         self.assertIn("improvement", ta.strengths)
 
     def test_05_enums(self):
-        from core.strategy_v2.models import (
+        from core.strategy.v2.models import (
             ImpactDimension, StrategyStatus, TimeHorizon,
         )
         self.assertEqual(TimeHorizon.SHORT_TERM.value, "short_term")
@@ -108,7 +108,7 @@ class TestStrategicPlanner(TestCase):
         )
 
     def test_10_single_proposal_creates_one_strategy(self):
-        from core.strategy_v2.planner import StrategicPlanner
+        from core.strategy.v2.planner import StrategicPlanner
         planner = StrategicPlanner()
         proposals = [self._make_proposal("prp_001")]
         candidates = planner.plan_from_proposals(proposals)
@@ -118,7 +118,7 @@ class TestStrategicPlanner(TestCase):
         self.assertAlmostEqual(c.overall_improvement, 0.33 * 0.89)
 
     def test_11_multiple_proposals_create_multiple_strategies(self):
-        from core.strategy_v2.planner import StrategicPlanner
+        from core.strategy.v2.planner import StrategicPlanner
         planner = StrategicPlanner()
         proposals = [
             self._make_proposal("prp_001", "tool_a"),
@@ -130,7 +130,7 @@ class TestStrategicPlanner(TestCase):
 
     def test_12_combined_strategy_for_same_system(self):
         """Two proposals for the same system produce 2 single + 1 combined."""
-        from core.strategy_v2.planner import StrategicPlanner
+        from core.strategy.v2.planner import StrategicPlanner
         planner = StrategicPlanner()
         proposals = [
             self._make_proposal("prp_001", "browser_tool", "add_capability"),
@@ -143,14 +143,14 @@ class TestStrategicPlanner(TestCase):
         self.assertEqual(len(combined), 1)
 
     def test_13_empty_proposals(self):
-        from core.strategy_v2.planner import StrategicPlanner
+        from core.strategy.v2.planner import StrategicPlanner
         planner = StrategicPlanner()
         candidates = planner.plan_from_proposals([])
         self.assertEqual(candidates, [])
 
     def test_14_candidate_has_impact_dimensions(self):
         """Each candidate has inferred impact dimensions."""
-        from core.strategy_v2.planner import StrategicPlanner
+        from core.strategy.v2.planner import StrategicPlanner
         planner = StrategicPlanner()
         proposals = [self._make_proposal("prp_001", "browser_tool")]
         candidates = planner.plan_from_proposals(proposals)
@@ -159,7 +159,7 @@ class TestStrategicPlanner(TestCase):
 
     def test_15_risk_derived_from_confidence(self):
         """Risk = 1 - confidence."""
-        from core.strategy_v2.planner import StrategicPlanner
+        from core.strategy.v2.planner import StrategicPlanner
         planner = StrategicPlanner()
         proposals = [self._make_proposal("prp_001", "tool_a", confidence=0.70)]
         candidates = planner.plan_from_proposals(proposals)
@@ -167,7 +167,7 @@ class TestStrategicPlanner(TestCase):
 
     def test_16_cost_estimated_from_proposal_type(self):
         """add_capability has cost 0.4."""
-        from core.strategy_v2.planner import StrategicPlanner
+        from core.strategy.v2.planner import StrategicPlanner
         planner = StrategicPlanner()
         proposals = [self._make_proposal("prp_001")]
         candidates = planner.plan_from_proposals(proposals)
@@ -180,7 +180,7 @@ class TestStrategicPlanner(TestCase):
 class TestOutcomePredictor(TestCase):
     def _make_candidate(self, improvement: float = 0.30, risk: float = 0.10,
                         cost: float = 0.40, confidence: float = 0.89):
-        from core.strategy_v2.models import StrategyCandidate
+        from core.strategy.v2.models import StrategyCandidate
         return StrategyCandidate(
             strategy_id="strat_pred",
             name="Test",
@@ -194,39 +194,39 @@ class TestOutcomePredictor(TestCase):
         )
 
     def test_20_predicts_short_term_for_low_cost_low_risk(self):
-        from core.strategy_v2.predictor import OutcomePredictor
-        from core.strategy_v2.models import TimeHorizon
+        from core.strategy.v2.predictor import OutcomePredictor
+        from core.strategy.v2.models import TimeHorizon
         p = OutcomePredictor()
         c = self._make_candidate(cost=0.2, risk=0.2)
         result = p.predict(c)
         self.assertEqual(result.time_horizon, TimeHorizon.SHORT_TERM)
 
     def test_21_predicts_long_term_for_high_cost(self):
-        from core.strategy_v2.predictor import OutcomePredictor
-        from core.strategy_v2.models import TimeHorizon
+        from core.strategy.v2.predictor import OutcomePredictor
+        from core.strategy.v2.models import TimeHorizon
         p = OutcomePredictor()
         c = self._make_candidate(cost=0.7, risk=0.3)
         result = p.predict(c)
         self.assertEqual(result.time_horizon, TimeHorizon.LONG_TERM)
 
     def test_22_predicts_long_term_for_high_risk(self):
-        from core.strategy_v2.predictor import OutcomePredictor
-        from core.strategy_v2.models import TimeHorizon
+        from core.strategy.v2.predictor import OutcomePredictor
+        from core.strategy.v2.models import TimeHorizon
         p = OutcomePredictor()
         c = self._make_candidate(cost=0.3, risk=0.7)
         result = p.predict(c)
         self.assertEqual(result.time_horizon, TimeHorizon.LONG_TERM)
 
     def test_23_medium_term_by_default(self):
-        from core.strategy_v2.predictor import OutcomePredictor
-        from core.strategy_v2.models import TimeHorizon
+        from core.strategy.v2.predictor import OutcomePredictor
+        from core.strategy.v2.models import TimeHorizon
         p = OutcomePredictor()
         c = self._make_candidate(cost=0.4, risk=0.4)
         result = p.predict(c)
         self.assertEqual(result.time_horizon, TimeHorizon.MEDIUM_TERM)
 
     def test_24_improvement_range(self):
-        from core.strategy_v2.predictor import OutcomePredictor
+        from core.strategy.v2.predictor import OutcomePredictor
         p = OutcomePredictor()
         c = self._make_candidate(improvement=0.50, confidence=0.80)
         pessimistic, optimistic = p.estimate_improvement_range(c)
@@ -241,7 +241,7 @@ class TestTradeoffEngine(TestCase):
     def _make_candidate(self, strategy_id: str, improvement: float = 0.30,
                         risk: float = 0.10, cost: float = 0.40,
                         confidence: float = 0.89, horizon: str = "short_term"):
-        from core.strategy_v2.models import StrategyCandidate, TimeHorizon
+        from core.strategy.v2.models import StrategyCandidate, TimeHorizon
         return StrategyCandidate(
             strategy_id=strategy_id,
             name=f"Strategy {strategy_id}",
@@ -256,7 +256,7 @@ class TestTradeoffEngine(TestCase):
         )
 
     def test_30_higher_improvement_higher_utility(self):
-        from core.strategy_v2.tradeoffs import TradeoffEngine
+        from core.strategy.v2.tradeoffs import TradeoffEngine
         e = TradeoffEngine()
         low = self._make_candidate("low", improvement=0.20)
         high = self._make_candidate("high", improvement=0.60)
@@ -265,7 +265,7 @@ class TestTradeoffEngine(TestCase):
         self.assertGreater(a_high.net_utility, a_low.net_utility)
 
     def test_31_lower_risk_higher_utility(self):
-        from core.strategy_v2.tradeoffs import TradeoffEngine
+        from core.strategy.v2.tradeoffs import TradeoffEngine
         e = TradeoffEngine()
         risky = self._make_candidate("risky", risk=0.80)
         safe = self._make_candidate("safe", risk=0.10)
@@ -274,7 +274,7 @@ class TestTradeoffEngine(TestCase):
         self.assertGreater(a_safe.net_utility, a_risky.net_utility)
 
     def test_32_strengths_identified(self):
-        from core.strategy_v2.tradeoffs import TradeoffEngine
+        from core.strategy.v2.tradeoffs import TradeoffEngine
         e = TradeoffEngine()
         c = self._make_candidate("good", improvement=0.70, risk=0.10,
                                   cost=0.20, confidence=0.95)
@@ -284,7 +284,7 @@ class TestTradeoffEngine(TestCase):
         self.assertIn("low_cost", a.strengths)
 
     def test_33_weaknesses_identified(self):
-        from core.strategy_v2.tradeoffs import TradeoffEngine
+        from core.strategy.v2.tradeoffs import TradeoffEngine
         e = TradeoffEngine()
         c = self._make_candidate("bad", improvement=0.10, risk=0.80,
                                   cost=0.80, confidence=0.30)
@@ -294,7 +294,7 @@ class TestTradeoffEngine(TestCase):
 
     def test_34_analyze_all_incorporates_opportunity_cost(self):
         """analyze_all should penalize strategies with strong alternatives."""
-        from core.strategy_v2.tradeoffs import TradeoffEngine
+        from core.strategy.v2.tradeoffs import TradeoffEngine
         e = TradeoffEngine()
         c1 = self._make_candidate("s1", improvement=0.50)
         c2 = self._make_candidate("s2", improvement=0.45)
@@ -305,7 +305,7 @@ class TestTradeoffEngine(TestCase):
 
     def test_35_net_utility_structure(self):
         """Net utility = sum of dimension scores."""
-        from core.strategy_v2.tradeoffs import TradeoffEngine
+        from core.strategy.v2.tradeoffs import TradeoffEngine
         e = TradeoffEngine()
         c = self._make_candidate("s1", improvement=0.30, risk=0.10,
                                   cost=0.40, confidence=0.89)
@@ -320,7 +320,7 @@ class TestTradeoffEngine(TestCase):
                                       confidence: float = 0.89,
                                       horizon: str = "short_term",
                                       enabled: list[str] | None = None):
-        from core.strategy_v2.models import StrategyCandidate, TimeHorizon
+        from core.strategy.v2.models import StrategyCandidate, TimeHorizon
         return StrategyCandidate(
             strategy_id=sid,
             name=f"Strategy {sid}",
@@ -337,7 +337,7 @@ class TestTradeoffEngine(TestCase):
 
     def test_36_option_value_added_when_enabled_strategies(self):
         """A strategy that enables others gets option_value > 0."""
-        from core.strategy_v2.tradeoffs import TradeoffEngine
+        from core.strategy.v2.tradeoffs import TradeoffEngine
         e = TradeoffEngine()
 
         # s1 enables s2, which has its own utility
@@ -357,7 +357,7 @@ class TestTradeoffEngine(TestCase):
 
     def test_37_option_value_affects_net_utility(self):
         """The option value bonus increases net_utility."""
-        from core.strategy_v2.tradeoffs import TradeoffEngine
+        from core.strategy.v2.tradeoffs import TradeoffEngine
         e = TradeoffEngine()
 
         s_enabler = self._make_candidate_with_enables("enabler",
@@ -380,7 +380,7 @@ class TestTradeoffEngine(TestCase):
 
     def test_38_option_value_discounted_by_time_horizon(self):
         """Short-term enabled strategies contribute more option value."""
-        from core.strategy_v2.tradeoffs import TradeoffEngine
+        from core.strategy.v2.tradeoffs import TradeoffEngine
         e = TradeoffEngine()
 
         s_short = self._make_candidate_with_enables("short",
@@ -404,7 +404,7 @@ class TestTradeoffEngine(TestCase):
 
     def test_39_option_value_dimension_in_analysis(self):
         """option_value appears as a dimension score when > 0."""
-        from core.strategy_v2.tradeoffs import TradeoffEngine
+        from core.strategy.v2.tradeoffs import TradeoffEngine
         e = TradeoffEngine()
 
         s1 = self._make_candidate_with_enables("s1", improvement=0.20,
@@ -424,7 +424,7 @@ class TestTradeoffEngine(TestCase):
 
     def test_36b_candidate_serializes_enabled_ids(self):
         """enabled_strategy_ids appears in to_dict()."""
-        from core.strategy_v2.models import StrategyCandidate
+        from core.strategy.v2.models import StrategyCandidate
         c = StrategyCandidate(
             strategy_id="s1", name="T", description="",
             proposal_ids=[], impact_by_dimension={},
@@ -438,8 +438,8 @@ class TestTradeoffEngine(TestCase):
 
     def test_36c_empty_enabled_ids_produces_no_option_value(self):
         """No enabled_strategy_ids = no option value (backward compatible)."""
-        from core.strategy_v2.tradeoffs import TradeoffEngine
-        from core.strategy_v2.models import StrategyCandidate, TimeHorizon
+        from core.strategy.v2.tradeoffs import TradeoffEngine
+        from core.strategy.v2.models import StrategyCandidate, TimeHorizon
         e = TradeoffEngine()
         c = StrategyCandidate(
             strategy_id="solo", name="Solo", description="",
@@ -453,7 +453,7 @@ class TestTradeoffEngine(TestCase):
 
     def test_36d_non_existent_enabled_id_skipped_gracefully(self):
         """If enabled_strategy_ids reference a non-existent candidate, skip."""
-        from core.strategy_v2.tradeoffs import TradeoffEngine
+        from core.strategy.v2.tradeoffs import TradeoffEngine
         e = TradeoffEngine()
         s1 = self._make_candidate_with_enables("s1", enabled=["nonexistent"])
         analyses = e.analyze_all([s1])
@@ -461,8 +461,8 @@ class TestTradeoffEngine(TestCase):
 
     def test_36e_negative_utility_enabled_strategies_do_not_contribute(self):
         """Only positive-utility enabled strategies add option value."""
-        from core.strategy_v2.tradeoffs import TradeoffEngine
-        from core.strategy_v2.models import StrategyCandidate, TimeHorizon
+        from core.strategy.v2.tradeoffs import TradeoffEngine
+        from core.strategy.v2.models import StrategyCandidate, TimeHorizon
         e = TradeoffEngine()
         # s1 enables s2, but s2 has very high risk → negative utility
         s1 = self._make_candidate_with_enables("s1", enabled=["s2"])
@@ -487,7 +487,7 @@ class TestTradeoffEngine(TestCase):
 class TestStrategicEvaluator(TestCase):
     def _make_candidate(self, strategy_id: str, improvement: float,
                         risk: float = 0.10, confidence: float = 0.89):
-        from core.strategy_v2.models import StrategyCandidate
+        from core.strategy.v2.models import StrategyCandidate
         return StrategyCandidate(
             strategy_id=strategy_id,
             name=f"S {strategy_id}",
@@ -501,7 +501,7 @@ class TestStrategicEvaluator(TestCase):
         )
 
     def test_40_sorts_by_utility_descending(self):
-        from core.strategy_v2.evaluator import StrategicEvaluator
+        from core.strategy.v2.evaluator import StrategicEvaluator
         e = StrategicEvaluator()
         candidates = [
             self._make_candidate("high", 0.60),
@@ -515,7 +515,7 @@ class TestStrategicEvaluator(TestCase):
         self.assertEqual(results[2][0].strategy_id, "low")
 
     def test_41_single_candidate(self):
-        from core.strategy_v2.evaluator import StrategicEvaluator
+        from core.strategy.v2.evaluator import StrategicEvaluator
         e = StrategicEvaluator()
         results = e.evaluate([
             self._make_candidate("only", 0.30),
@@ -523,7 +523,7 @@ class TestStrategicEvaluator(TestCase):
         self.assertEqual(len(results), 1)
 
     def test_42_returns_candidate_and_analysis(self):
-        from core.strategy_v2.evaluator import StrategicEvaluator
+        from core.strategy.v2.evaluator import StrategicEvaluator
         e = StrategicEvaluator()
         results = e.evaluate([
             self._make_candidate("s1", 0.30),
@@ -538,7 +538,7 @@ class TestStrategicEvaluator(TestCase):
 
 class TestStrategicSelector(TestCase):
     def _make_candidate(self, strategy_id: str):
-        from core.strategy_v2.models import StrategyCandidate
+        from core.strategy.v2.models import StrategyCandidate
         return StrategyCandidate(
             strategy_id=strategy_id,
             name=f"S {strategy_id}",
@@ -552,7 +552,7 @@ class TestStrategicSelector(TestCase):
         )
 
     def _make_analysis(self, strategy_id: str, utility: float):
-        from core.strategy_v2.models import TradeoffAnalysis
+        from core.strategy.v2.models import TradeoffAnalysis
         return TradeoffAnalysis(
             strategy_id=strategy_id,
             net_utility=utility,
@@ -562,7 +562,7 @@ class TestStrategicSelector(TestCase):
         )
 
     def test_50_selects_top_candidate(self):
-        from core.strategy_v2.selector import StrategicSelector
+        from core.strategy.v2.selector import StrategicSelector
         s = StrategicSelector()
         candidates = [
             self._make_candidate("best"),
@@ -579,7 +579,7 @@ class TestStrategicSelector(TestCase):
         self.assertEqual(len(decision.alternative_strategy_ids), 2)
 
     def test_51_decision_has_rationale(self):
-        from core.strategy_v2.selector import StrategicSelector
+        from core.strategy.v2.selector import StrategicSelector
         s = StrategicSelector()
         candidates = [self._make_candidate("only")]
         analyses = [self._make_analysis("only", 0.40)]
@@ -589,14 +589,14 @@ class TestStrategicSelector(TestCase):
         self.assertEqual(decision.alternative_strategy_ids, [])
 
     def test_52_empty_candidates_raises(self):
-        from core.strategy_v2.selector import StrategicSelector
+        from core.strategy.v2.selector import StrategicSelector
         s = StrategicSelector()
         with self.assertRaises(ValueError):
             s.select([], [])
 
     def test_53_selected_strategy_marked(self):
-        from core.strategy_v2.selector import StrategicSelector
-        from core.strategy_v2.models import StrategyStatus
+        from core.strategy.v2.selector import StrategicSelector
+        from core.strategy.v2.models import StrategyStatus
         s = StrategicSelector()
         candidates = [self._make_candidate("chosen")]
         analyses = [self._make_analysis("chosen", 0.40)]
@@ -604,7 +604,7 @@ class TestStrategicSelector(TestCase):
         self.assertEqual(candidates[0].status, StrategyStatus.SELECTED)
 
     def test_54_decision_has_utility_scores(self):
-        from core.strategy_v2.selector import StrategicSelector
+        from core.strategy.v2.selector import StrategicSelector
         s = StrategicSelector()
         candidates = [
             self._make_candidate("a"),
@@ -649,7 +649,7 @@ class TestStrategyMemoryAdapter(TestCase):
         )
 
     def test_60_get_open_proposals_returns_generated_and_approved(self):
-        from core.strategy_v2.memory_adapter import StrategyMemoryAdapter
+        from core.strategy.v2.memory_adapter import StrategyMemoryAdapter
         from core.generalization.models import ProposalStatus
         self.store.save_proposal(self._make_proposal("prp_gen", "generated"))
         self.store.save_proposal(self._make_proposal("prp_app", "approved"))
@@ -663,7 +663,7 @@ class TestStrategyMemoryAdapter(TestCase):
         self.assertNotIn("prp_exp", proposal_ids)
 
     def test_61_get_experimenting_proposals(self):
-        from core.strategy_v2.memory_adapter import StrategyMemoryAdapter
+        from core.strategy.v2.memory_adapter import StrategyMemoryAdapter
         self.store.save_proposal(self._make_proposal("prp_exp", "experimenting"))
         self.store.save_proposal(self._make_proposal("prp_gen", "generated"))
 
@@ -673,7 +673,7 @@ class TestStrategyMemoryAdapter(TestCase):
         self.assertEqual(exp[0].proposal_id, "prp_exp")
 
     def test_62_count_open_proposals(self):
-        from core.strategy_v2.memory_adapter import StrategyMemoryAdapter
+        from core.strategy.v2.memory_adapter import StrategyMemoryAdapter
         self.store.save_proposal(self._make_proposal("prp_1", "generated"))
         self.store.save_proposal(self._make_proposal("prp_2", "approved"))
         self.store.save_proposal(self._make_proposal("prp_3", "experimenting"))
@@ -682,7 +682,7 @@ class TestStrategyMemoryAdapter(TestCase):
         self.assertEqual(adapter.count_open_proposals(), 2)
 
     def test_63_get_proposal_by_id(self):
-        from core.strategy_v2.memory_adapter import StrategyMemoryAdapter
+        from core.strategy.v2.memory_adapter import StrategyMemoryAdapter
         self.store.save_proposal(self._make_proposal("prp_find"))
         adapter = StrategyMemoryAdapter(self.store)
         p = adapter.get_proposal("prp_find")
@@ -723,11 +723,11 @@ class TestStrategicReasoningPipeline(TestCase):
         )
 
     def test_70_end_to_end_pipeline(self):
-        from core.strategy_v2.planner import StrategicPlanner
-        from core.strategy_v2.predictor import OutcomePredictor
-        from core.strategy_v2.tradeoffs import TradeoffEngine
-        from core.strategy_v2.evaluator import StrategicEvaluator
-        from core.strategy_v2.selector import StrategicSelector
+        from core.strategy.v2.planner import StrategicPlanner
+        from core.strategy.v2.predictor import OutcomePredictor
+        from core.strategy.v2.tradeoffs import TradeoffEngine
+        from core.strategy.v2.evaluator import StrategicEvaluator
+        from core.strategy.v2.selector import StrategicSelector
 
         # Seed proposals
         proposals = [
@@ -763,9 +763,9 @@ class TestStrategicReasoningPipeline(TestCase):
 
     def test_71_pipeline_with_multiple_same_system_proposals(self):
         """Proposals for the same system produce combined strategy."""
-        from core.strategy_v2.planner import StrategicPlanner
-        from core.strategy_v2.evaluator import StrategicEvaluator
-        from core.strategy_v2.selector import StrategicSelector
+        from core.strategy.v2.planner import StrategicPlanner
+        from core.strategy.v2.evaluator import StrategicEvaluator
+        from core.strategy.v2.selector import StrategicSelector
 
         proposals = [
             self._make_proposal("prp_x1", "tool_x", 0.30, 0.90),
@@ -790,9 +790,9 @@ class TestStrategicReasoningPipeline(TestCase):
 
     def test_72_high_improvement_low_risk_selected_over_alternatives(self):
         """The best strategy (high improvement, low risk) is selected."""
-        from core.strategy_v2.planner import StrategicPlanner
-        from core.strategy_v2.evaluator import StrategicEvaluator
-        from core.strategy_v2.selector import StrategicSelector
+        from core.strategy.v2.planner import StrategicPlanner
+        from core.strategy.v2.evaluator import StrategicEvaluator
+        from core.strategy.v2.selector import StrategicSelector
 
         proposals = [
             self._make_proposal("prp_best", "tool_a", 0.50, 0.95),
@@ -817,9 +817,9 @@ class TestStrategicReasoningPipeline(TestCase):
 
     def test_73_all_strategies_have_tradeoff_analyses(self):
         """Every strategy has a corresponding tradeoff analysis in the decision."""
-        from core.strategy_v2.planner import StrategicPlanner
-        from core.strategy_v2.evaluator import StrategicEvaluator
-        from core.strategy_v2.selector import StrategicSelector
+        from core.strategy.v2.planner import StrategicPlanner
+        from core.strategy.v2.evaluator import StrategicEvaluator
+        from core.strategy.v2.selector import StrategicSelector
 
         proposals = [
             self._make_proposal("prp_1", "tool_a", 0.30, 0.80),
@@ -886,12 +886,12 @@ class TestStrategyExecutor(TestCase):
         self.store.save_proposals([self.proposal_a, self.proposal_b])
 
     def _make_candidates_and_decision(self) -> tuple:
-        from core.strategy_v2.models import (
+        from core.strategy.v2.models import (
             StrategicDecision,
             StrategyCandidate,
             TradeoffAnalysis,
         )
-        from core.strategy_v2.selector import StrategicSelector
+        from core.strategy.v2.selector import StrategicSelector
 
         combined = StrategyCandidate(
             strategy_id="strat_combined",
@@ -925,8 +925,8 @@ class TestStrategyExecutor(TestCase):
         return candidates, decision
 
     def test_80_execute_decision_transitions_proposals_to_experimenting(self):
-        from core.strategy_v2.executor import StrategyExecutor
-        from core.strategy_v2.models import StrategyStatus
+        from core.strategy.v2.executor import StrategyExecutor
+        from core.strategy.v2.models import StrategyStatus
         from core.generalization.models import ProposalStatus
 
         candidates, decision = self._make_candidates_and_decision()
@@ -949,7 +949,7 @@ class TestStrategyExecutor(TestCase):
         self.assertEqual(decision.status, StrategyStatus.EXECUTING)
 
     def test_81_execute_decision_skips_already_experimenting(self):
-        from core.strategy_v2.executor import StrategyExecutor
+        from core.strategy.v2.executor import StrategyExecutor
         from core.generalization.models import ProposalStatus
 
         # Manually set one to EXPERIMENTING
@@ -964,8 +964,8 @@ class TestStrategyExecutor(TestCase):
         self.assertIn("prp_exec_b", result)
 
     def test_82_execute_decision_raises_on_missing_strategy(self):
-        from core.strategy_v2.executor import StrategyExecutor
-        from core.strategy_v2.models import StrategicDecision
+        from core.strategy.v2.executor import StrategyExecutor
+        from core.strategy.v2.models import StrategicDecision
 
         decision = StrategicDecision(
             decision_id="dec_missing",
@@ -979,8 +979,8 @@ class TestStrategyExecutor(TestCase):
             executor.execute_decision(decision, [])
 
     def test_83_complete_decision_promotes_proposals(self):
-        from core.strategy_v2.executor import StrategyExecutor
-        from core.strategy_v2.models import StrategyStatus
+        from core.strategy.v2.executor import StrategyExecutor
+        from core.strategy.v2.models import StrategyStatus
         from core.generalization.models import ProposalStatus
 
         candidates, decision = self._make_candidates_and_decision()
@@ -1005,8 +1005,8 @@ class TestStrategyExecutor(TestCase):
         self.assertEqual(decision.status, StrategyStatus.COMPLETED)
 
     def test_84_complete_decision_rejects_on_failure(self):
-        from core.strategy_v2.executor import StrategyExecutor
-        from core.strategy_v2.models import StrategyStatus
+        from core.strategy.v2.executor import StrategyExecutor
+        from core.strategy.v2.models import StrategyStatus
         from core.generalization.models import ProposalStatus
 
         candidates, decision = self._make_candidates_and_decision()
@@ -1026,7 +1026,7 @@ class TestStrategyExecutor(TestCase):
         self.assertEqual(decision.status, StrategyStatus.SUPERSEDED)
 
     def test_85_complete_decision_with_per_proposal_results(self):
-        from core.strategy_v2.executor import StrategyExecutor
+        from core.strategy.v2.executor import StrategyExecutor
         from core.generalization.models import ProposalStatus
 
         candidates, decision = self._make_candidates_and_decision()
@@ -1053,7 +1053,7 @@ class TestStrategyExecutor(TestCase):
         self.assertEqual(pb.status, ProposalStatus.REJECTED)
 
     def test_86_complete_decision_skips_non_experimenting(self):
-        from core.strategy_v2.executor import StrategyExecutor
+        from core.strategy.v2.executor import StrategyExecutor
 
         candidates, decision = self._make_candidates_and_decision()
         executor = StrategyExecutor(self.store)
@@ -1065,7 +1065,7 @@ class TestStrategyExecutor(TestCase):
         self.assertEqual(result, {})
 
     def test_87_execute_and_complete_roundtrip_persists_outcome_data_points(self):
-        from core.strategy_v2.executor import StrategyExecutor
+        from core.strategy.v2.executor import StrategyExecutor
 
         candidates, decision = self._make_candidates_and_decision()
         executor = StrategyExecutor(self.store)
@@ -1083,7 +1083,7 @@ class TestStrategyExecutor(TestCase):
 
     def test_88_execute_decision_with_experiment_runner_injection(self):
         """StrategyExecutor accepts a custom ProposalExecutor."""
-        from core.strategy_v2.executor import StrategyExecutor
+        from core.strategy.v2.executor import StrategyExecutor
         from core.generalization.executor import ProposalExecutor
 
         # Inject a ProposalExecutor
@@ -1096,7 +1096,7 @@ class TestStrategyExecutor(TestCase):
         self.assertEqual(len(result), 2)
 
     def test_89_complete_decision_passes_metrics_to_outcome_point(self):
-        from core.strategy_v2.executor import StrategyExecutor
+        from core.strategy.v2.executor import StrategyExecutor
         from core.generalization.models import ProposalStatus
 
         candidates, decision = self._make_candidates_and_decision()
@@ -1135,14 +1135,14 @@ class TestStrategyExecutor(TestCase):
 
 class TestResourceModels(TestCase):
     def test_90_resource_budget_defaults(self):
-        from core.strategy_v2.models import ResourceBudget
+        from core.strategy.v2.models import ResourceBudget
         b = ResourceBudget()
         self.assertEqual(b.effort_budget, 40.0)
         self.assertEqual(b.max_concurrent, 1)
         self.assertEqual(b.min_utility_threshold, 0.0)
 
     def test_91_resource_budget_custom(self):
-        from core.strategy_v2.models import ResourceBudget
+        from core.strategy.v2.models import ResourceBudget
         b = ResourceBudget(effort_budget=100.0, max_concurrent=3,
                             min_utility_threshold=0.1)
         self.assertEqual(b.effort_budget, 100.0)
@@ -1150,8 +1150,8 @@ class TestResourceModels(TestCase):
         self.assertEqual(b.min_utility_threshold, 0.1)
 
     def test_92_portfolio_allocation_empty(self):
-        from core.strategy_v2.models import PortfolioAllocation
-        from core.strategy_v2.models import ResourceBudget
+        from core.strategy.v2.models import PortfolioAllocation
+        from core.strategy.v2.models import ResourceBudget
         budget = ResourceBudget()
         a = PortfolioAllocation(
             selected=[], selected_analyses=[],
@@ -1165,8 +1165,8 @@ class TestResourceModels(TestCase):
         self.assertEqual(a.remaining_effort, 40.0)
 
     def test_93_portfolio_allocation_to_dict(self):
-        from core.strategy_v2.models import PortfolioAllocation
-        from core.strategy_v2.models import StrategyCandidate, TradeoffAnalysis
+        from core.strategy.v2.models import PortfolioAllocation
+        from core.strategy.v2.models import StrategyCandidate, TradeoffAnalysis
         c = StrategyCandidate(
             strategy_id="s1", name="T1", description="",
             proposal_ids=[], impact_by_dimension={},
@@ -1191,7 +1191,7 @@ class TestPortfolioOptimizer(TestCase):
     def _make_candidate(self, strategy_id: str, name: str,
                         improvement: float = 0.30, risk: float = 0.10,
                         cost: float = 0.40, confidence: float = 0.89):
-        from core.strategy_v2.models import StrategyCandidate
+        from core.strategy.v2.models import StrategyCandidate
         return StrategyCandidate(
             strategy_id=strategy_id, name=name, description="",
             proposal_ids=["prp_" + strategy_id],
@@ -1201,7 +1201,7 @@ class TestPortfolioOptimizer(TestCase):
         )
 
     def _make_analysis(self, strategy_id: str, utility: float):
-        from core.strategy_v2.models import TradeoffAnalysis
+        from core.strategy.v2.models import TradeoffAnalysis
         return TradeoffAnalysis(
             strategy_id=strategy_id, net_utility=utility,
             dimension_scores={"improvement": utility},
@@ -1209,8 +1209,8 @@ class TestPortfolioOptimizer(TestCase):
         )
 
     def test_100_selects_best_strategies_within_budget(self):
-        from core.strategy_v2.portfolio import PortfolioOptimizer
-        from core.strategy_v2.models import ResourceBudget
+        from core.strategy.v2.portfolio import PortfolioOptimizer
+        from core.strategy.v2.models import ResourceBudget
 
         candidates = [
             self._make_candidate("s1", "High value, low cost",
@@ -1237,8 +1237,8 @@ class TestPortfolioOptimizer(TestCase):
 
     def test_101_highest_value_cost_ratio_selected_first(self):
         """Strategies are selected by value/cost ratio, not raw utility."""
-        from core.strategy_v2.portfolio import PortfolioOptimizer
-        from core.strategy_v2.models import ResourceBudget
+        from core.strategy.v2.portfolio import PortfolioOptimizer
+        from core.strategy.v2.models import ResourceBudget
 
         candidates = [
             self._make_candidate("high_ratio", "Efficient", improvement=0.30,
@@ -1260,8 +1260,8 @@ class TestPortfolioOptimizer(TestCase):
 
     def test_102_negative_utility_excluded(self):
         """Strategies with utility below min_utility_threshold are excluded."""
-        from core.strategy_v2.portfolio import PortfolioOptimizer
-        from core.strategy_v2.models import ResourceBudget
+        from core.strategy.v2.portfolio import PortfolioOptimizer
+        from core.strategy.v2.models import ResourceBudget
 
         candidates = [
             self._make_candidate("good", "Good", improvement=0.30, cost=0.20),
@@ -1287,8 +1287,8 @@ class TestPortfolioOptimizer(TestCase):
         self.assertNotIn("bad", selected2_ids)
 
     def test_103_deferred_when_budget_exhausted(self):
-        from core.strategy_v2.portfolio import PortfolioOptimizer
-        from core.strategy_v2.models import ResourceBudget
+        from core.strategy.v2.portfolio import PortfolioOptimizer
+        from core.strategy.v2.models import ResourceBudget
 
         candidates = [
             self._make_candidate("a", "A", improvement=0.30, cost=0.50),
@@ -1318,8 +1318,8 @@ class TestPortfolioOptimizer(TestCase):
         self.assertIn("c", deferred_ids)
 
     def test_104_all_fit_when_enough_budget(self):
-        from core.strategy_v2.portfolio import PortfolioOptimizer
-        from core.strategy_v2.models import ResourceBudget
+        from core.strategy.v2.portfolio import PortfolioOptimizer
+        from core.strategy.v2.models import ResourceBudget
 
         candidates = [
             self._make_candidate("a", "A", improvement=0.30, cost=0.20),
@@ -1338,8 +1338,8 @@ class TestPortfolioOptimizer(TestCase):
 
     def test_105_zero_cost_strategies_always_included(self):
         """Zero-cost strategies are always selected regardless of utility."""
-        from core.strategy_v2.portfolio import PortfolioOptimizer
-        from core.strategy_v2.models import ResourceBudget
+        from core.strategy.v2.portfolio import PortfolioOptimizer
+        from core.strategy.v2.models import ResourceBudget
 
         candidates = [
             self._make_candidate("free", "Free", improvement=0.10, cost=0.0),
@@ -1360,8 +1360,8 @@ class TestPortfolioOptimizer(TestCase):
         self.assertIn("costly", selected_ids)
 
     def test_106_select_best_returns_top_fitting_strategy(self):
-        from core.strategy_v2.portfolio import PortfolioOptimizer
-        from core.strategy_v2.models import ResourceBudget
+        from core.strategy.v2.portfolio import PortfolioOptimizer
+        from core.strategy.v2.models import ResourceBudget
 
         candidates = [
             self._make_candidate("s1", "Best", improvement=0.30, cost=0.20),
@@ -1380,8 +1380,8 @@ class TestPortfolioOptimizer(TestCase):
         self.assertEqual(best_candidate.strategy_id, "s2")
 
     def test_107_select_best_returns_none_when_nothing_fits(self):
-        from core.strategy_v2.portfolio import PortfolioOptimizer
-        from core.strategy_v2.models import ResourceBudget
+        from core.strategy.v2.portfolio import PortfolioOptimizer
+        from core.strategy.v2.models import ResourceBudget
 
         candidates = [
             self._make_candidate("s1", "Too expensive", improvement=0.30, cost=10.0),
@@ -1395,8 +1395,8 @@ class TestPortfolioOptimizer(TestCase):
         self.assertIsNone(result)
 
     def test_108_empty_candidates(self):
-        from core.strategy_v2.portfolio import PortfolioOptimizer
-        from core.strategy_v2.models import ResourceBudget
+        from core.strategy.v2.portfolio import PortfolioOptimizer
+        from core.strategy.v2.models import ResourceBudget
 
         optimizer = PortfolioOptimizer()
         allocation = optimizer.optimize([], [], ResourceBudget())
@@ -1406,8 +1406,8 @@ class TestPortfolioOptimizer(TestCase):
 
     def test_109_rationale_includes_value_cost_ratio(self):
         """The rationale string includes value/cost ratio for transparency."""
-        from core.strategy_v2.portfolio import PortfolioOptimizer
-        from core.strategy_v2.models import ResourceBudget
+        from core.strategy.v2.portfolio import PortfolioOptimizer
+        from core.strategy.v2.models import ResourceBudget
 
         candidates = [
             self._make_candidate("s1", "Test strategy",
@@ -1425,8 +1425,8 @@ class TestPortfolioOptimizer(TestCase):
 
     def test_110_effort_computation_correct(self):
         """Total effort consumed equals sum of implementation_cost * budget."""
-        from core.strategy_v2.portfolio import PortfolioOptimizer
-        from core.strategy_v2.models import ResourceBudget
+        from core.strategy.v2.portfolio import PortfolioOptimizer
+        from core.strategy.v2.models import ResourceBudget
 
         candidates = [
             self._make_candidate("a", "A", improvement=0.30, cost=0.25),
@@ -1446,10 +1446,10 @@ class TestPortfolioOptimizer(TestCase):
 
     def test_111_portfolio_wired_to_pipeline(self):
         """End-to-end: proposals → planner → tradeoffs → portfolio optimizer."""
-        from core.strategy_v2.planner import StrategicPlanner
-        from core.strategy_v2.tradeoffs import TradeoffEngine
-        from core.strategy_v2.portfolio import PortfolioOptimizer
-        from core.strategy_v2.models import ResourceBudget
+        from core.strategy.v2.planner import StrategicPlanner
+        from core.strategy.v2.tradeoffs import TradeoffEngine
+        from core.strategy.v2.portfolio import PortfolioOptimizer
+        from core.strategy.v2.models import ResourceBudget
         from core.generalization.models import ImprovementProposal, ProposalStatus
 
         proposals = [

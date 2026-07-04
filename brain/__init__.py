@@ -25,7 +25,8 @@ from .automation import AutomationLoop
 
 # Event-driven architecture
 from .events import (
-    EventBus, Event, Subscription, global_event_bus,
+    EventBus, Event, Subscription, PluginEventBus, global_event_bus,
+    subscribe_event, unsubscribe_event, fire_event, get_task_scheduler,
     GoalCreated, GoalCompleted, GoalFailed,
     TaskCompleted, TaskFailed,
     MemoryStored, MemoryRetrieved,
@@ -77,7 +78,8 @@ __all__ = [
     # Automation
     "AutomationLoop",
     # Events
-    "EventBus", "Event", "Subscription", "global_event_bus",
+    "EventBus", "Event", "Subscription", "PluginEventBus", "global_event_bus",
+    "subscribe_event", "unsubscribe_event", "fire_event", "get_task_scheduler",
     "GoalCreated", "GoalCompleted", "GoalFailed",
     "TaskCompleted", "TaskFailed",
     "MemoryStored", "MemoryRetrieved",

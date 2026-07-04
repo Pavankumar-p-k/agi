@@ -346,7 +346,8 @@ async def _dispatch_tool(tc, session_id, context):
         desc, result = await execute_tool_block(block=block, session_id=session_id, owner="dev", context=context)
         return result
     except Exception as e:
-        return {"error": str(e), "exit_code": 1}
+        logging.getLogger(__name__).error("Benchmark task failed: %s", e, exc_info=True)
+        return {"error": "Benchmark task failed", "exit_code": 1}
 
 
 # ── Reporting ────────────────────────────────────────────────────────────────

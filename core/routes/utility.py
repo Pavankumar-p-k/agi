@@ -1,3 +1,5 @@
+import logging
+logger = logging.getLogger(__name__)
 # Copyright (c) 2024-2026 JARVIS Project
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -66,4 +68,5 @@ async def code_review(
         review = (await llm_complete("code", [{"role": "user", "content": prompt}])).unwrap_or("")
         return {"review": review, "language": req.language}
     except Exception as e:
-        return {"error": str(e), "language": req.language}
+        logger.error("Utility route failed: %s", e, exc_info=True)
+        return {"error": "Operation failed", "language": req.language}

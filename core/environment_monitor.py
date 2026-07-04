@@ -17,6 +17,7 @@ Provides real-time health data for proactive decisions.
 """
 import json
 import logging
+import os
 import shutil
 import socket
 import subprocess
@@ -107,8 +108,8 @@ class EnvironmentMonitor:
         try:
             usage = shutil.disk_usage(Path.home())
             return usage.free / (1024**3), usage.total / (1024**3)
-        except Exception as e:
-            logger.exception("[MONITOR] disk check: %s", e)
+        except Exception:
+            logger.warning("[MONITOR] disk check failed")
             return 0.0, 0.0
 
     def _check_memory(self) -> tuple[float, float]:
@@ -130,21 +131,28 @@ class EnvironmentMonitor:
                     free_kb = int(parts[1])
                     total_kb = int(parts[2])
                     return free_kb / 1024, total_kb / 1024
-        except Exception as e:
-            logger.exception("[MONITOR] memory check: %s", e)
+        except Exception:
+            logger.warning("[MONITOR] memory check failed")
         return 0.0, 0.0
 
     def _check_ollama(self) -> tuple[bool, float]:
-        try:
-            import urllib.request
-            start = time.time()
-            req = urllib.request.Request(f"{self._ollama_url}/api/tags", method="GET")
-            resp = urllib.request.urlopen(req, timeout=3)
-            latency = (time.time() - start) * 1000
-            return resp.status == 200, latency
-        except Exception as e:
-            logger.exception("[MONITOR] ollama check: %s", e)
-            return False, 0.0
+        urls_to_try = [self._ollama_url]
+        alt = os.getenv("OLLAMA_URL")
+        if alt and alt not in urls_to_try:
+            urls_to_try.append(alt)
+        import urllib.request
+        for url in urls_to_try:
+            try:
+                start = time.time()
+                req = urllib.request.Request(f"{url.rstrip('/')}/api/tags", method="GET")
+                resp = urllib.request.urlopen(req, timeout=3)
+                latency = (time.time() - start) * 1000
+                if resp.status == 200:
+                    return True, latency
+            except Exception:
+                continue
+        logger.warning("[MONITOR] ollama check failed — tried: %s", urls_to_try)
+        return False, 0.0
 
     def _check_network(self) -> bool:
         try:
@@ -153,8 +161,8 @@ class EnvironmentMonitor:
             sock.connect(("8.8.8.8", 443))
             sock.close()
             return True
-        except Exception as e:
-            logger.exception("[MONITOR] network check: %s", e)
+        except Exception:
+            logger.warning("[MONITOR] network check failed")
             return False
 
     def _check_services(self) -> dict[str, ServiceHealth]:

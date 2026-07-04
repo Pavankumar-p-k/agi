@@ -142,6 +142,8 @@ class IntegrationManager:
         results = {}
         for name, integ in self._integrations.items():
             try:
+                if not integ._connected:
+                    await integ.connect()
                 results[name] = await integ.health_check()
             except Exception as e:
                 results[name] = IntegrationStatus(name=name, error=str(e))

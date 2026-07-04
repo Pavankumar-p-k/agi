@@ -108,7 +108,7 @@ async def process_message(
         try:
             import asyncio
 
-            from core.plugins.events import PluginEventBus
+            from brain.events import PluginEventBus
             asyncio.create_task(PluginEventBus.instance().emit(
                 "on_channel_message",
                 text=text,

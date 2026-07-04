@@ -134,7 +134,7 @@ class WorkflowRunner:
         print()
         print("=" * 60)
 
-        report_path = Path("tests/acceptance/results") / "END_USER_WORKFLOW_REPORT.md"
+        report_path = Path("docs/tests") / "END_USER_WORKFLOW_REPORT.md"
         report_path.parent.mkdir(parents=True, exist_ok=True)
         lines = [
             "# END USER WORKFLOW REPORT\n",

@@ -280,7 +280,8 @@ class McpManager:
                     return {"error": f"MCP server crashed and reconnect failed: {server_id}", "exit_code": 1}
             else:
                 logger.error(f"MCP tool call failed: {qualified_name}: {e}")
-                return {"error": str(e), "exit_code": 1}
+                logger.error("MCP manager failed: %s", e, exc_info=True)
+                return {"error": "Operation failed", "exit_code": 1}
 
         return result
 

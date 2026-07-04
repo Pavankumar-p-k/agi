@@ -12,10 +12,10 @@ import logging
 from typing import Any
 
 from core.decision.models import EvidenceDimension
-from core.strategy_v2.models import StrategyCandidate, TradeoffAnalysis
-from core.strategy_v2.tradeoffs import TradeoffEngine
-from core.strategy_v2.predictor import OutcomePredictor
-from core.strategy_v2.selector import StrategicSelector
+from core.strategy.v2.models import StrategyCandidate, TradeoffAnalysis
+from core.strategy.v2.tradeoffs import TradeoffEngine
+from core.strategy.v2.predictor import OutcomePredictor
+from core.strategy.v2.selector import StrategicSelector
 
 logger = logging.getLogger(__name__)
 

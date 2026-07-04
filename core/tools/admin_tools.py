@@ -76,7 +76,7 @@ def _do_manage_endpoints_sync(content: str, owner: str | None = None) -> dict:
             return {"error": f"Unknown action: {action}", "exit_code": 1}
     except Exception as e:
         logger.error(f"manage_endpoints error: {e}")
-        return {"error": str(e), "exit_code": 1}
+        return {"error": "Operation failed", "exit_code": 1}
     finally:
         db.close()
 
@@ -201,8 +201,8 @@ async def do_manage_mcp(content: str, owner: str | None = None) -> dict:
                 return {"error": f"Server {sid} not found", "exit_code": 1}
             finally:
                 db2.close()
-        except Exception as e:
-            return {"error": str(e), "exit_code": 1}
+        except Exception:
+            return {"error": "Operation failed", "exit_code": 1}
 
     elif action in ("enable", "disable"):
         sid = args.get("server_id", "")
@@ -263,8 +263,8 @@ def _do_manage_webhooks_sync(content: str, owner: str | None = None) -> dict:
             try:
                 url = validate_webhook_url(url)
                 events = validate_events(events)
-            except ValueError as e:
-                return {"error": str(e), "exit_code": 1}
+            except ValueError:
+                return {"error": "Invalid webhook configuration", "exit_code": 1}
             wid = str(_uuid.uuid4())[:8]
             hook = Webhook(id=wid, name=name or url, url=url,
                            events=events, is_active=True,
@@ -296,7 +296,7 @@ def _do_manage_webhooks_sync(content: str, owner: str | None = None) -> dict:
             return {"error": f"Unknown action: {action}", "exit_code": 1}
     except Exception as e:
         logger.error(f"manage_webhooks error: {e}")
-        return {"error": str(e), "exit_code": 1}
+        return {"error": "Operation failed", "exit_code": 1}
     finally:
         db.close()
 
@@ -354,7 +354,7 @@ def _do_manage_tokens_sync(content: str, owner: str | None = None) -> dict:
             return {"error": f"Unknown action: {action}", "exit_code": 1}
     except Exception as e:
         logger.error(f"manage_tokens error: {e}")
-        return {"error": str(e), "exit_code": 1}
+        return {"error": "Operation failed", "exit_code": 1}
     finally:
         db.close()
 

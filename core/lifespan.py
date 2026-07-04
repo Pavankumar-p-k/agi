@@ -70,13 +70,19 @@ async def _migrate_legacy_settings_once():
     Runs once, marks itself done with data/.settings_migrated flag.
     """
     from core.settings import get_settings_store
-    from core.settings_legacy import _load_legacy
 
     MIGRATION_DONE_FLAG = Path("data/.settings_migrated")
     if MIGRATION_DONE_FLAG.exists():
         return  # already done
 
-    legacy = _load_legacy()
+    legacy_path = Path("data/settings.json")
+    legacy = {}
+    if legacy_path.exists():
+        try:
+            import json
+            legacy = json.loads(legacy_path.read_text())
+        except Exception:
+            pass
     store = get_settings_store()
 
     # Only migrate keys that exist in the new schema
@@ -155,6 +161,26 @@ def _init_agent_routes(app):
         logger.warning("[Router] Sub-agent routes not loaded: %s", e)
 
 
+def _init_website_routes(app):
+    """Deferred website generator route registration (~500ms import)."""
+    try:
+        from api.website_routes import router as website_router
+        app.include_router(website_router)
+        logger.info("[Router] Website Generator routes loaded (deferred)")
+    except Exception as e:
+        logger.warning("[Router] Website Generator routes not loaded: %s", e)
+
+
+def _init_call_sync_routes(app):
+    """Deferred call sync route registration (~210ms import — pyttsx3 now lazy)."""
+    try:
+        from automation.call_sync_server import get_fastapi_router
+        app.include_router(get_fastapi_router())
+        logger.info("[Router] Call sync routes loaded (deferred)")
+    except Exception as e:
+        logger.warning("[Router] Call sync routes not loaded: %s", e)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("=" * 50)
@@ -190,12 +216,14 @@ async def lifespan(app: FastAPI):
         logger.warning("[LIFESPAN] Database init failed (non-fatal): %s", e)
         startup_status["warnings"].append(f"database: {e}")
 
-    # Deferred: heavy route imports (~18s combined), fire after DB is ready
+    # Deferred: heavy route imports, fire after DB is ready
     _init_research_routes(app)
     _init_email_routes(app)
     _init_whatsapp_routes(app)
     _init_supervisor_routes(app)
     _init_agent_routes(app)
+    _init_website_routes(app)
+    _init_call_sync_routes(app)
 
     # Subagent orphan recovery
     try:
@@ -382,16 +410,19 @@ async def lifespan(app: FastAPI):
     try:
         from core.config_registry import config as _c2
         _ollama_url = _c2.get("ollama.base_url")
-        for _ in range(30):
-            try:
-                from urllib.request import urlopen
-                with urlopen(f"{_ollama_url}/api/tags", timeout=1) as resp:
-                    if resp.status == 200:
-                        break
-            except Exception as e:
-                logger.exception("[LIFESPAN] Ollama poll attempt failed: %s", e)
-                await asyncio.sleep(1)
-        _warmup_ollama_models()
+        async def _poll_ollama_background():
+            """Finishes Ollama reachability check in background — doesn't block server startup."""
+            for _ in range(30):
+                try:
+                    from urllib.request import urlopen
+                    with urlopen(f"{_ollama_url}/api/tags", timeout=1) as resp:
+                        if resp.status == 200:
+                            break
+                except Exception:
+                    await asyncio.sleep(1)
+            _warmup_ollama_models()
+        asyncio.create_task(_poll_ollama_background())
+        logger.info("[LIFESPAN] Ollama check started in background [OK]")
     except Exception as e:
         startup_status["warnings"].append(f"ollama_check: {e}")
 
@@ -571,13 +602,18 @@ async def lifespan(app: FastAPI):
         startup_status["warnings"].append(f"skills_plugins: {e}")
         logger.warning("[LIFESPAN] Skills/library plugin loader failed: %s", e)
 
-    # Marketplace refresh (background, best-effort)
+    # Marketplace refresh (background, best-effort — doesn't block startup)
     try:
         from core.plugins.marketplace import plugin_marketplace
-        await plugin_marketplace.refresh_index()
-        logger.info("[LIFESPAN] Plugin marketplace index refreshed [OK]")
+        async def _refresh_marketplace():
+            try:
+                await plugin_marketplace.refresh_index()
+                logger.info("[LIFESPAN] Plugin marketplace index refreshed [OK]")
+            except Exception as e:
+                logger.info("[LIFESPAN] Plugin marketplace unavailable (offline) — %s", e)
+        asyncio.create_task(_refresh_marketplace())
     except Exception as e:
-        logger.info("[LIFESPAN] Plugin marketplace unavailable (offline) — %s", e)
+        logger.info("[LIFESPAN] Plugin marketplace init failed: %s", e)
 
     # Start governance work queue (background task processor)
     try:
@@ -626,24 +662,38 @@ async def lifespan(app: FastAPI):
         channel_controller.register(IRCChannel())
 
         from brain.UnifiedBrain import unified_brain
-        await channel_controller.start_all(unified_brain)
+        async def _start_channels():
+            try:
+                await channel_controller.start_all(unified_brain)
+                logger.info("[LIFESPAN] %d/%d channel(s) running [OK]",
+                             len(channel_controller.running), len(channel_controller.channels))
+            except Exception as e:
+                startup_status["warnings"].append(f"channels: {e}")
+                logger.warning("[LIFESPAN] Channel init failed: %s", e)
+        asyncio.create_task(_start_channels())
         app.state.channel_controller = channel_controller
-        logger.info("[LIFESPAN] %d/%d channel(s) running [OK]",
-                     len(channel_controller.running), len(channel_controller.channels))
+        logger.info("[LIFESPAN] Channel registration complete, starting in background [OK]")
     except Exception as e:
-        startup_status["warnings"].append(f"channels: {e}")
-        logger.warning("[LIFESPAN] Channel init failed: %s", e)
+        startup_status["warnings"].append(f"channels_register: {e}")
+        logger.warning("[LIFESPAN] Channel registration failed: %s", e)
 
     # â”€â”€ Phase 16: MCP (Model Context Protocol) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     try:
         from mcp import mcp_server
-        await mcp_server.start()
-        app.include_router(mcp_server.get_fastapi_router())
+        async def _start_mcp():
+            try:
+                await mcp_server.start()
+                app.include_router(mcp_server.get_fastapi_router())
+                logger.info("[LIFESPAN] MCP server online — %d tools [OK]", len(mcp_server._tools))
+            except Exception as e:
+                startup_status["warnings"].append(f"mcp: {e}")
+                logger.warning("[LIFESPAN] MCP init failed: %s", e)
+        asyncio.create_task(_start_mcp())
         app.state.mcp_server = mcp_server
-        logger.info("[LIFESPAN] MCP server online â€” %d tools [OK]", len(mcp_server._tools))
+        logger.info("[LIFESPAN] MCP server init scheduled in background [OK]")
     except Exception as e:
-        startup_status["warnings"].append(f"mcp: {e}")
-        logger.warning("[LIFESPAN] MCP init failed: %s", e)
+        startup_status["warnings"].append(f"mcp_register: {e}")
+        logger.warning("[LIFESPAN] MCP registration failed: %s", e)
 
     # â”€â”€ Phase 16.1: MCP Bridge (Bidirectional) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     try:
@@ -735,33 +785,52 @@ async def lifespan(app: FastAPI):
 
     try:
         from core.proactive_monitor import init_proactive_monitor
-        await init_proactive_monitor(app.state)
+        async def _start_proactive_monitor():
+            try:
+                await init_proactive_monitor(app.state)
+                logger.info("[LIFESPAN] ProactiveMonitor started [OK]")
+            except Exception as e:
+                startup_status["warnings"].append(f"proactive_monitor: {e}")
+                logger.warning("[LIFESPAN] ProactiveMonitor init failed: %s", e)
+        asyncio.create_task(_start_proactive_monitor())
+        logger.info("[LIFESPAN] ProactiveMonitor scheduled in background [OK]")
     except Exception as e:
-        startup_status["warnings"].append(f"proactive_monitor: {e}")
-        logger.warning("[LIFESPAN] ProactiveMonitor init failed: %s", e)
+        startup_status["warnings"].append(f"proactive_monitor_register: {e}")
+        logger.warning("[LIFESPAN] ProactiveMonitor registration failed: %s", e)
 
     try:
         from core.workflow import HeartbeatMonitor, WorkflowEngine, recover_active_workflows
         engine = WorkflowEngine()
         app.state.workflow_engine = engine
-        recovered = await recover_active_workflows(engine)
-        if recovered:
-            for r in recovered:
-                logger.info("[WORKFLOW] Recovered %s (%s) at step %d/%d",
-                            r["workflow_id"], r["workflow_type"],
-                            r["current_step"], r["total_steps"])
-            startup_status["warnings"].append(
-                f"workflow: {len(recovered)} workflow(s) recovered from crash"
-            )
-        else:
-            logger.info("[WORKFLOW] No active workflows to recover [OK]")
-        heartbeat = HeartbeatMonitor(engine, interval=10, stale_seconds=60)
-        app.state.workflow_heartbeat = heartbeat
-        await heartbeat.start()
-        logger.info("[WORKFLOW] Heartbeat monitor started [OK]")
+        async def _recover_workflows():
+            try:
+                recovered = await recover_active_workflows(engine)
+                if recovered:
+                    for r in recovered:
+                        logger.info("[WORKFLOW] Recovered %s (%s) at step %d/%d",
+                                    r["workflow_id"], r["workflow_type"],
+                                    r["current_step"], r["total_steps"])
+                    startup_status["warnings"].append(
+                        f"workflow: {len(recovered)} workflow(s) recovered from crash"
+                    )
+                else:
+                    logger.info("[WORKFLOW] No active workflows to recover [OK]")
+            except Exception as e:
+                startup_status["warnings"].append(f"workflow_recovery: {e}")
+                logger.warning("[WORKFLOW] Recovery failed: %s", e)
+            try:
+                heartbeat = HeartbeatMonitor(engine, interval=10, stale_seconds=60)
+                app.state.workflow_heartbeat = heartbeat
+                await heartbeat.start()
+                logger.info("[WORKFLOW] Heartbeat monitor started [OK]")
+            except Exception as e:
+                startup_status["warnings"].append(f"workflow_heartbeat: {e}")
+                logger.warning("[WORKFLOW] Heartbeat init failed: %s", e)
+        asyncio.create_task(_recover_workflows())
+        logger.info("[WORKFLOW] Workflow recovery scheduled in background [OK]")
     except Exception as e:
-        startup_status["warnings"].append(f"workflow_recovery: {e}")
-        logger.warning("[WORKFLOW] Recovery init failed: %s", e)
+        startup_status["warnings"].append(f"workflow_register: {e}")
+        logger.warning("[WORKFLOW] Engine registration failed: %s", e)
 
     # ── Phase 9: Knowledge Consolidator (background loop) ─────────────────
     _consolidator_task = None
@@ -780,6 +849,10 @@ async def lifespan(app: FastAPI):
         logger.warning("[JARVIS] Startup completed with warnings: %s", startup_status["warnings"])
     else:
         logger.info("[JARVIS] All systems online [OK]")
+
+    logger.info("===================================================================")
+    logger.info("[JARVIS] FastAPI ready — accepting connections")
+    logger.info("===================================================================")
 
     yield
 

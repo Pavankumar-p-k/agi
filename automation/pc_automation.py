@@ -12,6 +12,11 @@
 # limitations under the License.
 from __future__ import annotations
 import logging
+import warnings
+warnings.warn(
+    "automation/pc_automation.py is DEPRECATED. Use core/desktop/controller.py instead.",
+    DeprecationWarning, stacklevel=2,
+)
 # automation/pc_automation.py
 #
 # JARVIS PC Automation Engine
@@ -138,7 +143,7 @@ class BrowserManager:
             print(f"[Browser] Opened: {url}")
             return True
         except Exception as e:
-            print(f"[Browser] Fallback system browser - {e}")
+            logger.info("Browser fallback: %s", e)
             webbrowser.open(url); return True
 
     def google(self, q: str):
@@ -223,8 +228,8 @@ class WhatsAppSender:
             print(f"[WhatsApp] Sent -> {contact_name}: {message[:50]}")
             return {"success": True, "to": contact_name}
         except Exception as e:
-            print(f"[WhatsApp] [FAIL] {e}")
-            return {"success": False, "error": str(e)}
+            logger.warning("WhatsApp failed: %s", e, exc_info=True)
+            return {"success": False, "error": "Operation failed"}
 
     def send_by_number(self, phone: str, message: str) -> dict:
         """Send using phone number (no need to be in WA contacts)."""
@@ -243,7 +248,7 @@ class WhatsAppSender:
             print(f"[WhatsApp] Sent -> {clean}: {message[:50]}")
             return {"success": True, "to": clean}
         except Exception as e:
-            return {"success": False, "error": str(e)}
+            return {"success": False, "error": "Operation failed"}
 
     def send_to_contact(self, name: str, message: str) -> dict:
         """Try JARVIS contacts DB, then WhatsApp search, then phone number."""
@@ -318,7 +323,7 @@ class InstagramSender:
             print(f"[Instagram] Sent -> @{username}: {message[:50]}")
             return {"success": True, "to": f"@{username}"}
         except Exception as e:
-            return {"success": False, "error": str(e)}
+            return {"success": False, "error": "Operation failed"}
 
     def send_to_contact(self, name: str, message: str) -> dict:
         c = contacts_db.get(name)

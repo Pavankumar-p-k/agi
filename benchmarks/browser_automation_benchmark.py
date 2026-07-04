@@ -521,7 +521,8 @@ async def execute_tool(tool_name: str, arguments: dict) -> dict:
                     return await result
                 return result
         except Exception as e:
-            return {"error": str(e)}
+            logging.getLogger(__name__).error("Benchmark task failed: %s", e, exc_info=True)
+            return {"error": "Benchmark task failed"}
 
     # Non-browser tools return a generic success
     return {"success": True, "result": f"{tool_name} completed"}

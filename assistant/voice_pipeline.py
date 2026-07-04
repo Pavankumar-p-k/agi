@@ -451,7 +451,7 @@ class VoiceEngine:
         stt_ms = self.latency.phase_ms("stt_done")
 
         try:
-            from core.plugins.events import PluginEventBus
+            from brain.events import PluginEventBus
             asyncio.create_task(PluginEventBus.instance().emit("on_voice_command", text=transcribed))
         except Exception as e:
             logger.warning("[VoiceEngine] Plugin event failed: %s", e)

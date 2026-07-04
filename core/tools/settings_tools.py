@@ -33,7 +33,7 @@ def _do_manage_settings_sync(content: str, owner: str | None = None) -> dict:
     from core.database_models import SessionLocal
     db = SessionLocal()
     try:
-        from core.settings_legacy import DEFAULT_SETTINGS, load_settings, save_settings
+        from core.configuration import configuration
 
         _SECRET_KEYS = {
             "brave_api_key", "google_pse_key", "google_pse_cx",
@@ -73,9 +73,7 @@ def _do_manage_settings_sync(content: str, owner: str | None = None) -> dict:
         }
         def _resolve(k):
             k2 = (k or "").strip().lower()
-            if k2 in DEFAULT_SETTINGS:
-                return k2
-            return _ALIASES_SET.get(k2, (k or "").strip())
+            return _ALIASES_SET.get(k2, k2)
 
         _ENUMS = {
             "image_quality": ["low", "medium", "high"],
@@ -132,17 +130,17 @@ def _do_manage_settings_sync(content: str, owner: str | None = None) -> dict:
             return "••••• (set in panel)" if _is_secret(k) and v else v
 
         if action == "list":
-            s = load_settings()
-            shown = {k: _mask(k, v) for k, v in s.items() if k in DEFAULT_SETTINGS and not isinstance(v, dict)}
+            s = configuration.as_dict()
+            shown = {k: _mask(k, v) for k, v in s.items() if not isinstance(v, dict)}
             return {"response": f"{len(shown)} settings (use get/set with a key)", "settings": shown, "exit_code": 0}
 
         elif action == "get":
             key = _resolve(args.get("key", ""))
             if not key:
                 return {"error": "key is required", "exit_code": 1}
-            if key not in DEFAULT_SETTINGS:
+            val = configuration.get(key, None)
+            if val is None:
                 return {"error": f"Unknown setting '{args.get('key')}'. Use action='list' to see them.", "exit_code": 1}
-            val = load_settings().get(key, DEFAULT_SETTINGS.get(key))
             return {"response": f"{key} = {_mask(key, val)}", "value": _mask(key, val), "exit_code": 0}
 
         elif action == "set":
@@ -151,45 +149,20 @@ def _do_manage_settings_sync(content: str, owner: str | None = None) -> dict:
             if not raw:
                 return {"error": "key is required", "exit_code": 1}
             key = _resolve(raw)
-            if key not in DEFAULT_SETTINGS:
-                return {"error": f"Unknown setting '{raw}'. Use action='list' to see available settings.", "exit_code": 1}
             if _is_secret(key):
                 return {"response": f"'{key}' is a credential/secret — for security I can't set it from chat. Open Settings and set it there.", "exit_code": 0}
-            if isinstance(DEFAULT_SETTINGS[key], (dict, list)):
-                return {"response": f"'{key}' is a structured setting — edit it in its panel, not from chat. (You can reset it to default here.)", "exit_code": 0}
-            try:
-                value = _coerce(value, DEFAULT_SETTINGS[key])
-            except (ValueError, TypeError):
-                return {"error": f"'{value}' isn't a valid value for {key} (expected {type(DEFAULT_SETTINGS[key]).__name__}).", "exit_code": 1}
-            if key in _ENUMS and str(value).lower() not in _ENUMS[key]:
-                return {"error": f"{key} must be one of: {', '.join(_ENUMS[key])}.", "exit_code": 1}
-            s = load_settings()
-            s[key] = value
-            if key in {"default_model", "research_model", "utility_model", "task_model", "vision_model", "image_model"}:
-                resolved = _endpoint_model_from_cache(str(value))
-                if resolved:
-                    prefix = key[:-6]
-                    s[f"{prefix}_endpoint_id"] = resolved["endpoint_id"]
-                    s[key] = resolved["model"]
-                    value = resolved["model"]
-            save_settings(s)
-            if key.endswith("_model") and s.get(f"{key[:-6]}_endpoint_id"):
-                return {"response": f"Set {key} = {value} (endpoint {s.get(f'{key[:-6]}_endpoint_id')}).", "exit_code": 0}
+            configuration.set(key, value)
             return {"response": f"Set {key} = {value}.", "exit_code": 0}
 
         elif action == "delete" or action == "reset":
             key = _resolve(args.get("key", ""))
-            if key not in DEFAULT_SETTINGS:
-                return {"error": f"Unknown setting '{args.get('key')}'.", "exit_code": 1}
             if _is_secret(key):
                 return {"response": f"'{key}' is a credential — reset it in the panel.", "exit_code": 0}
-            s = load_settings()
-            s[key] = DEFAULT_SETTINGS[key]
-            save_settings(s)
-            return {"response": f"Reset {key} to default ({DEFAULT_SETTINGS[key]}).", "exit_code": 0}
+            configuration.reset(key)
+            return {"response": f"Reset {key} to default.", "exit_code": 0}
 
         elif action in ("disable_tool", "enable_tool", "list_tools"):
-            from core.settings_legacy import get_setting, load_settings, save_settings
+            from core.configuration import configuration
             _ALIASES = {
                 "shell": ["bash"],
                 "terminal": ["bash"],
@@ -210,7 +183,7 @@ def _do_manage_settings_sync(content: str, owner: str | None = None) -> dict:
             }
 
             if action == "list_tools":
-                current = get_setting("disabled_tools", []) or []
+                current = configuration.get("disabled_tools", []) or []
                 return {
                     "response": (
                         f"Currently disabled: {', '.join(current) if current else '(none)'}.\n"
@@ -226,8 +199,7 @@ def _do_manage_settings_sync(content: str, owner: str | None = None) -> dict:
                 return {"error": "tool name required (e.g. 'shell', 'search', 'bash')", "exit_code": 1}
             targets = _ALIASES.get(tool_name, [tool_name])
 
-            settings = load_settings()
-            current = list(settings.get("disabled_tools") or [])
+            current = list(configuration.get("disabled_tools", []) or [])
             before = set(current)
             if action == "disable_tool":
                 for t in targets:
@@ -236,8 +208,7 @@ def _do_manage_settings_sync(content: str, owner: str | None = None) -> dict:
             else:
                 current = [t for t in current if t not in targets]
             after = set(current)
-            settings["disabled_tools"] = current
-            save_settings(settings)
+            configuration.set("disabled_tools", current)
 
             verb = "Disabled" if action == "disable_tool" else "Enabled"
             changed = sorted(after.symmetric_difference(before))
@@ -255,7 +226,7 @@ def _do_manage_settings_sync(content: str, owner: str | None = None) -> dict:
             return {"error": f"Unknown action: {action}", "exit_code": 1}
     except Exception as e:
         logger.error(f"manage_settings error: {e}")
-        return {"error": str(e), "exit_code": 1}
+        return {"error": "Operation failed", "exit_code": 1}
     finally:
         db.close()
 
@@ -487,7 +458,7 @@ def _do_manage_notes_sync(content: str, owner: str | None = None) -> dict:
             return {"error": f"Unknown action: {action}. Use list/add/update/delete/toggle_item", "exit_code": 1}
     except Exception as e:
         logger.error(f"manage_notes error: {e}")
-        return {"error": str(e), "exit_code": 1}
+        return {"error": "Operation failed", "exit_code": 1}
     finally:
         db.close()
 
@@ -851,7 +822,7 @@ def _do_manage_calendar_sync(content: str, owner: str | None = None) -> dict:
             try:
                 base_uid = _resolve_base_uid(uid)
             except ValueError as e:
-                return {"error": str(e), "exit_code": 1}
+                return {"error": "Operation failed", "exit_code": 1}
             ev = _event_query().filter(CalendarEvent.uid == base_uid).first()
             if not ev:
                 return {"error": f"Event {uid} not found", "exit_code": 1}
@@ -887,7 +858,7 @@ def _do_manage_calendar_sync(content: str, owner: str | None = None) -> dict:
             try:
                 base_uid = _resolve_base_uid(uid)
             except ValueError as e:
-                return {"error": str(e), "exit_code": 1}
+                return {"error": "Operation failed", "exit_code": 1}
             ev = _event_query().filter(CalendarEvent.uid == base_uid).first()
             if not ev:
                 return {"error": f"Event {uid} not found", "exit_code": 1}
@@ -904,7 +875,7 @@ def _do_manage_calendar_sync(content: str, owner: str | None = None) -> dict:
     except Exception as e:
         db.rollback()
         logger.error(f"manage_calendar error: {e}")
-        return {"error": str(e), "exit_code": 1}
+        return {"error": "Operation failed", "exit_code": 1}
     finally:
         db.close()
 

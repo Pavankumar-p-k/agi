@@ -84,10 +84,10 @@ async def chat_route(
 @router.post("/api/agent/stream")
 async def agent_stream(req: ChatRequest):
     from core.agent_loop import stream_agent_loop
-    from core.config_registry import config as _c
+    from core.configuration import configuration
 
-    endpoint_url = _c.get("ollama.base_url")
-    model = os.getenv("CHAT_MODEL") or _c.get("llm.chat_model")
+    endpoint_url = configuration.get("ollama.base_url")
+    model = os.getenv("CHAT_MODEL") or configuration.get("llm.chat_model")
 
     messages: list[dict] = []
     if req.context:
@@ -96,8 +96,8 @@ async def agent_stream(req: ChatRequest):
 
     pause_enabled = False
     try:
-        from core.settings_legacy import get_setting as _gs
-        pause_enabled = bool(_gs("pause_before_effectful", False))
+        from core.configuration import configuration
+        pause_enabled = bool(configuration.get("pause_before_effectful", False))
     except Exception as e:
         logger.warning("[core.routes.chat] process_chat_message failed: %s", e)
 

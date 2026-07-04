@@ -145,24 +145,40 @@ async def chat_stream_websocket(ws: WebSocket):
                         else:
                             import httpx
                             from core.model_router import get_ollama_url, model_for_role
-                            model_obj = model_for_role(current_intent)
-                            ollama_chat_url = get_ollama_url(model_obj) + "/api/chat"
-                            try:
-                                async with httpx.AsyncClient(timeout=30) as client:
-                                    r = await client.post(ollama_chat_url, json={
-                                        "model": model_obj,
-                                        "messages": [{"role": "system", "content": system_prompt},
-                                                     {"role": "user", "content": processed_query}],
-                                        "stream": False,
-                                        "options": {"num_predict": 1024, "temperature": 0.7}})
-                                    r.raise_for_status()
-                                    resp_text = r.json().get("message", {}).get("content", "")
-                                    if not resp_text:
-                                        resp_text = "The model returned an empty response."
+                            models_to_try = [
+                                model_for_role(current_intent),
+                                *["qwen2.5:7b", "llama3.1:8b", "qwen2.5-coder:3b", "tinyllama"],
+                            ]
+                            deduped = []
+                            seen = set()
+                            for m in models_to_try:
+                                if m not in seen:
+                                    seen.add(m)
+                                    deduped.append(m)
+                            resp_text = None
+                            for model_obj in deduped:
+                                ollama_chat_url = get_ollama_url(model_obj) + "/api/chat"
+                                try:
+                                    async with httpx.AsyncClient(timeout=30) as client:
+                                        r = await client.post(ollama_chat_url, json={
+                                            "model": model_obj,
+                                            "messages": [{"role": "system", "content": system_prompt},
+                                                         {"role": "user", "content": processed_query}],
+                                            "stream": False,
+                                            "options": {"num_predict": 1024, "temperature": 0.7}})
+                                        r.raise_for_status()
+                                        resp_text = r.json().get("message", {}).get("content", "")
+                                        if resp_text:
+                                            break
+                                except Exception:
+                                    continue
+                            if resp_text:
                                 response_text = epistemic_tagger.tag_response(resp_text, ws_provenance)
-                            except Exception as e:
-                                logger.exception("[WS] Ollama call failed: %s", e)
-                                response_text = "I had a temporary issue processing that request."
+                            else:
+                                response_text = (
+                                    "Ollama is not running or no model is installed. "
+                                    "Run `ollama pull qwen2.5:7b` to install a model, then refresh."
+                                )
                     except Exception as e:
                         logger.exception("[WS] All LLM fallbacks failed: %s", e)
                         response_text = "I had a temporary issue processing that request."
@@ -214,10 +230,10 @@ async def chat_stream_websocket(ws: WebSocket):
         pass
     except Exception as e:
         try:
-            await ws.send_json({"type": "error", "message": f"WS error: {e}"})
+            await ws.send_json({"type": "error", "message": "An unexpected error occurred"})
         except Exception:
             pass
-        print(f"[WS] EXCEPTION: {e}")
+        logger.warning("WebSocket exception: %s", e, exc_info=True)
         _tb.print_exc()
         await plugin_registry.run_hook("session_end", session_id=session_id, summary={"error": str(e)})
         try:
@@ -288,7 +304,7 @@ async def log_stream_websocket(ws: WebSocket):
 async def agent_stream_websocket(ws: WebSocket):
     import time
     from core.agent_loop import stream_agent_loop
-    from core.config_registry import config as _c
+    from core.configuration import configuration
     from core.plugins import plugin_registry
     from core.routing import classify_request, RequestMode, Classification, get_context_manager, SafetyLevel, classify_tool
     from core.routing.project_context import ProjectContext
@@ -463,13 +479,13 @@ async def agent_stream_websocket(ws: WebSocket):
                 if len(session.last_commands) > 20:
                     session.last_commands.pop(0)
 
-                endpoint_url = _c.get("ollama.base_url")
-                model = os.getenv("CHAT_MODEL") or _c.get("llm.chat_model")
+                endpoint_url = configuration.get("ollama.base_url")
+                model = os.getenv("CHAT_MODEL") or configuration.get("llm.chat_model")
 
                 pause_enabled = False
                 try:
-                    from core.settings_legacy import get_setting as _gs
-                    pause_enabled = bool(_gs("pause_before_effectful", False))
+                    from core.configuration import configuration
+                    pause_enabled = bool(configuration.get("pause_before_effectful", False))
                 except Exception:
                     pass
 
@@ -612,7 +628,7 @@ async def _fast_execute_action(text: str, sub_type: str | None, ctx: ProjectCont
                 await ws.send_json({"type": "stream_token", "token": content, "complete": False})
                 await ws.send_json({"type": "tool_end", "tool": "read_file", "result": f"Read {fname} ({len(content)} chars)", "exit_code": 0})
             except Exception as e:
-                await ws.send_json({"type": "error", "message": str(e)})
+                await ws.send_json({"type": "error", "message": "Failed to read file"})
             return {"exit_code": 0, "summary": f"Read {fname}"}
 
         # ACTION_SHELL: direct shell commands (git, npm, poetry, pytest, etc.)

@@ -123,7 +123,7 @@ class WhatsAppAutomation(BrowserAutomation):
             return True
 
         except Exception as e:
-            print(f"[WhatsApp] Failed to send message: {e}")
+            logger.warning("WhatsApp send failed: %s", e, exc_info=True)
             return False
 
     def send_to_phone(self, phone_number: str, message: str) -> bool:
@@ -138,7 +138,7 @@ class WhatsAppAutomation(BrowserAutomation):
             print(f"[WhatsApp] Message sent to +{phone_number}")
             return True
         except Exception as e:
-            print(f"[WhatsApp] Failed: {e}")
+            logger.warning("WhatsApp failed: %s", e, exc_info=True)
             return False
 
     def get_unread_messages(self) -> list:
@@ -207,7 +207,7 @@ class InstagramAutomation(BrowserAutomation):
             print("[Instagram] Login attempted")
             return True
         except Exception as e:
-            print(f"[Instagram] Login failed: {e}")
+            logger.warning("Instagram login failed: %s", e, exc_info=True)
             return False
 
     def send_dm(self, username: str, message: str) -> bool:
@@ -245,7 +245,7 @@ class InstagramAutomation(BrowserAutomation):
             return True
 
         except Exception as e:
-            print(f"[Instagram] Failed to send DM: {e}")
+            logger.warning("Instagram DM failed: %s", e, exc_info=True)
             return False
 
 

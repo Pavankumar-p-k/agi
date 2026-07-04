@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+import logging
+logger = logging.getLogger(__name__)
 # Copyright (c) 2024-2026 JARVIS Project
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,7 +15,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """SENTINEL — System monitoring, health analysis, and alerting sub-agent."""
-from __future__ import annotations
 
 import json
 import time
@@ -95,4 +98,5 @@ class SentinelAgent(SubAgent):
                                   for p in procs],
             }
         except Exception as e:
-            return {"error": str(e)}
+            logger.error("Sentinel agent failed: %s", e, exc_info=True)
+            return {"error": "Operation failed"}

@@ -44,7 +44,9 @@ class ReminderManager:
             try:
                 await self._check_due_reminders()
             except Exception as e:
-                print(f"[Reminders] Loop error: {e}")
+                import logging
+                logging.getLogger(__name__).warning("Reminders loop error: %s", e, exc_info=True)
+                print("[Reminders] Reminder check failed. Check logs for details.")
             await asyncio.sleep(30)
 
     async def _check_due_reminders(self):
@@ -71,7 +73,9 @@ class ReminderManager:
                     try:
                         self._tts.speak_async(msg)
                     except Exception as e:
-                        print(f"[Reminders] TTS failed: {e}")
+                        import logging
+                        logging.getLogger(__name__).warning("Reminders TTS failed: %s", e, exc_info=True)
+                        print("[Reminders] TTS notification failed. Check logs for details.")
 
                 # Mark as done
                 r.is_done = True

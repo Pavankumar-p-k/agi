@@ -20,6 +20,7 @@ def register_internal_providers() -> None:
     from core.providers.adapters.workspace_provider import WorkspaceProvider
     from core.providers.adapters.github_provider import GitHubProvider
     from core.providers.adapters.email_provider import EmailProvider
+    from core.providers.adapters.desktop_provider import DesktopProvider
     provider_registry.register(ForgeProvider(), priority=10)
     provider_registry.register(BrowserProvider(), priority=10)
     provider_registry.register(ResearchProvider(), priority=10)
@@ -29,7 +30,8 @@ def register_internal_providers() -> None:
     provider_registry.register(WorkspaceProvider(), priority=10)
     provider_registry.register(GitHubProvider(), priority=10)
     provider_registry.register(EmailProvider(), priority=10)
-    logger.info("[ProviderBootstrap] Registered internal providers: forge, browser, research, automation, messaging, deployment, workspace, github, email")
+    provider_registry.register(DesktopProvider(), priority=10)
+    logger.info("[ProviderBootstrap] Registered internal providers: forge, browser, research, automation, messaging, deployment, workspace, github, email, desktop")
 
 
 def register_external_providers() -> None:

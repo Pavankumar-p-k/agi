@@ -57,8 +57,8 @@ async def install_plugin(req: InstallRequest):
     try:
         subprocess.check_call([sys.executable, "-m", "pip", "install", req.package_name])
         return {"status": "success", "package": req.package_name}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        raise HTTPException(status_code=500, detail="Request failed. Please try again.")
 
 
 @router.get("/{plugin_id}")

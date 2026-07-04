@@ -84,8 +84,8 @@ if _FASTAPI:
 
         try:
             config.set(key, body.value)
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=str(e))
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid setting value")
 
         entry = _REGISTRY_MAP[key]
         return {
@@ -114,7 +114,8 @@ if _FASTAPI:
                 if _REGISTRY_MAP[key].restart_required:
                     restart_needed = True
             except Exception as e:
-                errors[key] = str(e)
+                logger.warning("Failed to set setting %s: %s", key, e)
+                errors[key] = "Failed to update setting"
 
         return {
             "updated": results,
@@ -168,8 +169,8 @@ if _FASTAPI:
                     for m in raw_models
                 ]
         except Exception as e:
-            error = str(e)
-            logger.warning(f"Could not fetch Ollama models: {e}")
+            error = "Could not fetch Ollama models"
+            logger.warning("Could not fetch Ollama models: %s", e)
 
         cloud_models = []
         if config.get("failover.openai_api_key"):

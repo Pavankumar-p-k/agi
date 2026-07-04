@@ -10,10 +10,12 @@ from typing import Any
 
 from core.memory import get_text_similarity
 
+from .base import MemoryProvider
+
 logger = logging.getLogger(__name__)
 
 
-class DecisionMemory:
+class DecisionMemory(MemoryProvider):
     """Decision memory — stores every decision made, its outcome, and the lesson learned.
 
     This is the core of self-reflection: after every task, the system records
@@ -173,6 +175,33 @@ class DecisionMemory:
             d["tags"] = json.loads(d.get("tags", "[]"))
             result.append(d)
         return result
+
+    def get_recent(self, limit: int = 20) -> list[dict]:
+        with self._lock:
+            conn = sqlite3.connect(self._db_path)
+            conn.row_factory = sqlite3.Row
+            rows = conn.execute(
+                "SELECT * FROM decision_memories ORDER BY created_at DESC LIMIT ?",
+                (limit,),
+            ).fetchall()
+            conn.close()
+        result = []
+        for r in rows:
+            d = dict(r)
+            d["alternatives"] = json.loads(d.get("alternatives", "[]"))
+            d["tags"] = json.loads(d.get("tags", "[]"))
+            result.append(d)
+        return result
+
+    def clear(self) -> int:
+        with self._lock:
+            conn = sqlite3.connect(self._db_path)
+            row = conn.execute("SELECT COUNT(*) FROM decision_memories").fetchone()
+            conn.execute("DELETE FROM decision_memories")
+            conn.commit()
+            conn.close()
+        logger.info("[DecisionMemory] cleared %d decisions", row[0])
+        return row[0]
 
     def count(self) -> int:
         with self._lock:

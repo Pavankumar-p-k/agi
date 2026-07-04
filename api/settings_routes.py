@@ -29,8 +29,8 @@ async def get_setting(key: str):
     """Return a specific setting value."""
     try:
         return {"key": key, "value": store.get(key)}
-    except KeyError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Setting not found")
 
 @router.patch("/{key}")
 async def update_setting(key: str, payload: dict = Body(...)):
@@ -43,12 +43,12 @@ async def update_setting(key: str, payload: dict = Body(...)):
             return {"status": "success", "key": key, "new_value": payload["value"]}
         else:
             raise HTTPException(status_code=500, detail="Failed to save setting")
-    except KeyError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Setting not found")
     except ValidationError as e:
         raise HTTPException(status_code=422, detail=e.errors())
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        raise HTTPException(status_code=500, detail="Request failed. Please try again.")
 
 @router.post("/reset")
 async def reset_settings(payload: dict | None = Body(None)):
@@ -57,8 +57,8 @@ async def reset_settings(payload: dict | None = Body(None)):
     try:
         store.reset(key)
         return {"status": "success", "message": f"Reset {'all settings' if not key else key} to default"}
-    except KeyError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Setting not found")
 
 @router.get("/export")
 async def export_settings():

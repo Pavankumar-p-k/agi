@@ -540,7 +540,7 @@ The engine is ready for production integration.
         report += f"""**{total - passed} scenario(s) failed.** Review per-scenario details above.
 """
 
-    report_path = os.path.join(os.path.dirname(__file__), "..", "workflow_durability_report.md")
+    report_path = os.path.join(os.path.dirname(__file__), "..", "docs", "workflow_durability_report.md")
     with open(report_path, "w") as f:
         f.write(report)
     print(f"\nReport: {os.path.abspath(report_path)}")

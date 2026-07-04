@@ -52,10 +52,10 @@ async def run_agent(agent_name: str, req: RunRequest):
             mode=req.mode, **kwargs
         )
         return result.to_dict()
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Agent not found")
+    except Exception:
+        raise HTTPException(status_code=500, detail="Request failed. Please try again.")
 
 @router.get("/{agent_name}/modes")
 async def agent_modes(agent_name: str):
