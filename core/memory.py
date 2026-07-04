@@ -71,8 +71,24 @@ def get_text_similarity(text1: str, text2: str) -> float:
             logger.debug("memory get_text_similarity failed: %s", _e)
     return jaccard_similarity(text1, text2)
 
+_mm_warned = False
+
+
+def _deprecation_warning() -> None:
+    global _mm_warned
+    if not _mm_warned:
+        import warnings
+        warnings.warn(
+            "core.memory.MemoryManager is deprecated. "
+            "Use 'memory.memory_facade' for memory storage instead.",
+            DeprecationWarning, stacklevel=2,
+        )
+        _mm_warned = True
+
+
 class MemoryManager:
     def __init__(self, data_dir: str):
+        _deprecation_warning()
         self.memory_file = os.path.join(data_dir, "memory.json")
         self.ensure_file_exists()
 
