@@ -38,7 +38,7 @@ except ImportError:  # pragma: no cover
 import requests
 
 from core.config import CLAUDE_API_KEY, COPILOT_API_KEY, CODEX_CLI_PATH
-from core.model_router import ROLE_MODELS, MODEL_ALIASES
+from core.llm_router import ROLE_MODELS, MODEL_ALIASES
 from core.types import ModelResult
 
 
@@ -199,7 +199,7 @@ class HybridModelManager:
         # Get best Ollama model for task
         model = self._get_ollama_model_for_task(task_type)
 
-        from core.model_router import get_ollama_url
+        from core.llm_router import get_ollama_url
         url = f"{get_ollama_url(model)}/api/generate"
 
         payload = {

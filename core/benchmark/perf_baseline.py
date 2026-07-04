@@ -105,7 +105,7 @@ async def measure_server_startup(port: int = 18998) -> dict:
 
 async def measure_setup_duration() -> dict:
     from core.setup.engine import SetupEngine
-    from core.setup.detector import is_first_run, mark_setup_state
+    from core.setup.detector import is_first_run
     if is_first_run():
         start = time.monotonic()
         engine = SetupEngine()

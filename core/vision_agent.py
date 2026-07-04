@@ -45,7 +45,7 @@ import mss
 import pyautogui
 from PIL import Image
 
-from core.model_router import get_ollama_url, model_for_role
+from core.llm_router import get_ollama_url, model_for_role
 
 logger = logging.getLogger(__name__)
 

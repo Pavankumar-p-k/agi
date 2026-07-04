@@ -78,7 +78,7 @@ class ForgeAgent(SubAgent):
 
             try:
                 # Use smolagents for bulletproof code execution/generation
-                from core.model_router import get_router_model
+                from core.llm_router import get_router_model
                 model_name = get_router_model("code") # Usually qwen2.5-coder
 
                 # Build smolagents compatible model

@@ -37,10 +37,10 @@ class MemoryVectorStore:
 
     def _initialize(self):
         try:
-            from src.chroma_client import get_chroma_client
+            from core.chroma_client import get_chroma_client
 
             if self._model is None:
-                from src.embeddings import get_embedding_client
+                from core.embeddings import get_embedding_client
                 self._model = get_embedding_client()
                 if self._model is None:
                     raise RuntimeError("No embedding backend available")
@@ -149,10 +149,10 @@ class MemoryVectorStore:
             return
 
         try:
-            from src.chroma_client import get_chroma_client
+            from core.chroma_client import get_chroma_client
             client = get_chroma_client()
         except ImportError as e:
-            logger.warning("[core.memory_vector] src.chroma_client not available: %s", e)
+            logger.warning("[core.memory_vector] chroma_client not available: %s", e)
             return
 
         # Delete and recreate collection for a clean rebuild

@@ -46,7 +46,7 @@ async def vision_screen(user=Depends(verify_token)):
 async def vision_analyze(req: VisionAnalyzeRequest, user=Depends(verify_token)):
     question = req.question or "What is on my screen?"
     try:
-        from core.model_router import get_ollama_url, model_for_role
+        from core.llm_router import get_ollama_url, model_for_role
         from core.vision_agent import VisionAgent
         agent = VisionAgent()
         try:

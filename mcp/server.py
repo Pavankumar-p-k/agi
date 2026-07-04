@@ -427,9 +427,13 @@ class MCPServer:
 
     async def _handle_browser_navigate(self, url: str) -> str:
         try:
-            from tools.browser_tool import BrowserTool
-            bt = BrowserTool()
-            result = await bt.navigate(url)
+            from core.browser_manager import BrowserManager
+            bm = BrowserManager.instance()
+            session = await bm.get_or_create_session()
+            page = session.current_page
+            if page:
+                await page.goto(url, timeout=30000)
+            result = f"navigated to {url}"
             return f"Navigated to {url}: {result}"
         except Exception as e:
             return f"Browser failed: {e}"

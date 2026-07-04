@@ -588,8 +588,8 @@ async def browser_action(
     req: BrowserActionRequest,
     user: User = Depends(verify_token),
 ):
-    from tools.browser_tool import JarvisBrowser
-    browser = JarvisBrowser(headless=True)
+    from core.browser_manager import BrowserManager
+    browser = BrowserManager.instance()
     try:
         if req.action == "navigate":
             if not req.url:

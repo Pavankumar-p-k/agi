@@ -32,7 +32,7 @@ async def mcp_bridge_websocket(websocket: WebSocket):
 @router.websocket("/ws/chat_stream")
 async def chat_stream_websocket(ws: WebSocket):
     from core.intent_router import extract_intent
-    from core.model_router import route_request
+    from core.llm_router import route_request
     try:
         from core.plugins import plugin_registry
     except Exception:
@@ -144,7 +144,7 @@ async def chat_stream_websocket(ws: WebSocket):
                             response_text = epistemic_tagger.tag_response(resp_text, ws_provenance)
                         else:
                             import httpx
-                            from core.model_router import get_ollama_url, model_for_role
+                            from core.llm_router import get_ollama_url, model_for_role
                             models_to_try = [
                                 model_for_role(current_intent),
                                 *["qwen2.5:7b", "llama3.1:8b", "qwen2.5-coder:3b", "tinyllama"],

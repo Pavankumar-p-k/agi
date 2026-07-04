@@ -60,8 +60,8 @@ async def browser_agent(req: BrowseRequest, user: User = Depends(verify_token)):
             audit_log.log("ssrf_blocked", user_id=user.uid, path="/browse", method="POST", request_body={"instruction": instruction})
             raise HTTPException(400, str(e))
 
-    from tools.browser_tool import JarvisBrowser
-    browser = JarvisBrowser()
+    from core.browser_manager import BrowserManager
+    browser = BrowserManager.instance()
 
     result = await browser.execute(instruction)
     audit_log.log("browse", user_id=user.uid, path="/browse", method="POST", status=200, request_body={"instruction": instruction})

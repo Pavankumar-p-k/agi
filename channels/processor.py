@@ -26,7 +26,7 @@ async def process_message(
 ) -> str:
     from brain.epistemic_tagger import epistemic_tagger
     from core.llm_router import get_router
-    from core.model_router import get_ollama_url, model_for_role, route_request
+    from core.llm_router import get_ollama_url, model_for_role, route_request
 
     try:
         model, tier, processed_query = route_request(text)

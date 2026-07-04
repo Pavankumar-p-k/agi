@@ -497,3 +497,67 @@ _config_router = LLMRouter()
 def get_config_router() -> LLMRouter:
     """Return the config-driven LLMRouter singleton (new API)."""
     return _config_router
+
+
+# ── Routed model selection (moved from core/model_router.py) ──────────────
+
+from core.privacy_classifier import PrivacyTier as _PrivacyTier, privacy_classifier as _privacy_classifier
+
+
+def route_role_for_text(text: str) -> str:
+    """Lightweight heuristic router for text-only tasks."""
+    t = (text or "").lower()
+    if any(k in t for k in ("deep research", "thorough analysis", "comprehensive", "deep dive", "expert analysis", "in-depth")):
+        return "deep"
+    if any(k in t for k in ("code", "bug", "stack trace", "exception", "compile", "syntax")):
+        return "code"
+    if any(k in t for k in ("analyze", "analysis", "compare", "pros and cons", "decision")):
+        return "analysis"
+    if any(k in t for k in ("write", "rewrite", "story", "poem", "script", "lyrics", "email")):
+        return "creative"
+    if any(k in t for k in ("plan", "steps", "schedule", "roadmap", "automate", "workflow")):
+        return "reasoning"
+    return "chat"
+
+
+_health_checker: callable = lambda: True
+
+
+def set_health_checker(fn: callable):
+    """Inject health-monitor callback (set during server startup)."""
+    global _health_checker
+    _health_checker = fn
+
+
+def route_request(query: str, context: dict = None, force_tier: str = None):
+    """
+    Route request based on privacy classifier.
+    Auto-fails over to cloud if Ollama is down and cloud keys are available.
+
+    Returns (router_group, privacy_tier, processed_query).
+    """
+    if force_tier == "cloud":
+        return "cloud", _PrivacyTier.CLOUD, query
+    if force_tier == "local":
+        tier = _privacy_classifier.classify(query, context)
+        processed_query = query
+        if tier == _PrivacyTier.HYBRID:
+            processed_query = _privacy_classifier.sanitize(query, tier=_PrivacyTier.HYBRID)
+        role = route_role_for_text(processed_query)
+        return group_for_role(role), _PrivacyTier.LOCAL, processed_query
+
+    if os.getenv("FORCE_CLOUD", "").lower() in ("1", "true", "yes"):
+        return "cloud", _PrivacyTier.CLOUD, query
+
+    if not _health_checker():
+        if os.getenv("ANTHROPIC_API_KEY") or os.getenv("OPENAI_API_KEY") or os.getenv("GEMINI_API_KEY"):
+            return "cloud", _PrivacyTier.CLOUD, query
+
+    tier = _privacy_classifier.classify(query, context)
+    processed_query = query
+
+    if tier == _PrivacyTier.HYBRID:
+        processed_query = _privacy_classifier.sanitize(query, tier=_PrivacyTier.HYBRID)
+
+    role = route_role_for_text(processed_query)
+    return group_for_role(role), tier, processed_query

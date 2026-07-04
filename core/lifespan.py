@@ -34,7 +34,7 @@ startup_status = {
 def _warmup_ollama_models():
     """Verify Ollama is reachable and models are available (no pre-loading to save GPU memory)."""
     try:
-        from core.model_router import ROLE_MODELS, resolve_model
+        from core.llm_router import ROLE_MODELS, resolve_model
     except ImportError:
         logger.debug("[LIFESPAN] model_router not available, skipping Ollama model check")
         return
@@ -304,7 +304,7 @@ async def lifespan(app: FastAPI):
         )
         app.state.service_health = ServiceHealthChecker(interval=30)
         await app.state.service_health.start()
-        from core.model_router import set_health_checker
+        from core.llm_router import set_health_checker
         set_health_checker(lambda: app.state.service_health.latest().ollama.status == "healthy")
         logger.info("[LIFESPAN] Consolidated monitoring started [OK]")
     except Exception as e:
@@ -313,7 +313,7 @@ async def lifespan(app: FastAPI):
         # Fallback to legacy health monitor
         try:
             from core.health_monitor import HealthMonitor
-            from core.model_router import set_health_checker
+            from core.llm_router import set_health_checker
             app.state.health = HealthMonitor(interval=30)
             await app.state.health.start()
             set_health_checker(app.state.health.ollama_alive)
