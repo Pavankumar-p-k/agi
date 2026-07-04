@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """ORACLE — Goal planning and task decomposition sub-agent."""
-from core.sub_agents.base_agent import SubAgent
+from core.agents._sub_agent_base import SubAgent
 
 ORACLE_PROMPTS = {
     "plan": (
@@ -62,3 +62,4 @@ class OracleAgent(SubAgent):
 
     def get_system_prompt(self, mode: str) -> str:
         return ORACLE_PROMPTS.get(mode, ORACLE_PROMPTS["plan"])
+

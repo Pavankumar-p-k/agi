@@ -11,7 +11,7 @@ from core.providers.base import (
     ProviderHealth,
     ProviderHealthStatus,
 )
-from core.sub_agents.agents.forge import ForgeAgent as ForgeSubAgent
+from core.agents._legacy.forge import ForgeAgent as ForgeSubAgent
 
 logger = logging.getLogger(__name__)
 

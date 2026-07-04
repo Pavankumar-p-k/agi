@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """SCRIBE — Writing, documentation, and report generation sub-agent."""
-from core.sub_agents.base_agent import SubAgent
+from core.agents._sub_agent_base import SubAgent
 
 SCRIBE_PROMPTS = {
     "docs": (
@@ -54,3 +54,4 @@ class ScribeAgent(SubAgent):
 
     def get_system_prompt(self, mode: str) -> str:
         return SCRIBE_PROMPTS.get(mode, SCRIBE_PROMPTS["docs"])
+

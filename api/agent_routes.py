@@ -20,7 +20,7 @@ router = APIRouter(prefix="/agents", tags=["agents"])
 
 
 def _get_registry():
-    from core.sub_agents.registry import agent_registry
+    from core.agents.registry import agent_registry
     return agent_registry
 
 class RunRequest(BaseModel):

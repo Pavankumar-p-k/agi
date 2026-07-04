@@ -15,7 +15,7 @@ Uses existing tools/browser_tool.py + tools/crawl4ai_tool.py under the hood.
 """
 from __future__ import annotations
 
-from core.sub_agents.base_agent import AgentResult, SubAgent
+from core.agents._sub_agent_base import AgentResult, SubAgent
 
 PHANTOM_PROMPTS = {
     "scrape": (
@@ -86,3 +86,4 @@ class PhantomAgent(SubAgent):
                 return f"[Scrape tool tools.crawl4ai_tool not found for {url}]"
         except Exception as e:
             return f"[Scrape failed: {e}]"
+

@@ -21,8 +21,8 @@ from typing import Literal
 
 from core.session import session_manager
 from core.spawning.store import SubagentStore
-from core.sub_agents.base_agent import AgentResult
-from core.sub_agents.registry import agent_registry
+from core.agents._sub_agent_base import AgentResult
+from core.agents.registry import agent_registry
 
 logger = logging.getLogger("jarvis.spawning.manager")
 

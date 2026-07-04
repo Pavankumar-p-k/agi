@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 import json
 import time
 
-from core.sub_agents.base_agent import AgentResult, SubAgent
+from core.agents._sub_agent_base import AgentResult, SubAgent
 
 try:
     import psutil
@@ -100,3 +100,4 @@ class SentinelAgent(SubAgent):
         except Exception as e:
             logger.error("Sentinel agent failed: %s", e, exc_info=True)
             return {"error": "Operation failed"}
+

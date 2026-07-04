@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """CIPHER — Security analysis and threat detection sub-agent."""
-from core.sub_agents.base_agent import SubAgent
+from core.agents._sub_agent_base import SubAgent
 
 CIPHER_PROMPTS = {
     "audit": (
@@ -54,3 +54,4 @@ class CipherAgent(SubAgent):
 
     def get_system_prompt(self, mode: str) -> str:
         return CIPHER_PROMPTS.get(mode, CIPHER_PROMPTS["audit"])
+

@@ -13,7 +13,7 @@
 import logging
 import time
 
-from core.sub_agents.base_agent import AgentResult, SubAgent
+from core.agents._sub_agent_base import AgentResult, SubAgent
 
 logger = logging.getLogger("jarvis.agents.forge")
 
@@ -119,3 +119,4 @@ class ForgeAgent(SubAgent):
     def _build_user_content(self, task: str, mode: str, **kwargs) -> str:
         self._lang = kwargs.get("lang", "auto")
         return task
+

@@ -1,6 +1,6 @@
 from core.agents.adapters.base_adapter import SubAgentAdapter
 from core.agents.capabilities import CAPABILITIES
-from core.sub_agents.agents.herald import HeraldAgent as HeraldSubAgent
+from core.agents._legacy.herald import HeraldAgent as HeraldSubAgent
 
 
 class HeraldAdapter(SubAgentAdapter):
@@ -8,3 +8,4 @@ class HeraldAdapter(SubAgentAdapter):
     capabilities = CAPABILITIES["herald"]
     sub_agent_class = HeraldSubAgent
     default_mode = "draft"
+

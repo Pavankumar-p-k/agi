@@ -14,7 +14,7 @@ import os
 from typing import Any
 
 from core.agents.base import BaseAgent
-from core.sub_agents.base_agent import SubAgent
+from core.agents._sub_agent_base import SubAgent
 
 logger = logging.getLogger(__name__)
 

@@ -1,6 +1,6 @@
 from core.agents.adapters.base_adapter import SubAgentAdapter
 from core.agents.capabilities import CAPABILITIES
-from core.sub_agents.agents.cipher import CipherAgent as CipherSubAgent
+from core.agents._legacy.cipher import CipherAgent as CipherSubAgent
 
 
 class CipherAdapter(SubAgentAdapter):
@@ -8,3 +8,4 @@ class CipherAdapter(SubAgentAdapter):
     capabilities = CAPABILITIES["cipher"]
     sub_agent_class = CipherSubAgent
     default_mode = "audit"
+

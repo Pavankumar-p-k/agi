@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """HERALD — Smart notification drafting and communication sub-agent."""
-from core.sub_agents.base_agent import SubAgent
+from core.agents._sub_agent_base import SubAgent
 
 HERALD_PROMPTS = {
     "draft": (
@@ -52,3 +52,4 @@ class HeraldAgent(SubAgent):
 
     def get_system_prompt(self, mode: str) -> str:
         return HERALD_PROMPTS.get(mode, HERALD_PROMPTS["draft"])
+

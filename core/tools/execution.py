@@ -36,7 +36,7 @@ from typing import Any
 from core.sandbox.docker_sandbox import docker_sandbox as _docker_sandbox
 from core.config_schema import jarvis_config
 from core.tools.security import owner_is_admin_or_single_user
-from core.sub_agents.tool import do_sessions_spawn
+from core.tools.sub_agent_spawn import do_sessions_spawn
 
 # Build automation adapter — bridges the Graph Runtime to the Automation Loop
 from core.tools.build_tools import (

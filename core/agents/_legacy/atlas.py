@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """ATLAS — Data analysis, pattern detection, and insight generation sub-agent."""
-from core.sub_agents.base_agent import SubAgent
+from core.agents._sub_agent_base import SubAgent
 
 ATLAS_PROMPTS = {
     "analyze": (
@@ -57,3 +57,4 @@ class AtlasAgent(SubAgent):
 
     def get_system_prompt(self, mode: str) -> str:
         return ATLAS_PROMPTS.get(mode, ATLAS_PROMPTS["analyze"])
+

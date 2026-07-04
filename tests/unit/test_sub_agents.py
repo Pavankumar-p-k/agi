@@ -37,8 +37,8 @@ def mock_complete_global():
 @pytest.fixture(autouse=True)
 def mock_smolagents():
     # Mock ForgeAgent's internal smolagents usage
-    with patch("core.sub_agents.agents.forge.CodeAgent") as mock_agent, \
-         patch("core.sub_agents.agents.forge.LiteLLMModel") as mock_model:
+    with patch("core.agents._legacy.forge.CodeAgent") as mock_agent, \
+         patch("core.agents._legacy.forge.LiteLLMModel") as mock_model:
         
         agent_instance = MagicMock()
         mock_agent.return_value = agent_instance
@@ -59,13 +59,13 @@ def mock_mem0():
         yield mock
 
 def test_registry_has_all_agents():
-    from core.sub_agents.registry import agent_registry
+    from core.agents.registry import agent_registry
     names = agent_registry.names()
-    for expected in ["NEXUS","FORGE","ORACLE","PHANTOM","CIPHER","HERALD","SCRIBE","ATLAS","SENTINEL","MAESTRO"]:
+    for expected in ["NEXUS","FORGE","ORACLE","PHANTOM","CIPHER","HERALD","SCRIBE","ATLAS","SENTINEL"]:
         assert expected in names, f"{expected} missing from registry"
 
 def test_agent_info():
-    from core.sub_agents.agents.nexus import NexusAgent
+    from core.agents._legacy.nexus import NexusAgent
     a = NexusAgent()
     info = a.info()
     assert info["name"] == "NEXUS"
@@ -73,7 +73,7 @@ def test_agent_info():
 
 @pytest.mark.asyncio
 async def test_nexus_run():
-    from core.sub_agents.agents.nexus import NexusAgent
+    from core.agents._legacy.nexus import NexusAgent
     a = NexusAgent()
     result = await a.run("What is quantum computing?", mode="research")
     assert result.success
@@ -83,7 +83,7 @@ async def test_nexus_run():
 
 @pytest.mark.asyncio
 async def test_forge_run():
-    from core.sub_agents.agents.forge import ForgeAgent
+    from core.agents._legacy.forge import ForgeAgent
     a = ForgeAgent()
     result = await a.run("Write a fibonacci function", mode="generate", lang="Python")
     assert result.success
@@ -92,21 +92,21 @@ async def test_forge_run():
 
 @pytest.mark.asyncio
 async def test_invalid_mode_falls_back():
-    from core.sub_agents.agents.nexus import NexusAgent
+    from core.agents._legacy.nexus import NexusAgent
     a = NexusAgent()
     result = await a.run("test", mode="nonexistent_mode")
     assert result.success  # should use default mode, not crash
 
 @pytest.mark.asyncio
 async def test_registry_run():
-    from core.sub_agents.registry import agent_registry
+    from core.agents.registry import agent_registry
     result = await agent_registry.run("ORACLE", "Plan a website build", mode="plan")
     assert result.success
     assert result.agent_name == "ORACLE"
 
 @pytest.mark.asyncio
 async def test_parallel_run():
-    from core.sub_agents.registry import agent_registry
+    from core.agents.registry import agent_registry
     tasks = [
         {"agent": "NEXUS", "task": "research AI", "mode": "brief"},
         {"agent": "SCRIBE", "task": "write docs for AI module", "mode": "docs"},
@@ -117,7 +117,7 @@ async def test_parallel_run():
 
 @pytest.mark.asyncio
 async def test_result_to_dict():
-    from core.sub_agents.agents.herald import HeraldAgent
+    from core.agents._legacy.herald import HeraldAgent
     a = HeraldAgent()
     result = await a.run("Draft an update email")
     d = result.to_dict()

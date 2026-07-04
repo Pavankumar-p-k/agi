@@ -10,7 +10,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""core/sub_agents/base_agent.py — Base class for all JARVIS sub-agents."""
+"""Base class for all JARVIS sub-agents. Moved from core/sub_agents/base_agent.py."""
 from __future__ import annotations
 
 import asyncio

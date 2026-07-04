@@ -1,7 +1,7 @@
 # SOURCE OF TRUTH — MJ Constitution
 
 > Audit date: 2026-07-04
-> Phase: Phase 1b complete — Diagnostics consolidated, Event Bus consolidated.
+> Phase: Phase 1e complete — Diagnostics, Event Bus, Resource Monitors, Memory, Agent Execution consolidated.
 > Methodology: grep import analysis, file-by-file read, dependency tracing.
 
 ---
@@ -876,7 +876,7 @@ Each phase below lists the subsystems that need this lifecycle applied.
 |-----------|--------------|-----------------|--------|
 | **Configuration** | 5 systems: config.py, config_schema.py, config_registry.py, configuration/service.py, settings/store.py | `core/configuration/service.py:ConfigurationService` | Migrate all consumers to ConfigurationService. Delete config.py constants, deprecate config_registry.py, fold config_schema into service |
 | **Request Routing** | 2 paths: intent_router (legacy 750-line rule-based) vs routing/request_classifier (modern) | `core/routing/request_classifier.py` | Kill intent_router's `_rule_based()`, migrate callers to classify_request(), delete intent_router.py |
-| **Agent Execution** | 2 layers: sub_agents/ (10 legacy LLM agents) vs agents/ (new BaseAgent system) | `core/agents/` | Delete sub_agents/ directory. Adapters already bridge. Remove Maestro (no adapter exists) |
+| **Agent Execution** | 2 layers: sub_agents/ (10 legacy LLM agents) vs agents/ (new BaseAgent system) | `core/agents/` | ✅ COMPLETED — `core/sub_agents/` deleted. SubAgent base + AgentResult moved to `core/agents/_sub_agent_base.py`. AgentRegistry moved to `core/agents/registry.py`. 9 agent implementations moved to `core/agents/_legacy/`. `do_sessions_spawn` moved to `core/tools/sub_agent_spawn.py`. MaestroAgent removed (no adapter existed). All 12 importers (adapters, api routes, spawning manager, forge provider, tests) updated. |
 | **Event Bus** | 4 variants: core/event_bus.py, workflow/events.py, agents/events.py, plugins/events.py | `core/event_bus.py` | ✅ COMPLETED — All event bus logic merged into `core/event_bus.py`. `brain/events/event_bus.py` and `core/workflow/events.py` are now re-export shims. WebSocket broadcast added to canonical bus. |
 | **Resource Monitoring** | 3 monitors: monitors/resource.py, governance/resource_monitor.py, environment_monitor.py | `monitors/` package | ✅ COMPLETED — `monitors/resource.py` expanded to cover governance API (get_snapshot, should_throttle, should_reject, 5-tier recommend_concurrency, pct/count field aliases). `governance/resource_monitor.py` converted to backward-compat shim with DeprecationWarning. `core/environment_monitor.py` now emits DeprecationWarning. `monitors/__init__.py` exports `resource_monitor` singleton. |
 | **SSRF** | 2 files: ssrf.py (strict, active) vs url_safety.py (permissive, dead) | `core/ssrf.py` | Already complete — url_safety.py removed in Phase 0 |

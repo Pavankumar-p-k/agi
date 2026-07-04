@@ -1,6 +1,6 @@
 from core.agents.adapters.base_adapter import SubAgentAdapter
 from core.agents.capabilities import CAPABILITIES
-from core.sub_agents.agents.sentinel import SentinelAgent as SentinelSubAgent
+from core.agents._legacy.sentinel import SentinelAgent as SentinelSubAgent
 
 
 class SentinelAdapter(SubAgentAdapter):
@@ -8,3 +8,4 @@ class SentinelAdapter(SubAgentAdapter):
     capabilities = CAPABILITIES["sentinel"]
     sub_agent_class = SentinelSubAgent
     default_mode = "diagnose"
+

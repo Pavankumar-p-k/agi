@@ -1,6 +1,6 @@
 from core.agents.adapters.base_adapter import SubAgentAdapter
 from core.agents.capabilities import CAPABILITIES
-from core.sub_agents.agents.atlas import AtlasAgent as AtlasSubAgent
+from core.agents._legacy.atlas import AtlasAgent as AtlasSubAgent
 
 
 class AtlasAdapter(SubAgentAdapter):
@@ -8,3 +8,4 @@ class AtlasAdapter(SubAgentAdapter):
     capabilities = CAPABILITIES["atlas"]
     sub_agent_class = AtlasSubAgent
     default_mode = "analyze"
+

@@ -13,7 +13,7 @@
 import logging
 import time
 
-from core.sub_agents.base_agent import AgentResult, SubAgent
+from core.agents._sub_agent_base import AgentResult, SubAgent
 
 logger = logging.getLogger("jarvis.agents.nexus")
 
@@ -138,3 +138,4 @@ class NexusAgent(SubAgent):
             )
 
         return self._result
+

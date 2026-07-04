@@ -32,7 +32,7 @@ async def test_spawn_lifecycle(clean_store):
     task = "Find the meaning of life"
     agent_id = "MAESTRO"
     
-    with patch("core.sub_agents.base_agent.complete") as mock_complete:
+    with patch("core.agents._sub_agent_base.complete") as mock_complete:
         mock_complete.return_value = Ok("The answer is 42.")
         
         # 1. Spawn
@@ -68,7 +68,7 @@ async def test_spawn_depth_limit():
 async def test_steer_injection():
     """Test steering an agent by injecting guidance."""
     # 1. Start a slow/dummy agent (mocked)
-    with patch("core.sub_agents.base_agent.complete") as mock_complete:
+    with patch("core.agents._sub_agent_base.complete") as mock_complete:
         # Create a future that we can resolve later to simulate a long run
         fut = asyncio.Future()
         mock_complete.return_value = fut
@@ -122,7 +122,7 @@ async def test_orphan_recovery_simulated():
     # 3. Run recovery
     from core.spawning.orphan import orphan_recovery
     
-    with patch("core.sub_agents.base_agent.complete") as mock_complete:
+    with patch("core.agents._sub_agent_base.complete") as mock_complete:
         mock_complete.return_value = Ok("Recovered!")
         
         # We need to bypass the grace period or set it to 0

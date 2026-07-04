@@ -1,6 +1,6 @@
 from core.agents.adapters.base_adapter import SubAgentAdapter
 from core.agents.capabilities import CAPABILITIES
-from core.sub_agents.agents.oracle import OracleAgent as OracleSubAgent
+from core.agents._legacy.oracle import OracleAgent as OracleSubAgent
 
 
 class OracleAdapter(SubAgentAdapter):
@@ -8,3 +8,4 @@ class OracleAdapter(SubAgentAdapter):
     capabilities = CAPABILITIES["oracle"]
     sub_agent_class = OracleSubAgent
     default_mode = "plan"
+

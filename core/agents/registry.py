@@ -15,19 +15,16 @@ from __future__ import annotations
 
 import asyncio
 
-from core.sub_agents.agents.atlas import AtlasAgent
-from core.sub_agents.agents.cipher import CipherAgent
-from core.sub_agents.agents.forge import ForgeAgent
-from core.sub_agents.agents.herald import HeraldAgent
-from core.sub_agents.agents.maestro import MaestroAgent
-
-# Import all agents
-from core.sub_agents.agents.nexus import NexusAgent
-from core.sub_agents.agents.oracle import OracleAgent
-from core.sub_agents.agents.phantom import PhantomAgent
-from core.sub_agents.agents.scribe import ScribeAgent
-from core.sub_agents.agents.sentinel import SentinelAgent
-from core.sub_agents.base_agent import AgentResult, SubAgent
+from core.agents._legacy.atlas import AtlasAgent
+from core.agents._legacy.cipher import CipherAgent
+from core.agents._legacy.forge import ForgeAgent
+from core.agents._legacy.herald import HeraldAgent
+from core.agents._legacy.nexus import NexusAgent
+from core.agents._legacy.oracle import OracleAgent
+from core.agents._legacy.phantom import PhantomAgent
+from core.agents._legacy.scribe import ScribeAgent
+from core.agents._legacy.sentinel import SentinelAgent
+from core.agents._sub_agent_base import AgentResult, SubAgent
 
 _REGISTRY: dict[str, type[SubAgent]] = {
     "NEXUS":    NexusAgent,
@@ -39,7 +36,6 @@ _REGISTRY: dict[str, type[SubAgent]] = {
     "SCRIBE":   ScribeAgent,
     "ATLAS":    AtlasAgent,
     "SENTINEL": SentinelAgent,
-    "MAESTRO":  MaestroAgent,
 }
 
 class AgentRegistry:
