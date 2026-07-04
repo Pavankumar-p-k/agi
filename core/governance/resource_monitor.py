@@ -1,178 +1,153 @@
-# Copyright (c) 2024-2026 JARVIS Project
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-"""core/governance/resource_monitor.py
-ResourceMonitor — lightweight psutil wrapper for JARVIS governance.
+"""DEPRECATED — use `monitors.resource` instead.
 
-Provides:
-  get_snapshot()          → ResourceSnapshot
-  should_throttle()       → bool   (cpu > 80% or ram > 85%)
-  should_reject()         → bool   (cpu > 95% or ram > 95%)
-  recommend_concurrency() → int    (1–8)
+This module is a backward-compatibility shim that re-exports
+from `monitors.resource` with the original governance API names.
 """
+
 from __future__ import annotations
 
 import logging
-import time
-from dataclasses import dataclass, field
+import warnings
+from typing import Any
+
+from monitors.resource import (
+    ResourceMonitor as _ResourceMonitor,
+    ResourceSnapshot as _ResourceSnapshot,
+)
 
 logger = logging.getLogger(__name__)
 
+_warned = False
 
-# ── data class ────────────────────────────────────────────────────────────────
 
-@dataclass
+def _warn() -> None:
+    global _warned
+    if not _warned:
+        warnings.warn(
+            "core.governance.resource_monitor is deprecated. "
+            "Use 'from monitors.resource import ResourceMonitor, resource_monitor' instead.",
+            DeprecationWarning, stacklevel=3,
+        )
+        _warned = True
+
+
 class ResourceSnapshot:
-    cpu_pct:       float        # 0–100
-    ram_pct:       float        # 0–100
-    disk_pct:      float        # 0–100
-    agent_count:   int          # number of tracked active agents
-    active_skills: list[str]    # skill ids currently running
-    timestamp:     float = field(default_factory=time.time)
+    """Backward-compatible snapshot. Delegates to monitors.resource.ResourceSnapshot."""
 
-    def to_dict(self) -> dict:
-        return {
-            "cpu_pct":       self.cpu_pct,
-            "ram_pct":       self.ram_pct,
-            "disk_pct":      self.disk_pct,
-            "agent_count":   self.agent_count,
-            "active_skills": self.active_skills,
-            "timestamp":     self.timestamp,
-        }
+    def __init__(self, cpu_pct: float = 0.0, ram_pct: float = 0.0,
+                 disk_pct: float = 0.0, agent_count: int = 0,
+                 active_skills: list[str] | None = None,
+                 timestamp: float | None = None):
+        import time
+        self._snap = _ResourceSnapshot(
+            cpu_percent=cpu_pct, ram_percent=ram_pct, disk_percent=disk_pct,
+            active_agents=agent_count, active_skills=active_skills or [],
+            timestamp=timestamp or time.time(),
+        )
+        _warn()
+
+    @property
+    def cpu_pct(self) -> float:
+        return self._snap.cpu_percent
+
+    @cpu_pct.setter
+    def cpu_pct(self, value: float) -> None:
+        self._snap.cpu_percent = value
+
+    @property
+    def ram_pct(self) -> float:
+        return self._snap.ram_percent
+
+    @ram_pct.setter
+    def ram_pct(self, value: float) -> None:
+        self._snap.ram_percent = value
+
+    @property
+    def disk_pct(self) -> float:
+        return self._snap.disk_percent
+
+    @disk_pct.setter
+    def disk_pct(self, value: float) -> None:
+        self._snap.disk_percent = value
+
+    @property
+    def agent_count(self) -> int:
+        return self._snap.active_agents
+
+    @agent_count.setter
+    def agent_count(self, value: int) -> None:
+        self._snap.active_agents = value
+
+    @property
+    def active_skills(self) -> list[str]:
+        return self._snap.active_skills
+
+    @active_skills.setter
+    def active_skills(self, value: list[str]) -> None:
+        self._snap.active_skills = value
+
+    @property
+    def timestamp(self) -> float:
+        return self._snap.timestamp
+
+    @timestamp.setter
+    def timestamp(self, value: float) -> None:
+        self._snap.timestamp = value
 
     @property
     def is_healthy(self) -> bool:
-        return self.cpu_pct < 80 and self.ram_pct < 85
+        return self._snap.is_healthy
 
     @property
     def is_critical(self) -> bool:
-        return self.cpu_pct >= 95 or self.ram_pct >= 95
+        return self._snap.is_critical
 
+    def to_dict(self) -> dict:
+        return {
+            "cpu_pct": self._snap.cpu_percent,
+            "ram_pct": self._snap.ram_percent,
+            "disk_pct": self._snap.disk_percent,
+            "agent_count": self._snap.active_agents,
+            "active_skills": self._snap.active_skills,
+            "timestamp": self._snap.timestamp,
+        }
 
-# ── thresholds ────────────────────────────────────────────────────────────────
-
-_THROTTLE_CPU = 80.0
-_THROTTLE_RAM = 85.0
-_REJECT_CPU   = 95.0
-_REJECT_RAM   = 95.0
-
-
-# ── main class ────────────────────────────────────────────────────────────────
 
 class ResourceMonitor:
-    """Monitors CPU, RAM, disk, and active agent/skill counts.
-
-    Falls back to zero-values if psutil is unavailable so JARVIS can
-    still start in minimal environments.
-    """
+    """Backward-compatible monitor. Delegates to monitors.resource.ResourceMonitor."""
 
     def __init__(self):
-        self._active_agents: set[str]  = set()
-        self._active_skills: list[str] = []
-        self._psutil_available = False
-        try:
-            import psutil  # noqa: F401
-            self._psutil_available = True
-        except ImportError:
-            logger.warning(
-                "[ResourceMonitor] psutil not installed — resource readings will be 0. "
-                "Run: pip install psutil"
-            )
-
-    # ── public API ────────────────────────────────────────────────────────────
+        self._mon = _ResourceMonitor()
+        _warn()
 
     def get_snapshot(self) -> ResourceSnapshot:
-        cpu_pct = disk_pct = ram_pct = 0.0
-
-        if self._psutil_available:
-            try:
-                import psutil
-                cpu_pct  = psutil.cpu_percent(interval=0.1)
-                ram      = psutil.virtual_memory()
-                ram_pct  = ram.percent
-                disk     = psutil.disk_usage("/")
-                disk_pct = disk.percent
-            except Exception as exc:
-                logger.debug("[ResourceMonitor] psutil error: %s", exc)
-
+        snap = self._mon.snapshot()
         return ResourceSnapshot(
-            cpu_pct       = cpu_pct,
-            ram_pct       = ram_pct,
-            disk_pct      = disk_pct,
-            agent_count   = len(self._active_agents),
-            active_skills = list(self._active_skills),
+            cpu_pct=snap.cpu_percent, ram_pct=snap.ram_percent,
+            disk_pct=snap.disk_percent, agent_count=snap.active_agents,
+            active_skills=snap.active_skills, timestamp=snap.timestamp,
         )
 
     def should_throttle(self) -> bool:
-        """Pause queue ingestion when system is under moderate load."""
-        snap = self.get_snapshot()
-        throttle = snap.cpu_pct > _THROTTLE_CPU or snap.ram_pct > _THROTTLE_RAM
-        if throttle:
-            logger.warning(
-                "[ResourceMonitor] Throttle triggered — CPU=%.1f%% RAM=%.1f%%",
-                snap.cpu_pct, snap.ram_pct,
-            )
-        return throttle
+        return self._mon.should_throttle()
 
     def should_reject(self) -> bool:
-        """Reject new tasks when system is critically overloaded."""
-        snap = self.get_snapshot()
-        reject = snap.cpu_pct > _REJECT_CPU or snap.ram_pct > _REJECT_RAM
-        if reject:
-            logger.error(
-                "[ResourceMonitor] Reject triggered — CPU=%.1f%% RAM=%.1f%%",
-                snap.cpu_pct, snap.ram_pct,
-            )
-        return reject
+        return self._mon.should_reject()
 
     def recommend_concurrency(self) -> int:
-        """Return 1–8 based on available CPU/RAM headroom."""
-        if not self._psutil_available:
-            return 2  # safe default
-
-        snap = self.get_snapshot()
-        cpu_free = 100.0 - snap.cpu_pct
-        ram_free = 100.0 - snap.ram_pct
-        headroom = min(cpu_free, ram_free)
-
-        if headroom >= 80:
-            return 8
-        if headroom >= 60:
-            return 6
-        if headroom >= 40:
-            return 4
-        if headroom >= 20:
-            return 2
-        return 1
-
-    # ── agent / skill tracking ────────────────────────────────────────────────
+        return self._mon.snapshot().recommend_concurrency()
 
     def register_agent(self, agent_id: str) -> None:
-        self._active_agents.add(agent_id)
+        self._mon.register_agent(agent_id)
 
     def unregister_agent(self, agent_id: str) -> None:
-        self._active_agents.discard(agent_id)
+        self._mon.unregister_agent(agent_id)
 
     def start_skill(self, skill_id: str) -> None:
-        if skill_id not in self._active_skills:
-            self._active_skills.append(skill_id)
+        self._mon.start_skill(skill_id)
 
     def finish_skill(self, skill_id: str) -> None:
-        try:
-            self._active_skills.remove(skill_id)
-        except ValueError:
-            pass
+        self._mon.finish_skill(skill_id)
 
-
-# ── singleton ─────────────────────────────────────────────────────────────────
 
 resource_monitor = ResourceMonitor()

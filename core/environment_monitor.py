@@ -10,11 +10,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""core/environment_monitor.py
-Phase 5 (E1): Environment Monitor.
-Tracks API health, disk space, network connectivity, Ollama status.
-Provides real-time health data for proactive decisions.
+"""DEPRECATED — use `monitors` package instead.
+
+This module will be removed in a future release. The `monitors/resource.py`
+and `monitors/services.py` modules provide equivalent functionality.
 """
+import warnings
+warnings.warn(
+    "core.environment_monitor is deprecated. "
+    "Use 'from monitors.resource import ResourceMonitor' or "
+    "'from monitors.services import ServiceHealthChecker' instead.",
+    DeprecationWarning, stacklevel=2,
+)
 import json
 import logging
 import os

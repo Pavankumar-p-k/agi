@@ -57,15 +57,33 @@ class ResourceSnapshot:
     def should_reject(self) -> bool:
         return self.cpu_percent > 95 or self.ram_percent > 95
 
+    @property
+    def cpu_pct(self) -> float:
+        return self.cpu_percent
+
+    @property
+    def ram_pct(self) -> float:
+        return self.ram_percent
+
+    @property
+    def disk_pct(self) -> float:
+        return self.disk_percent
+
+    @property
+    def agent_count(self) -> int:
+        return self.active_agents
+
     def recommend_concurrency(self) -> int:
         cpu_headroom = max(0, 100 - self.cpu_percent)
         ram_headroom = max(0, 100 - self.ram_percent)
         headroom = min(cpu_headroom, ram_headroom)
-        if headroom >= 40:
+        if headroom >= 80:
             return 8
-        if headroom >= 25:
+        if headroom >= 60:
+            return 6
+        if headroom >= 40:
             return 4
-        if headroom >= 10:
+        if headroom >= 20:
             return 2
         return 1
 
@@ -111,6 +129,15 @@ class ResourceMonitor:
             self._active_skills.remove(skill_id)
         except ValueError:
             pass
+
+    def get_snapshot(self) -> ResourceSnapshot:
+        return self.snapshot()
+
+    def should_throttle(self) -> bool:
+        return self.snapshot().should_throttle
+
+    def should_reject(self) -> bool:
+        return self.snapshot().should_reject
 
     def snapshot(self) -> ResourceSnapshot:
         snap = ResourceSnapshot(timestamp=time.time())

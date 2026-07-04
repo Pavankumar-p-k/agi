@@ -68,9 +68,10 @@ class TestResourceMonitor:
 
     def test_recommend_concurrency(self):
         assert ResourceSnapshot(cpu_percent=10, ram_percent=10).recommend_concurrency() == 8
-        assert ResourceSnapshot(cpu_percent=40, ram_percent=30).recommend_concurrency() == 8
-        assert ResourceSnapshot(cpu_percent=70, ram_percent=50).recommend_concurrency() == 4
-        assert ResourceSnapshot(cpu_percent=85, ram_percent=50).recommend_concurrency() == 2
+        assert ResourceSnapshot(cpu_percent=30, ram_percent=20).recommend_concurrency() == 6
+        assert ResourceSnapshot(cpu_percent=40, ram_percent=30).recommend_concurrency() == 6
+        assert ResourceSnapshot(cpu_percent=70, ram_percent=50).recommend_concurrency() == 2
+        assert ResourceSnapshot(cpu_percent=85, ram_percent=50).recommend_concurrency() == 1
         assert ResourceSnapshot(cpu_percent=96, ram_percent=96).recommend_concurrency() == 1
 
     def test_to_dict(self):
