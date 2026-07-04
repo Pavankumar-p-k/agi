@@ -4,7 +4,7 @@ Preserves the WorkflowEvent pattern from core/workflow/events.py
 while adding agent-specific semantics.
 """
 
-from core.workflow.events import WorkflowEvent
+from core.event_bus import WorkflowEvent
 
 AGENT_STARTED = "agent_started"
 AGENT_COMPLETED = "agent_completed"
