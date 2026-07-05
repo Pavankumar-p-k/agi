@@ -10,9 +10,23 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Channel message processor.
+
+This module is being migrated to the canonical pipeline.  New requests are
+routed through ``core.pipeline.adapters.channel_adapter`` first.  If the
+pipeline is unavailable or returns an error, the legacy inline path is used
+as fallback.
+
+.. deprecated::
+   The legacy path (intent extraction + direct LLM calls) is retained for
+   backward compatibility during migration.  It will be removed once the
+   pipeline handles all channel message types (Phase 2D completion).
+"""
 from __future__ import annotations
 
 import logging
+
+from core.pipeline.adapters import channel_adapter
 
 logger = logging.getLogger(__name__)
 
@@ -24,9 +38,41 @@ async def process_message(
     user_id: str,
     user_name: str,
 ) -> str:
+    """Process a channel message.
+
+    **Migration path:** calls ``channel_adapter()`` (canonical pipeline)
+    first.  Falls back to the legacy inline path if the pipeline is not
+    available or returns an error.
+    """
+    # ── Canonical pipeline path (preferred) ──────────────────────────────
+    try:
+        response_text = await channel_adapter(text, source, channel_id, user_id, user_name)
+        if not response_text.startswith("Error:"):
+            _emit_hooks(text, source, channel_id, user_id, user_name, response_text)
+            return response_text
+        # Pipeline returned an error — fall through to legacy path
+        logger.info("Pipeline returned error, falling back to legacy path: %s", response_text)
+    except Exception as exc:
+        logger.warning("Pipeline unavailable, falling back to legacy path: %s", exc)
+
+    # ── Legacy inline path (backward compat — will be removed) ───────────
+    return await _legacy_process_message(text, source, channel_id, user_id, user_name)
+
+
+async def _legacy_process_message(
+    text: str,
+    source: str,
+    channel_id: str,
+    user_id: str,
+    user_name: str,
+) -> str:
+    """Original inline processing — intent extraction, LLM calls, fallback.
+
+    .. deprecated:: v3.2
+       Remove after the pipeline handles all channel message types.
+    """
     from brain.epistemic_tagger import epistemic_tagger
-    from core.llm_router import get_router
-    from core.llm_router import get_ollama_url, model_for_role, route_request
+    from core.llm_router import get_ollama_url, get_router, model_for_role, route_request
 
     try:
         model, tier, processed_query = route_request(text)
@@ -102,48 +148,57 @@ async def process_message(
                 logger.exception("[Channel] All LLM fallbacks failed: %s", e)
                 response_text = "I had a temporary issue processing that request."
 
-        logger.info("[Channel] %s|%s|%s -> %.80s", source, channel_id, user_name, response_text)
-
-        # Phase 3: Emit hook
-        try:
-            import asyncio
-
-            from brain.events import PluginEventBus
-            asyncio.create_task(PluginEventBus.instance().emit(
-                "on_channel_message",
-                text=text,
-                source=source,
-                channel_id=channel_id,
-                user_id=user_id,
-                user_name=user_name,
-                response=response_text
-            ))
-        except Exception as hook_exc:
-            logger.debug("on_channel_message hook failed: %s", hook_exc)
-
-        # Phase 6: MCP Bridge notification
-        try:
-            from mcp.server import mcp_server
-            if mcp_server.is_running:
-                mcp_server.enqueue_event("message", {
-                    "session_key": channel_id,
-                    "role": "user",
-                    "text": text,
-                    "source": source,
-                    "user_id": user_id,
-                    "user_name": user_name
-                })
-                mcp_server.enqueue_event("message", {
-                    "session_key": channel_id,
-                    "role": "assistant",
-                    "text": response_text,
-                    "source": "jarvis"
-                })
-        except Exception as bridge_exc:
-            logger.debug("MCP Server event enqueuing failed: %s", bridge_exc)
-
+        _emit_hooks(text, source, channel_id, user_id, user_name, response_text)
         return response_text
 
     except Exception as e:
         logger.exception("[Channel] process_message failed: %s", e)
         return "I encountered an error processing your message."
+
+
+def _emit_hooks(
+    text: str,
+    source: str,
+    channel_id: str,
+    user_id: str,
+    user_name: str,
+    response_text: str,
+) -> None:
+    """Emit plugin hooks and MCP bridge notifications."""
+    logger.info("[Channel] %s|%s|%s -> %.80s", source, channel_id, user_name, response_text)
+
+    try:
+        import asyncio
+
+        from brain.events import PluginEventBus
+        asyncio.create_task(PluginEventBus.instance().emit(
+            "on_channel_message",
+            text=text,
+            source=source,
+            channel_id=channel_id,
+            user_id=user_id,
+            user_name=user_name,
+            response=response_text,
+        ))
+    except Exception as hook_exc:
+        logger.debug("on_channel_message hook failed: %s", hook_exc)
+
+    try:
+        from mcp.server import mcp_server
+        if mcp_server.is_running:
+            mcp_server.enqueue_event("message", {
+                "session_key": channel_id,
+                "role": "user",
+                "text": text,
+                "source": source,
+                "user_id": user_id,
+                "user_name": user_name,
+            })
+            mcp_server.enqueue_event("message", {
+                "session_key": channel_id,
+                "role": "assistant",
+                "text": response_text,
+                "source": "jarvis",
+            })
+    except Exception as bridge_exc:
+        logger.debug("MCP Server event enqueuing failed: %s", bridge_exc)

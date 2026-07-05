@@ -50,11 +50,58 @@ async def chat_route(
     user: User = Depends(verify_token)
 ):
     user_id = req.session_id or "default_user"
+
+    # ── Canonical pipeline path (preferred) ──────────────────────────────
+    try:
+        from core.pipeline.adapters import rest_adapter
+        result = await rest_adapter(
+            message=req.message,
+            user_id=user_id,
+            session_id=req.session_id,
+            context=req.context,
+        )
+        if not result.get("response", "").startswith("Error:"):
+            response_text = result.get("response", "")
+            _persist_chat(req, result, response_text, db, user, user_id)
+            return result
+        # Pipeline returned error — fall through
+    except Exception as exc:
+        logger.warning("Pipeline unavailable for REST, falling back: %s", exc)
+
+    # ── Legacy three-pass handler (backward compat) ──────────────────────
     handler = _get_three_pass_handler()
     if handler is None:
         return {"response": "Chat handler not available."}
     result = await handler(req)
     response_text = result.get("response", "")
+    _persist_chat(req, result, response_text, db, user, user_id)
+    # Legacy path needs explicit memory write (pipeline's MemoryStage
+    # handles this for the pipeline path).
+    try:
+        memory.store(
+            [{"role": "user", "content": req.message}, {"role": "assistant", "content": response_text}],
+            user_id=user_id,
+        )
+    except Exception:
+        logger.debug("memory.store (legacy) failed")
+    return result
+
+
+def _persist_chat(
+    req: ChatRequest,
+    result: dict,
+    response_text: str,
+    db: AsyncSession,
+    user: User,
+    user_id: str,
+) -> None:
+    """Persist conversation history to database.
+
+    SQLite persistence is a REST API concern (needed for ``/api/chat/history``).
+    Memory persistence is handled by the pipeline's MemoryStage when the
+    canonical pipeline processes the request, or by the legacy handler
+    inline.
+    """
 
     # Immediate persistence to SQLite
     from core.database import ChatHistory
@@ -73,12 +120,6 @@ async def chat_route(
         intent=result.get("intent", {}).get("intent", "chat")
     ))
     await db.commit()
-
-    memory.store(
-        [{"role": "user", "content": req.message}, {"role": "assistant", "content": response_text}],
-        user_id=user_id,
-    )
-    return result
 
 
 @router.post("/api/agent/stream")

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 import uuid
 from typing import Any
@@ -64,11 +65,17 @@ async def process_message(request: Request) -> Response:
     )
     ctx = await pipeline.execute(ctx)
 
+    response_metadata: dict[str, Any] = dict(ctx.metrics)
+    if ctx.epistemic_tags:
+        response_metadata["epistemic_tags"] = list(ctx.epistemic_tags)
+    if ctx.formatted_response and ctx.formatted_response.get("epistemic"):
+        response_metadata["epistemic"] = ctx.formatted_response["epistemic"]
+
     return Response(
         text=ctx.formatted_response.get("text", "") if ctx.formatted_response else "",
         error=ctx.error,
         data=ctx.formatted_response.get("data") if ctx.formatted_response else None,
-        metadata=dict(ctx.metrics),
+        metadata=response_metadata,
     )
 
 
@@ -143,85 +150,100 @@ class Pipeline:
             stage_name = stage.name
             context.span_stack.append(stage_name)
 
-            result = await stage.execute(context)
+            retry_count = 0
+            max_retries = getattr(stage, "max_retries", 3)
+            timeout = getattr(stage, "timeout", None)
 
-            # Merge any metrics the stage emitted
-            if result.metrics:
-                context.metrics[stage_name] = result.metrics
-
-            outcome = result.outcome
-
-            if outcome == StageOutcome.CONTINUE:
-                context = result.context
-                context.span_stack.pop()
-                continue
-
-            if outcome == StageOutcome.SHORT_CIRCUIT:
-                logger.info(
-                    "Pipeline short-circuited at stage '%s' — reason: %s",
-                    stage_name, result.error,
-                )
-                context = result.context
-                context.execution_state = "short_circuited"
-                context.error = result.error
-                context.span_stack.pop()
-                break
-
-            if outcome == StageOutcome.RETRY:
-                max_retries = 3
-                if result.retry_count < max_retries:
-                    logger.warning(
-                        "Stage '%s' requested retry (%d/%d)",
-                        stage_name, result.retry_count + 1, max_retries,
-                    )
-                    # Re-run the stage with incremented retry count
-                    result = await stage.execute(context)
-                    # Re-evaluate outcome after retry
-                    outcome = result.outcome
-                    if result.metrics:
-                        context.metrics[stage_name] = result.metrics
-                    if outcome in (StageOutcome.CONTINUE,):
-                        context.span_stack.pop()
+            while True:
+                try:
+                    coro = stage.execute(context)
+                    if timeout is not None:
+                        coro = asyncio.wait_for(coro, timeout=timeout)
+                    result = await coro
+                except asyncio.TimeoutError:
+                    logger.error("Stage '%s' timed out after %ss", stage_name, timeout)
+                    if retry_count < max_retries:
+                        retry_count += 1
+                        logger.warning(
+                            "Retrying stage '%s' after timeout (%d/%d)",
+                            stage_name, retry_count, max_retries,
+                        )
                         continue
-                    if outcome == StageOutcome.FAIL:
-                        context.execution_state = "failed"
-                        context.error = result.error
-                        context.span_stack.pop()
-                        break
+                    context.execution_state = "failed"
+                    context.error = f"stage '{stage_name}' timed out after {retry_count + 1} attempts"
                     context.span_stack.pop()
                     break
-                else:
+                except Exception as exc:
+                    logger.exception("Stage '%s' raised unexpected exception", stage_name)
+                    if retry_count < max_retries:
+                        retry_count += 1
+                        logger.warning(
+                            "Retrying stage '%s' after exception (%d/%d)",
+                            stage_name, retry_count, max_retries,
+                        )
+                        continue
+                    context.execution_state = "failed"
+                    context.error = f"stage '{stage_name}' raised: {exc}"
+                    context.span_stack.pop()
+                    break
+
+                # Merge any metrics the stage emitted
+                if result.metrics:
+                    context.metrics[stage_name] = result.metrics
+
+                outcome = result.outcome
+                context = result.context
+
+                if outcome == StageOutcome.CONTINUE:
+                    context.span_stack.pop()
+                    break
+
+                if outcome == StageOutcome.SHORT_CIRCUIT:
+                    logger.info(
+                        "Pipeline short-circuited at stage '%s' — reason: %s",
+                        stage_name, result.error,
+                    )
+                    context.execution_state = "short_circuited"
+                    context.error = result.error
+                    context.span_stack.pop()
+                    break
+
+                if outcome == StageOutcome.RETRY:
+                    if retry_count < max_retries:
+                        retry_count += 1
+                        logger.warning(
+                            "Stage '%s' requested retry (%d/%d)",
+                            stage_name, retry_count, max_retries,
+                        )
+                        continue
                     logger.error(
                         "Stage '%s' exhausted retries (%d) — failing",
                         stage_name, max_retries,
                     )
-                    context = result.context
                     context.execution_state = "failed"
-                    context.error = result.error or f"stage '{stage_name}' exhausted retries"
+                    context.error = f"stage '{stage_name}' exhausted retries: {result.error}" if result.error else f"stage '{stage_name}' exhausted retries"
                     context.span_stack.pop()
                     break
 
-            if outcome == StageOutcome.FAIL:
-                logger.error(
-                    "Pipeline failed at stage '%s' — %s",
-                    stage_name, result.error,
-                )
-                context = result.context
-                context.execution_state = "failed"
-                context.error = result.error
-                context.span_stack.pop()
-                break
+                if outcome == StageOutcome.FAIL:
+                    logger.error(
+                        "Pipeline failed at stage '%s' — %s",
+                        stage_name, result.error,
+                    )
+                    context.execution_state = "failed"
+                    context.error = result.error
+                    context.span_stack.pop()
+                    break
 
-            if outcome == StageOutcome.DEFER:
-                logger.info(
-                    "Pipeline deferred at stage '%s' — %s",
-                    stage_name, result.error,
-                )
-                context = result.context
-                context.execution_state = "deferred"
-                context.error = result.error
-                context.span_stack.pop()
-                break
+                if outcome == StageOutcome.DEFER:
+                    logger.info(
+                        "Pipeline deferred at stage '%s' — %s",
+                        stage_name, result.error,
+                    )
+                    context.execution_state = "deferred"
+                    context.error = result.error
+                    context.span_stack.pop()
+                    break
 
         return context
 

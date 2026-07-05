@@ -402,6 +402,20 @@ class VoiceEngine:
     # ── Think ─────────────────────────────────────────────────────────────
 
     async def think(self, text: str, emotion_context: dict | None = None) -> str:
+        # ── Canonical pipeline path (preferred) ──────────────────────────
+        try:
+            from core.pipeline.adapters.voice_adapter import voice_adapter
+            reply = await voice_adapter(
+                text=text,
+                user_id=self._settings.get("user_id", "voice_user"),
+                metadata={"emotion_context": emotion_context or {}},
+            )
+            if reply is not None:
+                return reply
+        except Exception as exc:
+            logger.warning("[VoiceEngine] Pipeline unavailable, falling back: %s", exc)
+
+        # ── Legacy LLM path (backward compat) ────────────────────────────
         system = SYSTEM_PROMPT
         if emotion_context and emotion_context.get("emotion_guidance"):
             system = f"{system}\n\n{emotion_context['emotion_guidance']}"

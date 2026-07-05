@@ -63,6 +63,25 @@ async def chat_stream_websocket(ws: WebSocket):
                 session_id = msg.get('session_id') or str(id(ws))
                 user_id = session_id
 
+                # ── Canonical pipeline path (preferred) ──────────────────
+                try:
+                    from core.pipeline.adapters import ws_adapter
+                    pipeline_handled = await ws_adapter.stream_via_pipeline(
+                        ws=ws,
+                        text=text,
+                        user_id=user_id,
+                        session_id=session_id,
+                        metadata={"channel": "websocket"},
+                    )
+                    if pipeline_handled:
+                        logger.info("WS_STAGE_PIPELINE_DONE")
+                        if plugin_registry:
+                            await plugin_registry.run_hook("message_sent", message={"id": session_id, "text": text, "type": "response"})
+                        continue
+                except Exception as exc:
+                    logger.warning("Pipeline unavailable for WS chat_stream, falling back: %s", exc)
+
+                # ── Legacy path (backward compat) ────────────────────────
                 from ..context_builder import build_unified_context
                 logger.info("WS_STAGE_2_CONTEXT_START")
                 print("[WS] build_unified_context...", flush=True)
@@ -384,7 +403,22 @@ async def agent_stream_websocket(ws: WebSocket):
                 _p_mem = time.perf_counter()
                 logger.info("[PROFILE] conv_load %.3fs", _p_mem - _p0)
 
-                # Classify request
+                # ── Try canonical pipeline first ───────────────────────
+                try:
+                    from core.pipeline.adapters import ws_adapter
+                    result = await ws_adapter(text=text, user_id=session_id, session_id=session_id)
+                    if result is not None and result.get("error") is None:
+                        response_text = result.get("response", "")
+                        conv.add_message("user", text)
+                        conv.add_message("assistant", response_text)
+                        conv.save()
+                        await ws.send_json({"type": "stream_token", "token": response_text, "complete": True})
+                        await ws.send_json({"type": "stream_end"})
+                        continue
+                except Exception as exc:
+                    logger.warning("Pipeline unavailable for WS agent_stream, falling back: %s", exc)
+
+                # ── Legacy classification path ─────────────────────────
                 classification = classify_request(text)
                 _p_cls = time.perf_counter()
                 logger.info("[PROFILE] classify %.3fs", _p_cls - _p_mem)

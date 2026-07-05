@@ -55,6 +55,9 @@ class PipelineStage(ABC):
     Every stage receives the full ``PipelineContext``, reads what it needs,
     writes what it produces, and returns a ``StageResult`` indicating whether
     the pipeline should continue, short-circuit, retry, or fail.
+
+    Subclasses may override ``max_retries`` and ``timeout`` to tune
+    resilience for their specific behaviour.
     """
 
     @property
@@ -62,6 +65,12 @@ class PipelineStage(ABC):
     def name(self) -> str:
         """Unique identifier for this stage (e.g. ``"intent"``, ``"execution"``)."""
         ...
+
+    max_retries: int = 3
+    """Maximum number of automatic retries when the stage returns RETRY."""
+
+    timeout: float | None = None
+    """Optional timeout in seconds for this stage's ``execute()`` call."""
 
     @abstractmethod
     async def execute(self, context: PipelineContext) -> StageResult:

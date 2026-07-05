@@ -5,6 +5,8 @@ interfaces, context, and runner exist and behave as specified by ADR-006.
 """
 from __future__ import annotations
 
+import asyncio
+
 import pytest
 
 from core.pipeline import (
@@ -611,7 +613,7 @@ async def test_pipeline_retries_on_retry_outcome():
             nonlocal call_count
             call_count += 1
             if call_count < 2:
-                return StageResult(outcome=StageOutcome.RETRY, context=context, retry_count=call_count - 1)
+                return StageResult(outcome=StageOutcome.RETRY, context=context)
             return StageResult(outcome=StageOutcome.CONTINUE, context=context)
 
     p = Pipeline()
@@ -620,4 +622,107 @@ async def test_pipeline_retries_on_retry_outcome():
     result = await p.execute(ctx)
     assert call_count == 2
     assert result.execution_state == "pending"  # CONTINUE keeps state
+
+
+@pytest.mark.asyncio
+async def test_pipeline_exhausts_retries():
+    """Stage that keeps returning RETRY eventually fails."""
+
+    class _AlwaysRetryStage(PipelineStage):
+        max_retries = 2
+
+        @property
+        def name(self) -> str:
+            return "always_retry"
+
+        async def execute(self, context: PipelineContext) -> StageResult:
+            return StageResult(
+                outcome=StageOutcome.RETRY,
+                context=context,
+                error="transient error",
+            )
+
+    p = Pipeline()
+    p.add_stage(_AlwaysRetryStage())
+    ctx = PipelineContext(request_id="r1", transport="test")
+    result = await p.execute(ctx)
+    assert result.execution_state == "failed"
+    assert result.error == "stage 'always_retry' exhausted retries: transient error"
+
+
+@pytest.mark.asyncio
+async def test_pipeline_retries_on_timeout():
+    """Stage that times out gets retried, then fails."""
+
+    call_count = 0
+
+    class _TimeoutStage(PipelineStage):
+        timeout = 0.01
+        max_retries = 1
+
+        @property
+        def name(self) -> str:
+            return "timeout_stage"
+
+        async def execute(self, context: PipelineContext) -> StageResult:
+            nonlocal call_count
+            call_count += 1
+            await asyncio.sleep(1)  # much longer than timeout
+            return StageResult(outcome=StageOutcome.CONTINUE, context=context)
+
+    p = Pipeline()
+    p.add_stage(_TimeoutStage())
+    ctx = PipelineContext(request_id="r1", transport="test")
+    result = await p.execute(ctx)
+    assert call_count == 2  # initial + 1 retry
+    assert result.execution_state == "failed"
+    assert "timed out" in (result.error or "")
+
+
+@pytest.mark.asyncio
+async def test_pipeline_retries_on_exception():
+    """Stage that raises an exception gets retried, then succeeds."""
+
+    call_count = 0
+
+    class _FickleStage(PipelineStage):
+        @property
+        def name(self) -> str:
+            return "fickle_stage"
+
+        async def execute(self, context: PipelineContext) -> StageResult:
+            nonlocal call_count
+            call_count += 1
+            if call_count < 2:
+                raise RuntimeError("transient boom")
+            return StageResult(outcome=StageOutcome.CONTINUE, context=context)
+
+    p = Pipeline()
+    p.add_stage(_FickleStage())
+    ctx = PipelineContext(request_id="r1", transport="test")
+    result = await p.execute(ctx)
+    assert call_count == 2
+    assert result.execution_state == "pending"
+
+
+@pytest.mark.asyncio
+async def test_pipeline_exception_exhausts_retries():
+    """Stage that always raises eventually fails."""
+
+    class _AlwaysCrashStage(PipelineStage):
+        max_retries = 1
+
+        @property
+        def name(self) -> str:
+            return "crash_stage"
+
+        async def execute(self, context: PipelineContext) -> StageResult:
+            raise RuntimeError("boom")
+
+    p = Pipeline()
+    p.add_stage(_AlwaysCrashStage())
+    ctx = PipelineContext(request_id="r1", transport="test")
+    result = await p.execute(ctx)
+    assert result.execution_state == "failed"
+    assert "boom" in (result.error or "")
 
