@@ -7,6 +7,7 @@ from typing import Any
 from core.pipeline.base import PipelineStage, StageOutcome
 from core.pipeline.context import PipelineContext
 from core.pipeline.messages import Request, Response
+from core.pipeline.stages import DEFAULT_STAGES
 
 logger = logging.getLogger(__name__)
 
@@ -18,12 +19,15 @@ _default_pipeline: Pipeline | None = None
 def get_pipeline() -> Pipeline:
     """Return the application-wide default pipeline instance.
 
-    The instance is created lazily on first call.  Bootstrap code should
-    register stages on this instance during server startup.
+    The instance is created lazily on first call with the default stages
+    (ADR-006 order).  Bootstrap code may call ``add_stage`` / ``remove_stage``
+    to customise for the deployment.
     """
     global _default_pipeline
     if _default_pipeline is None:
         _default_pipeline = Pipeline()
+        for _name, stage_factory in DEFAULT_STAGES:
+            _default_pipeline.add_stage(stage_factory())
     return _default_pipeline
 
 
@@ -164,10 +168,38 @@ class Pipeline:
                 break
 
             if outcome == StageOutcome.RETRY:
-                logger.warning(
-                    "Stage '%s' requested retry (%d/%d)",
-                    stage_name, result.retry_count, 3,
-                )
+                max_retries = 3
+                if result.retry_count < max_retries:
+                    logger.warning(
+                        "Stage '%s' requested retry (%d/%d)",
+                        stage_name, result.retry_count + 1, max_retries,
+                    )
+                    # Re-run the stage with incremented retry count
+                    result = await stage.execute(context)
+                    # Re-evaluate outcome after retry
+                    outcome = result.outcome
+                    if result.metrics:
+                        context.metrics[stage_name] = result.metrics
+                    if outcome in (StageOutcome.CONTINUE,):
+                        context.span_stack.pop()
+                        continue
+                    if outcome == StageOutcome.FAIL:
+                        context.execution_state = "failed"
+                        context.error = result.error
+                        context.span_stack.pop()
+                        break
+                    context.span_stack.pop()
+                    break
+                else:
+                    logger.error(
+                        "Stage '%s' exhausted retries (%d) — failing",
+                        stage_name, max_retries,
+                    )
+                    context = result.context
+                    context.execution_state = "failed"
+                    context.error = result.error or f"stage '{stage_name}' exhausted retries"
+                    context.span_stack.pop()
+                    break
 
             if outcome == StageOutcome.FAIL:
                 logger.error(

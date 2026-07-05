@@ -8,6 +8,7 @@ from __future__ import annotations
 import pytest
 
 from core.pipeline import (
+    DEFAULT_STAGES,
     Pipeline,
     PipelineContext,
     PipelineStage,
@@ -19,6 +20,18 @@ from core.pipeline import (
     set_pipeline,
 )
 from core.pipeline.base import StageOutcome  # noqa: I001 — ruff doesn't merge this
+from core.pipeline.stages import (
+    AuthenticationStage,
+    CapabilitySelectionStage,
+    EpistemicTaggingStage,
+    FormatterStage,
+    IntentStage,
+    LoadContextStage,
+    MetricsStage,
+    PlannerStage,
+    ReceiveStage,
+    VerificationStage,
+)
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # 1.  Interfaces exist
@@ -402,3 +415,209 @@ async def test_span_stack_tracking(ctx):
     pipeline.add_stage(_PassStage()).add_stage(_PassStage())
     result = await pipeline.execute(ctx)
     assert result.span_stack == []
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 5.  Stage extraction — default stages exist
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+def test_default_stages_have_correct_order():
+    from core.pipeline import DEFAULT_STAGES
+
+    names = [n for n, _ in DEFAULT_STAGES]
+    assert names == [
+        "receive",
+        "load_context",
+        "authentication",
+        "rate_limit",
+        "intent",
+        "capability_selection",
+        "planner",
+        "execution",
+        "verification",
+        "epistemic",
+        "memory",
+        "metrics",
+        "formatter",
+    ]
+
+
+def test_all_stage_classes_importable():
+    from core.pipeline.stages import (
+        AuthenticationStage,
+        CapabilitySelectionStage,
+        EpistemicTaggingStage,
+        ExecutionStage,
+        FormatterStage,
+        IntentStage,
+        LoadContextStage,
+        MemoryStage,
+        MetricsStage,
+        PlannerStage,
+        RateLimitStage,
+        ReceiveStage,
+        VerificationStage,
+    )
+    for cls in (
+        AuthenticationStage,
+        CapabilitySelectionStage,
+        EpistemicTaggingStage,
+        ExecutionStage,
+        FormatterStage,
+        IntentStage,
+        LoadContextStage,
+        MemoryStage,
+        MetricsStage,
+        PlannerStage,
+        RateLimitStage,
+        ReceiveStage,
+        VerificationStage,
+    ):
+        obj = cls()
+        assert obj.name
+
+
+def test_default_stage_count():
+    """DEFAULT_STAGES has the expected count."""
+    assert len(DEFAULT_STAGES) == 13
+
+
+@pytest.mark.asyncio
+async def test_classify_to_formatter_pipeline():
+    """Run from receive through intent to formatter (no Execution)."""
+    p = Pipeline()
+    for name, cls in (
+        ("receive", ReceiveStage),
+        ("intent", IntentStage),
+        ("capability_selection", CapabilitySelectionStage),
+        ("planner", PlannerStage),
+        ("verification", VerificationStage),
+        ("epistemic", EpistemicTaggingStage),
+        ("metrics", MetricsStage),
+        ("formatter", FormatterStage),
+    ):
+        p.add_stage(cls())
+
+    ctx = PipelineContext(request_id="test-1", transport="pytest", raw_input="hello world")
+    result = await p.execute(ctx)
+    assert result.classification is not None
+    assert result.classification["mode"] in ("chat", "action", "direct", "codebase", "agent")
+    assert result.formatted_response is not None
+    assert "text" in result.formatted_response
+
+
+@pytest.mark.asyncio
+async def test_receive_stage_parses_input():
+    stage = ReceiveStage()
+    ctx = PipelineContext(request_id="r1", transport="test", raw_input="hello")
+    result = await stage.execute(ctx)
+    assert result.outcome == StageOutcome.CONTINUE
+    assert result.context.parsed_request == {"text": "hello"}
+    assert result.context.parsed_request.get("attachment_count") is None
+
+
+@pytest.mark.asyncio
+async def test_receive_stage_with_attachments():
+    stage = ReceiveStage()
+    ctx = PipelineContext(
+        request_id="r1", transport="test",
+        raw_input="hello", attachments=[{"name": "photo.jpg"}],
+    )
+    result = await stage.execute(ctx)
+    assert result.context.parsed_request["attachment_count"] == 1
+
+
+@pytest.mark.asyncio
+async def test_intent_stage_classifies():
+    stage = IntentStage()
+    ctx = PipelineContext(request_id="r1", transport="test", raw_input="what is the weather")
+    result = await stage.execute(ctx)
+    assert result.context.classification is not None
+    assert "mode" in result.context.classification
+
+
+@pytest.mark.asyncio
+async def test_intent_stage_empty_input():
+    stage = IntentStage()
+    ctx = PipelineContext(request_id="r1", transport="test", raw_input="")
+    result = await stage.execute(ctx)
+    assert result.outcome == StageOutcome.CONTINUE
+
+
+@pytest.mark.asyncio
+async def test_formatter_stage_builds_response():
+    stage = FormatterStage()
+    ctx = PipelineContext(
+        request_id="r1", transport="test",
+        execution_result={"text": "hello world", "provider": "test", "tokens": 10},
+        epistemic_tags={"confidence": 1.0},
+        metrics={"tokens": 10},
+    )
+    result = await stage.execute(ctx)
+    assert result.outcome == StageOutcome.CONTINUE
+    assert result.context.formatted_response is not None
+    assert result.context.formatted_response["text"] == "hello world"
+    assert "epistemic" in result.context.formatted_response
+
+
+@pytest.mark.asyncio
+async def test_formatter_stage_with_error():
+    stage = FormatterStage()
+    ctx = PipelineContext(
+        request_id="r1", transport="test",
+        error="something broke",
+    )
+    result = await stage.execute(ctx)
+    assert "Error: something broke" in result.context.formatted_response["text"]  # type: ignore[operator]
+
+
+@pytest.mark.asyncio
+async def test_load_context_stage_sets_transport(ctx):
+    stage = LoadContextStage()
+    result = await stage.execute(ctx)
+    assert result.context.metadata.get("transport") == "pytest"
+
+
+@pytest.mark.asyncio
+async def test_authentication_stage_pass_through(ctx):
+    stage = AuthenticationStage()
+    result = await stage.execute(ctx)
+    assert result.context.metadata.get("authenticated") is False
+
+
+@pytest.mark.asyncio
+async def test_metrics_stage_aggregates(ctx):
+    stage = MetricsStage()
+    ctx.classification = {"mode": "chat"}
+    ctx.execution_result = {"provider": "test", "tokens": 42}
+    result = await stage.execute(ctx)
+    assert result.context.metrics.get("intent") == "chat"
+    assert result.context.metrics.get("tokens") == 42
+
+
+@pytest.mark.asyncio
+async def test_pipeline_retries_on_retry_outcome():
+    """RETRY outcome causes the stage to be re-invoked."""
+
+    call_count = 0
+
+    class _RetryStage(PipelineStage):
+        @property
+        def name(self) -> str:
+            return "retry_stage"
+
+        async def execute(self, context: PipelineContext) -> StageResult:
+            nonlocal call_count
+            call_count += 1
+            if call_count < 2:
+                return StageResult(outcome=StageOutcome.RETRY, context=context, retry_count=call_count - 1)
+            return StageResult(outcome=StageOutcome.CONTINUE, context=context)
+
+    p = Pipeline()
+    p.add_stage(_RetryStage())
+    ctx = PipelineContext(request_id="r1", transport="test")
+    result = await p.execute(ctx)
+    assert call_count == 2
+    assert result.execution_state == "pending"  # CONTINUE keeps state
+
