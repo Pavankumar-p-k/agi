@@ -80,13 +80,22 @@ _CODEBASE_PATTERNS = [
         "show api routes", "show database", "find all ",
         "display project structure", "show project structure",
         "project structure", "repository structure",
+        "refactor ", "implement ", "unit test", "write tests",
+        "add feature", "fix bug", "code review",
     ]),
 ]
 
 _DIRECT_PATTERNS = [
     (RequestMode.DIRECT, 0.98, None, [
         "weather ", "what's the weather", "what is the weather",
-        "news ", "stock ", "stocks ", "time ",
+        "temperature", "forecast", "rain", "sunny", "humidity",
+        "news ", "headlines", "what's happening",
+        "stock ", "stocks ", "stock price", "share price",
+        "scores", "nba ", "game ",
+        "time ", "what time",
+        "remind me", "reminder",
+        "send an email", "send a message",
+        "search for ", "search ", "look up ",
     ]),
 ]
 
@@ -117,11 +126,26 @@ _ACTION_PATTERNS = [
     (RequestMode.ACTION, 0.90, "ACTION_BROWSER", [
         "search amazon", "search google", "open website",
         "browse to ",
+        "sign up", "register", "login", "log in",
+        "fill out form", "submit form", "checkout",
+        "add to cart",
     ]),
     # SYSTEM
     (RequestMode.ACTION, 0.90, "ACTION_SYSTEM", [
         "open chrome", "open browser", "launch ",
         "start ", "open folder", "open project",
+        "open notepad", "open calculator", "open vscode",
+        "open settings",
+        "open terminal", "open cmd", "open code", "open explorer",
+    ]),
+    (RequestMode.ACTION, 0.90, "ACTION_BROWSER", [
+        "open spotify", "open youtube", "open github",
+        "open gmail", "open google", "open facebook",
+        "open twitter", "open instagram", "open reddit",
+    ]),
+    # PLAY MEDIA
+    (RequestMode.ACTION, 0.90, "ACTION_BROWSER", [
+        "play ", "play music", "play video",
     ]),
     (RequestMode.ACTION, 0.90, "ACTION_SYSTEM", [
         "go to web folder", "go to project", "go to folder",
@@ -158,6 +182,25 @@ _ALL_PATTERNS = (
 )
 
 
+def _match_trigger(lowered: str, trigger: str) -> bool:
+    """Check if trigger appears as a word/phrase (word-boundary aware)."""
+    if lowered.startswith(trigger):
+        return True
+    idx = lowered.find(trigger, 1)
+    while idx != -1:
+        if lowered[idx - 1] in (" ", "\t", "-"):
+            return True
+        idx = lowered.find(trigger, idx + 1)
+    # If trigger ends with space, also match when word appears at end of string
+    if trigger.endswith(" ") and len(trigger) > 1:
+        word = trigger[:-1]
+        if lowered.endswith(word):
+            pre_idx = len(lowered) - len(word) - 1
+            if pre_idx < 0 or lowered[pre_idx] in (" ", "\t", "-"):
+                return True
+    return False
+
+
 def _keyword_classify(text: str) -> Classification | None:
     lowered = text.lower().strip()
 
@@ -170,7 +213,7 @@ def _keyword_classify(text: str) -> Classification | None:
     for group_name, patterns in _ALL_PATTERNS:
         for mode, conf, sub_type, triggers in patterns:
             for trigger in triggers:
-                if lowered.startswith(trigger) or trigger in lowered:
+                if _match_trigger(lowered, trigger):
                     if group_name == "action":
                         return Classification(mode=mode, confidence=conf, sub_type=sub_type)
                     return Classification(mode=mode, confidence=conf)
@@ -181,11 +224,11 @@ def _keyword_classify(text: str) -> Classification | None:
             rest = lowered[len(prefix):]
             for mode, conf, sub_type, triggers in _ACTION_PATTERNS:
                 for trigger in triggers:
-                    if rest.startswith(trigger) or trigger in rest:
+                    if _match_trigger(rest, trigger):
                         return Classification(mode=mode, confidence=conf - 0.10, sub_type=sub_type)
             for mode, conf, _, triggers in _CODEBASE_PATTERNS:
                 for trigger in triggers:
-                    if rest.startswith(trigger) or trigger in rest:
+                    if _match_trigger(rest, trigger):
                         return Classification(mode=mode, confidence=conf - 0.10)
 
     return None

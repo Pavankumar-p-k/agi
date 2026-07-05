@@ -88,5 +88,8 @@ archive/legacy_theater/
 # Generated reports
 reports/
 
+# Ephemeral runtime data
+memory.json
+
 # Docker
 .dockerignore
