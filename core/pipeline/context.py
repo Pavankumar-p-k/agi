@@ -25,7 +25,13 @@ class PipelineContext:
 
     # ── Raw / Parsed Request ────────────────────────────────────────────────
     raw_input: str = ""
-    """Original text or serialised payload from the transport."""
+    """Original text from the transport."""
+
+    attachments: list[dict[str, Any]] = field(default_factory=list)
+    """File attachments included with the request."""
+
+    messages: list[dict[str, Any]] = field(default_factory=list)
+    """Chat history (e.g. ``[{"role": "user", "content": …}]``)."""
 
     parsed_request: dict[str, Any] | None = None
     """Transport-agnostic structured representation of the request,
@@ -43,7 +49,11 @@ class PipelineContext:
 
     # ── Execution ───────────────────────────────────────────────────────────
     execution_state: str = "pending"
-    """One of ``"pending"``, ``"running"``, ``"completed"``, ``"failed"``."""
+    """One of ``"pending"``, ``"running"``, ``"completed"``, ``"failed"``,
+    ``"short_circuited"``, ``"deferred"``."""
+
+    error: str | None = None
+    """Error message if the pipeline failed or was short-circuited."""
 
     execution_result: Any = None
     """Raw output from the Execution stage (before verification / formatting)."""

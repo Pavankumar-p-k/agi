@@ -7,7 +7,17 @@ from __future__ import annotations
 
 import pytest
 
-from core.pipeline import Pipeline, PipelineContext, PipelineStage, StageResult
+from core.pipeline import (
+    Pipeline,
+    PipelineContext,
+    PipelineStage,
+    Request,
+    Response,
+    StageResult,
+    get_pipeline,
+    process_message,
+    set_pipeline,
+)
 from core.pipeline.base import StageOutcome  # noqa: I001 — ruff doesn't merge this
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -83,10 +93,116 @@ def test_pipeline_context_has_all_expected_fields():
     assert hasattr(ctx, "formatted_response")
     assert hasattr(ctx, "metrics")
     assert hasattr(ctx, "metadata")
+    assert hasattr(ctx, "attachments")
+    assert hasattr(ctx, "messages")
+    assert hasattr(ctx, "error")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# 2.  Pipeline runner
+# 2.  Request / Response types
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+def test_request_required_fields():
+    req = Request(text="hello", transport="rest")
+    assert req.text == "hello"
+    assert req.transport == "rest"
+    assert req.user_id is None
+    assert req.attachments == []
+    assert req.metadata == {}
+
+
+def test_request_with_optional_fields():
+    req = Request(
+        text="hello",
+        transport="telegram",
+        user_id="u1",
+        session_id="s1",
+        attachments=[{"name": "photo.jpg"}],
+        metadata={"chat_id": 42},
+    )
+    assert req.user_id == "u1"
+    assert req.metadata["chat_id"] == 42
+
+
+def test_response_required_fields():
+    resp = Response(text="hi there")
+    assert resp.text == "hi there"
+    assert resp.error is None
+    assert resp.data is None
+    assert resp.metadata == {}
+
+
+def test_response_with_error():
+    resp = Response(text="", error="something broke", metadata={"tokens": 10})
+    assert resp.error == "something broke"
+    assert resp.metadata["tokens"] == 10
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 3.  process_message()
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+@pytest.mark.asyncio
+async def test_process_message_function_exists():
+    """The module-level process_message() is callable and returns a Response."""
+    pipeline = Pipeline()
+    pipeline.add_stage(_PassStage())
+    set_pipeline(pipeline)
+
+    resp = await process_message(Request(text="hello", transport="pytest"))
+    assert isinstance(resp, Response)
+    assert resp.error is None
+
+
+@pytest.mark.asyncio
+async def test_process_message_with_formatter():
+    """A stage that sets formatted_response produces a Response with text."""
+    class _FormatterStage(PipelineStage):
+        @property
+        def name(self) -> str:
+            return "formatter"
+
+        async def execute(self, context: PipelineContext) -> StageResult:
+            context.formatted_response = {"text": "formatted: " + context.raw_input}
+            return StageResult(outcome=StageOutcome.CONTINUE, context=context)
+
+    pipeline = Pipeline()
+    pipeline.add_stage(_PassStage()).add_stage(_FormatterStage())
+    set_pipeline(pipeline)
+
+    resp = await process_message(Request(text="world", transport="pytest"))
+    assert resp.text == "formatted: world"
+
+
+@pytest.mark.asyncio
+async def test_process_message_with_error():
+    """A stage that fails produces a Response with error set."""
+    pipeline = Pipeline()
+    pipeline.add_stage(_FailStage())
+    set_pipeline(pipeline)
+
+    resp = await process_message(Request(text="hello", transport="pytest"))
+    assert resp.error == "intentional failure"
+
+
+@pytest.mark.asyncio
+async def test_get_pipeline_returns_singleton():
+    p1 = get_pipeline()
+    p2 = get_pipeline()
+    assert p1 is p2
+
+
+@pytest.mark.asyncio
+async def test_set_pipeline_overrides_default():
+    p = Pipeline()
+    set_pipeline(p)
+    assert get_pipeline() is p
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 4.  Pipeline runner
 # ═══════════════════════════════════════════════════════════════════════════════
 
 

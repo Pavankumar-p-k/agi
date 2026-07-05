@@ -2,11 +2,70 @@ from __future__ import annotations
 
 import logging
 import uuid
+from typing import Any
 
 from core.pipeline.base import PipelineStage, StageOutcome
 from core.pipeline.context import PipelineContext
+from core.pipeline.messages import Request, Response
 
 logger = logging.getLogger(__name__)
+
+# ── Default pipeline instance (populated by bootstrap code) ──────────────────
+
+_default_pipeline: Pipeline | None = None
+
+
+def get_pipeline() -> Pipeline:
+    """Return the application-wide default pipeline instance.
+
+    The instance is created lazily on first call.  Bootstrap code should
+    register stages on this instance during server startup.
+    """
+    global _default_pipeline
+    if _default_pipeline is None:
+        _default_pipeline = Pipeline()
+    return _default_pipeline
+
+
+def set_pipeline(pipeline: Pipeline) -> None:
+    """Override the default pipeline (used in tests)."""
+    global _default_pipeline
+    _default_pipeline = pipeline
+
+
+async def process_message(request: Request) -> Response:
+    """Canonical entry point for all request processing.
+
+    Every transport adapter calls this single function.  It:
+    1. Creates a ``PipelineContext`` from the given ``Request``
+    2. Runs the default pipeline
+    3. Extracts the result into a ``Response``
+
+    Args:
+        request: Transport-agnostic request.
+
+    Returns:
+        A ``Response`` containing the result text, optional structured data,
+        and metadata (token counts, duration, traces, …).
+    """
+    pipeline = get_pipeline()
+    ctx = PipelineContext(
+        request_id=uuid.uuid4().hex,
+        transport=request.transport,
+        user_id=request.user_id,
+        session_id=request.session_id,
+        raw_input=request.text,
+        attachments=request.attachments,
+        metadata=dict(request.metadata),
+    )
+    ctx = await pipeline.execute(ctx)
+
+    return Response(
+        text=ctx.formatted_response.get("text", "") if ctx.formatted_response else "",
+        error=ctx.error,
+        data=ctx.formatted_response.get("data") if ctx.formatted_response else None,
+        metadata=dict(ctx.metrics),
+    )
 
 
 class Pipeline:
@@ -100,6 +159,7 @@ class Pipeline:
                 )
                 context = result.context
                 context.execution_state = "short_circuited"
+                context.error = result.error
                 context.span_stack.pop()
                 break
 
@@ -116,6 +176,7 @@ class Pipeline:
                 )
                 context = result.context
                 context.execution_state = "failed"
+                context.error = result.error
                 context.span_stack.pop()
                 break
 
@@ -126,6 +187,7 @@ class Pipeline:
                 )
                 context = result.context
                 context.execution_state = "deferred"
+                context.error = result.error
                 context.span_stack.pop()
                 break
 
@@ -138,10 +200,13 @@ class Pipeline:
         *,
         user_id: str | None = None,
         session_id: str | None = None,
+        attachments: list[dict[str, Any]] | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> PipelineContext:
-        """Convenience wrapper: build a context and execute.
+        """Convenience wrapper: build a context and execute against *this* pipeline.
 
-        This is the signature that transport adapters call.
+        Prefer the module-level :func:`process_message` function for new code.
+        This method is kept for cases where a specific pipeline instance is needed.
         """
         context = PipelineContext(
             request_id=uuid.uuid4().hex,
@@ -149,5 +214,7 @@ class Pipeline:
             user_id=user_id,
             session_id=session_id,
             raw_input=raw_input,
+            attachments=attachments or [],
+            metadata=metadata or {},
         )
         return await self.execute(context)
