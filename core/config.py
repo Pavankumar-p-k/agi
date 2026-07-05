@@ -2,6 +2,9 @@
 
 This module is a backward-compatibility shim. Module-level constants are
 resolved from the canonical ConfigurationService on first access.
+
+Deprecated: v3.2
+Remove after: v4.0
 """
 from __future__ import annotations
 

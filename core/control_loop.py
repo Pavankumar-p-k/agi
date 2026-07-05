@@ -33,7 +33,7 @@ from core.conflict_resolver import lock_manager
 from core.failure_classifier import classify
 from core.goal_interpreter import interpret_goal
 from core.interrupt_override import interrupt_manager
-from core.memory_driven_decisions import memory_router
+from core.memory_driven_decisions import memory_router  # TODO (Phase 2): Migrate to memory.decision_memory
 from core.nondet_control import DecisionEntry, decision_logger
 from core.partial_success import PartialSuccessTracker
 from core.pattern_failure_memory import pattern_memory

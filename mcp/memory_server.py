@@ -15,7 +15,10 @@ import logging
 memory_server.py
 
 MCP server exposing memory management (list, add, edit, delete, search).
-Imports MemoryManager and MemoryVectorStore from the Odysseus codebase.
+Imports MemoryManager and MemoryVectorStore from legacy modules.
+
+TODO (Phase 2): Migrate to `memory.memory_facade` once it exposes CRUD API.
+Currently blocked: MemoryFacade lacks load()/save()/add_entry()/load_all().
 """
 
 import asyncio

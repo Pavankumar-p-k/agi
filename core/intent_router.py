@@ -3,6 +3,9 @@
 This module is a backward-compatibility shim. The `extract_intent()`
 function now delegates to the modern `classify_request()` with a mapping
 layer that preserves the legacy dict format.
+
+Deprecated: v3.2
+Remove after: v4.0
 """
 from __future__ import annotations
 

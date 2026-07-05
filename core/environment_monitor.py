@@ -14,6 +14,9 @@
 
 This module will be removed in a future release. The `monitors/resource.py`
 and `monitors/services.py` modules provide equivalent functionality.
+
+Deprecated: v3.2
+Remove after: v3.5 (targeted for early removal due to no shim wrapper)
 """
 import warnings
 warnings.warn(

@@ -1,6 +1,9 @@
 """core/plugins/manifest.py
 DEPRECATED — re-exports PluginManifest from base.py for backward compatibility.
 New code should import from core.plugins.base import PluginManifest.
+
+Deprecated: v3.2
+Remove after: v4.0
 """
 from __future__ import annotations
 

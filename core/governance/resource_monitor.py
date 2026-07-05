@@ -2,6 +2,9 @@
 
 This module is a backward-compatibility shim that re-exports
 from `monitors.resource` with the original governance API names.
+
+Deprecated: v3.2
+Remove after: v4.0
 """
 
 from __future__ import annotations

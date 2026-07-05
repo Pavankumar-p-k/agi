@@ -2,6 +2,9 @@
 
 This module is a backward-compatibility shim. All configuration reads are
 delegated to the canonical ConfigurationService at runtime.
+
+Deprecated: v3.2
+Remove after: v4.0
 """
 from __future__ import annotations
 

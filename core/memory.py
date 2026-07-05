@@ -11,6 +11,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+DEPRECATED — use `memory.memory_facade.MemoryFacade` instead.
+
+This module is a backward-compatibility shim. MemoryManager still works
+but new code MUST use the memory/ package API.
+
+Deprecated: v3.2
+Remove after: v4.0
+"""
 import json
 import logging
 import os

@@ -14,11 +14,12 @@ def _ensure_memory():
         return
     try:
         from core.constants import DATA_DIR as _data_dir
-        from core.memory import MemoryManager
+        # TODO (Phase 2): Migrate to memory.memory_facade once CRUD API is exposed
+        from core.memory import MemoryManager  # noqa: F811 — legacy shim
         mm = MemoryManager(_data_dir)
         MEMORY_MANAGER = mm
         try:
-            from core.memory_vector import MemoryVectorStore
+            from core.memory_vector import MemoryVectorStore  # noqa: F811 — legacy shim
             v = MemoryVectorStore(_data_dir)
             MEMORY_VECTOR = v if v.healthy else None
         except Exception:
