@@ -1,24 +1,33 @@
-# Copyright (c) 2024-2026 JARVIS Project
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+"""DEPRECATED — use `core.configuration.configuration` (ConfigurationService) instead.
+
+This module is a backward-compatibility shim. All configuration reads are
+delegated to the canonical ConfigurationService at runtime.
+"""
 from __future__ import annotations
 
 import json
 import logging
 import os
+import warnings
 from dataclasses import dataclass, field, fields
 from pathlib import Path
+from typing import Any
 
 logger = logging.getLogger(__name__)
+
+_warned = False
+
+
+def _warn() -> None:
+    global _warned
+    if not _warned:
+        warnings.warn(
+            "core.config_schema is deprecated. "
+            "Use 'from core.configuration import configuration' instead.",
+            DeprecationWarning, stacklevel=3,
+        )
+        _warned = True
+
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 DATA_DIR = BASE_DIR / "data"
@@ -88,7 +97,6 @@ class BuildSystemConfig:
     projects_dir: str = str(Path.home() / ".jarvis" / "projects")
     codex_cli_path: str = str(BASE_DIR / "tools" / "codex-cli")
 
-    # Subagent spawning limits
     max_spawn_depth: int = 5
     max_child_agents: int = 10
     orphan_grace_period_seconds: int = 300
@@ -230,164 +238,145 @@ class FailoverConfig:
     cooldown_backoff_base: int = 60
 
 
-_SUB_CONFIGS = {
-    "server": ServerConfig,
-    "db": DatabaseConfig,
-    "ollama": OllamaConfig,
-    "plugins": PluginConfig,
-    "hardware": HardwareConfig,
-    "build": BuildSystemConfig,
-    "llm": LLMConfig,
-    "search": SearchConfig,
-    "research": ResearchConfig,
-    "features": FeatureConfig,
-    "voice": VoiceConfig,
-    "sandbox": SandboxConfig,
-    "failover": FailoverConfig,
-    "browser": BrowserConfig,
+_SUB_CONFIG_NAMES: set[str] = {
+    "server", "db", "ollama", "plugins", "hardware", "build",
+    "llm", "search", "research", "features", "voice", "sandbox",
+    "failover", "browser",
+}
+
+_SUB_CONFIG_DEFAULTS: dict[str, dataclass] = {
+    "server": ServerConfig(),
+    "db": DatabaseConfig(),
+    "ollama": OllamaConfig(),
+    "plugins": PluginConfig(),
+    "hardware": HardwareConfig(),
+    "build": BuildSystemConfig(),
+    "llm": LLMConfig(),
+    "search": SearchConfig(),
+    "research": ResearchConfig(),
+    "features": FeatureConfig(),
+    "voice": VoiceConfig(),
+    "sandbox": SandboxConfig(),
+    "failover": FailoverConfig(),
+    "browser": BrowserConfig(),
 }
 
 
+class _ConfigFieldProxy:
+    """Proxies a single field read: tries ConfigurationService, falls back to default."""
 
-def _coerce_type(val, target_type):
-    if target_type is bool:
-        if isinstance(val, str):
-            return val.lower() in ("1", "true", "yes", "on")
-        return bool(val)
-    if val == "null":
-        return None
-    return val
+    def __init__(self, prefix: str, fallback: Any):
+        self._prefix = prefix
+        self._fallback = fallback
+
+    @property
+    def _proxy(self) -> _ConfigFieldProxy:
+        return self
+
+    def __getattr__(self, name: str) -> Any:
+        if name.startswith("_"):
+            raise AttributeError(name)
+        full_key = f"{self._prefix}.{name}"
+        try:
+            from core.configuration import configuration
+            val = configuration.get(full_key)
+            if val is not None:
+                return val
+        except Exception:
+            pass
+        if hasattr(self._fallback, name):
+            return getattr(self._fallback, name)
+        raise AttributeError(f"Config has no key: {full_key}")
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        if name.startswith("_"):
+            super().__setattr__(name, value)
+            return
+        full_key = f"{self._prefix}.{name}"
+        try:
+            from core.configuration import configuration
+            configuration.set(full_key, value)
+        except Exception:
+            pass
+
+    def __repr__(self) -> str:
+        return f"<ConfigProxy {self._prefix}>"
 
 
-def _dataclass_from_dict(cls, data: dict):
-    """Recursively build a dataclass from a dict, handling nested dataclasses."""
-    kw = {}
-    for f in fields(cls):
-        if f.name not in data:
-            continue
-        val = data[f.name]
-        ftype = f.type
-        if hasattr(ftype, "__origin__"):
-            origin = ftype.__origin__
-            if origin is list and hasattr(ftype.__args__[0], "__dataclass_fields__"):
-                kw[f.name] = [_dataclass_from_dict(ftype.__args__[0], item) for item in val]
-                continue
-            if origin is dict:
-                kw[f.name] = val
-                continue
-        if hasattr(ftype, "__dataclass_fields__"):
-            kw[f.name] = _dataclass_from_dict(ftype, val) if isinstance(val, dict) else val
-        else:
-            kw[f.name] = _coerce_type(val, ftype)
-    return cls(**kw)
+class _LegacyTopLevelAttrs:
+    """Provides backward-compat top-level attrs like claude_api_key, supabase_url."""
+
+    @staticmethod
+    def claude_api_key() -> str | None:
+        return os.getenv("CLAUDE_API_KEY") or os.getenv("JARVIS_CLAUDE_API_KEY")
+
+    @staticmethod
+    def openai_api_key() -> str | None:
+        return os.getenv("OPENAI_API_KEY") or os.getenv("JARVIS_OPENAI_API_KEY")
+
+    @staticmethod
+    def gemini_api_key() -> str | None:
+        return os.getenv("GEMINI_API_KEY") or os.getenv("JARVIS_GEMINI_API_KEY")
+
+    @staticmethod
+    def github_token() -> str | None:
+        return os.getenv("GITHUB_TOKEN") or os.getenv("JARVIS_GITHUB_TOKEN")
+
+    @staticmethod
+    def supabase_url() -> str | None:
+        return os.getenv("SUPABASE_URL")
+
+    @staticmethod
+    def supabase_service_key() -> str | None:
+        return os.getenv("SUPABASE_SERVICE_KEY")
 
 
-def _deep_merge(base: dict, update: dict):
-    for k, v in update.items():
-        if isinstance(v, dict) and k in base and isinstance(base[k], dict):
-            _deep_merge(base[k], v)
-        else:
-            base[k] = v
-
-
-def _map_flat_settings(sdata: dict) -> dict:
-    """Map flat settings.json keys to nested structure for backward compat."""
-    mapped: dict = {}
-    for key, val in sdata.items():
-        seg = key.split("_", 1)
-        if len(seg) == 2 and seg[0] in _SUB_CONFIGS:
-            mapped.setdefault(seg[0], {})[seg[1]] = val
-        else:
-            mapped[key] = val
-    return mapped
+_legacy_attrs = _LegacyTopLevelAttrs()
 
 
 class JarvisConfig:
-    """Unified configuration for JARVIS.
+    """DEPRECATED — backward-compat shim over ConfigurationService.
 
-    Loads from multiple sources with override priority:
-      1. config.yaml
-      2. data/settings.json  (deprecated, backward compat)
-      3. Environment variables (JARVIS_ prefix)
-      4. Programmatic overrides
+    Access is routed to ConfigurationService at runtime with dataclass
+    defaults as fallback. New code should use::
+
+        from core.configuration import configuration
+        configuration.get("server.host")
     """
 
-    def __init__(self, overrides: dict | None = None):
-        merged = self._load_all()
-        if overrides:
-            _deep_merge(merged, overrides)
-        for name, cls in _SUB_CONFIGS.items():
-            setattr(self, name, _dataclass_from_dict(cls, merged.get(name, {})))
+    def __init__(self, overrides: dict | None = None) -> None:
+        _warn()
 
-        # Top-level attributes for backward compat and easy access
-        self.claude_api_key = self.get_api_key("CLAUDE_API_KEY")
-        self.openai_api_key = self.get_api_key("OPENAI_API_KEY")
-        self.gemini_api_key = self.get_api_key("GEMINI_API_KEY")
-        self.github_token = self.get_api_key("GITHUB_TOKEN")
-        self.supabase_url = os.getenv("SUPABASE_URL")
-        self.supabase_service_key = os.getenv("SUPABASE_SERVICE_KEY")
+    def __getattr__(self, name: str) -> Any:
+        if name.startswith("_"):
+            raise AttributeError(name)
+        if name in _SUB_CONFIG_NAMES:
+            return _ConfigFieldProxy(name, _SUB_CONFIG_DEFAULTS[name])
+        api_key = getattr(_legacy_attrs, name, None)
+        if api_key is not None:
+            return api_key() if callable(api_key) else api_key
+        raise AttributeError(f"JarvisConfig has no attribute {name!r}")
 
-    def _load_all(self) -> dict:
-        merged: dict = {}
-
-        yaml_path = BASE_DIR / "config.yaml"
-        if yaml_path.exists():
-            try:
-                import yaml
-                with open(yaml_path) as f:
-                    ydata = yaml.safe_load(f)
-                    if ydata:
-                        _deep_merge(merged, ydata)
-            except Exception as _e1:
-                logger.debug("merge_yaml: yaml load failed: %s", _e1)
-
-        settings_path = DATA_DIR / "settings.json"
-        if settings_path.exists():
-            try:
-                with open(settings_path) as f:
-                    sdata = json.load(f)
-                    if sdata:
-                        _deep_merge(merged, _map_flat_settings(sdata))
-            except Exception as _e2:
-                logger.debug("merge_settings: json load failed: %s", _e2)
-
-        features_path = DATA_DIR / "features.json"
-        if features_path.exists():
-            try:
-                with open(features_path) as f:
-                    fdata = json.load(f)
-                    if fdata:
-                        _deep_merge(merged, {"features": fdata})
-            except Exception as _e3:
-                logger.debug("merge_features: json load failed: %s", _e3)
-
-        for key, val in os.environ.items():
-            if key.startswith("JARVIS_"):
-                self._apply_env(merged, key.removeprefix("JARVIS_").lower(), val)
-
-        return merged
-
-    @staticmethod
-    def _apply_env(target: dict, key: str, val: str):
-        """Apply a JARVIS_* env var into the config dict handling nested keys."""
-        parts = key.split("__", 1)
-        if len(parts) == 2:
-            target.setdefault(parts[0], {})
-            if isinstance(target[parts[0]], dict):
-                target[parts[0]][parts[1]] = val
-            else:
-                target[parts[0]] = {parts[1]: val}
-        else:
-            target[parts[0]] = val
+    def __setattr__(self, name: str, value: Any) -> None:
+        if name.startswith("_"):
+            super().__setattr__(name, value)
+            return
+        full_key = name
+        try:
+            from core.configuration import configuration
+            configuration.set(full_key, value)
+        except Exception:
+            pass
 
     @classmethod
     def load(cls, overrides: dict | None = None) -> JarvisConfig:
+        _warn()
         return cls(overrides)
 
     def get_api_key(self, name: str) -> str | None:
         return os.getenv(name.upper()) or os.getenv(f"JARVIS_{name.upper()}")
 
 
-jarvis_config = JarvisConfig.load()
+jarvis_config = JarvisConfig()
 
 __all__ = ["jarvis_config", "JarvisConfig"]
