@@ -27,20 +27,6 @@ logger = logging.getLogger("jarvis")
 router = APIRouter(tags=["Chat"])
 
 from ..schemas import ChatRequest
-from memory.memory_facade import memory
-
-# Lazy getter for three_pass_handler (heavy ~2.5s import, deferred until first request)
-_three_pass_handler = None
-def _get_three_pass_handler():
-    global _three_pass_handler
-    if _three_pass_handler is None:
-        try:
-            from routers.chat import chat_handler as h
-            _three_pass_handler = h
-        except Exception as e:
-            logger.warning("[core.routes.chat] three-pass handler import failed: %s", e)
-            _three_pass_handler = False
-    return _three_pass_handler if _three_pass_handler is not False else None
 
 
 @router.post("/api/chat")
@@ -51,39 +37,15 @@ async def chat_route(
 ):
     user_id = req.session_id or "default_user"
 
-    # ── Canonical pipeline path (preferred) ──────────────────────────────
-    try:
-        from core.pipeline.adapters import rest_adapter
-        result = await rest_adapter(
-            message=req.message,
-            user_id=user_id,
-            session_id=req.session_id,
-            context=req.context,
-        )
-        if not result.get("response", "").startswith("Error:"):
-            response_text = result.get("response", "")
-            _persist_chat(req, result, response_text, db, user, user_id)
-            return result
-        # Pipeline returned error — fall through
-    except Exception as exc:
-        logger.warning("Pipeline unavailable for REST, falling back: %s", exc)
-
-    # ── Legacy three-pass handler (backward compat) ──────────────────────
-    handler = _get_three_pass_handler()
-    if handler is None:
-        return {"response": "Chat handler not available."}
-    result = await handler(req)
+    from core.pipeline.adapters import rest_adapter
+    result = await rest_adapter(
+        message=req.message,
+        user_id=user_id,
+        session_id=req.session_id,
+        context=req.context,
+    )
     response_text = result.get("response", "")
     _persist_chat(req, result, response_text, db, user, user_id)
-    # Legacy path needs explicit memory write (pipeline's MemoryStage
-    # handles this for the pipeline path).
-    try:
-        memory.store(
-            [{"role": "user", "content": req.message}, {"role": "assistant", "content": response_text}],
-            user_id=user_id,
-        )
-    except Exception:
-        logger.debug("memory.store (legacy) failed")
     return result
 
 
@@ -164,42 +126,34 @@ async def openai_compat(body: dict):
         raise HTTPException(400, "No messages provided")
 
     last_msg = messages[-1].get("content", "")
-    context = "\n".join([f"{m['role']}: {m['content']}" for m in messages[:-1]])
 
-    req = ChatRequest(message=last_msg, context=context)
+    from core.pipeline.adapters import rest_adapter
+    result = await rest_adapter(
+        message=last_msg,
+        user_id="default",
+        session_id=None,
+    )
+    content = result.get("response", "Error processing request.")
 
-    try:
-        handler = _get_three_pass_handler()
-        if handler:
-            result = await handler(req)
-            content = result.get("response", "")
-        else:
-            from core.llm_router import complete
-            res = await complete(last_msg, context=context)
-            content = res.unwrap_or("Error processing request.")
-
-        return {
-            "id": f"chatcmpl-{uuid.uuid4()}",
-            "object": "chat.completion",
-            "created": int(time.time()),
-            "model": body.get("model", "jarvis-reasoning"),
-            "choices": [{
-                "index": 0,
-                "message": {
-                    "role": "assistant",
-                    "content": content,
-                },
-                "finish_reason": "stop"
-            }],
-            "usage": {
-                "prompt_tokens": len(last_msg) // 4,
-                "completion_tokens": len(content) // 4,
-                "total_tokens": (len(last_msg) + len(content)) // 4
-            }
+    return {
+        "id": f"chatcmpl-{uuid.uuid4()}",
+        "object": "chat.completion",
+        "created": int(time.time()),
+        "model": body.get("model", "jarvis-reasoning"),
+        "choices": [{
+            "index": 0,
+            "message": {
+                "role": "assistant",
+                "content": content,
+            },
+            "finish_reason": "stop"
+        }],
+        "usage": {
+            "prompt_tokens": len(last_msg) // 4,
+            "completion_tokens": len(content) // 4,
+            "total_tokens": (len(last_msg) + len(content)) // 4
         }
-    except Exception as e:
-        logger.error(f"[OpenAI Compat] Error: {e}")
-        raise HTTPException(500, str(e))
+    }
 
 
 @router.get("/api/chat/history")

@@ -28,7 +28,6 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from assistant.stt import get_stt, init_stt_providers, stt_registry
 from assistant.tts import get_tts
 from core.config_registry import config as _jarvis_config, Config
-from core.llm_router import complete as llm_complete
 from core.settings.store import get_settings_store
 
 
@@ -402,49 +401,13 @@ class VoiceEngine:
     # ── Think ─────────────────────────────────────────────────────────────
 
     async def think(self, text: str, emotion_context: dict | None = None) -> str:
-        # ── Canonical pipeline path (preferred) ──────────────────────────
-        try:
-            from core.pipeline.adapters.voice_adapter import voice_adapter
-            reply = await voice_adapter(
-                text=text,
-                user_id=self._settings.get("user_id", "voice_user"),
-                metadata={"emotion_context": emotion_context or {}},
-            )
-            if reply is not None:
-                return reply
-        except Exception as exc:
-            logger.warning("[VoiceEngine] Pipeline unavailable, falling back: %s", exc)
-
-        # ── Legacy LLM path (backward compat) ────────────────────────────
-        system = SYSTEM_PROMPT
-        if emotion_context and emotion_context.get("emotion_guidance"):
-            system = f"{system}\n\n{emotion_context['emotion_guidance']}"
-        model = "cloud" if self._settings.get("groq_api_key") else "automation"
-        try:
-            reply = (await llm_complete(
-                model_group=model,
-                messages=[
-                    {"role": "system", "content": system},
-                    {"role": "user", "content": text},
-                ],
-                timeout=_jarvis_config.get("voice.think_timeout", 10),
-            )).unwrap_or("")
-            return reply
-        except Exception:
-            logger.warning("[VoiceEngine] Cloud LLM failed, falling back to local")
-        try:
-            reply = (await llm_complete(
-                model_group="automation",
-                messages=[
-                    {"role": "system", "content": system},
-                    {"role": "user", "content": text},
-                ],
-                timeout=_jarvis_config.get("voice.think_timeout_fallback", 15),
-            )).unwrap_or("")
-            return reply
-        except Exception as e:
-            logger.warning("[VoiceEngine] Local LLM also failed: %s", e)
-            return ""
+        from core.pipeline.adapters.voice_adapter import voice_adapter
+        reply = await voice_adapter(
+            text=text,
+            user_id=self._settings.get("user_id", "voice_user"),
+            metadata={"emotion_context": emotion_context or {}},
+        )
+        return reply or ""
 
     # ── Speak ─────────────────────────────────────────────────────────────
 

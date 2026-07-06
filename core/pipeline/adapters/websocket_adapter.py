@@ -1,24 +1,21 @@
 """WebSocket adapter — converts WebSocket chat messages to canonical
-``Request`` / ``Response`` and delegates to ``process_message()``.
+``Request`` / ``Response`` and delegates to the pipeline via
+:func:`stream_pipeline` for live stage lifecycle events.
 
 Both ``/ws/chat_stream`` and ``/ws/agent_stream`` call this adapter
 instead of duplicating intent classification, LLM calls, and provider
 fallback.
-
-**Streaming note:** The pipeline returns a complete ``Response``.  The
-adapter splits the response text into word tokens for the WS streaming
-protocol, preserving backward compatibility.
 """
 from __future__ import annotations
 
-import json
 import logging
 from typing import Any
 
 from fastapi import WebSocket
 
-from core.pipeline import process_message
+from core.pipeline import stream_pipeline
 from core.pipeline.messages import Request, Response
+from core.pipeline.stream import StreamEvent
 
 logger = logging.getLogger(__name__)
 
@@ -32,19 +29,10 @@ async def ws_adapter(
     attachments: list[dict] | None = None,
     metadata: dict[str, Any] | None = None,
 ) -> dict | None:
-    """Process a WebSocket chat message through the canonical pipeline.
+    """Process a WebSocket chat message through the pipeline (non-streaming).
 
-    Args:
-        text: The raw message text.
-        user_id: User identifier (usually the session_id).
-        session_id: Conversation session identifier.
-        context: Optional system context string.
-        attachments: Optional list of file/media attachments.
-        metadata: Optional extra metadata.
-
-    Returns:
-        A dict with at least ``"response"`` (the response text), or
-        ``None`` if the pipeline is unavailable.
+    Returns a dict with ``"response"`` (the response text), or ``None``
+    if the pipeline returned an error.
     """
     request = Request(
         text=text,
@@ -58,7 +46,7 @@ async def ws_adapter(
         },
     )
 
-    response: Response = await process_message(request)
+    response: Response = await _run_pipeline(request)
 
     if response.error:
         logger.warning("Pipeline returned error for WS request: %s", response.error)
@@ -85,26 +73,59 @@ async def stream_via_pipeline(
     tier_value: str = "local",
     model_name: str = "pipeline",
     intent: str = "chat",
-) -> bool:
-    """Process a WS message through the pipeline and stream the result.
+) -> None:
+    """Process a WS message through the pipeline and stream events live.
 
-    Returns ``True`` if the pipeline handled the request, ``False`` if
-    the caller should fall through to legacy handling.
-
-    The response text is split into word tokens and sent as a sequence
-    of ``stream_token`` messages matching the existing WS protocol.
+    Sends ``stage_start`` / ``stage_end`` events as the pipeline progresses,
+    then word-token ``stream_token`` messages from the final response.
     """
-    result = await ws_adapter(
+    request = Request(
         text=text,
+        transport="websocket",
         user_id=user_id,
         session_id=session_id,
-        context=context,
-        metadata=metadata,
+        metadata={
+            "context": context or "",
+            **(metadata or {}),
+        },
     )
-    if result is None or result.get("error"):
-        return False
 
-    response_text = result.get("response", "")
+    response_text = ""
+    async for event in stream_pipeline(request):
+        if event.event_type == "stage_start":
+            await ws.send_json({
+                "type": "stage_start",
+                "stage": event.stage,
+            })
+        elif event.event_type == "stage_end":
+            await ws.send_json({
+                "type": "stage_end",
+                "stage": event.stage,
+                "data": event.data,
+            })
+        elif event.event_type in ("stage_error", "pipeline_error"):
+            await ws.send_json({
+                "type": "stage_error",
+                "stage": event.stage if event.event_type == "stage_error" else "pipeline",
+                "error": event.error,
+            })
+        elif event.event_type == "pipeline_cancelled":
+            await ws.send_json({
+                "type": "pipeline_cancelled",
+                "error": event.error,
+            })
+            response_text = "Pipeline was cancelled."
+            break
+        elif event.event_type == "pipeline_end":
+            ctx = event.data["_context"] if event.data else None  # type: ignore[union-attr]
+            if ctx and ctx.formatted_response:
+                response_text = ctx.formatted_response.get("text", "")
+            elif event.data and "metadata" in event.data:
+                response_text = str(event.data["metadata"])  # fallback
+            break
+
+    if not response_text:
+        response_text = "I had an issue processing that request."
 
     words = response_text.split()
     for i, word in enumerate(words):
@@ -117,4 +138,27 @@ async def stream_via_pipeline(
             "intent": intent,
         })
 
-    return True
+
+async def _run_pipeline(request: Request) -> Response:
+    """Run the pipeline via streaming and collect the final Response."""
+    response_metadata: dict[str, Any] = {}
+    response_text = ""
+    response_error: str | None = None
+
+    async for event in stream_pipeline(request):
+        if event.event_type == "pipeline_end":
+            if event.data:
+                ctx = event.data.get("_context")
+                response_metadata = event.data.get("metadata", {})
+                if ctx and hasattr(ctx, "formatted_response") and ctx.formatted_response:
+                    response_text = ctx.formatted_response.get("text", "")
+        elif event.event_type in ("pipeline_error", "pipeline_cancelled"):
+            response_error = event.error
+            if event.data:
+                response_metadata = event.data.get("metadata", {})
+
+    return Response(
+        text=response_text,
+        error=response_error,
+        metadata=response_metadata,
+    )

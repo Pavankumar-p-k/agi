@@ -10,4 +10,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# Package init
+from memory.extraction import ExtractedFact, extract_facts, extract_facts_from_messages
+from memory.fact_store import FactStore, get_fact_store
+
+__all__ = [
+    "ExtractedFact",
+    "FactStore",
+    "extract_facts",
+    "extract_facts_from_messages",
+    "get_fact_store",
+]

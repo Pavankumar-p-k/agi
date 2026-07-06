@@ -4,6 +4,8 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any
 
+from core.pipeline.outcome import Outcome
+
 logger = logging.getLogger(__name__)
 
 
@@ -53,11 +55,26 @@ class PipelineContext:
     classification: dict[str, Any] | None = None
     """Output of Intent Classification — mode, confidence, sub_type, etc."""
 
-    selected_capabilities: list[str] = field(default_factory=list)
-    """Capabilities matched to the classified intent."""
+    retrieved_context: dict[str, Any] | None = None
+    """Context retrieved from memory by ContextRetrieval stage.
+    Contains ``memories`` (list of memory dicts) and optionally
+    ``formatted_context`` (LLM-readable string)."""
+
+    reasoning_assessment: dict[str, Any] | None = None
+    """Output of the Reasoner stage — complexity, requirements,
+    constraints, confidence, estimated_steps, routing_hints."""
 
     plan: dict[str, Any] | None = None
-    """Executable plan produced by the Planner stage."""
+    """Logical plan produced by the Planner stage.
+    Structure: ``{"goal": str, "steps": [{"intent": str, "objective": str,
+    "constraints": dict}, ...]}``"""
+
+    plan_validated: bool = True
+    """Set by PlanValidator. ``True`` if plan structure is valid."""
+
+    selected_capabilities: dict[int, list[Any]] = field(default_factory=dict)
+    """Capabilities matched to each plan step.
+    Maps step index to a list of capability descriptors."""
 
     # ── Execution ───────────────────────────────────────────────────────────
     execution_state: str = "pending"
@@ -68,7 +85,11 @@ class PipelineContext:
     """Error message if the pipeline failed or was short-circuited."""
 
     execution_result: Any = None
-    """Raw output from the Execution stage (before verification / formatting)."""
+    """Raw output from the Execution stage (before verification / formatting).
+    Kept for backward compatibility; prefer ``outcome`` for new code."""
+
+    outcome: Outcome | None = None
+    """Structured Outcome from Execution.  Replaces ``execution_result``."""
 
     # ── Verification ────────────────────────────────────────────────────────
     verification_result: dict[str, Any] | None = None
@@ -81,6 +102,9 @@ class PipelineContext:
     # ── Memory ──────────────────────────────────────────────────────────────
     memory_refs: list[str] = field(default_factory=list)
     """References stored in the memory facade during the Memory stage."""
+
+    store_decision: dict[str, Any] | None = None
+    """Decision from the Memory stage: action (store/skip), type, reason."""
 
     # ── Activity / Tracing ──────────────────────────────────────────────────
     activity_id: str | None = None

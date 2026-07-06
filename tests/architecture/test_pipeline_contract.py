@@ -25,12 +25,15 @@ from core.pipeline.base import StageOutcome  # noqa: I001 — ruff doesn't merge
 from core.pipeline.stages import (
     AuthenticationStage,
     CapabilitySelectionStage,
+    ContextRetrievalStage,
     EpistemicTaggingStage,
     FormatterStage,
     IntentStage,
     LoadContextStage,
     MetricsStage,
+    PlanValidatorStage,
     PlannerStage,
+    ReasonerStage,
     ReceiveStage,
     VerificationStage,
 )
@@ -95,13 +98,17 @@ def test_pipeline_context_has_all_expected_fields():
     assert hasattr(ctx, "raw_input")
     assert hasattr(ctx, "parsed_request")
     assert hasattr(ctx, "classification")
-    assert hasattr(ctx, "selected_capabilities")
+    assert hasattr(ctx, "retrieved_context")
+    assert hasattr(ctx, "reasoning_assessment")
     assert hasattr(ctx, "plan")
+    assert hasattr(ctx, "plan_validated")
+    assert hasattr(ctx, "selected_capabilities")
     assert hasattr(ctx, "execution_state")
     assert hasattr(ctx, "execution_result")
     assert hasattr(ctx, "verification_result")
     assert hasattr(ctx, "epistemic_tags")
     assert hasattr(ctx, "memory_refs")
+    assert hasattr(ctx, "store_decision")
     assert hasattr(ctx, "activity_id")
     assert hasattr(ctx, "trace_id")
     assert hasattr(ctx, "span_stack")
@@ -434,8 +441,11 @@ def test_default_stages_have_correct_order():
         "authentication",
         "rate_limit",
         "intent",
-        "capability_selection",
+        "context_retrieval",
+        "reasoner",
         "planner",
+        "plan_validator",
+        "capability_selection",
         "execution",
         "verification",
         "epistemic",
@@ -449,6 +459,7 @@ def test_all_stage_classes_importable():
     from core.pipeline.stages import (
         AuthenticationStage,
         CapabilitySelectionStage,
+        ContextRetrievalStage,
         EpistemicTaggingStage,
         ExecutionStage,
         FormatterStage,
@@ -456,14 +467,17 @@ def test_all_stage_classes_importable():
         LoadContextStage,
         MemoryStage,
         MetricsStage,
+        PlanValidatorStage,
         PlannerStage,
         RateLimitStage,
+        ReasonerStage,
         ReceiveStage,
         VerificationStage,
     )
     for cls in (
         AuthenticationStage,
         CapabilitySelectionStage,
+        ContextRetrievalStage,
         EpistemicTaggingStage,
         ExecutionStage,
         FormatterStage,
@@ -471,8 +485,10 @@ def test_all_stage_classes_importable():
         LoadContextStage,
         MemoryStage,
         MetricsStage,
+        PlanValidatorStage,
         PlannerStage,
         RateLimitStage,
+        ReasonerStage,
         ReceiveStage,
         VerificationStage,
     ):
@@ -481,19 +497,29 @@ def test_all_stage_classes_importable():
 
 
 def test_default_stage_count():
-    """DEFAULT_STAGES has the expected count."""
-    assert len(DEFAULT_STAGES) == 13
+    """DEFAULT_STAGES has the expected count (ADR-007)."""
+    assert len(DEFAULT_STAGES) == 16
 
 
 @pytest.mark.asyncio
 async def test_classify_to_formatter_pipeline():
-    """Run from receive through intent to formatter (no Execution)."""
+    """Run from receive through intent to formatter (no Execution).
+    Includes all ADR-007 stages."""
+    from core.pipeline.stages import (
+        ContextRetrievalStage,
+        PlanValidatorStage,
+        ReasonerStage,
+    )
+
     p = Pipeline()
     for name, cls in (
         ("receive", ReceiveStage),
         ("intent", IntentStage),
-        ("capability_selection", CapabilitySelectionStage),
+        ("context_retrieval", ContextRetrievalStage),
+        ("reasoner", ReasonerStage),
         ("planner", PlannerStage),
+        ("plan_validator", PlanValidatorStage),
+        ("capability_selection", CapabilitySelectionStage),
         ("verification", VerificationStage),
         ("epistemic", EpistemicTaggingStage),
         ("metrics", MetricsStage),
@@ -505,6 +531,10 @@ async def test_classify_to_formatter_pipeline():
     result = await p.execute(ctx)
     assert result.classification is not None
     assert result.classification["mode"] in ("chat", "action", "direct", "codebase", "agent")
+    assert result.retrieved_context is not None
+    assert result.reasoning_assessment is not None
+    assert result.plan is not None
+    assert result.plan_validated is True
     assert result.formatted_response is not None
     assert "text" in result.formatted_response
 

@@ -7,8 +7,8 @@ from core.pipeline.context import PipelineContext
 class FormatterStage(PipelineStage):
     """Build the final response payload.
 
-    This is the **last** stage in the pipeline.  It reads the execution
-    result and epistemic tags and writes ``context.formatted_response``.
+    This is the **last** stage in the pipeline.  It reads the outcome
+    and epistemic tags and writes ``context.formatted_response``.
     No stage after Formatter should modify the response.
     """
 
@@ -18,9 +18,11 @@ class FormatterStage(PipelineStage):
 
     async def execute(self, context: PipelineContext) -> StageResult:
         text = ""
-        if context.execution_result:
+        if context.outcome is not None:
+            text = context.outcome.text
+        elif context.execution_result:
             text = context.execution_result.get("text", "")
-        elif context.error:
+        if not text and context.error:
             text = f"Error: {context.error}"
 
         payload: dict[str, object] = {

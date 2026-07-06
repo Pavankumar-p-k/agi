@@ -10,18 +10,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Channel message processor.
-
-This module is being migrated to the canonical pipeline.  New requests are
-routed through ``core.pipeline.adapters.channel_adapter`` first.  If the
-pipeline is unavailable or returns an error, the legacy inline path is used
-as fallback.
-
-.. deprecated::
-   The legacy path (intent extraction + direct LLM calls) is retained for
-   backward compatibility during migration.  It will be removed once the
-   pipeline handles all channel message types (Phase 2D completion).
-"""
+"""Channel message processor — routes through the canonical pipeline."""
 from __future__ import annotations
 
 import logging
@@ -38,122 +27,10 @@ async def process_message(
     user_id: str,
     user_name: str,
 ) -> str:
-    """Process a channel message.
-
-    **Migration path:** calls ``channel_adapter()`` (canonical pipeline)
-    first.  Falls back to the legacy inline path if the pipeline is not
-    available or returns an error.
-    """
-    # ── Canonical pipeline path (preferred) ──────────────────────────────
-    try:
-        response_text = await channel_adapter(text, source, channel_id, user_id, user_name)
-        if not response_text.startswith("Error:"):
-            _emit_hooks(text, source, channel_id, user_id, user_name, response_text)
-            return response_text
-        # Pipeline returned an error — fall through to legacy path
-        logger.info("Pipeline returned error, falling back to legacy path: %s", response_text)
-    except Exception as exc:
-        logger.warning("Pipeline unavailable, falling back to legacy path: %s", exc)
-
-    # ── Legacy inline path (backward compat — will be removed) ───────────
-    return await _legacy_process_message(text, source, channel_id, user_id, user_name)
-
-
-async def _legacy_process_message(
-    text: str,
-    source: str,
-    channel_id: str,
-    user_id: str,
-    user_name: str,
-) -> str:
-    """Original inline processing — intent extraction, LLM calls, fallback.
-
-    .. deprecated:: v3.2
-       Remove after the pipeline handles all channel message types.
-    """
-    from brain.epistemic_tagger import epistemic_tagger
-    from core.llm_router import get_ollama_url, get_router, model_for_role, route_request
-
-    try:
-        model, tier, processed_query = route_request(text)
-
-        non_chat_intents = ("pc_control", "open_url", "play_media", "reminder", "weather", "news", "web_search", "search")
-        current_intent = "chat"
-
-        try:
-            from core.intent_router import extract_intent
-            from core.main import execute_action
-            intent_data = await extract_intent(processed_query)
-            action_result = await execute_action(intent_data, message=text)
-            current_intent = intent_data.get("intent", "chat")
-        except Exception as e:
-            logger.warning("[channels.processor] intent extraction failed: %s", e)
-            intent_data = {"intent": "chat"}
-            action_result = {"executed": False}
-
-        provenance = {"source": source, "confidence": 0.5, "url": None}
-
-        if current_intent in non_chat_intents and action_result.get("executed") and not action_result.get("error"):
-            response_text = action_result.get("action", f"{current_intent} completed")
-        else:
-            try:
-                vision_keywords = ["screen", "screenshot", "see", "look", "what is on", "what's on", "what do you see", "what am i looking"]
-                is_vision = any(kw in text.lower() for kw in vision_keywords)
-                if is_vision or current_intent == "vision":
-                    try:
-                        from core.vision_agent import VisionAgent
-                        agent = VisionAgent()
-                        state = await agent._capture()
-                        screen_desc = await agent._describe(state)
-                        processed_query += f"\n[SCREEN CAPTURE: {screen_desc}]"
-                    except Exception as e:
-                        logger.warning("[Channel] Vision capture failed: %s", e)
-
-                model_group = "cloud" if model == "cloud" else current_intent
-                try:
-                    from core.llm_router import complete_vision
-                    if is_vision:
-                        vision_result = await complete_vision([
-                            {"role": "system", "content": "You are JARVIS, your AI assistant. Be concise."},
-                            {"role": "user", "content": processed_query}
-                        ], timeout=60)
-                        resp_text = vision_result.unwrap_or("")
-                        response_text = epistemic_tagger.tag_response(resp_text, provenance)
-                    else:
-                        resp = await get_router().acompletion(
-                            model=model_group,
-                            messages=[{"role": "system", "content": "You are JARVIS, your AI assistant. Be concise."},
-                                      {"role": "user", "content": processed_query}],
-                            timeout=60,
-                        )
-                        response_text = epistemic_tagger.tag_response(
-                            resp.choices[0].message.content, provenance
-                        )
-                except Exception as e:
-                    logger.warning("[Channel] LiteLLM fallback to Ollama: %s", e)
-                    model_obj = model_for_role(current_intent)
-                    direct_url = get_ollama_url(model_obj)
-                    import httpx
-                    async with httpx.AsyncClient(timeout=60) as client:
-                        r = await client.post(f"{direct_url}/api/chat", json={
-                            "model": model_obj,
-                            "messages": [{"role": "system", "content": "You are JARVIS, your AI assistant. Be concise."},
-                                         {"role": "user", "content": processed_query}],
-                            "stream": False,
-                            "options": {"num_predict": 1024, "temperature": 0.7, "num_gpu": 99},
-                        })
-                        resp_text = r.json().get("message", {}).get("content", "")
-                    response_text = epistemic_tagger.tag_response(resp_text, provenance)
-            except Exception as e:
-                logger.exception("[Channel] All LLM fallbacks failed: %s", e)
-                response_text = "I had a temporary issue processing that request."
-
-        _emit_hooks(text, source, channel_id, user_id, user_name, response_text)
-        return response_text
-
-    except Exception as e:
-        logger.exception("[Channel] process_message failed: %s", e)
-        return "I encountered an error processing your message."
+    """Process a channel message through the canonical pipeline."""
+    response_text = await channel_adapter(text, source, channel_id, user_id, user_name)
+    _emit_hooks(text, source, channel_id, user_id, user_name, response_text)
+    return response_text
 
 
 def _emit_hooks(
