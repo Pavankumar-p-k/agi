@@ -5,12 +5,33 @@ import logging
 import uuid
 from typing import Any
 
-from core.pipeline.base import PipelineStage, StageOutcome
+from core.pipeline.base import HookRegistry, PipelineStage, StageOutcome
 from core.pipeline.context import PipelineContext
 from core.pipeline.messages import Request, Response
 from core.pipeline.stages import DEFAULT_STAGES
 
 logger = logging.getLogger(__name__)
+
+# ── Activity-aware logging adapter ───────────────────────────────────────────
+
+
+class _ActivityAdapter(logging.LoggerAdapter):
+    """LoggerAdapter that injects activity context into every log record."""
+
+    def process(self, msg: str, kwargs: Any) -> tuple[str, Any]:
+        ctx = kwargs.pop("_ctx", None)
+        stage = kwargs.pop("_stage", None)
+        extra = kwargs.setdefault("extra", {})
+        if ctx:
+            extra["activity_id"] = ctx.activity_id
+            extra["request_id"] = ctx.request_id
+        if stage:
+            extra["stage"] = stage
+        return msg, kwargs
+
+
+_logger = _ActivityAdapter(logger, {})
+
 
 # ── Default pipeline instance (populated by bootstrap code) ──────────────────
 
@@ -63,6 +84,7 @@ async def process_message(request: Request) -> Response:
         attachments=request.attachments,
         metadata=dict(request.metadata),
     )
+    ctx.trace_id = ctx.request_id
     ctx = await pipeline.execute(ctx)
 
     response_metadata: dict[str, Any] = dict(ctx.metrics)
@@ -70,6 +92,9 @@ async def process_message(request: Request) -> Response:
         response_metadata["epistemic_tags"] = list(ctx.epistemic_tags)
     if ctx.formatted_response and ctx.formatted_response.get("epistemic"):
         response_metadata["epistemic"] = ctx.formatted_response["epistemic"]
+    response_metadata["pipeline_version"] = ctx.pipeline_version
+    response_metadata["activity_id"] = ctx.activity_id
+    response_metadata["trace_id"] = ctx.trace_id
 
     return Response(
         text=ctx.formatted_response.get("text", "") if ctx.formatted_response else "",
@@ -87,8 +112,13 @@ class Pipeline:
     ``process_message()`` and receive a populated ``PipelineContext`` back.
     """
 
+    version: str = "1.0"
+    """Pipeline architecture version.  Increment on breaking changes."""
+
     def __init__(self) -> None:
         self._stages: list[PipelineStage] = []
+        self._hooks = HookRegistry()
+        self._cancelled: bool = False
 
     # ── Stage Registration ──────────────────────────────────────────────────
 
@@ -97,58 +127,62 @@ class Pipeline:
         return list(self._stages)
 
     def add_stage(self, stage: PipelineStage) -> Pipeline:
-        """Append *stage* to the end of the pipeline.
-
-        Returns ``self`` for fluent registration::
-
-            pipeline = Pipeline()
-            pipeline.add_stage(ReceiveStage()).add_stage(LoadContextStage())
-        """
         self._stages.append(stage)
         return self
 
     def insert_stage(self, index: int, stage: PipelineStage) -> Pipeline:
-        """Insert *stage* at *index*.
-
-        Returns ``self`` for fluent registration.
-        """
         self._stages.insert(index, stage)
         return self
 
     def remove_stage(self, name: str) -> bool:
-        """Remove the first stage whose ``.name`` matches *name*.
-
-        Returns ``True`` if a stage was removed.
-        """
         for i, s in enumerate(self._stages):
             if s.name == name:
                 del self._stages[i]
                 return True
         return False
 
+    # ── Hook Registration ───────────────────────────────────────────────────
+
+    @property
+    def hooks(self) -> HookRegistry:
+        """Lifecycle hook registry for plugin integration."""
+        return self._hooks
+
+    # ── Cancellation ────────────────────────────────────────────────────────
+
+    def cancel(self) -> None:
+        """Request cancellation of the current pipeline execution.
+
+        The pipeline checks the ``cancelled`` flag between stages.
+        Long-running stages may also check ``context.cancelled``.
+        """
+        self._cancelled = True
+
     # ── Execution ───────────────────────────────────────────────────────────
 
     async def execute(self, context: PipelineContext | None = None) -> PipelineContext:
-        """Run every registered stage in order against *context*.
-
-        Args:
-            context: An optional pre-populated context.  If ``None``, a minimal
-                     context is created with a generated ``request_id`` and
-                     ``transport="unknown"``.
-
-        Returns:
-            The final ``PipelineContext`` after all stages have run (or after
-            a short-circuit / failure).
-        """
         if context is None:
             context = PipelineContext(
                 request_id=uuid.uuid4().hex,
                 transport="unknown",
             )
 
+        _logger.info("Pipeline start", _ctx=context)
+        context.pipeline_version = self.version
+
         for stage in self._stages:
+            # Check for external cancellation
+            if self._cancelled or context.cancelled:
+                context.execution_state = "cancelled"
+                context.error = "Pipeline was cancelled"
+                _logger.info(f"Pipeline cancelled at stage '{stage.name}'", _ctx=context, _stage=stage.name)
+                break
+
             stage_name = stage.name
             context.span_stack.append(stage_name)
+
+            # Fire before-hooks
+            await self._hooks.fire_before(stage_name, context)
 
             retry_count = 0
             max_retries = getattr(stage, "max_retries", 3)
@@ -161,26 +195,20 @@ class Pipeline:
                         coro = asyncio.wait_for(coro, timeout=timeout)
                     result = await coro
                 except asyncio.TimeoutError:
-                    logger.error("Stage '%s' timed out after %ss", stage_name, timeout)
+                    _logger.error(f"Stage '{stage_name}' timed out after {timeout}s", _ctx=context, _stage=stage_name)
                     if retry_count < max_retries:
                         retry_count += 1
-                        logger.warning(
-                            "Retrying stage '%s' after timeout (%d/%d)",
-                            stage_name, retry_count, max_retries,
-                        )
+                        _logger.warning(f"Retrying stage '{stage_name}' after timeout ({retry_count}/{max_retries})", _ctx=context, _stage=stage_name)
                         continue
                     context.execution_state = "failed"
                     context.error = f"stage '{stage_name}' timed out after {retry_count + 1} attempts"
                     context.span_stack.pop()
                     break
                 except Exception as exc:
-                    logger.exception("Stage '%s' raised unexpected exception", stage_name)
+                    _logger.exception(f"Stage '{stage_name}' raised unexpected exception", _ctx=context, _stage=stage_name)
                     if retry_count < max_retries:
                         retry_count += 1
-                        logger.warning(
-                            "Retrying stage '%s' after exception (%d/%d)",
-                            stage_name, retry_count, max_retries,
-                        )
+                        _logger.warning(f"Retrying stage '{stage_name}' after exception ({retry_count}/{max_retries})", _ctx=context, _stage=stage_name)
                         continue
                     context.execution_state = "failed"
                     context.error = f"stage '{stage_name}' raised: {exc}"
@@ -199,10 +227,7 @@ class Pipeline:
                     break
 
                 if outcome == StageOutcome.SHORT_CIRCUIT:
-                    logger.info(
-                        "Pipeline short-circuited at stage '%s' — reason: %s",
-                        stage_name, result.error,
-                    )
+                    _logger.info(f"Pipeline short-circuited at stage '{stage_name}' — reason: {result.error}", _ctx=context, _stage=stage_name)
                     context.execution_state = "short_circuited"
                     context.error = result.error
                     context.span_stack.pop()
@@ -211,40 +236,39 @@ class Pipeline:
                 if outcome == StageOutcome.RETRY:
                     if retry_count < max_retries:
                         retry_count += 1
-                        logger.warning(
-                            "Stage '%s' requested retry (%d/%d)",
-                            stage_name, retry_count, max_retries,
-                        )
+                        _logger.warning(f"Stage '{stage_name}' requested retry ({retry_count}/{max_retries})", _ctx=context, _stage=stage_name)
                         continue
-                    logger.error(
-                        "Stage '%s' exhausted retries (%d) — failing",
-                        stage_name, max_retries,
-                    )
+                    _logger.error(f"Stage '{stage_name}' exhausted retries ({max_retries}) — failing", _ctx=context, _stage=stage_name)
                     context.execution_state = "failed"
                     context.error = f"stage '{stage_name}' exhausted retries: {result.error}" if result.error else f"stage '{stage_name}' exhausted retries"
                     context.span_stack.pop()
                     break
 
                 if outcome == StageOutcome.FAIL:
-                    logger.error(
-                        "Pipeline failed at stage '%s' — %s",
-                        stage_name, result.error,
-                    )
+                    _logger.error(f"Pipeline failed at stage '{stage_name}' — {result.error}", _ctx=context, _stage=stage_name)
                     context.execution_state = "failed"
                     context.error = result.error
                     context.span_stack.pop()
                     break
 
                 if outcome == StageOutcome.DEFER:
-                    logger.info(
-                        "Pipeline deferred at stage '%s' — %s",
-                        stage_name, result.error,
-                    )
+                    _logger.info(f"Pipeline deferred at stage '{stage_name}' — {result.error}", _ctx=context, _stage=stage_name)
                     context.execution_state = "deferred"
                     context.error = result.error
                     context.span_stack.pop()
                     break
 
+                if outcome == StageOutcome.CANCELLED:
+                    _logger.info(f"Pipeline cancelled at stage '{stage_name}' — {result.error}", _ctx=context, _stage=stage_name)
+                    context.execution_state = "cancelled"
+                    context.error = result.error or "Stage requested cancellation"
+                    context.span_stack.pop()
+                    break
+
+            # Fire after-hooks
+            await self._hooks.fire_after(stage_name, context)
+
+        _logger.info(f"Pipeline end — state={context.execution_state}", _ctx=context)
         return context
 
     async def process_message(

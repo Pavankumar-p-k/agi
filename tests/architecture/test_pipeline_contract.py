@@ -726,3 +726,163 @@ async def test_pipeline_exception_exhausts_retries():
     assert result.execution_state == "failed"
     assert "boom" in (result.error or "")
 
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 6.  CANCELLED outcome
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+@pytest.mark.asyncio
+async def test_pipeline_stops_on_cancelled():
+    """CANCELLED outcome from a stage stops the pipeline."""
+
+    class _CancelStage(PipelineStage):
+        @property
+        def name(self) -> str:
+            return "cancel_stage"
+
+        async def execute(self, context: PipelineContext) -> StageResult:
+            return StageResult(
+                outcome=StageOutcome.CANCELLED,
+                context=context,
+                error="user interrupted",
+            )
+
+    p = Pipeline()
+    p.add_stage(_PassStage())
+    p.add_stage(_CancelStage())
+    p.add_stage(_PassStage())  # should NOT run
+
+    ctx = PipelineContext(request_id="r1", transport="test")
+    result = await p.execute(ctx)
+    assert result.execution_state == "cancelled"
+    assert result.error == "user interrupted"
+
+
+@pytest.mark.asyncio
+async def test_pipeline_external_cancel():
+    """Calling pipeline.cancel() mid-execution stops subsequent stages."""
+
+    executed_stages: list[str] = []
+
+    class _TrackStage(PipelineStage):
+        def __init__(self, name: str) -> None:
+            self._name = name
+
+        @property
+        def name(self) -> str:
+            return self._name
+
+        async def execute(self, context: PipelineContext) -> StageResult:
+            executed_stages.append(self._name)
+            return StageResult(outcome=StageOutcome.CONTINUE, context=context)
+
+    p = Pipeline()
+    p.add_stage(_TrackStage("first"))
+    p.add_stage(_TrackStage("second"))
+
+    # Cancel before execution
+    p.cancel()
+
+    ctx = PipelineContext(request_id="r1", transport="test")
+    result = await p.execute(ctx)
+    assert result.execution_state == "cancelled"
+    assert "first" not in executed_stages
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 7.  Pipeline versioning
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+@pytest.mark.asyncio
+async def test_pipeline_version_in_context():
+    ctx = PipelineContext(request_id="r1", transport="test")
+    assert ctx.pipeline_version == "1.0"
+
+
+@pytest.mark.asyncio
+async def test_process_message_includes_version():
+    p = Pipeline()
+    p.add_stage(_PassStage())
+    set_pipeline(p)
+
+    resp = await process_message(Request(text="hello", transport="pytest"))
+    assert resp.metadata.get("pipeline_version") == "1.0"
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 8.  Field ownership
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+def test_stage_field_ownership_mapping():
+    from core.pipeline.base import STAGE_OWNERSHIP
+
+    assert "classification" in STAGE_OWNERSHIP["intent"]
+    assert "execution_result" in STAGE_OWNERSHIP["execution"]
+    assert "formatted_response" in STAGE_OWNERSHIP["formatter"]
+    assert "request_id" not in {f for v in STAGE_OWNERSHIP.values() for f in v}
+
+
+def test_set_stage_field_ownership_ok():
+    ctx = PipelineContext(request_id="r1", transport="test")
+    ctx.set_stage_field("intent", "classification", {"mode": "chat"})
+    assert ctx.classification == {"mode": "chat"}
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 9.  Lifecycle hooks
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+@pytest.mark.asyncio
+async def test_hooks_fire_before_and_after():
+    events: list[str] = []
+
+    def record_before(stage: str, ctx: PipelineContext) -> None:
+        events.append(f"before:{stage}")
+
+    def record_after(stage: str, ctx: PipelineContext) -> None:
+        events.append(f"after:{stage}")
+
+    p = Pipeline()
+    p.hooks.on_before("pass", record_before)
+    p.hooks.on_after("pass", record_after)
+    p.add_stage(_PassStage())
+
+    ctx = PipelineContext(request_id="r1", transport="test")
+    await p.execute(ctx)
+    assert "before:pass" in events
+    assert "after:pass" in events
+
+
+@pytest.mark.asyncio
+async def test_hook_failure_does_not_crash_pipeline():
+    def failing_hook(stage: str, ctx: PipelineContext) -> None:
+        raise RuntimeError("hook error")
+
+    p = Pipeline()
+    p.hooks.on_before("pass", failing_hook)
+    p.add_stage(_PassStage())
+
+    ctx = PipelineContext(request_id="r1", transport="test")
+    result = await p.execute(ctx)
+    assert result.execution_state == "pending"  # still succeeded
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 10.  Activity ID in response metadata
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+@pytest.mark.asyncio
+async def test_response_includes_activity_metadata():
+    p = Pipeline()
+    p.add_stage(_PassStage())
+    set_pipeline(p)
+
+    resp = await process_message(Request(text="hello", transport="pytest"))
+    assert "activity_id" in resp.metadata
+    assert "trace_id" in resp.metadata
+
