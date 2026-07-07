@@ -11,6 +11,7 @@ from core.pipeline.context import PipelineContext
 from core.pipeline.deterministic import DeterministicServices
 from core.pipeline.messages import Request, Response
 from core.pipeline.stages import DEFAULT_STAGES
+from core.runtime_version import RUNTIME_VERSION
 
 logger = logging.getLogger(__name__)
 
@@ -121,7 +122,7 @@ class Pipeline:
     ``process_message()`` and receive a populated ``PipelineContext`` back.
     """
 
-    version: str = "1.0"
+    version: str = RUNTIME_VERSION.pipeline
     """Pipeline architecture version.  Increment on breaking changes."""
 
     def __init__(self) -> None:

@@ -294,5 +294,52 @@ def test_observation_only_created_in_execution(path: Path):
             )
 
 
+
+# ── Rule 11: Single path invariant ──────────────────────────────────────────
+# Every new component must integrate through existing canonical interfaces
+# rather than creating alternate execution paths.
+
+SINGLE_PATH_EXEMPTIONS = {
+    "core/pipeline/pipeline.py",           # owns process_message()
+    "core/pipeline/stages/execution.py",   # owns Runtime
+    "core/pipeline/observation.py",        # owns Observation
+    "core/pipeline/outcome.py",            # owns Outcome
+    "core/pipeline/context.py",            # owns PipelineContext
+    "core/pipeline/base.py",               # owns PipelineStage, HookRegistry
+    "core/pipeline/deterministic.py",      # owns DeterministicServices
+    "core/pipeline/architecture_metrics.py",  # owns ArchitectureMetrics
+    "core/observation/hub.py",             # owns ObservationHub
+    "core/scheduler/pipeline_executor.py", # owns PipelineExecutor bridge
+    "core/runtime_version.py",             # owns RuntimeVersion
+}
+
+
+@pytest.mark.parametrize("path", [p for p in _prod_files()
+                                   if str(p.as_posix()) not in SINGLE_PATH_EXEMPTIONS])
+def test_no_alternate_process_message(path: Path):
+    """No file outside the pipeline may reimplement process_message().
+
+    Only ``core/pipeline/pipeline.py`` may define ``process_message()``.
+    Any other file that defines a function accepting ``Request`` and
+    returning ``Response``, or that directly calls ``Pipeline.execute()``
+    outside of ``process_message()``, is an alternate path violation.
+    """
+    source = _read_source(path)
+    lines = source.split("\n")
+    for lineno, line in enumerate(lines, 1):
+        stripped = line.strip()
+        # Ignore comments, strings, and test files
+        if stripped.startswith("#") or stripped.startswith('"') or stripped.startswith("'"):
+            continue
+
+        # Flag: async def process_message outside the canonical home
+        if "async def process_message" in stripped and path.name != "pipeline.py":
+            pytest.fail(
+                f"{path}:{lineno} defines an alternate process_message(). "
+                "All request processing must go through "
+                "core/pipeline/pipeline.process_message()."
+            )
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

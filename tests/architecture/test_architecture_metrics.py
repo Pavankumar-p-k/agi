@@ -22,6 +22,7 @@ from core.pipeline.stages.execution import (
 )
 from core.pipeline.stages.verification import VerificationStage
 from core.pipeline.stages.memory import MemoryStage
+from core.runtime_version import RUNTIME_VERSION, RuntimeVersion
 
 
 # ── Fake provider ───────────────────────────────────────────────────────────
@@ -218,7 +219,8 @@ def _build_trace(ctx: PipelineContext) -> dict:
         "activity_id": ctx.activity_id,
         "request_id": ctx.request_id,
         "execution_state": ctx.execution_state,
-        "architecture_metrics": ctx.architecture_metrics.to_dict(),
+        "runtime_version": RUNTIME_VERSION.to_dict(),
+        "architecture_metrics": ctx.architecture_metrics.to_snapshot_dict(),
         "outcome": {
             "activity_id": outcome.activity_id if outcome else None,
             "success": outcome.success if outcome else None,
@@ -250,7 +252,12 @@ def _validate_trace_structure(trace: dict) -> None:
     assert trace["activity_id"] is not None
     assert "request_id" in trace
     assert "execution_state" in trace
+    assert "runtime_version" in trace
+    assert trace["runtime_version"]["pipeline"] == RUNTIME_VERSION.pipeline
+    assert trace["runtime_version"]["snapshot"] == RUNTIME_VERSION.snapshot
     assert "architecture_metrics" in trace
+    assert trace["architecture_metrics"]["runtime_version"]["pipeline"] == RUNTIME_VERSION.pipeline
+    assert trace["architecture_metrics"]["runtime_version"]["snapshot"] == RUNTIME_VERSION.snapshot
     assert "outcome" in trace
     assert trace["outcome"]["activity_id"] == trace["activity_id"]
     assert len(trace["outcome"]["observations"]) > 0

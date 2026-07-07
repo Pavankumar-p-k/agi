@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
+from core.runtime_version import RUNTIME_VERSION
+
 if TYPE_CHECKING:
     from core.pipeline.context import PipelineContext
 
@@ -55,6 +57,12 @@ class ArchitectureMetrics:
             "retries": self.retries,
             "execution_state": self.execution_state,
         }
+
+    def to_snapshot_dict(self) -> dict[str, Any]:
+        """Like ``to_dict()`` but includes the active ``RuntimeVersion``."""
+        d = self.to_dict()
+        d["runtime_version"] = RUNTIME_VERSION.to_dict()
+        return d
 
     @staticmethod
     def from_context(ctx: PipelineContext) -> ArchitectureMetrics:

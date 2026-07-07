@@ -2,6 +2,9 @@
 
 > Canonical reference for the JARVIS Runtime — independent of implementation.
 > Freeze date: 2026-07-07.  Breaking changes require a new ADR.
+>
+> Version constants: ``core/runtime_version.py`` — ``RuntimeVersion(pipeline, runtime_spec, architecture, snapshot)``
+> Current: pipeline=1.0, runtime_spec=1.0, architecture=1.0, snapshot=1.0
 
 ---
 
@@ -364,17 +367,29 @@ class ArchitectureMetrics:
   "activity_id": "00000000000000000000000000000001",
   "request_id": "00000000000000000000000000000001",
   "execution_state": "completed",
-  "architecture_metrics": {
-    "reasoning_complexity": "unknown",
-    "plan_steps": 0,
-    "selected_capabilities": 0,
-    "observations": 1,
-    "verifiers": 3,
-    "memory_operations": 1,
-    "activity_depth": 1,
-    "retries": 0,
-    "execution_state": "completed"
+  "runtime_version": {
+    "pipeline": "1.0",
+    "runtime_spec": "1.0",
+    "architecture": "1.0",
+    "snapshot": "1.0"
   },
+    "architecture_metrics": {
+      "reasoning_complexity": "unknown",
+      "plan_steps": 0,
+      "selected_capabilities": 0,
+      "observations": 1,
+      "verifiers": 3,
+      "memory_operations": 1,
+      "activity_depth": 1,
+      "retries": 0,
+      "execution_state": "completed",
+      "runtime_version": {
+        "pipeline": "1.0",
+        "runtime_spec": "1.0",
+        "architecture": "1.0",
+        "snapshot": "1.0"
+      }
+    },
   "outcome": {
     "activity_id": "00000000000000000000000000000001",
     "success": true,
