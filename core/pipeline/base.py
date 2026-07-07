@@ -16,7 +16,8 @@ logger = logging.getLogger(__name__)
 STAGE_OWNERSHIP: dict[str, set[str]] = {
     "receive": {"parsed_request"},
     "load_context": {"metadata", "session_id", "user_id", "identity"},
-    "authentication": set(),
+    "authentication": {"authentication_result"},
+    "authorization": {"authorization_result"},
     "rate_limit": set(),
     "intent": {"classification"},
     "context_retrieval": {"retrieved_context"},

@@ -1,4 +1,5 @@
 from core.pipeline.stages.auth import AuthenticationStage
+from core.pipeline.stages.authorization import AuthorizationStage
 from core.pipeline.stages.capability_selection import CapabilitySelectionStage
 from core.pipeline.stages.context_retrieval import ContextRetrievalStage
 from core.pipeline.stages.epistemic import EpistemicTaggingStage
@@ -17,6 +18,7 @@ from core.pipeline.stages.verification import VerificationStage
 
 __all__ = [
     "AuthenticationStage",
+    "AuthorizationStage",
     "CapabilitySelectionStage",
     "ContextRetrievalStage",
     "EpistemicTaggingStage",
@@ -39,6 +41,7 @@ DEFAULT_STAGES = [
     ("receive", ReceiveStage),
     ("load_context", LoadContextStage),
     ("authentication", AuthenticationStage),
+    ("authorization", AuthorizationStage),
     ("rate_limit", RateLimitStage),
     ("intent", IntentStage),
     ("context_retrieval", ContextRetrievalStage),

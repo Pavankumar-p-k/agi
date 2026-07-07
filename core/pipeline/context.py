@@ -6,6 +6,9 @@ from typing import Any
 
 from core.identity.models import IdentityContext
 from core.pipeline.architecture_metrics import ArchitectureMetrics
+from core.pipeline.authentication_result import AuthenticationResult
+from core.pipeline.authorization_result import AuthorizationResult
+from core.pipeline.security_context import SecurityContext
 from core.pipeline.deterministic import DeterministicServices
 from core.pipeline.outcome import Outcome
 
@@ -36,6 +39,8 @@ class PipelineContext:
     user_id: str | None = None
     session_id: str | None = None
     identity: IdentityContext | None = None
+    authentication_result: AuthenticationResult | None = None
+    authorization_result: AuthorizationResult | None = None
 
     # ── Pipeline metadata ───────────────────────────────────────────────────
     pipeline_version: str = "1.0"
@@ -150,6 +155,19 @@ class PipelineContext:
     # ── Field ownership (internal) ──────────────────────────────────────────
     _owned_fields_set: set[str] = field(default_factory=set, repr=False)
     """Tracks which owned fields have been set during this request."""
+
+    @property
+    def security(self) -> SecurityContext:
+        """Read-only aggregate of identity, authentication, and authorization.
+
+        Built lazily from the individual context fields.  Downstream stages
+        should prefer this over accessing the three fields directly.
+        """
+        return SecurityContext(
+            identity=self.identity,
+            authentication=self.authentication_result,
+            authorization=self.authorization_result,
+        )
 
     def set_stage_field(self, stage_name: str, field_name: str, value: Any) -> None:
         """Set a context field on behalf of *stage_name*.

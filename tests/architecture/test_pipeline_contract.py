@@ -22,8 +22,10 @@ from core.pipeline import (
     set_pipeline,
 )
 from core.pipeline.base import StageOutcome  # noqa: I001 — ruff doesn't merge this
+from core.identity.models import AuthenticationState
 from core.pipeline.stages import (
     AuthenticationStage,
+    AuthorizationStage,
     CapabilitySelectionStage,
     ContextRetrievalStage,
     EpistemicTaggingStage,
@@ -439,6 +441,7 @@ def test_default_stages_have_correct_order():
         "receive",
         "load_context",
         "authentication",
+        "authorization",
         "rate_limit",
         "intent",
         "context_retrieval",
@@ -458,6 +461,7 @@ def test_default_stages_have_correct_order():
 def test_all_stage_classes_importable():
     from core.pipeline.stages import (
         AuthenticationStage,
+        AuthorizationStage,
         CapabilitySelectionStage,
         ContextRetrievalStage,
         EpistemicTaggingStage,
@@ -476,6 +480,7 @@ def test_all_stage_classes_importable():
     )
     for cls in (
         AuthenticationStage,
+        AuthorizationStage,
         CapabilitySelectionStage,
         ContextRetrievalStage,
         EpistemicTaggingStage,
@@ -498,7 +503,7 @@ def test_all_stage_classes_importable():
 
 def test_default_stage_count():
     """DEFAULT_STAGES has the expected count (ADR-007)."""
-    assert len(DEFAULT_STAGES) == 16
+    assert len(DEFAULT_STAGES) == 17
 
 
 @pytest.mark.asyncio
@@ -612,10 +617,14 @@ async def test_load_context_stage_sets_transport(ctx):
 
 
 @pytest.mark.asyncio
-async def test_authentication_stage_pass_through(ctx):
+async def test_authentication_stage_anonymous(ctx):
     stage = AuthenticationStage()
     result = await stage.execute(ctx)
-    assert result.context.metadata.get("authenticated") is False
+    ar = result.context.authentication_result
+    assert ar is not None
+    assert ar.authenticated is False
+    assert ar.state.name == "ANONYMOUS"
+    assert ar.reason == "no identity context"
 
 
 @pytest.mark.asyncio

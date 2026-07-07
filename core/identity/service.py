@@ -43,12 +43,37 @@ class IdentityResolver(Protocol):
         """Resolve a session identifier to a SessionIdentity."""
         ...
 
+    def authenticate_session(
+        self, token: str
+    ) -> tuple[UserIdentity, SessionIdentity] | None:
+        """Validate a session token against the authentication backend.
+
+        Returns ``(user, session)`` if the token is valid, or ``None``
+        if the token is invalid, expired, or the user was deleted.
+        """
+        ...
+
+    def authorize(
+        self,
+        identity: IdentityContext,
+        scope: str,
+    ) -> AuthorizationResult:
+        """Answer whether *identity* may perform *scope*.
+
+        Never called by the pipeline directly — only by AuthorizationStage.
+        """
+        ...
+
 
 class IdentityService(IdentityResolver):
-    """Default identity resolver — Sprint 1 structural mapping only.
+    """Default identity resolver.
 
-    Wraps raw identifiers into canonical identity objects without
-    performing any authentication, token validation, or persistence.
+    Sprint 1: structural mapping only (create_context, resolve_user,
+    resolve_session).
+
+    Sprint 2: authenticate_session integrated with AuthManager for
+    token validation.  IdentityService is the only adapter between
+    the pipeline and the authentication backend.
     """
 
     def create_context(
@@ -99,3 +124,73 @@ class IdentityService(IdentityResolver):
     def resolve_session(self, session_id: str) -> SessionIdentity:
         """Sprint 1: wraps raw session_id into SessionIdentity without validation."""
         return SessionIdentity(id=session_id)
+
+    def authenticate_session(
+        self, token: str
+    ) -> tuple[UserIdentity, SessionIdentity] | None:
+        """Validate *token* via AuthManager and return resolved identity.
+
+        Returns ``None`` for invalid, expired, or deleted-user tokens.
+        """
+        from core.auth import get_auth_manager
+
+        mgr = get_auth_manager()
+        if not mgr.validate_token(token):
+            return None
+        username = mgr.get_username_for_token(token)
+        if username is None:
+            return None
+        user = UserIdentity(id=username)
+        session = SessionIdentity(id=token, user_id=username)
+        return (user, session)
+
+    def authorize(
+        self,
+        identity: IdentityContext,
+        scope: str,
+    ) -> AuthorizationResult:
+        """Answer whether *identity* may perform *scope*.
+
+        Delegates to PolicyEngine for the actual evaluation.
+        Unauthenticated identities are always denied.
+        """
+        from core.pipeline.authorization_result import AuthorizationResult
+        from core.auth import get_auth_manager
+        from core.authz.engine import authz_engine
+        from core.authz.schema import AuthContext, Role, Scope as AuthzScope
+
+        if identity.user is None or identity.user.id is None:
+            return AuthorizationResult(
+                allowed=False,
+                scope=scope,
+                reason="no user identity",
+            )
+
+        user_id = identity.user.id
+        mgr = get_auth_manager()
+
+        roles: set[Role] = {Role.GUEST}
+        scopes: set[AuthzScope] = set()
+
+        if identity.authentication_state in (
+            AuthenticationState.AUTHENTICATED,
+            AuthenticationState.SYSTEM,
+        ):
+            resolved = mgr.resolve_context(user_id)
+            roles = resolved.roles
+            scopes = resolved.scopes
+
+        ctx = AuthContext(
+            user_id=user_id,
+            roles=roles,
+            scopes=scopes,
+        )
+
+        allowed = authz_engine.evaluate(ctx, scope)
+        return AuthorizationResult(
+            allowed=allowed,
+            scope=scope,
+            permissions=frozenset(str(s) for s in scopes),
+            roles=frozenset(r.value for r in roles),
+            reason=None if allowed else f"missing scope: {scope}",
+        )
