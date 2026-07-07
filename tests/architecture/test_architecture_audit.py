@@ -204,5 +204,95 @@ def test_no_duplicate_verification(path: Path):
     )
 
 
+
+# ── Phase 5 Rules ────────────────────────────────────────────────────────────
+# These rules enforce the Runtime v1 freeze (ADR-008).
+
+
+# ── Rule 8: Scheduler only imports pipeline internals through PipelineExecutor ─
+
+
+# We don't need to check "core.pipeline.pipeline_executor" because that *is*
+# the bridge. Pattern: any ``from core.pipeline`` import inside core/scheduler/
+# must come from ``pipeline_executor.py``.
+ALLOWED_SCHEDULER_PIPELINE_IMPORTS = {"core.scheduler.pipeline_executor"}
+
+
+@pytest.mark.parametrize("path", [p for p in _prod_files() if "scheduler" in p.parts])
+def test_scheduler_imports_pipeline_only_via_pipeline_executor(path: Path):
+    """Scheduler must not import pipeline internals except via PipelineExecutor.
+
+    ``core/scheduler/pipeline_executor.py`` is the only allowed bridge.
+    ``core/scheduler/*.py`` files must not ``from core.pipeline`` import
+    anything directly.
+    """
+    if path.name == "pipeline_executor.py":
+        pytest.skip("Pipeline executor is the intentional bridge")
+    source = _read_source(path)
+    imports = _extract_imports(source)
+    violations = [i for i in imports if i.startswith("core.pipeline")]
+    assert not violations, (
+        f"{path} imports pipeline module(s) {violations}. "
+        "The Scheduler may only reach the pipeline through "
+        "core.scheduler.pipeline_executor.pipeline_executor()."
+    )
+
+
+# ── Rule 9: Outcome only ever created in Execution stage ─────────────────────
+
+# The canonical ``Outcome`` dataclass lives at ``core.pipeline.outcome``.
+# Only ``execution.py`` may construct it.
+
+
+@pytest.mark.parametrize("path", _prod_files())
+def test_outcome_only_created_in_execution(path: Path):
+    if path.name == "execution.py":
+        pytest.skip("Execution stage is the owner of Outcome")
+    if path.name == "outcome.py":
+        pytest.skip("Outcome definition lives here")
+    source = _read_source(path)
+    # Look for direct Outcome( construction (not imports, not type hints)
+    # We match any ``Outcome(`` token that is not preceded by a dot
+    lines = source.split("\n")
+    for lineno, line in enumerate(lines, 1):
+        stripped = line.strip()
+        # Skip imports, comments, and string literals
+        if stripped.startswith("from ") or stripped.startswith("import "):
+            continue
+        if stripped.startswith("#"):
+            continue
+        if "Outcome(" in stripped and "Outcome(" not in stripped.split("#")[0]:
+            pytest.fail(
+                f"{path}:{lineno} constructs Outcome directly. "
+                "Outcome must only be created in the Execution stage "
+                "(core/pipeline/stages/execution.py)."
+            )
+
+
+# ── Rule 10: Observation.new() only ever called in Execution stage ───────────
+
+
+@pytest.mark.parametrize("path", _prod_files())
+def test_observation_only_created_in_execution(path: Path):
+    if path.name == "execution.py":
+        pytest.skip("Execution stage creates observations")
+    if path.name in ("observation.py", "__init__.py"):
+        pytest.skip("Observation definition lives here")
+    source = _read_source(path)
+    lines = source.split("\n")
+    for lineno, line in enumerate(lines, 1):
+        stripped = line.strip()
+        if stripped.startswith("from ") or stripped.startswith("import "):
+            continue
+        if stripped.startswith("#"):
+            continue
+        if "Observation.new(" in stripped:
+            pytest.fail(
+                f"{path}:{lineno} calls Observation.new() directly. "
+                "Observations must only be created in the Execution stage "
+                "(core/pipeline/stages/execution.py)."
+            )
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

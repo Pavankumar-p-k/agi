@@ -5,8 +5,10 @@ import logging
 import uuid
 from typing import Any
 
+from core.pipeline.architecture_metrics import ArchitectureMetrics
 from core.pipeline.base import HookRegistry, PipelineStage, StageOutcome
 from core.pipeline.context import PipelineContext
+from core.pipeline.deterministic import DeterministicServices
 from core.pipeline.messages import Request, Response
 from core.pipeline.stages import DEFAULT_STAGES
 
@@ -59,7 +61,10 @@ def set_pipeline(pipeline: Pipeline) -> None:
     _default_pipeline = pipeline
 
 
-async def process_message(request: Request) -> Response:
+async def process_message(
+    request: Request,
+    services: DeterministicServices | None = None,
+) -> Response:
     """Canonical entry point for all request processing.
 
     Every transport adapter calls this single function.  It:
@@ -69,20 +74,24 @@ async def process_message(request: Request) -> Response:
 
     Args:
         request: Transport-agnostic request.
+        services: Optional deterministic services for testability.
+            Defaults to ``None`` (uses real UUIDs and system clock).
 
     Returns:
         A ``Response`` containing the result text, optional structured data,
         and metadata (token counts, duration, traces, …).
     """
+    svc = services or DeterministicServices.real()
     pipeline = get_pipeline()
     ctx = PipelineContext(
-        request_id=uuid.uuid4().hex,
+        request_id=svc.uuid4(),
         transport=request.transport,
         user_id=request.user_id,
         session_id=request.session_id,
         raw_input=request.text,
         attachments=request.attachments,
         metadata=dict(request.metadata),
+        services=svc,
     )
     ctx.trace_id = ctx.request_id
     ctx = await pipeline.execute(ctx)
@@ -267,6 +276,19 @@ class Pipeline:
 
             # Fire after-hooks
             await self._hooks.fire_after(stage_name, context)
+
+            # Publish observations from Outcome to the event bus
+            if context.outcome and context.outcome.observations:
+                try:
+                    from core.observation.hub import get_hub
+                    hub = get_hub()
+                    await hub.publish_observations_async(
+                        context.outcome.observations,
+                    )
+                except Exception:
+                    _logger.exception("Failed to publish observations after stage '%s'", stage_name)
+
+        context.architecture_metrics = ArchitectureMetrics.from_context(context)
 
         _logger.info(f"Pipeline end — state={context.execution_state}", _ctx=context)
         return context

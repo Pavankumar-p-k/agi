@@ -784,6 +784,10 @@ class TestExecutionStage:
             def step_results(self):
                 return []
 
+            @property
+            def observations(self):
+                return []
+
         stage._runtime = FailingRuntime()  # type: ignore[assignment]
         ctx.plan = {"goal": "test", "steps": [{"intent": "respond", "objective": "x", "constraints": {}}]}
         ctx.selected_capabilities = {0: []}

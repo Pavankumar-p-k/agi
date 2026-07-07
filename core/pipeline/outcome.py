@@ -3,13 +3,16 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
+from core.pipeline.observation import Observation
 
-@dataclass
+
+@dataclass(frozen=True)
 class Outcome:
-    """Structured result of the Execution stage.
+    """Structured result of the Execution stage (immutable).
 
     Replaces ad-hoc ``execution_result`` dicts with a typed contract.
     Verification consumes this, Memory stores this, Formatter formats this.
+    Once created by Execution, Outcome is never mutated.
     """
 
     success: bool
@@ -22,7 +25,10 @@ class Outcome:
     """File/artifact references produced during execution."""
 
     tool_results: list[dict[str, Any]] = field(default_factory=list)
-    """Results of individual tool or plan-step executions."""
+    """Results of individual tool or plan-step executions (legacy — prefer ``observations``)."""
+
+    observations: list[Observation] = field(default_factory=list)
+    """Typed Observation objects from execution (replaces ``tool_results``)."""
 
     metrics: dict[str, Any] = field(default_factory=dict)
     """Execution-level metrics (token count, duration, provider, …)."""

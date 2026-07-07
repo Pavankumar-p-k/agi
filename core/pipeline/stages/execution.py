@@ -8,6 +8,7 @@ from typing import Any
 
 from core.pipeline.base import PipelineStage, StageOutcome, StageResult
 from core.pipeline.context import PipelineContext
+from core.pipeline.observation import Observation
 from core.pipeline.outcome import Outcome
 
 logger = logging.getLogger(__name__)
@@ -95,10 +96,15 @@ class Runtime:
         self._provider_manager = provider_manager
         self._executors: dict[str, type[StepExecutor]] = {}
         self._step_results: list[dict[str, Any]] = []
+        self._observations: list[Observation] = []
 
     @property
     def step_results(self) -> list[dict[str, Any]]:
         return list(self._step_results)
+
+    @property
+    def observations(self) -> list[Observation]:
+        return list(self._observations)
 
     def register(self, capability_id: str, executor_cls: type[StepExecutor]) -> None:
         self._executors[capability_id] = executor_cls
@@ -111,6 +117,8 @@ class Runtime:
     ) -> str:
         steps = plan.get("steps", [])
         combined_text = ""
+        self._step_results.clear()
+        self._observations.clear()
         activity_mgr = _get_activity_manager(context)
 
         for i, step in enumerate(steps):
@@ -140,6 +148,19 @@ class Runtime:
 
             result = await executor.execute(step, context)
             self._step_results.append(result)
+
+            # Create Observation for this step
+            obs = Observation.new(
+                activity_id=context.activity_id or "",
+                source="execution",
+                type_="tool_output",
+                payload=result,
+                confidence=None,
+                metadata={"step_index": i, "step_intent": step_intent, "executor": type(executor).__name__},
+                parent_id=subgoal_node.node_id if subgoal_node else None,
+                services=context.services,
+            )
+            self._observations.append(obs)
 
             if tool_node and activity_mgr:
                 tool_node.status = _to_activity_status("completed", result.get("error"))
@@ -256,6 +277,7 @@ class ExecutionStage(PipelineStage):
                 success=False,
                 outputs={"text": ""},
                 tool_results=self.runtime.step_results,
+                observations=self.runtime.observations,
                 metrics={"provider": "runtime", "tokens": 0},
                 activity_id=context.activity_id,
                 errors=[f"Plan execution failed: {exc}"],
@@ -278,6 +300,7 @@ class ExecutionStage(PipelineStage):
             success=True,
             outputs={"text": text},
             tool_results=self.runtime.step_results,
+            observations=self.runtime.observations,
             metrics={"provider": "pipeline", "tokens": tokens},
             activity_id=context.activity_id,
         )
@@ -291,9 +314,19 @@ class ExecutionStage(PipelineStage):
             "tokens": result.tokens,
         }
         context.execution_result = er
+        obs = Observation.new(
+            activity_id=context.activity_id or "",
+            source="execution",
+            type_="text",
+            payload={"text": result.text},
+            confidence=None,
+            metadata={"provider": result.provider, "tokens": result.tokens},
+            services=context.services,
+        )
         context.outcome = Outcome(
             success=result.error is None,
             outputs={"text": result.text},
+            observations=[obs],
             metrics={"provider": result.provider, "tokens": result.tokens},
             activity_id=context.activity_id,
             errors=[result.error] if result.error else [],

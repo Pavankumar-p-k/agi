@@ -9,6 +9,7 @@ from core.pipeline.base import PipelineStage, StageOutcome, StageResult
 from core.pipeline.context import PipelineContext
 from core.pipeline.decision import Decision
 from core.pipeline.messages import Request, Response
+from core.pipeline.observation import Observation
 from core.pipeline.outcome import Outcome
 from core.pipeline.store_decision import StoreAction, StoreDecision
 from core.pipeline.pipeline import Pipeline, get_pipeline, process_message, set_pipeline
@@ -28,6 +29,7 @@ __all__ = [
     "Decision",
     "ExecutionStage",
     "LiteLLMProvider",
+    "Observation",
     "OllamaFallbackProvider",
     "Outcome",
     "Pipeline",

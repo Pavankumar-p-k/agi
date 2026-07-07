@@ -4,6 +4,8 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any
 
+from core.pipeline.architecture_metrics import ArchitectureMetrics
+from core.pipeline.deterministic import DeterministicServices
 from core.pipeline.outcome import Outcome
 
 logger = logging.getLogger(__name__)
@@ -125,6 +127,16 @@ class PipelineContext:
     formatted_response: dict[str, Any] | None = None
     """Final response payload (set by the Formatter stage, last in pipeline).
     The transport adapter reads this and sends it to the client."""
+
+    # ── Deterministic Services ───────────────────────────────────────────────
+    services: DeterministicServices = field(default_factory=DeterministicServices.real)
+    """Injectables that freeze nondeterminism (time, UUIDs, RNG).
+    Defaults to ``RealServices`` in production.  Tests inject ``FakeServices``."""
+
+    # ── Architecture Metrics ────────────────────────────────────────────────
+    architecture_metrics: ArchitectureMetrics = field(default_factory=ArchitectureMetrics)
+    """Per-request structural measurements (plan_steps, observations, …).
+    Populated automatically after pipeline execution."""
 
     # ── Metrics / Metadata ──────────────────────────────────────────────────
     metrics: dict[str, Any] = field(default_factory=dict)
