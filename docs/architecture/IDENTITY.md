@@ -119,7 +119,39 @@ need to write to it.
 
 ---
 
-## 4. Architecture audit — Rule 12
+## 4. Identity precedence during migration
+
+During the migration from legacy `user_id`/`session_id` to canonical
+`IdentityContext`, `Request` carries both:
+
+```python
+@dataclass
+class Request:
+    user_id: str | None = None      # legacy
+    session_id: str | None = None   # legacy
+    identity: IdentityContext | None = None  # canonical
+```
+
+### Precedence rules (enforced in `process_message()`)
+
+1. **If `Request.identity` is present**, use it directly.  Do not
+   reconstruct from `user_id`/`session_id`.
+2. **Otherwise**, create `IdentityContext` from `user_id`/`session_id`
+   via `get_identity_service().create_context()`.
+3. **Never allow both to diverge** — `process_message()` must never
+   receive `identity` AND non-matching `user_id`/`session_id`.  This
+   is a precondition on transport adapters; the identity service
+   trusts `identity` when present.
+
+### Future state
+
+Once all transport adapters provide `Request.identity` directly
+(Sprint 2+), the legacy `user_id`/`session_id` fields will be removed
+from `Request` and `PipelineContext`.
+
+---
+
+## 5. Architecture audit — Rule 12
 
 Only `core/identity/service.py` may construct `IdentityContext` directly
 in production code. All other code must call
