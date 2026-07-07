@@ -299,6 +299,37 @@ def test_observation_only_created_in_execution(path: Path):
 # Every new component must integrate through existing canonical interfaces
 # rather than creating alternate execution paths.
 
+# ── Rule 12: Only core/identity/service.py may instantiate IdentityContext ──
+# in production code.  Tests and identity model definitions are exempt.
+
+
+@pytest.mark.parametrize("path", _prod_files())
+def test_identity_context_only_created_by_service(path: Path):
+    """Only core/identity/service.py may construct IdentityContext directly.
+
+    All other production code must obtain an IdentityContext through
+    ``get_identity_service().create_context()``.
+    """
+    if "core/identity/service.py" in str(path):
+        pytest.skip("IdentityService is the canonical creator")
+    if "identity" in path.parts:
+        pytest.skip("Identity model files are exempt")
+    source = _read_source(path)
+    try:
+        tree = ast.parse(source)
+    except SyntaxError:
+        return
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call) and hasattr(node.func, "id"):
+            if node.func.id == "IdentityContext":
+                lineno = getattr(node, "lineno", 0)
+                pytest.fail(
+                    f"{path}:{lineno} constructs IdentityContext directly. "
+                    "Only core/identity/service.py may create IdentityContext. "
+                    "Use get_identity_service().create_context() instead."
+                )
+
+
 SINGLE_PATH_EXEMPTIONS = {
     "core/pipeline/pipeline.py",           # owns process_message()
     "core/pipeline/stages/execution.py",   # owns Runtime

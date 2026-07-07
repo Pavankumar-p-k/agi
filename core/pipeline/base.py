@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 # Non-owner stages writing to these fields will trigger a runtime warning.
 STAGE_OWNERSHIP: dict[str, set[str]] = {
     "receive": {"parsed_request"},
-    "load_context": {"metadata", "session_id", "user_id"},
+    "load_context": {"metadata", "session_id", "user_id", "identity"},
     "authentication": set(),
     "rate_limit": set(),
     "intent": {"classification"},

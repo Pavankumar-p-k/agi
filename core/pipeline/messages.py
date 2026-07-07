@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from core.identity.models import IdentityContext
 
 
 @dataclass
@@ -22,6 +25,7 @@ class Request:
 
     user_id: str | None = None
     session_id: str | None = None
+    identity: IdentityContext | None = None
 
     attachments: list[dict[str, Any]] = field(default_factory=list)
     """Optional file attachments (e.g. ``[{"name": "photo.jpg", "data": …}]``)."""

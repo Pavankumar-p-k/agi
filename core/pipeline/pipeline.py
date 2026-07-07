@@ -5,6 +5,7 @@ import logging
 import uuid
 from typing import Any
 
+from core.identity import get_identity_service
 from core.pipeline.architecture_metrics import ArchitectureMetrics
 from core.pipeline.base import HookRegistry, PipelineStage, StageOutcome
 from core.pipeline.context import PipelineContext
@@ -95,6 +96,11 @@ async def process_message(
         services=svc,
     )
     ctx.trace_id = ctx.request_id
+    ctx.identity = get_identity_service().create_context(
+        user_id=request.user_id,
+        session_id=request.session_id,
+        agent_type=request.transport,
+    )
     ctx = await pipeline.execute(ctx)
 
     response_metadata: dict[str, Any] = dict(ctx.metrics)

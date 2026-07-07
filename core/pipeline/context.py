@@ -4,6 +4,7 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any
 
+from core.identity.models import IdentityContext
 from core.pipeline.architecture_metrics import ArchitectureMetrics
 from core.pipeline.deterministic import DeterministicServices
 from core.pipeline.outcome import Outcome
@@ -34,6 +35,7 @@ class PipelineContext:
 
     user_id: str | None = None
     session_id: str | None = None
+    identity: IdentityContext | None = None
 
     # ── Pipeline metadata ───────────────────────────────────────────────────
     pipeline_version: str = "1.0"
