@@ -70,63 +70,55 @@ class Executor:
 
     async def execute(self, action_name: str, params: dict | None = None,
                       task_id: str = "", timeout: float = 120.0) -> ActionResult:
-        """Execute an action by name with params. Returns ActionResult."""
+        """Execute an action by name with params. Returns ActionResult.
+
+        Routes through the canonical ``execute_tool_block`` for all tools
+        known to the core execution engine, then falls back to locally
+        registered tools, then to LLM-based resolution.
+        """
         start = time.time()
         params = params or {}
 
+        # 1. Try canonical execution path (RBAC, sandbox, approval gates)
+        result = await self._try_core_execution(action_name, params, task_id, timeout, start)
+        if result is not None:
+            return result
+
+        # 2. Try locally registered tool
         try:
             if action_name in self._tools:
                 tool_fn = self._tools[action_name]
                 if asyncio.iscoroutinefunction(tool_fn):
-                    result = await asyncio.wait_for(tool_fn(**params), timeout=timeout)
+                    tool_result = await asyncio.wait_for(tool_fn(**params), timeout=timeout)
                 else:
-                    result = await asyncio.wait_for(
+                    tool_result = await asyncio.wait_for(
                         asyncio.to_thread(tool_fn, **params),
                         timeout=timeout,
                     )
 
                 elapsed = (time.time() - start) * 1000
 
-                if isinstance(result, ActionResult):
-                    result.duration_ms = elapsed
-                    return result
+                if isinstance(tool_result, ActionResult):
+                    tool_result.duration_ms = elapsed
+                    return tool_result
 
-                if isinstance(result, dict):
+                if isinstance(tool_result, dict):
                     return ActionResult(
-                        success=result.get("success", False),
-                        output=str(result.get("output", result.get("result", ""))),
-                        evidence=str(result.get("evidence", "")),
-                        confidence=float(result.get("confidence", 0.5)),
-                        error=str(result.get("error", "")),
+                        success=tool_result.get("success", False),
+                        output=str(tool_result.get("output", tool_result.get("result", ""))),
+                        evidence=str(tool_result.get("evidence", "")),
+                        confidence=float(tool_result.get("confidence", 0.5)),
+                        error=str(tool_result.get("error", "")),
                         duration_ms=elapsed,
-                        metadata=result.get("metadata", {}),
+                        metadata=tool_result.get("metadata", {}),
                     )
 
                 return ActionResult(
                     success=True,
-                    output=str(result),
+                    output=str(tool_result),
                     confidence=0.8,
                     duration_ms=elapsed,
                 )
-
-            # Unknown action — try to resolve via LLM
-            resolved = await self._resolve_unknown_action(
-                action_name, params.get("description", "") or params.get("goal", "")
-            )
-            if resolved:
-                tool_name = resolved.get("tool", "")
-                tool_params = resolved.get("params", {})
-                tool_params.update({k: v for k, v in params.items()
-                                    if k not in tool_params})
-                logger.info("[Executor] resolved '%s' -> %s(%s)",
-                            action_name, tool_name, tool_params)
-                return await self.execute(tool_name, tool_params, timeout=timeout)
-
-            return ActionResult(
-                success=False,
-                error=f"Unknown action: {action_name}. Could not resolve to any tool.",
-                duration_ms=(time.time() - start) * 1000,
-            )
 
         except asyncio.TimeoutError:
             elapsed = (time.time() - start) * 1000
@@ -144,6 +136,69 @@ class Executor:
                 error=str(e),
                 duration_ms=elapsed,
             )
+
+        # 3. Unknown action — try to resolve via LLM
+        resolved = await self._resolve_unknown_action(
+            action_name, params.get("description", "") or params.get("goal", "")
+        )
+        if resolved:
+            tool_name = resolved.get("tool", "")
+            tool_params = resolved.get("params", {})
+            tool_params.update({k: v for k, v in params.items()
+                                if k not in tool_params})
+            logger.info("[Executor] resolved '%s' -> %s(%s)",
+                        action_name, tool_name, tool_params)
+            return await self.execute(tool_name, tool_params, timeout=timeout)
+
+        return ActionResult(
+            success=False,
+            error=f"Unknown action: {action_name}. Could not resolve to any tool.",
+            duration_ms=(time.time() - start) * 1000,
+        )
+
+    async def _try_core_execution(
+        self, action_name: str, params: dict,
+        task_id: str, timeout: float, start: float,
+    ) -> ActionResult | None:
+        """Attempt execution via ``execute_tool_block``.
+
+        Returns ``None`` when the tool type is unknown to the core engine,
+        so the caller falls through to local registration or LLM resolution.
+        """
+        _ensure_core_imports()
+        import json as _json
+        try:
+            content = _json.dumps(params) if params else ""
+            block = _TOOL_BLOCK_CLS(tool_type=action_name, content=content)
+            desc, result = await _CORE_TOOL_EXEC(
+                block,
+                session_id=task_id or None,
+                owner="brain",
+            )
+        except Exception:
+            logger.debug("[Executor] core exec bypassed for %s", action_name, exc_info=True)
+            return None
+
+        # Unknown tool type — let caller try local path
+        if result.get("error", "").startswith("Unknown tool type"):
+            return None
+
+        elapsed = (time.time() - start) * 1000
+
+        success = result.get("exit_code", 0) == 0 or not result.get("error")
+        output = result.get("output", result.get("stdout", ""))
+        error = result.get("error", "")
+        if not error and result.get("stderr"):
+            error = result["stderr"]
+
+        return ActionResult(
+            success=success,
+            output=str(output) if output else desc,
+            error=str(error) if error else "",
+            duration_ms=elapsed,
+            metadata={"core_desc": desc, **{k: v for k, v in result.items()
+                      if k not in ("output", "error", "exit_code", "stdout", "stderr")}},
+        )
 
     async def _resolve_unknown_action(self, task_label: str,
                                        description: str) -> dict | None:
