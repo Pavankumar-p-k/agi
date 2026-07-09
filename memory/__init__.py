@@ -12,11 +12,20 @@
 # limitations under the License.
 from memory.extraction import ExtractedFact, extract_facts, extract_facts_from_messages
 from memory.fact_store import FactStore, get_fact_store
+from memory.episodic_store import EpisodicStore
+from memory.semantic_store import SemanticStore
+from memory.task_store import TaskStore
+from memory.decision_store import DecisionStore
 
 __all__ = [
     "ExtractedFact",
     "FactStore",
+    "episodic_store",
+    "EpisodicStore",
+    "get_fact_store",
+    "SemanticStore",
+    "TaskStore",
+    "DecisionStore",
     "extract_facts",
     "extract_facts_from_messages",
-    "get_fact_store",
 ]

@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import warnings
 from typing import Any
 
 from .base import MemoryProvider
@@ -13,7 +14,7 @@ from .decision import DecisionMemory
 
 logger = logging.getLogger(__name__)
 
-# Canonical memory facade — all memory operations eventually route here.
+# Canonical memory facade — all memory operations route here.
 _MEMORY_FACADE = None
 
 
@@ -30,20 +31,32 @@ def _ensure_memory_facade():
         _MEMORY_FACADE = False
 
 
+_deprecation_warned = False
+
+
+def _warn_deprecated():
+    global _deprecation_warned
+    if not _deprecation_warned:
+        warnings.warn(
+            "brain.memory.memory_manager.MemoryManager is deprecated. "
+            "Use 'memory.memory_facade.memory' directly instead.",
+            DeprecationWarning, stacklevel=3,
+        )
+        _deprecation_warned = True
+
+
 class MemoryManager:
     """Orchestrates all memory subsystems.
 
-    Provides a unified API for storing, retrieving, and managing
-    episodic, semantic, task, and decision memories. All operations
-    are mirrored to the canonical ``MemoryFacade`` (memory/ package)
-    in addition to the local brain memory stores.
-
-    External providers can be registered via register_provider().
+    .. deprecated::
+        Use ``memory.memory_facade.memory`` directly instead.
+        ``brain/memory/`` will be removed in a future release.
     """
 
     _MEMORY_USER = "brain"
 
     def __init__(self, db_path: str | None = None):
+        _warn_deprecated()
         if db_path is None:
             data_dir = os.path.join(
                 os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
@@ -71,7 +84,6 @@ class MemoryManager:
         return dict(self._providers)
 
     def register_provider(self, name: str, provider: MemoryProvider):
-        """Register an external memory provider."""
         self._providers[name] = provider
         setattr(self, name, provider)
         logger.info("[MemoryManager] registered provider: %s", name)
@@ -86,7 +98,7 @@ class MemoryManager:
                       episode_type: str = "task",
                       tags: list[str] | None = None) -> str:
         mem_id = self.episodic.store(goal, actions, context, result, episode_type, tags)
-        self._mirror_to_facade("episode", {
+        self._write_to_facade("episodic", "store_episode", {
             "goal": goal, "actions": actions, "context": context,
             "result": result, "episode_type": episode_type, "tags": tags,
         })
@@ -104,7 +116,7 @@ class MemoryManager:
                    confidence: float = 1.0, source: str = "inference",
                    tags: list[str] | None = None) -> str:
         fact_id = self.semantic.store(fact, category, confidence, source, tags)
-        self._mirror_to_facade("fact", {
+        self._write_to_facade("semantic", "store_fact", {
             "fact": fact, "category": category, "confidence": confidence,
             "source": source, "tags": tags,
         })
@@ -126,7 +138,7 @@ class MemoryManager:
                     tags: list[str] | None = None) -> str:
         trace_id = self.task.store(action_name, action_params, observation,
                                    success, duration_ms, task_id, context, tags)
-        self._mirror_to_facade("trace", {
+        self._write_to_facade("task", "store_trace", {
             "action_name": action_name, "action_params": action_params,
             "observation": observation, "success": success,
             "duration_ms": duration_ms, "task_id": task_id,
@@ -148,7 +160,7 @@ class MemoryManager:
                        tags: list[str] | None = None) -> str:
         dec_id = self.decision.store(context, decision, alternatives,
                                      outcome, lesson, success, tags)
-        self._mirror_to_facade("decision", {
+        self._write_to_facade("decision", "store_decision", {
             "context": context, "decision": decision,
             "alternatives": alternatives, "outcome": outcome,
             "lesson": lesson, "success": success, "tags": tags,
@@ -164,7 +176,6 @@ class MemoryManager:
 
     def reflect_on_task(self, task_goal: str, task_result: dict,
                         actions_taken: list[dict]) -> dict:
-        """Self-reflection: analyze what happened and store lessons in DecisionMemory."""
         success = task_result.get("success", False)
         error = task_result.get("error", "")
 
@@ -193,7 +204,13 @@ class MemoryManager:
     # ------------------------------------------------------------------
 
     def summarize(self) -> dict:
-        """Return a summary of all memory stores."""
+        if _MEMORY_FACADE is not None and _MEMORY_FACADE is not False:
+            try:
+                summary = _MEMORY_FACADE.summarize(user_id=self._MEMORY_USER)
+                summary["db_path"] = self.db_path
+                return summary
+            except Exception:
+                pass
         return {
             "episodic_count": self.episodic.count(),
             "semantic_count": self.semantic.count(),
@@ -203,30 +220,22 @@ class MemoryManager:
         }
 
     def decay_all(self, factor: float = 0.95):
-        """Apply importance decay across all memory types."""
         self.semantic.decay(factor)
 
     def cleanup_old_episodes(self, before_days: int = 30):
-        """Summarize old episodes to save space."""
         self.episodic.summarize_old(before_days)
 
     # ------------------------------------------------------------------
-    # Canonical mirror
+    # Canonical write-through
     # ------------------------------------------------------------------
 
-    def _mirror_to_facade(self, memory_type: str, payload: dict) -> None:
-        """Mirror a write to the canonical ``MemoryFacade``."""
+    def _write_to_facade(self, memory_type: str, method: str, payload: dict) -> None:
         if _MEMORY_FACADE is None or _MEMORY_FACADE is False:
             return
         try:
-            text = json.dumps({"type": memory_type, **payload}, default=str)
-            _MEMORY_FACADE.store(
-                text,
-                user_id=self._MEMORY_USER,
-                metadata={"source": "brain", "memory_type": memory_type},
-            )
+            getattr(_MEMORY_FACADE, method)(**payload, user_id=self._MEMORY_USER)
         except Exception as exc:
-            logger.debug("[MemoryManager] facade mirror failed: %s", exc)
+            logger.debug("[MemoryManager] facade %s failed: %s", method, exc)
 
 
 memory_manager = MemoryManager()

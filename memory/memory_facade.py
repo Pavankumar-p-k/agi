@@ -28,6 +28,10 @@ class MemoryFacade:
     def __init__(self):
         self._mem0 = None
         self._tiered = None
+        self._episodic = None
+        self._semantic = None
+        self._task = None
+        self._decision = None
 
     # ------------------------------------------------------------------ #
     # Lazy backend accessors
@@ -55,8 +59,52 @@ class MemoryFacade:
                 self._tiered = False
         return self._tiered if self._tiered is not False else None
 
+    @property
+    def _episodic_store(self):
+        if self._episodic is None:
+            try:
+                from memory.episodic_store import EpisodicStore
+                self._episodic = EpisodicStore()
+            except Exception as exc:
+                logger.debug("EpisodicStore unavailable: %s", exc)
+                self._episodic = False
+        return self._episodic if self._episodic is not False else None
+
+    @property
+    def _semantic_store(self):
+        if self._semantic is None:
+            try:
+                from memory.semantic_store import SemanticStore
+                self._semantic = SemanticStore()
+            except Exception as exc:
+                logger.debug("SemanticStore unavailable: %s", exc)
+                self._semantic = False
+        return self._semantic if self._semantic is not False else None
+
+    @property
+    def _task_store(self):
+        if self._task is None:
+            try:
+                from memory.task_store import TaskStore
+                self._task = TaskStore()
+            except Exception as exc:
+                logger.debug("TaskStore unavailable: %s", exc)
+                self._task = False
+        return self._task if self._task is not False else None
+
+    @property
+    def _decision_store(self):
+        if self._decision is None:
+            try:
+                from memory.decision_store import DecisionStore
+                self._decision = DecisionStore()
+            except Exception as exc:
+                logger.debug("DecisionStore unavailable: %s", exc)
+                self._decision = False
+        return self._decision if self._decision is not False else None
+
     # ------------------------------------------------------------------ #
-    # Public API
+    # Public API — Legacy (store/recall)
     # ------------------------------------------------------------------ #
 
     def store(self, text: str | list[dict], user_id: str = "default", metadata: dict | None = None) -> None:
@@ -96,7 +144,6 @@ class MemoryFacade:
 
     def get_all(self, user_id: str) -> list[dict]:
         results = []
-        # Get from Tiered (Hot)
         tiered = self._tiered_memory
         if tiered is not None:
             try:
@@ -105,7 +152,6 @@ class MemoryFacade:
             except Exception as exc:
                 logger.debug("tiered_memory.get_hot failed: %s", exc)
 
-        # Get from Mem0 (Cold)
         mem0 = self._mem0_adapter
         if mem0 is not None:
             try:
@@ -125,7 +171,6 @@ class MemoryFacade:
         return False
 
     def search_all(self, query: str, limit: int = 5, user_id: str = "default") -> list[dict]:
-        """Search all memory backends and tag results with source."""
         results = []
         backends = [
             ("tiered", self._tiered_memory),
@@ -149,10 +194,7 @@ class MemoryFacade:
         return results
 
     def consolidate_all(self):
-        """Consolidate memories across all available backends."""
-        backends = [
-            ("tiered", self._tiered_memory),
-        ]
+        backends = [("tiered", self._tiered_memory)]
         for source, backend in backends:
             if backend is None:
                 continue
@@ -178,6 +220,139 @@ class MemoryFacade:
             if text:
                 lines.append(f"- {text}")
         return "\n".join(lines)
+
+    # ------------------------------------------------------------------ #
+    # Public API — Episodic
+    # ------------------------------------------------------------------ #
+
+    def store_episode(self, goal: str, actions: list[dict],
+                      context: dict | None = None,
+                      result: dict | None = None,
+                      episode_type: str = "task",
+                      tags: list[str] | None = None,
+                      user_id: str = "default") -> str:
+        store = self._episodic_store
+        if store is not None:
+            return store.store(goal, actions, context, result, episode_type, tags, user_id)
+        return ""
+
+    def retrieve_episodes(self, query: str, top_k: int = 5,
+                          min_importance: float = 0.0,
+                          user_id: str = "default") -> list[dict]:
+        store = self._episodic_store
+        if store is not None:
+            return store.retrieve(query, top_k, min_importance, user_id)
+        return []
+
+    def get_recent_episodes(self, limit: int = 20, user_id: str = "default") -> list[dict]:
+        store = self._episodic_store
+        if store is not None:
+            return store.get_recent(limit, user_id)
+        return []
+
+    # ------------------------------------------------------------------ #
+    # Public API — Semantic (facts)
+    # ------------------------------------------------------------------ #
+
+    def store_fact(self, fact: str, category: str = "general",
+                   confidence: float = 1.0, source: str = "inference",
+                   tags: list[str] | None = None,
+                   user_id: str = "default") -> str:
+        store = self._semantic_store
+        if store is not None:
+            return store.store(fact, category, confidence, source, tags, user_id)
+        return ""
+
+    def retrieve_facts(self, query: str, top_k: int = 8,
+                       min_confidence: float = 0.0,
+                       categories: list[str] | None = None,
+                       user_id: str = "default") -> list[dict]:
+        store = self._semantic_store
+        if store is not None:
+            return store.retrieve(query, top_k, min_confidence, categories, user_id)
+        return []
+
+    def get_facts_by_category(self, category: str, limit: int = 50,
+                              user_id: str = "default") -> list[dict]:
+        store = self._semantic_store
+        if store is not None:
+            return store.get_by_category(category, limit, user_id)
+        return []
+
+    # ------------------------------------------------------------------ #
+    # Public API — Task (action traces)
+    # ------------------------------------------------------------------ #
+
+    def store_trace(self, action_name: str, action_params: dict | None = None,
+                    observation: str = "", success: bool = False,
+                    duration_ms: float = 0.0, task_id: str = "",
+                    context: dict | None = None,
+                    tags: list[str] | None = None,
+                    user_id: str = "default") -> str:
+        store = self._task_store
+        if store is not None:
+            return store.store(action_name, action_params, observation,
+                               success, duration_ms, task_id, context, tags, user_id)
+        return ""
+
+    def get_task_traces(self, task_id: str, user_id: str = "default") -> list[dict]:
+        store = self._task_store
+        if store is not None:
+            return store.get_task_traces(task_id, user_id)
+        return []
+
+    def get_recent_traces(self, limit: int = 50, user_id: str = "default") -> list[dict]:
+        store = self._task_store
+        if store is not None:
+            return store.get_recent(limit, user_id)
+        return []
+
+    # ------------------------------------------------------------------ #
+    # Public API — Decision
+    # ------------------------------------------------------------------ #
+
+    def store_decision(self, context: str, decision: str,
+                       alternatives: list[str] | None = None,
+                       outcome: str = "", lesson: str = "",
+                       success: bool = False,
+                       tags: list[str] | None = None,
+                       user_id: str = "default") -> str:
+        store = self._decision_store
+        if store is not None:
+            return store.store(context, decision, alternatives,
+                               outcome, lesson, success, tags, user_id)
+        return ""
+
+    def retrieve_decisions(self, query_context: str, top_k: int = 5,
+                           user_id: str = "default") -> list[dict]:
+        store = self._decision_store
+        if store is not None:
+            return store.retrieve_similar(query_context, top_k, user_id)
+        return []
+
+    def get_failures(self, limit: int = 20, user_id: str = "default") -> list[dict]:
+        store = self._decision_store
+        if store is not None:
+            return store.get_failures(limit, user_id)
+        return []
+
+    def get_lessons(self, limit: int = 20, user_id: str = "default") -> list[dict]:
+        store = self._decision_store
+        if store is not None:
+            return store.get_lessons(limit, user_id)
+        return []
+
+    # ------------------------------------------------------------------ #
+    # Introspection
+    # ------------------------------------------------------------------ #
+
+    def summarize(self, user_id: str = "default") -> dict:
+        return {
+            "episodic_count": self._episodic_store.count(user_id) if self._episodic_store else 0,
+            "semantic_count": self._semantic_store.count(user_id) if self._semantic_store else 0,
+            "task_count": self._task_store.count(user_id) if self._task_store else 0,
+            "decision_count": self._decision_store.count(user_id) if self._decision_store else 0,
+        }
 
 
 memory = MemoryFacade()

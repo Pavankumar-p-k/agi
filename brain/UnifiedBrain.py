@@ -15,7 +15,8 @@ from .cognitive_patterns import CognitivePatterns
 from .epistemic_tagger import EpistemicTagger
 from .reasoning_engine import reasoning_engine
 
-from .memory import MemoryManager
+from memory.memory_facade import memory as _canonical_memory
+from .memory import MemoryManager as _MemoryManager
 from .goals import Goal, GoalStatus, GoalManager
 from .planner import Planner
 from .planner.task_graph import TaskGraph
@@ -91,7 +92,7 @@ class UnifiedBrain:
         self.tagger = EpistemicTagger()
 
         # Autonomous OS subsystems
-        self.memory = MemoryManager(db_path)
+        self.memory = _MemoryManager(db_path)
         self.goals = GoalManager(db_path)
         self.planner = Planner()
         self.executor = _executor_singleton
@@ -195,7 +196,7 @@ class UnifiedBrain:
         logger.warning("[Brain] event: goal.failed — %s", event.payload.get("objective", "")[:60])
 
     async def _on_task_completed(self, event: Event):
-        self.memory.store_trace(
+        _canonical_memory.store_trace(
             action_name=event.payload.get("label", "unknown"),
             observation=event.payload.get("output", ""),
             success=True,
@@ -204,7 +205,7 @@ class UnifiedBrain:
         )
 
     async def _on_task_failed(self, event: Event):
-        self.memory.store_trace(
+        _canonical_memory.store_trace(
             action_name=event.payload.get("label", "unknown"),
             observation=event.payload.get("error", ""),
             success=False,
@@ -393,7 +394,7 @@ class UnifiedBrain:
         else:
             verification = None
 
-        self.memory.store_trace(
+        _canonical_memory.store_trace(
             action_name=action_name,
             action_params=params,
             observation=result.output,
@@ -435,15 +436,15 @@ class UnifiedBrain:
     def store_memory(self, fact: str, category: str = "general",
                      confidence: float = 1.0, source: str = "inference") -> str:
         """Store a semantic fact in long-term memory."""
-        mem_id = self.memory.store_fact(fact, category, confidence, source)
+        mem_id = _canonical_memory.store_fact(fact, category, confidence, source)
         return mem_id
 
     def retrieve_memories(self, query: str, top_k: int = 8) -> dict:
         """Retrieve relevant memories across all memory types."""
         return {
-            "episodes": self.memory.retrieve_episodes(query, top_k=top_k // 2),
-            "facts": self.memory.retrieve_facts(query, top_k=top_k // 2),
-            "decisions": self.memory.retrieve_decisions(query, top_k=top_k // 2),
+            "episodes": _canonical_memory.retrieve_episodes(query, top_k=top_k // 2),
+            "facts": _canonical_memory.retrieve_facts(query, top_k=top_k // 2),
+            "decisions": _canonical_memory.retrieve_decisions(query, top_k=top_k // 2),
         }
 
     async def auto_generate_goals(self) -> list[Goal]:
@@ -515,7 +516,7 @@ class UnifiedBrain:
         """Get full system status."""
         return {
             "automation": self.automation.status(),
-            "memory": self.memory.summarize(),
+            "memory": _canonical_memory.summarize(),
             "goals": self.goals.count(),
             "observers": self.observers.list_observers(),
             "events": self.events.stats(),
