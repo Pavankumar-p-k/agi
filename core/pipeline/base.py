@@ -26,7 +26,7 @@ STAGE_OWNERSHIP: dict[str, set[str]] = {
     "knowledge": {"knowledge_result"},
     "reasoner": {"reasoning_assessment"},  # legacy — removal target Sprint 3
     "reasoning": {"reasoning_assessment", "reasoning_result"},
-    "planner": {"plan"},
+    "planner": {"plan", "planner_result"},
     "plan_validator": {"plan_validated"},
     "capability_selection": {"selected_capabilities"},
     "execution": {"execution_result", "execution_state", "outcome"},

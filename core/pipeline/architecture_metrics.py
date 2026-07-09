@@ -84,6 +84,17 @@ class ArchitectureMetrics:
     knowledge_nodes_traversed: int = 0
     """Number of nodes traversed during knowledge queries."""
 
+    # ── Planning metrics (Phase 7, Sprint 3) ─────────────────────────────
+
+    plan_strategy_count: int = 0
+    """Number of strategy candidates generated."""
+
+    plan_ranking_margin: float = 0.0
+    """Score margin between first and second ranked strategy."""
+
+    plan_selected_confidence: float = 0.0
+    """Confidence of the selected (winning) strategy."""
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "reasoning_complexity": self.reasoning_complexity,
@@ -106,6 +117,9 @@ class ArchitectureMetrics:
             "knowledge_fact_count": self.knowledge_fact_count,
             "knowledge_edge_count": self.knowledge_edge_count,
             "knowledge_nodes_traversed": self.knowledge_nodes_traversed,
+            "plan_strategy_count": self.plan_strategy_count,
+            "plan_ranking_margin": self.plan_ranking_margin,
+            "plan_selected_confidence": self.plan_selected_confidence,
         }
 
     def to_snapshot_dict(self) -> dict[str, Any]:
@@ -125,6 +139,15 @@ class ArchitectureMetrics:
         scope = ctx.resource_scope
         rsn = ctx.reasoning_result
         kn = ctx.knowledge_result
+        pr = ctx.planner_result
+
+        # Planner ranking margin
+        plan_margin = 0.0
+        plan_confidence = 0.0
+        if pr and pr.ranking.comparisons:
+            plan_margin = pr.ranking.comparisons[0].margin
+        if pr and pr.selected_strategy:
+            plan_confidence = pr.selected_strategy.confidence
 
         return ArchitectureMetrics(
             reasoning_complexity=reasoning.get("complexity", "unknown"),
@@ -147,4 +170,7 @@ class ArchitectureMetrics:
             knowledge_fact_count=len(kn.facts) if kn else 0,
             knowledge_edge_count=kn.edge_count if kn else 0,
             knowledge_nodes_traversed=kn.node_count if kn else 0,
+            plan_strategy_count=pr.total_candidates if pr else 0,
+            plan_ranking_margin=plan_margin,
+            plan_selected_confidence=plan_confidence,
         )

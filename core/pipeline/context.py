@@ -10,6 +10,7 @@ from core.pipeline.architecture_metrics import ArchitectureMetrics
 from core.pipeline.authentication_result import AuthenticationResult
 from core.pipeline.authorization_result import AuthorizationResult
 from core.pipeline.knowledge_result import KnowledgeResult
+from core.pipeline.planner_result import PlannerResult
 from core.pipeline.resource_access_result import ResourceAccessResult
 from core.pipeline.resource_grant import ResourceGrant
 from core.pipeline.reasoning_result import ReasoningResult
@@ -96,6 +97,12 @@ class PipelineContext:
     """Canonical output of the Reasoning stage (Phase 7).
     Replaces ``reasoning_assessment``.  Frozen dataclass with
     beliefs, evidence, contradictions, counter-hypotheses, confidence."""
+
+    planner_result: PlannerResult | None = None
+    """Canonical output of the multi-strategy Planner stage (Phase 7, Sprint 3).
+    Contains ranked strategy candidates, comparisons, and the selected plan.
+    ``context.plan`` is still populated from the winning strategy for backward
+    compat."""
 
     plan: dict[str, Any] | None = None
     """Logical plan produced by the Planner stage.
