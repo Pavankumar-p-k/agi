@@ -21,6 +21,7 @@ relevant ones per user message.
 import hashlib
 import logging
 import re
+import threading
 import time
 
 try:
@@ -630,10 +631,11 @@ class ToolIndex:
 _tool_index: ToolIndex | None = None
 _last_attempt = 0.0
 _RETRY_INTERVAL = 30.0
+_tool_index_lock = threading.Lock()
 
 
 def get_tool_index() -> ToolIndex | None:
-    """Get or create the singleton ToolIndex. Returns None if unavailable."""
+    """Get or create the singleton ToolIndex. Returns None if unavailable. Thread-safe."""
     global _tool_index, _last_attempt
 
     if _tool_index is not None and _tool_index.healthy:
@@ -642,13 +644,20 @@ def get_tool_index() -> ToolIndex | None:
     now = time.monotonic()
     if now - _last_attempt < _RETRY_INTERVAL:
         return None
-    _last_attempt = now
 
-    try:
-        _tool_index = ToolIndex()
-        _tool_index.index_builtin_tools()
-        return _tool_index
-    except Exception as e:
-        logger.warning(f"ToolIndex init failed (will retry in {_RETRY_INTERVAL}s): {e}")
-        _tool_index = None
-        return None
+    with _tool_index_lock:
+        if _tool_index is not None and _tool_index.healthy:
+            return _tool_index
+        if time.monotonic() - _last_attempt < _RETRY_INTERVAL:
+            return None
+
+        _last_attempt = time.monotonic()
+
+        try:
+            _tool_index = ToolIndex()
+            _tool_index.index_builtin_tools()
+            return _tool_index
+        except Exception as e:
+            logger.warning(f"ToolIndex init failed (will retry in {_RETRY_INTERVAL}s): {e}")
+            _tool_index = None
+            return None

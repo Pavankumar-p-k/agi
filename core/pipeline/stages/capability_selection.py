@@ -33,56 +33,6 @@ class CapabilitySelectionStage(PipelineStage):
         return StageResult(outcome=StageOutcome.CONTINUE, context=context)
 
     def _resolve(self, intent: str) -> list[Any]:
-        intent = intent.lower().strip()
+        from core.capability.registry import capability_registry
 
-        try:
-            from core.capability.registry import capability_registry as _cr
-            registry = _cr
-        except Exception:
-            registry = None
-
-        from core.capability.models import Capability, _BUILTIN_CAPABILITIES
-
-        intent_to_cap: dict[str, list[str]] = {
-            "respond": ["documentation"],
-            "search_web": ["research", "browser"],
-            "browse_web": ["browser"],
-            "write_code": ["coding"],
-            "summarize": ["research", "documentation"],
-            "research": ["research"],
-            "analyze": ["research", "vision"],
-            "translate": ["translation"],
-            "generate_image": ["image_generation"],
-            "send_email": ["email", "notifications"],
-            "send_message": ["messaging", "notifications"],
-            "run_command": ["terminal"],
-            "deploy": ["deployment"],
-            "test": ["testing"],
-            "query_database": ["database"],
-            "read_file": ["filesystem"],
-            "write_file": ["filesystem"],
-        }
-
-        def _get_cap(cid: str) -> Capability | None:
-            if registry is not None:
-                try:
-                    cap = registry.get(cid)
-                    if cap is not None:
-                        return cap
-                except Exception:
-                    pass
-            return _BUILTIN_CAPABILITIES.get(cid)
-
-        cap_ids = intent_to_cap.get(intent, [])
-        results: list[Capability] = []
-        for cid in cap_ids:
-            cap = _get_cap(cid)
-            if cap is not None:
-                results.append(cap)
-
-        if not results:
-            fallback = _get_cap("documentation")
-            if fallback is not None:
-                results.append(fallback)
-
-        return results
+        return capability_registry.resolve_intent(intent)

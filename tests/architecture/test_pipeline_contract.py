@@ -456,6 +456,7 @@ def test_default_stages_have_correct_order():
         "execution",
         "verification",
         "epistemic",
+        "reflection",
         "memory",
         "metrics",
         "formatter",
@@ -482,6 +483,7 @@ def test_all_stage_classes_importable():
         ReasonerStage,
         ReasoningStage,
         ReceiveStage,
+        ReflectionStage,
         ResourceAccessStage,
         TenantResolutionStage,
         VerificationStage,
@@ -505,6 +507,7 @@ def test_all_stage_classes_importable():
         ReasonerStage,
         ReasoningStage,
         ReceiveStage,
+        ReflectionStage,
         ResourceAccessStage,
         TenantResolutionStage,
         VerificationStage,
@@ -515,7 +518,7 @@ def test_all_stage_classes_importable():
 
 def test_default_stage_count():
     """DEFAULT_STAGES has the expected count (ADR-007 + ADR-009)."""
-    assert len(DEFAULT_STAGES) == 20
+    assert len(DEFAULT_STAGES) == 21
 
 
 @pytest.mark.asyncio

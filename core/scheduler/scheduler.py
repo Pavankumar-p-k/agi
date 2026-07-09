@@ -391,6 +391,16 @@ class Scheduler:
                 cb(result)
             except Exception as e:
                 logger.warning("Scheduler: tick callback error: %s", e)
+        try:
+            from core.event_bus import Event, global_event_bus
+            event = Event(
+                type="scheduler.tick",
+                source="scheduler",
+                payload=result,
+            )
+            global_event_bus.publish_sync(event)
+        except Exception:
+            logger.debug("Failed to publish scheduler tick event", exc_info=True)
 
     # ── Internal loop ───────────────────────────────────────────────────────
 

@@ -95,6 +95,17 @@ class ArchitectureMetrics:
     plan_selected_confidence: float = 0.0
     """Confidence of the selected (winning) strategy."""
 
+    # ── Reflection metrics (Phase 7, Sprint 4) ───────────────────────────
+
+    reflection_success_rating: float = 0.0
+    """Success rating from the Reflection stage (0–1)."""
+
+    reflection_lessons_count: int = 0
+    """Number of lessons learned."""
+
+    reflection_patterns_count: int = 0
+    """Number of patterns extracted."""
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "reasoning_complexity": self.reasoning_complexity,
@@ -120,6 +131,9 @@ class ArchitectureMetrics:
             "plan_strategy_count": self.plan_strategy_count,
             "plan_ranking_margin": self.plan_ranking_margin,
             "plan_selected_confidence": self.plan_selected_confidence,
+            "reflection_success_rating": self.reflection_success_rating,
+            "reflection_lessons_count": self.reflection_lessons_count,
+            "reflection_patterns_count": self.reflection_patterns_count,
         }
 
     def to_snapshot_dict(self) -> dict[str, Any]:
@@ -140,6 +154,7 @@ class ArchitectureMetrics:
         rsn = ctx.reasoning_result
         kn = ctx.knowledge_result
         pr = ctx.planner_result
+        rf = ctx.reflection_result
 
         # Planner ranking margin
         plan_margin = 0.0
@@ -173,4 +188,7 @@ class ArchitectureMetrics:
             plan_strategy_count=pr.total_candidates if pr else 0,
             plan_ranking_margin=plan_margin,
             plan_selected_confidence=plan_confidence,
+            reflection_success_rating=rf.success_rating if rf else 0.0,
+            reflection_lessons_count=len(rf.lessons) if rf else 0,
+            reflection_patterns_count=len(rf.patterns) if rf else 0,
         )

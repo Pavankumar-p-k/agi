@@ -13,6 +13,7 @@
 from __future__ import annotations
 
 import json
+import threading
 from collections import OrderedDict
 from typing import Any, Callable, Iterable, List, Optional
 
@@ -22,29 +23,36 @@ from .base_tool import ToolDefinition, ToolResult
 class ToolRegistry:
     def __init__(self) -> None:
         self._definitions: OrderedDict[str, ToolDefinition] = OrderedDict()
+        self._lock = threading.Lock()
 
     def register(self, definition: ToolDefinition) -> ToolDefinition:
-        self._definitions[definition.name] = definition
+        with self._lock:
+            self._definitions[definition.name] = definition
         return definition
 
     def extend(self, definitions: Iterable[ToolDefinition]) -> None:
-        for definition in definitions:
-            self.register(definition)
+        with self._lock:
+            for definition in definitions:
+                self._definitions[definition.name] = definition
 
     def get(self, name: str) -> ToolDefinition:
-        return self._definitions[name]
+        with self._lock:
+            return self._definitions[name]
 
     def has(self, name: str) -> bool:
-        return name in self._definitions
+        with self._lock:
+            return name in self._definitions
 
     def list(self, *, category: Optional[str] = None) -> List[ToolDefinition]:
-        items = list(self._definitions.values())
+        with self._lock:
+            items = list(self._definitions.values())
         if category:
             items = [item for item in items if item.category == category]
         return items
 
     def as_dicts(self) -> list[dict]:
-        """Machine-readable catalog for API consumption."""
+        with self._lock:
+            definitions = list(self._definitions.values())
         return [
             {
                 "name": definition.name,
@@ -57,29 +65,30 @@ class ToolRegistry:
                 "read_only": definition.read_only,
                 "metadata": dict(definition.metadata),
             }
-            for definition in self._definitions.values()
+            for definition in definitions
         ]
 
     def catalog(self) -> str:
-        """Human-readable string for LLM system prompt. Description IS routing."""
-        if not self._definitions:
-            return "AVAILABLE TOOLS: (none)"
-        lines = ["AVAILABLE TOOLS:"]
-        for t in self._definitions.values():
-            lines.append(f"\n- {t.name}: {t.description}")
-            lines.append(f"  params: {json.dumps(t.input_schema)}")
-            if t.examples:
-                ex = t.examples[0]
-                inp = json.dumps(ex.get("input", {}))
-                out = str(ex.get("output", ""))[:80]
-                lines.append(f"  example: input={inp} -> output={out}")
-        lines.append(
-            '\nTo call a tool output exactly: {"tool": "name", "params": {...}}'
-        )
-        return "\n".join(lines)
+        with self._lock:
+            if not self._definitions:
+                return "AVAILABLE TOOLS: (none)"
+            lines = ["AVAILABLE TOOLS:"]
+            for t in self._definitions.values():
+                lines.append(f"\n- {t.name}: {t.description}")
+                lines.append(f"  params: {json.dumps(t.input_schema)}")
+                if t.examples:
+                    ex = t.examples[0]
+                    inp = json.dumps(ex.get("input", {}))
+                    out = str(ex.get("output", ""))[:80]
+                    lines.append(f"  example: input={inp} -> output={out}")
+            lines.append(
+                '\nTo call a tool output exactly: {"tool": "name", "params": {...}}'
+            )
+            return "\n".join(lines)
 
     def get_handler_dict(self, names: list[str] | None = None) -> dict[str, Callable]:
-        tools = self.list()
+        with self._lock:
+            tools = list(self._definitions.values())
         if names is not None:
             tools = [t for t in tools if t.name in names]
         return {
@@ -89,10 +98,13 @@ class ToolRegistry:
         }
 
     async def execute(self, name: str, params: dict) -> ToolResult:
-        tool = self._definitions.get(name)
+        with self._lock:
+            tool = self._definitions.get(name)
         if not tool:
+            with self._lock:
+                available = list(self._definitions.keys())
             return ToolResult(
-                error=f"Unknown tool: '{name}'. Available: {list(self._definitions.keys())}",
+                error=f"Unknown tool: '{name}'. Available: {available}",
                 retryable=False,
             )
         if not tool.handler:
@@ -109,15 +121,27 @@ class ToolRegistry:
             return ToolResult(error=f"'{name}' failed: {str(e)}", retryable=True)
 
     def __len__(self) -> int:
-        return len(self._definitions)
+        with self._lock:
+            return len(self._definitions)
 
 
 def new_registry() -> ToolRegistry:
     return ToolRegistry()
 
 
-_default_tool_registry = new_registry()
+_default_tool_registry_lock = threading.Lock()
+_default_tool_registry: ToolRegistry | None = None
+
+
+def _ensure_registry() -> ToolRegistry:
+    global _default_tool_registry
+    if _default_tool_registry is not None:
+        return _default_tool_registry
+    with _default_tool_registry_lock:
+        if _default_tool_registry is None:
+            _default_tool_registry = new_registry()
+    return _default_tool_registry
 
 
 def get_tool(name: str) -> ToolDefinition:
-    return _default_tool_registry.get(name)
+    return _ensure_registry().get(name)

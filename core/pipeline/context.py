@@ -11,6 +11,7 @@ from core.pipeline.authentication_result import AuthenticationResult
 from core.pipeline.authorization_result import AuthorizationResult
 from core.pipeline.knowledge_result import KnowledgeResult
 from core.pipeline.planner_result import PlannerResult
+from core.pipeline.reflection_result import ReflectionResult
 from core.pipeline.resource_access_result import ResourceAccessResult
 from core.pipeline.resource_grant import ResourceGrant
 from core.pipeline.reasoning_result import ReasoningResult
@@ -103,6 +104,10 @@ class PipelineContext:
     Contains ranked strategy candidates, comparisons, and the selected plan.
     ``context.plan`` is still populated from the winning strategy for backward
     compat."""
+
+    reflection_result: ReflectionResult | None = None
+    """Canonical output of the Reflection stage (Phase 7, Sprint 4).
+    Post-execution analysis with lessons, patterns, success rating."""
 
     plan: dict[str, Any] | None = None
     """Logical plan produced by the Planner stage.

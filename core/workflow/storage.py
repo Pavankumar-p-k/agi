@@ -250,6 +250,20 @@ class WorkflowStore:
                 (event.event_id, event.workflow_id, event.event_type,
                  json.dumps(event.data), _dt(event.timestamp)),
             )
+        try:
+            from core.event_bus import Event, global_event_bus
+            ev = Event(
+                type=f"workflow.{event.event_type}",
+                source="workflow",
+                payload={
+                    "workflow_id": event.workflow_id,
+                    "event_type": event.event_type,
+                    "data": event.data,
+                },
+            )
+            global_event_bus.publish_sync(ev)
+        except Exception:
+            logger.debug("Failed to publish workflow event to EventBus", exc_info=True)
 
     def get_events(self, workflow_id: str, limit: int = 100) -> list[WorkflowEvent]:
         with self._lock, sqlite3.connect(self._db_path) as conn:

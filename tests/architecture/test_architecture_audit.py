@@ -1632,5 +1632,53 @@ def test_only_planner_stage_creates_planning_artifacts():
         )
 
 
+# ── Rule 52: Only ReflectionStage creates ReflectionResult ───────────────────
+
+
+def test_only_reflection_stage_creates_reflection_result():
+    """``ReflectionResult`` must only be constructed by the Reflection stage.
+
+    Enforced by scanning for ``ReflectionResult(`` calls outside
+    ``core/pipeline/stages/reflection/`` and the contract definition.
+    """
+    import ast
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parent.parent.parent
+    reflection_result_files: list[str] = []
+
+    for path in sorted(root.rglob("*.py")):
+        posix = path.as_posix()
+        if "/tests/" in posix or "/__pycache__/" in posix:
+            continue
+        if posix.endswith("/reflection_result.py"):
+            continue  # contract definition is exempt
+        if posix.endswith("/reflection.py") and "research" in posix:
+            continue  # research engine defines its own ReflectionResult
+        try:
+            source = path.read_text(encoding="utf-8")
+        except Exception:
+            continue
+        # Check for our pipeline's ReflectionResult constructor
+        if "ReflectionResult(" in source:
+            tree = ast.parse(source)
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Call):
+                    fn = node.func
+                    if isinstance(fn, ast.Name) and fn.id == "ReflectionResult":
+                        rel = path.relative_to(root).as_posix()
+                        reflection_result_files.append(rel)
+
+    allowed = {
+        "core/pipeline/stages/reflection/stage.py",
+    }
+    violations = [f for f in reflection_result_files if f not in allowed]
+    if violations:
+        pytest.fail(
+            f"ReflectionResult constructed outside allowed stages: {violations}. "
+            "Only ReflectionStage may construct ReflectionResult (Rule 52)."
+        )
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

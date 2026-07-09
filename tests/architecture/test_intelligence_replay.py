@@ -425,3 +425,125 @@ async def test_planner_direct_research_coding_scenarios():
     c_names = {s.name for s in ctx_code.planner_result.ranking.strategies}
     assert "direct" in c_names
     assert "code" in c_names
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Sprint 4 — Reflection Replay Tests
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+async def _run_reflection(ctx: PipelineContext) -> PipelineContext:
+    """Run the ReflectionStage and return the updated context."""
+    from core.pipeline.stages.reflection import ReflectionStage
+
+    stage = ReflectionStage()
+    result = await stage.execute(ctx)
+    assert result.context is not None
+    return result.context
+
+
+def _make_reflection_context(
+    services: DeterministicServices,
+    raw_input: str = "test request",
+    with_reasoning: bool = True,
+) -> PipelineContext:
+    ctx = PipelineContext(
+        request_id=services.uuid4(),
+        transport="test",
+        raw_input=raw_input,
+        classification={"mode": "chat", "confidence": 0.8, "sub_type": ""},
+        services=services,
+    )
+    ctx.activity_id = f"act_{services.uuid4().hex[:12]}"
+    ctx.plan = {"goal": raw_input, "steps": [{"intent": "respond", "objective": raw_input, "constraints": {}}]}
+
+    if with_reasoning:
+        from core.pipeline.reasoning_result import ReasoningResult, Belief
+
+        ctx.reasoning_result = ReasoningResult(
+            reasoning_id=f"rsn_{services.uuid4().hex[:12]}",
+            activity_id=ctx.activity_id,
+            complexity="simple",
+            confidence=0.8,
+            beliefs=(Belief(claim="test belief", confidence=0.8, status="accepted"),),
+            evidence=(),
+            contradictions=(),
+            counter_hypotheses=(),
+            reasoning_trace=(),
+        )
+    return ctx
+
+
+async def _run_reflection_twice(
+    raw_input: str,
+) -> tuple[PipelineContext, PipelineContext]:
+    a = _make_reflection_context(DeterministicServices.fake(), raw_input)
+    b = _make_reflection_context(DeterministicServices.fake(), raw_input)
+
+    ctx_a = await _run_reflection(a)
+    ctx_b = await _run_reflection(b)
+
+    return ctx_a, ctx_b
+
+
+@pytest.mark.asyncio
+async def test_reflection_result_is_deterministic():
+    """Two runs with same deterministic services produce identical
+    reflection_result (reflection_id, success_rating, lessons, patterns)."""
+    ctx_a, ctx_b = await _run_reflection_twice("what is the weather?")
+
+    assert ctx_a.reflection_result is not None
+    assert ctx_b.reflection_result is not None
+
+    rf_a = ctx_a.reflection_result
+    rf_b = ctx_b.reflection_result
+
+    assert rf_a.reflection_id == rf_b.reflection_id
+    assert rf_a.success_rating == rf_b.success_rating
+    assert rf_a.overall_confidence == rf_b.overall_confidence
+    assert rf_a.lessons == rf_b.lessons
+    assert rf_a.patterns == rf_b.patterns
+    assert rf_a.total_facts_collected == rf_b.total_facts_collected
+
+
+@pytest.mark.asyncio
+async def test_reflection_success_rating_bounded():
+    """Success rating is in [0, 1]."""
+    ctx, _ = await _run_reflection_twice("test rating")
+
+    assert ctx.reflection_result is not None
+    assert 0.0 <= ctx.reflection_result.success_rating <= 1.0
+
+
+@pytest.mark.asyncio
+async def test_reflection_without_reasoning():
+    """Reflection still produces a result even without reasoning data."""
+    services = DeterministicServices.fake()
+    ctx = _make_reflection_context(services, "simple request", with_reasoning=False)
+    ctx = await _run_reflection(ctx)
+
+    assert ctx.reflection_result is not None
+    assert ctx.reflection_result.reflection_id
+
+
+@pytest.mark.asyncio
+async def test_reflection_activity_id():
+    """Reflection result carries the activity id."""
+    ctx, _ = await _run_reflection_twice("test activity binding")
+
+    assert ctx.reflection_result is not None
+    expected = ctx.activity_id or ""
+    assert ctx.reflection_result.activity_id == expected
+
+
+@pytest.mark.asyncio
+async def test_reflection_lessons_and_patterns():
+    """Reflection produces lessons and patterns for research activities."""
+    services = DeterministicServices.fake()
+    ctx = _make_reflection_context(services, "research complex topic")
+    ctx = await _run_reflection(ctx)
+
+    assert ctx.reflection_result is not None
+    # May have lessons/patterns depending on the engine's analysis
+    assert isinstance(ctx.reflection_result.lessons, tuple)
+    assert isinstance(ctx.reflection_result.patterns, tuple)

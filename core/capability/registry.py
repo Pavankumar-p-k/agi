@@ -16,6 +16,7 @@ class CapabilityRegistry:
     def __init__(self, registry: ProviderRegistry | None = None):
         self._provider_registry = registry or provider_registry
         self._capabilities: dict[str, Capability] = {}
+        self._intent_map: dict[str, list[str]] = {}
 
     def register(self, capability: Capability) -> None:
         self._capabilities[capability.id] = capability
@@ -51,6 +52,27 @@ class CapabilityRegistry:
                 id=capability, description=desc, version=1, tags=(description.lower(),) if description else (capability.lower(),),
             )
         logger.info("[CapabilityRegistry] Registered capability: %s", capability)
+
+    def register_intent(self, intent: str, capability_ids: list[str]) -> None:
+        self._intent_map[intent] = capability_ids
+        logger.debug("[CapabilityRegistry] Registered intent: %s -> %s", intent, capability_ids)
+
+    def resolve_intent(self, intent: str) -> list[Capability]:
+        intent_lower = intent.lower().strip()
+        cap_ids = self._intent_map.get(intent_lower, [])
+        if not cap_ids:
+            return []
+        from core.capability.models import _BUILTIN_CAPABILITIES
+        results: list[Capability] = []
+        for cid in cap_ids:
+            cap = self._capabilities.get(cid) or _BUILTIN_CAPABILITIES.get(cid)
+            if cap is not None:
+                results.append(cap)
+        if not results:
+            fallback = self._capabilities.get("documentation") or _BUILTIN_CAPABILITIES.get("documentation")
+            if fallback is not None:
+                results.append(fallback)
+        return results
 
     def _iter_capabilities(self) -> dict[str, Capability]:
         if self._capabilities:
@@ -90,3 +112,27 @@ def _score_match(cap: Capability, goal: str) -> int:
 
 
 capability_registry = CapabilityRegistry()
+
+
+_BUILTIN_INTENT_MAP: dict[str, list[str]] = {
+    "respond": ["documentation"],
+    "search_web": ["research", "browser"],
+    "browse_web": ["browser"],
+    "write_code": ["coding"],
+    "summarize": ["research", "documentation"],
+    "research": ["research"],
+    "analyze": ["research", "vision"],
+    "translate": ["translation"],
+    "generate_image": ["image_generation"],
+    "send_email": ["email", "notifications"],
+    "send_message": ["messaging", "notifications"],
+    "run_command": ["terminal"],
+    "deploy": ["deployment"],
+    "test": ["testing"],
+    "query_database": ["database"],
+    "read_file": ["filesystem"],
+    "write_file": ["filesystem"],
+}
+
+for _intent, _cap_ids in _BUILTIN_INTENT_MAP.items():
+    capability_registry.register_intent(_intent, _cap_ids)

@@ -17,6 +17,7 @@ from core.pipeline.stages.planner import PlannerStage
 from core.pipeline.stages.rate_limit import RateLimitStage
 from core.pipeline.stages.reasoner import ReasonerStage  # legacy, use ReasoningStage for new code
 from core.pipeline.stages.reasoning import ReasoningStage
+from core.pipeline.stages.reflection import ReflectionStage
 from core.pipeline.stages.receive import ReceiveStage
 from core.pipeline.stages.verification import VerificationStage
 
@@ -40,6 +41,7 @@ __all__ = [
     "RateLimitStage",
     "ReasonerStage",   # legacy
     "ReasoningStage",
+    "ReflectionStage",
     "ReceiveStage",
     "VerificationStage",
 ]
@@ -63,6 +65,7 @@ DEFAULT_STAGES = [
     ("execution", lambda: ExecutionStage().with_default_providers()),
     ("verification", VerificationStage),
     ("epistemic", EpistemicTaggingStage),
+    ("reflection", ReflectionStage),
     ("memory", MemoryStage),
     ("metrics", MetricsStage),
     ("formatter", FormatterStage),
