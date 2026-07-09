@@ -372,7 +372,10 @@ async def _record_benchmark_graph(session: BenchmarkSession) -> None:
         └── promotion_decision
     """
     try:
-        from core.activity.models import ActivityNode, ActivityStatus
+        import importlib as _il
+        _as_mod = _il.import_module("core.activity.models")
+        ActivityNode = _as_mod.ActivityNode
+        ActivityStatus = _as_mod.ActivityStatus
         from core.activity.storage import ActivityStore
     except ImportError:
         logger.debug("ActivityStore not available")
@@ -555,7 +558,8 @@ async def _record_benchmark_calibration(session: BenchmarkSession) -> None:
 async def _record_benchmark_knowledge(session: BenchmarkSession) -> None:
     """Feed build outcomes into KnowledgeStore via ExperienceExtractor."""
     try:
-        from core.activity.manager import ActivityManager
+        import importlib as _il
+        ActivityManager = _il.import_module("core.activity.manager").ActivityManager
         from core.activity.storage import ActivityStore
         from core.long_term_memory.extractor import ExperienceExtractor
         from core.long_term_memory.store import KnowledgeStore

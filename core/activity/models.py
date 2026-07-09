@@ -33,6 +33,10 @@ class ActivityNode:
     Every unit of work — from a user goal down to a single tool call —
     is represented as a node. Nodes form a tree via parent_id and can
     express causality via origin_node_id.
+
+    Every node carries a ``resource_scope`` dict (tenant_id, workspace_id,
+    owner_id) inherited from the ``PipelineContext`` that created it.
+    Cross-tenant parent/child relationships are rejected.
     """
     node_id: str
     activity_id: str                       # root node id for grouping
@@ -50,6 +54,9 @@ class ActivityNode:
     started_at: datetime | None = None
     completed_at: datetime | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
+    resource_scope: dict[str, Any] = field(default_factory=dict)
+    """Tenant ownership scope: ``{"tenant_id": ..., "workspace_id": ..., "owner_id": ...}``.
+    Inherited from the PipelineContext that created the activity."""
     created_at: datetime | None = None
 
     @property

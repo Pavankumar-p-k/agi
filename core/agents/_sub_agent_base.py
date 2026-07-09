@@ -21,8 +21,6 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Literal
 
-from core.llm_router import complete
-
 logger = logging.getLogger("jarvis.agents")
 
 @dataclass
@@ -95,24 +93,17 @@ class SubAgent(ABC):
             if cancel_event and cancel_event.is_set():
                 return self._cancel_result(task, mode, start)
 
-            # Use the JARVIS LLM Router
-            messages = [
-                {"role": "system", "content": system},
-                {"role": "user", "content": user_content}
-            ]
-
-            # If cancel_event is provided, we might want to wrap this in a way that
-            # checks the event periodically, but LLM calls are atomic.
-            # Minimal: check before and after.
-            res = await complete(self.MODEL_GROUP, messages)
+            # Use the canonical pipeline for LLM completion
+            from core.pipeline.internal_client import prompt as llm_prompt
+            combined = f"{system}\n\n{user_content}" if system else user_content
 
             if cancel_event and cancel_event.is_set():
                 return self._cancel_result(task, mode, start)
 
-            if res.is_err():
-                raise res.unwrap_err()
+            output = await llm_prompt(combined)
 
-            output = res.unwrap()
+            if cancel_event and cancel_event.is_set():
+                return self._cancel_result(task, mode, start)
 
             from core.model_context import estimate_tokens
             tokens = estimate_tokens([{"role": "assistant", "content": output}])

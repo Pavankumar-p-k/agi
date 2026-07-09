@@ -452,8 +452,9 @@ class RealValidator:
 
             try:
                 import json
-
-                from core.llm_router import complete_vision
+                import importlib as _il
+                _llm_router = _il.import_module("core.llm_router")
+                complete_vision = _llm_router.complete_vision
                 scores = []
                 all_issues = []
                 for msg in vision_messages:

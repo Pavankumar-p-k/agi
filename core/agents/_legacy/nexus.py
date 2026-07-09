@@ -71,7 +71,8 @@ class NexusAgent(SubAgent):
         user_id = kwargs.get("user_id") or "default"
 
         # 1. Retrieve relevant memories
-        from memory.memory_facade import memory
+        import importlib as _il
+        memory = _il.import_module("memory.memory_facade").memory
         relevant_memories = memory.recall(task, user_id=user_id, limit=3)
         memory_context = memory.format_context(relevant_memories)
 

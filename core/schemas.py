@@ -19,24 +19,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel
 
-# ---- Brain dataclasses (Phase 1) ----
-
-@dataclass
-class ReasonResult:
-    answer: str
-    thinking_trace: str = ""
-    confidence: float = 0.0
-    steps_taken: int = 0
-    provenance: dict[str, str] = field(default_factory=dict)
-    model_group: str = "reasoning"
-
-    def to_dict(self) -> dict:
-        return {
-            "conclusion": self.answer,
-            "trace": [t for t in self.thinking_trace.split("\n") if t.strip()] if self.thinking_trace else [],
-            "confidence": self.confidence,
-            "model_group": self.model_group,
-        }
+# Re-exported from canonical location (RSN-01 migration)
+from core.pipeline.decision import ReasonResult  # noqa: F401
 
 
 @dataclass

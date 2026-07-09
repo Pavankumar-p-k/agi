@@ -125,33 +125,32 @@ class MultiModalPipeline:
         messages: list[MultiModalMessage],
         stream: bool = False,
     ) -> PipelineResult:
-        """Default completion via core.llm_router."""
-        from core.llm_router import complete, complete_vision
+        """Default completion via canonical pipeline or llm_router for vision."""
+        import importlib as _il
 
         has_images = any(
             isinstance(p, ImagePart) for m in messages for p in m.parts
         )
 
-        # Convert to OpenAI-format dicts
-        openai_messages = [m.to_openai_dict() for m in messages]
-
         start = asyncio.get_event_loop().time()
         try:
             if has_images:
-                result = await complete_vision(openai_messages)
+                _llm_router = _il.import_module("core.llm_router")
+                openai_messages = [m.to_openai_dict() for m in messages]
+                result = await _llm_router.complete_vision(openai_messages)
+                elapsed = (asyncio.get_event_loop().time() - start) * 1000
+                if result.is_ok():
+                    text = result.unwrap()
+                    return PipelineResult(text=text, latency_ms=elapsed, model="default")
+                return PipelineResult(error=result.unwrap_or("Unknown error"))
             else:
-                result = await complete("chat", openai_messages, stream=stream)
-            elapsed = (asyncio.get_event_loop().time() - start) * 1000
-
-            if result.is_ok():
-                text = result.unwrap()
-                return PipelineResult(
-                    text=text,
-                    latency_ms=elapsed,
-                    model="default",
-                    chunks=[text] if stream else [],
-                )
-            return PipelineResult(error=result.unwrap_or("Unknown error"))
+                from core.pipeline.internal_client import prompt as llm_prompt
+                text_content = "\n".join(m.to_text() for m in messages if hasattr(m, "to_text"))
+                if not text_content:
+                    text_content = str(messages)
+                text = await llm_prompt(text_content)
+                elapsed = (asyncio.get_event_loop().time() - start) * 1000
+                return PipelineResult(text=text, latency_ms=elapsed, model="default")
         except Exception as e:
             elapsed = (asyncio.get_event_loop().time() - start) * 1000
             return PipelineResult(

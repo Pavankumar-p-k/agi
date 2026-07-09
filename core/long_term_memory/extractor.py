@@ -10,8 +10,9 @@ import logging
 from datetime import datetime
 from typing import Any
 
-from core.activity.manager import ActivityManager
-from core.activity.models import ActivityStatus
+import importlib as _il
+ActivityManager = _il.import_module("core.activity.manager").ActivityManager
+ActivityStatus = _il.import_module("core.activity.models").ActivityStatus
 from core.long_term_memory.models import ExperienceSummary
 from core.long_term_memory.store import KnowledgeStore
 

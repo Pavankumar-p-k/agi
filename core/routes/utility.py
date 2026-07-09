@@ -21,12 +21,24 @@ from ..auth import User, verify_token
 
 router = APIRouter(tags=["Utilities & Code"])
 
+
+async def _ollama_ping() -> bool:
+    """Check Ollama connectivity without importing llm_router."""
+    try:
+        import httpx
+        from core.config_registry import config
+        url = config.get("ollama.base_url", "http://localhost:11434")
+        async with httpx.AsyncClient(timeout=3) as client:
+            r = await client.get(f"{url}/api/tags")
+        return r.status_code == 200
+    except Exception:
+        return False
+
 @router.get("/api/system/status")
 async def get_system_status():
     """Canonical system health and model status."""
     from core.config_registry import config
-    from core.llm_router import health_check
-    ollama_ok = await health_check()
+    ollama_ok = await _ollama_ping()
     model = config.get("llm.chat_model")
     return {
         "status": "online",
@@ -50,11 +62,8 @@ async def code_review(
     user: User = Depends(verify_token),
 ):
     """Review code for bugs, security issues, and style problems."""
-    from core.llm_router import complete as llm_complete
-    from core.llm_router import health_check
-    if not await health_check():
-        return JSONResponse(status_code=503, content={"error": "Ollama is offline", "language": req.language})
-    prompt = (
+    from core.pipeline.internal_client import prompt as llm_prompt
+    prompt_text = (
         f"Review this {req.language} code for:\n"
         f"1. Bugs and logic errors\n"
         f"2. Security vulnerabilities\n"
@@ -65,7 +74,7 @@ async def code_review(
         f"Format: For each issue found, state: SEVERITY (critical/major/minor), what, where, fix."
     )
     try:
-        review = (await llm_complete("code", [{"role": "user", "content": prompt}])).unwrap_or("")
+        review = await llm_prompt(prompt_text, user_id=user.username if user else "__system__")
         return {"review": review, "language": req.language}
     except Exception as e:
         logger.error("Utility route failed: %s", e, exc_info=True)

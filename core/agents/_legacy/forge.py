@@ -78,8 +78,9 @@ class ForgeAgent(SubAgent):
 
             try:
                 # Use smolagents for bulletproof code execution/generation
-                from core.llm_router import get_router_model
-                model_name = get_router_model("code") # Usually qwen2.5-coder
+                import importlib as _il
+                _llm_router = _il.import_module("core.llm_router")
+                model_name = _llm_router.get_router_model("code") # Usually qwen2.5-coder
 
                 # Build smolagents compatible model
                 # Note: smolagents LiteLLMModel works with Ollama prefixes

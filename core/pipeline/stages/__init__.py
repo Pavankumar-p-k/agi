@@ -1,5 +1,7 @@
 from core.pipeline.stages.auth import AuthenticationStage
 from core.pipeline.stages.authorization import AuthorizationStage
+from core.pipeline.stages.resource_access import ResourceAccessStage
+from core.pipeline.stages.tenant_resolution import TenantResolutionStage
 from core.pipeline.stages.capability_selection import CapabilitySelectionStage
 from core.pipeline.stages.context_retrieval import ContextRetrievalStage
 from core.pipeline.stages.epistemic import EpistemicTaggingStage
@@ -12,13 +14,16 @@ from core.pipeline.stages.metrics import MetricsStage
 from core.pipeline.stages.plan_validator import PlanValidatorStage
 from core.pipeline.stages.planner import PlannerStage
 from core.pipeline.stages.rate_limit import RateLimitStage
-from core.pipeline.stages.reasoner import ReasonerStage
+from core.pipeline.stages.reasoner import ReasonerStage  # legacy, use ReasoningStage for new code
+from core.pipeline.stages.reasoning import ReasoningStage
 from core.pipeline.stages.receive import ReceiveStage
 from core.pipeline.stages.verification import VerificationStage
 
 __all__ = [
     "AuthenticationStage",
     "AuthorizationStage",
+    "ResourceAccessStage",
+    "TenantResolutionStage",
     "CapabilitySelectionStage",
     "ContextRetrievalStage",
     "EpistemicTaggingStage",
@@ -31,7 +36,8 @@ __all__ = [
     "PlanValidatorStage",
     "PlannerStage",
     "RateLimitStage",
-    "ReasonerStage",
+    "ReasonerStage",   # legacy
+    "ReasoningStage",
     "ReceiveStage",
     "VerificationStage",
 ]
@@ -41,11 +47,13 @@ DEFAULT_STAGES = [
     ("receive", ReceiveStage),
     ("load_context", LoadContextStage),
     ("authentication", AuthenticationStage),
+    ("tenant_resolution", TenantResolutionStage),
     ("authorization", AuthorizationStage),
+    ("resource_access", ResourceAccessStage),
     ("rate_limit", RateLimitStage),
     ("intent", IntentStage),
     ("context_retrieval", ContextRetrievalStage),
-    ("reasoner", ReasonerStage),
+    ("reasoning", ReasoningStage),
     ("planner", PlannerStage),
     ("plan_validator", PlanValidatorStage),
     ("capability_selection", CapabilitySelectionStage),

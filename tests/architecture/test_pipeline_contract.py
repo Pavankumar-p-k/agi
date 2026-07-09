@@ -26,6 +26,7 @@ from core.identity.models import AuthenticationState
 from core.pipeline.stages import (
     AuthenticationStage,
     AuthorizationStage,
+    ResourceAccessStage,
     CapabilitySelectionStage,
     ContextRetrievalStage,
     EpistemicTaggingStage,
@@ -442,6 +443,7 @@ def test_default_stages_have_correct_order():
         "load_context",
         "authentication",
         "authorization",
+        "resource_access",
         "rate_limit",
         "intent",
         "context_retrieval",
@@ -476,6 +478,7 @@ def test_all_stage_classes_importable():
         RateLimitStage,
         ReasonerStage,
         ReceiveStage,
+        ResourceAccessStage,
         VerificationStage,
     )
     for cls in (
@@ -495,6 +498,7 @@ def test_all_stage_classes_importable():
         RateLimitStage,
         ReasonerStage,
         ReceiveStage,
+        ResourceAccessStage,
         VerificationStage,
     ):
         obj = cls()
@@ -503,7 +507,7 @@ def test_all_stage_classes_importable():
 
 def test_default_stage_count():
     """DEFAULT_STAGES has the expected count (ADR-007)."""
-    assert len(DEFAULT_STAGES) == 17
+    assert len(DEFAULT_STAGES) == 18
 
 
 @pytest.mark.asyncio

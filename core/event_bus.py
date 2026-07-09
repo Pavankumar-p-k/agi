@@ -26,6 +26,10 @@ class Event:
     id: str = ""
     timestamp: str = ""
     priority: int = 0
+    resource_scope: dict | None = None
+    """Canonical resource scope for tenant-aware routing.
+    Every event that originates from a pipeline request MUST carry
+    resource_scope to enable logical tenant partitioning."""
 
     def __post_init__(self):
         if not self.id:
@@ -40,6 +44,10 @@ class Subscription:
     handler: Callable
     once: bool = False
     priority: int = 0
+    tenant_id: str | None = None
+    """Optional tenant filter.  When set, this subscription only receives
+    events whose ``resource_scope.tenant_id`` matches.  ``__system__``
+    receives system events."""
     _id: str = ""
 
     def __post_init__(self):
@@ -133,10 +141,21 @@ class EventBus:
         self._stats[event.type] = self._stats.get(event.type, 0) + 1
         matched = []
 
+        # Tenant-aware routing: extract tenant_id from resource_scope
+        event_tenant = None
+        if event.resource_scope and isinstance(event.resource_scope, dict):
+            event_tenant = event.resource_scope.get("tenant_id")
+
         async with self._lock:
             for sub in self._subscriptions:
-                if self._matches(sub.pattern, event.type):
-                    matched.append(sub)
+                if not self._matches(sub.pattern, event.type):
+                    continue
+                # Tenant filtering: subscriptions can have a tenant_id attribute
+                sub_tenant = getattr(sub, "tenant_id", None)
+                if sub_tenant is not None and event_tenant is not None:
+                    if sub_tenant != event_tenant and sub_tenant != "__system__":
+                        continue
+                matched.append(sub)
 
         for sub in matched:
             try:
@@ -154,8 +173,14 @@ class EventBus:
             "channel": event.type, "type": event.type,
             "source": event.source, "payload": event.payload,
             "id": event.id, "timestamp": event.timestamp,
+            "resource_scope": event.resource_scope,
         }
         for queue in self._event_queues:
+            # Tenant filter for stream queues too (if they have tenant_id attr)
+            q_tenant = getattr(queue, "_tenant_id", None)
+            if q_tenant is not None and event_tenant is not None:
+                if q_tenant != event_tenant and q_tenant != "__system__":
+                    continue
             try:
                 queue.put_nowait(stream_event)
             except asyncio.QueueFull:
@@ -164,6 +189,7 @@ class EventBus:
         self._history.append({
             "type": event.type, "source": event.source,
             "payload": event.payload, "timestamp": event.timestamp,
+            "resource_scope": event.resource_scope,
         })
         if len(self._history) > self._max_history:
             self._history.pop(0)

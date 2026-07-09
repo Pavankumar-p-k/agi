@@ -27,12 +27,24 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["Quality Assurance"])
 
 
+async def _ollama_ping() -> bool:
+    """Check Ollama connectivity without importing llm_router."""
+    try:
+        import httpx
+        from core.config_registry import config
+        url = config.get("ollama.base_url", "http://localhost:11434")
+        async with httpx.AsyncClient(timeout=3) as client:
+            r = await client.get(f"{url}/api/tags")
+        return r.status_code == 200
+    except Exception:
+        return False
+
+
 @router.get("/api/quality/health")
 async def quality_health():
     """Health check for the quality grading subsystem."""
     try:
-        from core.llm_router import health_check
-        llm_ok = await health_check()
+        llm_ok = await _ollama_ping()
         return {"status": "ok" if llm_ok else "degraded", "llm_available": llm_ok}
     except Exception as e:
         return {"status": "error", "error": str(e)}

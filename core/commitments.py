@@ -21,8 +21,6 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
-from core.llm_router import complete
-
 logger = logging.getLogger("jarvis.commitments")
 
 DB_PATH = Path.home() / ".jarvis" / "commitments.db"
@@ -59,10 +57,10 @@ class CommitmentStore:
             f"User: {user_msg}\nAssistant: {assistant_msg}"
         )
         try:
-            res = await complete("analysis", prompt)
-            if res.is_ok():
-                items = json.loads(res.unwrap())
-                for item in items:
+            from core.pipeline.internal_client import prompt as llm_prompt
+            raw = await llm_prompt(prompt, user_id=user_id)
+            items = json.loads(raw)
+            for item in items:
                     self.add(
                         user_id=user_id,
                         description=item["description"],

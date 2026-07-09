@@ -19,7 +19,6 @@ from core.pipeline.stages.execution import (
     LiteLLMProvider,
     OllamaFallbackProvider,
     Provider,
-    ProviderManager,
     ProviderResult,
 )
 from core.pipeline.stream import StreamEvent, StreamEventType, stream_pipeline
@@ -36,7 +35,6 @@ __all__ = [
     "PipelineContext",
     "PipelineStage",
     "Provider",
-    "ProviderManager",
     "ProviderResult",
     "Request",
     "Response",

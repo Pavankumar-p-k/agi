@@ -498,7 +498,7 @@ class TestDefaultPipelineOrder:
         assert names.index("capability_selection") < names.index("execution")
 
     def test_default_stage_count(self):
-        assert len(DEFAULT_STAGES) == 17
+        assert len(DEFAULT_STAGES) == 18
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

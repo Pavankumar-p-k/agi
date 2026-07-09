@@ -36,7 +36,7 @@ from core.plugins.sandbox import DEFAULT_ALLOWED_MODULES, check_plugin_imports, 
 from core.plugins.settings_store import PluginSettingsStore, get_settings_store
 from core.plugins.ssrf import SsrfProtection, assert_safe_url, is_blocked_url, safe_httpx_client
 from core.plugins.state_store import PluginStateStore
-from core.plugins.verification import ManifestVerifier, VerificationMode, manifest_verifier
+from core.pipeline.stages.verification.manifest import ManifestVerifier, VerificationMode, manifest_verifier
 from core.plugins.voice import VoicePlugin
 
 __all__ = [

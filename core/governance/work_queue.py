@@ -270,9 +270,8 @@ class WorkQueue:
 
     async def _llm_direct(self, task: str, context: dict) -> dict:
         try:
-            from core.llm_router import complete  # type: ignore
-            result = await complete("chat", [{"role": "user", "content": task}])
-            answer = result.unwrap_or("") if hasattr(result, "unwrap_or") else str(result)
+            from core.pipeline.internal_client import prompt as llm_prompt
+            answer = await llm_prompt(task)
             return {"response": answer, "handler": "llm_direct"}
         except Exception as exc:
             logger.debug("[WorkQueue] llm_direct fallback: %s", exc)

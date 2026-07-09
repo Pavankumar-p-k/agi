@@ -237,10 +237,10 @@ def _keyword_classify(text: str) -> Classification | None:
 def _llm_router_classify(text: str, fallback: Classification) -> Classification:
     """Use a small, fast LLM to classify ambiguous requests."""
     try:
-        from core.llm_router import complete
+        from core.pipeline.internal_client import prompt as llm_prompt
         import asyncio
 
-        prompt = (
+        prompt_text = (
             "Classify this user request into exactly one mode.\n\n"
             "Modes:\n"
             "- CHAT: greetings, questions, explanations, discussion\n"
@@ -254,9 +254,8 @@ def _llm_router_classify(text: str, fallback: Classification) -> Classification:
 
         loop = asyncio.new_event_loop()
         try:
-            result = loop.run_until_complete(complete(prompt, model="qwen2.5:0.5b"))
+            mode_str = loop.run_until_complete(llm_prompt(prompt_text)).strip().upper()
             loop.close()
-            mode_str = result.unwrap_or("").strip().upper() if hasattr(result, "unwrap_or") else str(result).strip().upper()
         except Exception:
             return fallback
 

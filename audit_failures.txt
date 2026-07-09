@@ -1,0 +1,306 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.11.9, pytest-9.0.2, pluggy-1.6.0
+rootdir: C:\Users\peter\Desktop\jarvis
+configfile: pyproject.toml
+plugins: anyio-4.12.1, deepeval-4.0.5, Faker-40.23.0, hypothesis-6.155.1, langsmith-0.8.3, asyncio-1.3.0, cov-7.1.0, repeat-0.9.4, rerunfailures-16.3, xdist-3.8.0, typeguard-4.4.3
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+collected 20080 items / 19367 deselected / 713 selected
+
+tests\architecture\test_architecture_audit.py ......F.....s.F.F.Fs.sF... [  3%]
+.............F.......................................................... [ 13%]
+........................................................................ [ 23%]
+...............s....s....s.............................................. [ 33%]
+........................................................................ [ 44%]
+........................................................................ [ 54%]
+........................................................................ [ 64%]
+........................................................................ [ 74%]
+................F....................................................... [ 84%]
+........................................................................ [ 94%]
+........................F..F....F......                                  [100%]Running teardown with pytest sessionfinish...
+
+
+================================== FAILURES ===================================
+___________________ test_worker_uses_process_message[path6] ___________________
+
+path = WindowsPath('core/distribution/retry.py')
+
+    @pytest.mark.parametrize("path", [p for p in _prod_files()
+                                       if "distribution/" in p.as_posix()
+                                       and not p.name.startswith("__")])
+    def test_worker_uses_process_message(path: Path):
+        """Distribution code that triggers execution must use ``process_message``."""
+        source = _read_source(path)
+        if "worker" in path.as_posix().lower() and "execute" in path.as_posix().lower():
+            return  # skip protocol definitions
+        if "process_message" not in source and ("execute" in source or "WorkerEndpoint" in source):
+            # only flag files that implement execution but don't reference process_message
+            lines = source.split("\n")
+            exec_lines = [l for l in lines if "def execute" in l or "async def execute" in l]
+            if exec_lines and "process_message" not in source:
+>               pytest.fail(
+                    f"{path} implements execute() without calling process_message(). "
+                    "Remote workers must run the canonical pipeline."
+                )
+E               Failed: core\distribution\retry.py implements execute() without calling process_message(). Remote workers must run the canonical pipeline.
+
+tests\architecture\test_architecture_audit.py:1123: Failed
+_________________ test_remote_dispatch_uses_transport[path3] __________________
+
+path = WindowsPath('core/distribution/local_worker.py')
+
+    @pytest.mark.parametrize("path", [p for p in _prod_files()
+                                       if "distribution/" in p.as_posix()])
+    def test_remote_dispatch_uses_transport(path: Path):
+        """All remote execution dispatch must use the ``Transport`` protocol."""
+        posix = path.as_posix()
+        for exempt in TRANSPORT_EXEMPTIONS:
+            if exempt in posix:
+                pytest.skip(f"{exempt} is exempt from transport-only dispatch rule")
+        source = _read_source(path)
+        if ("dispatch" in source or "async def execute" in source) and "Transport" not in source:
+>           pytest.fail(
+                f"{path} dispatches remotely without using Transport protocol. "
+                "All remote dispatch must go through Transport."
+            )
+E           Failed: core\distribution\local_worker.py dispatches remotely without using Transport protocol. All remote dispatch must go through Transport.
+
+tests\architecture\test_architecture_audit.py:1149: Failed
+_________________ test_remote_dispatch_uses_transport[path5] __________________
+
+path = WindowsPath('core/distribution/pool.py')
+
+    @pytest.mark.parametrize("path", [p for p in _prod_files()
+                                       if "distribution/" in p.as_posix()])
+    def test_remote_dispatch_uses_transport(path: Path):
+        """All remote execution dispatch must use the ``Transport`` protocol."""
+        posix = path.as_posix()
+        for exempt in TRANSPORT_EXEMPTIONS:
+            if exempt in posix:
+                pytest.skip(f"{exempt} is exempt from transport-only dispatch rule")
+        source = _read_source(path)
+        if ("dispatch" in source or "async def execute" in source) and "Transport" not in source:
+>           pytest.fail(
+                f"{path} dispatches remotely without using Transport protocol. "
+                "All remote dispatch must go through Transport."
+            )
+E           Failed: core\distribution\pool.py dispatches remotely without using Transport protocol. All remote dispatch must go through Transport.
+
+tests\architecture\test_architecture_audit.py:1149: Failed
+_________________ test_remote_dispatch_uses_transport[path7] __________________
+
+path = WindowsPath('core/distribution/retry.py')
+
+    @pytest.mark.parametrize("path", [p for p in _prod_files()
+                                       if "distribution/" in p.as_posix()])
+    def test_remote_dispatch_uses_transport(path: Path):
+        """All remote execution dispatch must use the ``Transport`` protocol."""
+        posix = path.as_posix()
+        for exempt in TRANSPORT_EXEMPTIONS:
+            if exempt in posix:
+                pytest.skip(f"{exempt} is exempt from transport-only dispatch rule")
+        source = _read_source(path)
+        if ("dispatch" in source or "async def execute" in source) and "Transport" not in source:
+>           pytest.fail(
+                f"{path} dispatches remotely without using Transport protocol. "
+                "All remote dispatch must go through Transport."
+            )
+E           Failed: core\distribution\retry.py dispatches remotely without using Transport protocol. All remote dispatch must go through Transport.
+
+tests\architecture\test_architecture_audit.py:1149: Failed
+_________________ test_remote_dispatch_uses_transport[path11] _________________
+
+path = WindowsPath('core/distribution/worker.py')
+
+    @pytest.mark.parametrize("path", [p for p in _prod_files()
+                                       if "distribution/" in p.as_posix()])
+    def test_remote_dispatch_uses_transport(path: Path):
+        """All remote execution dispatch must use the ``Transport`` protocol."""
+        posix = path.as_posix()
+        for exempt in TRANSPORT_EXEMPTIONS:
+            if exempt in posix:
+                pytest.skip(f"{exempt} is exempt from transport-only dispatch rule")
+        source = _read_source(path)
+        if ("dispatch" in source or "async def execute" in source) and "Transport" not in source:
+>           pytest.fail(
+                f"{path} dispatches remotely without using Transport protocol. "
+                "All remote dispatch must go through Transport."
+            )
+E           Failed: core\distribution\worker.py dispatches remotely without using Transport protocol. All remote dispatch must go through Transport.
+
+tests\architecture\test_architecture_audit.py:1149: Failed
+_______________ test_worker_discovery_only_via_registry[path16] _______________
+
+path = WindowsPath('core/agent_prompts.py')
+
+    @pytest.mark.parametrize("path", [p for p in _prod_files()])
+    def test_worker_discovery_only_via_registry(path: Path):
+        """Code that discovers workers must use ``WorkerRegistry``."""
+        posix = path.as_posix()
+        for exempt in WORKER_REGISTRY_DISCOVERY_EXEMPTIONS:
+            if exempt in posix:
+                pytest.skip(f"{exempt} is exempt from registry-only discovery")
+        source = _read_source(path)
+        if "worker" in source.lower() and "discover" in source:
+            if "get_worker_registry" not in source and "WorkerRegistry" not in source:
+>               pytest.fail(
+                    f"{path} references worker discovery without using WorkerRegistry. "
+                    "WorkerRegistry is the sole source of worker discovery (Rule 38)."
+                )
+E               Failed: core\agent_prompts.py references worker discovery without using WorkerRegistry. WorkerRegistry is the sole source of worker discovery (Rule 38).
+
+tests\architecture\test_architecture_audit.py:1175: Failed
+______________ test_worker_discovery_only_via_registry[path523] _______________
+
+path = WindowsPath('core/scheduler/autonomous.py')
+
+    @pytest.mark.parametrize("path", [p for p in _prod_files()])
+    def test_worker_discovery_only_via_registry(path: Path):
+        """Code that discovers workers must use ``WorkerRegistry``."""
+        posix = path.as_posix()
+        for exempt in WORKER_REGISTRY_DISCOVERY_EXEMPTIONS:
+            if exempt in posix:
+                pytest.skip(f"{exempt} is exempt from registry-only discovery")
+        source = _read_source(path)
+        if "worker" in source.lower() and "discover" in source:
+            if "get_worker_registry" not in source and "WorkerRegistry" not in source:
+>               pytest.fail(
+                    f"{path} references worker discovery without using WorkerRegistry. "
+                    "WorkerRegistry is the sole source of worker discovery (Rule 38)."
+                )
+E               Failed: core\scheduler\autonomous.py references worker discovery without using WorkerRegistry. WorkerRegistry is the sole source of worker discovery (Rule 38).
+
+tests\architecture\test_architecture_audit.py:1175: Failed
+____________ test_cross_boundary_only_via_worker_contracts[path9] _____________
+
+path = WindowsPath('core/distribution/scheduler.py')
+
+    @pytest.mark.parametrize("path", [p for p in _prod_files()
+                                       if "distribution/" in p.as_posix()])
+    def test_cross_boundary_only_via_worker_contracts(path: Path):
+        """Cross-boundary communication between runtime and worker must use
+        ``WorkerRequest`` / ``WorkerResponse``."""
+        source = _read_source(path)
+        worker_related = (path.as_posix().startswith("core/distribution/")
+                          and not path.name.startswith("__"))
+        if not worker_related:
+            return
+        # Skip files that define or use WorkerRequest/WorkerResponse legitimately
+        if "WorkerRequest" in source or "WorkerResponse" in source:
+            return
+        # Flag files that seem to do remote communication without the contracts
+        if any(kw in source.lower() for kw in ["http", "send", "receive", "remote"]):
+            if "WorkerRequest" not in source and "WorkerResponse" not in source:
+>               pytest.fail(
+                    f"{path} appears to do remote communication without "
+                    "using WorkerRequest/WorkerResponse. "
+                    "These are the only cross-boundary contracts (Rule 39)."
+                )
+E               Failed: core\distribution\scheduler.py appears to do remote communication without using WorkerRequest/WorkerResponse. These are the only cross-boundary contracts (Rule 39).
+
+tests\architecture\test_architecture_audit.py:1200: Failed
+____________________ test_worker_version_advertised[path0] ____________________
+
+path = WindowsPath('core/distribution/__init__.py')
+
+    @pytest.mark.parametrize("path", [p for p in _prod_files()
+                                       if "distribution/" in p.as_posix()])
+    def test_worker_version_advertised(path: Path):
+        """Workers must advertise pipeline_version, runtime_spec_version, and
+        worker_protocol_version."""
+        source = _read_source(path)
+        posix = path.as_posix()
+    
+        # Skip protocol/contract definitions
+        if posix in ("core/distribution/worker.py", "core/distribution/contracts.py"):
+            return
+    
+        # Skip files that don't define worker-like entities
+        if "WorkerRegistration" not in source and "class" not in source:
+            return
+    
+        if "WorkerRegistration" in source:
+            if "pipeline_version" not in source:
+>               pytest.fail(
+                    f"{path} defines worker registration without pipeline_version. "
+                    "Workers must advertise runtime version (Rule 41)."
+                )
+E               Failed: core\distribution\__init__.py defines worker registration without pipeline_version. Workers must advertise runtime version (Rule 41).
+
+tests\architecture\test_architecture_audit.py:1251: Failed
+____________________ test_worker_version_advertised[path5] ____________________
+
+path = WindowsPath('core/distribution/pool.py')
+
+    @pytest.mark.parametrize("path", [p for p in _prod_files()
+                                       if "distribution/" in p.as_posix()])
+    def test_worker_version_advertised(path: Path):
+        """Workers must advertise pipeline_version, runtime_spec_version, and
+        worker_protocol_version."""
+        source = _read_source(path)
+        posix = path.as_posix()
+    
+        # Skip protocol/contract definitions
+        if posix in ("core/distribution/worker.py", "core/distribution/contracts.py"):
+            return
+    
+        # Skip files that don't define worker-like entities
+        if "WorkerRegistration" not in source and "class" not in source:
+            return
+    
+        if "WorkerRegistration" in source:
+            if "pipeline_version" not in source:
+>               pytest.fail(
+                    f"{path} defines worker registration without pipeline_version. "
+                    "Workers must advertise runtime version (Rule 41)."
+                )
+E               Failed: core\distribution\pool.py defines worker registration without pipeline_version. Workers must advertise runtime version (Rule 41).
+
+tests\architecture\test_architecture_audit.py:1251: Failed
+Test 
+tests/architecture/test_architecture_audit.py::test_remote_dispatch_uses_transp
+ort was skipped. Reason: 
+('C:\\Users\\peter\\Desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1146, 'Skipped: core/distribution/contracts.py is exempt from 
+transport-only dispatch rule')
+Test 
+tests/architecture/test_architecture_audit.py::test_remote_dispatch_uses_transp
+ort was skipped. Reason: 
+('C:\\Users\\peter\\Desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1146, 'Skipped: core/distribution/runtime.py is exempt from 
+transport-only dispatch rule')
+Test 
+tests/architecture/test_architecture_audit.py::test_remote_dispatch_uses_transp
+ort was skipped. Reason: 
+('C:\\Users\\peter\\Desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1146, 'Skipped: core/distribution/transport.py is exempt from 
+transport-only dispatch rule')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_discovery_only_via_r
+egistry was skipped. Reason: 
+('C:\\Users\\peter\\Desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1171, 'Skipped: core/distribution/contracts.py is exempt from 
+registry-only discovery')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_discovery_only_via_r
+egistry was skipped. Reason: 
+('C:\\Users\\peter\\Desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1171, 'Skipped: core/distribution/registry.py is exempt from 
+registry-only discovery')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_discovery_only_via_r
+egistry was skipped. Reason: 
+('C:\\Users\\peter\\Desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1171, 'Skipped: core/distribution/worker.py is exempt from 
+registry-only discovery')
+=========================== short test summary info ===========================
+FAILED tests/architecture/test_architecture_audit.py::test_worker_uses_process_message[path6]
+FAILED tests/architecture/test_architecture_audit.py::test_remote_dispatch_uses_transport[path3]
+FAILED tests/architecture/test_architecture_audit.py::test_remote_dispatch_uses_transport[path5]
+FAILED tests/architecture/test_architecture_audit.py::test_remote_dispatch_uses_transport[path7]
+FAILED tests/architecture/test_architecture_audit.py::test_remote_dispatch_uses_transport[path11]
+FAILED tests/architecture/test_architecture_audit.py::test_worker_discovery_only_via_registry[path16]
+FAILED tests/architecture/test_architecture_audit.py::test_worker_discovery_only_via_registry[path523]
+FAILED tests/architecture/test_architecture_audit.py::test_cross_boundary_only_via_worker_contracts[path9]
+FAILED tests/architecture/test_architecture_audit.py::test_worker_version_advertised[path0]
+FAILED tests/architecture/test_architecture_audit.py::test_worker_version_advertised[path5]
+======== 10 failed, 697 passed, 6 skipped, 19367 deselected in 13.87s =========

@@ -1,8 +1,10 @@
 # SOURCE OF TRUTH — MJ Constitution
 
-> Audit date: 2026-07-04
-> Phase: Phase 1e complete — Diagnostics, Event Bus, Resource Monitors, Memory, Agent Execution consolidated.
-> Methodology: grep import analysis, file-by-file read, dependency tracing.
+> Audit date: 2026-07-09
+> Phase: Phase 6F complete — Runtime v1 (Identity, Multi-tenancy, Distribution, Distributed Graph).
+> Phase 7 start: Intelligence Platform (ADR-009).
+> Sections: 48 responsibility areas catalogued. 15 new overlapping systems identified. 6 deprecated subsystems tagged.
+> Methodology: grep import analysis, file-by-file read, dependency tracing, parallel agent exploration.
 
 ---
 
@@ -79,8 +81,12 @@
 | Capability composition | `core/capability/composition.py:CompositionEngine.compose()` | ACTIVE | Full goal->capability->provider resolution pipeline |
 | Capability negotiator | `core/capability/negotiation.py:CapabilityNegotiator.resolve_goal()` | ACTIVE | Per-node provider negotiation with fallback |
 | Governance task router | `core/governance/task_router.py:TaskRouter.route()` | ACTIVE | LLM rule-based task routing with keyword fallback |
+| Brain goal generator | `brain/goal_generator.py:GoalGenerator` | ACTIVE | Autonomous goal generation: checks disk/CPU for immediate goals, LLM for complex. Evaluates world state |
+| Brain unified goal | `brain/UnifiedBrain.py:create_goal()` | ACTIVE | Creates persistent Goal + publishes GoalCreated event. Wraps GoalManager |
+| Brain goal classifier | `brain/goal_generator.py:_parse_goals()` | ACTIVE | Extracts JSON goal list from LLM answer tags |
+| Brain world state eval | `brain/goal_generator.py:evaluate_world()` | ACTIVE | Checks resource thresholds (disk <10%, CPU >90%) + LLM-based opportunity detection |
 
-**Reality score:** 9/10 — Cohesive pipeline. goal_interpreter is the primary entry, capability graph handles resolution.
+**Reality score:** 9/10 — Cohesive pipeline. goal_interpreter is the primary entry, capability graph handles resolution. brain/GoalGenerator provides autonomous/self-triggered goal creation.
 
 ---
 
@@ -106,8 +112,14 @@
 | Site planner | `core/site_planner.py:SitePlanner` | EXPERIMENTAL | 11 template types, 9 page types. Used by control_loop |
 | Horizon planner | `core/horizon_planner.py:HorizonPlanner` | EXPERIMENTAL | JSON-backed long-term goal tracking. Used by admin routes |
 | Control loop | `core/control_loop.py:ControlLoop` | ACTIVE | Orchestrates planning+build+validate+fix cycle. The heart of builds |
+| Brain planner | `brain/planner/planner.py:Planner` | ACTIVE | Goal → 3-node DAG (create_directory → write_file → run_command). Simpler alternative to core/planner |
+| Brain task graph | `brain/planner/task_graph.py:TaskGraph` | ACTIVE | DAG with topological sort, cycle detection, critical path, serialization |
+| Brain plan (UnifiedBrain) | `brain/UnifiedBrain.py:plan()` | ACTIVE | Uses CognitivePatterns.decompose() to create Step list |
+| Brain cognitive decompose | `brain/cognitive_patterns.py:decompose()` | ACTIVE | Splits complex problems into independent sub-problems via LLM |
+| Brain cognitive plan | `brain/cognitive_patterns.py:plan()` | ACTIVE | Breaks goal into concrete ordered steps via LLM |
+| Brain replan | `brain/planner/planner.py:replan()` | ACTIVE | Replaces failed node with new sub-graph |
 
-**Reality score:** 9/10 — Comprehensive planning layer. Two experimental planners (site, horizon) are wired but secondary.
+**Reality score:** 9/10 — Comprehensive planning layer. Two experimental planners (site, horizon) are wired but secondary. **Note:** `brain/planner/` is a simpler parallel planning implementation — creates only 3-node DAGs vs `core/planner/`'s full state machine. Need consolidation.
 
 ---
 
@@ -139,8 +151,14 @@
 | Agent states shim | `core/agent_states.py` | DEAD | Zero importers. Remove safely |
 | Agent prompts | `core/agent_prompts.py` | ACTIVE | System prompt assembly |
 | Agent helpers | `core/agent_helpers.py` | ACTIVE | MCP tool cache, tool-call extraction, verifier subagent |
+| Brain executor | `brain/executor/executor.py:Executor` | ACTIVE | Unified action executor with tool registration, LLM-based resolution, timeout. Singleton `executor` |
+| Brain verifier | `brain/executor/verifier.py:Verifier` | ACTIVE | LLM-based verification of actions, file creations, code outputs. Singleton `verifier` |
+| Brain execute with verify | `brain/UnifiedBrain.py:execute_with_verification()` | ACTIVE | Executes action, verifies result, publishes events, stores trace |
+| Brain action result | `brain/executor/executor.py:ActionResult` | ACTIVE | Standard result dataclass: success, output, evidence, confidence, error, duration_ms |
+| Brain verification result | `brain/executor/verifier.py:VerificationResult` | ACTIVE | Dataclass: verified, confidence, issues, evidence |
+| Brain execution context | `brain/execution_context.py:BrainExecutionContext` | ACTIVE | Dataclass for brain execution context: goal, prompt, user_id, session_id |
 
-**Reality score:** 7/10 — Two execution systems coexist (new BaseAgent + legacy SubAgent). Adapter pattern bridges them. agent_states.py is dead.
+**Reality score:** 7/10 — Two execution systems coexist (new BaseAgent + legacy SubAgent). Adapter pattern bridges them. agent_states.py is dead. **brain/executor/ is a third execution path** — simpler tool registration without the full agent lifecycle. Three parallel execution systems exist.
 
 ---
 
@@ -220,8 +238,11 @@
 | PC agent playbooks | `pc_agent/playbooks.py` | EXPERIMENTAL/DEPRECATED | 10 web automation playbooks |
 | PC agent snapshot | `pc_agent/snapshot.py:SystemSnapshot` | EXPERIMENTAL/DEPRECATED | Filesystem snapshot before PC control |
 | Desktop control routes | `core/routes/control.py` | ACTIVE | POST /computer |
+| PC agent (deprecated) | `pc_agent/computer_agent.py:ComputerAgent` | LEGACY | DeprecationWarning: "will be replaced by core/desktop/" |
+| PC agent playbooks | `pc_agent/playbooks.py` | LEGACY | 10 web automation playbooks |
+| PC agent snapshot | `pc_agent/snapshot.py:SystemSnapshot` | LEGACY | Filesystem snapshot before PC control |
 
-**Reality score:** 8/10 — core/desktop is the active system. pc_agent is deprecated with explicit warning. Workspace modules are well integrated.
+**Reality score:** 8/10 — core/desktop is the active system. pc_agent/ directory (3 files) is deprecated with explicit warning. Workspace modules are well integrated.
 
 ---
 
@@ -263,8 +284,13 @@
 | Build tools (legacy) | `core/tools/build_tools.py` | ACTIVE/LEGACY | Wraps old AutomationLoop for build_project |
 | Automated build | `core/tools/automated_build.py` | ACTIVE | Phase 13.0: Richer build tool with artifact scanning, activity graph, calibration |
 | Build routes | `core/build_routes.py` | ACTIVE | 24 FastAPI routes for build lifecycle |
+| Brain compiler repair | `brain/compiler_repair_engine.py:CompilerRepairEngine` | ACTIVE | 944-line unified deterministic repair engine. Parses javac/Gradle/AAPT2 errors. 50+ error patterns, category-based repair map |
+| Brain repair chaining | `brain/repair_chaining.py:RepairChain` | ACTIVE | Iterative fix→rebuild→detect→fix loop with rollback safety, loop detection, priority-based error selection |
+| Brain structural transformer | `brain/structural_transformer.py:StructuralTransformationEngine` | ACTIVE | Type-mismatch, parameter, and API contract repair. 25+ type conversion rules |
+| Brain production gate | `brain/production_gate.py:ProductionGate` | ACTIVE | Evaluates benchmark results vs production criteria (build 90%, APK 90%, runtime 60%) |
+| Brain real validator | `brain/real_validator.py` (file not found in brain/ — check path) | UNKNOWN | Referenced in cross-module imports |
 
-**Reality score:** 10/10 — Mature, well-layered coding intelligence subsystem. Phase structure clear.
+**Reality score:** 10/10 — Mature, well-layered coding intelligence subsystem. brain/ adds deterministic compiler repair with pattern memory and autonomous fix chaining.
 
 ---
 
@@ -328,8 +354,18 @@
 | Embeddings | `core/embeddings.py:EmbeddingClient` | ACTIVE | HTTP API + FastEmbed fallback |
 | Chroma client | `core/chroma_client.py:get_chroma_client()` | ACTIVE | ChromaDB HTTP singleton |
 | Evidence generator | `core/evidence/generator.py:EvidenceGenerator` | ACTIVE | 4-source continuous evidence generation |
+| Brain memory manager | `brain/memory/memory_manager.py:MemoryManager` | ACTIVE | Orchestrates 4 brain memory types: episodic, semantic, task, decision. Singleton `memory_manager` |
+| Brain episodic memory | `brain/memory/episodic.py:EpisodicMemory` | ACTIVE | SQLite-backed goal-driven interaction episodes with actions, context, outcomes |
+| Brain semantic memory | `brain/memory/semantic.py:SemanticMemory` | ACTIVE | SQLite-backed fact store with confidence, importance decay, deduplication |
+| Brain task memory | `brain/memory/task.py:TaskMemory` | ACTIVE | SQLite-backed execution traces (action, params, observation, success, duration) |
+| Brain decision memory | `brain/memory/decision.py:DecisionMemory` | ACTIVE | SQLite-backed decision store: context, decision, alternatives, outcome, lessons |
+| Brain memory provider | `brain/memory/base.py:MemoryProvider` | ACTIVE | ABC for all brain memory types |
+| Memory fact extraction | `memory/extraction.py:extract_facts()` | ACTIVE | Regex-based subject-predicate-object fact extraction from natural language |
+| Memory fact store | `memory/fact_store.py:FactStore` | ACTIVE | SQLite-backed fact storage with embedding support, contradiction detection, consolidation. Singleton via `get_fact_store()` |
+| Memory preference profile | `memory/preference_profile.py:PreferenceProfile` | ACTIVE | Builds per-user preference profiles from fact store preference-type facts |
+| Memory reranker | `memory/reranker.py:ReRanker` | ACTIVE | Multi-factor memory recall reranker (similarity 0.5, recency 0.3, confidence 0.1, preference 0.1) |
 
-**Reality score:** 7/10 — Multiple overlapping memory systems. 2 dead files (rag_manager, rag_singleton). 1 broken file (memory_vector). PreferenceStore is dead.
+**Reality score:** 6/10 — Multiple overlapping memory systems. 2 dead files (rag_manager, rag_singleton). 1 broken file (memory_vector). PreferenceStore is dead. **Critical overlap:** `brain/memory/` (EpisodicMemory, SemanticMemory, TaskMemory, DecisionMemory) duplicates `memory/` package and `core/activity/storage.py`. `memory/decision_memory.py` vs `brain/memory/decision.py:DecisionMemory` — two separate decision memory implementations with different schemas. `memory/extraction.py` and `memory/fact_store.py` provide fact extraction while `brain/memory/semantic.py:SemanticMemory` does the same.
 
 ---
 
@@ -378,8 +414,18 @@
 | Provider bootstrap | `core/providers/bootstrap.py:bootstrap_providers()` | ACTIVE | Internal+external provider registration |
 | Provider feedback | `core/providers/feedback/` (4 files) | ACTIVE | Decision recording, calibration, scoring |
 | Provider orchestration | `core/providers/orchestration/` (5 files) | ACTIVE | OrchestrationPlanner, Orchestrator, AdaptEngine |
+| Provider SDK | `provider_sdk/` (10 files) | ACTIVE | External provider framework: discovery, registration, lifecycle, loader, manifest v2 |
+| Provider SDK loader | `provider_sdk/loader.py` | ACTIVE | Provider discovery and loading from external packages |
+| Provider SDK lifecycle | `provider_sdk/lifecycle.py` | ACTIVE | External provider lifecycle management |
+| Provider SDK permissions | `provider_sdk/permissions.py` | ACTIVE | Provider permission models |
+| Provider SDK quarantine | `provider_sdk/quarantine.py` | ACTIVE | Provider isolation/quarantine |
+| Provider SDK stages | `provider_sdk/stages.py` | ACTIVE | Provider execution stages |
+| Provider SDK registration | `provider_sdk/registration.py` | ACTIVE | External provider registration |
+| Provider SDK manifest | `provider_sdk/manifest.py` / `manifest_v2.py` | ACTIVE | Provider manifest schema (v1 + v2) |
+| Provider SDK discovery | `provider_sdk/discovery.py` | ACTIVE | Automated provider discovery |
+| Provider SDK adapters | `provider_sdk/adapters/` (4 files) | ACTIVE | MCP, HTTP, gRPC, CLI adapters for external providers |
 
-**Reality score:** 9/10 — Two distinct provider ecosystems (LLM providers + execution providers). Both well-structured.
+**Reality score:** 9/10 — Two distinct provider ecosystems (LLM providers + execution providers) + external provider SDK. Both well-structured.
 
 ---
 
@@ -453,8 +499,13 @@
 | Audit log | `core/audit_log.py:AuditLog` | ACTIVE | PII-redacted JSONL audit with buffering |
 | Security auditor | `core/security_audit.py:SecurityAuditor` | ACTIVE | Periodic security audit → audit_log + JSON report |
 | System logger | `utils/logger.py:SystemLogger` | ACTIVE | Thin logging wrapper |
+| Telemetry | `utils/telemetry.py` | ACTIVE | Usage telemetry collection |
+| Environment loader | `utils/env_loader.py` | ACTIVE | `.env` file loading and variable resolution |
+| Resource monitor | `monitors/resource.py` | ACTIVE | System resource monitoring (CPU, memory, disk) |
+| Service health monitor | `monitors/services.py` | ACTIVE | Service health checking |
+| Alert router | `monitors/alerts.py:AlertRouter` | ACTIVE | Unified alert dispatch: WebSocket, TTS, WhatsApp. Priority levels |
 
-**Reality score:** 9/10 — Solid observability stack with structured logging, metrics, and audit.
+**Reality score:** 9/10 — Solid observability stack with structured logging, metrics, resource/service monitoring, and alerting.
 
 ---
 
@@ -522,8 +573,22 @@
 | Voice plugin | `core/plugins/voice.py:VoicePlugin` | ACTIVE | Plugin hooks for STT/TTS/wake-word |
 | Wake word plugin | `plugins/wake_word_plugin.py` | ACTIVE | Wake word detection plugin |
 | Voice config | `core/config_schema.py:VoiceConfig` | ACTIVE | STT/TTS provider and model config |
+| STT protocol | `assistant/stt_protocol.py:STTProvider` | ACTIVE | ABC for speech-to-text providers. Registry: `stt_registry` singleton |
+| STT init | `assistant/stt.py:init_stt_providers()` | ACTIVE | Registers all STT providers: FasterWhisper (default), Deepgram, Azure |
+| TTS protocol | `assistant/tts_protocol.py:TTSProvider` | ACTIVE | ABC for text-to-speech providers. Registry: `tts_registry` singleton |
+| TTS core | `assistant/tts.py:JarvisTTS` | ACTIVE | Kokoro-TTS integration with audio caching. Singleton `get_tts()` |
+| Wake word detector | `assistant/wake_word.py:WakeWordDetector` | ACTIVE | Two-stage: WebRTC VAD + Faster-Whisper confirmation. Watchdog auto-restart |
+| Wake word registry | `assistant/wake_word.py:WakeWordRegistry` | ACTIVE | Manages wake word phrases with phonetic-aware matching (Levenshtein) |
+| Voice health monitor | `assistant/voice_pipeline.py:VoiceHealthMonitor` | ACTIVE | Periodic STT/TTS health checks, auto-recovery |
+| Voice metrics | `assistant/voice_pipeline.py:VoiceMetrics` | ACTIVE | Per-phase latency tracking (STT, think, TTS, total) |
+| FasterWhisper STT | `assistant/providers/faster_whisper.py:FasterWhisperProvider` | ACTIVE | Default STT: local, offline, Faster-Whisper with VAD filter, CUDA/CPU auto-detect |
+| Deepgram STT | `assistant/providers/deepgram.py:DeepgramProvider` | ACTIVE | Cloud STT via Deepgram nova-3 API |
+| Azure STT | `assistant/providers/azure_speech.py:AzureSpeechProvider` | ACTIVE | Cloud STT via Azure Cognitive Services |
+| Kokoro TTS | `assistant/providers/kokoro_tts.py:KokoroTTSProvider` | ACTIVE | Default TTS: wraps JarvisTTS into TTSProvider protocol |
+| Edge TTS | `assistant/providers/edge_tts_provider.py:EdgeTTSProvider` | ACTIVE | Cloud TTS via Microsoft Edge online service |
+| Legacy voice loop | `assistant/voice_pipeline.py:VoiceLoop` | LEGACY | Backward-compatible wrapper around VoiceEngine |
 
-**Reality score:** 9/10 — Production-grade voice pipeline. No dedicated `core/voice/` directory (functionality spread across routes, plugins, assistant).
+**Reality score:** 9/10 — Production-grade voice pipeline with protocol-based STT/TTS provider framework, wake word detection, health monitoring. No dedicated `core/voice/` directory.
 
 ---
 
@@ -538,8 +603,12 @@
 | Webhook manager | `core/webhook_manager.py` | ACTIVE | Webhook registration and dispatch |
 | MCP manager | `core/mcp_manager.py` | ACTIVE | MCP server management |
 | MCP servers | `mcp/` (6 files) | ACTIVE | email_server, memory_server, rag_server, image_gen_server, server |
+| PC automation (deprecated) | `automation/pc_automation.py:Parser` | LEGACY | Monolithic NLP command parser for WhatsApp, Instagram, browser, apps, system |
+| Messaging automation | `automation/messaging.py:MessagingController` | ACTIVE | Refactored messaging: WhatsAppAutomation, InstagramAutomation via Selenium |
+| Call sync server | `automation/call_sync_server.py` | ACTIVE | Windows TCP listener (port 9001): receives call records from Android, desktop notifications, TTS |
+| Automation routes | `automation/routes.py` | ACTIVE | FastAPI router exposing automation via `/api/automation/*` |
 
-**Reality score:** 8/10 — Automation infrastructure exists but is less cohesive than other subsystems.
+**Reality score:** 8/10 — Automation infrastructure exists but is less cohesive than other subsystems. pc_automation.py is deprecated in favor of messaging.py and core/desktop.
 
 ---
 
@@ -772,8 +841,11 @@
 | Skills utils | `skills/utils.py` | ACTIVE | Skill utility functions |
 | Workflow skills | `skills/` (.md files) | ACTIVE | 4 auto-workflow markdown skills |
 | Library skills | `skills/library/` | ACTIVE | Entertainment, finance, knowledge, productivity, system |
+| Skills manager | `services/memory/skills.py:SkillsManager` | ACTIVE | Manages skill lifecycle: CRUD, relevance search, categorical indexing. Persists to skills.json |
+| Skill format | `services/memory/skill_format.py:Skill` | ACTIVE | Data model + Markdown parser for skill definitions |
+| Brain skill acquisition | `brain/skill_acquisition.py:SkillAcquisition` | ACTIVE | Discovers reusable workflows from repeated action patterns via N-gram detection |
 
-**Reality score:** 7/10 — Skills system exists but is less developed than other subsystems.
+**Reality score:** 7/10 — Skills system exists but is less developed than other subsystems. `brain/skill_acquisition.py` provides automatic skill discovery from action traces.
 
 ---
 
@@ -794,6 +866,173 @@
 
 ---
 
+## 39. BRAIN (Cognitive Core)
+
+**Canonical future owner:** `brain/UnifiedBrain.py` (central orchestrator)
+
+| Component | File(s) | Status | Details |
+|-----------|---------|--------|---------|
+| Unified brain | `brain/UnifiedBrain.py:UnifiedBrain` | ACTIVE | Central cognitive core. Orchestrates reasoning, memory, goals, planning, execution, automation, learning, observers, tools. Singleton `unified_brain` |
+| Brain reasoning | `brain/reasoning_engine.py:ReasoningEngine` | ACTIVE | Core LLM reasoning with Chain-of-Thought parsing, fallback, warmup. Singleton `reasoning_engine` |
+| Brain cognitive patterns | `brain/cognitive_patterns.py:CognitivePatterns` | ACTIVE | 10 cognitive strategies: plan, critique, reflect, verify, simulate, prioritize, decompose, synthesize, hypothesize, evaluate |
+| Brain epistemic tagger | `brain/epistemic_tagger.py:EpistemicTagger` | ACTIVE | Tags responses with [VERIFIED]/[ASSUMED]/[UNCERTAIN]/[RETRIEVED] based on provenance |
+| Brain world model | `brain/world_model.py:WorldModel` | ACTIVE | Central situational awareness: tracks entities, resources, goals. Provides structured context for LLM |
+| Brain task resolver | `brain/task_resolver.py:TaskResolver` | ACTIVE | Bridges high-level plan nodes to executable tool calls via LLM. Singleton `task_resolver` |
+| Brain three-pass pipeline | `brain/UnifiedBrain.py:three_pass()` | ACTIVE | Reason→Critique→Revise three-pass pipeline with plugin hooks |
+| Brain reflection | `brain/UnifiedBrain.py:reflect()` | ACTIVE | Reflects on conversation sessions for self-improvement |
+| Brain auto-generate goals | `brain/UnifiedBrain.py:auto_generate_goals()` | ACTIVE | Calls GoalGenerator.evaluate_world() for autonomous goal creation |
+| Brain learning engine | `brain/learning_engine.py:LearningEngine` | ACTIVE | Reads lessons from DecisionMemory, builds prompt suffix, suppresses/prefers actions based on past outcomes |
+| Brain self-improvement | `brain/self_improvement.py:SelfImprovementEngine` | ACTIVE | Propose→Measure→Apply→A/B test→Keep/Revert behavioral intervention |
+| Brain skill acquisition | `brain/skill_acquisition.py:SkillAcquisition` | ACTIVE | Discovers reusable workflows from repeated action patterns via N-gram detection |
+| Brain prompt optimizer | `brain/prompt_optimizer.py:PromptOptimizer` | ACTIVE | 734-line automated prompt optimization: FailureAnalyzer→PromptGenerator→PromptTester→PromptStore |
+| Brain persistence | `brain/persistence.py:ProjectPersistence` | ACTIVE | SQLite-backed multi-day checkpoint/resume for long-running autonomous projects |
+| Brain observers | `brain/UnifiedBrain.py:_setup_observers()` | ACTIVE | Registers SystemMonitor, TimeObserver, FileSystemObserver for environment awareness |
+| Brain automation loop | `brain/automation/loop.py:AutomationLoop` | ACTIVE | 1234+ line strict autonomous build loop with FailureMemory, ArchitecturalMemory, RequirementTracker, verify_gates |
+| Brain execution graph | `brain/planner/task_graph.py:TaskGraph` | ACTIVE | DAG with topological sort, cycle detection, critical path |
+| Brain compiler repair | `brain/compiler_repair_engine.py:CompilerRepairEngine` | ACTIVE | 944-line deterministic repair for javac/Gradle/AAPT2 errors |
+| Brain repair chain | `brain/repair_chaining.py:RepairChain` | ACTIVE | Iterative fix→rebuild→detect loop with rollback safety |
+| Brain production gate | `brain/production_gate.py:ProductionGate` | ACTIVE | Benchmark-based production readiness evaluation |
+
+**Reality score:** 8/10 — brain/ is a parallel cognitive architecture that duplicates many core/ subsystems (planner, executor, memory, automation). UnifiedBrain acts as a second orchestrator alongside core/lifespan and core/pipeline.
+
+---
+
+## 40. CHANNELS (Multi-Platform Messaging)
+
+**Canonical future owner:** `channels/controller.py:ChannelController`
+
+| Component | File(s) | Status | Details |
+|-----------|---------|--------|---------|
+| Channel controller | `channels/controller.py:ChannelController` | ACTIVE | Singleton: registers, starts/stops all channels. Unified `send()` API |
+| Message processor | `channels/processor.py:process_message()` | ACTIVE | Routes messages through canonical pipeline, emits plugin hooks, enqueues MCP bridge events |
+| Base channel plugin | `channels/base.py:ChannelPlugin` | ACTIVE | ABC with ACL (allowlist/blocklist), PairingProtocol for challenge-response device pairing |
+| Telegram channel | `channels/telegram_channel.py` | ACTIVE | Telegram bot channel plugin |
+| Slack channel | `channels/slack_channel.py` | ACTIVE | Slack bot channel plugin |
+| Discord channel | `channels/discord_channel.py` | ACTIVE | Discord bot channel plugin |
+| Matrix channel | `channels/matrix_channel.py` | ACTIVE | Matrix protocol channel plugin |
+| IRC channel | `channels/irc_channel.py` | ACTIVE | IRC channel plugin |
+| Email channel | `channels/email_channel.py` | ACTIVE | Email channel plugin |
+| Channel config | `channels/base.py:ChannelConfig` | ACTIVE | Channel configuration dataclass |
+
+**Reality score:** 9/10 — Well-designed channel abstraction with 7 platform implementations. Unified controller lifecycle management.
+
+---
+
+## 41. LEARNING (Student AGI & Pattern Learning)
+
+**Canonical future owner:** `learning/` package
+
+| Component | File(s) | Status | Details |
+|-----------|---------|--------|---------|
+| Training collector | `learning/training_collector.py:TrainingCollector` | ACTIVE | Logs every interaction to SQLite for fine-tuning with auto-labeled accepted/rejected status |
+| Pattern engine | `learning/pattern_engine.py:PatternEngine` | ACTIVE | Pure-Python behavioral pattern recognition: frequency analysis, time-series matching, sequence detection |
+| Habit tracker | `learning/habit_tracker.py:HabitTracker` | PARTIAL | Stub/placeholder for habit learning |
+| Student AGI main | `learning/student_agi/student_agi_main.py` | ACTIVE | Autonomous Student AGI: FastAPI server on port 11436 with teach, ask, feedback, daily lessons, mistakes, progress |
+| Student brain | `learning/student_agi/brain/student_brain.py:StudentBrain` | ACTIVE | 913-line core: SQLite knowledge store, step-by-step reasoning, confidence estimation, mistake analysis, emotional state, curiosity engine |
+| Jarvis teacher | `learning/student_agi/teacher/jarvis_teacher.py:JarvisTeacher` | ACTIVE | Teaches, quizzes, grades, corrects, encourages the student AGI |
+| Student world model | `learning/student_agi/cognition/world_model.py:WorldModel` | ACTIVE | CausalEngine, AnalogyEngine, MetaCognition, ConsistencyChecker for conceptual understanding |
+| Student routes | `learning/student_agi/api/student_routes.py` | ACTIVE | Additional API routes for the Student AGI |
+
+**Reality score:** 8/10 — Sophisticated learning system with a complete autonomous Student AGI sub-system. Student AGI is a separate entity taught by JARVIS, not part of the core runtime.
+
+---
+
+## 42. DAEMON (Background Service)
+
+**Canonical future owner:** `daemon/jarvis_service.py:JarvisDaemon`
+
+| Component | File(s) | Status | Details |
+|-----------|---------|--------|---------|
+| Jarvis daemon | `daemon/jarvis_service.py:JarvisDaemon` | ACTIVE | Windows background service: heartbeat loop, environment monitoring, stale project cleanup, auto-resume of pending builds |
+| PID management | `daemon/jarvis_service.py` | ACTIVE | PID file management and health JSON persistence |
+| Windows scheduled task | `daemon/jarvis_service.py:install()`/`uninstall()` | ACTIVE | Creates/removes Windows Scheduled Task via `schtasks` |
+| CLI interface | `daemon/jarvis_service.py` | ACTIVE | `python daemon/jarvis_service.py [start|stop|install|uninstall|status]` |
+
+**Reality score:** 7/10 — Functional Windows daemon. No cross-platform support. Tightly coupled to Windows task scheduler.
+
+---
+
+## 43. NETWORK (WebSocket)
+
+**Canonical future owner:** `network/websocket_server.py:ConnectionManager`
+
+| Component | File(s) | Status | Details |
+|-----------|---------|--------|---------|
+| Connection manager | `network/websocket_server.py:ConnectionManager` | ACTIVE | Manages WebSocket connections keyed by `device_id:user_id`. Singleton `connection_manager` |
+| Message dispatcher | `network/websocket_server.py:handle_message()` | ACTIVE | Processes ping, chat, and echo messages. Chat routes through core.intent_router |
+
+**Reality score:** 6/10 — Minimal WebSocket implementation. Chat routing goes through legacy intent_router. No WS authentication or reconnection.
+
+---
+
+## 44. MCP SERVERS (Standalone)
+
+**Canonical future owner:** `mcp/server.py:MCPServer`
+
+| Component | File(s) | Status | Details |
+|-----------|---------|--------|---------|
+| Main MCP server | `mcp/server.py:MCPServer` | ACTIVE | Central MCP server: registers 12+ tools (web_search, browser_navigate, computer, memory_search, send_message, etc.), WebSocket bridge, event queue with approval |
+| RAG MCP server | `mcp/rag_server.py` | ACTIVE | MCP server for RAG document management: list indexed files, add/remove directories |
+| Memory MCP server | `mcp/memory_server.py` | ACTIVE | MCP server for memory CRUD: list, add, edit, delete, search with vector store |
+| Email MCP server | `mcp/email_server.py` | ACTIVE | 1278+ line MCP server for email management: list/send/reply/archive/delete across multiple IMAP accounts |
+| Image gen MCP server | `mcp/image_gen_server.py` | ACTIVE | MCP server for image generation via OpenAI-compatible APIs |
+| MCP common utils | `mcp/_common.py` | ACTIVE | Shared constants and truncate helper for MCP servers |
+
+**Reality score:** 8/10 — Standalone MCP servers with JSON-RPC 2.0. Each server can run independently. Email server is the most feature-rich.
+
+---
+
+## 45. HYBRID MODELS
+
+**Canonical future owner:** `models/hybrid_models.py:HybridModelManager`
+
+| Component | File(s) | Status | Details |
+|-----------|---------|--------|---------|
+| Hybrid model manager | `models/hybrid_models.py:HybridModelManager` | ACTIVE | Orchestrates multiple LLM providers with automatic fallback: Ollama→Codex CLI→Claude→Copilot. Singleton `hybrid_manager` |
+| Task-type routing | `models/hybrid_models.py` | ACTIVE | Task-type-specific model routing (planning→deepseek-r1, coding→qwen2.5-coder, vision→moondream) |
+| Performance tracking | `models/hybrid_models.py` | ACTIVE | Per-provider performance tracking and confidence estimation |
+
+**Reality score:** 6/10 — Overlaps with core/llm_router and core/llm_failover. Provides a simpler fallback chain but duplicates LLM routing logic.
+
+---
+
+## 46. CONFIG ASSETS
+
+**Canonical future owner:** `config/` directory
+
+| Component | File(s) | Status | Details |
+|-----------|---------|--------|---------|
+| Quality constitution | `config/quality_constitution.json` | ACTIVE | Quality constitution rules/guidelines for output grading |
+| Role definitions | `config/roles.yaml` | ACTIVE | Role definitions in YAML for RBAC |
+
+**Reality score:** 7/10 — Static config assets. Not a Python package. Consumed by governance and quality systems.
+
+---
+
+## 47. REMINDERS
+
+**Canonical future owner:** `reminders/manager.py:ReminderManager`
+
+| Component | File(s) | Status | Details |
+|-----------|---------|--------|---------|
+| Reminder manager | `reminders/manager.py:ReminderManager` | ACTIVE | Background polling loop (30s), SQLAlchemy-backed due reminder checking, TTS injection for voice alerts |
+
+**Reality score:** 7/10 — Simple background polling implementation. Tightly coupled to AsyncSession and TTS.
+
+---
+
+## 48. NOTES
+
+**Canonical future owner:** `notes/activity_tracker.py:NotesManager`
+
+| Component | File(s) | Status | Details |
+|-----------|---------|--------|---------|
+| Notes manager | `notes/activity_tracker.py:NotesManager` | ACTIVE | SQLAlchemy CRUD for user notes, tags, activity, daily summaries via core.database models |
+
+**Reality score:** 7/10 — Simple CRUD notes manager integrated with the async ORM.
+
+---
+
 ## CROSS-CUTTING ISSUES
 
 ### Dead Files (Zero Production Imports)
@@ -811,24 +1050,51 @@
 | `core/memory_vector.py` | Memory | Imports from non-existent `src.chroma_client` and `src.embeddings`. `_healthy` always False |
 | `core/benchmark/perf_baseline.py` | Benchmark | Imports non-existent `mark_setup_state` from `core.setup.detector` (inside try block) |
 
+### Deprecated Code (Explicit DeprecationWarning)
+| File | Responsibility | Notes |
+|------|----------------|-------|
+| `pc_agent/computer_agent.py:ComputerAgent` | Desktop | Explicit deprecation: "will be replaced by core/desktop/" |
+| `pc_agent/playbooks.py` | Desktop | Deprecated alongside computer_agent |
+| `pc_agent/snapshot.py:SystemSnapshot` | Desktop | Deprecated alongside computer_agent |
+| `automation/pc_automation.py` | Automation | Monolithic engine — deprecated in favor of messaging.py and core/desktop |
+| `core/memory.py:MemoryManager` | Memory | DeprecationWarning: "use memory.memory_facade.MemoryFacade" |
+| `core/model_router.py` | LLM | Backward-compat shim for llm_router |
+| `tools/browser_tool.py:JarvisBrowser` | Browser | DeprecationWarning: "re-exports BrowserManager" |
+| `governance/resource_monitor.py` | Monitoring | DeprecationWarning: "use monitors/resource.py" |
+| `core/environment_monitor.py` | Monitoring | DeprecationWarning |
+
 ### Duplicate/Overlapping Systems
 | Area | Files | Issue |
 |------|-------|-------|
 | Configuration | config.py, config_schema.py, config_registry.py, configuration/service.py, settings/store.py | 5 overlapping config systems |
 | Request routing | intent_router.py (legacy) vs routing/request_classifier.py (modern) | Two parallel classification paths |
 | Agent execution | sub_agents/ (legacy) + adapters vs agents/ (new) | Dual execution systems bridged by adapters |
+| **Brain executor** | `brain/executor/` | **Third execution path** — simpler tool registration without full agent lifecycle |
 | Diagnostics | core/diagnostics.py (standalone) vs core/diagnostics/ (package) | Two different build_diagnostic_report implementations |
 | SSRF | core/ssrf.py vs core/url_safety.py | Two SSRF protection files with different philosophies |
 | Event bus | core/event_bus.py, workflow/events.py, agents/events.py, plugins/events.py | Multiple event bus variants |
 | Resource monitoring | monitors/resource.py, governance/resource_monitor.py, core/environment_monitor.py | Overlapping resource monitors |
+| **Planning** | `core/planner/` (full state machine) vs `brain/planner/` (simple 3-node DAG) | Two parallel planning systems with different complexity |
+| **Memory (brain/memory)** | `brain/memory/memory_manager.py` + 4 sub-memories | Duplicates `memory/` package (MemoryFacade, TieredMemory, EmbeddingMemory, Mem0Adapter) |
+| **Decision memory** | `memory/decision_memory.py` vs `brain/memory/decision.py:DecisionMemory` | Two separate decision memory implementations with different schemas and persistence |
+| **LLM routing** | `core/llm_router.py` (LiteLLM, 8 groups) vs `models/hybrid_models.py:HybridModelManager` (simple fallback) | Two LLM routing systems |
+| **Automation** | `brain/automation/loop.py:AutomationLoop` (autonomous build loop) vs `core/control_loop.py:ControlLoop` (core build loop) | Two build-loop implementations |
+| **Channels vs routers** | `channels/processor.py:process_message()` (canonical pipeline) vs `routers/chat.py:chat_handler()` (legacy direct handler) | Two message processing paths |
+| **Fact extraction** | `memory/extraction.py:extract_facts()` (regex-based) vs `brain/memory/semantic.py:SemanticMemory` (embedding-based) | Two fact extraction/storage approaches |
+| **Orchestrators** | `core/lifespan.py` (startup orchestrator) vs `brain/UnifiedBrain.py` (cognitive orchestrator) | Two system orchestrators with different scope |
 
 ### Key Architectural Observations
-1. **Centralized lifespan** — `core/lifespan.py` is the single orchestration point with 42 startup phases
-2. **Activity graph as spine** — Activity system (store/manager/recorder) serves as the common persistence backbone
-3. **Provider abstraction** — Two clean provider abstractions (LLM model_providers + execution providers) with registration and routing
-4. **Self-improvement chain** — improvement/detector -> generalization/extractor -> proposals -> executor forms a feedback loop
-5. **Phase numbering** — Code comments reference Phase numbers (Phase 7.5, 8.1, 10, 13.0, 13.1, 14, 15, 17-24) indicating phased development
-6. **No migration path** — No documented process for migrating from legacy to new systems
+1. **Centralized lifespan** — `core/lifespan.py` is the single orchestration point with ~42 startup phases
+2. **Brain as cognitive core** — `brain/UnifiedBrain.py` is a parallel orchestrator that duplicates many core/ subsystems (planner, executor, memory, automation) with its own event wiring and observer system
+3. **Activity graph as spine** — Activity system (store/manager/recorder) serves as the common persistence backbone
+4. **Provider abstraction** — Two clean provider abstractions (LLM model_providers + execution providers) with registration and routing
+5. **Self-improvement chain** — improvement/detector -> generalization/extractor -> proposals -> executor forms a feedback loop
+6. **Phase numbering** — Code comments reference Phase numbers (Phase 7.5, 8.1, 10, 13.0, 13.1, 14, 15, 17-24) indicating phased development
+7. **Three execution paths** — `core/agents/` (new BaseAgent system), `brain/executor/` (simple tool executor), and legacy sub_agents (now migrated) — three parallel execution systems
+8. **Six memory packages** — `memory/` (MemoryFacade), `brain/memory/` (MemoryManager), `core/memory.py` (legacy JSON), `core/long_term_memory/` (KnowledgeStore), `core/activity/storage.py` (ActivityStore), `core/rag_vector.py` (VectorRAG) — six memory systems with overlapping responsibilities
+9. **Two orchestrators** — `core/lifespan.py` (startup/HTTP) and `brain/UnifiedBrain.py` (cognitive/autonomous) co-exist with no clear boundary between them
+10. **Channels architecture** — `channels/processor.py:process_message()` is the canonical message routing pipeline, but `routers/chat.py:chat_handler()` still bypasses it for direct HTTP requests
+11. **No migration path** — No documented process for migrating from legacy to new systems
 
 ---
 
@@ -868,9 +1134,13 @@ Each phase below lists the subsystems that need this lifecycle applied.
 
 ---
 
-### PHASE 1 — Canonical Architecture (1–2 weeks)
+### PHASE 1 — Canonical Architecture (2–3 weeks)
 
 **Goal:** Every subsystem has exactly ONE canonical owner. Eliminate all overlapping implementations.
+
+**Sub-phase 1e completed:** Diagnostics, Event Bus, Resource Monitors, Memory, Agent Execution consolidated. Sub-agents migrated to core/agents/_legacy/.
+
+**Sub-phase 1f completed:** Full deep audit of brain/, memory/, assistant/, tools/, services/, channels/, learning/, daemon/, mcp/, network/, automation/, providers/, plugins/, integrations/, config/, models/. 12 new subsystems documented. 15 new duplicate/overlapping systems identified.
 
 | Subsystem | Current State | Canonical Owner | Action |
 |-----------|--------------|-----------------|--------|
@@ -882,6 +1152,12 @@ Each phase below lists the subsystems that need this lifecycle applied.
 | **SSRF** | 2 files: ssrf.py (strict, active) vs url_safety.py (permissive, dead) | `core/ssrf.py` | Already complete — url_safety.py removed in Phase 0 |
 | **Diagnostics** | 2 files: core/diagnostics.py (standalone, dead) vs core/diagnostics/ (package, active) | `core/diagnostics/` package | ✅ COMPLETED — Standalone `core/diagnostics.py` deleted. All functionality merged into `core/diagnostics/report.py`. |
 | **Memory** | Multiple facades: memory/memory_facade.py, core/memory.py, memory/tiered_memory.py, memory/embedding_memory.py, memory/mem0_adapter.py | `memory/memory_facade.py` | ✅ COMPLETED — `core/memory.py:MemoryManager` emits DeprecationWarning. `tiered_memory`, `embedding_memory`, `mem0_adapter` already have zero direct production imports (only consumed by the facade). Utility functions (tokenize, jaccard_similarity, get_text_similarity) remain without warning. `core/rag_manager.py` removed in Phase 0. |
+| **Brain Memory** | `brain/memory/` (MemoryManager + 4 sub-memories) duplicates `memory/` package | `memory/memory_facade.py` | NEW — `brain/memory/` has EpisodicMemory, SemanticMemory, TaskMemory, DecisionMemory that overlap with memory/ and core/activity/. Must consolidate 6 memory packages into one. |
+| **Brain Planner** | `brain/planner/` (simple 3-node DAG) duplicates `core/planner/` (full state machine) | `core/planner/` | NEW — `brain/planner/planner.py:Planner` only creates 3-node DAGs. Should be replaced by core/planner calls or merged. |
+| **Brain Executor** | `brain/executor/` (Executor + Verifier) is a third execution path | `core/agents/` | NEW — brain/executor provides simpler tool registration without agent lifecycle. Should consolidate into core/agents/ or core/tools/. |
+| **Brain Automation** | `brain/automation/loop.py:AutomationLoop` (1234-line autonomous build loop) overlaps with `core/control_loop.py:ControlLoop` | `core/control_loop.py` | NEW — Two parallel build-loop implementations with different architectures. Need unification. |
+| **Hybrid Models** | `models/hybrid_models.py:HybridModelManager` duplicates `core/llm_router.py` | `core/llm_router.py` | NEW — HybridModelManager provides simpler fallback chain but duplicates LLM routing. Should be deprecated in favor of llm_router. |
+| **Decision Memory** | `memory/decision_memory.py` vs `brain/memory/decision.py:DecisionMemory` — two implementations | `memory/memory_facade.py` | NEW — Different schemas and persistence mechanisms for the same concept. Need consolidation. |
 
 **Canonical owner:** Architecture lead
 
@@ -1021,30 +1297,63 @@ Scheduler — schedule next observation
 
 ---
 
-### PHASE 6 — Marketplace (3–4 weeks)
+### PHASE 6 — Runtime & Distribution (6A–6F, completed)
 
-**Goal:** Expand the existing plugin marketplace into a full App Store for the JARVIS ecosystem.
+**Goal:** Complete the runtime platform with security, tenancy, distribution, and
+distributed graph execution.
 
-| Artifact Type | Current Support | Marketplace Target |
-|--------------|-----------------|-------------------|
-| Plugins | ✅ `core/plugins/marketplace.py` | Install, version, dependency resolution |
-| Agents | ❌ | Publish BaseAgent subclasses as packages |
-| Skills | ❌ `skills/library/` (local only) | Remote skill registries |
-| Workflows | ❌ | Workflow template registry |
-| MCP Servers | ❌ | MCP server discovery and installation |
-| Prompt Packs | ❌ | Shared system prompt collections |
-| Integrations | ❌ | One-click integration installation |
-| Capability Packs | ❌ | Bundled capability sets |
-| Tool Providers | ❌ | Provider registration from remote |
-| Templates | ❌ | Project/site/workflow templates |
-| Themes | ❌ | UI theme packs |
-| Models | ❌ | Model registry + one-click pull |
+| Sprint | Focus | Status |
+|---|---|---|
+| 6A | Identity models & propagation (User, Session, Identity propagation) | ✅ |
+| 6B | Tenant boundaries & multi-tenancy (TenantResolution stage, tenant isolation) | ✅ |
+| 6C | Resource access & authorization (ResourceScope, Authorization, Permission grants) | ✅ |
+| 6D | RuntimeContext v1 (frozen runtime object model, canonical pipeline 19 stages) | ✅ |
+| 6E | Distribution layer (WorkerRegistry, Transport, WorkerEndpoint, InProcess/HTTP) | ✅ |
+| 6F | Distributed Graph (DAG execution, scheduler, checkpoint, recovery, architecture rules 43–47) | ✅ |
 
-**Canonical owner:** Marketplace team
+**Key outputs:** `core/distribution/`, `core/identity/`, `core/pipeline/` (19-stage canonical pipeline),
+`docs/architecture/ADR-008-runtime-v1.md`, architecture rules 1–47.
+
+**Marketplace / Ecosystem plans deferred to Phase 9.**
 
 ---
 
-### PHASE 7 — Enterprise (4–6 weeks)
+> **Roadmap update (runtime-v1):** Phase 7 was originally planned as Enterprise.
+> After completion of Runtime v1 (Identity, Multi-tenancy, Distribution, Distributed Graph),
+> the roadmap was reordered. Intelligence Platform now precedes Enterprise because it builds
+> directly on the completed runtime architecture. Enterprise capabilities move to Phase 8
+> without loss of scope. Universal Graph moves to Phase 9.
+
+### PHASE 7 — Intelligence Platform (4–6 weeks)
+
+**Goal:** Transform the runtime into a system that can reason, compare strategies,
+learn from outcomes, and explain every decision.
+
+**Canonical spec:** `docs/architecture/ADR-009-intelligence-platform.md`
+
+| Sprint | Focus | Type | Dependencies |
+|---|---|---|---|
+| 7.0 | Consolidation audit & frozen contracts | Inventory | None |
+| 7.1 | Reasoning integration (ReasoningEngine, EvidenceTracker, FactReasoner) | Integration | Sprint 0 |
+| 7.2 | Knowledge graph integration (KnowledgeGraph, GraphStore) | Integration | Sprint 0 |
+| 7.3 | Multi-strategy planner (strategy generation, comparison, ranking) | New build | Sprint 1 |
+| 7.4 | Reflection integration (ResearchReflection) | Integration | Sprint 0 |
+| 7.5 | Learning engine (merge DecisionMemory + brain/learning_engine) | Merge + new | Sprint 4 |
+| 7.6 | Policy optimization (thresholds, weights, retry limits) | New build | Sprint 5 |
+| 7.7 | Explainability (unified explanation artifact) | New build | Sprints 1+2+3 |
+| 7.8 | Intelligence metrics (reasoning_depth, evidence_count, etc.) | New build | Sprint 7 |
+| 7.9 | Architecture rules 48–55 | Enforcement | Sprint 8 |
+| 7.10 | Deterministic replay & regression tests | New build | Sprint 9 |
+
+**Existing assets reused:** `core/research/reasoning.py`, `reasoner.py`, `evidence_tracker.py`,
+`knowledge_graph.py`, `graph_store.py`, `reflection.py`, `synthesizer.py`, `planner.py`.
+
+**Pipeline insertion:** Knowledge → Reasoning → Planner → Reflection → Learning → Explainability
+(6 new or replaced stages in the 23-stage pipeline).
+
+---
+
+### PHASE 8 — Enterprise Platform (4–6 weeks)
 
 **Goal:** Multi-user, multi-team operation with shared state.
 
@@ -1057,15 +1366,15 @@ Scheduler — schedule next observation
 | Distributed Agents | ❌ | Remote agent workers, cloud orchestration |
 | Remote Execution | ❌ | Execute on remote machines via provider SDK |
 
-**Prerequisites:** Phase 1 (config canonical), Phase 7 (graph database)
+**Prerequisites:** Phase 1 (config canonical), Phase 7 (intelligence pipeline)
 
 **Canonical owner:** Enterprise team
 
 ---
 
-### PHASE 8 — Universal Graph (4–6 weeks)
+### PHASE 9 — Universal Graph & Marketplace (4–6 weeks each)
 
-**Goal:** One graph database unifying all current graph types.
+**Goal (Graph):** One graph database unifying all current graph types.
 
 | Current Graph | File(s) | Status |
 |-------------|---------|--------|
@@ -1098,26 +1407,41 @@ Project → Goal → Plan → Activity → Decision → Evidence
 4. Build a single `GraphDB` class with relationship traversal, path finding, and subgraph extraction
 5. Replace all existing graph implementations with `GraphDB`
 
-**Canonical owner:** Graph team (cross-cutting)
+**Goal (Marketplace):** Expand the existing plugin marketplace into a full App Store:
+Plugins, Agents, Skills, Workflows, MCP Servers, Prompt Packs, Integrations,
+Capability Packs, Tool Providers, Templates, Themes, Models.
+
+**Canonical owner:** Graph team (cross-cutting) / Marketplace team
 
 ---
 
 ### SUMMARY — Execution Order
 
 ```
-Phase 0: Remove Dead Code          ██░░░░░░░░░░░░░░  1–2 days
-Phase 1: Canonical Architecture    ████████░░░░░░░░  1–2 weeks
+Phase 0: Remove Dead Code          ██░░░░░░░░░░░░░░  1–2 days      ✅ COMPLETED
+Phase 1: Canonical Architecture    ██████████░░░░░░  2–3 weeks     🔄 IN PROGRESS (1e✅ 1f✅)
 Phase 2: Universal Activity Layer  ████████████░░░░  2–3 weeks
 Phase 3: Unified Reasoning Engine  ██████████████░░  2–3 weeks
-Phase 4: Universal Memory          ██████████████░░  1–2 weeks
+Phase 4: Universal Memory          ██████████████░░  2–3 weeks     (scope expanded: 6→1 consolidation)
 Phase 5: Autonomous Loop           ████████████████  2–3 weeks
-Phase 6: Marketplace               ████████████████  3–4 weeks
-Phase 7: Enterprise                ████████████████  4–6 weeks
-Phase 8: Universal Graph           ████████████████  4–6 weeks
+Phase 6: Runtime & Distribution    ████████████████  3–4 weeks     6A–6F (Identity → Distributed Graph)
+Phase 7: Intelligence Platform     ████████████████  4–6 weeks     ADR-009
+Phase 8: Enterprise Platform       ████████████████  4–6 weeks
+Phase 9: Universal Graph / Marketplace ████████████  4–6 weeks each
 
 MIGRATION LIFECYCLE                ░░░░░░░░░░░░░░░░  Ongoing
 ```
 
-**Total estimated effort:** 4–6 months with a focused team.
+**Total estimated effort:** 6–9 months with a focused team (reordered per runtime-v1 checkpoint).
+
+**Phase 1 remaining work (15 new consolidation targets):**
+- `brain/memory/` (6 memory packages → 1)
+- `brain/planner/` (merge into core/planner/)
+- `brain/executor/` (merge into core/agents/ or core/tools/)
+- `brain/automation/loop.py` (merge with core/control_loop.py)
+- `models/hybrid_models.py` (deprecate in favor of core/llm_router.py)
+- `memory/decision_memory.py` vs `brain/memory/decision.py` (consolidate)
+- `routers/chat.py` (route through channels/processor.py)
+- Core orchestrator boundary: `core/lifespan.py` vs `brain/UnifiedBrain.py`
 
 **The golden rule:** No new features until Phase 1 is complete. Every feature built on a fragmented architecture creates more migration debt.

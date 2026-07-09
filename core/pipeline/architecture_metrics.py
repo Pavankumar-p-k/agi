@@ -16,6 +16,9 @@ class ArchitectureMetrics:
     These are structural measurements of the request's path through the
     architecture — not performance timings.  A separate ``MetricsCollector``
     (not part of this dataclass) aggregates across requests.
+
+    Every snapshot carries ``tenant_id`` and ``workspace_id`` so that
+    replay and analysis are tenant-local rather than global.
     """
 
     reasoning_complexity: str = "unknown"
@@ -45,6 +48,28 @@ class ArchitectureMetrics:
     execution_state: str = "pending"
     """Final execution state: completed, failed, short_circuited, etc."""
 
+    tenant_id: str = ""
+    """Tenant that owned this request.  Populated from ``resource_scope``."""
+    workspace_id: str = ""
+    """Workspace within the tenant, if applicable."""
+
+    # ── Intelligence metrics (Phase 7) ────────────────────────────────────
+
+    belief_count: int = 0
+    """Number of Beliefs constructed by the Reasoning stage."""
+
+    evidence_count: int = 0
+    """Number of EvidenceItems collected during reasoning."""
+
+    contradiction_count: int = 0
+    """Number of cross-source contradictions detected."""
+
+    counter_hypothesis_count: int = 0
+    """Number of counter-hypotheses generated."""
+
+    reasoning_confidence: float = 0.0
+    """Overall confidence score from the Reasoning stage."""
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "reasoning_complexity": self.reasoning_complexity,
@@ -56,6 +81,13 @@ class ArchitectureMetrics:
             "activity_depth": self.activity_depth,
             "retries": self.retries,
             "execution_state": self.execution_state,
+            "tenant_id": self.tenant_id,
+            "workspace_id": self.workspace_id,
+            "belief_count": self.belief_count,
+            "evidence_count": self.evidence_count,
+            "contradiction_count": self.contradiction_count,
+            "counter_hypothesis_count": self.counter_hypothesis_count,
+            "reasoning_confidence": self.reasoning_confidence,
         }
 
     def to_snapshot_dict(self) -> dict[str, Any]:
@@ -72,6 +104,8 @@ class ArchitectureMetrics:
         reasoning = ctx.reasoning_assessment or {}
         verification = ctx.verification_result or {}
         outcome = ctx.outcome
+        scope = ctx.resource_scope
+        rsn = ctx.reasoning_result
 
         return ArchitectureMetrics(
             reasoning_complexity=reasoning.get("complexity", "unknown"),
@@ -83,4 +117,11 @@ class ArchitectureMetrics:
             activity_depth=1 if ctx.activity_id else 0,
             retries=0,  # populated by Pipeline.execute retry tracking
             execution_state=ctx.execution_state,
+            tenant_id=scope.tenant_id if scope else "",
+            workspace_id=scope.workspace_id or "" if scope else "",
+            belief_count=len(rsn.beliefs) if rsn else 0,
+            evidence_count=len(rsn.evidence) if rsn else 0,
+            contradiction_count=len(rsn.contradictions) if rsn else 0,
+            counter_hypothesis_count=len(rsn.counter_hypotheses) if rsn else 0,
+            reasoning_confidence=rsn.confidence if rsn else 0.0,
         )

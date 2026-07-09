@@ -53,7 +53,8 @@ class SchedulerQueue:
     def submit(self, activity_id: str, goal: str = "",
                priority: int = 0, node_type: str = "goal",
                depends_on: list[str] | None = None,
-               metadata: dict[str, Any] | None = None) -> ScheduledActivity:
+               metadata: dict[str, Any] | None = None,
+               tenant_id: str = "") -> ScheduledActivity:
         """Submit a new activity directly to the queue (bypasses ActivityGraph)."""
         act = ScheduledActivity(
             activity_id=activity_id,
@@ -61,6 +62,7 @@ class SchedulerQueue:
             status="pending",
             goal=goal,
             node_type=node_type,
+            tenant_id=tenant_id,
             depends_on=depends_on or [],
             metadata=metadata or {},
         )

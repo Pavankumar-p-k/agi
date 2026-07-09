@@ -10,17 +10,28 @@ from core.identity.models import (
     TenantIdentity,
     UserIdentity,
 )
+from core.identity.resource_scope import ResourceScope, Visibility
 from core.identity.service import IdentityResolver, IdentityService
+from core.identity.tenant_resolver import (
+    DefaultTenantResolver,
+    TenantResolutionResult,
+    TenantResolver,
+)
 
 __all__ = [
     "AgentIdentity",
     "AuthenticationState",
+    "DefaultTenantResolver",
     "IdentityContext",
     "IdentityResolver",
     "IdentityService",
+    "ResourceScope",
     "SessionIdentity",
     "TenantIdentity",
+    "TenantResolutionResult",
+    "TenantResolver",
     "UserIdentity",
+    "Visibility",
     "get_identity_service",
     "set_identity_service",
 ]

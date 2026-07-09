@@ -17,14 +17,14 @@ _observation_hub: ObservationHub | None = None
 
 
 class ObservationHub:
-    """Publishes Observation events to the canonical EventBus.
+    """Tenant-aware Observation publisher.
 
     Design:
     - Thin adapter — no business logic, no subscriber awareness.
     - Converts Observation objects to Event objects and publishes via EventBus.
-    - Uses ``observation.observed`` as the primary event type.
-    - ``get_hub()`` returns a singleton for convenience; the hub can also be
-      instantiated directly with a custom EventBus for testing.
+    - Attaches ``resource_scope`` from the Observation to the Event so that
+      the EventBus can perform tenant-aware routing.
+    - Subscribers only receive observations from the same tenant (or SYSTEM).
     """
 
     def __init__(self, bus: EventBus | None = None):
@@ -32,21 +32,29 @@ class ObservationHub:
 
     def publish_observation(self, observation: Observation, *,
                             source: str = "observation.hub") -> None:
-        """Publish a single Observation as an Event on the bus."""
+        """Publish a single Observation as an Event on the bus.
+
+        The Event carries the Observation's ``resource_scope`` for
+        tenant-aware routing by the EventBus.
+        """
+        payload = observation.to_dict()
         event = Event(
             type=OBSERVATION_OBSERVED,
             source=source,
-            payload=observation.to_dict(),
+            payload=payload,
+            resource_scope=payload.get("resource_scope"),
         )
         self._bus.publish_sync(event)
 
     async def publish_observation_async(self, observation: Observation, *,
                                         source: str = "observation.hub") -> None:
         """Async variant of publish_observation."""
+        payload = observation.to_dict()
         event = Event(
             type=OBSERVATION_OBSERVED,
             source=source,
-            payload=observation.to_dict(),
+            payload=payload,
+            resource_scope=payload.get("resource_scope"),
         )
         await self._bus.publish(event)
 

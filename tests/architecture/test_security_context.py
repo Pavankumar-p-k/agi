@@ -5,9 +5,11 @@ from __future__ import annotations
 import pytest
 
 from core.identity.models import AuthenticationState, IdentityContext, UserIdentity
+from core.identity.resource_scope import ResourceScope, Visibility
 from core.pipeline.authentication_result import AuthenticationResult
 from core.pipeline.authorization_result import AuthorizationResult
 from core.pipeline.context import PipelineContext
+from core.pipeline.resource_access_result import ResourceAccessResult
 from core.pipeline.security_context import SecurityContext
 
 
@@ -24,15 +26,21 @@ class TestSecurityContextContract:
         assert sc.identity is None
         assert sc.authentication is None
         assert sc.authorization is None
+        assert sc.resource_scope is None
+        assert sc.resource_access is None
 
     def test_all_fields_populated(self):
         identity = IdentityContext(authentication_state=AuthenticationState.AUTHENTICATED)
         authn = AuthenticationResult(authenticated=True, state=AuthenticationState.AUTHENTICATED)
         authz = AuthorizationResult(allowed=True, scope="chat.execute")
-        sc = SecurityContext(identity=identity, authentication=authn, authorization=authz)
+        scope = ResourceScope(tenant_id="acme")
+        ra = ResourceAccessResult(allowed=True, reason="ok", resource_scope=scope, requested_action="read", effective_visibility=Visibility.PUBLIC)
+        sc = SecurityContext(identity=identity, authentication=authn, authorization=authz, resource_scope=scope, resource_access=ra)
         assert sc.identity is identity
         assert sc.authentication is authn
         assert sc.authorization is authz
+        assert sc.resource_scope is scope
+        assert sc.resource_access is ra
 
     def test_equality(self):
         sc1 = SecurityContext()
@@ -54,6 +62,8 @@ class TestPipelineContextSecurity:
         assert sc.identity is None
         assert sc.authentication is None
         assert sc.authorization is None
+        assert sc.resource_scope is None
+        assert sc.resource_access is None
 
     def test_security_reflects_identity(self):
         identity = IdentityContext(authentication_state=AuthenticationState.IDENTIFIED)
@@ -64,19 +74,27 @@ class TestPipelineContextSecurity:
         assert sc.identity.authentication_state == AuthenticationState.IDENTIFIED
         assert sc.authentication is None
         assert sc.authorization is None
+        assert sc.resource_scope is None
+        assert sc.resource_access is None
 
-    def test_security_reflects_all_three(self):
+    def test_security_reflects_all_five(self):
         identity = IdentityContext(authentication_state=AuthenticationState.AUTHENTICATED)
         authn = AuthenticationResult(authenticated=True, state=AuthenticationState.AUTHENTICATED)
         authz = AuthorizationResult(allowed=True, scope="chat.execute")
+        scope = ResourceScope(tenant_id="acme")
+        ra = ResourceAccessResult(allowed=True, reason="ok", resource_scope=scope, requested_action="read", effective_visibility=Visibility.PUBLIC)
         ctx = PipelineContext(request_id="r3", transport="test")
         ctx.identity = identity
         ctx.authentication_result = authn
         ctx.authorization_result = authz
+        ctx.resource_scope = scope
+        ctx.resource_access_result = ra
         sc = ctx.security
         assert sc.identity is identity
         assert sc.authentication is authn
         assert sc.authorization is authz
+        assert sc.resource_scope is scope
+        assert sc.resource_access is ra
 
     def test_security_readonly_snapshot(self):
         """Modifying context fields after accessing .security does not retroactively change it."""

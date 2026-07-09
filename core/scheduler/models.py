@@ -14,6 +14,9 @@ class ScheduledActivity:
     The scheduler does NOT re-model the activity graph. It reads from
     ActivityManager and wraps each active activity with its own metadata:
     priority, score, dependency list, resume tracking.
+
+    Every ScheduledActivity carries a ``tenant_id`` for queue partitioning.
+    Workers process only their assigned tenant partition.
     """
 
     activity_id: str
@@ -22,6 +25,8 @@ class ScheduledActivity:
     status: str = "pending"
     goal: str = ""
     node_type: str = "goal"
+    tenant_id: str = ""
+    """Tenant that owns this activity.  Used for logical queue partitioning."""
     depends_on: list[str] = field(default_factory=list)
     created_at: datetime | None = None
     resumed_count: int = 0

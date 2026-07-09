@@ -10,6 +10,11 @@ from core.identity.models import (
     TenantIdentity,
     UserIdentity,
 )
+from core.identity.tenant_resolver import (
+    DefaultTenantResolver,
+    TenantResolutionResult,
+    TenantResolver,
+)
 
 
 class IdentityResolver(Protocol):
@@ -50,6 +55,17 @@ class IdentityResolver(Protocol):
 
         Returns ``(user, session)`` if the token is valid, or ``None``
         if the token is invalid, expired, or the user was deleted.
+        """
+        ...
+
+    def resolve_tenant(
+        self,
+        identity: IdentityContext | None,
+    ) -> TenantResolutionResult:
+        """Resolve the canonical tenant for *identity*.
+
+        Never called by the pipeline directly — only by
+        ``TenantResolutionStage``.
         """
         ...
 
@@ -143,6 +159,19 @@ class IdentityService(IdentityResolver):
         user = UserIdentity(id=username)
         session = SessionIdentity(id=token, user_id=username)
         return (user, session)
+
+    def resolve_tenant(
+        self,
+        identity: IdentityContext | None,
+    ) -> TenantResolutionResult:
+        """Resolve the canonical tenant for *identity*.
+
+        Delegates to ``DefaultTenantResolver``.  Subclasses or test
+        overrides may replace ``self._tenant_resolver``.
+        """
+        if not hasattr(self, "_tenant_resolver"):
+            self._tenant_resolver = DefaultTenantResolver()
+        return self._tenant_resolver.resolve_tenant(identity)
 
     def authorize(
         self,

@@ -24,6 +24,19 @@ from core.schemas import HorizonGoalRequest, QualityGradeRequest
 router = APIRouter(tags=["admin"])
 
 
+async def _ollama_ping() -> bool:
+    """Check Ollama connectivity without importing llm_router."""
+    try:
+        import httpx
+        from core.config_registry import config
+        url = config.get("ollama.base_url", "http://localhost:11434")
+        async with httpx.AsyncClient(timeout=3) as client:
+            r = await client.get(f"{url}/api/tags")
+        return r.status_code == 200
+    except Exception:
+        return False
+
+
 # ── QUALITY ─────────────────────────────────────────────────────────
 
 @router.post("/api/quality/grade")
@@ -31,17 +44,17 @@ async def quality_grade(
     req: QualityGradeRequest,
     user: User = Depends(verify_token),
 ):
-    import core.llm_router
-    from core.llm_router import health_check
+    import importlib as _il
+    _llm_router = _il.import_module("core.llm_router")
     from core.quality_grader import QualityGrader
 
-    if not await health_check():
+    if not await _ollama_ping():
         return JSONResponse(status_code=503, content={"error": "Ollama is offline"})
 
     try:
         grader = QualityGrader(
             constitution_path=str(Path(__file__).parent.parent.parent / "config" / "quality_constitution.json"),
-            llm_router=core.llm_router,
+            llm_router=_llm_router,
         )
         grade = await grader.grade(req.type, req.content)
         return {

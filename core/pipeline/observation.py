@@ -8,7 +8,20 @@ from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
+    from core.identity.resource_scope import ResourceScope
     from core.pipeline.deterministic import DeterministicServices
+
+
+def _scope_to_dict(scope: Any | None) -> dict[str, Any] | None:
+    if scope is None:
+        return None
+    return {
+        "tenant_id": scope.tenant_id,
+        "workspace_id": scope.workspace_id,
+        "owner_id": scope.owner_id,
+        "visibility": scope.visibility.value,
+        "metadata": dict(scope.metadata),
+    }
 
 
 def _compute_fingerprint(source: str, type_: str, payload: dict[str, Any]) -> str:
@@ -44,6 +57,7 @@ class Observation:
     tenant_id: str | None = None
     organization_id: str | None = None
     workspace_id: str | None = None
+    resource_scope: ResourceScope | None = None
 
     @classmethod
     def new(
@@ -59,6 +73,7 @@ class Observation:
         tenant_id: str | None = None,
         organization_id: str | None = None,
         workspace_id: str | None = None,
+        resource_scope: ResourceScope | None = None,
         services: DeterministicServices | None = None,
     ) -> Observation:
         """Create a new Observation with auto-generated id and fingerprint.
@@ -84,6 +99,7 @@ class Observation:
             tenant_id=tenant_id,
             organization_id=organization_id,
             workspace_id=workspace_id,
+            resource_scope=resource_scope,
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -101,4 +117,5 @@ class Observation:
             "tenant_id": self.tenant_id,
             "organization_id": self.organization_id,
             "workspace_id": self.workspace_id,
+            "resource_scope": _scope_to_dict(self.resource_scope),
         }

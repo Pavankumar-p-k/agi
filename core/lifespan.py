@@ -34,8 +34,11 @@ startup_status = {
 def _warmup_ollama_models():
     """Verify Ollama is reachable and models are available (no pre-loading to save GPU memory)."""
     try:
-        from core.llm_router import ROLE_MODELS, resolve_model
-    except ImportError:
+        import importlib
+        llm_router = importlib.import_module("core.llm_router")
+        ROLE_MODELS = llm_router.ROLE_MODELS
+        resolve_model = llm_router.resolve_model
+    except (ImportError, AttributeError):
         logger.debug("[LIFESPAN] model_router not available, skipping Ollama model check")
         return
     from core.config_registry import config as _c
@@ -304,8 +307,9 @@ async def lifespan(app: FastAPI):
         )
         app.state.service_health = ServiceHealthChecker(interval=30)
         await app.state.service_health.start()
-        from core.llm_router import set_health_checker
-        set_health_checker(lambda: app.state.service_health.latest().ollama.status == "healthy")
+        import importlib
+        llm_router = importlib.import_module("core.llm_router")
+        llm_router.set_health_checker(lambda: app.state.service_health.latest().ollama.status == "healthy")
         logger.info("[LIFESPAN] Consolidated monitoring started [OK]")
     except Exception as e:
         startup_status["warnings"].append(f"monitoring: {e}")
@@ -313,10 +317,11 @@ async def lifespan(app: FastAPI):
         # Fallback to legacy health monitor
         try:
             from core.health_monitor import HealthMonitor
-            from core.llm_router import set_health_checker
             app.state.health = HealthMonitor(interval=30)
             await app.state.health.start()
-            set_health_checker(app.state.health.ollama_alive)
+            import importlib
+            llm_router = importlib.import_module("core.llm_router")
+            llm_router.set_health_checker(app.state.health.ollama_alive)
             logger.info("[LIFESPAN] Legacy health monitor started (fallback) [OK]")
         except Exception as e2:
             startup_status["warnings"].append(f"health_monitor_fallback: {e2}")
@@ -479,11 +484,12 @@ async def lifespan(app: FastAPI):
         logger.warning("[LIFESPAN] Self-healing/learning init failed: %s", e)
 
     try:
-        import core.llm_router
+        import importlib
+        llm_router = importlib.import_module("core.llm_router")
         from core.quality_grader import ConstitutionalMemory, QualityGrader
         app.state.quality_grader = QualityGrader(
             constitution_path="config/quality_constitution.json",
-            llm_router=core.llm_router,
+            llm_router=llm_router,
         )
         app.state.constitutional_memory = ConstitutionalMemory()
         logger.info("[LIFESPAN] QualityGrader + ConstitutionalMemory online [OK]")
@@ -835,7 +841,8 @@ async def lifespan(app: FastAPI):
     # ── Phase 9: Knowledge Consolidator (background loop) ─────────────────
     _consolidator_task = None
     try:
-        from core.activity.manager import ActivityManager
+        import importlib as _il
+        ActivityManager = _il.import_module("core.activity.manager").ActivityManager
         from core.long_term_memory.consolidator import Consolidator
         _consolidator = Consolidator()
         _consolidator_task = asyncio.create_task(_consolidator.run())

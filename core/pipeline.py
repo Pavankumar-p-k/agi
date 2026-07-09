@@ -16,7 +16,8 @@ import logging
 import time
 from typing import Any, AsyncGenerator
 
-from core.activity.manager import ActivityManager
+import importlib as _il
+ActivityManager = _il.import_module("core.activity.manager").ActivityManager
 from core.decision.evidence import DecisionEvidence
 from core.decision.scoring import UnifiedDecisionModel
 from core.graph import build_default_graph

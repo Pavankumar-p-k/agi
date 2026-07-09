@@ -5,10 +5,15 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from core.identity.models import IdentityContext
+from core.identity.resource_scope import ResourceScope
 from core.pipeline.architecture_metrics import ArchitectureMetrics
 from core.pipeline.authentication_result import AuthenticationResult
 from core.pipeline.authorization_result import AuthorizationResult
+from core.pipeline.resource_access_result import ResourceAccessResult
+from core.pipeline.resource_grant import ResourceGrant
+from core.pipeline.reasoning_result import ReasoningResult
 from core.pipeline.security_context import SecurityContext
+from core.identity.tenant_resolver import TenantResolutionResult
 from core.pipeline.deterministic import DeterministicServices
 from core.pipeline.outcome import Outcome
 
@@ -41,6 +46,10 @@ class PipelineContext:
     identity: IdentityContext | None = None
     authentication_result: AuthenticationResult | None = None
     authorization_result: AuthorizationResult | None = None
+    resource_grant: ResourceGrant | None = None
+    resource_scope: ResourceScope | None = None
+    resource_access_result: ResourceAccessResult | None = None
+    tenant_resolution_result: TenantResolutionResult | None = None
 
     # ── Pipeline metadata ───────────────────────────────────────────────────
     pipeline_version: str = "1.0"
@@ -71,7 +80,13 @@ class PipelineContext:
 
     reasoning_assessment: dict[str, Any] | None = None
     """Output of the Reasoner stage — complexity, requirements,
-    constraints, confidence, estimated_steps, routing_hints."""
+    constraints, confidence, estimated_steps, routing_hints.
+    Deprecated: use ``reasoning_result`` for new code."""
+
+    reasoning_result: ReasoningResult | None = None
+    """Canonical output of the Reasoning stage (Phase 7).
+    Replaces ``reasoning_assessment``.  Frozen dataclass with
+    beliefs, evidence, contradictions, counter-hypotheses, confidence."""
 
     plan: dict[str, Any] | None = None
     """Logical plan produced by the Planner stage.
@@ -158,15 +173,19 @@ class PipelineContext:
 
     @property
     def security(self) -> SecurityContext:
-        """Read-only aggregate of identity, authentication, and authorization.
+        """Read-only aggregate of all security artifacts.
 
         Built lazily from the individual context fields.  Downstream stages
-        should prefer this over accessing the three fields directly.
+        should prefer this over accessing the individual fields directly.
         """
         return SecurityContext(
             identity=self.identity,
             authentication=self.authentication_result,
             authorization=self.authorization_result,
+            resource_grant=self.resource_grant,
+            resource_scope=self.resource_scope,
+            resource_access=self.resource_access_result,
+            tenant_resolution=self.tenant_resolution_result,
         )
 
     def set_stage_field(self, stage_name: str, field_name: str, value: Any) -> None:

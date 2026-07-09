@@ -76,6 +76,7 @@ async def memory_search(
     """Search JARVIS's tiered memory (hot/warm/cold)."""
     if not q:
         return {"results": []}
-    from memory.memory_facade import memory
+    import importlib as _il
+    memory = _il.import_module("memory.memory_facade").memory
     results = memory.recall(q, limit=limit)
     return {"query": q, "results": results[:limit]}

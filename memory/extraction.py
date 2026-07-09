@@ -14,6 +14,7 @@ class ExtractedFact:
     category: str
     source_text: str
     user_id: str = ""
+    tenant_id: str = ""
     id: str | None = None
     activity_id: str | None = None
     conversation_id: str | None = None

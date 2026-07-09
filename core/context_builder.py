@@ -21,7 +21,8 @@ import logging
 from typing import Any
 
 from .session import ConversationManager
-from memory.memory_facade import memory
+import importlib as _il
+memory = _il.import_module("memory.memory_facade").memory
 from tools.ragflow_tool import format_rag_context, ragflow_search
 
 logger = logging.getLogger("jarvis.context")

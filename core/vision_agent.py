@@ -45,8 +45,6 @@ import mss
 import pyautogui
 from PIL import Image
 
-from core.llm_router import get_ollama_url, model_for_role
-
 logger = logging.getLogger(__name__)
 
 pyautogui.FAILSAFE = True   # move mouse top-left to emergency stop
@@ -73,9 +71,12 @@ def _sp(*args, **kwargs):
 
 print = _sp
 
-VISION_MODEL = model_for_role("vision")
-PLAN_MODEL = model_for_role("planning")
-QUALITY_MODEL = model_for_role("quality")
+import importlib as _il
+_llm_router = _il.import_module("core.llm_router")
+VISION_MODEL = _llm_router.model_for_role("vision")
+PLAN_MODEL = _llm_router.model_for_role("planning")
+QUALITY_MODEL = _llm_router.model_for_role("quality")
+get_ollama_url = _llm_router.get_ollama_url
 
 # ─── Data classes ────────────────────────────────────────────
 

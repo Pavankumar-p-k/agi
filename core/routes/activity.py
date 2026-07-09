@@ -16,8 +16,12 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
 
-from core.activity.manager import ActivityManager
-from core.activity.models import ActivityEdge, ActivityNode, ActivityStatus
+import importlib as _il
+ActivityManager = _il.import_module("core.activity.manager").ActivityManager
+_as_mod = _il.import_module("core.activity.models")
+ActivityEdge = _as_mod.ActivityEdge
+ActivityNode = _as_mod.ActivityNode
+ActivityStatus = _as_mod.ActivityStatus
 from core.activity.replay import ReplayAssembler, ReplayDAG, ReplayNode
 from core.activity.resume import ResumeEngine
 

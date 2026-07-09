@@ -44,6 +44,7 @@ class FactStore:
                     confidence  REAL NOT NULL DEFAULT 0.5,
                     category    TEXT NOT NULL DEFAULT 'fact',
                     user_id     TEXT NOT NULL DEFAULT '',
+                    tenant_id   TEXT NOT NULL DEFAULT '',
                     source_text TEXT NOT NULL DEFAULT '',
                     created_at  REAL NOT NULL,
                     updated_at  REAL NOT NULL,
@@ -63,6 +64,7 @@ class FactStore:
                 row["name"] for row in conn.execute("PRAGMA table_info(facts)").fetchall()
             }
             _PROVENANCE_COLUMNS: dict[str, str] = {
+                "tenant_id": "TEXT NOT NULL DEFAULT ''",
                 "activity_id": "TEXT",
                 "conversation_id": "TEXT",
                 "source_message": "TEXT",
@@ -76,6 +78,10 @@ class FactStore:
             conn.execute("""
                 CREATE INDEX IF NOT EXISTS idx_facts_user
                 ON facts(user_id)
+            """)
+            conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_facts_tenant
+                ON facts(tenant_id)
             """)
             conn.execute("""
                 CREATE INDEX IF NOT EXISTS idx_facts_category
@@ -106,12 +112,19 @@ class FactStore:
         self,
         facts: list[ExtractedFact],
         user_id: str = "",
+        tenant_id: str = "",
         force: bool = False,
     ) -> list[str]:
-        """Insert extracted facts, deduplicating by (subject, predicate, object, user_id).
+        """Insert extracted facts, deduplicating by (subject, predicate, object, user_id, tenant_id).
 
         When *force* is True, dedup is skipped and every fact is inserted
         (useful for storing contradictory facts).
+
+        Args:
+            facts: The facts to store.
+            user_id: Owner of the facts.
+            tenant_id: Tenant scope for the facts.  Every fact must carry a tenant_id.
+            force: Skip dedup when True.
 
         Returns the list of fact IDs that were inserted.
         """
@@ -121,14 +134,15 @@ class FactStore:
         with self._lock, self._connect() as conn:
             for fact in facts:
                 fact_user = fact.user_id or user_id
+                fact_tenant = getattr(fact, "tenant_id", None) or tenant_id
 
                 if not force:
-                    # Check for existing fact (case-insensitive)
+                    # Check for existing fact (case-insensitive, tenant-scoped)
                     existing = conn.execute(
                         """SELECT id, confidence FROM facts
                            WHERE LOWER(subject)=LOWER(?) AND LOWER(predicate)=LOWER(?)
-                             AND LOWER(object)=LOWER(?) AND user_id=?""",
-                        (fact.subject, fact.predicate, fact.object, fact_user),
+                             AND LOWER(object)=LOWER(?) AND user_id=? AND tenant_id=?""",
+                        (fact.subject, fact.predicate, fact.object, fact_user, fact_tenant),
                     ).fetchone()
 
                     if existing:
@@ -146,15 +160,15 @@ class FactStore:
 
                 conn.execute(
                     """INSERT INTO facts
-                       (id, subject, predicate, object, confidence, category, user_id,
+                       (id, subject, predicate, object, confidence, category, user_id, tenant_id,
                         source_text, created_at, updated_at, embedding, is_active,
                         activity_id, conversation_id, source_message,
                         last_verified, verification_level, derived_from)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1,
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1,
                                ?, ?, ?, ?, ?, ?)""",
                     (
                         fact_id, fact.subject, fact.predicate, fact.object,
-                        fact.confidence, fact.category, fact_user,
+                        fact.confidence, fact.category, fact_user, fact_tenant,
                         fact.source_text, now, now, embedding_blob,
                         fact.activity_id, fact.conversation_id, fact.source_message,
                         fact.last_verified, fact.verification_level, fact.derived_from,
@@ -163,48 +177,51 @@ class FactStore:
                 inserted.append(fact_id)
 
         if inserted:
-            logger.debug("Stored %d new facts for user '%s'", len(inserted), user_id)
+            logger.debug("Stored %d new facts for tenant '%s' user '%s'", len(inserted), tenant_id, user_id)
         return inserted
 
     def search_facts(
         self,
         query: str,
         user_id: str = "",
+        tenant_id: str = "",
         limit: int = 10,
         min_confidence: float = 0.3,
     ) -> list[dict[str, Any]]:
-        """Search facts by semantic similarity to the query.
+        """Search facts by semantic similarity to the query, scoped to tenant.
 
         Falls back to keyword matching when embeddings are unavailable.
+        Every query must supply a tenant_id.
         """
         query_embedding = self._compute_embedding(query)
         if query_embedding is not None:
-            return self._search_by_embedding(query_embedding, user_id, limit, min_confidence)
-        return self._search_by_keyword(query, user_id, limit, min_confidence)
+            return self._search_by_embedding(query_embedding, user_id, tenant_id, limit, min_confidence)
+        return self._search_by_keyword(query, user_id, tenant_id, limit, min_confidence)
 
     def get_user_facts(
         self,
         user_id: str,
+        tenant_id: str = "",
         category: str | None = None,
         limit: int = 50,
     ) -> list[dict[str, Any]]:
-        """Retrieve all active facts for a user, optionally filtered by category."""
+        """Retrieve all active facts for a user within a tenant, optionally filtered by category."""
         with self._lock, self._connect() as conn:
             if category:
                 rows = conn.execute(
                     """SELECT * FROM facts
-                       WHERE user_id=? AND is_active=1 AND category=?
+                       WHERE user_id=? AND tenant_id=? AND is_active=1 AND category=?
                        ORDER BY confidence DESC, updated_at DESC
                        LIMIT ?""",
-                    (user_id, category, limit),
+                    (user_id, tenant_id, category, limit),
                 ).fetchall()
             else:
                 rows = conn.execute(
                     """SELECT * FROM facts
-                       WHERE user_id=? AND is_active=1
+                       WHERE user_id=? AND tenant_id=? AND is_active=1
                        ORDER BY confidence DESC, updated_at DESC
                        LIMIT ?""",
-                    (user_id, limit),
+                    (user_id, tenant_id, limit),
                 ).fetchall()
         return [dict(r) for r in rows]
 
@@ -235,11 +252,11 @@ class FactStore:
     def mark_inactive(self, fact_id: str) -> bool:
         return self.update_fact(fact_id, is_active=0)
 
-    def delete_facts_for_user(self, user_id: str) -> int:
+    def delete_facts_for_user(self, user_id: str, tenant_id: str = "") -> int:
         with self._lock, self._connect() as conn:
             cur = conn.execute(
-                "DELETE FROM facts WHERE user_id=?",
-                (user_id,),
+                "DELETE FROM facts WHERE user_id=? AND tenant_id=?",
+                (user_id, tenant_id),
             )
             return cur.rowcount
 
@@ -249,9 +266,10 @@ class FactStore:
         self,
         new_facts: list[ExtractedFact],
         user_id: str = "",
+        tenant_id: str = "",
         threshold: float = 0.7,
     ) -> list[dict[str, Any]]:
-        """Check new facts against stored facts for contradictions.
+        """Check new facts against stored facts for contradictions, scoped to tenant.
 
         A contradiction is flagged when the same subject+predicate pair has
         a different object value with confidence above *threshold*.
@@ -261,12 +279,13 @@ class FactStore:
         contradictions: list[dict[str, Any]] = []
         with self._lock, self._connect() as conn:
             for nf in new_facts:
+                fact_tenant = getattr(nf, "tenant_id", None) or tenant_id
                 rows = conn.execute(
                     """SELECT * FROM facts
                        WHERE LOWER(subject)=LOWER(?) AND LOWER(predicate)=LOWER(?)
-                         AND user_id=? AND is_active=1 AND confidence>=?
+                         AND user_id=? AND tenant_id=? AND is_active=1 AND confidence>=?
                          AND LOWER(object)!=LOWER(?)""",
-                    (nf.subject, nf.predicate, nf.user_id or user_id, threshold, nf.object),
+                    (nf.subject, nf.predicate, nf.user_id or user_id, fact_tenant, threshold, nf.object),
                 ).fetchall()
                 for row in rows:
                     contradictions.append({
@@ -284,8 +303,8 @@ class FactStore:
 
     # ── Consolidation ─────────────────────────────────────────────────────────
 
-    def consolidate(self, user_id: str = "", min_similarity: float = 0.5) -> int:
-        """Merge duplicate or near-duplicate facts for a user.
+    def consolidate(self, user_id: str = "", tenant_id: str = "", min_similarity: float = 0.5) -> int:
+        """Merge duplicate or near-duplicate facts for a user within a tenant.
 
         Facts with the same (subject, predicate) whose objects share at least
         *min_similarity* fraction of words are consolidated — the higher-
@@ -299,9 +318,9 @@ class FactStore:
         with self._lock, self._connect() as conn:
             rows = conn.execute(
                 """SELECT * FROM facts
-                   WHERE user_id=? AND is_active=1
+                   WHERE user_id=? AND tenant_id=? AND is_active=1
                    ORDER BY LOWER(subject), LOWER(predicate), confidence DESC""",
-                (user_id,),
+                (user_id, tenant_id),
             ).fetchall()
 
             groups: dict[tuple[str, str], list[dict[str, Any]]] = {}
@@ -368,10 +387,11 @@ class FactStore:
         self,
         query_emb: list[float],
         user_id: str,
+        tenant_id: str,
         limit: int,
         min_confidence: float,
     ) -> list[dict[str, Any]]:
-        """Full scan with cosine similarity.  Acceptable for moderate fact counts."""
+        """Full scan with cosine similarity, scoped to tenant."""
         import numpy as np
         import struct
 
@@ -381,10 +401,10 @@ class FactStore:
         with self._lock, self._connect() as conn:
             rows = conn.execute(
                 """SELECT * FROM facts
-                   WHERE user_id=? AND is_active=1 AND confidence>=?
+                   WHERE user_id=? AND tenant_id=? AND is_active=1 AND confidence>=?
                    AND embedding IS NOT NULL
                    ORDER BY confidence DESC LIMIT 200""",
-                (user_id, min_confidence),
+                (user_id, tenant_id, min_confidence),
             ).fetchall()
 
             for row in rows:
@@ -404,10 +424,11 @@ class FactStore:
         self,
         query: str,
         user_id: str,
+        tenant_id: str,
         limit: int,
         min_confidence: float,
     ) -> list[dict[str, Any]]:
-        """Simple LIKE search across subject/predicate/object fields."""
+        """Simple LIKE search across subject/predicate/object fields, scoped to tenant."""
         terms = query.lower().split()
         if not terms:
             return []
@@ -420,12 +441,12 @@ class FactStore:
         for t in terms:
             pattern = f"%{t}%"
             params.extend([pattern, pattern, pattern])
-        params.extend([user_id, min_confidence, limit])
+        params.extend([user_id, tenant_id, min_confidence, limit])
 
         with self._lock, self._connect() as conn:
             rows = conn.execute(
                 f"""SELECT * FROM facts
-                   WHERE ({conditions}) AND user_id=? AND is_active=1 AND confidence>=?
+                   WHERE ({conditions}) AND user_id=? AND tenant_id=? AND is_active=1 AND confidence>=?
                    ORDER BY confidence DESC, updated_at DESC
                    LIMIT ?""",
                 params,
@@ -434,9 +455,14 @@ class FactStore:
 
     # ── Stats ────────────────────────────────────────────────────────────────
 
-    def count_facts(self, user_id: str = "") -> int:
+    def count_facts(self, user_id: str = "", tenant_id: str = "") -> int:
         with self._lock, self._connect() as conn:
-            if user_id:
+            if user_id and tenant_id:
+                row = conn.execute(
+                    "SELECT COUNT(*) as cnt FROM facts WHERE user_id=? AND tenant_id=? AND is_active=1",
+                    (user_id, tenant_id),
+                ).fetchone()
+            elif user_id:
                 row = conn.execute(
                     "SELECT COUNT(*) as cnt FROM facts WHERE user_id=? AND is_active=1",
                     (user_id,),
@@ -447,9 +473,14 @@ class FactStore:
                 ).fetchone()
             return row["cnt"] if row else 0
 
-    def get_categories(self, user_id: str = "") -> dict[str, int]:
+    def get_categories(self, user_id: str = "", tenant_id: str = "") -> dict[str, int]:
         with self._lock, self._connect() as conn:
-            if user_id:
+            if user_id and tenant_id:
+                rows = conn.execute(
+                    "SELECT category, COUNT(*) as cnt FROM facts WHERE user_id=? AND tenant_id=? AND is_active=1 GROUP BY category",
+                    (user_id, tenant_id),
+                ).fetchall()
+            elif user_id:
                 rows = conn.execute(
                     "SELECT category, COUNT(*) as cnt FROM facts WHERE user_id=? AND is_active=1 GROUP BY category",
                     (user_id,),

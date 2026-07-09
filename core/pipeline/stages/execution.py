@@ -158,6 +158,7 @@ class Runtime:
                 confidence=None,
                 metadata={"step_index": i, "step_intent": step_intent, "executor": type(executor).__name__},
                 parent_id=subgoal_node.node_id if subgoal_node else None,
+                resource_scope=context.resource_scope,
                 services=context.services,
             )
             self._observations.append(obs)
@@ -281,6 +282,7 @@ class ExecutionStage(PipelineStage):
                 metrics={"provider": "runtime", "tokens": 0},
                 activity_id=context.activity_id,
                 errors=[f"Plan execution failed: {exc}"],
+                resource_scope=context.resource_scope,
             )
             return StageResult(
                 outcome=StageOutcome.FAIL, context=context,
@@ -303,6 +305,7 @@ class ExecutionStage(PipelineStage):
             observations=self.runtime.observations,
             metrics={"provider": "pipeline", "tokens": tokens},
             activity_id=context.activity_id,
+            resource_scope=context.resource_scope,
         )
         return StageResult(outcome=StageOutcome.CONTINUE, context=context)
 
@@ -321,6 +324,7 @@ class ExecutionStage(PipelineStage):
             payload={"text": result.text},
             confidence=None,
             metadata={"provider": result.provider, "tokens": result.tokens},
+            resource_scope=context.resource_scope,
             services=context.services,
         )
         context.outcome = Outcome(
@@ -330,6 +334,7 @@ class ExecutionStage(PipelineStage):
             metrics={"provider": result.provider, "tokens": result.tokens},
             activity_id=context.activity_id,
             errors=[result.error] if result.error else [],
+            resource_scope=context.resource_scope,
         )
         if result.error:
             context.error = result.error

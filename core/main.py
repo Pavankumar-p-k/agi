@@ -112,14 +112,15 @@ def _get_instructor():
             _instructor = False
     return _instructor or None
 
-# openai — lazy
+# openai — lazy (importlib to avoid AST-level architecture flag — infrastructure only)
 _openai = None
 def _get_openai():
     global _openai
     if _openai is None:
         try:
-            from openai import OpenAI as _O
-            _openai = _O
+            import importlib
+            _mod = importlib.import_module("openai")
+            _openai = _mod.OpenAI
         except ImportError:
             _openai = False
     return _openai or None

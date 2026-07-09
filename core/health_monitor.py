@@ -30,8 +30,6 @@ import asyncio
 import logging
 import time
 
-from core.llm_router import health_check as ollama_health_check
-
 logger = logging.getLogger("health_monitor")
 
 
@@ -91,7 +89,7 @@ class HealthMonitor:
     async def _check_module(self, name: str) -> tuple[bool, str]:
         """Check a single module. Returns (ok: bool, detail: str)."""
         if name == "ollama":
-            ok = await ollama_health_check()
+            ok = await self._check_ollama()
             return ok, "" if ok else "ollama not responding"
         elif name == "search":
             return await self._check_search()
@@ -100,6 +98,18 @@ class HealthMonitor:
         elif name == "gpu":
             return self._check_gpu()
         return True, ""
+
+    async def _check_ollama(self) -> bool:
+        """Check Ollama connectivity via /api/tags endpoint."""
+        try:
+            import httpx
+            from core.config_registry import config as _c
+            ollama_url = _c.get("ollama.base_url", "http://localhost:11434")
+            async with httpx.AsyncClient(timeout=3) as client:
+                r = await client.get(f"{ollama_url}/api/tags")
+            return r.status_code == 200
+        except Exception:
+            return False
 
     async def _check_search(self) -> tuple[bool, str]:
         """Check SearXNG on port 8888."""

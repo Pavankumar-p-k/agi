@@ -63,15 +63,10 @@ async def interpret_goal(goal: str) -> dict:
     }
 
     try:
-        from core.llm_router import complete as llm_complete
-        from core.llm_router import health_check
-        if not await health_check():
-            logger.warning("[GOAL] LLM not available, using defaults")
-            result["reasoning"].append("llm_unavailable")
-            return result
+        from core.pipeline.internal_client import prompt as llm_prompt
 
         prompt = LLM_PROMPT.format(goal=goal)
-        resp = (await llm_complete("analysis", [{"role": "user", "content": prompt}], timeout=30)).unwrap_or("")
+        resp = await llm_prompt(prompt)
 
         # Remove markdown code fences if present
         resp = resp.strip()

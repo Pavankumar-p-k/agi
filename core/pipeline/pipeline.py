@@ -5,7 +5,8 @@ import logging
 import uuid
 from typing import Any
 
-from core.identity import get_identity_service
+from core.identity import ResourceScope, Visibility, get_identity_service
+from core.identity.resource_scope import DEFAULT_TENANT_ID
 from core.pipeline.architecture_metrics import ArchitectureMetrics
 from core.pipeline.base import HookRegistry, PipelineStage, StageOutcome
 from core.pipeline.context import PipelineContext
@@ -100,6 +101,13 @@ async def process_message(
         user_id=request.user_id,
         session_id=request.session_id,
         agent_type=request.transport,
+    )
+    tenant = ctx.identity.tenant
+    ctx.resource_scope = ResourceScope(
+        tenant_id=tenant.id or DEFAULT_TENANT_ID,
+        workspace_id=tenant.workspace_id,
+        owner_id=request.user_id,
+        visibility=Visibility.TENANT,
     )
     ctx = await pipeline.execute(ctx)
 

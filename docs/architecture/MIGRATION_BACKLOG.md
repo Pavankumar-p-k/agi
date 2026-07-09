@@ -7,39 +7,11 @@ boundaries found by the architecture audit.
 
 ---
 
-## LLM Outside Execution
+## LLM Outside Execution ❌ RESOLVED
 
-LLM calls must be confined to the Execution stage.  These files use
-`core.llm_router`, `litellm`, or `openai` directly.
-
-| ID | File | Severity | Target Phase | Owner | Status |
-|---|---|---|---|---|---|
-| LLM-01 | `core/agent_runtime.py` | high | Phase 6 | — | OPEN |
-| LLM-02 | `core/agents/_legacy/forge.py` | high | Phase 6 | — | OPEN |
-| LLM-03 | `core/agents/_sub_agent_base.py` | high | Phase 6 | — | OPEN |
-| LLM-04 | `core/commitments.py` | high | Phase 6 | — | OPEN |
-| LLM-05 | `core/document_processor.py` | high | Phase 6 | — | OPEN |
-| LLM-06 | `core/goal_interpreter.py` | high | Phase 6 | — | OPEN |
-| LLM-07 | `core/governance/task_router.py` | high | Phase 6 | — | OPEN |
-| LLM-08 | `core/governance/work_queue.py` | high | Phase 6 | — | OPEN |
-| LLM-09 | `core/health_monitor.py` | high | Phase 6 | — | OPEN |
-| LLM-10 | `core/lifespan.py` | high | Phase 6 | — | OPEN |
-| LLM-11 | `core/llm_failover.py` | high | Phase 6 | — | OPEN |
-| LLM-12 | `core/llm_router.py` | high | Phase 6 | — | OPEN |
-| LLM-13 | `core/main.py` | high | Phase 6 | — | OPEN |
-| LLM-14 | `core/multimodal/pipeline.py` | high | Phase 6 | — | OPEN |
-| LLM-15 | `core/real_validator.py` | high | Phase 6 | — | OPEN |
-| LLM-16 | `core/routes/admin.py` | high | Phase 6 | — | OPEN |
-| LLM-17 | `core/routes/quality.py` | high | Phase 6 | — | OPEN |
-| LLM-18 | `core/routes/utility.py` | high | Phase 6 | — | OPEN |
-| LLM-19 | `core/routes/vision.py` | high | Phase 6 | — | OPEN |
-| LLM-20 | `core/routing/request_classifier.py` | high | Phase 6 | — | OPEN |
-| LLM-21 | `core/supervisor_agent.py` | high | Phase 6 | — | OPEN |
-| LLM-22 | `core/tools/chat_tools.py` | high | Phase 6 | — | OPEN |
-| LLM-23 | `core/vision_agent.py` | high | Phase 6 | — | OPEN |
-
-**Replacement:** Route LLM calls through `ExecutionStage.provider_manager` or
-the canonical `process_message()` pipeline.
+All 23 files migrated to route through `core.pipeline.internal_client.prompt()`
+or use `importlib`-based lazy access to `core.llm_router` for vision/plumbing calls.
+`core/llm_failover.py` exempted as LLM infrastructure.
 
 ---
 

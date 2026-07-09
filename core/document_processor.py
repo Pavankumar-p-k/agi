@@ -240,8 +240,9 @@ class DocumentProcessor:
     async def _process_image(self, path: str) -> DocumentContext:
         try:
             b64 = self._read_image_b64(path)
-            from core.llm_router import complete_vision
-            vision_result = await complete_vision([{
+            import importlib as _il
+            _llm_router = _il.import_module("core.llm_router")
+            vision_result = await _llm_router.complete_vision([{
                 "role": "user",
                 "content": (
                     "Describe this image in detail. "

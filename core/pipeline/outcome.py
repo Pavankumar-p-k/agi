@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from core.pipeline.observation import Observation
+
+if TYPE_CHECKING:
+    from core.identity.resource_scope import ResourceScope
 
 
 @dataclass(frozen=True)
@@ -38,6 +41,9 @@ class Outcome:
 
     errors: list[str] = field(default_factory=list)
     """Non-fatal errors or warnings accumulated during execution."""
+
+    resource_scope: Any = None
+    """Ownership scope for this outcome (``ResourceScope`` or ``None``)."""
 
     @property
     def text(self) -> str:

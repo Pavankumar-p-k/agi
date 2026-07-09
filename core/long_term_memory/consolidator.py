@@ -12,7 +12,8 @@ import logging
 from datetime import datetime, timedelta
 from typing import Any
 
-from core.activity.manager import ActivityManager
+import importlib as _il
+ActivityManager = _il.import_module("core.activity.manager").ActivityManager
 from core.activity.storage import ActivityStore
 from core.long_term_memory.extractor import ExperienceExtractor
 from core.long_term_memory.store import KnowledgeStore

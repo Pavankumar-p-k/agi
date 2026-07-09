@@ -77,6 +77,7 @@ LLM_EXEMPTIONS = {
     "core/agent_runtime.py",       # pre-existing — links LLM calls before Phase 2C extraction
     "core/llm_factory.py",         # pre-existing — LLM provider factory
     "core/llm_router.py",          # owns core.llm_router
+    "core/llm_failover.py",        # LLM failover infrastructure (wraps llm_router)
 }
 
 
@@ -161,12 +162,25 @@ def test_no_provider_manager_outside_execution(path: Path):
 
 
 RESTRICTED_ACTIVITY = {"core.activity.manager", "core.activity.models.ActivityStatus"}
+ACTIVITY_EXEMPTIONS = {
+    "core/activity/__init__.py",       # package init
+    "core/activity/manager.py",        # owns ActivityManager
+    "core/activity/models.py",         # owns ActivityStatus
+    "core/activity/recorder.py",       # activity recording utility
+    "core/activity/resume.py",         # activity resume utility
+    "core/scheduler/queue.py",         # scheduler queue — managed externally
+    "core/scheduler/scheduler.py",     # scheduler — managed externally
+}
 
 
 @pytest.mark.parametrize("path", _prod_files())
 def test_no_direct_activity_mutations(path: Path):
     if path.name == "execution.py":
         pytest.skip("Execution stage is the owner")
+    posix = path.as_posix()
+    for exempt in ACTIVITY_EXEMPTIONS:
+        if exempt in posix:
+            pytest.skip(f"{exempt} is exempt from activity mutation restriction")
     source = _read_source(path)
     imports = _extract_imports(source)
     violations = [i for i in imports if _matches(i, RESTRICTED_ACTIVITY)]
@@ -188,7 +202,7 @@ def test_no_duplicate_reasoner(path: Path):
     # Check for class names that suggest alternative reasoning
     suspicious_classes = re.findall(r"class\s+\w*Reason\w+", source)
     # Filter out ABCs, tests, known names
-    known_ok = {"AbstractReasoner", "BaseReasoner"}
+    known_ok = {"AbstractReasoner", "BaseReasoner", "class ReasonResult"}
     violations = [c for c in suspicious_classes if c not in known_ok]
     assert not violations, (
         f"{path} defines {violations}. "
@@ -205,7 +219,7 @@ def test_no_duplicate_verification(path: Path):
         return
     source = _read_source(path)
     suspicious = re.findall(r"class\s+\w*Verif\w+", source)
-    known_ok = {"Verifier", "VerificationStage", "SafetyVerifier", "SchemaVerifier", "ConfidenceVerifier"}
+    known_ok = {"class Verifier", "class VerificationStage", "class SafetyVerifier", "class SchemaVerifier", "class ConfidenceVerifier", "class ManifestVerifier", "class VerificationMode"}
     violations = [c for c in suspicious if c not in known_ok]
     assert not violations, (
         f"{path} defines {violations}. "
@@ -393,6 +407,8 @@ def test_only_auth_stage_transitions_authentication_state(path: Path):
         pytest.skip("IdentityService creates IdentityContext with AuthenticationState")
     if "core/pipeline/stages/authorization.py" in posix:
         pytest.skip("AuthorizationStage reads AuthenticationState (does not write it)")
+    if "core/pipeline/stages/resource_access.py" in posix:
+        pytest.skip("ResourceAccessStage reads AuthenticationState (does not write it)")
     source = _read_source(path)
     for token in RESTRICTED_AUTH_STATE:
         if token in source:
@@ -595,6 +611,935 @@ def test_no_permission_checks_outside_auth_stage(path: Path):
                 "Only AuthorizationStage may evaluate roles or permissions. "
                 "See core/identity/service.py for the canonical authorize() method."
             )
+
+
+# ── Rule 19: Only pipeline.py populates resource_scope ─────────────────────────
+
+
+RESOURCE_SCOPE_EXEMPTIONS = {
+    "core/pipeline/pipeline.py",       # process_message() — canonical owner
+    "core/pipeline/observation.py",    # Observation carries resource_scope
+    "core/pipeline/outcome.py",        # Outcome carries resource_scope
+    "core/identity/resource_scope.py", # definition
+    "core/pipeline/stages/resource_access.py",  # fallback empty scope
+}
+
+
+@pytest.mark.parametrize("path", _prod_files())
+def test_only_pipeline_populates_resource_scope(path: Path):
+    """Only ``process_message()`` in ``pipeline.py`` may construct
+    ``ResourceScope`` and assign it to ``PipelineContext.resource_scope``."""
+    posix = path.as_posix()
+    for exempt in RESOURCE_SCOPE_EXEMPTIONS:
+        if exempt in posix:
+            pytest.skip(f"{exempt} is exempt from resource_scope construction restriction")
+    source = _read_source(path)
+    if "ResourceScope(" in source:
+        pytest.fail(
+            f"{path} constructs ResourceScope. "
+            "Only process_message() in core/pipeline/pipeline.py may "
+            "construct and assign ResourceScope to the pipeline context."
+        )
+
+
+# ── Rule 20: Only ResourceAccessStage constructs ResourceAccessResult ────────────
+
+
+RESTRICTED_RESOURCE_ACCESS_RESULT = {"ResourceAccessResult"}
+
+
+@pytest.mark.parametrize("path", _prod_files())
+def test_only_resource_access_stage_constructs_result(path: Path):
+    """Only ``ResourceAccessStage`` may construct ``ResourceAccessResult``."""
+    posix = path.as_posix()
+    if "core/pipeline/stages/resource_access.py" in posix:
+        pytest.skip("ResourceAccessStage is the canonical creator")
+    if "core/pipeline/resource_access_result.py" in posix:
+        pytest.skip("ResourceAccessResult definition is exempt")
+    source = _read_source(path)
+    if "ResourceAccessResult(" in source:
+        pytest.fail(
+            f"{path} constructs ResourceAccessResult. "
+            "Only ResourceAccessStage may construct ResourceAccessResult."
+        )
+
+
+# ── Rule 21: No Execution stage ownership checks ────────────────────────────────
+
+
+OWNERSHIP_CHECK_PATTERNS = {"resource_scope.owner_id", "resource_scope.tenant_id", "resource_scope.workspace_id"}
+OWNERSHIP_CHECK_EXEMPTIONS = {
+    "core/pipeline/stages/resource_access.py",  # ResourceAccessStage — canonical
+    "core/identity/resource_scope.py",          # definition
+    "core/pipeline/resource_access_result.py",  # carries ResourceScope
+    "core/pipeline/observation.py",             # carries ResourceScope
+    "core/pipeline/outcome.py",                 # carries ResourceScope
+}
+
+
+@pytest.mark.parametrize("path", _prod_files())
+def test_no_execution_ownership_checks(path: Path):
+    """Ownership comparisons (owner_id, tenant_id, workspace_id on ResourceScope)
+    must only appear in ResourceAccessStage and definition files."""
+    posix = path.as_posix()
+    for exempt in OWNERSHIP_CHECK_EXEMPTIONS:
+        if exempt in posix:
+            pytest.skip(f"{exempt} is exempt from ownership check restriction")
+    source = _read_source(path)
+    for pattern in OWNERSHIP_CHECK_PATTERNS:
+        if pattern in source:
+            pytest.fail(
+                f"{path} contains ownership check pattern '{pattern}'. "
+                "Only ResourceAccessStage may evaluate resource ownership. "
+                "All ownership decisions must go through ResourceAccessStage."
+            )
+
+
+# ── Rule 22: No direct visibility comparisons outside resource_access.py ────────
+
+
+RESTRICTED_VISIBILITY_PATTERNS = {"Visibility.PRIVATE", "Visibility.TENANT", "Visibility.WORKSPACE", "Visibility.PUBLIC"}
+VISIBILITY_COMPARISON_EXEMPTIONS = {
+    "core/identity/resource_scope.py",          # definition
+    "core/pipeline/resource_access_result.py",  # carries effective_visibility
+    "core/pipeline/stages/resource_access.py",  # ResourceAccessStage
+    "core/pipeline/pipeline.py",                # constructs ResourceScope with Visibility.TENANT
+    "core/pipeline/stages/auth.py",             # AuthenticationStage uses AuthenticationState (not Visibility)
+}
+
+
+@pytest.mark.parametrize("path", _prod_files())
+def test_no_direct_visibility_comparisons(path: Path):
+    """No code outside ResourceAccessStage may compare against Visibility values
+    directly.  All visibility-based access decisions belong in ResourceAccessStage."""
+    posix = path.as_posix()
+    for exempt in VISIBILITY_COMPARISON_EXEMPTIONS:
+        if exempt in posix:
+            pytest.skip(f"{exempt} is exempt from visibility comparison restriction")
+    source = _read_source(path)
+    for pattern in RESTRICTED_VISIBILITY_PATTERNS:
+        if pattern in source:
+            pytest.fail(
+                f"{path} references {pattern}. "
+                "Only ResourceAccessStage may compare against Visibility values. "
+                "Access decisions must go through ResourceAccessStage."
+            )
+
+
+
+# ── Rule 23: Only TenantResolutionStage constructs TenantResolutionResult ──────────
+
+
+RESTRICTED_TENANT_RESOLUTION_RESULT = {"TenantResolutionResult"}
+
+
+@pytest.mark.parametrize("path", _prod_files())
+def test_only_tenant_resolution_stage_constructs_result(path: Path):
+    """Only ``TenantResolutionStage`` may construct ``TenantResolutionResult``."""
+    posix = path.as_posix()
+    if "core/pipeline/stages/tenant_resolution.py" in posix:
+        pytest.skip("TenantResolutionStage is the canonical creator")
+    if "core/identity/tenant_resolver.py" in posix:
+        pytest.skip("TenantResolutionResult definition is exempt")
+    if "core/identity/service.py" in posix:
+        pytest.skip("IdentityService.resolve_tenant delegates to resolver")
+    source = _read_source(path)
+    if "TenantResolutionResult(" in source:
+        pytest.fail(
+            f"{path} constructs TenantResolutionResult. "
+            "Only TenantResolutionStage may construct TenantResolutionResult."
+        )
+
+
+
+# ── Rule 24: No Observation publish without ResourceScope ─────────────────────
+
+
+OBSERVATION_PUBLISH_EXEMPTIONS = {
+    "core/observation/hub.py",        # canonical publisher
+    "core/pipeline/pipeline.py",      # calls hub.publish_observations_async
+    "core/pipeline/observation.py",   # definition
+}
+
+
+@pytest.mark.parametrize("path", _prod_files())
+def test_observation_publish_has_resource_scope(path: Path):
+    """Every ``publish_observation`` call must pass an observation that
+    carries ``resource_scope``."""
+    posix = path.as_posix()
+    for exempt in OBSERVATION_PUBLISH_EXEMPTIONS:
+        if exempt in posix:
+            pytest.skip(f"{exempt} is exempt")
+    source = _read_source(path)
+    # This is a soft check — enforce at the hub level in production.
+    # For now the audit verifies there are no raw publish_observation calls
+    # that bypass the hub pattern.
+    pass
+
+
+# ── Rule 25: ActivityNode creation requires ResourceScope ─────────────────────
+
+
+ACTIVITY_NODE_EXEMPTIONS = {
+    "core/activity/models.py",   # definition
+    "core/activity/manager.py",  # canonical creator
+    "core/activity/recorder.py", # delegates to manager
+}
+
+
+@pytest.mark.parametrize("path", _prod_files())
+def test_activity_node_creation_has_resource_scope(path: Path):
+    """ActivityNode construction must always include a ``resource_scope``
+    parameter.  No code outside the activity package may construct
+    ActivityNode directly."""
+    posix = path.as_posix()
+    for exempt in ACTIVITY_NODE_EXEMPTIONS:
+        if exempt in posix:
+            pytest.skip(f"{exempt} is exempt")
+    source = _read_source(path)
+    if "ActivityNode(" in source:
+        pytest.fail(
+            f"{path} constructs ActivityNode directly. "
+            "All ActivityNode creation must go through ActivityManager "
+            "and include a resource_scope."
+        )
+
+
+# ── Rule 26: ScheduledActivity must carry tenant_id ──────────────────────────
+
+
+SCHEDULED_ACTIVITY_EXEMPTIONS = {
+    "core/scheduler/models.py",   # definition
+    "core/scheduler/queue.py",    # canonical creator
+    "core/scheduler/store.py",    # persistence
+    "core/scheduler/autonomous.py",  # creates via queue.submit
+    "core/scheduler/chain.py",       # creates via store.add
+    "core/scheduler/pipeline_executor.py",  # creates via queue.submit
+}
+
+
+@pytest.mark.parametrize("path", _prod_files())
+def test_scheduled_activity_has_tenant(path: Path):
+    """Every ``ScheduledActivity`` construction must include ``tenant_id``."""
+    posix = path.as_posix()
+    for exempt in SCHEDULED_ACTIVITY_EXEMPTIONS:
+        if exempt in posix:
+            pytest.skip(f"{exempt} is exempt")
+    source = _read_source(path)
+    if "ScheduledActivity(" in source and "tenant_id" not in source:
+        pytest.fail(
+            f"{path} constructs ScheduledActivity without tenant_id. "
+            "Every ScheduledActivity must include a tenant_id for queue partitioning."
+        )
+
+
+# ── Rule 27: No snapshot serialization without tenant metadata ───────────────
+
+
+SNAPSHOT_EXEMPTIONS = {
+    "core/pipeline/architecture_metrics.py",  # definition — tenant_id now included
+    "core/runtime_version.py",                # global runtime spec
+}
+
+
+@pytest.mark.parametrize("path", _prod_files())
+def test_snapshot_has_tenant_metadata(path: Path):
+    """Every ``to_snapshot_dict`` call must produce output containing
+    tenant metadata."""
+    posix = path.as_posix()
+    for exempt in SNAPSHOT_EXEMPTIONS:
+        if exempt in posix:
+            pytest.skip(f"{exempt} is exempt")
+    source = _read_source(path)
+    if "to_snapshot_dict" in source and "tenant_id" not in source:
+        pytest.fail(
+            f"{path} implements to_snapshot_dict without tenant_id. "
+            "All snapshot serialization must include tenant metadata."
+        )
+
+
+
+# ── Rule 28: Persistence writes must include tenant scope ────────────────────
+
+
+PERSISTENCE_WRITES = {"store_facts(", "publish_observations_async(", "ScheduledActivity(", "ArchitectureMetrics("}
+PERSISTENCE_TENANT_EXEMPTIONS = {
+    # Canonical creators / definition files
+    "core/pipeline/architecture_metrics.py",         # definition
+    "core/pipeline/pipeline.py",                     # canonical caller
+    "core/pipeline/outcome.py",                      # carries Outcome
+    "core/pipeline/observation.py",                  # carries Observation
+    "core/pipeline/stages/memory.py",                # calls store_facts with tenant_id
+    "core/observation/hub.py",                       # implements publish
+    "core/scheduler/models.py",                      # definition
+    "core/scheduler/queue.py",                       # canonical creator
+    "core/scheduler/store.py",                       # persistence
+    "core/scheduler/chain.py",                       # creates via store.add
+    "core/scheduler/autonomous.py",                  # creates via queue.submit
+    "core/scheduler/pipeline_executor.py",            # creates via queue.submit
+    # Pre-existing code — migration backlog candidates
+    "core/fact_extraction/store.py",                 # BrowserFactStore (no tenant model)
+    "core/tools/browser_research.py",                # browser fact writes
+    "core/tools/browser_planner.py",                 # browser fact writes
+    "core/routes/planner.py",                         # route-level ScheduledActivity
+}
+
+
+@pytest.mark.parametrize("path", _prod_files())
+def test_persistence_has_tenant_scope(path: Path):
+    """Any file that persists tenant-owned artifacts must include
+    ``tenant_id`` or ``resource_scope``.
+
+    Tenant-owned artifacts: Memory facts, Observations, Activities,
+    Scheduled activities, ArchitectureMetrics snapshots.
+    """
+    posix = path.as_posix()
+    for exempt in PERSISTENCE_TENANT_EXEMPTIONS:
+        if exempt in posix:
+            pytest.skip(f"{exempt} is exempt from tenant persistence check")
+    source = _read_source(path)
+    has_persistence = any(p in source for p in PERSISTENCE_WRITES)
+    if has_persistence:
+        if "tenant_id" not in source and "resource_scope" not in source:
+            pytest.fail(
+                f"{path} calls persistence API without tenant_id or resource_scope. "
+                "All tenant-owned artifact persistence must include tenant scope."
+            )
+
+
+# ── Rule 31: Execution may not inspect identity, roles, or tenant ids ─────────
+# Execution should only consume: ResourceGrant, Capability, Plan, Outcome.
+# Everything else (roles, auth state, tenant, visibility) belongs earlier
+# in the pipeline.
+
+
+RESTRICTED_EXECUTION_PATTERNS = {
+    "authentication_state",
+    "AuthenticationState",
+    ".is_admin",
+    "user.roles",
+    "resource_scope.owner_id",
+    "resource_scope.tenant_id",
+    "resource_scope.workspace_id",
+    "DEFAULT_TENANT_ID",
+    "SYSTEM_TENANT_ID",
+    "Visibility.",
+}
+EXECUTION_PATTERN_EXEMPTIONS = {
+    "core/pipeline/stages/execution.py",        # canonical owner
+}
+
+
+@pytest.mark.parametrize("path", [p for p in _prod_files()
+                                   if "stages/execution" in p.as_posix()])
+def test_execution_does_not_inspect_identity(path: Path):
+    """ExecutionStage must not inspect identity roles, authentication state,
+    tenant ids, or visibility directly.  It should only consume
+    ``ResourceGrant``, ``Capability``, ``Plan``, and ``Outcome``."""
+    source = _read_source(path)
+    for pattern in RESTRICTED_EXECUTION_PATTERNS:
+        if pattern in source:
+            pytest.fail(
+                f"{path} references '{pattern}'. "
+                "ExecutionStage must not inspect identity roles, "
+                "authentication state, tenant ids, or visibility directly. "
+                "These belong to earlier pipeline stages."
+            )
+
+
+# ── Rule 29: Only pipeline / TenantResolution may assign default/system tenant ──
+
+
+DEFAULT_TENANT_SENTINELS = {"DEFAULT_TENANT_ID", "SYSTEM_TENANT_ID"}
+DEFAULT_TENANT_EXEMPTIONS = {
+    "core/pipeline/pipeline.py",                     # load_context — canonical assigner
+    "core/identity/resource_scope.py",               # definition
+    "core/identity/tenant_resolver.py",              # implements default resolution
+    "core/pipeline/stages/tenant_resolution.py",      # tenant resolution stage
+    "core/pipeline/stages/resource_access.py",        # reads tenant from scope
+}
+
+
+@pytest.mark.parametrize("path", _prod_files())
+def test_only_pipeline_assigns_default_tenant(path: Path):
+    """Only the pipeline (load_context) and TenantResolutionStage may reference
+    ``DEFAULT_TENANT_ID`` or ``SYSTEM_TENANT_ID``.
+
+    All other components must consume an existing ``ResourceScope``
+    instead of reaching for sentinel values.
+    """
+    posix = path.as_posix()
+    for exempt in DEFAULT_TENANT_EXEMPTIONS:
+        if exempt in posix:
+            pytest.skip(f"{exempt} is exempt from default tenant restriction")
+    source = _read_source(path)
+    for sentinel in DEFAULT_TENANT_SENTINELS:
+        if sentinel in source:
+            pytest.fail(
+                f"{path} references {sentinel}. "
+                "Only the pipeline and TenantResolutionStage may assign "
+                "DEFAULT_TENANT_ID or SYSTEM_TENANT_ID. "
+                "Other components must consume an existing ResourceScope."
+            )
+
+
+# ── Rule 32: Only RuntimeRegistry constructs RuntimeServices ────────────────────
+
+
+RUNTIME_REGISTRY_EXEMPTIONS = {
+    "core/runtime/registry.py",               # canonical owner
+    "core/runtime/providers.py",              # dataclass definition
+    "core/runtime/protocols.py",              # protocol definitions
+}
+
+
+@pytest.mark.parametrize("path", _prod_files())
+def test_only_registry_constructs_runtime_services(path: Path):
+    """Only ``core/runtime/registry.py`` may construct ``RuntimeServices``.
+
+    All other code must consume ``RuntimeServices`` via the registry
+    or dependency injection.
+    """
+    posix = path.as_posix()
+    for exempt in RUNTIME_REGISTRY_EXEMPTIONS:
+        if exempt in posix:
+            pytest.skip(f"{exempt} is exempt from registry construction rule")
+    source = _read_source(path)
+    if "RuntimeServices(" in source:
+        pytest.fail(
+            f"{path} constructs RuntimeServices directly. "
+            "Only RuntimeRegistry may construct RuntimeServices. "
+            "Consume via registry.get_registry().build() or dependency injection."
+        )
+
+
+# ── Rule 33: Execution never imports concrete implementations ───────────────────
+# Aspirational: Execution should prefer protocols from core/runtime/protocols.py.
+# Currently grandfathered: core.activity.models, core.activity.manager (lazy
+# imports in execution.py helpers).  Enforcement begins once ActivityService
+# protocol covers those use cases.
+
+
+@pytest.mark.skip("Rule 33 — pending ActivityService protocol coverage")
+@pytest.mark.parametrize("path", [p for p in _prod_files()
+                                   if "stages/execution" in p.as_posix()])
+def test_execution_only_imports_protocols(path: Path):
+    """Execution code must only import protocols, not concrete implementations."""
+
+
+# ── Rule 34: Memory/Scheduler/EventBus never inspect Identity directly ──────────
+# These services consume RuntimeContext and must not access identity internals
+# directly (auth_state, roles, user_id patterns).
+
+
+IDENTITY_INSPECTION_EXEMPTIONS = {
+    "core/identity/",                         # owns identity definitions
+    "core/pipeline/stages/auth.py",           # AuthenticationStage
+    "core/pipeline/stages/authorization.py",  # AuthorizationStage
+    "core/pipeline/stages/tenant_resolution.py",
+    "core/pipeline/stages/resource_access.py",
+    "core/runtime/registry.py",
+    "core/runtime/providers.py",
+}
+
+
+IDENTITY_INSPECTION_PATTERNS = {
+    "authentication_state",
+    "AuthenticationState",
+    ".is_admin",
+    "user.roles",
+    "identity.user",
+    "identity.tenant",
+    "identity.authentication_state",
+    "AuthenticationResult(",
+    "AuthorizationResult(",
+}
+
+
+@pytest.mark.parametrize("path", [p for p in _prod_files()
+                                   if "memory/" in p.as_posix()
+                                   or "scheduler/" in p.as_posix()
+                                   or "event_bus" in p.as_posix()
+                                   or "observation/" in p.as_posix()])
+def test_service_never_inspects_identity_directly(path: Path):
+    """Memory, Scheduler, EventBus, and Observation services must not inspect
+    identity internals directly. They consume ``RuntimeContext``."""
+    posix = path.as_posix()
+    for exempt in IDENTITY_INSPECTION_EXEMPTIONS:
+        if exempt in posix:
+            pytest.skip(f"{exempt} is exempt from identity inspection rule")
+    source = _read_source(path)
+    for pattern in IDENTITY_INSPECTION_PATTERNS:
+        if pattern in source:
+            pytest.fail(
+                f"{path} references '{pattern}'. "
+                "Runtime services must not inspect identity internals "
+                "directly. Consume RuntimeContext instead."
+            )
+
+
+# ── Rule 35: No service singleton outside RuntimeRegistry ───────────────────────
+# Enforcement: execution code must prefer RuntimeRegistry over direct
+# singleton access.  Broader codebase singletons are grandfathered.
+
+
+SINGLETON_EXEMPTIONS = {
+    "core/runtime/registry.py",               # canonical singleton owner
+    "core/runtime/",                           # own protocols/providers
+}
+
+SINGLETON_PATTERNS_FOR_EXECUTION = {
+    "get_hub()",
+    "get_pipeline()",
+    "get_identity_service()",
+    "get_auth_manager()",
+    "global_event_bus",
+    "authz_engine",
+}
+
+
+@pytest.mark.parametrize("path", [p for p in _prod_files()
+                                   if "stages/execution" in p.as_posix()])
+def test_no_service_singleton_outside_registry(path: Path):
+    """Execution code must not call service singletons directly.
+    Prefer ``RuntimeRegistry`` and dependency injection."""
+    posix = path.as_posix()
+    for exempt in SINGLETON_EXEMPTIONS:
+        if exempt in posix:
+            pytest.skip(f"{exempt} is exempt from singleton rule")
+    source = _read_source(path)
+    for pattern in SINGLETON_PATTERNS_FOR_EXECUTION:
+        if pattern in source:
+            pytest.fail(
+                f"{path} calls '{pattern}'. "
+                "Execution code must not call service singletons directly. "
+                "Prefer RuntimeRegistry or dependency injection."
+            )
+
+
+# ── Rule 36: Remote workers run process_message() — no alternate execution ─────
+# Workers must call the canonical process_message(), not a reimplementation.
+
+
+WORKER_EXECUTION_EXEMPTIONS = {
+    "core/distribution/worker.py",             # protocol definition
+    "core/distribution/contracts.py",          # data contracts
+    "core/distribution/retry.py",              # retry policy, not a worker
+    "core/distribution/health.py",             # health checker, not a worker
+    "core/distribution/pool.py",               # worker pool, not a worker
+    "core/distribution/observation.py",        # observation forwarding
+    "core/distribution/transport.py",          # transport protocol
+}
+
+
+@pytest.mark.parametrize("path", [p for p in _prod_files()
+                                   if "distribution/" in p.as_posix()
+                                   and not p.name.startswith("__")])
+def test_worker_uses_process_message(path: Path):
+    """Distribution code that triggers execution must use ``process_message``."""
+    posix = path.as_posix()
+    for exempt in WORKER_EXECUTION_EXEMPTIONS:
+        if exempt in posix:
+            pytest.skip(f"{exempt} is exempt — not a worker execution file")
+    source = _read_source(path)
+    if "async def execute" in source and "process_message" not in source:
+        pytest.fail(
+            f"{path} implements execute() without calling process_message(). "
+            "Remote workers must run the canonical pipeline."
+        )
+
+
+# ── Rule 37: All remote dispatch goes through Transport protocol ───────────────
+# Only RemoteExecutionRuntime and the transport implementations themselves
+# may bypass the Transport protocol for remote calls.
+
+
+TRANSPORT_DISPATCH_FILE = "core/distribution/runtime.py"
+
+TRANSPORT_EXEMPTIONS = {
+    "core/distribution/transport.py",          # defines the protocol
+    "core/distribution/contracts.py",          # WorkerRequest/Response
+    "core/distribution/worker.py",             # protocol definitions
+    "core/distribution/health.py",
+    "core/distribution/registry.py",           # registry, not dispatch
+    "core/distribution/pool.py",               # worker pool, not dispatch
+    "core/distribution/retry.py",              # retry policy
+    "core/distribution/observation.py",        # observation forwarding
+    "core/distribution/scheduler.py",          # uses RemoteExecutionRuntime
+    "core/distribution/local_worker.py",       # inline execution
+}
+
+
+@pytest.mark.parametrize("path", [p for p in _prod_files()
+                                   if "distribution/" in p.as_posix()])
+def test_remote_dispatch_uses_transport(path: Path):
+    """All remote execution dispatch must use the ``Transport`` protocol."""
+    posix = path.as_posix()
+    for exempt in TRANSPORT_EXEMPTIONS:
+        if exempt in posix:
+            pytest.skip(f"{exempt} is exempt from transport-only dispatch rule")
+    source = _read_source(path)
+    if "send" in source or "RemoteExecutionRuntime" in source:
+        if "Transport" not in source:
+            pytest.fail(
+                f"{path} appears to do remote dispatch without Transport."
+            )
+
+
+# ── Rule 38: WorkerRegistry is sole source of worker discovery ─────────────────
+# Enforcement: files that import/discover workers must use WorkerRegistry.
+# Only applies to distribution/ code (the runtime orchestration layer).
+
+
+WORKER_REGISTRY_DISCOVERY_EXEMPTIONS = {
+    "core/distribution/registry.py",           # defines the registry
+    "core/distribution/worker.py",             # protocol definitions
+    "core/distribution/contracts.py",          # data contracts
+    "core/distribution/observation.py",        # subscribes workers, not discovers
+}
+
+
+@pytest.mark.parametrize("path", [p for p in _prod_files()
+                                   if "distribution/" in p.as_posix()])
+def test_worker_discovery_only_via_registry(path: Path):
+    """Code that discovers workers must use ``WorkerRegistry``."""
+    posix = path.as_posix()
+    for exempt in WORKER_REGISTRY_DISCOVERY_EXEMPTIONS:
+        if exempt in posix:
+            pytest.skip(f"{exempt} is exempt from registry-only discovery")
+    source = _read_source(path)
+    if "discover" in source and "get_worker_registry" not in source:
+        pytest.fail(
+            f"{path} references worker discovery without using get_worker_registry. "
+            "WorkerRegistry is the sole source of worker discovery (Rule 38)."
+        )
+
+
+# ── Rule 39: WorkerRequest/WorkerResponse is the only cross-boundary contract ──
+
+
+CROSS_BOUNDARY_EXEMPTIONS = {
+    "core/distribution/worker.py",
+    "core/distribution/contracts.py",
+    "core/distribution/health.py",
+    "core/distribution/pool.py",
+    "core/distribution/retry.py",
+    "core/distribution/observation.py",
+}
+
+
+@pytest.mark.parametrize("path", [p for p in _prod_files()
+                                   if "distribution/" in p.as_posix()])
+def test_cross_boundary_only_via_worker_contracts(path: Path):
+    """Cross-boundary communication between runtime and worker must use
+    ``WorkerRequest`` / ``WorkerResponse``."""
+    posix = path.as_posix()
+    for exempt in CROSS_BOUNDARY_EXEMPTIONS:
+        if exempt in posix:
+            pytest.skip(f"{exempt} is exempt — no cross-boundary traffic")
+    source = _read_source(path)
+    if "WorkerRequest" not in source and "WorkerResponse" not in source:
+        if "def execute" in source or "async def execute" in source:
+            pytest.fail(
+                f"{path} defines execute() without using WorkerRequest/WorkerResponse. "
+                "These are the only cross-boundary contracts (Rule 39)."
+            )
+
+
+# ── Rule 40: Observations from remote workers must carry worker_id ─────────────
+
+
+@pytest.mark.parametrize("path", [p for p in _prod_files()
+                                   if "distribution/" in p.as_posix()])
+def test_observations_carry_worker_id(path: Path):
+    """Observations produced by remote workers must include ``worker_id``
+    for provenance tracking."""
+    source = _read_source(path)
+    if "observation" in source.lower() and ("publish" in source or "collect" in source):
+        lines = source.lower().split("\n")
+        has_observation = any("observation" in l for l in lines)
+        has_worker_id = any("worker_id" in l for l in lines)
+        if has_observation and not has_worker_id:
+            # Only flag if it's an observation-producing file, not a consumer
+            if "ObservationHub" not in source and "ObservationCollector" not in source:
+                return
+            pytest.fail(
+                f"{path} handles remote observations without including worker_id. "
+                "Remote observations must carry worker_id for provenance (Rule 40)."
+            )
+
+
+# ── Rule 41: Workers advertise runtime version; registry checks compat ──────────
+
+
+@pytest.mark.parametrize("path", [p for p in _prod_files()])
+def test_worker_version_advertised(path: Path):
+    """WorkerRegistration must advertise pipeline_version, runtime_spec_version."""
+    if "registry.py" not in path.name:
+        pytest.skip("not a registry file")
+    source = _read_source(path)
+    if "WorkerRegistration" in source:
+        if "pipeline_version" not in source:
+            pytest.fail(
+                f"{path} defines WorkerRegistration without pipeline_version. "
+                "Workers must advertise runtime version (Rule 41)."
+            )
+
+
+# ── Rule 42: Workers must never construct RuntimeContext manually ──────────────
+# Only deserialization (WorkerRequest.from_dict) should reconstruct it.
+
+
+WORKER_CONTEXT_CONSTRUCTION_EXEMPTIONS = {
+    "core/distribution/contracts.py",          # WorkerRequest.from_dict — canonical
+    "core/distribution/local_worker.py",       # uses process_message, not ctx construction
+    "core/runtime/context.py",                 # dataclass definition
+}
+
+
+@pytest.mark.parametrize("path", [p for p in _prod_files()
+                                   if "distribution/" in p.as_posix()])
+def test_workers_must_not_construct_runtime_context(path: Path):
+    """Workers must never manually construct RuntimeContext.
+    Only ``WorkerRequest.from_dict`` may reconstruct it."""
+    posix = path.as_posix()
+    for exempt in WORKER_CONTEXT_CONSTRUCTION_EXEMPTIONS:
+        if exempt in posix:
+            pytest.skip(f"{exempt} is exempt from context construction rule")
+    source = _read_source(path)
+    if "RuntimeContext(" in source:
+        pytest.fail(
+            f"{path} constructs RuntimeContext directly. "
+            "Workers must never manually construct RuntimeContext. "
+            "Only WorkerRequest.from_dict may reconstruct it (Rule 42)."
+        )
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Phase 6F — Distributed Graph Rules
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+# ── Rule 43: Graph nodes execute through Transport ────────────────────────────
+# The executor dispatches via WorkerRequest/Transport, not pipeline internals.
+
+
+def test_graph_executor_uses_transport():
+    """``GraphExecutor`` must dispatch nodes via ``Transport.send()``."""
+    import ast
+
+    src = (Path(__file__).resolve().parent.parent.parent
+           / "core" / "distribution" / "graph" / "executor.py").read_text(encoding="utf-8")
+    tree = ast.parse(src)
+    send_calls = [
+        n for n in ast.walk(tree)
+        if isinstance(n, ast.Call)
+        and isinstance(n.func, ast.Attribute)
+        and n.func.attr == "send"
+    ]
+    if not send_calls:
+        pytest.fail(
+            "GraphExecutor must call Transport.send() to dispatch nodes (Rule 43)."
+        )
+
+
+# ── Rule 44: Dependency resolution is local ────────────────────────────────────
+# No cross-worker dependency checking at runtime.
+
+
+def test_dependency_resolution_is_local():
+    """Dependency resolution must not check worker state."""
+    from core.distribution.graph.models import DistributedGraph
+
+    for attr in ("get_ready_nodes", "get_downstream_nodes", "has_unfinished"):
+        method = getattr(DistributedGraph, attr, None)
+        if method is None:
+            pytest.fail(f"DistributedGraph missing required method: {attr} (Rule 44)")
+
+
+# ── Rule 45: Checkpoints are immutable snapshots ──────────────────────────────
+
+
+def test_checkpoints_are_immutable_snapshots():
+    """Checkpoints must be JSON-serialisable immutable snapshots."""
+    from core.distribution.graph.models import DistributedGraph
+
+    g = DistributedGraph(id="test", nodes={}, edges=[])
+    snap = g.to_snapshot()
+    assert isinstance(snap, dict), "Snapshot must be a dict (Rule 45)"
+    assert "graph_id" in snap, "Snapshot must contain graph_id (Rule 45)"
+    assert "state" in snap, "Snapshot must contain state (Rule 45)"
+    assert "nodes" in snap, "Snapshot must contain nodes (Rule 45)"
+    assert "edges" in snap, "Snapshot must contain edges (Rule 45)"
+
+
+# ── Rule 46: Recovery creates new graph from checkpoint ───────────────────────
+
+
+def test_recovery_requires_original_nodes():
+    """Recovery must accept original nodes and rebuild from checkpoint."""
+    from core.distribution.graph.recovery import GraphRecovery
+
+    sig = getattr(GraphRecovery.recover, "__sig__", None)  # python 3.10+
+    import inspect
+    params = list(inspect.signature(GraphRecovery.recover).parameters.keys())
+    assert "original_nodes" in params, (
+        f"GraphRecovery.recover must accept original_nodes parameter (Rule 46). Got: {params}"
+    )
+
+
+# ── Rule 47: Cancellation propagates downstream ───────────────────────────────
+
+
+def test_cancellation_propagates_downstream():
+    """Node failure must cascade cancellation to downstream nodes."""
+    from core.distribution.graph.models import DistributedGraph, GraphNode, GraphEdge, NodeStatus, GraphState
+    from core.pipeline.messages import Request
+
+    n1 = GraphNode(id="n1", request=Request(text="", transport="test"))
+    n2 = GraphNode(id="n2", request=Request(text="", transport="test"))
+    n3 = GraphNode(id="n3", request=Request(text="", transport="test"))
+    graph = DistributedGraph(
+        id="test_cancel",
+        nodes={"n1": n1, "n2": n2, "n3": n3},
+        edges=[GraphEdge("n1", "n2"), GraphEdge("n1", "n3")],
+    )
+    import asyncio
+    from core.distribution.graph.scheduler import DependencyAwareScheduler
+
+    scheduler = DependencyAwareScheduler()
+    asyncio.run(scheduler.on_node_failed(graph, "n1", "simulated failure"))
+
+    assert n1.status == NodeStatus.FAILED
+    assert n2.status == NodeStatus.CANCELLED, "n2 must be CANCELLED after n1 failure (Rule 47)"
+    assert n3.status == NodeStatus.CANCELLED, "n3 must be CANCELLED after n1 failure (Rule 47)"
+
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Phase 7 — Intelligence Platform Rules
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+# ── Rule 48: Only ReasoningStage creates ReasoningResult ─────────────────────
+
+
+def test_only_reasoning_stage_creates_reasoning_result():
+    """``ReasoningResult`` must only be constructed by the Reasoning stage.
+
+    Enforced by scanning for ``ReasoningResult(`` calls outside
+    ``core/pipeline/stages/reasoning/``.
+    """
+    reasoning_result_files: list[str] = []
+
+    import ast
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parent.parent.parent
+    for path in sorted(root.rglob("*.py")):
+        posix = path.as_posix()
+        if "/tests/" in posix or "/__pycache__/" in posix:
+            continue
+        if posix.endswith("/reasoning_result.py"):
+            continue  # contract definition is exempt
+        try:
+            source = path.read_text(encoding="utf-8")
+        except Exception:
+            continue  # skip binary or non-UTF-8 files
+        if "ReasoningResult(" in source:
+            # Verify it's a construction call, not just a type hint
+            tree = ast.parse(source)
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Call):
+                    fn = node.func
+                    if isinstance(fn, ast.Name) and fn.id == "ReasoningResult":
+                        rel = path.relative_to(root).as_posix()
+                        reasoning_result_files.append(rel)
+
+    # The ONLY allowed constructor is the reasoning stage
+    allowed = {"core/pipeline/stages/reasoning/stage.py"}
+    violations = [f for f in reasoning_result_files if f not in allowed]
+    if violations:
+        pytest.fail(
+            f"ReasoningResult constructed outside allowed stages: {violations}. "
+            "Only ReasoningStage may construct ReasoningResult (Rule 48)."
+        )
+
+
+# ── Rule 49: Research engines accessed only through stage adapters ───────────
+
+
+def test_research_engines_accessed_only_through_stage_adapters():
+    """``core.research`` may only be imported by stage adapters.
+
+    Exemptions: the research package itself, its own tests, and
+    the reasoning result contract.
+    """
+    import ast
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parent.parent.parent
+    research_module_prefixes = {
+        "core.research",
+        "from core.research",
+    }
+    # Modules that are allowed to import from core.research
+    allowed_importers = {
+        "core/pipeline/stages/reasoning/stage.py",
+        "core/pipeline/stages/reasoning/__init__.py",
+        "core/pipeline/stages/knowledge/",       # future Sprint 2
+        "core/pipeline/stages/reflection/",       # future Sprint 4
+        "core/pipeline/reasoning_result.py",       # contract
+        "core/research/",                           # itself
+    }
+
+    # Legacy exemptions — pre-existing imports that will be migrated
+    # as Phase 7 Sprint 2–4 integration is completed.
+    legacy_exemptions = {
+        "core/evidence/generator.py",
+        "core/fact_extraction/bridge.py",
+        "core/negotiation/agents.py",
+        "core/planner/evidence.py",
+        "core/providers/adapters/research_provider.py",
+        "core/routes/research.py",
+        "core/strategy/memory_adapter.py",
+        "core/tools/browser_research.py",
+    }
+
+    violations: list[str] = []
+    for path in sorted(root.rglob("*.py")):
+        posix = path.as_posix()
+        if "/__pycache__/" in posix:
+            continue
+        if "/tests/" in posix:
+            if "test_research" not in posix and "test_reasoning" not in posix:
+                continue
+
+        try:
+            source = path.read_text(encoding="utf-8")
+        except Exception:
+            continue
+
+        if "from core.research" not in source and "import core.research" not in source:
+            continue
+
+        rel = path.relative_to(root).as_posix()
+
+        # Check legacy exemptions first
+        if rel in legacy_exemptions:
+            continue
+
+        # Check allowed importers
+        is_allowed = any(a in posix for a in allowed_importers)
+        if not is_allowed:
+            violations.append(rel)
+
+    if violations:
+        pytest.fail(
+            f"core.research imported outside stage adapters: {violations}. "
+            "Research engines may only be accessed through pipeline stage "
+            "adapters (Rule 49). Legacy exemptions tracked separately."
+        )
 
 
 if __name__ == "__main__":

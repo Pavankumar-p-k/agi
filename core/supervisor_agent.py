@@ -26,7 +26,6 @@ from pathlib import Path
 logger = logging.getLogger("supervisor")
 
 from core.agent_launcher import AgentLauncher, AgentResult
-from core.llm_router import health_check
 from core.shared_context import SharedContext
 
 TASK_TEMPLATES = {
@@ -119,30 +118,28 @@ class SupervisorAgent:
         return build
 
     async def _decompose_goal(self, goal: str) -> dict:
-        ollama_ok = await health_check()
-        if ollama_ok:
-            try:
-                from core.llm_router import complete as llm_complete
-                prompt = (
-                    f"Decompose this software project goal into a JSON plan.\n"
-                    f"Goal: {goal}\n\n"
-                    f"Respond with ONLY a JSON object:\n"
-                    f"{{\n"
-                    f'  "project_type": "...",\n'
-                    f'  "tech_stack": ["..."],\n'
-                    f'  "tasks": [\n'
-                    f'    {{"id": "task_1", "type": "scaffold", "description": "..."}},\n'
-                    f'    {{"id": "task_2", "type": "frontend", "description": "...", "depends_on": ["task_1"]}},\n'
-                    f'  ]\n'
-                    f"}}\n"
-                    f"Task types: scaffold, frontend, backend, database, styling, auth, form, deploy, test, docs."
-                )
-                result = (await llm_complete("analysis", [{"role": "user", "content": prompt}], timeout=30)).unwrap_or("")
-                json_match = re.search(r'\{.*\}', result, re.DOTALL)
-                if json_match:
-                    return json.loads(json_match.group())
-            except Exception as e:
-                logger.warning(f"[SUPERVISOR] LLM decompose failed: {e}")
+        try:
+            from core.pipeline.internal_client import prompt as llm_prompt
+            prompt_text = (
+                f"Decompose this software project goal into a JSON plan.\n"
+                f"Goal: {goal}\n\n"
+                f"Respond with ONLY a JSON object:\n"
+                f"{{\n"
+                f'  "project_type": "...",\n'
+                f'  "tech_stack": ["..."],\n'
+                f'  "tasks": [\n'
+                f'    {{"id": "task_1", "type": "scaffold", "description": "..."}},\n'
+                f'    {{"id": "task_2", "type": "frontend", "description": "...", "depends_on": ["task_1"]}},\n'
+                f'  ]\n'
+                f"}}\n"
+                f"Task types: scaffold, frontend, backend, database, styling, auth, form, deploy, test, docs."
+            )
+            result = await llm_prompt(prompt_text)
+            json_match = re.search(r'\{.*\}', result, re.DOTALL)
+            if json_match:
+                return json.loads(json_match.group())
+        except Exception as e:
+            logger.warning(f"[SUPERVISOR] LLM decompose failed: {e}")
 
         return self._heuristic_decompose(goal)
 

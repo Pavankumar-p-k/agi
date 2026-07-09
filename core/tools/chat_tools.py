@@ -210,23 +210,9 @@ async def do_chat_with_model(content: str, **kwargs) -> dict:
         return {"error": "No message provided", "exit_code": 1}
 
     try:
-        from core.llm_router import complete
-        system = f"You are a helpful assistant. Answer the user's question concisely."
-        result = await complete(
-            model or "chat",
-            [
-                {"role": "system", "content": system},
-                {"role": "user", "content": message},
-            ],
-            timeout=60,
-        )
-        if result.is_err():
-            try:
-                text = result.unwrap()
-            except Exception as e:
-                return {"output": f"Model returned error: {e}", "exit_code": 1}
-            return {"output": text, "model": model or "default"}
-        text = result.unwrap()
+        from core.pipeline.internal_client import prompt as llm_prompt
+        system = "You are a helpful assistant. Answer the user's question concisely."
+        text = await llm_prompt(message, system=system, metadata={"model": model or "chat"})
         return {"output": text, "model": model or "default"}
     except Exception as e:
         logger.warning("chat_with_model failed: %s", e)

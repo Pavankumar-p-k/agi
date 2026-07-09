@@ -177,7 +177,10 @@ async def _record_activity_nodes(record: BuildExecutionRecord) -> None:
     with node_type="build_phase" and execution_id in metadata.
     """
     try:
-        from core.activity.models import ActivityNode, ActivityStatus
+        import importlib as _il
+        _as_mod = _il.import_module("core.activity.models")
+        ActivityNode = _as_mod.ActivityNode
+        ActivityStatus = _as_mod.ActivityStatus
         from core.activity.storage import ActivityStore
     except ImportError:
         logger.debug("ActivityStore not available, skipping activity recording")
@@ -273,7 +276,8 @@ async def _record_knowledge(record: BuildExecutionRecord) -> None:
       AutomationLoop → ExperienceExtractor → KnowledgeStore
     """
     try:
-        from core.activity.manager import ActivityManager
+        import importlib as _il
+        ActivityManager = _il.import_module("core.activity.manager").ActivityManager
         from core.activity.storage import ActivityStore
         from core.long_term_memory.extractor import ExperienceExtractor
         from core.long_term_memory.store import KnowledgeStore

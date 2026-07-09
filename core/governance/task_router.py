@@ -235,7 +235,7 @@ class TaskRouter:
         Keeps the import lazy so the router works even without Ollama.
         """
         try:
-            from core.llm_router import complete  # type: ignore
+            from core.pipeline.internal_client import prompt as llm_prompt
 
             system = (
                 "You are a task router. Given a task, output EXACTLY one JSON object:\n"
@@ -244,11 +244,7 @@ class TaskRouter:
                 '"confidence": <0.0-1.0>, "reasoning": "<one sentence>"}\n'
                 "No other text."
             )
-            result = await complete("chat", [
-                {"role": "system", "content": system},
-                {"role": "user", "content": f"Task: {task}"},
-            ])
-            raw = result.unwrap_or("") if hasattr(result, "unwrap_or") else str(result)
+            raw = await llm_prompt(f"Task: {task}", system=system)
 
             import json
             data = json.loads(raw.strip())
