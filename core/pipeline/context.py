@@ -9,6 +9,7 @@ from core.identity.resource_scope import ResourceScope
 from core.pipeline.architecture_metrics import ArchitectureMetrics
 from core.pipeline.authentication_result import AuthenticationResult
 from core.pipeline.authorization_result import AuthorizationResult
+from core.pipeline.knowledge_result import KnowledgeResult
 from core.pipeline.resource_access_result import ResourceAccessResult
 from core.pipeline.resource_grant import ResourceGrant
 from core.pipeline.reasoning_result import ReasoningResult
@@ -78,10 +79,18 @@ class PipelineContext:
     Contains ``memories`` (list of memory dicts) and optionally
     ``formatted_context`` (LLM-readable string)."""
 
+    knowledge_result: KnowledgeResult | None = None
+    """Canonical output of the Knowledge stage (Phase 7, Sprint 2).
+    Entity graph built from retrieved context.  Frozen dataclass with
+    entities, facts, edges, node/edge counts."""
+
     reasoning_assessment: dict[str, Any] | None = None
     """Output of the Reasoner stage — complexity, requirements,
     constraints, confidence, estimated_steps, routing_hints.
-    Deprecated: use ``reasoning_result`` for new code."""
+
+    .. deprecated::
+       Use ``reasoning_result`` for new code.
+       Removal target: Sprint 3 (multi-strategy planner migration)."""
 
     reasoning_result: ReasoningResult | None = None
     """Canonical output of the Reasoning stage (Phase 7).

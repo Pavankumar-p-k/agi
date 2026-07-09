@@ -33,9 +33,11 @@ from core.pipeline.base import STAGE_OWNERSHIP
 from core.pipeline.stages import (
     CapabilitySelectionStage,
     ContextRetrievalStage,
+    KnowledgeStage,
     PlanValidatorStage,
     PlannerStage,
     ReasonerStage,
+    ReasoningStage,
 )
 
 
@@ -489,16 +491,18 @@ class TestDefaultPipelineOrder:
     def test_default_stages_include_new_stages(self):
         names = [n for n, _ in DEFAULT_STAGES]
         assert "context_retrieval" in names
-        assert "reasoner" in names
+        assert "knowledge" in names
+        assert "reasoning" in names
         assert "plan_validator" in names
-        assert names.index("context_retrieval") < names.index("reasoner")
-        assert names.index("reasoner") < names.index("planner")
+        assert names.index("context_retrieval") < names.index("knowledge")
+        assert names.index("knowledge") < names.index("reasoning")
+        assert names.index("reasoning") < names.index("planner")
         assert names.index("planner") < names.index("plan_validator")
         assert names.index("plan_validator") < names.index("capability_selection")
         assert names.index("capability_selection") < names.index("execution")
 
     def test_default_stage_count(self):
-        assert len(DEFAULT_STAGES) == 18
+        assert len(DEFAULT_STAGES) == 20
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -512,7 +516,8 @@ class TestEndToEnd:
         """A simple chat request flows through all new stages."""
         p = Pipeline()
         p.add_stage(ContextRetrievalStage())
-        p.add_stage(ReasonerStage())
+        p.add_stage(KnowledgeStage())
+        p.add_stage(ReasoningStage())
         p.add_stage(PlannerStage())
         p.add_stage(PlanValidatorStage())
         p.add_stage(CapabilitySelectionStage())
@@ -524,6 +529,7 @@ class TestEndToEnd:
         )
         result = await p.execute(ctx)
         assert result.retrieved_context is not None
+        assert result.knowledge_result is not None
         assert result.reasoning_assessment is not None
         assert result.reasoning_assessment["complexity"] == "simple"
         assert result.plan is not None
@@ -535,7 +541,8 @@ class TestEndToEnd:
     async def test_complex_request_flows_through_all_stages(self):
         p = Pipeline()
         p.add_stage(ContextRetrievalStage())
-        p.add_stage(ReasonerStage())
+        p.add_stage(KnowledgeStage())
+        p.add_stage(ReasoningStage())
         p.add_stage(PlannerStage())
         p.add_stage(PlanValidatorStage())
         p.add_stage(CapabilitySelectionStage())

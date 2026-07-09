@@ -442,12 +442,14 @@ def test_default_stages_have_correct_order():
         "receive",
         "load_context",
         "authentication",
+        "tenant_resolution",
         "authorization",
         "resource_access",
         "rate_limit",
         "intent",
         "context_retrieval",
-        "reasoner",
+        "knowledge",
+        "reasoning",
         "planner",
         "plan_validator",
         "capability_selection",
@@ -470,6 +472,7 @@ def test_all_stage_classes_importable():
         ExecutionStage,
         FormatterStage,
         IntentStage,
+        KnowledgeStage,
         LoadContextStage,
         MemoryStage,
         MetricsStage,
@@ -477,8 +480,10 @@ def test_all_stage_classes_importable():
         PlannerStage,
         RateLimitStage,
         ReasonerStage,
+        ReasoningStage,
         ReceiveStage,
         ResourceAccessStage,
+        TenantResolutionStage,
         VerificationStage,
     )
     for cls in (
@@ -490,6 +495,7 @@ def test_all_stage_classes_importable():
         ExecutionStage,
         FormatterStage,
         IntentStage,
+        KnowledgeStage,
         LoadContextStage,
         MemoryStage,
         MetricsStage,
@@ -497,8 +503,10 @@ def test_all_stage_classes_importable():
         PlannerStage,
         RateLimitStage,
         ReasonerStage,
+        ReasoningStage,
         ReceiveStage,
         ResourceAccessStage,
+        TenantResolutionStage,
         VerificationStage,
     ):
         obj = cls()
@@ -506,8 +514,8 @@ def test_all_stage_classes_importable():
 
 
 def test_default_stage_count():
-    """DEFAULT_STAGES has the expected count (ADR-007)."""
-    assert len(DEFAULT_STAGES) == 18
+    """DEFAULT_STAGES has the expected count (ADR-007 + ADR-009)."""
+    assert len(DEFAULT_STAGES) == 20
 
 
 @pytest.mark.asyncio
@@ -516,16 +524,19 @@ async def test_classify_to_formatter_pipeline():
     Includes all ADR-007 stages."""
     from core.pipeline.stages import (
         ContextRetrievalStage,
+        KnowledgeStage,
         PlanValidatorStage,
-        ReasonerStage,
+        ReasoningStage,
     )
 
     p = Pipeline()
     for name, cls in (
         ("receive", ReceiveStage),
         ("intent", IntentStage),
+
         ("context_retrieval", ContextRetrievalStage),
-        ("reasoner", ReasonerStage),
+        ("knowledge", KnowledgeStage),
+        ("reasoning", ReasoningStage),
         ("planner", PlannerStage),
         ("plan_validator", PlanValidatorStage),
         ("capability_selection", CapabilitySelectionStage),
@@ -541,6 +552,7 @@ async def test_classify_to_formatter_pipeline():
     assert result.classification is not None
     assert result.classification["mode"] in ("chat", "action", "direct", "codebase", "agent")
     assert result.retrieved_context is not None
+    assert result.knowledge_result is not None
     assert result.reasoning_assessment is not None
     assert result.plan is not None
     assert result.plan_validated is True

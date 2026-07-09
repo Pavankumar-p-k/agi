@@ -23,7 +23,9 @@ STAGE_OWNERSHIP: dict[str, set[str]] = {
     "rate_limit": set(),
     "intent": {"classification"},
     "context_retrieval": {"retrieved_context"},
-    "reasoner": {"reasoning_assessment"},
+    "knowledge": {"knowledge_result"},
+    "reasoner": {"reasoning_assessment"},  # legacy — removal target Sprint 3
+    "reasoning": {"reasoning_assessment", "reasoning_result"},
     "planner": {"plan"},
     "plan_validator": {"plan_validated"},
     "capability_selection": {"selected_capabilities"},

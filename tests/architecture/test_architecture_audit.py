@@ -1542,5 +1542,48 @@ def test_research_engines_accessed_only_through_stage_adapters():
         )
 
 
+# ── Rule 50: Only KnowledgeStage creates KnowledgeResult ─────────────────────
+
+
+def test_only_knowledge_stage_creates_knowledge_result():
+    """``KnowledgeResult`` must only be constructed by the Knowledge stage.
+
+    Enforced by scanning for ``KnowledgeResult(`` calls outside
+    ``core/pipeline/stages/knowledge/``.
+    """
+    import ast
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parent.parent.parent
+    knowledge_result_files: list[str] = []
+
+    for path in sorted(root.rglob("*.py")):
+        posix = path.as_posix()
+        if "/tests/" in posix or "/__pycache__/" in posix:
+            continue
+        if posix.endswith("/knowledge_result.py"):
+            continue  # contract definition is exempt
+        try:
+            source = path.read_text(encoding="utf-8")
+        except Exception:
+            continue
+        if "KnowledgeResult(" in source:
+            tree = ast.parse(source)
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Call):
+                    fn = node.func
+                    if isinstance(fn, ast.Name) and fn.id == "KnowledgeResult":
+                        rel = path.relative_to(root).as_posix()
+                        knowledge_result_files.append(rel)
+
+    allowed = {"core/pipeline/stages/knowledge/stage.py"}
+    violations = [f for f in knowledge_result_files if f not in allowed]
+    if violations:
+        pytest.fail(
+            f"KnowledgeResult constructed outside allowed stages: {violations}. "
+            "Only KnowledgeStage may construct KnowledgeResult (Rule 50)."
+        )
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

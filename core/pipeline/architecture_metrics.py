@@ -53,7 +53,7 @@ class ArchitectureMetrics:
     workspace_id: str = ""
     """Workspace within the tenant, if applicable."""
 
-    # ── Intelligence metrics (Phase 7) ────────────────────────────────────
+    # ── Intelligence metrics (Phase 7, Sprint 1) ─────────────────────────
 
     belief_count: int = 0
     """Number of Beliefs constructed by the Reasoning stage."""
@@ -69,6 +69,20 @@ class ArchitectureMetrics:
 
     reasoning_confidence: float = 0.0
     """Overall confidence score from the Reasoning stage."""
+
+    # ── Knowledge metrics (Phase 7, Sprint 2) ────────────────────────────
+
+    knowledge_entity_count: int = 0
+    """Number of entity nodes in the knowledge graph."""
+
+    knowledge_fact_count: int = 0
+    """Number of fact nodes in the knowledge graph."""
+
+    knowledge_edge_count: int = 0
+    """Number of edges in the knowledge graph."""
+
+    knowledge_nodes_traversed: int = 0
+    """Number of nodes traversed during knowledge queries."""
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -88,6 +102,10 @@ class ArchitectureMetrics:
             "contradiction_count": self.contradiction_count,
             "counter_hypothesis_count": self.counter_hypothesis_count,
             "reasoning_confidence": self.reasoning_confidence,
+            "knowledge_entity_count": self.knowledge_entity_count,
+            "knowledge_fact_count": self.knowledge_fact_count,
+            "knowledge_edge_count": self.knowledge_edge_count,
+            "knowledge_nodes_traversed": self.knowledge_nodes_traversed,
         }
 
     def to_snapshot_dict(self) -> dict[str, Any]:
@@ -106,6 +124,7 @@ class ArchitectureMetrics:
         outcome = ctx.outcome
         scope = ctx.resource_scope
         rsn = ctx.reasoning_result
+        kn = ctx.knowledge_result
 
         return ArchitectureMetrics(
             reasoning_complexity=reasoning.get("complexity", "unknown"),
@@ -124,4 +143,8 @@ class ArchitectureMetrics:
             contradiction_count=len(rsn.contradictions) if rsn else 0,
             counter_hypothesis_count=len(rsn.counter_hypotheses) if rsn else 0,
             reasoning_confidence=rsn.confidence if rsn else 0.0,
+            knowledge_entity_count=len(kn.entities) if kn else 0,
+            knowledge_fact_count=len(kn.facts) if kn else 0,
+            knowledge_edge_count=kn.edge_count if kn else 0,
+            knowledge_nodes_traversed=kn.node_count if kn else 0,
         )

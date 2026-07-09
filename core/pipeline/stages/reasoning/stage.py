@@ -232,7 +232,7 @@ class ReasoningStage(PipelineStage):
 
 def _make_reasoning_id(services: Any) -> str:
     """Generate a deterministic or random reasoning id."""
-    try:
-        return f"rsn_{services.uuid4().hex[:24]}"
-    except Exception:
-        return f"rsn_{uuid.uuid4().hex[:24]}"
+    raw = services.uuid4()
+    if isinstance(raw, str):
+        return f"rsn_{raw[:24]}"
+    return f"rsn_{raw.hex[:24]}"
