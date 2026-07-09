@@ -530,6 +530,7 @@ async def test_classify_to_formatter_pipeline():
         KnowledgeStage,
         PlanValidatorStage,
         ReasoningStage,
+        ReflectionStage,
     )
 
     p = Pipeline()
@@ -545,6 +546,7 @@ async def test_classify_to_formatter_pipeline():
         ("capability_selection", CapabilitySelectionStage),
         ("verification", VerificationStage),
         ("epistemic", EpistemicTaggingStage),
+        ("reflection", ReflectionStage),
         ("metrics", MetricsStage),
         ("formatter", FormatterStage),
     ):
@@ -558,6 +560,7 @@ async def test_classify_to_formatter_pipeline():
     assert result.knowledge_result is not None
     assert result.reasoning_assessment is not None
     assert result.planner_result is not None
+    assert result.reflection_result is not None
     assert result.plan is not None
     assert result.plan_validated is True
     assert result.formatted_response is not None

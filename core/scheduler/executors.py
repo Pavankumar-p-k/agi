@@ -1,7 +1,8 @@
 """Scheduler executors — adapter layer between scheduler and real subsystems.
 
 Each executor receives (activity_id, goal, metadata) from the scheduler
-and maps to the real function's parameter signature.
+and routes through the canonical pipeline (process_message) to ensure
+auth, rate limiting, capability selection, and memory are applied.
 """
 
 from __future__ import annotations
@@ -11,7 +12,55 @@ import json
 import logging
 from typing import Any
 
+from core.pipeline.messages import Request
+
+from .result import SchedulerResult
+
 logger = logging.getLogger(__name__)
+
+
+async def _run_via_pipeline(
+    activity_id: str,
+    text: str,
+    user_id: str = "__scheduler__",
+    metadata: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Execute a textual request through the canonical pipeline."""
+    from core.pipeline.pipeline import process_message
+
+    request = Request(
+        text=text,
+        transport="scheduler",
+        user_id=user_id,
+        metadata={
+            "activity_id": activity_id,
+            "source": "scheduler",
+            **(metadata or {}),
+        },
+    )
+    response = await process_message(request)
+    if response.error:
+        return {"error": response.error, "activity_id": activity_id}
+    return {
+        "text": response.text,
+        "data": response.data or {},
+        "metadata": response.metadata or {},
+        "activity_id": activity_id,
+    }
+
+
+def _executor_result(
+    response: dict[str, Any],
+    activity_id: str,
+) -> dict[str, Any]:
+    if "error" in response:
+        return {"error": response["error"], "activity_id": activity_id}
+    data = response.get("data", {})
+    return {
+        **data,
+        "activity_id": activity_id,
+        "text": response.get("text", ""),
+    }
 
 # Maps from opportunity target_system to appropriate executor type
 OPPORTUNITY_TARGET_TO_EXECUTOR: dict[str, str] = {
@@ -37,93 +86,89 @@ OPPORTUNITY_TARGET_TO_EXECUTOR: dict[str, str] = {
 async def research_executor(
     activity_id: str, goal: str, metadata: dict[str, Any],
 ) -> dict[str, Any]:
-    """Execute a research activity via browser_research."""
-    from core.tools.browser_research import do_browser_research
+    """Execute a research activity through the canonical pipeline."""
     question = metadata.get("question") or goal
-    max_pages = metadata.get("max_pages", 5)
-    result = await do_browser_research(
-        question=question,
-        max_pages=max_pages,
+    response = await _run_via_pipeline(
+        activity_id=activity_id,
+        text=question,
+        user_id=metadata.get("user_id", "__scheduler__"),
     )
-    return result
+    return _executor_result(response, activity_id)
 
 
 async def build_executor(
     activity_id: str, goal: str, metadata: dict[str, Any],
 ) -> dict[str, Any]:
-    """Execute a build activity via build_project."""
-    from core.tools.build_tools import do_build_project
-    project_dir = metadata.get("project_dir", ".")
+    """Execute a build activity through the canonical pipeline."""
     task = metadata.get("task") or goal
-    result = await do_build_project(task=task, project_dir=project_dir)
-    return result
+    return await _run_via_pipeline(
+        activity_id=activity_id,
+        text=task,
+        user_id=metadata.get("user_id", "__scheduler__"),
+        metadata={"activity_type": "build", **metadata},
+    )
 
 
 async def repair_executor(
     activity_id: str, goal: str, metadata: dict[str, Any],
 ) -> dict[str, Any]:
-    """Execute a repair activity via repair_project."""
-    from core.tools.build_tools import do_repair_project
-    project_dir = metadata.get("project_dir", ".")
+    """Execute a repair activity through the canonical pipeline."""
     build_output = metadata.get("build_output", "")
-    result = await do_repair_project(
-        project_dir=project_dir,
-        build_output=build_output,
+    text = f"Repair build: {goal}" if build_output else goal
+    return await _run_via_pipeline(
+        activity_id=activity_id,
+        text=text,
+        user_id=metadata.get("user_id", "__scheduler__"),
+        metadata={"activity_type": "repair", **metadata},
     )
-    return result
 
 
 async def email_executor(
     activity_id: str, goal: str, metadata: dict[str, Any],
 ) -> dict[str, Any]:
-    """Send an email via the MCP email tool dispatch."""
+    """Send an email through the canonical pipeline."""
     to = metadata.get("to", "")
     subject = metadata.get("subject") or goal
     body = metadata.get("body", "")
     if not to:
         return {"error": "no_recipient", "activity_id": activity_id}
-    try:
-        from core.tools.execution import _call_mcp_tool
-        content = json.dumps({
-            "to": to,
-            "subject": subject,
-            "body": body,
-            **({k: metadata[k] for k in ("cc", "bcc", "attachments") if k in metadata}),
-        })
-        result = await _call_mcp_tool("mcp__email__send_email", content)
-        return {"sent": True, "to": to, "subject": subject, "result": result}
-    except Exception as e:
-        logger.error("email_executor: failed for %s: %s", activity_id, e)
-        logger.error("Executor failed: %s", e, exc_info=True)
-            return {"error": "Operation failed", "activity_id": activity_id}
+    text = f"Send email to {to}: {subject}\n\n{body}"
+    cc = metadata.get("cc", "")
+    if cc:
+        text = f"CC: {cc}\n" + text
+    result = await _run_via_pipeline(
+        activity_id=activity_id,
+        text=text,
+        user_id=metadata.get("user_id", "__scheduler__"),
+        metadata={"activity_type": "email", **metadata},
+    )
+    if "error" in result:
+        return {"error": result["error"], "activity_id": activity_id}
+    return {"sent": True, "to": to, "subject": subject, "result": result}
 
 
 async def benchmark_executor(
     activity_id: str, goal: str, metadata: dict[str, Any],
 ) -> dict[str, Any]:
-    """Execute a benchmark activity via run_benchmark."""
-    from core.coding.build_benchmark import run_benchmark
-    project_dir = metadata.get("project_dir", ".")
-    goal_type = metadata.get("goal_type", "build")
-    session = await run_benchmark(
-        goal=goal,
-        project_dir=project_dir,
-        goal_type=goal_type,
+    """Execute a benchmark activity through the canonical pipeline."""
+    result = await _run_via_pipeline(
+        activity_id=activity_id,
+        text=goal,
+        user_id=metadata.get("user_id", "__scheduler__"),
+        metadata={"activity_type": "benchmark", **metadata},
     )
+    if "error" in result:
+        return {"error": result["error"], "activity_id": activity_id}
     return {
-        "benchmark_id": session.session_id if hasattr(session, "session_id") else str(id(session)),
-        "comparison": session.comparison.to_dict() if hasattr(session, "comparison") and hasattr(session.comparison, "to_dict") else {},
+        "benchmark_id": activity_id,
+        "result": result,
     }
 
 
 async def opportunity_executor(
     activity_id: str, goal: str, metadata: dict[str, Any],
 ) -> dict[str, Any]:
-    """Execute an opportunity-driven research activity.
-
-    Maps the opportunity's target_system to a research question and
-    delegates to the research executor for investigation.
-    """
+    """Execute an opportunity-driven research activity through the canonical pipeline."""
     target_system = metadata.get("target_system", "general")
     opportunity_id = metadata.get("opportunity_id", "")
     description = metadata.get("description", goal)
@@ -131,26 +176,21 @@ async def opportunity_executor(
     logger.info("opportunity_executor: %s (%s) — researching %s",
                 activity_id, opportunity_id, target_system)
 
-    try:
-        result = await research_executor(
-            activity_id=activity_id,
-            goal=f"Research improvement opportunity: {description[:200]}",
-            metadata={
-                "question": f"Investigate and propose improvements for {target_system}: {description[:200]}",
-                "max_pages": 3,
-                "opportunity_id": opportunity_id,
-                "target_system": target_system,
-            },
-        )
-        return {
-            "status": "completed",
-            "target_system": target_system,
-            "opportunity_id": opportunity_id,
-            "result": result,
-        }
-    except Exception as e:
-        logger.error("opportunity_executor: failed for %s: %s", activity_id, e)
-        return {"status": "failed", "error": str(e), "activity_id": activity_id}
+    text = f"Research improvement opportunity for {target_system}: {description[:200]}"
+    result = await _run_via_pipeline(
+        activity_id=activity_id,
+        text=text,
+        user_id=metadata.get("user_id", "__scheduler__"),
+        metadata={"activity_type": "opportunity", **metadata},
+    )
+    if "error" in result:
+        return {"status": "failed", "error": result["error"], "activity_id": activity_id}
+    return {
+        "status": "completed",
+        "target_system": target_system,
+        "opportunity_id": opportunity_id,
+        "result": result,
+    }
 
 
 # ── Default executor (fallback when no specific executor is registered) ──
@@ -159,24 +199,19 @@ async def opportunity_executor(
 async def default_executor(
     activity_id: str, goal: str, metadata: dict[str, Any],
 ) -> dict[str, Any]:
-    """Fallback executor for unregistered activity types.
-
-    Attempts to run the activity through the workflow engine as a single-step
-    tool call, using metadata.tool_type to pick which tool to call.
-    """
+    """Fallback executor routes through the canonical pipeline."""
     tool_type = metadata.get("tool_type", "")
     if not tool_type:
         return {
             "status": "skipped",
             "reason": f"no_executor_for_type:{metadata.get('node_type', 'unknown')}",
         }
-    try:
-        from core.tools.execution import execute_tool_block
-        from core.tools._constants import ToolBlock
-        block = ToolBlock(tool_type=tool_type, content=json.dumps(metadata.get("args", {})))
-        result = await execute_tool_block(block)
-        return {"tool": tool_type, "result": result}
-    except Exception as e:
-        logger.error("default_executor: failed for %s: %s", activity_id, e)
-        logger.error("Executor failed: %s", e, exc_info=True)
-        return {"error": "Operation failed"}
+    result = await _run_via_pipeline(
+        activity_id=activity_id,
+        text=goal,
+        user_id=metadata.get("user_id", "__scheduler__"),
+        metadata={"activity_type": "default_tool", "tool_type": tool_type, **metadata},
+    )
+    if "error" in result:
+        return {"error": "Operation failed", "activity_id": activity_id}
+    return {"tool": tool_type, "result": result}
