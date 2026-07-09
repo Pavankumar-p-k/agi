@@ -9,6 +9,7 @@ from core.pipeline.stages.execution import ExecutionStage
 from core.pipeline.stages.formatter import FormatterStage
 from core.pipeline.stages.intent import IntentStage
 from core.pipeline.stages.knowledge import KnowledgeStage
+from core.pipeline.stages.learning import LearningStage
 from core.pipeline.stages.load_context import LoadContextStage
 from core.pipeline.stages.memory import MemoryStage
 from core.pipeline.stages.metrics import MetricsStage
@@ -33,6 +34,7 @@ __all__ = [
     "FormatterStage",
     "IntentStage",
     "KnowledgeStage",
+    "LearningStage",
     "LoadContextStage",
     "MemoryStage",
     "MetricsStage",
@@ -66,6 +68,7 @@ DEFAULT_STAGES = [
     ("verification", VerificationStage),
     ("epistemic", EpistemicTaggingStage),
     ("reflection", ReflectionStage),
+    ("learning", LearningStage),
     ("memory", MemoryStage),
     ("metrics", MetricsStage),
     ("formatter", FormatterStage),

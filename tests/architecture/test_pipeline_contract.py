@@ -457,6 +457,7 @@ def test_default_stages_have_correct_order():
         "verification",
         "epistemic",
         "reflection",
+        "learning",
         "memory",
         "metrics",
         "formatter",
@@ -474,6 +475,7 @@ def test_all_stage_classes_importable():
         FormatterStage,
         IntentStage,
         KnowledgeStage,
+        LearningStage,
         LoadContextStage,
         MemoryStage,
         MetricsStage,
@@ -498,6 +500,7 @@ def test_all_stage_classes_importable():
         FormatterStage,
         IntentStage,
         KnowledgeStage,
+        LearningStage,
         LoadContextStage,
         MemoryStage,
         MetricsStage,
@@ -518,7 +521,7 @@ def test_all_stage_classes_importable():
 
 def test_default_stage_count():
     """DEFAULT_STAGES has the expected count (ADR-007 + ADR-009)."""
-    assert len(DEFAULT_STAGES) == 21
+    assert len(DEFAULT_STAGES) == 22
 
 
 @pytest.mark.asyncio
@@ -528,6 +531,7 @@ async def test_classify_to_formatter_pipeline():
     from core.pipeline.stages import (
         ContextRetrievalStage,
         KnowledgeStage,
+        LearningStage,
         PlanValidatorStage,
         ReasoningStage,
         ReflectionStage,
@@ -547,6 +551,7 @@ async def test_classify_to_formatter_pipeline():
         ("verification", VerificationStage),
         ("epistemic", EpistemicTaggingStage),
         ("reflection", ReflectionStage),
+        ("learning", LearningStage),
         ("metrics", MetricsStage),
         ("formatter", FormatterStage),
     ):

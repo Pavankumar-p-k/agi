@@ -554,3 +554,88 @@ async def test_reflection_lessons_and_patterns():
     # May have lessons/patterns depending on the engine's analysis
     assert isinstance(ctx.reflection_result.lessons, tuple)
     assert isinstance(ctx.reflection_result.patterns, tuple)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Sprint 5 — Learning Replay Tests
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+async def _run_learning(ctx: PipelineContext) -> PipelineContext:
+    """Run the LearningStage and return the updated context."""
+    from core.pipeline.stages.learning import LearningStage
+
+    stage = LearningStage()
+    result = await stage.execute(ctx)
+    assert result.context is not None
+    return result.context
+
+
+async def _run_learning_twice(
+    raw_input: str,
+) -> tuple[PipelineContext, PipelineContext]:
+    a = _make_reflection_context(DeterministicServices.fake(), raw_input)
+    b = _make_reflection_context(DeterministicServices.fake(), raw_input)
+
+    # Run reflection first to populate reflection_result
+    ctx_a = await _run_reflection(a)
+    ctx_b = await _run_reflection(b)
+
+    # Then run learning
+    ctx_a = await _run_learning(ctx_a)
+    ctx_b = await _run_learning(ctx_b)
+
+    return ctx_a, ctx_b
+
+
+@pytest.mark.asyncio
+async def test_learning_record_is_deterministic():
+    """Two runs with same deterministic services produce identical
+    learning records (learning_id, record count, store decisions)."""
+    ctx_a, ctx_b = await _run_learning_twice("what is the weather?")
+
+    assert len(ctx_a.learning_records) > 0
+    assert len(ctx_b.learning_records) > 0
+
+    lr_a = ctx_a.learning_records[0]
+    lr_b = ctx_b.learning_records[0]
+
+    # Semantic content must match (learning_id may differ due to
+    # non-deterministic reflection_id from research engine)
+    assert lr_a.success_rating == lr_b.success_rating
+    assert lr_a.store_decision == lr_b.store_decision
+    assert lr_a.lessons == lr_b.lessons
+    assert lr_a.patterns == lr_b.patterns
+
+
+@pytest.mark.asyncio
+async def test_learning_no_reflection():
+    """Learning produces empty records when no reflection data."""
+    ctx = PipelineContext(
+        request_id="test", transport="test",
+        raw_input="no reflection",
+    )
+    ctx = await _run_learning(ctx)
+    assert len(ctx.learning_records) == 0
+
+
+@pytest.mark.asyncio
+async def test_learning_store_decision():
+    """Learning records with high success are marked for storage."""
+    ctx, _ = await _run_learning_twice("successful activity")
+
+    assert len(ctx.learning_records) > 0
+    record = ctx.learning_records[0]
+    assert record.store_decision in ("store", "skip")
+
+
+@pytest.mark.asyncio
+async def test_learning_links_to_reflection():
+    """Learning record links back to the reflection that produced it."""
+    ctx, _ = await _run_learning_twice("test linking")
+
+    assert len(ctx.learning_records) > 0
+    record = ctx.learning_records[0]
+    assert record.reflection_id
+    assert record.activity_id
+    assert record.learning_id

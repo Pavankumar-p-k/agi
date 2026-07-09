@@ -1680,5 +1680,50 @@ def test_only_reflection_stage_creates_reflection_result():
         )
 
 
+# ── Rule 53: Only LearningStage creates LearningRecord ───────────────────────
+
+
+def test_only_learning_stage_creates_learning_record():
+    """``LearningRecord`` must only be constructed by the Learning stage.
+
+    Enforced by scanning for ``LearningRecord(`` calls outside
+    ``core/pipeline/stages/learning/`` and the contract definition.
+    """
+    import ast
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parent.parent.parent
+    learning_record_files: list[str] = []
+
+    for path in sorted(root.rglob("*.py")):
+        posix = path.as_posix()
+        if "/tests/" in posix or "/__pycache__/" in posix:
+            continue
+        if posix.endswith("/learning_result.py"):
+            continue  # contract definition is exempt
+        try:
+            source = path.read_text(encoding="utf-8")
+        except Exception:
+            continue
+        if "LearningRecord(" in source:
+            tree = ast.parse(source)
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Call):
+                    fn = node.func
+                    if isinstance(fn, ast.Name) and fn.id == "LearningRecord":
+                        rel = path.relative_to(root).as_posix()
+                        learning_record_files.append(rel)
+
+    allowed = {
+        "core/pipeline/stages/learning/stage.py",
+    }
+    violations = [f for f in learning_record_files if f not in allowed]
+    if violations:
+        pytest.fail(
+            f"LearningRecord constructed outside allowed stages: {violations}. "
+            "Only LearningStage may construct LearningRecord (Rule 53)."
+        )
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

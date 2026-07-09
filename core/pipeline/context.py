@@ -10,6 +10,7 @@ from core.pipeline.architecture_metrics import ArchitectureMetrics
 from core.pipeline.authentication_result import AuthenticationResult
 from core.pipeline.authorization_result import AuthorizationResult
 from core.pipeline.knowledge_result import KnowledgeResult
+from core.pipeline.learning_result import LearningRecord
 from core.pipeline.planner_result import PlannerResult
 from core.pipeline.reflection_result import ReflectionResult
 from core.pipeline.resource_access_result import ResourceAccessResult
@@ -108,6 +109,10 @@ class PipelineContext:
     reflection_result: ReflectionResult | None = None
     """Canonical output of the Reflection stage (Phase 7, Sprint 4).
     Post-execution analysis with lessons, patterns, success rating."""
+
+    learning_records: tuple[LearningRecord, ...] = ()
+    """Canonical output of the Learning stage (Phase 7, Sprint 5).
+    Structured learning records consumed by the Memory stage."""
 
     plan: dict[str, Any] | None = None
     """Logical plan produced by the Planner stage.

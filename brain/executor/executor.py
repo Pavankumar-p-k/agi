@@ -11,6 +11,21 @@ from core.llm_router import complete
 
 logger = logging.getLogger(__name__)
 
+# Canonical execution path — all tool execution routes through here for
+# RBAC, path confinement, sandboxing, and approval gates.
+_CORE_TOOL_EXEC = None
+_TOOL_BLOCK_CLS = None
+
+
+def _ensure_core_imports():
+    global _CORE_TOOL_EXEC, _TOOL_BLOCK_CLS
+    if _CORE_TOOL_EXEC is not None:
+        return
+    from core.tools.execution import execute_tool_block as _e
+    from core.tools._constants import ToolBlock as _T
+    _CORE_TOOL_EXEC = _e
+    _TOOL_BLOCK_CLS = _T
+
 _RESOLVE_SYSTEM = (
     "You map high-level tasks to available tools. "
     "Available tools: create_directory, write_file, read_file, edit_file_text, "

@@ -106,6 +106,17 @@ class ArchitectureMetrics:
     reflection_patterns_count: int = 0
     """Number of patterns extracted."""
 
+    # ── Learning metrics (Phase 7, Sprint 5) ─────────────────────────────
+
+    learning_records_count: int = 0
+    """Number of learning records produced."""
+
+    learning_store_decisions: int = 0
+    """Number of records marked for storage."""
+
+    learning_skip_decisions: int = 0
+    """Number of records marked for skip."""
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "reasoning_complexity": self.reasoning_complexity,
@@ -134,6 +145,9 @@ class ArchitectureMetrics:
             "reflection_success_rating": self.reflection_success_rating,
             "reflection_lessons_count": self.reflection_lessons_count,
             "reflection_patterns_count": self.reflection_patterns_count,
+            "learning_records_count": self.learning_records_count,
+            "learning_store_decisions": self.learning_store_decisions,
+            "learning_skip_decisions": self.learning_skip_decisions,
         }
 
     def to_snapshot_dict(self) -> dict[str, Any]:
@@ -155,6 +169,7 @@ class ArchitectureMetrics:
         kn = ctx.knowledge_result
         pr = ctx.planner_result
         rf = ctx.reflection_result
+        lr = ctx.learning_records
 
         # Planner ranking margin
         plan_margin = 0.0
@@ -191,4 +206,7 @@ class ArchitectureMetrics:
             reflection_success_rating=rf.success_rating if rf else 0.0,
             reflection_lessons_count=len(rf.lessons) if rf else 0,
             reflection_patterns_count=len(rf.patterns) if rf else 0,
+            learning_records_count=len(lr),
+            learning_store_decisions=sum(1 for r in lr if r.store_decision == "store"),
+            learning_skip_decisions=sum(1 for r in lr if r.store_decision == "skip"),
         )
