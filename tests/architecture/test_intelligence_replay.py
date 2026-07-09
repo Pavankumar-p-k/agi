@@ -291,3 +291,137 @@ async def test_knowledge_activity_id():
     assert ctx.knowledge_result is not None
     expected_activity_id = ctx.activity_id or ""
     assert ctx.knowledge_result.activity_id == expected_activity_id
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Sprint 3 — Planner Replay Tests
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+async def _run_planner(ctx: PipelineContext) -> PipelineContext:
+    """Run the PlannerStage and return the updated context."""
+    from core.pipeline.stages.planner import PlannerStage
+
+    stage = PlannerStage()
+    result = await stage.execute(ctx)
+    assert result.context is not None
+    return result.context
+
+
+async def _run_planner_twice(
+    raw_input: str,
+    complexity: str = "simple",
+    requirements: list[str] | None = None,
+) -> tuple[PipelineContext, PipelineContext]:
+    a = _make_context(DeterministicServices.fake(), raw_input)
+    b = _make_context(DeterministicServices.fake(), raw_input)
+
+    assessment = {
+        "complexity": complexity,
+        "requirements": requirements or [],
+        "constraints": [],
+        "confidence": 0.8,
+        "estimated_steps": 1,
+        "routing_hints": {},
+    }
+    a.reasoning_assessment = assessment
+    b.reasoning_assessment = assessment
+
+    ctx_a = await _run_planner(a)
+    ctx_b = await _run_planner(b)
+
+    return ctx_a, ctx_b
+
+
+@pytest.mark.asyncio
+async def test_planner_result_is_deterministic():
+    """Two runs with same deterministic services produce identical
+    planner_result (plan_id, strategy count, ranking)."""
+    ctx_a, ctx_b = await _run_planner_twice(
+        "what is the weather in London?", requirements=["research"],
+    )
+
+    assert ctx_a.planner_result is not None
+    assert ctx_b.planner_result is not None
+
+    pr_a = ctx_a.planner_result
+    pr_b = ctx_b.planner_result
+
+    assert pr_a.plan_id == pr_b.plan_id
+    assert pr_a.total_candidates == pr_b.total_candidates
+    assert len(pr_a.ranking.strategies) == len(pr_b.ranking.strategies)
+    assert pr_a.ranking.selected_id == pr_b.ranking.selected_id
+    assert pr_a.ranking.selection_rationale == pr_b.ranking.selection_rationale
+
+
+@pytest.mark.asyncio
+async def test_planner_backward_compat_plan():
+    """context.plan is still populated for backward compat from the
+    winning strategy."""
+    ctx, _ = await _run_planner_twice("write a script", requirements=["coding"])
+
+    assert ctx.planner_result is not None
+    assert ctx.plan is not None
+    assert ctx.plan["goal"] == "write a script"
+    assert len(ctx.plan["steps"]) > 0
+
+
+@pytest.mark.asyncio
+async def test_planner_generates_multiple_strategies():
+    """Research+coding request generates at least 2 strategy candidates."""
+    ctx, _ = await _run_planner_twice(
+        "research and implement", requirements=["research", "coding"],
+    )
+
+    assert ctx.planner_result is not None
+    assert ctx.planner_result.total_candidates >= 2
+    assert len(ctx.planner_result.ranking.strategies) >= 2
+
+
+@pytest.mark.asyncio
+async def test_planner_ranking_has_comparisons():
+    """Ranking includes pairwise comparisons between strategies."""
+    ctx, _ = await _run_planner_twice(
+        "complex research task", requirements=["research"],
+    )
+
+    assert ctx.planner_result is not None
+    assert len(ctx.planner_result.ranking.comparisons) > 0
+
+
+@pytest.mark.asyncio
+async def test_planner_strategy_confidence_bounded():
+    """All strategy confidences are in [0, 1]."""
+    ctx, _ = await _run_planner_twice("test confidence")
+
+    assert ctx.planner_result is not None
+    for s in ctx.planner_result.ranking.strategies:
+        assert 0.0 <= s.confidence <= 1.0
+
+
+@pytest.mark.asyncio
+async def test_planner_direct_research_coding_scenarios():
+    """Different complexity scenarios produce expected strategy counts."""
+    # Simple request → direct + balanced (fallback)
+    ctx_simple, _ = await _run_planner_twice("hello")
+    assert ctx_simple.planner_result is not None
+    strategy_names = {s.name for s in ctx_simple.planner_result.ranking.strategies}
+    assert "direct" in strategy_names
+
+    # Research request → direct + research
+    ctx_research, _ = await _run_planner_twice(
+        "research X", requirements=["research"],
+    )
+    assert ctx_research.planner_result is not None
+    r_names = {s.name for s in ctx_research.planner_result.ranking.strategies}
+    assert "direct" in r_names
+    assert "research" in r_names
+
+    # Coding request → direct + code
+    ctx_code, _ = await _run_planner_twice(
+        "code something", requirements=["coding"],
+    )
+    assert ctx_code.planner_result is not None
+    c_names = {s.name for s in ctx_code.planner_result.ranking.strategies}
+    assert "direct" in c_names
+    assert "code" in c_names

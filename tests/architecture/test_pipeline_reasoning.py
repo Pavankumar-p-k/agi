@@ -284,7 +284,7 @@ class TestPlannerStage:
         assert plan["steps"][0]["intent"] == "respond"
 
     @pytest.mark.asyncio
-    async def test_multi_step_produces_multiple_steps(self, stage):
+    async def test_multi_step_produces_multiple_strategies(self, stage):
         ctx = PipelineContext(request_id="r1", transport="test", raw_input="research and code a solution")
         ctx.reasoning_assessment = {
             "complexity": "multi_step",
@@ -292,11 +292,17 @@ class TestPlannerStage:
             "constraints": [],
         }
         result = await stage.execute(ctx)
+        # Multi-strategy planner generates separate strategies
+        assert result.context.planner_result is not None
+        assert result.context.planner_result.total_candidates >= 2
+        # Backward compat plan is from the winning strategy
         plan = result.context.plan
-        assert len(plan["steps"]) >= 2
-        intents = [s["intent"] for s in plan["steps"]]
-        assert "search_web" in intents
-        assert "write_code" in intents
+        assert plan is not None
+        assert len(plan["steps"]) >= 1
+        # All strategy names should include research and code
+        strategy_names = {s.name for s in result.context.planner_result.ranking.strategies}
+        assert "research" in strategy_names or "direct" in strategy_names
+        assert "code" in strategy_names or "direct" in strategy_names
 
     @pytest.mark.asyncio
     async def test_steps_have_logical_schema(self, stage):

@@ -8,7 +8,6 @@ Pipeline position: after Reasoning, before PlanValidator.
 """
 from __future__ import annotations
 
-import uuid
 from typing import Any
 
 from core.pipeline.base import PipelineStage, StageOutcome, StageResult
@@ -43,7 +42,7 @@ class PlannerStage(PipelineStage):
         reasoning = context.reasoning_result
 
         # Generate strategy candidates
-        strategies = self._generate_strategies(raw_input, assessment, reasoning)
+        strategies = self._generate_strategies(raw_input, assessment, reasoning, context.services)
 
         # Score and rank
         ranked = self._rank_strategies(strategies)
@@ -78,31 +77,32 @@ class PlannerStage(PipelineStage):
         raw_input: str,
         assessment: dict[str, Any],
         reasoning: Any,
+        services: Any,
     ) -> list[PlanningStrategy]:
         strategies: list[PlanningStrategy] = []
 
         requirements = assessment.get("requirements", [])
 
         # Always include a direct strategy
-        strategies.append(self._direct_strategy(raw_input))
+        strategies.append(self._direct_strategy(raw_input, services))
 
         if "research" in requirements:
-            strategies.append(self._research_strategy(raw_input, assessment))
+            strategies.append(self._research_strategy(raw_input, assessment, services))
         elif "browser" in requirements:
-            strategies.append(self._browse_strategy(raw_input))
+            strategies.append(self._browse_strategy(raw_input, services))
 
         if "coding" in requirements:
-            strategies.append(self._code_strategy(raw_input))
+            strategies.append(self._code_strategy(raw_input, services))
 
         # If we only have one strategy, add a generic fallback
         if len(strategies) < 2:
-            strategies.append(self._balanced_strategy(raw_input, assessment))
+            strategies.append(self._balanced_strategy(raw_input, assessment, services))
 
         return strategies
 
-    def _direct_strategy(self, raw_input: str) -> PlanningStrategy:
+    def _direct_strategy(self, raw_input: str, services: Any) -> PlanningStrategy:
         return PlanningStrategy(
-            strategy_id=_sid("direct"),
+            strategy_id=_sid("direct", services),
             name="direct",
             description="Direct response without research or code.",
             steps=(self._step("respond", f"Respond to: {raw_input[:200]}"),),
@@ -112,10 +112,11 @@ class PlannerStage(PipelineStage):
 
     def _research_strategy(
         self, raw_input: str, assessment: dict[str, Any],
+        services: Any,
     ) -> PlanningStrategy:
         constraints = {c: True for c in assessment.get("constraints", [])}
         return PlanningStrategy(
-            strategy_id=_sid("research"),
+            strategy_id=_sid("research", services),
             name="research",
             description="Research then respond with evidence-based answer.",
             steps=(
@@ -127,9 +128,9 @@ class PlannerStage(PipelineStage):
             rationale="Request requires information gathering.",
         )
 
-    def _browse_strategy(self, raw_input: str) -> PlanningStrategy:
+    def _browse_strategy(self, raw_input: str, services: Any) -> PlanningStrategy:
         return PlanningStrategy(
-            strategy_id=_sid("browse"),
+            strategy_id=_sid("browse", services),
             name="browse",
             description="Browse web pages and synthesize content.",
             steps=(
@@ -141,9 +142,9 @@ class PlannerStage(PipelineStage):
             rationale="Request requires browsing specific web content.",
         )
 
-    def _code_strategy(self, raw_input: str) -> PlanningStrategy:
+    def _code_strategy(self, raw_input: str, services: Any) -> PlanningStrategy:
         return PlanningStrategy(
-            strategy_id=_sid("code"),
+            strategy_id=_sid("code", services),
             name="code",
             description="Write code then explain the implementation.",
             steps=(
@@ -157,10 +158,11 @@ class PlannerStage(PipelineStage):
 
     def _balanced_strategy(
         self, raw_input: str, assessment: dict[str, Any],
+        services: Any,
     ) -> PlanningStrategy:
         constraints = {c: True for c in assessment.get("constraints", [])}
         return PlanningStrategy(
-            strategy_id=_sid("balanced"),
+            strategy_id=_sid("balanced", services),
             name="balanced",
             description="General-purpose plan combining research and response.",
             steps=(
@@ -237,9 +239,12 @@ class PlannerStage(PipelineStage):
         }
 
 
-def _sid(prefix: str) -> str:
-    """Generate a strategy id with the given prefix."""
-    return f"{prefix}_{uuid.uuid4().hex[:16]}"
+def _sid(prefix: str, services: Any) -> str:
+    """Generate a deterministic strategy id with the given prefix."""
+    raw = services.uuid4()
+    if isinstance(raw, str):
+        return f"{prefix}_{raw[:16]}"
+    return f"{prefix}_{raw.hex[:16]}"
 
 
 def _make_plan_id(services: Any) -> str:

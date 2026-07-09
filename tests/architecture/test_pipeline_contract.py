@@ -554,6 +554,7 @@ async def test_classify_to_formatter_pipeline():
     assert result.retrieved_context is not None
     assert result.knowledge_result is not None
     assert result.reasoning_assessment is not None
+    assert result.planner_result is not None
     assert result.plan is not None
     assert result.plan_validated is True
     assert result.formatted_response is not None

@@ -1585,5 +1585,52 @@ def test_only_knowledge_stage_creates_knowledge_result():
         )
 
 
+# ── Rule 51: Only PlannerStage creates PlanningStrategy / PlanRanking ────────
+
+
+def test_only_planner_stage_creates_planning_artifacts():
+    """``PlanningStrategy``, ``StrategyComparison``, ``PlanRanking``,
+    and ``PlannerResult`` must only be constructed by the Planner stage.
+
+    Enforced by scanning for constructors outside ``core/pipeline/stages/planner/``.
+    """
+    import ast
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parent.parent.parent
+    target_types = {"PlanningStrategy", "StrategyComparison", "PlanRanking"}
+    allowed = {"core/pipeline/stages/planner/stage.py"}
+
+    # Check PlannerResult separately (also exempted if in contract file)
+    planner_result_files: list[str] = []
+    for path in sorted(root.rglob("*.py")):
+        posix = path.as_posix()
+        if "/tests/" in posix or "/__pycache__/" in posix:
+            continue
+        if posix.endswith("/planner_result.py"):
+            continue  # contract definition is exempt
+        try:
+            source = path.read_text(encoding="utf-8")
+        except Exception:
+            continue
+        for tname in target_types:
+            if f"{tname}(" in source:
+                tree = ast.parse(source)
+                for node in ast.walk(tree):
+                    if isinstance(node, ast.Call):
+                        fn = node.func
+                        if isinstance(fn, ast.Name) and fn.id == tname:
+                            rel = path.relative_to(root).as_posix()
+                            planner_result_files.append(rel)
+
+    violations = [f for f in planner_result_files if f not in allowed]
+    if violations:
+        pytest.fail(
+            f"Planning artifacts constructed outside allowed stages: {violations}. "
+            "Only PlannerStage may construct PlanningStrategy, StrategyComparison, "
+            "or PlanRanking (Rule 51)."
+        )
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
