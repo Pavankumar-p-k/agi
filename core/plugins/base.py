@@ -618,7 +618,7 @@ class PluginRegistry:
                 results.append((record.manifest.name, _HookFailed(e)))
 
         try:
-            from brain.events import PluginEventBus
+            from core.event_bus import PluginEventBus
             asyncio.ensure_future(PluginEventBus.instance().emit(hook, **kwargs))
         except Exception as _e:
             logger.debug("plugins base run_hook event bus failed: %s", _e)

@@ -100,7 +100,7 @@ class JarvisFileAgent:
         try:
             import asyncio
 
-            from brain.events import PluginEventBus
+            from core.event_bus import PluginEventBus
             asyncio.create_task(PluginEventBus.instance().emit("on_file_saved", path=path, size=len(content)))
         except Exception as _e:
             logger.debug("file_agent emit hook failed: %s", _e)

@@ -117,6 +117,17 @@ class ArchitectureMetrics:
     learning_skip_decisions: int = 0
     """Number of records marked for skip."""
 
+    # ── Policy Optimization metrics (Phase 7, Sprint 6) ──────────────────
+
+    policy_optimization_applied: bool = False
+    """Whether a PolicyOptimizationResult was produced."""
+
+    policy_suggested_profile: str = ""
+    """Suggested policy profile from the optimization (if any)."""
+
+    policy_rate_limit_multiplier: float = 1.0
+    """Rate limit multiplier suggested by the optimization."""
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "reasoning_complexity": self.reasoning_complexity,
@@ -148,6 +159,9 @@ class ArchitectureMetrics:
             "learning_records_count": self.learning_records_count,
             "learning_store_decisions": self.learning_store_decisions,
             "learning_skip_decisions": self.learning_skip_decisions,
+            "policy_optimization_applied": self.policy_optimization_applied,
+            "policy_suggested_profile": self.policy_suggested_profile,
+            "policy_rate_limit_multiplier": self.policy_rate_limit_multiplier,
         }
 
     def to_snapshot_dict(self) -> dict[str, Any]:
@@ -170,6 +184,7 @@ class ArchitectureMetrics:
         pr = ctx.planner_result
         rf = ctx.reflection_result
         lr = ctx.learning_records
+        po = ctx.policy_optimization_result
 
         # Planner ranking margin
         plan_margin = 0.0
@@ -209,4 +224,7 @@ class ArchitectureMetrics:
             learning_records_count=len(lr),
             learning_store_decisions=sum(1 for r in lr if r.store_decision == "store"),
             learning_skip_decisions=sum(1 for r in lr if r.store_decision == "skip"),
+            policy_optimization_applied=po is not None,
+            policy_suggested_profile=po.suggested_profile or "" if po else "",
+            policy_rate_limit_multiplier=po.rate_limit_multiplier if po else 1.0,
         )

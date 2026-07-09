@@ -244,7 +244,7 @@ def _do_create_document_sync(content_block: str, session_id: str | None = None, 
 
         set_active_document(doc_id)
         try:
-            from brain.events import fire_event
+            from core.event_bus import fire_event
             fire_event("document_created", _owner)
         except Exception as _e:
             logger.debug("document_created event dispatch failed: %s", _e)
@@ -786,7 +786,7 @@ def _do_edit_document_sync(content: str, doc_id: str | None = None, owner: str |
 
         for _t_id in by_doc:
             try:
-                from brain.events import fire_event
+                from core.event_bus import fire_event
                 fire_event("document_edited", owner)
             except Exception as e:
                 logger.warning("[core.tools.document_tools] apply_unified_diff failed: %s", e)

@@ -34,6 +34,7 @@ STAGE_OWNERSHIP: dict[str, set[str]] = {
     "epistemic": {"epistemic_tags"},
     "reflection": {"reflection_result"},
     "learning": {"learning_records"},
+    "policy_optimization": {"policy_optimization_result"},
     "memory": {"memory_refs", "store_decision"},
     "metrics": {"metrics"},
     "formatter": {"formatted_response"},

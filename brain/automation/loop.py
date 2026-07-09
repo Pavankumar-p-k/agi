@@ -30,6 +30,22 @@ from brain.task_resolver import task_resolver
 from core.llm_router import complete
 from core.pattern_failure_memory import pattern_memory as _pattern_memory_singleton
 
+# Canonical step execution — used when a WorkflowEngine is available.
+_WORKFLOW_ENGINE = None
+
+
+def _ensure_workflow_engine():
+    global _WORKFLOW_ENGINE
+    if _WORKFLOW_ENGINE is not None:
+        return
+    try:
+        from core.workflow.engine import WorkflowEngine
+        _WORKFLOW_ENGINE = WorkflowEngine()
+        logger.debug("[AutoBuild] using WorkflowEngine for step execution")
+    except Exception:
+        logger.debug("[AutoBuild] WorkflowEngine not available")
+        _WORKFLOW_ENGINE = False
+
 logger = logging.getLogger(__name__)
 
 
@@ -1770,6 +1786,48 @@ android.enableJetifier=true
             "src/test/java/com/example/AppTest.java", "src/test/java/com/example/CalculatorTest.java",
         ]
 
+    async def _execute_step(
+        self, label: str, action: str, params: dict, idempotency_key: str = "",
+    ) -> ActionResult:
+        """Execute a single step, routing through WorkflowEngine when available.
+
+        When ``_WORKFLOW_ENGINE`` is available, creates a single-step workflow
+        so the execution is tracked, idempotent, and fires canonical events.
+        Falls back to ``executor.execute_graph_node`` otherwise.
+        """
+        wf = _WORKFLOW_ENGINE
+        if wf is not None and wf is not False and idempotency_key:
+            try:
+                from core.workflow.models import StepDefinition
+                step = StepDefinition(tool_name=action, input_data=params)
+                instance = await wf.start_workflow(
+                    workflow_type=f"brain_auto_{label}",
+                    steps=[step],
+                    session_id=idempotency_key,
+                    owner="brain_automation",
+                    launch_background=False,
+                )
+                # Wait for the workflow to finish
+                wf_result = await wf.get_status(instance.workflow_id)
+                if wf_result and wf_result.get("status") in ("completed", "failed"):
+                    step_result = instance.steps[0] if instance.steps else None
+                    if step_result and step_result.status.value == "completed":
+                        return ActionResult(
+                            success=True,
+                            output=str(step_result.output_data or ""),
+                            duration_ms=0.0,
+                        )
+                    error = step_result.error if step_result else "workflow failed"
+                    return ActionResult(
+                        success=False,
+                        error=str(error),
+                        duration_ms=0.0,
+                    )
+            except Exception:
+                logger.debug("[AutoBuild] workflow exec failed, falling back", exc_info=True)
+
+        return await executor.execute_graph_node(label, action, params)
+
     async def _phase_build(self, objective: str, proj_dir: str,
                            build_cmd: str, goal_id: str, plan: dict) -> bool:
         """Build with CompilerRepairEngine (deterministic) + failure memory + LLM fallback."""
@@ -1795,11 +1853,13 @@ android.enableJetifier=true
         total_unresolved = 0
         memory_hits = 0
 
+        _ensure_workflow_engine()
         for attempt in range(self.MAX_REPAIR_ATTEMPTS):
             logger.info("[AutoBuild] build attempt %d/%d: %s", attempt + 1, self.MAX_REPAIR_ATTEMPTS, build_cmd)
-            result = await executor.execute_graph_node(
+            result = await self._execute_step(
                 "build", "run_command",
                 {"command": build_cmd, "cwd": root},
+                f"build-{goal_id}-{attempt}",
             )
             self.memory.store_trace("build_attempt", {"command": build_cmd, "attempt": attempt},
                                     result.output or result.error, result.success, result.duration_ms, goal_id)
@@ -2516,11 +2576,13 @@ android.enableJetifier=true
             logger.info("[AutoBuild] test: no test source directories found, skipping")
             return True
 
+        _ensure_workflow_engine()
         for attempt in range(self.MAX_REPAIR_ATTEMPTS):
             logger.info("[AutoBuild] test attempt %d/%d: %s", attempt + 1, self.MAX_REPAIR_ATTEMPTS, test_cmd)
-            result = await executor.execute_graph_node(
+            result = await self._execute_step(
                 "test", "run_command",
                 {"command": test_cmd, "cwd": proj_dir},
+                f"test-{goal_id}-{attempt}",
             )
             self.memory.store_trace("test_attempt", {"command": test_cmd, "attempt": attempt},
                                     result.output or result.error, result.success, result.duration_ms, goal_id)

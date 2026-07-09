@@ -21,7 +21,7 @@ from typing import Any
 
 from pydantic import BaseModel, ValidationError
 
-from brain.events import EventBus
+from core.event_bus import EventBus
 from core.settings.schema import JarvisSettings
 
 logger = logging.getLogger("jarvis.settings")
@@ -297,7 +297,7 @@ _store: SettingsStore | None = None
 def get_settings_store() -> SettingsStore:
     global _store
     if _store is None:
-        from brain.events import global_event_bus as global_bus
+        from core.event_bus import global_event_bus as global_bus
         _store = SettingsStore(event_bus=global_bus)
         _store.load()
     return _store

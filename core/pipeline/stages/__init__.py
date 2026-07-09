@@ -15,6 +15,7 @@ from core.pipeline.stages.memory import MemoryStage
 from core.pipeline.stages.metrics import MetricsStage
 from core.pipeline.stages.plan_validator import PlanValidatorStage
 from core.pipeline.stages.planner import PlannerStage
+from core.pipeline.stages.policy_optimization import PolicyOptimizationStage
 from core.pipeline.stages.rate_limit import RateLimitStage
 from core.pipeline.stages.reasoner import ReasonerStage  # legacy, use ReasoningStage for new code
 from core.pipeline.stages.reasoning import ReasoningStage
@@ -40,6 +41,7 @@ __all__ = [
     "MetricsStage",
     "PlanValidatorStage",
     "PlannerStage",
+    "PolicyOptimizationStage",
     "RateLimitStage",
     "ReasonerStage",   # legacy
     "ReasoningStage",
@@ -69,6 +71,7 @@ DEFAULT_STAGES = [
     ("epistemic", EpistemicTaggingStage),
     ("reflection", ReflectionStage),
     ("learning", LearningStage),
+    ("policy_optimization", PolicyOptimizationStage),
     ("memory", MemoryStage),
     ("metrics", MetricsStage),
     ("formatter", FormatterStage),

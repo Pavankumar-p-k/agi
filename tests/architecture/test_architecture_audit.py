@@ -1725,5 +1725,51 @@ def test_only_learning_stage_creates_learning_record():
         )
 
 
+# ── Rule 54: Only PolicyOptimizationStage creates PolicyOptimizationResult ─────
+
+
+def test_only_policy_optimization_stage_creates_policy_optimization_result():
+    """``PolicyOptimizationResult`` must only be constructed by the
+    Policy Optimization stage.
+
+    Enforced by scanning for ``PolicyOptimizationResult(`` calls outside
+    ``core/pipeline/stages/policy_optimization/`` and the contract definition.
+    """
+    import ast
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parent.parent.parent
+    po_result_files: list[str] = []
+
+    for path in sorted(root.rglob("*.py")):
+        posix = path.as_posix()
+        if "/tests/" in posix or "/__pycache__/" in posix:
+            continue
+        if posix.endswith("/policy_optimization_result.py"):
+            continue  # contract definition is exempt
+        try:
+            source = path.read_text(encoding="utf-8")
+        except Exception:
+            continue
+        if "PolicyOptimizationResult(" in source:
+            tree = ast.parse(source)
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Call):
+                    fn = node.func
+                    if isinstance(fn, ast.Name) and fn.id == "PolicyOptimizationResult":
+                        rel = path.relative_to(root).as_posix()
+                        po_result_files.append(rel)
+
+    allowed = {
+        "core/pipeline/stages/policy_optimization/stage.py",
+    }
+    violations = [f for f in po_result_files if f not in allowed]
+    if violations:
+        pytest.fail(
+            f"PolicyOptimizationResult constructed outside allowed stages: {violations}. "
+            "Only PolicyOptimizationStage may construct PolicyOptimizationResult (Rule 54)."
+        )
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

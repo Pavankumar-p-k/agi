@@ -23,7 +23,7 @@ from core.plugins.errors import (
     PluginLoadError,
     PluginNetworkError,
 )
-from brain.events import PluginEventBus
+from core.event_bus import PluginEventBus
 from core.plugins.hot_reload import HotReloader
 from core.plugins.loader import PluginLoader, get_plugin_loader
 from core.plugins.manifest import PluginManifest as _PluginManifest

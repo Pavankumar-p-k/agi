@@ -20,6 +20,7 @@ from core.pipeline.security_context import SecurityContext
 from core.identity.tenant_resolver import TenantResolutionResult
 from core.pipeline.deterministic import DeterministicServices
 from core.pipeline.outcome import Outcome
+from core.pipeline.policy_optimization_result import PolicyOptimizationResult
 
 logger = logging.getLogger(__name__)
 
@@ -113,6 +114,15 @@ class PipelineContext:
     learning_records: tuple[LearningRecord, ...] = ()
     """Canonical output of the Learning stage (Phase 7, Sprint 5).
     Structured learning records consumed by the Memory stage."""
+
+    policy_optimization_result: PolicyOptimizationResult | None = None
+    """Canonical output of the Policy Optimization stage (Phase 7, Sprint 6).
+    Policy adjustment signals derived from learning records."""
+
+    policy_profile: str = "developer"
+    """Active ``PolicyProfile`` for this request (``"strict"``,
+    ``"developer"``, ``"autonomous"``).  Set by PolicyOptimizationStage
+    or loaded from storage on pipeline start."""
 
     plan: dict[str, Any] | None = None
     """Logical plan produced by the Planner stage.
