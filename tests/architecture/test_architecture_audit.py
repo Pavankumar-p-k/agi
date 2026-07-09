@@ -1741,9 +1741,10 @@ def test_only_policy_optimization_stage_creates_policy_optimization_result():
     root = Path(__file__).resolve().parent.parent.parent
     po_result_files: list[str] = []
 
+    excluded_dirs = {"/tests/", "/__pycache__/", "/.venv/", "/venv/", "/node_modules/"}
     for path in sorted(root.rglob("*.py")):
         posix = path.as_posix()
-        if "/tests/" in posix or "/__pycache__/" in posix:
+        if any(d in posix for d in excluded_dirs):
             continue
         if posix.endswith("/policy_optimization_result.py"):
             continue  # contract definition is exempt
