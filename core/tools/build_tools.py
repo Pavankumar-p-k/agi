@@ -25,9 +25,8 @@ async def _ensure_automation(project_dir: str = ""):
     from brain.memory.memory_manager import MemoryManager
     from brain.automation.loop import AutomationLoop
 
-    os.makedirs(_DATA_DIR, exist_ok=True)
-    _GOAL_MANAGER = GoalManager(db_path=os.path.join(_DATA_DIR, "goals.db"))
-    _MEMORY_MANAGER = MemoryManager(db_path=os.path.join(_DATA_DIR, "brain.db"))
+    _GOAL_MANAGER = GoalManager()
+    _MEMORY_MANAGER = MemoryManager()
     _BUILD_LOOP = AutomationLoop(
         goal_manager=_GOAL_MANAGER,
         memory_manager=_MEMORY_MANAGER,

@@ -18,12 +18,11 @@ import time
 from pathlib import Path
 from typing import Any
 
+from core.storage import SYSTEM_DB
 from core.workspace_manager import WorkspaceManager, ProjectMap
 from core.repository_analyzer import RepositoryAnalyzer
 
 logger = logging.getLogger(__name__)
-
-_DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
 
 
 class AgentOrchestrator:
@@ -45,9 +44,8 @@ class AgentOrchestrator:
         from brain.memory.memory_manager import MemoryManager
         from brain.automation.loop import AutomationLoop
 
-        os.makedirs(_DATA_DIR, exist_ok=True)
-        self._goal_manager = GoalManager(db_path=os.path.join(_DATA_DIR, "goals.db"))
-        self._memory_manager = MemoryManager(db_path=os.path.join(_DATA_DIR, "brain.db"))
+        self._goal_manager = GoalManager()
+        self._memory_manager = MemoryManager()
         self._loop = AutomationLoop(
             goal_manager=self._goal_manager,
             memory_manager=self._memory_manager,

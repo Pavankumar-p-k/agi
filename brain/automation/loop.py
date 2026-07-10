@@ -76,7 +76,11 @@ class FailureMemory:
     """
 
     def __init__(self, db_path: str = ""):
-        self.db_path = db_path or os.path.join(os.path.dirname(__file__), "../../data/failure_memory.db")
+        if db_path:
+            self.db_path = db_path
+        else:
+            from core.storage import SYSTEM_DB
+            self.db_path = SYSTEM_DB
         _db_dir = os.path.dirname(self.db_path)
         if _db_dir:
             os.makedirs(_db_dir, exist_ok=True)

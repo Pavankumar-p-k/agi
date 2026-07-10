@@ -22,10 +22,9 @@ from pathlib import Path
 
 
 class TrainingCollector:
-    DB_PATH = Path("data/training_log.db")
-
     def __init__(self):
-        self.DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+        from core.storage import SYSTEM_DB
+        self.DB_PATH = Path(SYSTEM_DB)
         self._init_db()
 
     def _init_db(self):

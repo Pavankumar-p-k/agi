@@ -9,11 +9,12 @@ import uuid
 from pathlib import Path
 from typing import Any, Generator, List
 
+from core.storage import SYSTEM_DB
 from memory.extraction import ExtractedFact
 
 logger = logging.getLogger(__name__)
 
-_DB_PATH = Path("data/jarvis_memory.db")
+_DB_PATH = Path(SYSTEM_DB)
 
 
 class FactStore:

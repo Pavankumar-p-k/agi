@@ -32,7 +32,10 @@ class EmbeddingMemory:
     - Uses Ollama embedding endpoint by default. If Ollama is not available,
       embed() returns an Err(ProviderError) and callers should handle gracefully.
     """
-    def __init__(self, db_path: str = "data/jarvis_memory.db"):
+    def __init__(self, db_path: str | None = None):
+        if db_path is None:
+            from core.storage import SYSTEM_DB
+            db_path = SYSTEM_DB
         self.db_path = db_path
         self.ollama_url = os.getenv("OLLAMA_EMBEDDING_URL", "http://localhost:11434/api/embed")
         self._init_db()

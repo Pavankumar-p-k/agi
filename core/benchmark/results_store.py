@@ -25,10 +25,11 @@ from core.benchmark.models import (
     BenchmarkTask,
     RunStatus,
 )
+from core.storage import SYSTEM_DB
 
 logger = logging.getLogger(__name__)
 
-BENCHMARK_DB = "data/benchmark.db"
+BENCHMARK_DB = SYSTEM_DB
 
 
 class BenchmarkResultsStore:

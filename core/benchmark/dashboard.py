@@ -21,7 +21,7 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 REPORT_DIR = "benchmark_reports"
-BM_DB = "data/benchmark.db"
+BM_DB = "data/system.db"
 
 
 def _list_json_reports(pattern: str) -> list[dict[str, Any]]:

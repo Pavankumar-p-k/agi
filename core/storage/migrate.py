@@ -42,7 +42,7 @@ def copy_tables(source_db: str, target_db: str, tables: list[str] | None = None)
         tgt_tables = tgt.execute(
             "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
         ).fetchall()
-        tgt_table_names = {r["name"] for r in tgt_tables}
+        tgt_table_names = {r[0] for r in tgt_tables}
 
         to_copy = [t for t in (tables or src_table_names) if t in src_table_names]
         if not to_copy:
@@ -54,9 +54,9 @@ def copy_tables(source_db: str, target_db: str, tables: list[str] | None = None)
             schema_rows = src.execute(
                 "SELECT sql FROM sqlite_master WHERE type='table' AND name=?", (table,)
             ).fetchall()
-            if not schema_rows or not schema_rows[0]["sql"]:
+            if not schema_rows or not schema_rows[0][0]:
                 continue
-            create_sql = schema_rows[0]["sql"]
+            create_sql = schema_rows[0][0]
 
             # Create table in target if it doesn't exist
             if table not in tgt_table_names:
@@ -90,7 +90,7 @@ def copy_tables(source_db: str, target_db: str, tables: list[str] | None = None)
             ).fetchall()
             for idx in idx_rows:
                 try:
-                    tgt.execute(idx["sql"])
+                    tgt.execute(idx[0])
                 except Exception:
                     pass
 
@@ -115,9 +115,63 @@ def merge_brain_db_to_system() -> dict[str, int]:
     return copy_tables(LEGACY_BRAIN_DB, SYSTEM_DB)
 
 
+def merge_goals_db_to_system() -> dict[str, int]:
+    from core.storage.registry import LEGACY_GOALS_DB
+    return copy_tables(LEGACY_GOALS_DB, SYSTEM_DB)
+
+
+def merge_jarvis_memory_to_system() -> dict[str, int]:
+    from core.storage.registry import LEGACY_JARVIS_MEMORY_DB
+    return copy_tables(LEGACY_JARVIS_MEMORY_DB, SYSTEM_DB)
+
+
+def merge_browser_facts_to_system() -> dict[str, int]:
+    from core.storage.registry import LEGACY_BROWSER_FACTS_DB
+    return copy_tables(LEGACY_BROWSER_FACTS_DB, SYSTEM_DB)
+
+
+def merge_inbox_to_system() -> dict[str, int]:
+    from core.storage.registry import LEGACY_INBOX_DB
+    return copy_tables(LEGACY_INBOX_DB, SYSTEM_DB)
+
+
+def merge_benchmark_to_system() -> dict[str, int]:
+    from core.storage.registry import LEGACY_BENCHMARK_DB
+    return copy_tables(LEGACY_BENCHMARK_DB, SYSTEM_DB)
+
+
+def merge_training_log_to_system() -> dict[str, int]:
+    from core.storage.registry import LEGACY_TRAINING_LOG_DB
+    return copy_tables(LEGACY_TRAINING_LOG_DB, SYSTEM_DB)
+
+
+def merge_failure_memory_to_system() -> dict[str, int]:
+    from core.storage.registry import LEGACY_FAILURE_MEMORY_DB
+    return copy_tables(LEGACY_FAILURE_MEMORY_DB, SYSTEM_DB)
+
+
+def merge_plugin_state_to_system() -> dict[str, int]:
+    from core.storage.registry import LEGACY_PLUGIN_STATE_DB
+    return copy_tables(LEGACY_PLUGIN_STATE_DB, SYSTEM_DB)
+
+
+def merge_plugin_secrets_to_system() -> dict[str, int]:
+    from core.storage.registry import LEGACY_PLUGIN_SECRETS_DB
+    return copy_tables(LEGACY_PLUGIN_SECRETS_DB, SYSTEM_DB)
+
+
 def run_all() -> dict[str, dict[str, int]]:
     """Run all storage migrations. Returns per-source results."""
     results: dict[str, dict[str, int]] = {}
     results["workflow"] = merge_workflow_db_to_system()
     results["brain"] = merge_brain_db_to_system()
+    results["goals"] = merge_goals_db_to_system()
+    results["jarvis_memory"] = merge_jarvis_memory_to_system()
+    results["browser_facts"] = merge_browser_facts_to_system()
+    results["inbox"] = merge_inbox_to_system()
+    results["benchmark"] = merge_benchmark_to_system()
+    results["training_log"] = merge_training_log_to_system()
+    results["failure_memory"] = merge_failure_memory_to_system()
+    results["plugin_state"] = merge_plugin_state_to_system()
+    results["plugin_secrets"] = merge_plugin_secrets_to_system()
     return results

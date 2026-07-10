@@ -8,6 +8,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from core.storage import SYSTEM_DB
 from core.workflow.context import ExecutionContext
 from core.workflow.events import WorkflowEvent
 from core.workflow.models import StepStatus, WorkflowInstance, WorkflowStatus, WorkflowStep
@@ -18,7 +19,7 @@ logger = logging.getLogger(__name__)
 class WorkflowStore:
     def __init__(self, db_path: str | None = None) -> None:
         if db_path is None:
-            db_path = str(Path("data") / "workflow.db")
+            db_path = SYSTEM_DB
         self._db_path = db_path
         self._lock = threading.Lock()
         self._init_db()

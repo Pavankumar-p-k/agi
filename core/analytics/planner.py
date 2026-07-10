@@ -56,8 +56,8 @@ class PlannerAnalytics:
     def _get_all_outcomes(self) -> list[dict[str, Any]]:
         """Fetch all outcome rows from the database."""
         import sqlite3
-        from pathlib import Path
-        db = str(Path("data") / "workflow.db")
+        from core.storage import SYSTEM_DB
+        db = SYSTEM_DB
         try:
             with sqlite3.connect(db) as conn:
                 conn.row_factory = sqlite3.Row

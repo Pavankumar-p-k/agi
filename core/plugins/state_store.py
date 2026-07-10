@@ -25,7 +25,8 @@ logger = logging.getLogger(__name__)
 class PluginStateStore:
     def __init__(self, db_path: str | Path | None = None):
         if db_path is None:
-            db_path = Path("data") / "plugin_state.db"
+            from core.storage import SYSTEM_DB
+            db_path = Path(SYSTEM_DB)
         self._db_path = Path(db_path)
         self._db_path.parent.mkdir(parents=True, exist_ok=True)
         self._local = threading.local()

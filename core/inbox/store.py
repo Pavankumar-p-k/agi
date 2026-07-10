@@ -16,6 +16,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from core.storage import SYSTEM_DB
 from core.workflow.events import (
     ERROR,
     GOAL_COMPLETED,
@@ -30,7 +31,7 @@ from core.workflow.events import (
 
 logger = logging.getLogger(__name__)
 
-_DEFAULT_DB = str(Path("data") / "inbox.db")
+_DEFAULT_DB = SYSTEM_DB
 
 INBOX_CATEGORIES = ("finished", "approval", "error", "suggestion", "update")
 

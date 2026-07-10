@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 import warnings
 from typing import Any
 
@@ -58,12 +57,8 @@ class MemoryManager:
     def __init__(self, db_path: str | None = None):
         _warn_deprecated()
         if db_path is None:
-            data_dir = os.path.join(
-                os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-                "data",
-            )
-            os.makedirs(data_dir, exist_ok=True)
-            db_path = os.path.join(data_dir, "brain.db")
+            from core.storage import SYSTEM_DB
+            db_path = SYSTEM_DB
 
         self.db_path = db_path
         self.episodic = EpisodicMemory(db_path)
