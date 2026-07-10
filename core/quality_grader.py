@@ -18,6 +18,9 @@ import json
 import logging
 import re
 import sqlite3
+from pathlib import Path
+
+from core.storage import USER_DB
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
@@ -160,7 +163,7 @@ class QualityGrader:
 
 
 class ConstitutionalMemory:
-    DB_PATH = Path.home() / ".jarvis" / "constitutional_memory.db"
+    DB_PATH = Path(USER_DB)
 
     def __init__(self):
         self.DB_PATH.parent.mkdir(parents=True, exist_ok=True)

@@ -53,7 +53,7 @@ class ServerConfig:
 
 @dataclass
 class DatabaseConfig:
-    url: str = f"sqlite+aiosqlite:///{(DATA_DIR / 'jarvis.db').as_posix()}"
+    url: str = f"sqlite+aiosqlite:///{(DATA_DIR / 'app.db').as_posix()}"
 
 
 @dataclass

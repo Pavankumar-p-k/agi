@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 _db_executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="db")
 
-DB_PATH = Path(__file__).resolve().parents[1] / "data" / "jarvis.db"
+DB_PATH = Path(__file__).resolve().parents[1] / "data" / "app.db"
 os.makedirs(str(DB_PATH.parent), exist_ok=True)
 engine = create_engine(
     f"sqlite:///{DB_PATH.as_posix()}",

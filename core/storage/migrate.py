@@ -6,7 +6,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from core.storage.registry import SYSTEM_DB, ensure_db_dir
+from core.storage.registry import APP_DB, HOME_DIR, SYSTEM_DB, USER_DB, ensure_db_dir
 
 logger = logging.getLogger(__name__)
 
@@ -158,6 +158,26 @@ def merge_plugin_state_to_system() -> dict[str, int]:
 def merge_plugin_secrets_to_system() -> dict[str, int]:
     from core.storage.registry import LEGACY_PLUGIN_SECRETS_DB
     return copy_tables(LEGACY_PLUGIN_SECRETS_DB, SYSTEM_DB)
+
+
+def merge_user_subdbs_to_user_db() -> dict[str, int]:
+    from core.storage.registry import USER_DB, HOME_DIR
+    results: dict[str, int] = {}
+    legacy_dbs = [
+        "agent_state.db", "agent_checkpoints.db", "cron.db",
+        "commitments.db", "constitutional_memory.db", "feedback.db",
+        "benchmark.db", "orchestration.db", "workflow_learning.db",
+    ]
+    for name in legacy_dbs:
+        path = str(HOME_DIR / name)
+        table_results = copy_tables(path, USER_DB)
+        results.update(table_results)
+    return results
+
+
+def merge_jarvis_db_to_app_db() -> dict[str, int]:
+    from core.storage.registry import LEGACY_JARVIS_DB
+    return copy_tables(LEGACY_JARVIS_DB, APP_DB)
 
 
 def run_all() -> dict[str, dict[str, int]]:

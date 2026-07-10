@@ -19,6 +19,8 @@ import sqlite3
 from datetime import datetime, timedelta
 from pathlib import Path
 
+from core.storage import USER_DB
+
 try:
     from croniter import croniter
     _HAS_CRONITER = True
@@ -27,7 +29,7 @@ except ImportError:
 
 logger = logging.getLogger("jarvis.cron")
 
-DB_PATH = Path.home() / ".jarvis" / "cron.db"
+DB_PATH = Path(USER_DB)
 
 
 class Scheduler:

@@ -7,6 +7,7 @@ import sqlite3
 import time
 from typing import Any
 
+from core.storage import USER_DB
 from core.workflow.learning_models import (
     WorkflowOutcome, RecoveryMode,
     WorkflowFingerprint,
@@ -29,9 +30,7 @@ def _ensure_provider_list(val: Any) -> list[dict[str, Any]]:
     return []
 
 
-_DEFAULT_DB_PATH = os.path.join(
-    os.path.expanduser("~"), ".jarvis", "workflow_learning.db",
-)
+_DEFAULT_DB_PATH = USER_DB
 
 
 # ── WorkflowHistoryStore (append-only source of truth) ────────────────

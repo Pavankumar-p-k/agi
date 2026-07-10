@@ -21,9 +21,11 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+from core.storage import USER_DB
+
 logger = logging.getLogger("jarvis.commitments")
 
-DB_PATH = Path.home() / ".jarvis" / "commitments.db"
+DB_PATH = Path(USER_DB)
 
 
 class CommitmentStore:

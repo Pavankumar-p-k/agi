@@ -11,12 +11,11 @@ from core.providers.feedback.models import (
     CalibrationEntry, RoutingDecision, RoutingOutcome, ScoreBreakdown,
     _CONTEXT_FALLBACK_CHAIN, _extract_context,
 )
+from core.storage import USER_DB
 
 logger = logging.getLogger(__name__)
 
-_DEFAULT_DB_PATH = os.path.join(
-    os.path.expanduser("~"), ".jarvis", "feedback.db",
-)
+_DEFAULT_DB_PATH = USER_DB
 
 
 class FeedbackStore:

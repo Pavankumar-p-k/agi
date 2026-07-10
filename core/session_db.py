@@ -12,6 +12,8 @@ import uuid
 from pathlib import Path
 from typing import Any
 
+from core.storage import USER_DB
+
 logger = logging.getLogger(__name__)
 
 _DB_PATH: Path | None = None
@@ -21,7 +23,7 @@ _CONN: sqlite3.Connection | None = None
 def _get_db_path() -> Path:
     global _DB_PATH
     if _DB_PATH is None:
-        _DB_PATH = Path.home() / ".jarvis" / "agent_state.db"
+        _DB_PATH = Path(USER_DB)
         _DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     return _DB_PATH
 
