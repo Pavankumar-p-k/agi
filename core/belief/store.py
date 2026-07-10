@@ -23,10 +23,9 @@ from core.belief.models import (
     SourceProfile,
     SourceType,
 )
+from core.storage import SYSTEM_DB as UNIFIED_DB
 
 logger = logging.getLogger(__name__)
-
-UNIFIED_DB = "data/workflow.db"
 
 
 class BeliefStore:

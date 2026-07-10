@@ -676,6 +676,104 @@ async def test_metrics_stage_aggregates(ctx):
 
 
 @pytest.mark.asyncio
+async def test_metrics_stage_intelligence_fields(ctx):
+    """MetricsStage populates intelligence metrics from ArchitectureMetrics."""
+    from core.pipeline.reasoning_result import Belief, ReasoningResult
+    from core.pipeline.knowledge_result import KnowledgeResult
+    from core.pipeline.reflection_result import ReflectionResult
+    from core.pipeline.deterministic import DeterministicServices
+
+    services = DeterministicServices.fake()
+    ctx.request_id = services.uuid4()
+    ctx.reasoning_assessment = {"complexity": "simple", "confidence": 0.85}
+    ctx.reasoning_result = ReasoningResult(
+        reasoning_id=services.uuid4(),
+        activity_id=services.uuid4(),
+        complexity="simple",
+        beliefs=(
+            Belief(belief_id=services.uuid4(), claim="test", confidence=0.9, status="accepted"),
+            Belief(belief_id=services.uuid4(), claim="test2", confidence=0.8, status="accepted"),
+        ),
+        evidence=(),
+        contradictions=(),
+        counter_hypotheses=(),
+        confidence=0.85,
+    )
+    ctx.knowledge_result = KnowledgeResult(
+        knowledge_id=services.uuid4(),
+        activity_id=services.uuid4(),
+        entities=("e1",),
+        facts=("f1",),
+        edges=(),
+        node_count=2,
+        edge_count=1,
+    )
+    ctx.reflection_result = ReflectionResult(
+        reflection_id=services.uuid4(),
+        activity_id=services.uuid4(),
+        question="test",
+        success_rating=0.8,
+        overall_confidence=0.75,
+        lessons=("lesson1",),
+    )
+
+    stage = MetricsStage()
+    result = await stage.execute(ctx)
+
+    metrics = result.context.metrics
+    assert metrics.get("intel_beliefs") == 2
+    assert metrics.get("intel_evidence") == 0
+    assert metrics.get("intel_knowledge_entities") == 1
+    assert metrics.get("intel_knowledge_facts") == 1
+    assert metrics.get("intel_knowledge_edges") == 1
+    assert metrics.get("intel_knowledge_nodes") == 2
+    assert metrics.get("intel_reflection_success") == 0.8
+    assert metrics.get("intel_reasoning_confidence") == 0.85
+    assert metrics.get("intel_reasoning_complexity") == "simple"
+
+
+@pytest.mark.asyncio
+async def test_metrics_stage_intelligence_fields_empty(ctx):
+    """MetricsStage handles missing intelligence data gracefully."""
+    from core.pipeline.deterministic import DeterministicServices
+
+    services = DeterministicServices.fake()
+    ctx.request_id = services.uuid4()
+    ctx.reasoning_result = None
+    ctx.knowledge_result = None
+    ctx.reflection_result = None
+
+    stage = MetricsStage()
+    result = await stage.execute(ctx)
+
+    metrics = result.context.metrics
+    assert metrics.get("intel_beliefs") == 0
+    assert metrics.get("intel_knowledge_entities") == 0
+    assert metrics.get("intel_reflection_success") == 0.0
+    assert metrics.get("intel_plan_strategies") == 0
+
+
+@pytest.mark.asyncio
+async def test_metrics_stage_intelligence_timing(ctx):
+    """MetricsStage collects per-stage timing for intelligence stages."""
+    ctx.metrics["_stage"] = {
+        "knowledge": {"elapsed_ms": 150},
+        "reasoning": {"elapsed_ms": 300},
+        "planner": {"elapsed_ms": 200},
+        "formatter": {"elapsed_ms": 50},  # not in INTELLIGENCE_STAGES
+    }
+
+    stage = MetricsStage()
+    result = await stage.execute(ctx)
+
+    metrics = result.context.metrics
+    assert metrics.get("intel_timing_knowledge") == 150
+    assert metrics.get("intel_timing_reasoning") == 300
+    assert metrics.get("intel_timing_planner") == 200
+    assert "intel_timing_formatter" not in metrics
+
+
+@pytest.mark.asyncio
 async def test_pipeline_retries_on_retry_outcome():
     """RETRY outcome causes the stage to be re-invoked."""
 

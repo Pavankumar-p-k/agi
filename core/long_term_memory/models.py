@@ -10,6 +10,8 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
 
+from core.storage import SYSTEM_DB
+
 
 @dataclass
 class ExperienceSummary:
@@ -103,4 +105,4 @@ class KnowledgeQuery:
     limit: int = 20
 
 
-UNIFIED_DB = "data/workflow.db"
+UNIFIED_DB = SYSTEM_DB

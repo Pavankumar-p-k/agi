@@ -21,10 +21,9 @@ from core.self_modification.models import (
     ModificationRecord,
     ModificationStatus,
 )
+from core.storage import SYSTEM_DB as UNIFIED_DB
 
 logger = logging.getLogger(__name__)
-
-UNIFIED_DB = "data/workflow.db"
 
 
 class ModificationStore:

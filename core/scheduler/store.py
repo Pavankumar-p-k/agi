@@ -15,10 +15,11 @@ from pathlib import Path
 from typing import Any
 
 from core.scheduler.models import ScheduleModel, ScheduledActivity
+from core.storage import SYSTEM_DB
 
 logger = logging.getLogger(__name__)
 
-_DEFAULT_DB = str(Path("data") / "workflow.db")
+_DEFAULT_DB = SYSTEM_DB
 
 _TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS scheduled_activities (

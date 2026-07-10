@@ -11,10 +11,11 @@ from pathlib import Path
 from typing import Any
 
 from core.research.graph_models import GraphEdge, GraphNode, ALL_EDGE_TYPES, ALL_NODE_TYPES
+from core.storage import SYSTEM_DB
 
 logger = logging.getLogger(__name__)
 
-_DEFAULT_DB = str(Path("data") / "workflow.db")
+_DEFAULT_DB = SYSTEM_DB
 
 
 class GraphStore:

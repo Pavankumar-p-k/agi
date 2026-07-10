@@ -30,10 +30,11 @@ from core.scheduler.resources import (
     ALL_RESOURCE_COLS,
     RESOURCE_MIGRATIONS,
 )
+from core.storage import SYSTEM_DB
 
 logger = logging.getLogger(__name__)
 
-_DEFAULT_DB = str(Path("data") / "workflow.db")
+_DEFAULT_DB = SYSTEM_DB
 MIN_SAMPLES_FOR_STATS = 3
 INTELLIGENCE_MULTIPLIER = 40
 DURATION_PENALTY_PER_10S = 2

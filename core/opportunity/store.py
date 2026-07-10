@@ -19,12 +19,10 @@ from pathlib import Path
 from typing import Any
 
 from core.opportunity.models import OpportunitySource
-
 from core.opportunity.models import Opportunity, OpportunitySource, OpportunityStatus
+from core.storage import SYSTEM_DB as UNIFIED_DB
 
 logger = logging.getLogger(__name__)
-
-UNIFIED_DB = "data/workflow.db"
 
 
 class OpportunityRecord:
