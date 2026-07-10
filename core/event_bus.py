@@ -283,6 +283,7 @@ COMPENSATION_STEP_COMPLETED = "compensation_step_completed"
 COMPENSATION_STEP_FAILED = "compensation_step_failed"
 WORKFLOW_COMPENSATED = "workflow_compensated"
 COMPENSATION_FAILED = "compensation_failed"
+IDEMPOTENCY_HIT = "idempotency_hit"
 
 GOAL_CREATED = "goal_created"
 GOAL_UPDATED = "goal_updated"

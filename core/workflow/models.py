@@ -127,6 +127,7 @@ class StepDefinition:
         compensation_tool: str | None = None,
         compensation_data: dict | None = None,
         retry_budget: int = 0,
+        idempotency_key: str | None = None,
     ) -> None:
         self.tool_name = tool_name
         self.input_data = input_data or {}
@@ -135,3 +136,4 @@ class StepDefinition:
         self.compensation_tool = compensation_tool
         self.compensation_data = compensation_data or {}
         self.retry_budget = retry_budget
+        self.idempotency_key = idempotency_key

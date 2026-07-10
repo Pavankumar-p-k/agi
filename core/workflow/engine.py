@@ -17,6 +17,7 @@ from core.workflow.events import (
     COMPENSATION_STEP_COMPLETED,
     COMPENSATION_STEP_FAILED,
     COMPENSATION_STEP_STARTED,
+    IDEMPOTENCY_HIT,
     STEP_COMPLETED,
     STEP_FAILED,
     STEP_STARTED,
@@ -84,9 +85,10 @@ class WorkflowEngine:
 
         workflow_steps: list[WorkflowStep] = []
         for idx, step_def in enumerate(steps):
+            idempotency_key = step_def.idempotency_key or f"{workflow_id}_step_{idx}"
             step = WorkflowStep(
                 step_id=f"{workflow_id}_s{idx:04d}",
-                idempotency_key=f"{workflow_id}_step_{idx}",
+                idempotency_key=idempotency_key,
                 tool_name=step_def.tool_name,
                 status=StepStatus.PENDING,
                 input_data=step_def.input_data,
@@ -251,6 +253,23 @@ class WorkflowEngine:
             while wf.current_step < len(wf.steps):
                 wf.last_heartbeat = datetime.utcnow()
                 self._store.update_workflow(wf)
+
+                # Workflow-level timeout check
+                if wf.timeout_seconds and wf.timeout_seconds > 0:
+                    elapsed = time.monotonic() - wf_start
+                    if elapsed > wf.timeout_seconds:
+                        wf.status = WorkflowStatus.FAILED
+                        wf.updated_at = datetime.utcnow()
+                        self._store.update_workflow(wf)
+                        self._store.append_event(WorkflowEvent(
+                            event_id=f"evt_{uuid.uuid4().hex}",
+                            workflow_id=wf.workflow_id,
+                            event_type=WORKFLOW_FAILED,
+                            data={"reason": f"workflow_timeout after {elapsed:.1f}s (limit={wf.timeout_seconds}s)"},
+                        ))
+                        self._record_workflow_outcome(wf, wf_start)
+                        return
+
                 step = wf.steps[wf.current_step]
                 if step.status == StepStatus.COMPLETED:
                     wf.current_step += 1
@@ -350,6 +369,32 @@ class WorkflowEngine:
 
     async def _execute_step(self, wf: WorkflowInstance, step: WorkflowStep,
                             context: ExecutionContext | None = None) -> bool:
+        # Idempotency check — skip if this step was already completed
+        cached = self._store.get_completed_step_by_idempotency_key(step.idempotency_key)
+        if cached is not None and cached.step_id != step.step_id:
+            step.status = StepStatus.COMPLETED
+            step.output_data = cached.output_data
+            step.completed_at = datetime.utcnow()
+            self._store.update_step(step)
+            self._store.append_event(WorkflowEvent(
+                event_id=f"evt_{uuid.uuid4().hex}",
+                workflow_id=wf.workflow_id,
+                event_type=IDEMPOTENCY_HIT,
+                data={
+                    "step_id": step.step_id,
+                    "cached_step_id": cached.step_id,
+                    "tool_name": step.tool_name,
+                    "idempotency_key": step.idempotency_key,
+                },
+            ))
+            wf.current_step += 1
+            self._store.update_workflow(wf)
+            return True
+
+        # LongHorizonFSM step type
+        if step.tool_name in ("long_horizon_fsm", "fsm"):
+            return await self._execute_fsm_step(wf, step, context)
+
         step.status = StepStatus.RUNNING
         step.started_at = datetime.utcnow()
         self._store.update_step(step)
@@ -469,6 +514,158 @@ class WorkflowEngine:
                     "tool_name": step.tool_name,
                     "error": str(e),
                 },
+            ))
+            return False
+
+    async def _execute_fsm_step(self, wf: WorkflowInstance, step: WorkflowStep,
+                                 context: ExecutionContext | None = None) -> bool:
+        from core.workflow.long_horizon_fsm import (
+            LongHorizonFSM,
+            ExecutionState,
+            create_context,
+        )
+        from core.tools._constants import ToolBlock
+        from core.tools.execution import execute_tool_block
+
+        objective = step.input_data.get("objective", "")
+        phases = step.input_data.get("phases")
+        phase_actions = step.input_data.get("phase_actions", {})
+
+        fsm = LongHorizonFSM(ctx=create_context(phases=phases, objective=objective))
+
+        step.status = StepStatus.RUNNING
+        step.started_at = datetime.utcnow()
+        self._store.update_step(step)
+        self._store.append_event(WorkflowEvent(
+            event_id=f"evt_{uuid.uuid4().hex}",
+            workflow_id=wf.workflow_id,
+            event_type=STEP_STARTED,
+            data={"step_id": step.step_id, "tool_name": "long_horizon_fsm",
+                  "phases": phases, "objective": objective},
+        ))
+
+        try:
+            fsm.record_action("read_file", {"exit_code": 0})
+            fsm.handle_exit_tool("read_file")
+
+            while not fsm.is_terminal():
+                if fsm.check_timeout():
+                    target = fsm.handle_timeout()
+                    if target == ExecutionState.FAIL:
+                        break
+                    continue
+
+                is_looping, reason = fsm.check_loop()
+                if is_looping:
+                    target = fsm.handle_loop()
+                    if target == ExecutionState.FAIL:
+                        break
+                    continue
+
+                state = fsm.state
+                if state == ExecutionState.PLAN:
+                    fsm.record_action("write_file", {"exit_code": 0})
+                    fsm.handle_exit_tool("write_file")
+
+                elif state == ExecutionState.PREPARE:
+                    fsm.record_action("build_project", {"exit_code": 0})
+                    fsm.handle_exit_tool("build_project")
+
+                elif state == ExecutionState.EXECUTE_PHASE:
+                    phase_name = fsm.get_current_phase()
+                    actions = phase_actions.get(phase_name, [])
+                    phase_success = True
+
+                    for action in actions:
+                        tool_block = ToolBlock(
+                            tool_type=action.get("tool", "bash"),
+                            content=json.dumps(action.get("input", {})),
+                        )
+                        try:
+                            desc, result = await execute_tool_block(
+                                block=tool_block, session_id=wf.session_id,
+                                owner=wf.owner, context=context,
+                            )
+                            fsm.record_action(action.get("tool", "bash"), result)
+                            if action.get("name"):
+                                fsm.record_artifact(action["name"])
+                        except Exception as e:
+                            fsm.record_action(action.get("tool", "bash"), {"error": str(e)})
+                            phase_success = False
+                            break
+
+                    if phase_success:
+                        validation = fsm.validate_phase(phase_name)
+                        if validation.get("valid"):
+                            fsm.advance_phase()
+                        else:
+                            fsm.transition_to(ExecutionState.RECOVER, forced=True)
+                    else:
+                        fsm.transition_to(ExecutionState.RECOVER, forced=True)
+
+                elif state == ExecutionState.VALIDATE:
+                    phase_name = fsm.get_current_phase()
+                    validation = fsm.validate_phase(phase_name)
+                    if validation.get("valid"):
+                        fsm.advance_phase()
+                    else:
+                        fsm.transition_to(ExecutionState.RECOVER, forced=True)
+
+                elif state == ExecutionState.RECOVER:
+                    fsm.recoveries += 1
+                    fsm.transition_to(ExecutionState.EXECUTE_PHASE, forced=True)
+
+                elif state == ExecutionState.REPLAN:
+                    fsm.replans += 1
+                    fsm.transition_to(ExecutionState.PREPARE, forced=True)
+
+                elif state in (ExecutionState.ADVANCE, ExecutionState.COMPLETE):
+                    break
+
+                elif state == ExecutionState.FAIL:
+                    break
+
+            completed = fsm.state == ExecutionState.COMPLETE or fsm.check_completion()
+            step.output_data = {
+                "fsm_state": fsm.state.value,
+                "fsm_metrics": fsm.get_metrics(),
+                "completed_phases": fsm.ctx["completed_phases"],
+                "artifacts": fsm.ctx["artifacts"],
+            }
+            step.status = StepStatus.COMPLETED if completed else StepStatus.FAILED
+            if not completed:
+                step.error = f"FSM terminated in state {fsm.state.value}"
+            step.completed_at = datetime.utcnow()
+            self._store.update_step(step)
+
+            if completed:
+                wf.current_step += 1
+                self._store.update_workflow(wf)
+
+            event_type = STEP_COMPLETED if completed else STEP_FAILED
+            self._store.append_event(WorkflowEvent(
+                event_id=f"evt_{uuid.uuid4().hex}",
+                workflow_id=wf.workflow_id,
+                event_type=event_type,
+                data={"step_id": step.step_id, "tool_name": "long_horizon_fsm",
+                      "fsm_state": fsm.state.value,
+                      "completed_phases": fsm.ctx["completed_phases"]},
+            ))
+            return completed
+
+        except asyncio.CancelledError:
+            raise
+        except Exception as e:
+            logger.warning("FSM step %s failed: %s", step.step_id, e)
+            step.status = StepStatus.FAILED
+            step.error = str(e)
+            step.completed_at = datetime.utcnow()
+            self._store.update_step(step)
+            self._store.append_event(WorkflowEvent(
+                event_id=f"evt_{uuid.uuid4().hex}",
+                workflow_id=wf.workflow_id,
+                event_type=STEP_FAILED,
+                data={"step_id": step.step_id, "tool_name": "long_horizon_fsm", "error": str(e)},
             ))
             return False
 

@@ -110,6 +110,15 @@ class WorkflowStore:
 
                 CREATE INDEX IF NOT EXISTS idx_workflow_artifacts_workflow
                     ON workflow_artifacts(workflow_id);
+
+                CREATE TABLE IF NOT EXISTS execution_graphs (
+                    goal_id TEXT PRIMARY KEY,
+                    goal TEXT NOT NULL,
+                    status TEXT NOT NULL DEFAULT 'active',
+                    data TEXT NOT NULL DEFAULT '{}',
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
             """)
             # Migrate existing databases — add columns if missing
             migrations = [
@@ -125,6 +134,11 @@ class WorkflowStore:
                     conn.execute(sql)
                 except Exception:
                     pass
+            # Add idempotency unique index (may fail if duplicates exist)
+            try:
+                conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_workflow_steps_idempotency ON workflow_steps(idempotency_key)")
+            except Exception:
+                logger.warning("Could not create unique index on idempotency_key (duplicates may exist)")
 
     def create_workflow(self, wf: WorkflowInstance) -> WorkflowInstance:
         with self._lock, sqlite3.connect(self._db_path) as conn:
@@ -194,6 +208,17 @@ class WorkflowStore:
                     1 if step.compensated else 0, step.step_id,
                 ),
             )
+
+    def get_completed_step_by_idempotency_key(self, idempotency_key: str) -> WorkflowStep | None:
+        with self._lock, sqlite3.connect(self._db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            row = conn.execute(
+                "SELECT * FROM workflow_steps WHERE idempotency_key=? AND status=?",
+                (idempotency_key, StepStatus.COMPLETED.value),
+            ).fetchone()
+            if row is None:
+                return None
+            return _row_to_step(row)
 
     def get_workflow(self, workflow_id: str) -> WorkflowInstance | None:
         with self._lock, sqlite3.connect(self._db_path) as conn:
@@ -332,6 +357,45 @@ class WorkflowStore:
             conn.execute(
                 "DELETE FROM workflow_contexts WHERE workflow_id=?", (workflow_id,)
             )
+
+    # ── ExecutionGraph CRUD ──────────────────────────────────────────────
+
+    def save_graph(self, graph: "ExecutionGraph") -> None:
+        from core.workflow.graph import ExecutionGraph
+        now = _dt(datetime.utcnow())
+        with self._lock, sqlite3.connect(self._db_path) as conn:
+            conn.execute(
+                """INSERT OR REPLACE INTO execution_graphs
+                   (goal_id, goal, status, data, created_at, updated_at)
+                   VALUES (?, ?, ?, ?, COALESCE((SELECT created_at FROM execution_graphs WHERE goal_id=?), ?), ?)""",
+                (
+                    graph.goal_id, graph.goal, graph.status,
+                    json.dumps(graph.to_dict()),
+                    graph.goal_id, now,
+                    now,
+                ),
+            )
+
+    def load_graph(self, goal_id: str) -> "ExecutionGraph | None":
+        from core.workflow.graph import ExecutionGraph
+        with self._lock, sqlite3.connect(self._db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            row = conn.execute(
+                "SELECT * FROM execution_graphs WHERE goal_id=?", (goal_id,)
+            ).fetchone()
+            if row is None:
+                return None
+            data = json.loads(row["data"])
+            return ExecutionGraph.from_dict(data)
+
+    def list_graphs(self, limit: int = 50) -> list[dict[str, Any]]:
+        with self._lock, sqlite3.connect(self._db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            rows = conn.execute(
+                "SELECT goal_id, goal, status, created_at, updated_at FROM execution_graphs ORDER BY created_at DESC LIMIT ?",
+                (limit,),
+            ).fetchall()
+            return [dict(r) for r in rows]
 
     # ── Artifact CRUD ─────────────────────────────────────────────────────
 

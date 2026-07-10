@@ -201,7 +201,48 @@ class ExecutionGraph:
             "root": self._root.to_dict() if self._root else None,
         }
 
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> ExecutionGraph:
+        graph = cls(goal=data.get("goal", ""), goal_id=data.get("goal_id"))
+        graph.status = data.get("status", "active")
+        graph.created_at = data.get("created_at", datetime.utcnow().isoformat())
+        root_data = data.get("root")
+        if root_data:
+            graph._root = _node_from_dict(root_data)
+            graph._index_node(graph._root)
+        return graph
+
     def _index_node(self, node: ExecutionNode) -> None:
         self._nodes[node.node_id] = node
         for child in node.children:
             self._index_node(child)
+
+
+def _node_from_dict(data: dict[str, Any]) -> ExecutionNode:
+    node = ExecutionNode(
+        label=data.get("label", ""),
+        node_type=data.get("node_type", "task"),
+        parent_id=data.get("parent_id"),
+        status=data.get("status", "pending"),
+        confidence=data.get("confidence", 0.0),
+        estimate_seconds=data.get("estimate_seconds"),
+        detail=data.get("detail", ""),
+        trust_level=data.get("trust_level", "safe"),
+        can_skip=data.get("can_skip", True),
+        can_reorder=data.get("can_reorder", True),
+        node_id=data.get("node_id"),
+    )
+    node.elapsed_seconds = data.get("elapsed_seconds")
+    node.files = data.get("files", [])
+    node.artifacts = data.get("artifacts", [])
+    node.logs = data.get("logs", [])
+    node.agent_reasoning = data.get("agent_reasoning")
+    node.error = data.get("error")
+    node.created_at = data.get("created_at", datetime.utcnow().isoformat())
+    node.started_at = data.get("started_at")
+    node.completed_at = data.get("completed_at")
+    for child_data in data.get("children", []):
+        child = _node_from_dict(child_data)
+        child.parent_id = node.node_id
+        node.children.append(child)
+    return node
