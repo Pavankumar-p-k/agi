@@ -461,6 +461,7 @@ def test_default_stages_have_correct_order():
         "policy_optimization",
         "memory",
         "metrics",
+        "explainability",
         "formatter",
     ]
 
@@ -473,6 +474,7 @@ def test_all_stage_classes_importable():
         ContextRetrievalStage,
         EpistemicTaggingStage,
         ExecutionStage,
+        ExplainabilityStage,
         FormatterStage,
         IntentStage,
         KnowledgeStage,
@@ -499,6 +501,7 @@ def test_all_stage_classes_importable():
         ContextRetrievalStage,
         EpistemicTaggingStage,
         ExecutionStage,
+        ExplainabilityStage,
         FormatterStage,
         IntentStage,
         KnowledgeStage,
@@ -524,7 +527,7 @@ def test_all_stage_classes_importable():
 
 def test_default_stage_count():
     """DEFAULT_STAGES has the expected count (ADR-007 + ADR-009)."""
-    assert len(DEFAULT_STAGES) == 23
+    assert len(DEFAULT_STAGES) == 24
 
 
 @pytest.mark.asyncio
@@ -533,6 +536,7 @@ async def test_classify_to_formatter_pipeline():
     Includes all ADR-007 stages."""
     from core.pipeline.stages import (
         ContextRetrievalStage,
+        ExplainabilityStage,
         KnowledgeStage,
         LearningStage,
         PlanValidatorStage,
@@ -558,6 +562,7 @@ async def test_classify_to_formatter_pipeline():
         ("learning", LearningStage),
         ("policy_optimization", PolicyOptimizationStage),
         ("metrics", MetricsStage),
+        ("explainability", ExplainabilityStage),
         ("formatter", FormatterStage),
     ):
         p.add_stage(cls())

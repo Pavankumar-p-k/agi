@@ -21,6 +21,7 @@ from core.identity.tenant_resolver import TenantResolutionResult
 from core.pipeline.deterministic import DeterministicServices
 from core.pipeline.outcome import Outcome
 from core.pipeline.policy_optimization_result import PolicyOptimizationResult
+from core.pipeline.explanation_result import ExplanationResult
 
 logger = logging.getLogger(__name__)
 
@@ -195,6 +196,12 @@ class PipelineContext:
     architecture_metrics: ArchitectureMetrics = field(default_factory=ArchitectureMetrics)
     """Per-request structural measurements (plan_steps, observations, …).
     Populated automatically after pipeline execution."""
+
+    # ── Explainability ─────────────────────────────────────────────────────
+    explanation: ExplanationResult | None = None
+    """Canonical output of the Explainability stage (Phase 7, Sprint 7).
+    Structured explanation of the decision chain, consumed by the
+    Formatter stage."""
 
     # ── Metrics / Metadata ──────────────────────────────────────────────────
     metrics: dict[str, Any] = field(default_factory=dict)

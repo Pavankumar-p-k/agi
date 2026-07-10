@@ -1772,5 +1772,52 @@ def test_only_policy_optimization_stage_creates_policy_optimization_result():
         )
 
 
+# ── Rule 55: Only ExplainabilityStage creates ExplanationResult ───────────────
+
+
+def test_only_explainability_stage_creates_explanation_result():
+    """``ExplanationResult`` must only be constructed by the
+    Explainability stage.
+
+    Enforced by scanning for ``ExplanationResult(`` calls outside
+    ``core/pipeline/stages/explainability/`` and the contract definition.
+    """
+    import ast
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parent.parent.parent
+    exp_result_files: list[str] = []
+
+    excluded_dirs = {"/tests/", "/__pycache__/", "/.venv/", "/venv/", "/node_modules/"}
+    for path in sorted(root.rglob("*.py")):
+        posix = path.as_posix()
+        if any(d in posix for d in excluded_dirs):
+            continue
+        if posix.endswith("/explanation_result.py"):
+            continue  # contract definition is exempt
+        try:
+            source = path.read_text(encoding="utf-8")
+        except Exception:
+            continue
+        if "ExplanationResult(" in source:
+            tree = ast.parse(source)
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Call):
+                    fn = node.func
+                    if isinstance(fn, ast.Name) and fn.id == "ExplanationResult":
+                        rel = path.relative_to(root).as_posix()
+                        exp_result_files.append(rel)
+
+    allowed = {
+        "core/pipeline/stages/explainability/stage.py",
+    }
+    violations = [f for f in exp_result_files if f not in allowed]
+    if violations:
+        pytest.fail(
+            f"ExplanationResult constructed outside allowed stages: {violations}. "
+            "Only ExplainabilityStage may construct ExplanationResult (Rule 55)."
+        )
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

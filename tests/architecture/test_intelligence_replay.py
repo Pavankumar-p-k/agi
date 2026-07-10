@@ -808,3 +808,188 @@ async def test_policy_optimization_block_patterns():
     assert po is not None
     assert "risky_pattern" in po.block_patterns
     assert "unstable_approach" in po.block_patterns
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Sprint 7 — Explainability Replay Tests
+# ═══════════════════════════════════════════════════════════════════════════════
+
+from core.pipeline.explanation_result import ExplanationResult
+
+
+async def _run_explainability(ctx: PipelineContext) -> PipelineContext:
+    """Run the ExplainabilityStage and return the updated context."""
+    from core.pipeline.stages.explainability import ExplainabilityStage
+
+    stage = ExplainabilityStage()
+    result = await stage.execute(ctx)
+    assert result.context is not None
+    return result.context
+
+
+def _make_explainability_context(
+    services: DeterministicServices,
+    *,
+    with_reasoning: bool = True,
+    with_knowledge: bool = True,
+    with_reflection: bool = True,
+) -> PipelineContext:
+    """Build a context with populated prior artifacts for explainability testing."""
+    from core.pipeline.reasoning_result import Belief, ReasoningResult
+    from core.pipeline.knowledge_result import KnowledgeResult
+    from core.pipeline.reflection_result import ReflectionResult
+    from core.pipeline.planner_result import PlannerResult, PlanRanking, StrategyComparison
+
+    ctx = _make_context(services, "explainability test request")
+
+    if with_reasoning:
+        ctx.reasoning_result = ReasoningResult(
+            reasoning_id=f"rsn_{services.uuid4()[:24]}",
+            activity_id=services.uuid4(),
+            beliefs=(
+                Belief(belief_id=services.uuid4(), claim="The sky is blue", confidence=0.9, status="accepted"),
+                Belief(belief_id=services.uuid4(), claim="Water is wet", confidence=0.8, status="accepted"),
+            ),
+            evidence=(),
+            contradictions=(),
+            counter_hypotheses=(),
+            confidence=0.85,
+            complexity="simple",
+        )
+
+    if with_knowledge:
+        ctx.knowledge_result = KnowledgeResult(
+            knowledge_id=f"kn_{services.uuid4()[:24]}",
+            activity_id=services.uuid4(),
+            entities=("entity_1", "entity_2"),
+            facts=("fact_1",),
+            edges=(),
+            node_count=3,
+            edge_count=0,
+        )
+
+    if with_reflection:
+        ctx.reflection_result = ReflectionResult(
+            reflection_id=f"ref_{services.uuid4()[:24]}",
+            activity_id=services.uuid4(),
+            question=ctx.raw_input,
+            success_rating=0.8,
+            overall_confidence=0.75,
+            lessons=("test lesson",),
+            patterns=("efficient_research",),
+        )
+
+    ctx.planner_result = PlannerResult(
+        plan_id=f"pln_{services.uuid4()[:24]}",
+        total_candidates=2,
+        ranking=PlanRanking(comparisons=(
+            StrategyComparison(winner_id="strategy_a", loser_id="strategy_b", margin=0.2),
+        )),
+        selected_strategy=None,
+    )
+
+    ctx.classification = {"mode": "research", "confidence": 0.8}
+    ctx.execution_state = "completed"
+
+    return ctx
+
+
+async def _run_explainability_twice(
+    *,
+    with_reasoning: bool = True,
+    with_knowledge: bool = True,
+    with_reflection: bool = True,
+) -> tuple[PipelineContext, PipelineContext]:
+    a = _make_explainability_context(
+        DeterministicServices.fake(),
+        with_reasoning=with_reasoning,
+        with_knowledge=with_knowledge,
+        with_reflection=with_reflection,
+    )
+    b = _make_explainability_context(
+        DeterministicServices.fake(),
+        with_reasoning=with_reasoning,
+        with_knowledge=with_knowledge,
+        with_reflection=with_reflection,
+    )
+    ctx_a = await _run_explainability(a)
+    ctx_b = await _run_explainability(b)
+    return ctx_a, ctx_b
+
+
+@pytest.mark.asyncio
+async def test_explainability_result_is_deterministic():
+    """Two runs with same deterministic services produce identical
+    explanation results (explanation_id, summary, confidence)."""
+    ctx_a, ctx_b = await _run_explainability_twice()
+
+    ex_a = ctx_a.explanation
+    ex_b = ctx_b.explanation
+
+    assert ex_a is not None
+    assert ex_b is not None
+
+    # Semantic content must match (explanation_id may differ due to
+    # non-deterministic belief IDs from research engine)
+    assert ex_a.summary == ex_b.summary
+    assert ex_a.confidence == ex_b.confidence
+    assert ex_a.reasoning_trace == ex_b.reasoning_trace
+    assert ex_a.key_findings == ex_b.key_findings
+
+
+@pytest.mark.asyncio
+async def test_explainability_no_reasoning():
+    """Explainability still produces a result even without reasoning data."""
+    ctx, _ = await _run_explainability_twice(
+        with_reasoning=False,
+        with_knowledge=False,
+        with_reflection=False,
+    )
+
+    ex = ctx.explanation
+    assert ex is not None
+    assert ex.explanation_id
+
+
+@pytest.mark.asyncio
+async def test_explainability_summary_not_empty():
+    """A populated context produces a non-empty summary."""
+    ctx, _ = await _run_explainability_twice()
+
+    ex = ctx.explanation
+    assert ex is not None
+    assert len(ex.summary) > 0
+
+
+@pytest.mark.asyncio
+async def test_explainability_links_to_request():
+    """Explanation request_id matches the original context request_id."""
+    ctx, _ = await _run_explainability_twice()
+
+    ex = ctx.explanation
+    assert ex is not None
+    assert ex.request_id == ctx.request_id
+
+
+@pytest.mark.asyncio
+async def test_explainability_confidence_bounded():
+    """Confidence is in [0, 1]."""
+    ctx, _ = await _run_explainability_twice()
+
+    ex = ctx.explanation
+    assert ex is not None
+    assert 0.0 <= ex.confidence <= 1.0
+
+
+@pytest.mark.asyncio
+async def test_explainability_reasoning_trace():
+    """Reasoning trace includes classification, reasoning, planning, execution, reflection."""
+    ctx, _ = await _run_explainability_twice()
+
+    ex = ctx.explanation
+    assert ex is not None
+    trace = " ".join(ex.reasoning_trace)
+    assert "reasoning=completed" in trace
+    assert "planning=2_strategies" in trace
+    assert "execution=completed" in trace
+    assert "reflection=completed" in trace

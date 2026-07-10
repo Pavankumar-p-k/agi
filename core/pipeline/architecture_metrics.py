@@ -128,6 +128,14 @@ class ArchitectureMetrics:
     policy_rate_limit_multiplier: float = 1.0
     """Rate limit multiplier suggested by the optimization."""
 
+    # ── Explainability metrics (Phase 7, Sprint 7) ──────────────────────
+
+    explanation_produced: bool = False
+    """Whether an ExplanationResult was produced."""
+
+    explanation_confidence: float = 0.0
+    """Overall confidence from the Explanation stage."""
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "reasoning_complexity": self.reasoning_complexity,
@@ -162,6 +170,8 @@ class ArchitectureMetrics:
             "policy_optimization_applied": self.policy_optimization_applied,
             "policy_suggested_profile": self.policy_suggested_profile,
             "policy_rate_limit_multiplier": self.policy_rate_limit_multiplier,
+            "explanation_produced": self.explanation_produced,
+            "explanation_confidence": self.explanation_confidence,
         }
 
     def to_snapshot_dict(self) -> dict[str, Any]:
@@ -185,6 +195,7 @@ class ArchitectureMetrics:
         rf = ctx.reflection_result
         lr = ctx.learning_records
         po = ctx.policy_optimization_result
+        ex = ctx.explanation
 
         # Planner ranking margin
         plan_margin = 0.0
@@ -227,4 +238,6 @@ class ArchitectureMetrics:
             policy_optimization_applied=po is not None,
             policy_suggested_profile=po.suggested_profile or "" if po else "",
             policy_rate_limit_multiplier=po.rate_limit_multiplier if po else 1.0,
+            explanation_produced=ex is not None,
+            explanation_confidence=ex.confidence if ex else 0.0,
         )

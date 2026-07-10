@@ -6,6 +6,7 @@ from core.pipeline.stages.capability_selection import CapabilitySelectionStage
 from core.pipeline.stages.context_retrieval import ContextRetrievalStage
 from core.pipeline.stages.epistemic import EpistemicTaggingStage
 from core.pipeline.stages.execution import ExecutionStage
+from core.pipeline.stages.explainability import ExplainabilityStage
 from core.pipeline.stages.formatter import FormatterStage
 from core.pipeline.stages.intent import IntentStage
 from core.pipeline.stages.knowledge import KnowledgeStage
@@ -32,6 +33,7 @@ __all__ = [
     "ContextRetrievalStage",
     "EpistemicTaggingStage",
     "ExecutionStage",
+    "ExplainabilityStage",
     "FormatterStage",
     "IntentStage",
     "KnowledgeStage",
@@ -74,5 +76,6 @@ DEFAULT_STAGES = [
     ("policy_optimization", PolicyOptimizationStage),
     ("memory", MemoryStage),
     ("metrics", MetricsStage),
+    ("explainability", ExplainabilityStage),
     ("formatter", FormatterStage),
 ]

@@ -37,6 +37,7 @@ STAGE_OWNERSHIP: dict[str, set[str]] = {
     "policy_optimization": {"policy_optimization_result"},
     "memory": {"memory_refs", "store_decision"},
     "metrics": {"metrics"},
+    "explainability": {"explanation"},
     "formatter": {"formatted_response"},
 }
 """Stage name → set of context fields that stage exclusively owns.
