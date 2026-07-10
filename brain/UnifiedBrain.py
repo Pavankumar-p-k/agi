@@ -19,7 +19,7 @@ from memory.memory_facade import memory as _canonical_memory
 from .memory import MemoryManager as _MemoryManager
 from .goals import Goal, GoalStatus, GoalManager
 from .planner import Planner
-from .planner.task_graph import TaskGraph
+from core.planner.dag import TaskGraph
 from .executor import Executor, Verifier, executor as _executor_singleton
 from .automation import AutomationLoop
 

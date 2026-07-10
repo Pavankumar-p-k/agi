@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from brain.goals.goal_manager import GoalManager
-from brain.planner.task_graph import TaskGraph
+from core.planner.dag import TaskGraph
 
 logger = logging.getLogger(__name__)
 
