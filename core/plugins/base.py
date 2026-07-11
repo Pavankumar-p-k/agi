@@ -337,12 +337,33 @@ class Plugin:
 
 
 class PluginRegistry:
-    def __init__(self, strict_sandbox: bool = False):
+    DEFAULT_HOOK_TIMEOUT = 30.0
+    DEFAULT_LOAD_TIMEOUT = 10.0
+    DEFAULT_UNLOAD_TIMEOUT = 5.0
+
+    def __init__(
+        self,
+        strict_sandbox: bool = False,
+        hook_timeout: float = DEFAULT_HOOK_TIMEOUT,
+        load_timeout: float = DEFAULT_LOAD_TIMEOUT,
+        unload_timeout: float = DEFAULT_UNLOAD_TIMEOUT,
+    ):
         self._plugins: dict[str, Plugin] = {}
         self._loaded: bool = False
         self.strict_sandbox = strict_sandbox
         self._app_state: dict | None = None
         self._route_routers: dict[str, Any] = {}
+        self.hook_timeout = hook_timeout
+        self.load_timeout = load_timeout
+        self.unload_timeout = unload_timeout
+
+    @staticmethod
+    async def _call_with_timeout(coro, timeout: float, hook: str, plugin_name: str):
+        try:
+            return await asyncio.wait_for(coro, timeout=timeout)
+        except asyncio.TimeoutError:
+            from core.plugins.errors import PluginTimeoutError
+            raise PluginTimeoutError(hook, timeout, plugin_name)
 
     @property
     def plugins(self) -> dict[str, Plugin]:
@@ -409,7 +430,8 @@ class PluginRegistry:
                 continue
             try:
                 if hasattr(record.module, 'on_load'):
-                    await record.module.on_load(app_state)
+                    coro = record.module.on_load(app_state)
+                    await self._call_with_timeout(coro, self.load_timeout, "on_load", name)
                 self._mount_plugin_routes(name, record.module)
                 loaded_count += 1
             except Exception as e:
@@ -427,7 +449,8 @@ class PluginRegistry:
             try:
                 self._unmount_plugin_routes(name)
                 if hasattr(record.module, 'on_unload'):
-                    await record.module.on_unload()
+                    coro = record.module.on_unload()
+                    await self._call_with_timeout(coro, self.unload_timeout, "on_unload", name)
             except Exception as e:
                 logger.exception("[PluginRegistry] Failed to unload %s: %s", name, e)
         self._loaded = False
@@ -443,7 +466,8 @@ class PluginRegistry:
         record.manifest.enabled = True
         try:
             if hasattr(record.module, 'on_load'):
-                await record.module.on_load(app_state or self._app_state)
+                coro = record.module.on_load(app_state or self._app_state)
+                await self._call_with_timeout(coro, self.load_timeout, "on_load", name)
             self._mount_plugin_routes(name, record.module)
             logger.info("[PluginRegistry] Enabled %s", name)
             return True
@@ -461,7 +485,8 @@ class PluginRegistry:
             return True
         self._unmount_plugin_routes(name)
         if hasattr(record.module, 'on_unload'):
-            await record.module.on_unload()
+            coro = record.module.on_unload()
+            await self._call_with_timeout(coro, self.unload_timeout, "on_unload", name)
         record.manifest.enabled = False
         logger.info("[PluginRegistry] Disabled %s", name)
         return True
@@ -490,12 +515,14 @@ class PluginRegistry:
 
         self._unmount_plugin_routes(name)
         if hasattr(record.module, 'on_unload'):
-            await record.module.on_unload()
+            coro = record.module.on_unload()
+            await self._call_with_timeout(coro, self.unload_timeout, "on_unload", name)
 
         if not importlib_reload:
             try:
                 if hasattr(record.module, 'on_load'):
-                    await record.module.on_load(self._app_state)
+                    coro = record.module.on_load(self._app_state)
+                    await self._call_with_timeout(coro, self.load_timeout, "on_load", name)
                 self._mount_plugin_routes(name, record.module)
                 logger.info("[PluginRegistry] Re-initialized %s", name)
                 return True
@@ -516,7 +543,8 @@ class PluginRegistry:
             if not new_class or not issubclass(new_class, Plugin):
                 logger.warning("[PluginRegistry] Reloaded module has no Plugin class for %s", name)
                 if hasattr(record.module, 'on_load'):
-                    await record.module.on_load(self._app_state)
+                    coro = record.module.on_load(self._app_state)
+                    await self._call_with_timeout(coro, self.load_timeout, "on_load", name)
                 self._mount_plugin_routes(name, record.module)
                 return False
 
@@ -525,7 +553,8 @@ class PluginRegistry:
             new_instance._api = PluginAPI(plugin=new_instance)
             new_instance._config = dict(getattr(record.module, '_config', {}))
             self._plugins[name] = _PluginRecord(new_instance.manifest, new_instance)
-            await new_instance.on_load(self._app_state)
+            coro = new_instance.on_load(self._app_state)
+            await self._call_with_timeout(coro, self.load_timeout, "on_load", name)
             self._mount_plugin_routes(name, new_instance)
             logger.info("[PluginRegistry] Reloaded %s via importlib.reload", name)
             return True
@@ -533,7 +562,8 @@ class PluginRegistry:
             logger.exception("[PluginRegistry] Failed to reload %s: %s", name, e)
             try:
                 if hasattr(record.module, 'on_load'):
-                    await record.module.on_load(self._app_state)
+                    coro = record.module.on_load(self._app_state)
+                    await self._call_with_timeout(coro, self.load_timeout, "on_load", name)
             except Exception as _e:
                 logger.debug("plugins base on_load hook failed: %s", _e)
             return False
@@ -608,7 +638,9 @@ class PluginRegistry:
                 continue
             try:
                 if inspect.iscoroutinefunction(hook_fn):
-                    result = await hook_fn(**kwargs)
+                    result = await self._call_with_timeout(
+                        hook_fn(**kwargs), self.hook_timeout, hook, record.manifest.name,
+                    )
                 else:
                     result = hook_fn(**kwargs)
                 rec_id = getattr(record.manifest, 'id', record.manifest.name)

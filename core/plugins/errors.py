@@ -28,6 +28,7 @@ class PluginError(Exception):
         "DEPENDENCY": "plugin_dependency",
         "SANDBOX": "plugin_sandbox",
         "RELOAD": "plugin_reload",
+        "TIMEOUT": "plugin_timeout",
         "UNKNOWN": "plugin_unknown",
     }
 
@@ -90,6 +91,20 @@ class PluginNetworkError(PluginError):
 class PluginDependencyError(PluginError):
     def __init__(self, dependency: str, message: str, plugin_name: str | None = None):
         super().__init__("PLUGIN_DEPENDENCY_ERROR", f"dep={dependency}: {message}", "plugin_dependency", plugin_name)
+
+
+class PluginTimeoutError(PluginError):
+    """Raised when a plugin hook or lifecycle method exceeds its timeout."""
+
+    def __init__(self, hook: str, timeout: float, plugin_name: str | None = None):
+        super().__init__(
+            "PLUGIN_TIMEOUT",
+            f"hook={hook} timed out after {timeout}s",
+            "plugin_timeout",
+            plugin_name,
+            details={"hook": hook, "timeout": timeout},
+        )
+        self.hook = hook
 
 
 def format_plugin_error(err: Exception) -> dict:

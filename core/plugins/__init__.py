@@ -22,6 +22,7 @@ from core.plugins.errors import (
     PluginHookError,
     PluginLoadError,
     PluginNetworkError,
+    PluginTimeoutError,
 )
 from core.event_bus import PluginEventBus
 from core.plugins.hot_reload import HotReloader
@@ -49,7 +50,7 @@ __all__ = [
     "PluginStateStore",
     "is_blocked_url", "assert_safe_url", "safe_httpx_client", "SsrfProtection",
     "PluginError", "PluginLoadError", "PluginConfigError", "PluginHookError",
-    "PluginNetworkError", "PluginDependencyError",
+    "PluginNetworkError", "PluginDependencyError", "PluginTimeoutError",
     "PluginLoader", "get_plugin_loader",
     "PluginSettingsStore", "get_settings_store",
     "get_plugin_registry",
