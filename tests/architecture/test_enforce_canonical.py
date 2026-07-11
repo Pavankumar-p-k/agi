@@ -130,7 +130,7 @@ def test_single_event_bus():
         if rel == "core/event_bus.py":
             continue
         src = _read_source(path)
-        if "class EventBus" in src:
+        if "class EventBus(" in src or "class EventBus:" in src:
             violations.append(rel)
     assert not violations, "EventBus defined outside core/event_bus.py:\n" + "\n".join(violations)
 

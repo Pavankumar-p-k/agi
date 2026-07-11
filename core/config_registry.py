@@ -1,8 +1,18 @@
+"""DEPRECATED — configuration metadata registry + backward-compat shim.
+
+Configuration metadata (_REGISTRY / _REGISTRY_MAP, ConfigEntry) is canonical
+and still used by ConfigurationService. The legacy Config class and config
+singleton are deprecated — use ``from core.configuration import configuration`` instead.
+
+Deprecated: v3.2
+Remove after: v4.0
+"""
 from __future__ import annotations
 
 import json
 import logging
 import os
+import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Optional
@@ -88,6 +98,7 @@ _REGISTRY: list[ConfigEntry] = [
     ConfigEntry("voice.ring_buffer_seconds",  4.0,                          "float","voice",        "Audio ring buffer length (seconds)", min_value=1.0, max_value=30.0),
     ConfigEntry("voice.mode",                "push-to-talk",                "str",  "voice",        "Voice mode (push-to-talk, continuous, wake-word)", ui="select", options=["push-to-talk", "continuous", "wake-word"]),
     ConfigEntry("voice.continuous_timeout",  30.0,                          "float","voice",        "Continuous listening timeout (seconds)", min_value=5.0, max_value=300.0),
+    ConfigEntry("voice.post_wake_delay",     1.0,                           "float","voice",        "Delay after wake word before listening (seconds)", min_value=0.0, max_value=10.0),
     ConfigEntry("voice.push_to_talk_key",    "",                            "str",  "voice",        "Keyboard key for push-to-talk (empty=disabled)"),
     ConfigEntry("voice.speaker_device",      "",                            "str",  "voice",        "Speaker device index (empty=default)"),
     ConfigEntry("voice.auto_recovery",       True,                          "bool", "voice",        "Auto-recover STT/TTS on failure", env_var="VOICE_AUTO_RECOVER"),
@@ -107,6 +118,10 @@ _REGISTRY: list[ConfigEntry] = [
     ConfigEntry("failover.anthropic_model", "claude-3-haiku-20240307", "str", "failover", "Anthropic failover model", ui="model_select", env_var="FAILOVER_ANTHROPIC_MODEL"),
     ConfigEntry("failover.cooldown_seconds", 60,    "int",  "failover",  "Cooldown after failure",           env_var="FAILOVER_COOLDOWN", min_value=0, max_value=3600),
     ConfigEntry("failover.max_retries",      3,      "int",  "failover",  "Max retries per provider",         env_var="FAILOVER_MAX_RETRIES", min_value=0, max_value=10),
+
+    # ── Role models ───────────────────────────────────────────────────────
+    ConfigEntry("role_models.teacher",           "ollama/qwen2.5:7b",         "str",  "models",       "Teacher / tutor role model",           env_var="TEACHER_MODEL"),
+    ConfigEntry("llm.teacher_model",             "ollama/qwen2.5:7b",         "str",  "models",       "Alias for role_models.teacher",        env_var="TEACHER_MODEL"),
 
     # ── Brain / Reasoning ─────────────────────────────────────────────────
     ConfigEntry("brain.reasoning_timeout",      120,  "int",   "reasoning", "Reasoning engine timeout seconds",        env_var="REASONING_TIMEOUT", min_value=5, max_value=300),
@@ -244,6 +259,11 @@ def _flatten_dot(data: dict, prefix: str = "") -> dict:
 
 class Config:
     def __init__(self):
+        warnings.warn(
+            "config_registry.Config / config_registry.config is deprecated. "
+            "Use 'from core.configuration import configuration' instead.",
+            DeprecationWarning, stacklevel=2,
+        )
         self._loaded = False
 
     def load(self, config_yaml_path: str = "./config.yaml", settings_path: str = "./data/settings.json"):

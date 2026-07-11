@@ -27,7 +27,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from assistant.stt import get_stt, init_stt_providers, stt_registry
 from assistant.tts import get_tts
-from core.config_registry import config as _jarvis_config, Config
+from core.config_registry import config as _jarvis_config
 from core.settings.store import get_settings_store
 
 
