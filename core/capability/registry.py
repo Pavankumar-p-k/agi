@@ -60,8 +60,6 @@ class CapabilityRegistry:
     def resolve_intent(self, intent: str) -> list[Capability]:
         intent_lower = intent.lower().strip()
         cap_ids = self._intent_map.get(intent_lower, [])
-        if not cap_ids:
-            return []
         from core.capability.models import _BUILTIN_CAPABILITIES
         results: list[Capability] = []
         for cid in cap_ids:
