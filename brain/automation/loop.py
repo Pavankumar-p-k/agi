@@ -27,10 +27,12 @@ from brain.goals.goal import Goal
 from brain.goals.goal_manager import GoalManager
 from brain.memory.memory_manager import MemoryManager
 from brain.task_resolver import task_resolver
+from core.execution import ExecutionManager
 from core.llm_router import complete
 from core.pattern_failure_memory import pattern_memory as _pattern_memory_singleton
 
-# Canonical step execution — used when a WorkflowEngine is available.
+# DEPRECATED: Use ``self.execution_manager.engine`` instead.
+# Kept for backward compatibility during Phase 5 migration.
 _WORKFLOW_ENGINE = None
 
 
@@ -38,10 +40,11 @@ def _ensure_workflow_engine():
     global _WORKFLOW_ENGINE
     if _WORKFLOW_ENGINE is not None:
         return
+    logger.warning("[AutoBuild] _ensure_workflow_engine() is deprecated — use ExecutionManager.engine instead")
     try:
         from core.workflow.engine import WorkflowEngine
         _WORKFLOW_ENGINE = WorkflowEngine()
-        logger.debug("[AutoBuild] using WorkflowEngine for step execution")
+        logger.debug("[AutoBuild] using WorkflowEngine for step execution (deprecated path)")
     except Exception:
         logger.debug("[AutoBuild] WorkflowEngine not available")
         _WORKFLOW_ENGINE = False
@@ -972,9 +975,11 @@ class AutomationLoop:
     MAX_REPAIR_ATTEMPTS = 10
 
     def __init__(self, goal_manager: GoalManager, memory_manager: MemoryManager,
-                 poll_interval: float = 5.0, project_dir: str = ""):
+                 poll_interval: float = 5.0, project_dir: str = "",
+                 execution_manager: ExecutionManager | None = None):
         self.goals = goal_manager
         self.memory = memory_manager
+        self.execution_manager = execution_manager or ExecutionManager()
         self.poll_interval = poll_interval
         self._running = False
         self._paused = False
@@ -1109,12 +1114,20 @@ class AutomationLoop:
         objective = goal.objective
         proj_dir = self.project_dir
 
+        exec_ctx = self.execution_manager.create_context(
+            source="automation_loop",
+            metadata={"goal_id": goal_id, "objective": objective[:120]},
+        )
+
         # === PLAN (tool-aware) ===
         plan = await self._phase_plan(objective)
         if not plan:
+            self.execution_manager.publish_failed(exec_ctx, "Failed to create build plan")
             self.goals.fail(goal_id, "Failed to create build plan")
             return
-        self.memory.store_trace("plan", {"goal": objective}, json.dumps(plan), True, 0, goal_id)
+        self.execution_manager.record_trace(exec_ctx, "plan", json.dumps(plan), True,
+                                            action_params={"goal": objective})
+        self.execution_manager.publish_progress(exec_ctx, "plan_created")
 
         # Normalize build/test commands: gradlew.bat/gradlew/./gradlew → system gradle if wrapper not found
         import shutil
@@ -1138,8 +1151,9 @@ class AutomationLoop:
         logger.info("[AutoBuild] generating project files")
         generated = await self._phase_generate(objective, proj_dir, plan)
         if generated:
-            self.memory.store_trace("generate", {"plan": plan.get("project_name", "")},
-                                    f"Generated {generated} files", True, 0, goal_id)
+            self.execution_manager.record_trace(exec_ctx, "generate", f"Generated {generated} files", True,
+                                                action_params={"plan": plan.get("project_name", "")})
+            self.execution_manager.publish_progress(exec_ctx, f"generate_done: {generated} files")
 
         # === PRIORITY 3: VERIFICATION GATES ===
         logger.info("[AutoBuild] running static verification gates")
@@ -1175,7 +1189,9 @@ class AutomationLoop:
             if not build_ok:
                 self.goals.fail(goal_id, "Build failed after max repair attempts + plan evolution")
                 return
-        self.memory.store_trace("build", {"command": build_cmd}, "Build succeeded", True, 0, goal_id)
+        self.execution_manager.record_trace(exec_ctx, "build", "Build succeeded", True,
+                                            action_params={"command": build_cmd})
+        self.execution_manager.publish_progress(exec_ctx, "build_succeeded")
 
         # === TEST LOOP ===
         test_cmd = plan.get("test_command", "")
@@ -1184,7 +1200,9 @@ class AutomationLoop:
             if not test_ok:
                 self.goals.fail(goal_id, "Tests failed after max repair attempts")
                 return
-        self.memory.store_trace("test", {"command": test_cmd}, "Tests passed", True, 0, goal_id)
+        self.execution_manager.record_trace(exec_ctx, "test", "Tests passed", True,
+                                            action_params={"command": test_cmd})
+        self.execution_manager.publish_progress(exec_ctx, "tests_passed")
 
         # === VERIFY LOOP ===
         verified = await self._phase_verify(objective, proj_dir, goal_id, plan)
@@ -1207,6 +1225,8 @@ class AutomationLoop:
 
         # === FINISH ===
         self.goals.complete(goal_id, f"All phases completed ({completion_pct:.0f}% requirements met)")
+        self.execution_manager.publish_completed(exec_ctx, {"completion_pct": completion_pct, "goal_id": goal_id})
+        self.execution_manager.record_decision(exec_ctx, "build_completed", f"goal {goal_id}: {completion_pct}%", True)
         logger.info("[AutoBuild] === GOAL COMPLETED: %s (%.0f%%) ===", objective[:60], completion_pct)
 
     async def _phase_plan(self, objective: str) -> dict | None:
@@ -1793,14 +1813,14 @@ android.enableJetifier=true
     async def _execute_step(
         self, label: str, action: str, params: dict, idempotency_key: str = "",
     ) -> ActionResult:
-        """Execute a single step, routing through WorkflowEngine when available.
+        """Execute a single step, routing through ExecutionManager when available.
 
-        When ``_WORKFLOW_ENGINE`` is available, creates a single-step workflow
+        Creates a single-step workflow via ``self.execution_manager.engine``
         so the execution is tracked, idempotent, and fires canonical events.
         Falls back to ``executor.execute_graph_node`` otherwise.
         """
-        wf = _WORKFLOW_ENGINE
-        if wf is not None and wf is not False and idempotency_key:
+        wf = self.execution_manager.engine
+        if wf is not None and idempotency_key:
             try:
                 from core.workflow.models import StepDefinition
                 step = StepDefinition(tool_name=action, input_data=params)
@@ -1810,6 +1830,13 @@ android.enableJetifier=true
                     session_id=idempotency_key,
                     owner="brain_automation",
                     launch_background=False,
+                )
+                self.execution_manager.publish_progress(
+                    self.execution_manager.create_context(
+                        source="automation_loop",
+                        metadata={"label": label, "action": action, "step": idempotency_key},
+                    ),
+                    f"execute_step:{label}",
                 )
                 # Wait for the workflow to finish
                 wf_result = await wf.get_status(instance.workflow_id)
@@ -1857,7 +1884,6 @@ android.enableJetifier=true
         total_unresolved = 0
         memory_hits = 0
 
-        _ensure_workflow_engine()
         for attempt in range(self.MAX_REPAIR_ATTEMPTS):
             logger.info("[AutoBuild] build attempt %d/%d: %s", attempt + 1, self.MAX_REPAIR_ATTEMPTS, build_cmd)
             result = await self._execute_step(

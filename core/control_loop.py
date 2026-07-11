@@ -48,6 +48,7 @@ from core.site_planner import plan_site
 from core.success_criteria import get_summary, is_done
 from core.system_governor import system_governor
 from core.template_intelligence import template_analyzer
+from core.execution import ExecutionManager
 from notifications.notifier import notifier
 
 MAX_PARALLEL = 2
@@ -140,10 +141,11 @@ TASK_TYPE_ORDER = {
 class ControlLoop:
     """The main autonomous build loop. Build → Validate → Fix → Repeat."""
 
-    def __init__(self, auto_approve: bool = True, autonomous: bool = False, notify_callback: Callable | None = None):
+    def __init__(self, auto_approve: bool = True, autonomous: bool = False, notify_callback: Callable | None = None, execution_manager: ExecutionManager | None = None):
         self.auto_approve = auto_approve
         self.autonomous = autonomous
         self.notify_callback = notify_callback
+        self.execution_manager = execution_manager or ExecutionManager()
         self.running_builds: dict[str, asyncio.Task] = {}
         self._failures_log: Path = Path.cwd() / "failures.jsonl"
 
@@ -201,7 +203,12 @@ class ControlLoop:
 
         ctx = SharedContext(safe_name)
 
+        exec_ctx = self.execution_manager.create_context(
+            source="control_loop",
+            metadata={"goal": goal, "project": safe_name},
+        )
         await self._notify(safe_name, "build_started", {"goal": goal, "project": safe_name})
+        self.execution_manager.publish_progress(exec_ctx, "build_started")
 
         # ── STEP 1: INTERPRET ──
         state.status = "interpreting"
@@ -216,6 +223,8 @@ class ControlLoop:
         state.compute_completion()
 
         await self._notify(safe_name, "goal_interpreted", interpreted)
+        exec_ctx = exec_ctx.advance("interpret", "completed")
+        self.execution_manager.publish_progress(exec_ctx, f"goal interpreted: {interpreted.get('project_type')}")
         logger.info(f"[CONTROL] Interpreted: {interpreted.get('project_type')} "
                       f"pages={interpreted.get('pages')} tech={interpreted.get('tech_stack')}")
 
@@ -430,6 +439,8 @@ class ControlLoop:
                     partial_tracker.mark_step(safe_name, tid, True)
                 state.partial_progress = partial_tracker.snapshot(safe_name).to_dict() if partial_tracker.snapshot(safe_name) else None
                 await self._notify(safe_name, "build_complete", {"outputs": len(outputs)})
+                exec_ctx = exec_ctx.advance("build", "in_progress")
+                self.execution_manager.publish_progress(exec_ctx, f"build_complete: {len(outputs)} outputs")
 
             # STEP 4: VALIDATE (real tools)
             state.status = "validating"
@@ -440,6 +451,8 @@ class ControlLoop:
             state.save()
             summary = get_summary(state)
             await self._notify(safe_name, "validation_complete", summary)
+            exec_ctx = exec_ctx.advance("validate", "in_progress")
+            self.execution_manager.publish_progress(exec_ctx, f"validation: {summary['passed']}/{summary['total_checks']} passed")
             logger.info(f"[CONTROL] Validation: {summary['passed']}/{summary['total_checks']} passed")
 
             # Phase 2: Quality scoring (design, responsiveness, content, nav, code)
@@ -479,6 +492,10 @@ class ControlLoop:
                 await self._notify(safe_name, "build_done", {
                     "retries": state.retries, "goal": goal[:60], "deploy_url": deploy_url
                 })
+                self.execution_manager.publish_completed(exec_ctx, {"retries": state.retries, "deploy_url": deploy_url})
+                await self.execution_manager.record_decision(
+                    exec_ctx, f"build complete ({state.retries} retries)", str(state.status), success=True
+                )
                 self._record_outcome(safe_name, goal, state)
                 logger.info(f"[CONTROL] BUILD DONE after {state.retries} retries")
                 return state
@@ -612,7 +629,9 @@ class ControlLoop:
             ctx.append(f"Retry {state.retries}/{state.max_retries}",
                        f"Failed: {', '.join(failures)} [{failure_cat.value}] Gov: {gov_decision.action}")
             await self._notify(safe_name, "retry", {"retry": state.retries, "failures": failures,
-                                                     "category": failure_cat.value, "governor": gov_decision.action})
+                                                      "category": failure_cat.value, "governor": gov_decision.action})
+            exec_ctx = exec_ctx.advance("retry", "in_progress")
+            self.execution_manager.publish_progress(exec_ctx, f"retry {state.retries}/{state.max_retries}")
             logger.warning(f"[CONTROL] Retry {state.retries}/{state.max_retries}: {failures} [{failure_cat.value}] Gov: {gov_decision.action}")
             state.save()
 
@@ -632,6 +651,7 @@ class ControlLoop:
         await self._notify(safe_name, "build_failed", {
             "retries": state.retries, "max_retries": state.max_retries
         })
+        self.execution_manager.publish_failed(exec_ctx, f"failed after {state.retries} retries")
         logger.error(f"[CONTROL] BUILD FAILED after {state.max_retries} retries")
         return state
 
