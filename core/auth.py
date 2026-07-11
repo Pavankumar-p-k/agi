@@ -11,6 +11,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # core/auth.py
+"""DEPRECATED — use ``core.identity.IdentityService`` / ``core.identity.auth_store.AuthStore`` instead.
+
+This module is a backward-compatibility shim. ``AuthManager`` still works
+but delegates auth data to ``core.identity.auth_store.AuthStore`` (SQLite,
+``user.db``). New code should use ``identity.get_identity_service()`` for
+authentication and ``AuthStore`` for direct storage access.
+
+Deprecated: v3.2
+Remove after: v4.0
+"""
 from __future__ import annotations
 
 import hmac
@@ -20,6 +30,7 @@ import os
 import secrets
 import threading
 import time
+import warnings
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -149,9 +160,29 @@ async def _get_or_create_user(
 # ---------------------------------------------------------------------------
 
 class AuthManager:
-    """Manages multi-user password + session-token auth system."""
+    """DEPRECATED — Manages multi-user password + session-token auth system.
+
+    Delegates primary storage to ``AuthStore`` (SQLite ``user.db``) with
+    JSON fallback for backward compatibility.
+
+    Use ``core.identity.IdentityService`` / ``core.identity.auth_store.AuthStore``
+    instead.
+
+    Deprecated: v3.2
+    Remove after: v4.0
+    """
+
+    _deprecation_warned = False
 
     def __init__(self, auth_path: str = DEFAULT_AUTH_PATH):
+        if not AuthManager._deprecation_warned:
+            warnings.warn(
+                "AuthManager is deprecated. "
+                "Use 'core.identity.get_identity_service()' or "
+                "'core.identity.auth_store.AuthStore' instead.",
+                DeprecationWarning, stacklevel=2,
+            )
+            AuthManager._deprecation_warned = True
         self.auth_path = auth_path
         self._sessions_path = os.path.join(os.path.dirname(auth_path), "sessions.json")
         self._config: dict[str, Any] = {}
@@ -162,6 +193,7 @@ class AuthManager:
         self._load_sessions()
         self._migrate_single_user()
         self._migrate_legacy_admin_role()
+        self._migrate_to_sqlite()
 
     def _load(self):
         try:
@@ -229,6 +261,22 @@ class AuthManager:
                 logger.info(f"Migrated legacy admin role for '{username}'")
         if changed:
             self._save()
+
+    def _migrate_to_sqlite(self):
+        """Migrate JSON auth data to SQLite AuthStore (idempotent)."""
+        try:
+            from core.identity.auth_store import AuthStore
+            store = AuthStore()
+            if store.user_count() == 0:
+                imported = store.import_from_auth_manager(self)
+                if imported[0] > 0 or imported[1] > 0:
+                    logger.info("Auth data migrated to SQLite: %d users, %d sessions", *imported)
+            else:
+                expires = store.prune_expired_sessions()
+                if expires:
+                    logger.debug("Pruned %d expired sessions from SQLite store", expires)
+        except Exception as e:
+            logger.warning("SQLite auth migration skipped: %s", e)
 
     def _save(self):
         _atomic_write_json(self.auth_path, self._config, indent=2)
@@ -553,6 +601,11 @@ class AuthManager:
 # Lazy singleton for AuthManager (avoids disk I/O on every tool call)
 _auth_manager_instance = None
 def get_auth_manager() -> AuthManager:
+    warnings.warn(
+        "get_auth_manager() is deprecated. "
+        "Use 'core.identity.get_identity_service()' instead.",
+        DeprecationWarning, stacklevel=2,
+    )
     global _auth_manager_instance
     if _auth_manager_instance is None:
         _auth_manager_instance = AuthManager()

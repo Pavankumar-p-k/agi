@@ -144,10 +144,21 @@ class IdentityService(IdentityResolver):
     def authenticate_session(
         self, token: str
     ) -> tuple[UserIdentity, SessionIdentity] | None:
-        """Validate *token* via AuthManager and return resolved identity.
+        """Validate *token* via AuthStore (SQLite) and return resolved identity.
 
+        Falls back to legacy AuthManager for backward compatibility.
         Returns ``None`` for invalid, expired, or deleted-user tokens.
         """
+        from core.identity.auth_store import AuthStore
+
+        store = AuthStore()
+        username = store.validate_session(token)
+        if username is not None:
+            user = UserIdentity(id=username)
+            session = SessionIdentity(id=token, user_id=username)
+            return (user, session)
+
+        # Legacy fallback
         from core.auth import get_auth_manager
 
         mgr = get_auth_manager()
