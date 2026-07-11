@@ -1487,9 +1487,11 @@ def test_research_engines_accessed_only_through_stage_adapters():
     allowed_importers = {
         "core/pipeline/stages/reasoning/stage.py",
         "core/pipeline/stages/reasoning/__init__.py",
-        "core/pipeline/stages/knowledge/",       # future Sprint 2
-        "core/pipeline/stages/reflection/",       # future Sprint 4
+        "core/pipeline/stages/knowledge/",       # Sprint 2
+        "core/pipeline/stages/reflection/",       # Sprint 4
+        "core/pipeline/stages/explainability/stage.py",  # Sprint 7
         "core/pipeline/reasoning_result.py",       # contract
+        "core/pipeline/knowledge_result.py",        # contract
         "core/research/",                           # itself
     }
 
@@ -1504,12 +1506,15 @@ def test_research_engines_accessed_only_through_stage_adapters():
         "core/routes/research.py",
         "core/strategy/memory_adapter.py",
         "core/tools/browser_research.py",
+        "benchmarks/research_quality_benchmark.py",
+        "tests/unit/test_research.py",
     }
 
+    excluded_dirs = {"/__pycache__/", "/.venv/", "/venv/", "/node_modules/"}
     violations: list[str] = []
     for path in sorted(root.rglob("*.py")):
         posix = path.as_posix()
-        if "/__pycache__/" in posix:
+        if any(d in posix for d in excluded_dirs):
             continue
         if "/tests/" in posix:
             if "test_research" not in posix and "test_reasoning" not in posix:
@@ -1816,6 +1821,61 @@ def test_only_explainability_stage_creates_explanation_result():
         pytest.fail(
             f"ExplanationResult constructed outside allowed stages: {violations}. "
             "Only ExplainabilityStage may construct ExplanationResult (Rule 55)."
+        )
+
+
+# ── Rule 56: No pipeline bypass from intelligence modules ──────────────────
+
+
+def test_no_pipeline_bypass_from_intelligence_modules():
+    """Intelligence modules must not import ``process_message`` from
+    ``core.pipeline.pipeline``.
+
+    ADR-009 states that all intelligence processing must flow through the
+    canonical pipeline (``process_message()``). Intelligence modules
+    (reasoning, memory, learning, planner, knowledge, etc.) that call
+    ``process_message`` directly would create a bypass of pipeline stages
+    like distribution, rate-limiting, and identity. Only the pipeline
+    itself, distribution layer, scheduler, and transports may invoke
+    ``process_message``.
+    """
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parent.parent.parent
+
+    allowed_pipeline_modules = {
+        "core/pipeline/pipeline.py",
+        "core/pipeline/__init__.py",
+        "core/pipeline/internal_client.py",
+        "core/pipeline/stream.py",
+        "core/distribution/local_worker.py",
+        "core/distribution/runtime.py",
+        "core/distribution/transport.py",
+        "core/scheduler/executors.py",
+        "core/scheduler/pipeline_executor.py",
+        "tests/architecture/test_architecture_audit.py",
+    }
+
+    excluded_dirs = {"/__pycache__/", "/.venv/", "/venv/", "/node_modules/"}
+    violations: list[str] = []
+    for path in sorted(root.rglob("*.py")):
+        rel = path.relative_to(root).as_posix()
+        if any(d in rel for d in excluded_dirs):
+            continue
+        if rel in allowed_pipeline_modules:
+            continue
+        try:
+            source = path.read_text(encoding="utf-8")
+        except Exception:
+            continue
+        if "from core.pipeline.pipeline import process_message" in source:
+            violations.append(rel)
+
+    if violations:
+        pytest.fail(
+            f"Intelligence modules bypassing canonical pipeline: {violations}. "
+            "Only the pipeline itself, distribution layer, scheduler, and "
+            "transports may call process_message (Rule 56)."
         )
 
 
