@@ -473,13 +473,20 @@ def _do_manage_calendar_sync(content: str, owner: str | None = None) -> dict:
     import uuid as _uuid
     from datetime import datetime, timedelta
 
-    from routes.calendar_routes import (
-        _ensure_default_calendar,
-        _parse_dt,
-        _parse_dt_pair,
-        _resolve_base_uid,
-        parse_due_for_user,
-    )
+    try:
+        from routes.calendar_routes import (
+            _ensure_default_calendar,
+            _parse_dt,
+            _parse_dt_pair,
+            _resolve_base_uid,
+            parse_due_for_user,
+        )
+    except ModuleNotFoundError:
+        return {
+            "error": "CalDAV calendar module (routes.calendar_routes) is not available. "
+                     "Use the manage_google_calendar tool instead for calendar operations.",
+            "exit_code": 1,
+        }
 
     from core.database_models import CalendarCal, CalendarEvent, Note, SessionLocal
 
