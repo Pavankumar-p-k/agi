@@ -15,19 +15,39 @@
 Self-healing framework + continuous learning loop for JARVIS.
 3-layer: detection -> diagnosis -> recovery.
 Continuous learning: accept/reject feedback -> auto-improve prompts.
+
+Primary storage: ``health_state`` and ``learning_state`` tables in ``system.db``,
+with JSON fallback for backward compatibility.
+
+Deprecated JSON paths: ``data/health.json``, ``data/learnings.json``
 """
 
 import json
 import logging
 import os
+import sqlite3
 import time
 from datetime import UTC, datetime
+from threading import Lock
+
+from core.storage.registry import SYSTEM_DB, ensure_db_dir
 
 logger = logging.getLogger("self_healing")
 
 _HEALTH_FILE = os.path.join(os.path.dirname(__file__), "..", "data", "health.json")
 _LEARNINGS_FILE = os.path.join(os.path.dirname(__file__), "..", "data", "learnings.json")
 _FEEDBACK_FILE = os.path.join(os.path.dirname(__file__), "..", "data", "feedback.json")
+
+_SCHEMA = """
+CREATE TABLE IF NOT EXISTS health_state (
+    key  TEXT PRIMARY KEY,
+    data TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS learning_state (
+    key  TEXT PRIMARY KEY,
+    data TEXT NOT NULL
+);
+"""
 
 
 # â”€â”€ Self-Healing Framework â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -58,12 +78,27 @@ class HealthRecord:
 
 
 class SelfHealing:
-    """3-layer self-healing: detection -> diagnosis -> recovery."""
+    """3-layer self-healing: detection -> diagnosis -> recovery.
+
+    Primary storage: ``health_state`` table in ``system.db``.
+    Fallback: ``data/health.json`` (auto-migrated on init).
+    """
 
     def __init__(self):
         self.record = HealthRecord()
+        self._lock = Lock()
+        ensure_db_dir(SYSTEM_DB)
+        self._init_schema()
         self._load()
         self._recovery_handlers: dict[str, callable] = {}
+
+    def _init_schema(self) -> None:
+        try:
+            with sqlite3.connect(SYSTEM_DB) as conn:
+                conn.executescript(_SCHEMA)
+                conn.commit()
+        except Exception as e:
+            logger.debug("[SELF-HEAL] Schema init error: %s", e)
 
     def register_recovery(self, component: str, handler: callable):
         self._recovery_handlers[component] = handler
@@ -152,20 +187,47 @@ class SelfHealing:
         }
 
     def _load(self):
-        try:
-            if os.path.isfile(_HEALTH_FILE):
-                with open(_HEALTH_FILE) as f:
-                    self.record = HealthRecord.from_dict(json.load(f))
-        except Exception as e:
-            logger.debug(f"[SELF-HEAL] Load error: {e}")
+        """Load health record from SQLite, fall back to JSON."""
+        with self._lock:
+            try:
+                with sqlite3.connect(SYSTEM_DB) as conn:
+                    row = conn.execute(
+                        "SELECT data FROM health_state WHERE key = 'default'"
+                    ).fetchone()
+                    if row:
+                        self.record = HealthRecord.from_dict(json.loads(row[0]))
+                        return
+            except Exception as e:
+                logger.debug("[SELF-HEAL] SQLite load error: %s", e)
+
+            # Fallback: JSON file
+            try:
+                if os.path.isfile(_HEALTH_FILE):
+                    with open(_HEALTH_FILE) as f:
+                        self.record = HealthRecord.from_dict(json.load(f))
+                    self.save()  # Migrate to SQLite
+            except Exception as e:
+                logger.debug("[SELF-HEAL] JSON load error: %s", e)
 
     def save(self):
-        try:
-            os.makedirs(os.path.dirname(_HEALTH_FILE), exist_ok=True)
-            with open(_HEALTH_FILE, "w") as f:
-                json.dump(self.record.to_dict(), f, indent=2)
-        except Exception as e:
-            logger.debug(f"[SELF-HEAL] Save error: {e}")
+        """Persist health record to SQLite (+ JSON fallback)."""
+        with self._lock:
+            data = json.dumps(self.record.to_dict(), default=str)
+            try:
+                with sqlite3.connect(SYSTEM_DB) as conn:
+                    conn.execute(
+                        "INSERT OR REPLACE INTO health_state (key, data) VALUES ('default', ?)",
+                        (data,),
+                    )
+                    conn.commit()
+            except Exception as e:
+                logger.debug("[SELF-HEAL] SQLite save error, falling back to JSON: %s", e)
+                try:
+                    os.makedirs(os.path.dirname(_HEALTH_FILE), exist_ok=True)
+                    with open(_HEALTH_FILE, "w") as f:
+                        json.dump(self.record.to_dict(), f, indent=2)
+                except Exception as e2:
+                    logger.debug("[SELF-HEAL] JSON save error: %s", e2)
 
     async def heal_ollama(self, detail: str = ""):
         await self._heal("ollama", detail)
@@ -177,13 +239,28 @@ class SelfHealing:
 # â”€â”€ Continuous Learning Loop â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class LearningLoop:
-    """Records accepts/rejects from user feedback to auto-improve prompts and examples."""
+    """Records accepts/rejects from user feedback to auto-improve prompts and examples.
+
+    Primary storage: ``learning_state`` table in ``system.db``.
+    Fallback: ``data/learnings.json`` (auto-migrated on init).
+    """
 
     def __init__(self):
         self.learnings: list[dict] = []
         self.rules: list[str] = []
         self.examples: list[dict] = []
+        self._lock = Lock()
+        ensure_db_dir(SYSTEM_DB)
+        self._init_schema()
         self._load()
+
+    def _init_schema(self) -> None:
+        try:
+            with sqlite3.connect(SYSTEM_DB) as conn:
+                conn.executescript(_SCHEMA)
+                conn.commit()
+        except Exception as e:
+            logger.debug("[LEARN] Schema init error: %s", e)
 
     def record_feedback(self, message: str, response: str, accepted: bool, reason: str = ""):
         entry = {
@@ -250,27 +327,61 @@ class LearningLoop:
         return "\n\n".join(parts)
 
     def _load(self):
-        try:
-            if os.path.isfile(_LEARNINGS_FILE):
-                with open(_LEARNINGS_FILE) as f:
-                    data = json.load(f)
-                    self.learnings = data.get("learnings", [])
-                    self.rules = data.get("rules", [])
-                    self.examples = data.get("examples", [])
-        except Exception as e:
-            logger.debug(f"[LEARN] Load error: {e}")
+        """Load learning state from SQLite, fall back to JSON."""
+        with self._lock:
+            try:
+                with sqlite3.connect(SYSTEM_DB) as conn:
+                    row = conn.execute(
+                        "SELECT data FROM learning_state WHERE key = 'default'"
+                    ).fetchone()
+                    if row:
+                        data = json.loads(row[0])
+                        self.learnings = data.get("learnings", [])
+                        self.rules = data.get("rules", [])
+                        self.examples = data.get("examples", [])
+                        return
+            except Exception as e:
+                logger.debug("[LEARN] SQLite load error: %s", e)
+
+            # Fallback: JSON file
+            try:
+                if os.path.isfile(_LEARNINGS_FILE):
+                    with open(_LEARNINGS_FILE) as f:
+                        data = json.load(f)
+                        self.learnings = data.get("learnings", [])
+                        self.rules = data.get("rules", [])
+                        self.examples = data.get("examples", [])
+                    self.save()  # Migrate to SQLite
+            except Exception as e:
+                logger.debug("[LEARN] JSON load error: %s", e)
 
     def save(self):
-        try:
-            os.makedirs(os.path.dirname(_LEARNINGS_FILE), exist_ok=True)
-            with open(_LEARNINGS_FILE, "w") as f:
-                json.dump({
-                    "learnings": self.learnings[-100:],
-                    "rules": self.rules,
-                    "examples": self.examples,
-                }, f, indent=2)
-        except Exception as e:
-            logger.debug(f"[LEARN] Save error: {e}")
+        """Persist learning state to SQLite (+ JSON fallback)."""
+        with self._lock:
+            data = json.dumps({
+                "learnings": self.learnings[-100:],
+                "rules": self.rules,
+                "examples": self.examples,
+            }, default=str)
+            try:
+                with sqlite3.connect(SYSTEM_DB) as conn:
+                    conn.execute(
+                        "INSERT OR REPLACE INTO learning_state (key, data) VALUES ('default', ?)",
+                        (data,),
+                    )
+                    conn.commit()
+            except Exception as e:
+                logger.debug("[LEARN] SQLite save error, falling back to JSON: %s", e)
+                try:
+                    os.makedirs(os.path.dirname(_LEARNINGS_FILE), exist_ok=True)
+                    with open(_LEARNINGS_FILE, "w") as f:
+                        json.dump({
+                            "learnings": self.learnings[-100:],
+                            "rules": self.rules,
+                            "examples": self.examples,
+                        }, f, indent=2)
+                except Exception as e2:
+                    logger.debug("[LEARN] JSON save error: %s", e2)
 
 
 # â”€â”€ Auto-Healing Recovery Handlers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

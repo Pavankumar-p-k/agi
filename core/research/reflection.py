@@ -2,6 +2,11 @@
 
 Analyzes completed research activities to discover what strategies
 worked, what didn't, and what should change in future activities.
+
+Primary storage: ``research_reflections`` and ``research_patterns`` tables
+in ``system.db``, with JSON fallback for backward compatibility.
+
+Deprecated JSON path: ``data/research_reflections.json``
 """
 
 from __future__ import annotations
@@ -9,6 +14,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import sqlite3
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -16,10 +22,23 @@ from pathlib import Path
 from typing import Any
 
 from core.research.evidence_tracker import ResearchCoverage
+from core.storage.registry import SYSTEM_DB, ensure_db_dir
 
 logger = logging.getLogger(__name__)
 
 _DEFAULT_MEMORY_PATH = str(Path("data") / "research_reflections.json")
+
+_SCHEMA = """
+CREATE TABLE IF NOT EXISTS research_reflections (
+    id          TEXT PRIMARY KEY,
+    activity_id TEXT NOT NULL,
+    data        TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS research_patterns (
+    pattern_id  TEXT PRIMARY KEY,
+    data        TEXT NOT NULL
+);
+"""
 
 
 @dataclass
@@ -317,6 +336,25 @@ class ResearchReflection:
     # ── Persistence ──────────────────────────────────────────────────
 
     def _load(self) -> None:
+        """Load from SQLite, fall back to JSON."""
+        ensure_db_dir(SYSTEM_DB)
+        try:
+            with sqlite3.connect(SYSTEM_DB) as conn:
+                conn.executescript(_SCHEMA)
+                ref_rows = conn.execute("SELECT data FROM research_reflections").fetchall()
+                pat_rows = conn.execute("SELECT data FROM research_patterns").fetchall()
+                if ref_rows or pat_rows:
+                    self._reflections = [
+                        ReflectionResult(**json.loads(r[0])) for r in ref_rows
+                    ]
+                    self._patterns = [
+                        LearnedPattern(**json.loads(p[0])) for p in pat_rows
+                    ]
+                    return
+        except Exception as e:
+            logger.warning("Failed to load research reflections from SQLite: %s", e)
+
+        # Fallback: JSON file
         if not self._path.exists():
             return
         try:
@@ -327,22 +365,42 @@ class ResearchReflection:
             self._patterns = [
                 LearnedPattern(**p) for p in data.get("patterns", [])
             ]
+            self._save()  # Migrate to SQLite
         except Exception as e:
-            logger.warning("Failed to load research reflections: %s", e)
+            logger.warning("Failed to load research reflections from JSON: %s", e)
 
     def _save(self) -> None:
-        self._path.parent.mkdir(parents=True, exist_ok=True)
-        data = {
-            "reflections": [
-                {k: v for k, v in r.__dict__.items() if not k.startswith("_")}
-                for r in self._reflections
-            ],
-            "patterns": [
-                {k: v for k, v in p.__dict__.items() if not k.startswith("_")}
-                for p in self._patterns
-            ],
-        }
-        self._path.write_text(
-            json.dumps(data, indent=2, default=str),
-            encoding="utf-8",
-        )
+        """Persist to SQLite (+ JSON fallback)."""
+        try:
+            with sqlite3.connect(SYSTEM_DB) as conn:
+                conn.executescript(_SCHEMA)
+                conn.execute("DELETE FROM research_reflections")
+                conn.execute("DELETE FROM research_patterns")
+                for r in self._reflections:
+                    conn.execute(
+                        "INSERT INTO research_reflections (id, activity_id, data) VALUES (?, ?, ?)",
+                        (r.reflection_id, r.activity_id, json.dumps(r.__dict__, default=str)),
+                    )
+                for p in self._patterns:
+                    conn.execute(
+                        "INSERT INTO research_patterns (pattern_id, data) VALUES (?, ?)",
+                        (p.pattern_id, json.dumps(p.__dict__, default=str)),
+                    )
+                conn.commit()
+        except Exception as e:
+            logger.warning("ResearchReflection: SQLite save failed, falling back to JSON: %s", e)
+            self._path.parent.mkdir(parents=True, exist_ok=True)
+            data = {
+                "reflections": [
+                    {k: v for k, v in r.__dict__.items() if not k.startswith("_")}
+                    for r in self._reflections
+                ],
+                "patterns": [
+                    {k: v for k, v in p.__dict__.items() if not k.startswith("_")}
+                    for p in self._patterns
+                ],
+            }
+            self._path.write_text(
+                json.dumps(data, indent=2, default=str),
+                encoding="utf-8",
+            )

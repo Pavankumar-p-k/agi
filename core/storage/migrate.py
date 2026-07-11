@@ -180,8 +180,64 @@ def merge_jarvis_db_to_app_db() -> dict[str, int]:
     return copy_tables(LEGACY_JARVIS_DB, APP_DB)
 
 
-def run_all() -> dict[str, dict[str, int]]:
-    """Run all storage migrations. Returns per-source results."""
+LEGACY_DB_PATHS = [
+    "workflow.db", "brain.db", "goals.db", "jarvis_memory.db",
+    "browser_facts.db", "inbox.db", "benchmark.db", "training_log.db",
+    "failure_memory.db", "plugin_state.db", "plugin_secrets.db", "jarvis.db",
+]
+
+LEGACY_JSON_PATHS = [
+    "data/knobs.json",
+    "data/research_reflections.json",
+    "data/health.json",
+    "data/learnings.json",
+]
+
+
+def delete_legacy_dbs(dry_run: bool = True) -> list[str]:
+    """Delete legacy database files after successful migration.
+
+    Args:
+        dry_run: If True, only report which files would be deleted.
+
+    Returns:
+        List of deleted (or would-be-deleted) file paths.
+    """
+    from core.storage.registry import DATA_DIR, HOME_DIR
+
+    deleted: list[str] = []
+
+    for name in LEGACY_DB_PATHS:
+        path = DATA_DIR / name
+        if path.exists():
+            if dry_run:
+                logger.info("[DRY RUN] Would delete legacy DB: %s", path)
+            else:
+                path.unlink()
+                logger.info("Deleted legacy DB: %s", path)
+            deleted.append(str(path))
+
+    for name in LEGACY_JSON_PATHS:
+        path = Path(name)
+        if not path.is_absolute():
+            path = DATA_DIR / name if not name.startswith("data/") else Path(name)
+        if path.exists():
+            if dry_run:
+                logger.info("[DRY RUN] Would delete legacy JSON: %s", path)
+            else:
+                path.unlink()
+                logger.info("Deleted legacy JSON: %s", path)
+            deleted.append(str(path))
+
+    return deleted
+
+
+def run_all(delete_legacy: bool = False) -> dict[str, dict[str, int]]:
+    """Run all storage migrations. Returns per-source results.
+
+    Args:
+        delete_legacy: If True, delete legacy DB files after successful migration.
+    """
     results: dict[str, dict[str, int]] = {}
     results["workflow"] = merge_workflow_db_to_system()
     results["brain"] = merge_brain_db_to_system()
@@ -194,4 +250,9 @@ def run_all() -> dict[str, dict[str, int]]:
     results["failure_memory"] = merge_failure_memory_to_system()
     results["plugin_state"] = merge_plugin_state_to_system()
     results["plugin_secrets"] = merge_plugin_secrets_to_system()
+
+    if delete_legacy:
+        deleted = delete_legacy_dbs(dry_run=False)
+        results["_deleted_legacy"] = {"files": len(deleted)}
+
     return results

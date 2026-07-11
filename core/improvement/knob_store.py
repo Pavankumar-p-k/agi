@@ -1,37 +1,77 @@
-"""KnobStore — persistent JSON-backed storage for behavior knob values.
+"""KnobStore — persistent SQLite-backed storage for behavior knob values.
 
 Each knob has a current_value that can differ from its default_value.
-The store persists to knobs.json for crash recovery and auditing.
+Primary storage is the ``knob_values`` table in ``system.db``, with JSON
+fallback for backward compatibility.
+
+Deprecated JSON path: ``data/knobs.json``
 """
 
 from __future__ import annotations
 
 import json
 import logging
-from threading import RLock
+import sqlite3
+import threading
 from pathlib import Path
 from typing import Any
 
 from core.improvement.models import DEFAULT_KNOBS_JSON, BehaviorKnob, KNOB_REGISTRY, KnobCategory
+from core.storage.registry import SYSTEM_DB, ensure_db_dir
 
 logger = logging.getLogger(__name__)
+
+_SCHEMA = """
+CREATE TABLE IF NOT EXISTS knob_values (
+    name  TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+);
+"""
 
 
 class KnobStore:
     """Persistent, thread-safe store for behavior knob values.
 
-    Loaded from knobs.json on init. Subsystems read knobs via get().
+    Primary storage: ``knob_values`` table in ``system.db``.
+    Fallback: ``data/knobs.json`` (auto-migrated on init).
     """
 
     def __init__(self, json_path: str | None = None):
         self._path = Path(json_path or DEFAULT_KNOBS_JSON)
-        self._lock = RLock()
+        self._lock = threading.RLock()
         self._knobs: dict[str, BehaviorKnob] = {}
+        ensure_db_dir(SYSTEM_DB)
+        self._init_schema()
         self._load()
 
+    def _init_schema(self) -> None:
+        try:
+            with sqlite3.connect(SYSTEM_DB) as conn:
+                conn.executescript(_SCHEMA)
+                conn.commit()
+        except Exception as e:
+            logger.warning("KnobStore: failed to init schema: %s", e)
+
     def _load(self) -> None:
-        """Load persisted knob values, falling back to registry defaults."""
+        """Load persisted knob values from SQLite, fall back to JSON."""
         self._knobs = {k: self._clone(v) for k, v in KNOB_REGISTRY.items()}
+
+        # Try SQLite first
+        try:
+            with sqlite3.connect(SYSTEM_DB) as conn:
+                rows = conn.execute("SELECT name, value FROM knob_values").fetchall()
+                if rows:
+                    for name, value_json in rows:
+                        if name in self._knobs:
+                            try:
+                                self._knobs[name].current_value = json.loads(value_json)
+                            except (json.JSONDecodeError, TypeError):
+                                pass
+                    return  # SQLite has data — done
+        except Exception:
+            pass
+
+        # Fallback: JSON file (auto-migrate)
         if self._path.exists():
             try:
                 with self._lock, open(self._path, "r") as f:
@@ -39,15 +79,27 @@ class KnobStore:
                 for name, value in saved.items():
                     if name in self._knobs:
                         self._knobs[name].current_value = value
+                self._save()  # Persist to SQLite
             except Exception:
                 logger.exception("KnobStore: failed to load %s", self._path)
 
     def _save(self) -> None:
-        """Persist current knob values to JSON."""
-        self._path.parent.mkdir(parents=True, exist_ok=True)
+        """Persist current knob values to SQLite (+ JSON fallback)."""
         data = {name: knob.current_value for name, knob in self._knobs.items()}
-        with self._lock, open(self._path, "w") as f:
-            json.dump(data, f, indent=2)
+        try:
+            with sqlite3.connect(SYSTEM_DB) as conn:
+                conn.execute("DELETE FROM knob_values")
+                for name, value in data.items():
+                    conn.execute(
+                        "INSERT INTO knob_values (name, value) VALUES (?, ?)",
+                        (name, json.dumps(value, default=str)),
+                    )
+                conn.commit()
+        except Exception as e:
+            logger.warning("KnobStore: SQLite save failed, falling back to JSON: %s", e)
+            self._path.parent.mkdir(parents=True, exist_ok=True)
+            with self._lock, open(self._path, "w") as f:
+                json.dump(data, f, indent=2)
 
     def get(self, name: str) -> Any:
         """Get the current value of a knob."""
