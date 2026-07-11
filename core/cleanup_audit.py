@@ -45,7 +45,6 @@ ENTRYPOINT_MODULES = {
     "api.ai_os_routes",
     "api.hybrid_integration",
     "api.os_routes",
-    "api.vision_routes",
     "automation.routes",
     "routers.chat",
     "routers.whatsapp",

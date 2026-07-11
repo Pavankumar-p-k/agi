@@ -234,12 +234,6 @@ except Exception as e:
 # ── Optional routers (kept separate so missing optional deps don't break startup) ──
 
 try:
-    from api.vision_routes import router as vision_router
-    app.include_router(vision_router)
-except Exception as e:
-    logger.warning("[Router] Vision routes not loaded: %s", e)
-
-try:
     from api.cookbook_routes import router as cookbook_router
     app.include_router(cookbook_router)
     logger.info("[Router] Cookbook routes loaded")
