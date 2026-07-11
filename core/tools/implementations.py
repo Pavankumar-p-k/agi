@@ -73,6 +73,9 @@ from core.tools.skill_tools import (
 from core.tools.vision_tools import (
     do_vision_browser,
 )
+from core.tools.google_calendar_tools import (
+    do_manage_google_calendar,
+)
 from core.tools.browser_tools import (
     do_browser_navigate,
     do_browser_find,
@@ -138,6 +141,7 @@ __all__ = [
     "do_search_chats", "do_create_skill", "do_manage_skills", "do_manage_tasks",
     "do_manage_endpoints", "do_manage_mcp", "do_manage_webhooks", "do_manage_tokens",
     "do_manage_settings", "do_api_call", "do_manage_notes", "do_manage_calendar",
+    "do_manage_google_calendar",
     "do_app_api", "do_download_model", "do_serve_model", "do_list_served_models",
     "do_stop_served_model", "do_list_downloads", "do_cancel_download", "do_search_hf_models",
     "do_list_cached_models", "do_list_serve_presets", "do_serve_preset", "do_adopt_served_model",

@@ -78,4 +78,32 @@ FUNCTION_TOOL_SCHEMAS = [
             }
         }
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "manage_google_calendar",
+            "description": "Manage Google Calendar events: list calendars, list events, create, update, delete. Uses Google Calendar API (not local CalDAV). Supports all-day events with YYYY-MM-DD dates. For event reminders, pass reminder_minutes.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "action": {"type": "string",
+                               "enum": ["list_calendars", "list_events", "create_event", "update_event", "delete_event"],
+                               "description": "Action to perform"},
+                    "calendar_id": {"type": "string", "description": "Calendar ID (defaults to 'primary')"},
+                    "summary": {"type": "string", "description": "Event title (for create/update)"},
+                    "start": {"type": "string", "description": "Start ISO datetime, or YYYY-MM-DD if all_day"},
+                    "end": {"type": "string", "description": "End ISO datetime; defaults to +1h (or +1 day for all_day)"},
+                    "all_day": {"type": "boolean", "description": "Whether this is an all-day event"},
+                    "description": {"type": "string", "description": "Event description / notes"},
+                    "location": {"type": "string", "description": "Event location"},
+                    "event_id": {"type": "string", "description": "Event ID (for update/delete)"},
+                    "attendees": {"type": "array", "items": {"type": "string"}, "description": "Attendee email addresses"},
+                    "recurrence": {"type": "array", "items": {"type": "string"}, "description": "Recurrence rules (RRULE format)"},
+                    "query": {"type": "string", "description": "Search query for list_events"},
+                    "max_results": {"type": "integer", "description": "Max events to return (default 20)"},
+                },
+                "required": ["action"]
+            }
+        }
+    },
 ]

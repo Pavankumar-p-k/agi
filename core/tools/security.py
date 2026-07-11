@@ -30,7 +30,7 @@ NON_ADMIN_BLOCKED_TOOLS = {
     "manage_mcp", "manage_webhooks", "manage_tokens", "manage_documents",
     "manage_settings", "api_call", "app_api", "send_email", "reply_to_email",
     "list_emails", "read_email", "resolve_contact", "manage_contact",
-    "manage_calendar", "vault_search", "vault_get", "vault_unlock",
+    "manage_calendar", "manage_google_calendar", "vault_search", "vault_get", "vault_unlock",
     "download_model", "serve_model", "serve_preset", "stop_served_model",
     "cancel_download", "adopt_served_model",
 }
