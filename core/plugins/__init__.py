@@ -25,6 +25,7 @@ from core.plugins.errors import (
     PluginTimeoutError,
 )
 from core.event_bus import PluginEventBus
+from core.plugins.watchdog import PluginWatchdog
 from core.plugins.hot_reload import HotReloader
 from core.plugins.loader import PluginLoader, get_plugin_loader
 from core.plugins.manifest import PluginManifest as _PluginManifest
@@ -61,4 +62,5 @@ __all__ = [
     "CompatibilityChecker", "CompatibilityMode", "compatibility_checker",
     "ManifestVerifier", "VerificationMode", "manifest_verifier",
     "PluginMarketplace", "plugin_marketplace",
+    "PluginWatchdog",
 ]

@@ -198,6 +198,17 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning("[LIFESPAN] Could not register default subscribers: %s", e)
 
+    # Start plugin watchdog (background health checks)
+    try:
+        from core.plugins.base import plugin_registry
+        from core.plugins.watchdog import PluginWatchdog
+        watchdog = PluginWatchdog(registry=plugin_registry)
+        watchdog.start()
+        app.state.plugin_watchdog = watchdog
+        logger.info("[LIFESPAN] Plugin watchdog started [OK]")
+    except Exception as e:
+        logger.warning("[LIFESPAN] Plugin watchdog not started: %s", e)
+
     # Warn if secret key is not set or is a dev default
     from core.config import ALLOWED_ORIGINS, DEV_MODE, SECRET_KEY
     if not SECRET_KEY:
@@ -876,6 +887,12 @@ async def lifespan(app: FastAPI):
         messaging.shutdown()
     except Exception as e:
         logger.warning("[SHUTDOWN] Messaging shutdown failed: %s", e)
+    if hasattr(app.state, "plugin_watchdog") and app.state.plugin_watchdog.is_running:
+        try:
+            await app.state.plugin_watchdog.stop()
+            logger.info("[SHUTDOWN] Plugin watchdog stopped")
+        except Exception as e:
+            logger.warning("[SHUTDOWN] Plugin watchdog stop failed: %s", e)
     if hasattr(app.state, "voice_loop"):
         app.state.voice_loop.stop()
         logger.info("[SHUTDOWN] Voice loop stopped")

@@ -356,14 +356,33 @@ class PluginRegistry:
         self.hook_timeout = hook_timeout
         self.load_timeout = load_timeout
         self.unload_timeout = unload_timeout
+        self._running_tasks: dict[str, list[asyncio.Task]] = {}
 
-    @staticmethod
-    async def _call_with_timeout(coro, timeout: float, hook: str, plugin_name: str):
+    async def _call_with_timeout(self, coro, timeout: float, hook: str, plugin_name: str):
+        task = asyncio.ensure_future(coro)
+        self._running_tasks.setdefault(plugin_name, []).append(task)
         try:
-            return await asyncio.wait_for(coro, timeout=timeout)
+            return await asyncio.wait_for(asyncio.shield(task), timeout=timeout)
         except asyncio.TimeoutError:
+            task.cancel()
             from core.plugins.errors import PluginTimeoutError
             raise PluginTimeoutError(hook, timeout, plugin_name)
+        except asyncio.CancelledError:
+            from core.plugins.errors import PluginTimeoutError
+            raise PluginTimeoutError(hook, timeout, plugin_name)
+        finally:
+            tasks = self._running_tasks.get(plugin_name, [])
+            if task in tasks:
+                tasks.remove(task)
+
+    def _cancel_plugin_hooks(self, plugin_name: str) -> None:
+        tasks = self._running_tasks.pop(plugin_name, [])
+        for t in tasks:
+            t.cancel()
+
+    def cancel_all_hooks(self) -> None:
+        for name in list(self._running_tasks):
+            self._cancel_plugin_hooks(name)
 
     @property
     def plugins(self) -> dict[str, Plugin]:
