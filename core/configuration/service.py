@@ -8,6 +8,14 @@ from typing import Any, Callable
 
 from core.settings.store import SettingsStore
 
+from core.event_bus import (
+    CONFIG_CHANGED,
+    CONFIG_RELOADED,
+    CONFIG_VALIDATION_ERROR,
+    Event,
+    global_event_bus,
+)
+
 logger = logging.getLogger(__name__)
 
 PROVIDERS_FILE = "providers.json"
@@ -81,6 +89,16 @@ class ConfigurationService:
         self._init_settings_store()
         self._load_providers()
         self._loaded = True
+
+        self._fire_config_reloaded()
+
+    def _fire_config_reloaded(self):
+        try:
+            global_event_bus.publish_sync(
+                Event(type=CONFIG_RELOADED, source="config.service", payload={})
+            )
+        except Exception:
+            logger.debug("[Config] Failed to emit config.reloaded event", exc_info=True)
 
     def _load_yaml(self, path: str):
         yaml_path = Path(path)
@@ -235,6 +253,16 @@ class ConfigurationService:
             except Exception as e:
                 logger.warning("[Config] Failed to persist %s=%s: %s", key, value, e)
         self._fire_on_change(key, value)
+        self._emit_config_changed(key, value)
+
+    def _emit_config_changed(self, key: str, value: Any):
+        try:
+            global_event_bus.publish_sync(
+                Event(type=CONFIG_CHANGED, source="config.service",
+                      payload={"key": key, "value": value})
+            )
+        except Exception:
+            logger.debug("[Config] Failed to emit config.changed event", exc_info=True)
 
     def reset(self, key: str):
         self._overrides.pop(key, None)

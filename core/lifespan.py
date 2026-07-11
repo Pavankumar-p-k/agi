@@ -190,6 +190,14 @@ async def lifespan(app: FastAPI):
     print("  JARVIS â€” Starting up...")
     print("=" * 50)
 
+    # Register default event subscribers for telemetry/audit events
+    try:
+        from core.event_bus import register_default_subscribers
+        register_default_subscribers()
+        logger.info("[LIFESPAN] Default event subscribers registered [OK]")
+    except Exception as e:
+        logger.warning("[LIFESPAN] Could not register default subscribers: %s", e)
+
     # Warn if secret key is not set or is a dev default
     from core.config import ALLOWED_ORIGINS, DEV_MODE, SECRET_KEY
     if not SECRET_KEY:

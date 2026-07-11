@@ -16,6 +16,13 @@ from fastapi import WebSocket
 logger = logging.getLogger(__name__)
 
 
+# ── Constants ─────────────────────────────────────────────────────────────────
+
+SYSTEM_NAMESPACE = "system"
+"""Reserved namespace for core system events.  Plugins must not subscribe
+to events with this namespace."""
+
+
 # ── Data types ────────────────────────────────────────────────────────────────
 
 @dataclass
@@ -26,6 +33,9 @@ class Event:
     id: str = ""
     timestamp: str = ""
     priority: int = 0
+    namespace: str = SYSTEM_NAMESPACE
+    """Event namespace for isolation. ``system`` for core events,
+    ``plugin`` for plugin events, ``workflow`` for workflow events."""
     resource_scope: dict | None = None
     """Canonical resource scope for tenant-aware routing.
     Every event that originates from a pipeline request MUST carry
@@ -44,6 +54,9 @@ class Subscription:
     handler: Callable
     once: bool = False
     priority: int = 0
+    namespace: str | None = None
+    """Optional namespace filter.  When set, this subscription only receives
+    events whose ``namespace`` matches (fnmatch).  ``None`` matches all."""
     tenant_id: str | None = None
     """Optional tenant filter.  When set, this subscription only receives
     events whose ``resource_scope.tenant_id`` matches.  ``__system__``
@@ -85,12 +98,15 @@ class EventBus:
     # ── Pattern subscription ──────────────────────────────────
 
     def subscribe(self, pattern: str, handler: Callable,
-                  priority: int = 0, once: bool = False) -> Subscription:
+                  priority: int = 0, once: bool = False,
+                  namespace: str | None = None) -> Subscription:
         sub = Subscription(pattern=pattern, handler=handler,
-                           priority=priority, once=once)
+                           priority=priority, once=once,
+                           namespace=namespace)
         self._subscriptions.append(sub)
         self._subscriptions.sort(key=lambda s: -s.priority)
-        logger.debug("[EventBus] subscribed %s -> %s", pattern, handler.__name__)
+        ns_tag = f" [{namespace}]" if namespace else ""
+        logger.debug("[EventBus] subscribed%s %s -> %s", ns_tag, pattern, handler.__name__)
         return sub
 
     def unsubscribe(self, sub: Subscription) -> None:
@@ -150,6 +166,8 @@ class EventBus:
             for sub in self._subscriptions:
                 if not self._matches(sub.pattern, event.type):
                     continue
+                if not self._namespace_matches(sub.namespace, event.namespace):
+                    continue
                 # Tenant filtering: subscriptions can have a tenant_id attribute
                 sub_tenant = getattr(sub, "tenant_id", None)
                 if sub_tenant is not None and event_tenant is not None:
@@ -206,6 +224,15 @@ class EventBus:
             return fnmatch.fnmatch(event_type, pattern)
         return fnmatch.fnmatch(event_type, pattern)
 
+    @staticmethod
+    def _namespace_matches(sub_namespace: str | None,
+                           event_namespace: str) -> bool:
+        if sub_namespace is None:
+            return True
+        if sub_namespace == event_namespace:
+            return True
+        return fnmatch.fnmatch(event_namespace, sub_namespace)
+
     def publish_sync(self, event: Event) -> None:
         try:
             loop = asyncio.get_event_loop()
@@ -219,7 +246,7 @@ class EventBus:
     # ── In-process handler API (legacy workflow compat) ───────
 
     def on(self, event_type: str, handler: Callable[[Any], None]) -> None:
-        self.subscribe(event_type, handler)
+        self.subscribe(event_type, handler, namespace=SYSTEM_NAMESPACE)
 
     def off(self, event_type: str, handler: Callable[[Any], None]) -> None:
         for sub in list(self._subscriptions):
@@ -233,6 +260,7 @@ class EventBus:
                 type=event.type,
                 source="workflow",
                 payload=event.payload,
+                namespace="workflow",
             )
             self.publish_sync(ev)
         elif isinstance(event, Event):
@@ -264,6 +292,49 @@ class EventBus:
 # ── Global singleton ──────────────────────────────────────────
 
 global_event_bus = EventBus()
+
+
+def register_default_subscribers() -> None:
+    """Register subscribers for events that currently have zero subscribers.
+
+    This ensures telemetry-relevant events (rag.*, workflow.idempotency_hit,
+    config.validation_error, memory.*, database.*) are at minimum logged.
+    Call once during application startup (lifespan).
+    """
+    _log_subscriber = lambda event: logger.info(
+        "[EventBus] %s (source=%s, ns=%s)", event.type, event.source, event.namespace
+    )
+    _subscribers = [
+        RAG_DOCUMENTS_RETRIEVED,
+        RAG_DOCUMENT_SCORED,
+        RAG_RELEVANCE_FEEDBACK,
+        WORKFLOW_IDEMPOTENCY_HIT,
+        CONFIG_VALIDATION_ERROR,
+        MEMORY_FACT_CONFLICT,
+        MEMORY_INDEX_UPDATED,
+        DATABASE_CONNECTION_POOLED,
+    ]
+    for event_type in _subscribers:
+        global_event_bus.subscribe(event_type, _log_subscriber)
+    logger.info("[EventBus] Registered %d default subscribers", len(_subscribers))
+
+
+# ── System event types ─────────────────────────────────────────────────────────
+
+CONFIG_CHANGED = "config.changed"
+CONFIG_RELOADED = "config.reloaded"
+CONFIG_VALIDATION_ERROR = "config.validation_error"
+
+RAG_DOCUMENTS_RETRIEVED = "rag.documents_retrieved"
+RAG_DOCUMENT_SCORED = "rag.document_scored"
+RAG_RELEVANCE_FEEDBACK = "rag.relevance_feedback"
+
+WORKFLOW_IDEMPOTENCY_HIT = "workflow.idempotency_hit"
+
+MEMORY_FACT_CONFLICT = "memory.fact_conflict"
+MEMORY_INDEX_UPDATED = "memory.index_updated"
+
+DATABASE_CONNECTION_POOLED = "database.connection_pooled"
 
 
 # ── Workflow event types ──────────────────────────────────────────────────────
@@ -400,7 +471,7 @@ def unsubscribe_event(pattern: str, handler: Callable) -> None:
 
 def fire_event(event: str, data=None) -> None:
     payload = data if isinstance(data, dict) else {"data": data}
-    ev = Event(type=event, source="system", payload=payload)
+    ev = Event(type=event, source="system", payload=payload, namespace=SYSTEM_NAMESPACE)
     global_event_bus.publish_sync(ev)
 
 
@@ -413,10 +484,18 @@ def get_task_scheduler():
         return None
 
 
-# ── PluginEventBus adapter ───────────────────────────────────
+# ── PluginEventBus adapter (deprecated) ──────────────────────
+
+import warnings as _warnings
+
 
 class PluginEventBus:
-    """Adapter that routes plugin events through the canonical bus + plugin hooks."""
+    """Adapter that routes plugin events through the canonical bus + plugin hooks.
+
+    .. deprecated::
+        Use ``global_event_bus`` directly with ``namespace="plugin"`` instead.
+        PluginEventBus will be removed in a future release.
+    """
 
     _instance: PluginEventBus | None = None
 
@@ -426,12 +505,21 @@ class PluginEventBus:
 
     @classmethod
     def instance(cls) -> PluginEventBus:
+        _warnings.warn(
+            "PluginEventBus is deprecated — use global_event_bus with namespace='plugin' instead",
+            DeprecationWarning, stacklevel=2,
+        )
         if cls._instance is None:
             cls._instance = cls()
         return cls._instance
 
     def subscribe(self, event_type: str, handler: Callable) -> None:
+        _warnings.warn(
+            "PluginEventBus.subscribe() is deprecated — use global_event_bus.subscribe()",
+            DeprecationWarning, stacklevel=2,
+        )
         self._direct_handlers.setdefault(event_type, []).append(handler)
+        self._bus.subscribe(event_type, handler, namespace="plugin")
 
     def unsubscribe(self, event_type: str, handler: Callable) -> None:
         self._direct_handlers[event_type] = [
@@ -439,6 +527,10 @@ class PluginEventBus:
         ]
 
     async def emit(self, event_type: str, **data: Any) -> list[Any]:
+        _warnings.warn(
+            "PluginEventBus.emit() is deprecated — use global_event_bus.publish()",
+            DeprecationWarning, stacklevel=2,
+        )
         results = []
 
         for handler in self._direct_handlers.get(event_type, []):
@@ -452,7 +544,7 @@ class PluginEventBus:
                 logger.exception("[PluginEventBus] Handler %s failed on %s: %s",
                                  getattr(handler, "__name__", "?"), event_type, e)
 
-        ev = Event(type=event_type, source="plugin", payload=data)
+        ev = Event(type=event_type, source="plugin", payload=data, namespace="plugin")
         await self._bus.publish(ev)
 
         try:
