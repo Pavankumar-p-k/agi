@@ -13,7 +13,6 @@ import logging
 from collections.abc import Awaitable, Callable
 from typing import Any
 
-from core.execution import ExecutionManager
 from core.tools._constants import ToolBlock
 from core.tools.execution.handlers import execute_tool_block
 from core.tools.resolver import ToolResolver
@@ -30,10 +29,14 @@ class ToolExecutor:
 
     def __init__(
         self,
-        execution_manager: ExecutionManager | None = None,
+        execution_manager: Any | None = None,
         resolver: ToolResolver | None = None,
     ) -> None:
-        self._execution_manager = execution_manager or ExecutionManager()
+        if execution_manager is not None:
+            self._execution_manager = execution_manager
+        else:
+            from core.execution import ExecutionManager
+            self._execution_manager = ExecutionManager()
         self._resolver = resolver or ToolResolver()
 
     @property

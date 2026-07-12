@@ -1,4 +1,19 @@
-"""Central capability registry — single source of truth for agent routing."""
+"""Central capability registry — single source of truth for agent routing.
+
+All capabilities are registered with ``CapabilityRegistry`` at import time.
+Direct access to ``CAPABILITIES`` is deprecated — use ``capability_registry``
+from ``core.capability`` instead.
+"""
+import logging
+import warnings
+
+warnings.warn(
+    "core.agents.capabilities.CAPABILITIES is deprecated — use core.capability.capability_registry instead",
+    DeprecationWarning,
+    stacklevel=2,
+)
+
+logger = logging.getLogger(__name__)
 
 CAPABILITIES: dict[str, list[str]] = {
     # ── Tool agents (priority 10) ──────────────────────────────────────────
@@ -21,3 +36,27 @@ CAPABILITIES: dict[str, list[str]] = {
     "scribe":   ["documentation", "readme", "changelog", "technical report"],
     "sentinel": ["system health", "diagnose", "optimize", "monitor metrics"],
 }
+
+
+def _register_with_capability_registry() -> None:
+    """Register all capabilities with the canonical ``CapabilityRegistry``."""
+    try:
+        from core.capability import capability_registry
+        from core.capability.models import Capability
+        for agent_id, keywords in CAPABILITIES.items():
+            cap = Capability(
+                id=agent_id,
+                description=f"Agent capability for {agent_id}",
+                version=1,
+                category="agent",
+                permissions=[],
+                inputs={},
+                outputs={},
+                tags=tuple(keywords),
+            )
+            capability_registry.register(cap)
+    except Exception:
+        logger.debug("CapabilityRegistry not available — skipping registration")
+
+
+_register_with_capability_registry()
