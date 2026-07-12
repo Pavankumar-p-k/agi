@@ -381,8 +381,8 @@ class FactStore:
     def _serialize_embedding(embedding: list[float] | None) -> bytes | None:
         if embedding is None:
             return None
-        import struct
-        return struct.pack(f"{len(embedding)}f", *embedding)
+        from memory.embedding_utils import serialize_embedding as _se
+        return _se(embedding)
 
     def _search_by_embedding(
         self,
@@ -394,7 +394,7 @@ class FactStore:
     ) -> list[dict[str, Any]]:
         """Full scan with cosine similarity, scoped to tenant."""
         import numpy as np
-        import struct
+        from memory.embedding_utils import deserialize_embedding, cosine_similarity
 
         q = np.array(query_emb, dtype=np.float32)
         scored: list[tuple[float, dict[str, Any]]] = []
@@ -412,10 +412,10 @@ class FactStore:
                 blob = row["embedding"]
                 if not blob:
                     continue
-                vec = np.frombuffer(blob, dtype=np.float32)
+                vec = deserialize_embedding(blob)
                 if len(vec) != len(q):
                     continue
-                sim = float(np.dot(q, vec) / (np.linalg.norm(q) * np.linalg.norm(vec) + 1e-10))
+                sim = cosine_similarity(q, vec)
                 scored.append((sim, dict(row)))
 
         scored.sort(key=lambda x: x[0], reverse=True)

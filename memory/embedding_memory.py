@@ -86,10 +86,11 @@ class EmbeddingMemory:
             logger.error("[Memory] Skipping store — embedding failed: %s", embedding_result._error)
             return
         embedding = embedding_result.unwrap() if hasattr(embedding_result, 'unwrap') else embedding_result
+        from memory.embedding_utils import serialize_embedding
         conn = sqlite3.connect(self.db_path)
         conn.execute(
             "INSERT INTO semantic_memory (text, metadata, embedding) VALUES (?, ?, ?)",
-            (text, json.dumps(metadata or {}), embedding.tobytes())
+            (text, json.dumps(metadata or {}), serialize_embedding(embedding))
         )
         conn.commit()
         conn.close()
@@ -104,10 +105,11 @@ class EmbeddingMemory:
         cursor = conn.execute("SELECT text, metadata, embedding FROM semantic_memory")
 
         results = []
+        from memory.embedding_utils import deserialize_embedding, cosine_similarity
         for text, metadata, emb_blob in cursor:
             try:
-                emb = np.frombuffer(emb_blob, dtype=np.float32)
-                similarity = np.dot(query_embedding, emb) / (np.linalg.norm(query_embedding) * np.linalg.norm(emb) + 1e-9)
+                emb = deserialize_embedding(emb_blob)
+                similarity = cosine_similarity(query_embedding, emb)
                 results.append({
                     "text": text,
                     "metadata": json.loads(metadata),
