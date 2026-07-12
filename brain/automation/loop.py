@@ -25,8 +25,8 @@ from typing import Any
 from brain.executor.executor import executor, ActionResult
 from brain.goals.goal import Goal
 from brain.goals.goal_manager import GoalManager
-from brain.memory.memory_manager import MemoryManager
 from brain.task_resolver import task_resolver
+from memory.memory_facade import memory as _memory_facade
 from core.execution import ExecutionManager
 from core.llm_router import complete
 from core.pattern_failure_memory import pattern_memory as _pattern_memory_singleton
@@ -974,11 +974,11 @@ class AutomationLoop:
 
     MAX_REPAIR_ATTEMPTS = 10
 
-    def __init__(self, goal_manager: GoalManager, memory_manager: MemoryManager,
+    def __init__(self, goal_manager: GoalManager, memory_manager: MemoryManager | None = None,
                  poll_interval: float = 5.0, project_dir: str = "",
                  execution_manager: ExecutionManager | None = None):
         self.goals = goal_manager
-        self.memory = memory_manager
+        self.memory = memory_manager or _memory_facade
         self.execution_manager = execution_manager or ExecutionManager()
         self.poll_interval = poll_interval
         self._running = False

@@ -7,8 +7,8 @@ from datetime import datetime, timezone
 from typing import Any
 
 from brain.goals.goal_manager import GoalManager
-from brain.memory.memory_manager import MemoryManager
 from brain.executor.executor import executor
+from memory.memory_facade import memory as _memory_facade
 
 logger = logging.getLogger(__name__)
 
@@ -88,9 +88,9 @@ class WorldModel:
     """
 
     def __init__(self, goal_manager: GoalManager | None = None,
-                 memory_manager: MemoryManager | None = None):
+                 memory_manager=None):
         self.goals = goal_manager
-        self.memory = memory_manager
+        self.memory = memory_manager or _memory_facade
         self._entities: dict[str, Entity] = {}
         self._tools_cache: list[dict] = []
 
@@ -144,7 +144,7 @@ class WorldModel:
         except ImportError:
             pass
 
-        mem_summary = self.memory.summarize() if self.memory else {}
+        mem_summary = self.memory.summarize(user_id="brain")
         event_stats = {}
 
         return WorldState(

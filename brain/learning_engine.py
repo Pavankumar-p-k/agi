@@ -5,8 +5,8 @@ from typing import Any
 
 from brain.events.event_bus import Event, global_event_bus
 from brain.events.event_types import LearningApplied
-from brain.memory.memory_manager import MemoryManager
 from brain.goals.goal_manager import GoalManager
+from memory.memory_facade import memory as _memory_facade
 
 logger = logging.getLogger(__name__)
 
@@ -26,9 +26,9 @@ class LearningEngine:
                                                        └──> Subsystem configuration
     """
 
-    def __init__(self, memory_manager: MemoryManager,
+    def __init__(self, memory_manager=None,
                  goal_manager: GoalManager | None = None):
-        self.memory = memory_manager
+        self.memory = memory_manager or _memory_facade
         self.goals = goal_manager
         self._lesson_prompt_suffix: str = ""
         self._suppressed_actions: set[str] = set()
@@ -40,8 +40,8 @@ class LearningEngine:
 
         Returns the number of new lessons applied.
         """
-        failures = self.memory.decision.get_failures(limit=50)
-        lessons = self.memory.decision.get_lessons(limit=50)
+        failures = self.memory.get_failures(limit=50, user_id="brain")
+        lessons = self.memory.get_lessons(limit=50, user_id="brain")
 
         new_count = len(failures) + len(lessons)
         if new_count == self._last_refresh_count and self._lesson_prompt_suffix:

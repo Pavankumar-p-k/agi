@@ -10,8 +10,8 @@ from typing import Any
 
 from brain.events.event_bus import Event, global_event_bus
 from brain.events.event_types import LearningApplied
-from brain.memory.memory_manager import MemoryManager
 from brain.goals.goal_manager import GoalManager
+from memory.memory_facade import memory as _memory_facade
 from brain.tools.project_tool import project_tool
 
 logger = logging.getLogger(__name__)
@@ -45,9 +45,9 @@ class SkillAcquisition:
         → Use automatically when similar task detected next time
     """
 
-    def __init__(self, memory_manager: MemoryManager,
+    def __init__(self, memory_manager=None,
                  goal_manager: GoalManager | None = None):
-        self.memory = memory_manager
+        self.memory = memory_manager or _memory_facade
         self.goals = goal_manager
         self._skills: dict[str, SkillTemplate] = {}
         self._action_sequences: dict[str, list[list[str]]] = defaultdict(list)
@@ -58,7 +58,7 @@ class SkillAcquisition:
 
         Returns newly discovered skill templates.
         """
-        traces = self.memory.task.get_recent(limit=500)
+        traces = self.memory.get_recent_traces(limit=500, user_id="brain")
         if len(traces) < 5:
             return []
 

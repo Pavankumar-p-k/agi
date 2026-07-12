@@ -22,14 +22,12 @@ async def _ensure_automation(project_dir: str = ""):
     if _BUILD_LOOP is not None:
         return
     from brain.goals.goal_manager import GoalManager
-    from brain.memory.memory_manager import MemoryManager
     from brain.automation.loop import AutomationLoop
 
     _GOAL_MANAGER = GoalManager()
-    _MEMORY_MANAGER = MemoryManager()
+    _MEMORY_MANAGER = None  # uses MemoryFacade via AutomationLoop default
     _BUILD_LOOP = AutomationLoop(
         goal_manager=_GOAL_MANAGER,
-        memory_manager=_MEMORY_MANAGER,
         project_dir=str(Path(project_dir).resolve()) if project_dir else "",
     )
 

@@ -11,8 +11,8 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
 
-from brain.memory.memory_manager import MemoryManager
 from brain.goals.goal_manager import GoalManager
+from memory.memory_facade import memory as _memory_facade
 from brain.events.event_bus import Event, global_event_bus
 from brain.events.event_types import LearningApplied
 
@@ -45,9 +45,9 @@ class SelfImprovementEngine:
     own learning process.
     """
 
-    def __init__(self, memory_manager: MemoryManager,
+    def __init__(self, memory_manager=None,
                  goal_manager: GoalManager | None = None):
-        self.memory = memory_manager
+        self.memory = memory_manager or _memory_facade
         self.goals = goal_manager
         self._change_log: list[dict] = []
         self._active_interventions: dict[str, dict] = {}
@@ -87,7 +87,7 @@ class SelfImprovementEngine:
         Reads recent task traces from TaskMemory and computes
         success rate and average duration.
         """
-        traces = self.memory.task.get_recent(limit=n_samples)
+        traces = self.memory.get_recent_traces(limit=n_samples, user_id="brain")
         if not traces:
             return {"success_rate": 0.0, "avg_duration_ms": 0.0, "samples": 0}
 
@@ -180,6 +180,7 @@ class SelfImprovementEngine:
             ),
             success=(outcome == "kept"),
             tags=["self_improvement", "meta_learning", outcome],
+            user_id="brain",
         )
 
         await global_event_bus.publish(Event(

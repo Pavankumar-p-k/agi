@@ -41,14 +41,12 @@ class AgentOrchestrator:
         if self._loop is not None:
             return
         from brain.goals.goal_manager import GoalManager
-        from brain.memory.memory_manager import MemoryManager
         from brain.automation.loop import AutomationLoop
 
         self._goal_manager = GoalManager()
-        self._memory_manager = MemoryManager()
+        self._memory_manager = None  # uses MemoryFacade via AutomationLoop default
         self._loop = AutomationLoop(
             goal_manager=self._goal_manager,
-            memory_manager=self._memory_manager,
             project_dir=self.project_dir,
         )
 
