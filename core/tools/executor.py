@@ -32,15 +32,14 @@ class ToolExecutor:
         execution_manager: Any | None = None,
         resolver: ToolResolver | None = None,
     ) -> None:
-        if execution_manager is not None:
-            self._execution_manager = execution_manager
-        else:
-            from core.execution import ExecutionManager
-            self._execution_manager = ExecutionManager()
+        self._execution_manager = execution_manager
         self._resolver = resolver or ToolResolver()
 
     @property
     def execution_manager(self) -> ExecutionManager:
+        if self._execution_manager is None:
+            from core.execution import ExecutionManager
+            self._execution_manager = ExecutionManager()
         return self._execution_manager
 
     @property

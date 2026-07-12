@@ -16,17 +16,34 @@ import json
 import logging
 import time
 from collections.abc import AsyncGenerator
+from typing import Any
 
+from core.execution import ExecutionManager
 from core.graph.state import AgentState
 
 logger = logging.getLogger(__name__)
 
 
 class StateGraph:
-    def __init__(self):
+    """Node/edge execution graph with ``ExecutionManager`` lifecycle.
+
+    Every node transition publishes a progress event and records
+    memory traces through the canonical ``ExecutionManager``.
+    """
+
+    def __init__(self, execution_manager: ExecutionManager | None = None):
         self.nodes: dict[str, callable] = {}
         self.edges: dict[str, str | tuple] = {}
         self._entry: str | None = None
+        self._execution_manager = execution_manager or ExecutionManager()
+
+    @property
+    def execution_manager(self) -> ExecutionManager:
+        return self._execution_manager
+
+    @execution_manager.setter
+    def execution_manager(self, value: ExecutionManager) -> None:
+        self._execution_manager = value
 
     def add_node(self, name: str, fn: callable):
         self.nodes[name] = fn
@@ -40,13 +57,25 @@ class StateGraph:
     def set_entry_point(self, name: str):
         self._entry = name
 
+    def _make_exec_ctx(self, state: AgentState) -> Any:
+        return self._execution_manager.create_context(
+            source="state_graph",
+            user_id=state.owner or "",
+            metadata={"run_id": state.run_id, "model": state.model or ""},
+        )
+
     async def execute(self, state: AgentState) -> AsyncGenerator[str, None]:
         _start = time.perf_counter()
         _node_times = {}
         current = self._entry
+
+        exec_ctx = self._make_exec_ctx(state)
+        self._execution_manager.publish_progress(exec_ctx, f"graph_start:{self._entry}")
+
         while current and current != "__end__":
             _t0 = time.perf_counter()
             if current == "__pause__":
+                self._execution_manager.publish_progress(exec_ctx, "graph_paused")
                 yield 'data: ' + json.dumps({
                     "type": "paused",
                     "run_id": state.run_id,
@@ -56,6 +85,7 @@ class StateGraph:
 
             # Send heartbeat before each node to keep WS alive
             yield 'data: ' + json.dumps({"type": "phase_change", "phase": current}) + '\n\n'
+            self._execution_manager.publish_progress(exec_ctx, f"node:{current}")
 
             fn = self.nodes.get(current)
             if not fn:
@@ -84,5 +114,16 @@ class StateGraph:
         logger.info("[PROFILE] graph.execute total=%.2fs nodes=[%s]", _wall, _node_summary)
 
         if state.error:
+            self._execution_manager.publish_failed(exec_ctx, state.error)
             yield f'data: {json.dumps({"type": "error", "error": state.error})}\n\n'
+        else:
+            self._execution_manager.publish_completed(exec_ctx, {
+                "node_count": len(_node_times), "wall_s": round(_wall, 2),
+            })
+
+        self._execution_manager.record_trace(
+            exec_ctx, "graph_execute",
+            f"nodes={list(_node_times.keys())} wall={_wall:.2f}s",
+            state.error is None,
+        )
         yield "data: [DONE]\n\n"

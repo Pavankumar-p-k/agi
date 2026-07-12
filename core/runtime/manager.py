@@ -141,6 +141,7 @@ class RuntimeManager:
         request: Request,
     ) -> dict[str, Any]:
         g = graph or self._get_graph()
+        g.execution_manager = self._execution_manager
         state = AgentState(
             run_id=self._run_id,
             messages=[{"role": "user", "content": request.text}],
