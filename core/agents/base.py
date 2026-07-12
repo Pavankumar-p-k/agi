@@ -16,7 +16,9 @@ from __future__ import annotations
 
 import logging
 from abc import ABC, abstractmethod
+from typing import Any
 
+from core.execution import ExecutionManager
 from core.workflow.context import ExecutionContext
 from core.workflow.models import StepDefinition
 
@@ -27,13 +29,16 @@ class BaseAgent(ABC):
     """Abstract base for all specialized agents in the multi-agent graph.
 
     Subclasses must set agent_id and capabilities at minimum.
+    Every agent now executes through ``ExecutionManager`` for lifecycle
+    events, memory recording, and workflow integration.
     """
 
     agent_id: str = ""
     capabilities: list[str] = []
     priority: int = 100
 
-    def __init__(self, **kwargs):
+    def __init__(self, execution_manager: ExecutionManager | None = None, **kwargs: Any):
+        self._execution_manager = execution_manager or ExecutionManager()
         for k, v in kwargs.items():
             setattr(self, k, v)
 
@@ -69,6 +74,50 @@ class BaseAgent(ABC):
           {"_artifacts": dict, "error": str}
         """
         ...
+
+    async def execute_with_lifecycle(
+        self, context: ExecutionContext | None = None,
+    ) -> dict:
+        """Execute with ``ExecutionManager`` lifecycle tracking.
+
+        Publishes started/progress/completed/failed events and records
+        memory traces automatically.  Subclasses should call this instead
+        of ``execute()`` for canonical lifecycle integration.
+        """
+        ec = context or ExecutionContext(
+            workflow_id=f"agent_{self.agent_id}",
+            owner=self.agent_id,
+            session_id="",
+        )
+        exec_ctx = self._execution_manager.create_context(
+            source=f"agent:{self.agent_id}",
+            metadata={"agent_id": self.agent_id},
+        )
+
+        self._execution_manager.publish_progress(
+            exec_ctx, f"agent_start:{self.agent_id}",
+        )
+        try:
+            result = await self.execute(context)
+            if result.get("exit_code", -1) == 0:
+                self._execution_manager.publish_completed(exec_ctx, result)
+            else:
+                self._execution_manager.publish_failed(
+                    exec_ctx, result.get("error", "non-zero exit"),
+                )
+            self._execution_manager.record_trace(
+                exec_ctx, f"agent:{self.agent_id}",
+                result.get("output", ""),
+                result.get("exit_code", -1) == 0,
+                action_params={"agent_id": self.agent_id},
+            )
+            return result
+        except Exception as exc:
+            self._execution_manager.publish_failed(exec_ctx, str(exc))
+            self._execution_manager.record_trace(
+                exec_ctx, f"agent:{self.agent_id}", str(exc), False,
+            )
+            return {"output": "", "exit_code": 1, "error": str(exc)}
 
     # ── Verification ───────────────────────────────────────────────────────
     def verify(self, context: ExecutionContext | None = None,

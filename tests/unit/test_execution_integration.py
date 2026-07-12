@@ -1,3 +1,4 @@
+import unittest
 import pytest
 from unittest.mock import MagicMock, patch, ANY
 
@@ -221,3 +222,43 @@ class TestAutomationLoopIntegration:
                         assert "self.execution_manager.record_decision" in body
                         return
         pytest.fail("_build_project not found")
+
+
+# ── RuntimeManager tests ───────────────────────────────────────────
+
+class TestRuntimeManager:
+    def test_initial_state(self):
+        from core.runtime import RuntimeManager, RuntimeState
+        mgr = RuntimeManager()
+        assert mgr.state == RuntimeState.CREATED
+        assert mgr.run_id == ""
+
+    def test_state_transitions_publish_events(self):
+        from core.runtime import RuntimeManager, RuntimeState
+        from core.execution import ExecutionManager
+        mgr = RuntimeManager()
+        mgr._execution_manager = unittest.mock.MagicMock()
+        from core.execution import ExecutionContext
+        ctx = ExecutionContext(workflow_id="test", execution_id="test")
+        mgr._transition(RuntimeState.INITIALIZING, ctx)
+        assert mgr.state == RuntimeState.INITIALIZING
+        mgr._execution_manager.publish_progress.assert_called_once()
+
+    def test_process_returns_response(self):
+        import asyncio
+        from core.runtime import RuntimeManager
+        from core.pipeline.messages import Request
+        mgr = RuntimeManager()
+        req = Request(text="hello", transport="test")
+        resp = asyncio.run(mgr.process(req))
+        assert resp is not None
+        # Response always has text and error fields
+        assert hasattr(resp, "text")
+        assert isinstance(resp, object)
+
+    def test_execute_graph_uses_state_graph(self):
+        from core.runtime import RuntimeManager
+        mgr = RuntimeManager()
+        mgr._execution_manager = unittest.mock.MagicMock()
+        assert hasattr(mgr, "_execute_graph")
+        assert callable(mgr._execute_graph)

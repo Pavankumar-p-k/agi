@@ -6,7 +6,7 @@ from typing import Any
 from core.runtime.context import RuntimeContext
 from core.runtime.protocols import (
     ActivityService,
-    EventBus,
+    EventBusProtocol as EventBus,
     MemoryService,
     MetricsService,
     ObservationService,

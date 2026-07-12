@@ -16,6 +16,7 @@ from typing import Any, Awaitable, Callable
 from core.agents.graph import GraphNode, NodeStatus, build_graph_from_tasks
 from core.agents.parallel_executor import ParallelAgentExecutor
 from core.agents.router import AgentRouter, find_agent_for_goal, get_agent
+from core.execution import ExecutionManager
 from core.planner.executor import PlannerExecutor
 from core.planner.templates import STEP_TO_PRIMARY_TOOL, TOOL_TO_STEP
 from core.tools._constants import ToolBlock
@@ -47,6 +48,7 @@ def make_agent_execute_fn(
     _router = router or AgentRouter()
     _ctx = dict(global_context or {})
     _counter: list[int] = [0]
+    _exec_mgr = ExecutionManager()
 
     async def _agent_enforce(tool_name: str, default_args: dict) -> dict:
         """Execute_fn for inject_task — maps tool_name to agent and executes."""
@@ -66,6 +68,10 @@ def make_agent_execute_fn(
             return result
 
         _counter[0] += 1
+        exec_ctx = _exec_mgr.create_context(
+            source=f"agent_enforce:{step_name}",
+            metadata={"args": default_args},
+        )
         ec = ExecutionContext(
             workflow_id=f"enforce_{step_name}_{_counter[0]}",
             owner="planner",
@@ -75,6 +81,7 @@ def make_agent_execute_fn(
         if _ctx:
             ec.variables.update(_ctx)
 
+        _exec_mgr.publish_progress(exec_ctx, f"enforce:{step_name}")
         return await agent.execute(ec)
 
     async def execute_fn(goal: str, executor: PlannerExecutor) -> dict[str, Any]:
@@ -100,6 +107,10 @@ def make_agent_execute_fn(
                 continue
 
             _counter[0] += 1
+            exec_ctx = _exec_mgr.create_context(
+                source=f"agent:{task['agent_id']}",
+                metadata={"task": task.get("agent_id", ""), "parameters": task.get("parameters", {})},
+            )
             ec = ExecutionContext(
                 workflow_id=f"agent_{task['agent_id']}_{_counter[0]}",
                 owner="planner",
@@ -111,7 +122,13 @@ def make_agent_execute_fn(
                     if k not in ec.variables:
                         ec.variables[k] = v
 
+            _exec_mgr.publish_progress(exec_ctx, f"agent_start:{task['agent_id']}")
             result = await agent.execute(ec)
+            _exec_mgr.record_trace(
+                exec_ctx, f"agent:{task['agent_id']}",
+                result.get("output", ""),
+                result.get("exit_code", -1) == 0,
+            )
 
             step_ok = (
                 result.get("exit_code", -1) == 0
@@ -200,6 +217,7 @@ def make_parallel_agent_execute_fn(
     _router = router or AgentRouter()
     _ctx = dict(global_context or {})
     _counter: list[int] = [0]
+    _exec_mgr = ExecutionManager()
 
     async def _agent_enforce(tool_name: str, default_args: dict) -> dict:
         """Execute_fn for inject_task — maps tool_name to agent and executes."""
@@ -215,6 +233,10 @@ def make_parallel_agent_execute_fn(
             _, result = await execute_tool_block(block)
             return result
         _counter[0] += 1
+        exec_ctx = _exec_mgr.create_context(
+            source=f"agent_enforce:{step_name}",
+            metadata={"args": default_args},
+        )
         ec = ExecutionContext(
             workflow_id=f"enforce_{step_name}_{_counter[0]}",
             owner="planner", session_id="",
@@ -222,6 +244,7 @@ def make_parallel_agent_execute_fn(
         )
         if _ctx:
             ec.variables.update(_ctx)
+        _exec_mgr.publish_progress(exec_ctx, f"enforce:{step_name}")
         return await agent.execute(ec)
 
     async def execute_fn(goal: str, executor: PlannerExecutor) -> dict[str, Any]:

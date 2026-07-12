@@ -10,6 +10,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""DEPRECATED — Use core/agents/ (BaseAgent + ExecutionManager) instead.
+
+This module provides a simple regex-based [TOOL: name(args)] tool-loop
+runtime that bypasses the canonical ExecutionManager/WorkflowEngine path.
+New agent execution should use core/agents/ with ExecutionManager.
+"""
+import warnings
+warnings.warn(
+    "core.agent_runtime is deprecated — use core.agents (BaseAgent) with ExecutionManager",
+    DeprecationWarning,
+    stacklevel=2,
+)
 from __future__ import annotations
 
 import asyncio

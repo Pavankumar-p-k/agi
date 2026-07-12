@@ -11,14 +11,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """core/agent_registry.py
-DEPRECATED — Use core/providers/ and core/providers/adapters/ instead.
+DEPRECATED — Use core/providers/ and core/agents/ instead.
 
 This module is kept for backward compatibility only.
 CLI agent definitions are now in:
   - core/providers/adapters/claude_code.py
   - core/providers/adapters/codex.py
-New agents should implement ExecutionProvider (core/providers/base.py).
+New agents should implement BaseAgent (core/agents/base.py) with ExecutionManager.
 """
+import warnings
+warnings.warn(
+    "core.agent_registry is deprecated — use core/agents/ (BaseAgent) with ExecutionManager",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 import asyncio
 import logging

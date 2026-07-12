@@ -6,7 +6,7 @@ from core.runtime.context import RuntimeContext
 from core.runtime.providers import ExecutionRuntime, RuntimeServices
 from core.runtime.protocols import (
     ActivityService,
-    EventBus,
+    EventBusProtocol as EventBus,
     MemoryService,
     MetricsService,
     ObservationService,
