@@ -1,9 +1,8 @@
 """
-Deprecated — use core.planner.executor or core.planner.state_machine instead.
+Deprecated — use core.planner instead.
 
-This legacy planner creates a fixed 3-node DAG (create_directory → write_file →
-run_command). New code should use the canonical core.planner package with
-templates, state machine, and agent routing.
+Shim that wraps CorePlanner (GoalDecomposer + PlannerExecutor) in the old
+brain.planner.Planner interface. All new code should import from core.planner.
 """
 from __future__ import annotations
 
@@ -11,8 +10,10 @@ import json
 import logging
 import warnings
 
-from brain.reasoning_engine import reasoning_engine
 from core.planner.dag import TaskGraph
+from core.planner.decomposer import GoalDecomposer
+from core.planner.executor import PlannerExecutor
+from core.planner.protocol import Plan, PlanStatus
 
 logger = logging.getLogger(__name__)
 
@@ -32,13 +33,19 @@ def _warn():
 class Planner:
     def __init__(self):
         _warn()
-        self._engine = reasoning_engine
+        self._decomposer = GoalDecomposer()
+        self._executor = PlannerExecutor()
 
     async def plan(self, goal: str, context: str = "") -> TaskGraph:
+        subgoal = self._decomposer.decompose(goal)
         graph = TaskGraph()
-        root = graph.add_node(label="create_directory", description="Create project directory structure")
-        write = graph.add_node(label="write_file", description="Write source files", depends_on=[root.label])
-        build = graph.add_node(label="run_command", description="Build and verify", depends_on=[write.label])
+        for leaf in subgoal.flatten():
+            graph.add_node(
+                label=leaf.step_name or "build",
+                description=leaf.description,
+            )
+        if len(graph) == 0:
+            graph.add_node(label="build", description=goal[:80])
         logger.info("[Planner] created %d-node task graph for: %s", len(graph), goal[:60])
         return graph
 
@@ -66,6 +73,17 @@ class Planner:
                 ]
                 graph.nodes[new_node.id] = new_node
         return graph
+
+    def create_plan(self, goal: str, context: dict | None = None) -> Plan:
+        """CorePlanner protocol compatibility."""
+        subgoal = self._decomposer.decompose(goal)
+        plan = self._executor.create_plan(goal)
+        return Plan(
+            id=plan.get("plan_id", goal[:8]) if plan else goal[:8],
+            goal=goal,
+            status=PlanStatus.DRAFT,
+            root_node={"id": "root", "children": [s.to_dict() if hasattr(s, 'to_dict') else {"id": s.id, "description": s.description} for s in subgoal.flatten()]},
+        )
 
 
 planner = Planner()

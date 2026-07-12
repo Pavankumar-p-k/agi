@@ -6,6 +6,7 @@ The planner owns the decomposition; the model never touches structure.
 
 from __future__ import annotations
 
+import json
 import logging
 import re
 from typing import Any
@@ -260,15 +261,76 @@ def _find_project_components(goal_lower: str) -> list[dict] | None:
 
 
 class GoalDecomposer:
-    """Deterministic goal decomposer — no LLM calls.
+    """Deterministic goal decomposer with optional LLM fallback.
 
     Breaks a natural-language goal into a tree of SubGoals using keyword
-    patterns and grammar heuristics. Each leaf sub-goal maps to either a
-    workflow template (via classify) or a direct tool step.
+    patterns and grammar heuristics. If heuristic decomposition produces
+    fewer than 2 sub-goals, attempts LLM-based decomposition for novel tasks.
+    Each leaf sub-goal maps to either a workflow template (via classify)
+    or a direct tool step.
     """
 
     def __init__(self):
         self._subgoal_counter = 0
+
+    async def _llm_decompose(self, goal: str) -> SubGoal | None:
+        """LLM-based decomposition fallback for novel/unrecognized goals."""
+        try:
+            from core.llm_router import complete
+
+            prompt = (
+                "You are a goal decomposition assistant. Decompose the following user goal "
+                "into a JSON array of sub-tasks. Each sub-task must have a 'description' (short phrase), "
+                "a 'step_name' (one of: research, build, test, validate, email, notify, codegen, "
+                "security, docs, analytics, synthesize, monitor, planning, extraction), "
+                "and an optional 'parameters' dict.\n\n"
+                f"Goal: {goal}\n\n"
+                "Return ONLY a valid JSON array — no markdown, no explanation:\n"
+                '[{"description": "...", "step_name": "...", "parameters": {}}]'
+            )
+            result = await complete("smart", [{"role": "user", "content": prompt}], timeout=30)
+            if not result or result.is_err():
+                logger.debug("LLM decompose: no result for %r", goal[:60])
+                return None
+            text = result.unwrap().strip()
+            if text.startswith("```"):
+                text = text.split("\n", 1)[-1].rsplit("```", 1)[0].strip()
+            tasks = json.loads(text)
+            if not isinstance(tasks, list) or len(tasks) < 2:
+                return None
+            children = []
+            for t in tasks:
+                desc = t.get("description", "")
+                step = t.get("step_name", "build")
+                params = t.get("parameters", {})
+                children.append(SubGoal(
+                    id=self._next_id(),
+                    description=desc[:120],
+                    step_name=step,
+                    parameters=params,
+                ))
+            if not children:
+                return None
+            logger.info("Decomposer: LLM fallback produced %d sub-goals for %r",
+                        len(children), goal[:60])
+            return SubGoal(id=self._next_id(), description=goal[:120], children=children)
+        except Exception as e:
+            logger.debug("LLM decompose failed for %r: %s", goal[:60], e)
+            return None
+
+    async def async_decompose(self, goal: str) -> SubGoal:
+        """Async decomposition with LLM fallback for novel tasks.
+
+        Uses keyword heuristics first; if fewer than 2 sub-goals are found,
+        falls back to LLM-based decomposition.
+        """
+        root = self.decompose(goal)
+        if len(root.children) >= 2:
+            return root
+        llm_root = await self._llm_decompose(goal)
+        if llm_root and llm_root.children:
+            return llm_root
+        return root
 
     def _next_id(self) -> str:
         self._subgoal_counter += 1

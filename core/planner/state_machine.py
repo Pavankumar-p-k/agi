@@ -75,10 +75,13 @@ class PlannerStateMachine:
     """
 
     def __init__(self, executor: PlannerExecutor, router: Any = None,
-                 activity_recorder: Any = None):
+                 activity_recorder: Any = None, health_engine: Any = None,
+                 replan_engine: Any = None):
         self.executor = executor
         self.router = router
         self.activity_recorder = activity_recorder
+        self.health_engine = health_engine
+        self.replan_engine = replan_engine
         self.state = State.PLAN
         self.plan: SubGoal | None = None
         self.verification_results: list[dict[str, Any]] = []
@@ -158,8 +161,9 @@ class PlannerStateMachine:
 
         self.state = State.EXECUTE
 
-        # ── EXECUTE + VERIFY loop ──────────────────────────────────────
+        # ── EXECUTE + VERIFY + HEALTH loop ────────────────────────────
         execution_result: dict[str, Any] = {}
+        _replan_attempted = False
         while self.state == State.EXECUTE:
             logger.info("StateMachine: EXECUTE (retry=%d)", self._verify_retries)
 
@@ -173,6 +177,17 @@ class PlannerStateMachine:
             self._last_execution_result = execution_result
 
             if execution_result.get("error"):
+                # Check health before declaring FAILED
+                if not _replan_attempted and self.health_engine:
+                    health = self.health_engine.evaluate(template_id or goal)
+                    if health.get("status") in ("replan_recommended", "replan_required"):
+                        logger.info("StateMachine: health=%s -> attempting replan", health["status"])
+                        if self.replan_engine:
+                            replan_opts = self.replan_engine.get_options(template_id or goal)
+                            if replan_opts and "error" not in replan_opts:
+                                _replan_attempted = True
+                                self._verify_retries = 0
+                                continue
                 result["error"] = execution_result["error"]
                 self.state = State.FAILED
                 break
@@ -193,9 +208,22 @@ class PlannerStateMachine:
             else:
                 self._verify_retries += 1
                 if self._verify_retries >= _MAX_VERIFY_RETRIES:
-                    logger.warning("StateMachine: verification failed after %d retries", _MAX_VERIFY_RETRIES)
-                    self.state = State.FAILED
-                    result["error"] = "Verification failed after max retries"
+                    health_replanned = False
+                    if not _replan_attempted and self.health_engine:
+                        health = self.health_engine.evaluate(template_id or goal)
+                        if health.get("status") in ("replan_recommended", "replan_required"):
+                            logger.info("StateMachine: health=%s after verify fail -> replan", health["status"])
+                            if self.replan_engine:
+                                replan_opts = self.replan_engine.get_options(template_id or goal)
+                                if replan_opts and "error" not in replan_opts:
+                                    _replan_attempted = True
+                                    health_replanned = True
+                                    self._verify_retries = 0
+                                    self.state = State.EXECUTE
+                    if not health_replanned:
+                        logger.warning("StateMachine: verification failed after %d retries", _MAX_VERIFY_RETRIES)
+                        self.state = State.FAILED
+                        result["error"] = "Verification failed after max retries"
                 else:
                     logger.info("StateMachine: verification failed -> re-EXECUTE")
                     self.state = State.EXECUTE
