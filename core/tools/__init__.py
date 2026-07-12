@@ -11,6 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from core.tools.execution import _run_subprocess_streaming, execute_tool_block
+from core.tools.executor import ToolExecutor, tool_executor
 from core.tools.implementations import (
     do_adopt_served_model,
     do_api_call,
@@ -53,6 +54,8 @@ from core.tools.implementations import (
 )
 from core.tools.index import ALWAYS_AVAILABLE, BUILTIN_TOOL_DESCRIPTIONS, ToolIndex
 from core.tools.parsing import _TOOL_NAME_MAP, ToolBlock, parse_tool_blocks, strip_tool_blocks
+from core.tools.registry import ToolRegistry, ToolRecord, tool_registry
+from core.tools.resolver import ToolResolver, ResolutionResult, tool_resolver
 from core.tools.schemas import FUNCTION_TOOL_SCHEMAS, function_call_to_tool_block
 from core.tools.security import (
     NON_ADMIN_BLOCKED_TOOLS,
@@ -64,7 +67,9 @@ from core.tools.security import (
 __all__ = [
     "FUNCTION_TOOL_SCHEMAS", "function_call_to_tool_block",
     "NON_ADMIN_BLOCKED_TOOLS", "is_public_blocked_tool", "owner_is_admin_or_single_user", "blocked_tools_for_owner",
-    "ToolIndex", "ALWAYS_AVAILABLE", "BUILTIN_TOOL_DESCRIPTIONS",
+    "ResolutionResult", "ToolExecutor", "ToolIndex", "ToolRecord", "ToolRegistry", "ToolResolver",
+    "tool_executor", "tool_registry", "tool_resolver",
+    "ALWAYS_AVAILABLE", "BUILTIN_TOOL_DESCRIPTIONS",
     "parse_tool_blocks", "strip_tool_blocks", "ToolBlock", "_TOOL_NAME_MAP",
     "execute_tool_block", "_run_subprocess_streaming",
     "do_create_document", "do_update_document", "do_edit_document", "do_suggest_document",
