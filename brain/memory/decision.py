@@ -8,7 +8,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
-from core.memory import get_text_similarity
+from memory.similarity import get_text_similarity
 
 from .base import MemoryProvider
 

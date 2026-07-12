@@ -13,12 +13,6 @@
 
 """
 DEPRECATED — use `memory.memory_facade.MemoryFacade` instead.
-
-This module is a backward-compatibility shim. MemoryManager still works
-but new code MUST use the memory/ package API.
-
-Deprecated: v3.2
-Remove after: v4.0
 """
 import json
 import logging
@@ -26,59 +20,18 @@ import os
 import re
 import time
 import uuid
+import warnings
 from datetime import datetime
 
-import numpy as np
+from memory.similarity import get_text_similarity, jaccard_similarity, tokenize  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
-_embedding_client = None
-
-def _get_embedder():
-    global _embedding_client
-    if _embedding_client is None:
-        try:
-            from core.embeddings import get_embedding_client
-            _embedding_client = get_embedding_client()
-        except Exception as _e:
-            logger.debug("memory get_embedder failed: %s", _e)
-            _embedding_client = False
-    return _embedding_client if _embedding_client is not False else None
-
-def tokenize(text: str) -> list[str]:
-    """Simple tokenizer that splits on whitespace and removes punctuation."""
-    return [word.strip('.,!?";') for word in text.split()]
-
-def jaccard_similarity(text1: str, text2: str) -> float:
-    """Calculate Jaccard similarity between two texts."""
-    if not text1 or not text2:
-        return 0.0
-
-    tokens1 = set(tokenize(text1.lower()))
-    tokens2 = set(tokenize(text2.lower()))
-
-    if not tokens1 and not tokens2:
-        return 1.0
-    if not tokens1 or not tokens2:
-        return 0.0
-
-    intersection = tokens1.intersection(tokens2)
-    union = tokens1.union(tokens2)
-
-    return len(intersection) / len(union)
-
-def get_text_similarity(text1: str, text2: str) -> float:
-    """Calculate semantic similarity using embeddings, with Jaccard fallback."""
-    embedder = _get_embedder()
-    if embedder is not None:
-        try:
-            vecs = embedder.encode([text1, text2], normalize_embeddings=True)
-            if vecs.size > 0:
-                sim = float(np.dot(vecs[0], vecs[1]))
-                return max(0.0, min(1.0, sim))
-        except Exception as _e:
-            logger.debug("memory get_text_similarity failed: %s", _e)
-    return jaccard_similarity(text1, text2)
+warnings.warn(
+    "core.memory is deprecated. Use 'memory.memory_facade' for memory "
+    "and 'memory.similarity' for text similarity utilities.",
+    DeprecationWarning, stacklevel=2,
+)
 
 _mm_warned = False
 
