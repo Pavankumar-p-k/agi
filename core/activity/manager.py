@@ -1,8 +1,12 @@
 """ActivityManager — high-level API for the activity graph.
 
-Wraps ActivityStore with domain operations:
-  create_activity, create_subgoal, create_agent_task, record_artifact,
-  add_dependency, mark_completed, resume_candidates, etc.
+All status transitions publish lifecycle events through ``ExecutionManager``
+so that subscribers can react to activity state changes in real time.
+
+Events published:
+  - activity.created / suspended / completed / failed
+  - subgoal.created / agent_task.created / tool_call.created / artifact.created
+  - node.running / node.completed / node.failed
 """
 
 from __future__ import annotations
@@ -10,16 +14,19 @@ from __future__ import annotations
 import logging
 import uuid
 from datetime import datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from core.activity.models import ActivityEdge, ActivityNode, ActivityStatus
 from core.activity.storage import ActivityStore
+
+if TYPE_CHECKING:
+    from core.execution import ExecutionManager
 
 logger = logging.getLogger(__name__)
 
 
 class ActivityManager:
-    """Domain operations for the activity graph.
+    """Domain operations for the activity graph with ``ExecutionManager`` lifecycle.
 
     Usage:
         mgr = ActivityManager()
@@ -30,12 +37,39 @@ class ActivityManager:
         mgr.mark_completed(task.node_id, output={"result": "..."}, artifacts={"report": "art_001"})
     """
 
-    def __init__(self, store: ActivityStore | None = None):
+    def __init__(self, store: ActivityStore | None = None,
+                 execution_manager: ExecutionManager | None = None):
         self._store = store or ActivityStore()
+        self._execution_manager = execution_manager
+        self._exec_ctx: Any = None
 
     @property
     def store(self) -> ActivityStore:
         return self._store
+
+    def _em(self) -> ExecutionManager:
+        if self._execution_manager is None:
+            from core.execution import ExecutionManager as _EM
+            self._execution_manager = _EM()
+        return self._execution_manager
+
+    def _publish(self, event: str, node: ActivityNode) -> None:
+        """Publish a lifecycle event for the given node."""
+        em = self._em()
+        em.publish_progress(self._ctx, f"activity.{event}:{node.node_id}")
+        em.record_trace(
+            self._ctx, event,
+            f"{node.node_type}:{node.label[:80]}", True,
+        )
+
+    @property
+    def _ctx(self) -> Any:
+        if self._exec_ctx is None:
+            self._exec_ctx = self._em().create_context(
+                source="activity_manager",
+                request_id="activity_graph",
+            )
+        return self._exec_ctx
 
     # ── Activity lifecycle ──────────────────────────────────────────────────
 
@@ -56,6 +90,7 @@ class ActivityManager:
             started_at=now,
         )
         self._store.create_node(node)
+        self._publish("created", node)
         logger.info("ActivityManager: created activity=%s goal=%r", node_id, goal[:60])
         return node
 
@@ -65,6 +100,7 @@ class ActivityManager:
         if root and root.depth == 0:
             root.status = ActivityStatus.SUSPENDED
             self._store.update_node(root)
+            self._publish("suspended", root)
             # Also mark any running children as SUSPENDED
             for node in self._store.get_activity_tree(activity_id):
                 if node.status == ActivityStatus.RUNNING:
@@ -82,6 +118,7 @@ class ActivityManager:
         if output:
             root.output = output
         self._store.update_node(root)
+        self._publish("completed", root)
 
     def fail_activity(self, activity_id: str, error: str) -> None:
         root = self._store.get_node(activity_id)
@@ -92,6 +129,7 @@ class ActivityManager:
         root.completed_at = now
         root.output = {"error": error}
         self._store.update_node(root)
+        self._publish("failed", root)
 
     # ── Sub-goal / task creation ────────────────────────────────────────────
 
@@ -114,6 +152,7 @@ class ActivityManager:
             created_at=now,
         )
         self._store.create_node(node)
+        self._publish("subgoal.created", node)
         return node
 
     def create_agent_task(self, activity: ActivityNode, agent_id: str,
@@ -145,6 +184,7 @@ class ActivityManager:
             started_at=now,
         )
         self._store.create_node(node)
+        self._publish("agent_task.created", node)
         return node
 
     def create_tool_call(self, parent: ActivityNode, tool_type: str,
@@ -167,6 +207,7 @@ class ActivityManager:
             created_at=now,
         )
         self._store.create_node(node)
+        self._publish("tool_call.created", node)
         return node
 
     def create_artifact_node(self, parent: ActivityNode, name: str,
@@ -190,6 +231,7 @@ class ActivityManager:
             completed_at=now,
         )
         self._store.create_node(node)
+        self._publish("artifact.created", node)
         return node
 
     # ── Status transitions ──────────────────────────────────────────────────
@@ -200,6 +242,7 @@ class ActivityManager:
             node.status = ActivityStatus.RUNNING
             node.started_at = node.started_at or datetime.utcnow()
             self._store.update_node(node)
+            self._publish("node.running", node)
 
     def mark_completed(self, node_id: str, output: dict | None = None,
                         artifacts: dict[str, str] | None = None) -> None:
@@ -213,6 +256,7 @@ class ActivityManager:
         if artifacts:
             node.artifacts.update(artifacts)
         self._store.update_node(node)
+        self._publish("node.completed", node)
 
     def mark_failed(self, node_id: str, error: str) -> None:
         node = self._store.get_node(node_id)
@@ -222,6 +266,7 @@ class ActivityManager:
         node.completed_at = datetime.utcnow()
         node.output = {"error": error}
         self._store.update_node(node)
+        self._publish("node.failed", node)
 
     # ── Dependencies ────────────────────────────────────────────────────────
 
