@@ -343,6 +343,20 @@ class MemoryFacade:
         return []
 
     # ------------------------------------------------------------------ #
+    # Vector store (ChromaDB)
+    # ------------------------------------------------------------------ #
+
+    def search_vectors(self, query: str, limit: int = 8,
+                       collection: str = "odysseus_memories") -> list[dict]:
+        """Unified vector search across ChromaDB collections."""
+        try:
+            from memory.vector_store import search_collection
+            return search_collection(collection, query, k=limit)
+        except Exception as e:
+            logger.debug("search_vectors failed: %s", e)
+            return []
+
+    # ------------------------------------------------------------------ #
     # Introspection
     # ------------------------------------------------------------------ #
 

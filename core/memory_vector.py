@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-memory_vector.py
+DEPRECATED — use ``memory.vector_store`` instead.
 
 ChromaDB-backed vector store for memory entries.
 Shares the EmbeddingClient with RAG to save memory.
@@ -19,8 +19,14 @@ Stores pre-computed embeddings (ChromaDB does not manage embedding).
 """
 
 import logging
+import warnings
 
 logger = logging.getLogger(__name__)
+
+warnings.warn(
+    "core.memory_vector is deprecated. Use 'memory.vector_store' instead.",
+    DeprecationWarning, stacklevel=2,
+)
 
 
 class MemoryVectorStore:
