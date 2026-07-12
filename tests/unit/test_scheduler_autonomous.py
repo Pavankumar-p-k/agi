@@ -62,6 +62,7 @@ class TestAutonomousScheduler:
             engine=None,  # will be set per test
             decision=self._engine,
             queue=self._queue,
+            execution_manager=MagicMock(),
         )
 
     def teardown_method(self):
@@ -241,6 +242,7 @@ class TestAutonomousSchedulerWithRealIntelligence:
             engine=None,
             decision=self._engine,
             queue=self._queue,
+            execution_manager=MagicMock(),
         )
 
     def teardown_method(self):

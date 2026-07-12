@@ -56,15 +56,14 @@ class ToolExecutor:
         context: Any | None = None,
     ) -> tuple[str, dict]:
         tool_name = block.tool_type if hasattr(block, "tool_type") else str(block)
+        em = self.execution_manager
 
-        exec_ctx = self._execution_manager.create_context(
+        exec_ctx = em.create_context(
             source=f"tool:{tool_name}",
             metadata={"tool": tool_name, "owner": owner or ""},
         )
 
-        self._execution_manager.publish_progress(
-            exec_ctx, f"tool_start:{tool_name}",
-        )
+        em.publish_progress(exec_ctx, f"tool_start:{tool_name}")
         try:
             text, result = await execute_tool_block(
                 block=block,
@@ -76,20 +75,20 @@ class ToolExecutor:
             )
             success = result.get("exit_code", 0) == 0 if isinstance(result, dict) else True
             if success:
-                self._execution_manager.publish_completed(exec_ctx, result)
+                em.publish_completed(exec_ctx, result)
             else:
-                self._execution_manager.publish_failed(
+                em.publish_failed(
                     exec_ctx, result.get("error", "") if isinstance(result, dict) else str(result),
                 )
-            self._execution_manager.record_trace(
+            em.record_trace(
                 exec_ctx, f"tool:{tool_name}",
                 text[:500] if text else "",
                 success,
             )
             return text, result
         except Exception as exc:
-            self._execution_manager.publish_failed(exec_ctx, str(exc))
-            self._execution_manager.record_trace(
+            em.publish_failed(exec_ctx, str(exc))
+            em.record_trace(
                 exec_ctx, f"tool:{tool_name}", str(exc), False,
             )
             return "", {"error": str(exc), "exit_code": 1}

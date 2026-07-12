@@ -19,6 +19,7 @@ import sqlite3
 from datetime import datetime, timedelta
 from pathlib import Path
 
+from core.execution import ExecutionManager
 from core.storage import USER_DB
 
 try:
@@ -35,10 +36,15 @@ DB_PATH = Path(USER_DB)
 class Scheduler:
     """Persistent job scheduler with interval and cron support."""
 
-    def __init__(self):
+    def __init__(self, execution_manager: ExecutionManager | None = None):
         self._init_db()
         self._task: asyncio.Task | None = None
         self._running = False
+        self._execution_manager = execution_manager or ExecutionManager()
+        self._exec_ctx = self._execution_manager.create_context(
+            source="cron_scheduler", request_id="cron_main",
+            metadata={"type": "legacy_cron"},
+        )
 
     def _init_db(self):
         DB_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -154,6 +160,7 @@ class Scheduler:
         if not self._running:
             self._running = True
             self._task = asyncio.create_task(self._loop())
+            self._execution_manager.publish_progress(self._exec_ctx, "cron.started")
             logger.info("Scheduler started")
 
     async def stop(self):
@@ -165,6 +172,7 @@ class Scheduler:
             except asyncio.CancelledError:
                 pass
             self._task = None
+        self._execution_manager.publish_completed(self._exec_ctx, {"cron": "stopped"})
         logger.info("Scheduler stopped")
 
 

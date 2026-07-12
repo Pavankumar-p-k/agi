@@ -1,19 +1,10 @@
 """Scheduler — persistent, time-driven autonomous activity loop with worker pool.
 
-Architecture:
-    Scheduler (this file)
-        │
-        ├── SchedulerQueue (dependency-aware + persistent)
-        │       ├── SchedulerStore (SQLite)
-        │       └── ActivityManager (ActivityGraph)
-        │
-        ├── Worker Pool (concurrent execution, max_workers=N)
-        │       └── asyncio.Task per activity
-        │
-        └── SchedulerRegistry (executor mapping)
-                ├── ResearchExecutor → do_browser_research
-                ├── BuildExecutor    → build_project
-                └── ...
+All lifecycle events are published through ``ExecutionManager``:
+  - ``publish_progress`` for start / pause / resume / tick
+  - ``publish_completed`` for normal stop
+  - ``publish_failed`` for unexpected crash
+  - ``record_trace`` for per-activity memory traces
 """
 
 from __future__ import annotations
@@ -21,7 +12,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from datetime import datetime
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any, Callable
 
 from core.activity.manager import ActivityManager
 from core.activity.resume import ResumeEngine
@@ -30,7 +21,11 @@ from core.scheduler.models import ScheduledActivity
 from core.scheduler.policies import PriorityPolicy
 from core.scheduler.queue import SchedulerQueue
 from core.scheduler.registry import ExecutorFn, SchedulerRegistry
+from core.scheduler.resources import ResourceUsage
 from core.scheduler.store import SchedulerStore
+
+if TYPE_CHECKING:
+    from core.execution import ExecutionContext, ExecutionManager
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +63,7 @@ class Scheduler:
         tick_interval: float = DEFAULT_TICK_INTERVAL,
         max_workers: int = DEFAULT_MAX_WORKERS,
         store_db_path: str | None = None,
+        execution_manager: ExecutionManager | None = None,
     ):
         self._mgr = activity_manager or ActivityManager()
         self._resume = resume_engine or ResumeEngine(self._mgr)
@@ -85,10 +81,30 @@ class Scheduler:
         self._current_activity: ScheduledActivity | None = None
         self._ticks = 0
         self._on_tick: list[Callable[[dict[str, Any]], None]] = []
+        self._execution_manager = execution_manager
+        self._exec_ctx = None
 
         # Wire intelligence into policy if it doesn't have one
         if policy and not policy.intelligence:
             policy.intelligence = self._intelligence
+
+    @property
+    def execution_manager(self) -> ExecutionManager:
+        if self._execution_manager is None:
+            from core.execution import ExecutionManager as _EM
+            self._execution_manager = _EM()
+        return self._execution_manager
+
+    @property
+    def _ctx(self) -> ExecutionContext:
+        if self._exec_ctx is None:
+            self._exec_ctx = self.execution_manager.create_context(
+                source="scheduler",
+                request_id="scheduler_main",
+                metadata={"tick_interval": self._tick_interval,
+                          "max_workers": self._max_workers},
+            )
+        return self._exec_ctx
 
     @property
     def intelligence(self) -> ActivityIntelligence:
@@ -151,6 +167,7 @@ class Scheduler:
             return
         self._state = SchedulerState.RUNNING
         self._task = asyncio.create_task(self._run())
+        self.execution_manager.publish_progress(self._ctx, "scheduler.started")
         logger.info("Scheduler: started (tick_interval=%.1fs, max_workers=%d)",
                      self._tick_interval, self._max_workers)
 
@@ -170,12 +187,16 @@ class Scheduler:
             await asyncio.gather(*self._running_tasks.values(), return_exceptions=True)
             self._running_tasks.clear()
         self._current_activity = None
+        self.execution_manager.publish_completed(self._ctx, {
+            "ticks": self._ticks, "max_workers": self._max_workers,
+        })
         logger.info("Scheduler: stopped")
 
     async def pause(self) -> None:
         if self._state != SchedulerState.RUNNING:
             return
         self._state = SchedulerState.PAUSED
+        self.execution_manager.publish_progress(self._ctx, "scheduler.paused")
         logger.info("Scheduler: paused (%d worker(s) continue running)",
                      self.running_count)
 
@@ -183,6 +204,7 @@ class Scheduler:
         if self._state != SchedulerState.PAUSED:
             return
         self._state = SchedulerState.RUNNING
+        self.execution_manager.publish_progress(self._ctx, "scheduler.resumed")
         logger.info("Scheduler: resumed")
 
     # ── Tick ─────────────────────────────────────────────────────────────────
@@ -273,6 +295,15 @@ class Scheduler:
         self._running_start_times[aid] = start_time
         success = False
 
+        em = self.execution_manager
+        act_ctx = em.create_context(
+            source="scheduler_worker",
+            request_id=f"sched_{aid}",
+            metadata={"activity_id": aid, "node_type": activity.node_type,
+                       "goal": activity.goal},
+        )
+        em.publish_progress(act_ctx, f"activity.started:{aid}")
+
         # Phase 8.3B: predict before execution
         prediction = self._intelligence.predict(activity.node_type)
         pred_success = prediction.success_probability if prediction.confidence > 0 else None
@@ -289,6 +320,7 @@ class Scheduler:
                 ctx = self._resume.find_resume_point(aid)
                 if ctx:
                     self._resume.mark_resumed(ctx)
+                    em.publish_progress(act_ctx, "activity.resumed")
             except Exception as e:
                 logger.debug("Scheduler: resume point lookup for %s: %s", aid, e)
 
@@ -303,7 +335,10 @@ class Scheduler:
                     logger.warning("Scheduler: no executor for %s (type=%s)",
                                    aid, activity.node_type)
                     self._queue.mark_failed(aid)
+                    em.publish_failed(
+                        act_ctx, f"no_executor:{activity.node_type}")
                     return
+                em.publish_progress(act_ctx, "activity.executing")
                 await executor(
                     activity_id=aid,
                     goal=activity.goal,
@@ -314,11 +349,15 @@ class Scheduler:
         except asyncio.CancelledError:
             logger.info("Scheduler: worker %s cancelled", aid)
             self._running_start_times.pop(aid, None)
+            em.publish_completed(act_ctx, {"cancelled": True})
+            em.record_trace(
+                act_ctx, "activity_cancelled", aid, True)
             raise
         except Exception as e:
             logger.error("Scheduler: worker %s failed: %s", aid, e)
             self._queue.mark_failed(aid)
             success = False
+            em.publish_failed(act_ctx, str(e))
         finally:
             # Phase 8.3B: record outcome + prediction for calibration
             duration_ms = int(
@@ -350,6 +389,13 @@ class Scheduler:
                 )
             except Exception as e:
                 logger.warning("Scheduler: intelligence record error: %s", e)
+
+            if success:
+                em.publish_completed(act_ctx, {
+                    "duration_ms": duration_ms, "node_type": activity.node_type,
+                })
+            em.record_trace(
+                act_ctx, "activity", f"{activity.node_type}:{aid}", success)
             self._running_tasks.pop(aid, None)
             self._running_start_times.pop(aid, None)
 
@@ -391,6 +437,8 @@ class Scheduler:
                 cb(result)
             except Exception as e:
                 logger.warning("Scheduler: tick callback error: %s", e)
+        self.execution_manager.publish_progress(
+            self._ctx, f"scheduler.tick:{result.get('tick', 0)}")
         try:
             from core.event_bus import Event, global_event_bus
             event = Event(

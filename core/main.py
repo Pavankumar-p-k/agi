@@ -715,9 +715,8 @@ async def execute_action(intent_data: dict, message: str = "", session_id: str =
             results = await search(target)
             return {"executed": True, "action": f"Searched for {target}", "result": results}
         elif intent == "reminder":
-            from core.scheduler import JarvisScheduler
-            scheduler = JarvisScheduler()
-            scheduler.add_task("reminder", params)
+            from core.cron import scheduler as cron_scheduler
+            cron_scheduler.add("reminder", "1h", "remind", params)
             return {"executed": True, "action": "Reminder set", "result": {}}
         elif intent in ("weather", "news", "stocks", "sports", "time"):
             from core.integrations import get_info

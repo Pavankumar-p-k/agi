@@ -28,6 +28,7 @@ from typing import TYPE_CHECKING, Any
 from core.scheduler.models import ScheduledActivity
 
 if TYPE_CHECKING:
+    from core.execution import ExecutionManager
     from core.opportunity.engine import OpportunityDiscoveryEngine
     from core.opportunity.models import Opportunity
     from core.scheduler.decision import DecisionEngine
@@ -82,6 +83,7 @@ class AutonomousScheduler:
         min_confidence: float = DEFAULT_MIN_CONFIDENCE,
         max_risk: float = DEFAULT_MAX_RISK,
         max_per_cycle: int = DEFAULT_MAX_PER_CYCLE,
+        execution_manager: ExecutionManager | None = None,
     ):
         self._engine = engine
         self._decision = decision
@@ -90,9 +92,18 @@ class AutonomousScheduler:
         self._min_confidence = min_confidence
         self._max_risk = max_risk
         self._max_per_cycle = max_per_cycle
+        self._execution_manager = execution_manager
+        self._exec_ctx: Any = None
 
         # Track submitted opportunities to avoid duplicates
         self._submitted_ids: set[str] = set()
+
+    @property
+    def execution_manager(self) -> ExecutionManager:
+        if self._execution_manager is None:
+            from core.execution import ExecutionManager as _EM
+            self._execution_manager = _EM()
+        return self._execution_manager
 
     def run_cycle(self, **discovery_kwargs: Any) -> dict[str, Any]:
         """Full pipeline: discover → evaluate → filter → submit.
@@ -114,43 +125,65 @@ class AutonomousScheduler:
             "rejected_reasons": [],
         }
 
-        # 1. Discover opportunities
-        opportunities = self._discover_opportunities(**discovery_kwargs)
-        results["discovered"] = len(opportunities)
+        em = self.execution_manager
+        ctx = em.create_context(
+            source="autonomous_scheduler",
+            request_id="auto_cycle",
+            metadata={"max_per_cycle": self._max_per_cycle},
+        )
+        em.publish_progress(ctx, "auto_cycle.started")
 
-        # 2. Evaluate and submit
-        for opp in opportunities:
-            if results["submitted"] >= self._max_per_cycle:
-                break
+        try:
+            # 1. Discover opportunities
+            opportunities = self._discover_opportunities(**discovery_kwargs)
+            results["discovered"] = len(opportunities)
 
-            bridge = self._evaluate_opportunity(opp)
-            results["evaluated"] += 1
+            # 2. Evaluate and submit
+            for opp in opportunities:
+                if results["submitted"] >= self._max_per_cycle:
+                    break
 
-            if bridge is None:
-                continue
+                bridge = self._evaluate_opportunity(opp)
+                results["evaluated"] += 1
 
-            if self._should_submit(bridge):
-                act = self._submit_activity(opp)
-                if act:
-                    bridge.submitted = True
-                    bridge.activity_id = act.activity_id
-                    self._submitted_ids.add(opp.id)
-                    results["submitted"] += 1
-                    results["submitted_activities"].append({
-                        "activity_id": act.activity_id,
+                if bridge is None:
+                    continue
+
+                if self._should_submit(bridge):
+                    act = self._submit_activity(opp)
+                    if act:
+                        bridge.submitted = True
+                        bridge.activity_id = act.activity_id
+                        self._submitted_ids.add(opp.id)
+                        results["submitted"] += 1
+                        results["submitted_activities"].append({
+                            "activity_id": act.activity_id,
+                            "opportunity_id": opp.id,
+                            "goal": act.goal,
+                            "node_type": act.node_type,
+                        })
+                        logger.info("AutonomousScheduler: submitted %s as %s (%s)",
+                                    opp.id, act.activity_id, act.goal[:60])
+                else:
+                    results["rejected"] += 1
+                    results["rejected_reasons"].append({
                         "opportunity_id": opp.id,
-                        "goal": act.goal,
-                        "node_type": act.node_type,
+                        "target_system": opp.target_system,
+                        "reason": self._rejection_reason(bridge),
                     })
-                    logger.info("AutonomousScheduler: submitted %s as %s (%s)",
-                                opp.id, act.activity_id, act.goal[:60])
-            else:
-                results["rejected"] += 1
-                results["rejected_reasons"].append({
-                    "opportunity_id": opp.id,
-                    "target_system": opp.target_system,
-                    "reason": self._rejection_reason(bridge),
-                })
+
+            em = self.execution_manager
+            em.publish_completed(ctx, results)
+            em.record_trace(
+                ctx, "auto_cycle",
+                f"discovered={results['discovered']} submitted={results['submitted']}",
+                True,
+            )
+        except Exception as e:
+            em = self.execution_manager
+            em.publish_failed(ctx, str(e))
+            em.record_trace(ctx, "auto_cycle", str(e), False)
+            raise
 
         return results
 
