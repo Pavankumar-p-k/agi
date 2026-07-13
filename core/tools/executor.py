@@ -63,6 +63,16 @@ class ToolExecutor:
             metadata={"tool": tool_name, "owner": owner or ""},
         )
 
+        # Wrap progress_cb so each tool-level progress event also
+        # publishes to the canonical EventBus through ExecutionManager.
+        async def _bridged_progress(payload: dict) -> None:
+            em.publish_progress(
+                exec_ctx, f"tool_progress:{tool_name}",
+                progress_pct=payload.get("progress"),
+            )
+            if progress_cb is not None:
+                await progress_cb(payload)
+
         em.publish_progress(exec_ctx, f"tool_start:{tool_name}")
         try:
             text, result = await execute_tool_block(
@@ -70,7 +80,7 @@ class ToolExecutor:
                 session_id=session_id,
                 disabled_tools=disabled_tools,
                 owner=owner,
-                progress_cb=progress_cb,
+                progress_cb=_bridged_progress,
                 context=context,
             )
             success = result.get("exit_code", 0) == 0 if isinstance(result, dict) else True
