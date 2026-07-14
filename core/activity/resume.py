@@ -18,10 +18,13 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from core.activity.manager import ActivityManager
 from core.activity.models import ActivityNode, ActivityStatus
+
+if TYPE_CHECKING:
+    from core.execution import ExecutionManager
 
 logger = logging.getLogger(__name__)
 
@@ -67,8 +70,17 @@ class ResumeEngine:
             planner.resume_from(ctx)
     """
 
-    def __init__(self, manager: ActivityManager):
+    def __init__(self, manager: ActivityManager,
+                 execution_manager: ExecutionManager | None = None):
         self._mgr = manager
+        self._execution_manager = execution_manager
+
+    @property
+    def _em(self) -> ExecutionManager:
+        if self._execution_manager is None:
+            from core.execution import ExecutionManager as _EM
+            self._execution_manager = _EM()
+        return self._execution_manager
 
     def find_resume_point(self, activity_id: str) -> ResumeContext | None:
         """Find where to resume execution in an activity.
@@ -85,6 +97,11 @@ class ResumeEngine:
                         activity_id, activity.status.value)
             return None
 
+        ctx_em = self._em.create_context(
+            source="resume_engine", request_id=f"resume_{activity_id}",
+        )
+        self._em.publish_progress(ctx_em, f"resume.find:{activity_id}")
+
         leaves = self._mgr.resume_candidates(activity_id)
         if not leaves:
             logger.info("ResumeEngine: no incomplete leaves in activity %s",
@@ -98,13 +115,17 @@ class ResumeEngine:
         ancestors = self._build_ancestors(target)
         accumulated = self._collect_artifacts(ancestors)
 
-        return ResumeContext(
+        ctx = ResumeContext(
             activity_id=activity_id,
             target_node=target,
             ancestors=ancestors,
             accumulated_artifacts=accumulated["artifacts"],
             accumulated_input=accumulated["input"],
         )
+        self._em.publish_completed(ctx_em, {"target": target.node_id, "activity": activity_id})
+        self._em.record_trace(ctx_em, "resume_found",
+                              f"{target.node_type}:{target.label[:60]}", True)
+        return ctx
 
     def resume_all_candidates(self, activity_id: str) -> list[ResumeContext]:
         """Return resume contexts for ALL incomplete leaves.
@@ -178,6 +199,13 @@ class ResumeEngine:
             if node.status in (ActivityStatus.PENDING, ActivityStatus.SUSPENDED):
                 self._mgr.mark_running(node.node_id)
         self._mgr.mark_running(ctx.target_node.node_id)
+        ctx_em = self._em.create_context(
+            source="resume_engine", request_id=f"resumed_{ctx.activity_id}",
+            metadata={"target": ctx.target_node.node_id},
+        )
+        self._em.publish_progress(ctx_em, f"resume.marked:{ctx.activity_id}")
+        self._em.record_trace(ctx_em, "resume_marked",
+                              f"{ctx.target_node.node_type}:{ctx.target_node.label[:60]}", True)
 
     def activity_summary(self, activity_id: str) -> str:
         """Return a human-readable summary of resume status."""

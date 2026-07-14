@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from core.execution import ExecutionManager
 from core.workflow.engine import WorkflowEngine
 from core.workflow.events import WORKFLOW_RECOVERED, WorkflowEvent
 from core.workflow.models import WorkflowStatus
@@ -12,7 +13,12 @@ logger = logging.getLogger(__name__)
 
 async def recover_active_workflows(
     engine: WorkflowEngine,
+    execution_manager: ExecutionManager | None = None,
 ) -> list[dict[str, Any]]:
+    em = execution_manager or ExecutionManager()
+    ctx = em.create_context(source="workflow_recovery", request_id="recovery_main")
+    em.publish_progress(ctx, "recovery.started")
+
     active = engine.store.list_workflows(status=WorkflowStatus.RUNNING.value)
     active += engine.store.list_workflows(status=WorkflowStatus.RECOVERING.value)
     active += engine.store.list_workflows(status=WorkflowStatus.COMPENSATING.value)
@@ -58,6 +64,8 @@ async def recover_active_workflows(
     if not recovered:
         logger.info("[WORKFLOW] No stale workflows to recover [OK]")
 
+    em.publish_completed(ctx, {"recovered_count": len(recovered)})
+    em.record_trace(ctx, "recovery", f"recovered {len(recovered)} workflows", True)
     return recovered
 
 
