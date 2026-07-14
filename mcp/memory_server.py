@@ -10,15 +10,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import logging
 """
 memory_server.py
 
 MCP server exposing memory management (list, add, edit, delete, search).
-Imports MemoryManager and MemoryVectorStore from legacy modules.
-
-TODO (Phase 2): Migrate to `memory.memory_facade` once it exposes CRUD API.
-Currently blocked: MemoryFacade lacks load()/save()/add_entry()/load_all().
+Uses ``memory.crud_store.CrudStore`` for JSON-file persistence and
+``memory.vector_store`` for vector search.
 """
 
 import asyncio
@@ -35,31 +32,21 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 server = Server("memory")
 
-# Late-initialized managers (set during first tool call)
-_memory_manager = None
-_memory_vector = None
+# Late-initialized store (set during first tool call)
+_store = None
 _initialized = False
 
 
 def _ensure_init():
-    """Lazy-init memory managers on first use."""
-    global _memory_manager, _memory_vector, _initialized
+    """Lazy-init the CrudStore on first use."""
+    global _store, _initialized
     if _initialized:
         return
     _initialized = True
 
     from core.constants import DATA_DIR
-    from core.memory import MemoryManager
-    _memory_manager = MemoryManager(DATA_DIR)
-
-    try:
-        from core.memory_vector import MemoryVectorStore
-        _memory_vector = MemoryVectorStore(DATA_DIR)
-        if not _memory_vector.healthy:
-            _memory_vector = None
-    except Exception as e:
-        logger.warning("[mcp.memory_server] memory vector init failed: %s", e)
-        _memory_vector = None
+    from memory.crud_store import CrudStore
+    _store = CrudStore(DATA_DIR)
 
 
 @server.list_tools()
@@ -96,16 +83,14 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
         return [TextContent(type="text", text=f"Unknown tool: {name}")]
 
     _ensure_init()
-    if not _memory_manager:
-        return [TextContent(type="text", text="Error: Memory manager not available")]
+    if not _store:
+        return [TextContent(type="text", text="Error: Memory store not available")]
 
     action = arguments.get("action", "")
 
     if action == "list":
         category_filter = arguments.get("category", "")
-        memories = _memory_manager.load()
-        if category_filter:
-            memories = [m for m in memories if m.get("category", "").lower() == category_filter.lower()]
+        memories = _store.list_all(category=category_filter) if category_filter else _store.list_all()
         if not memories:
             msg = "No memories found"
             if category_filter:
@@ -128,15 +113,12 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
         category = arguments.get("category", "fact")
         if not text:
             return [TextContent(type="text", text="Error: Memory text cannot be empty")]
-        entry = _memory_manager.add_entry(text, source="ai_agent", category=category)
-        memories = _memory_manager.load_all()
+        entry = _store.add(text, source="ai_agent", category=category)
+        memories = _store.load_all()
         memories.append(entry)
-        _memory_manager.save(memories)
-        if _memory_vector and _memory_vector.healthy:
-            try:
-                _memory_vector.add(entry["id"], text)
-            except Exception as e:
-                logger.warning("[mcp.memory_server] store_memory failed: %s", e)
+        _store.save(memories)
+        if _store.vector_healthy:
+            _store.vector_add(entry["id"], text)
         return [TextContent(type="text", text=f"Memory added: [{category}] {text} (id: {entry['id'][:8]})")]
 
     elif action == "edit":
@@ -144,36 +126,24 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
         new_text = arguments.get("text", "")
         if not memory_id or not new_text:
             return [TextContent(type="text", text="Error: edit needs memory_id and text")]
-        memories = _memory_manager.load_all()
-        found = False
-        full_id = None
-        for m in memories:
-            if m.get("id", "").startswith(memory_id):
-                m["text"] = new_text
-                m["timestamp"] = int(time.time())
-                found = True
-                full_id = m["id"]
-                break
-        if not found:
+        old = _store.update(memory_id, text=new_text)
+        if old is None:
             return [TextContent(type="text", text=f"Error: Memory '{memory_id}' not found")]
-        _memory_manager.save(memories)
-        if _memory_vector and _memory_vector.healthy and full_id:
-            try:
-                _memory_vector.remove(full_id)
-                _memory_vector.add(full_id, new_text)
-            except Exception as e:
-                logger.warning("[mcp.memory_server] recall_memory failed: %s", e)
+        full_id = old["id"]
+        if _store.vector_healthy:
+            _store.vector_remove(full_id)
+            _store.vector_add(full_id, new_text)
         return [TextContent(type="text", text=f"Memory updated: {new_text}")]
 
     elif action == "delete":
         memory_id = arguments.get("memory_id", "")
         if not memory_id:
             return [TextContent(type="text", text="Error: delete needs memory_id")]
-        memories = _memory_manager.load_all()
+        all_entries = _store.load_all()
         full_id = None
         deleted_text = ""
         deleted_category = ""
-        for m in memories:
+        for m in all_entries:
             if m.get("id", "").startswith(memory_id):
                 full_id = m["id"]
                 deleted_text = m.get("text", "")
@@ -181,13 +151,9 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
                 break
         if not full_id:
             return [TextContent(type="text", text=f"Error: Memory '{memory_id}' not found")]
-        memories = [m for m in memories if m.get("id") != full_id]
-        _memory_manager.save(memories)
-        if _memory_vector and _memory_vector.healthy and full_id:
-            try:
-                _memory_vector.remove(full_id)
-            except Exception as e:
-                logger.warning("[mcp.memory_server] delete_memory failed: %s", e)
+        _store.delete(memory_id)
+        if _store.vector_healthy:
+            _store.vector_remove(full_id)
         cat = f"[{deleted_category}] " if deleted_category else ""
         snippet = deleted_text if len(deleted_text) <= 120 else deleted_text[:117] + "..."
         return [TextContent(type="text", text=f"Memory deleted: {cat}{snippet} (id: {memory_id})")]
@@ -196,12 +162,7 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
         query = arguments.get("text", "")
         if not query:
             return [TextContent(type="text", text="Error: search needs text (query)")]
-        memories = _memory_manager.load()
-        if hasattr(_memory_manager, 'get_relevant_memories'):
-            results = _memory_manager.get_relevant_memories(query, memories, threshold=0.05, max_items=20)
-        else:
-            query_lower = query.lower()
-            results = [m for m in memories if query_lower in m.get("text", "").lower()][:20]
+        results = _store.get_relevant_memories(query, threshold=0.05, max_items=20)
         if not results:
             return [TextContent(type="text", text=f"No memories found matching '{query}'.")]
         lines = [f"Found {len(results)} matching memories:\n"]

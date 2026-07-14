@@ -4,34 +4,25 @@ import time
 
 logger = logging.getLogger(__name__)
 
-MEMORY_MANAGER = None
-MEMORY_VECTOR = None
+MEMORY_STORE = None
 
 
 def _ensure_memory():
-    global MEMORY_MANAGER, MEMORY_VECTOR
-    if MEMORY_MANAGER is not None:
+    global MEMORY_STORE
+    if MEMORY_STORE is not None:
         return
     try:
         from core.constants import DATA_DIR as _data_dir
-        # TODO (Phase 2): Migrate to memory.memory_facade once CRUD API is exposed
-        from core.memory import MemoryManager  # noqa: F811 — legacy shim
-        mm = MemoryManager(_data_dir)
-        MEMORY_MANAGER = mm
-        try:
-            from core.memory_vector import MemoryVectorStore  # noqa: F811 — legacy shim
-            v = MemoryVectorStore(_data_dir)
-            MEMORY_VECTOR = v if v.healthy else None
-        except Exception:
-            MEMORY_VECTOR = None
+        from memory.crud_store import CrudStore
+        MEMORY_STORE = CrudStore(_data_dir)
     except Exception as e:
         logger.warning("Memory init failed: %s", e)
 
 
 async def do_manage_memory(content: str, **kwargs) -> dict:
     _ensure_memory()
-    if not MEMORY_MANAGER:
-        return {"error": "Memory manager not available", "exit_code": 1}
+    if not MEMORY_STORE:
+        return {"error": "Memory store not available", "exit_code": 1}
 
     import json
     try:
@@ -59,9 +50,7 @@ async def do_manage_memory(content: str, **kwargs) -> dict:
 
     if action == "list":
         category = args.get("category", "")
-        memories = MEMORY_MANAGER.load()
-        if category:
-            memories = [m for m in memories if m.get("category", "").lower() == category.lower()]
+        memories = MEMORY_STORE.list_all(category=category) if category else MEMORY_STORE.list_all()
         if not memories:
             msg = "No memories found"
             if category:
@@ -82,15 +71,12 @@ async def do_manage_memory(content: str, **kwargs) -> dict:
         category = args.get("category", "fact")
         if not text:
             return {"error": "Memory text cannot be empty", "exit_code": 1}
-        entry = MEMORY_MANAGER.add_entry(text, source="ai_agent", category=category)
-        all_m = MEMORY_MANAGER.load_all()
+        entry = MEMORY_STORE.add(text, source="ai_agent", category=category)
+        all_m = MEMORY_STORE.load_all()
         all_m.append(entry)
-        MEMORY_MANAGER.save(all_m)
-        if MEMORY_VECTOR:
-            try:
-                MEMORY_VECTOR.add(entry["id"], text)
-            except Exception as e:
-                logger.warning("Vector store add failed: %s", e)
+        MEMORY_STORE.save(all_m)
+        if MEMORY_STORE.vector_healthy:
+            MEMORY_STORE.vector_add(entry["id"], text)
         return {"output": f"Memory added: [{category}] {text}", "id": entry["id"][:8]}
 
     elif action == "edit":
@@ -98,32 +84,20 @@ async def do_manage_memory(content: str, **kwargs) -> dict:
         new_text = args.get("text", "")
         if not memory_id or not new_text:
             return {"error": "edit needs memory_id and text", "exit_code": 1}
-        all_m = MEMORY_MANAGER.load_all()
-        found = False
-        full_id = None
-        for m in all_m:
-            if m.get("id", "").startswith(memory_id):
-                m["text"] = new_text
-                m["timestamp"] = int(time.time())
-                found = True
-                full_id = m["id"]
-                break
-        if not found:
+        old = MEMORY_STORE.update(memory_id, text=new_text)
+        if old is None:
             return {"error": f"Memory '{memory_id}' not found", "exit_code": 1}
-        MEMORY_MANAGER.save(all_m)
-        if MEMORY_VECTOR and full_id:
-            try:
-                MEMORY_VECTOR.remove(full_id)
-                MEMORY_VECTOR.add(full_id, new_text)
-            except Exception as e:
-                logger.warning("Vector store edit failed: %s", e)
+        full_id = old["id"]
+        if MEMORY_STORE.vector_healthy:
+            MEMORY_STORE.vector_remove(full_id)
+            MEMORY_STORE.vector_add(full_id, new_text)
         return {"output": f"Memory updated: {new_text}"}
 
     elif action == "delete":
         memory_id = args.get("memory_id", "")
         if not memory_id:
             return {"error": "delete needs memory_id", "exit_code": 1}
-        all_m = MEMORY_MANAGER.load_all()
+        all_m = MEMORY_STORE.load_all()
         full_id = None
         for m in all_m:
             if m.get("id", "").startswith(memory_id):
@@ -131,25 +105,16 @@ async def do_manage_memory(content: str, **kwargs) -> dict:
                 break
         if not full_id:
             return {"error": f"Memory '{memory_id}' not found", "exit_code": 1}
-        all_m = [m for m in all_m if m.get("id") != full_id]
-        MEMORY_MANAGER.save(all_m)
-        if MEMORY_VECTOR and full_id:
-            try:
-                MEMORY_VECTOR.remove(full_id)
-            except Exception as e:
-                logger.warning("Vector store delete failed: %s", e)
+        MEMORY_STORE.delete(memory_id)
+        if MEMORY_STORE.vector_healthy and full_id:
+            MEMORY_STORE.vector_remove(full_id)
         return {"output": f"Memory deleted (id: {memory_id})"}
 
     elif action == "search":
         query = args.get("text", "")
         if not query:
             return {"error": "search needs text (query)", "exit_code": 1}
-        memories = MEMORY_MANAGER.load()
-        if hasattr(MEMORY_MANAGER, 'get_relevant_memories'):
-            results = MEMORY_MANAGER.get_relevant_memories(query, memories, threshold=0.05, max_items=20)
-        else:
-            q = query.lower()
-            results = [m for m in memories if q in m.get("text", "").lower()][:20]
+        results = MEMORY_STORE.get_relevant_memories(query, threshold=0.05, max_items=20)
         if not results:
             return {"output": f"No memories found matching '{query}'.", "memories": []}
         lines = [f"Found {len(results)} matching memories:"]
