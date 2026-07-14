@@ -661,7 +661,7 @@ Four transport adapters bridge all entry points to the canonical pipeline:
 ### 6.1 CLI Entry: `jarvis.py` → argparse dispatch
 
 ```
-  Terminal → "jarvis chat" / "jarvis code" / "jarvis server" etc.
+  Terminal → "jarvis chat" / "jarvis code" / "jarvis build" etc.
       │
       ▼
   ┌─ jarvis.py:254 ──────────────────────────────────────────────────┐
@@ -671,77 +671,128 @@ Four transport adapters bridge all entry points to the canonical pipeline:
   │    # First-run setup gate                                         │
   │    return args.func(args)                                         │
   └──────────────────────┬────────────────────────────────────────────┘
+                        │
+          ┌─────────────┼─────────────┐
+          ▼             ▼             ▼
+   ┌──────────┐  ┌──────────┐  ┌──────────┐
+   │ cmd_cli  │  │ cmd_code │  │ cmd_tui  │
+   │(chat)    │  │(dev cmd) │  │(TUI)     │
+   └────┬─────┘  └────┬─────┘  └────┬─────┘
+        │             │             │
+        ▼             ▼             ▼
+   ┌─ jarvis-export/cli/cli_commands.py ────────────────────────────┐
+   │  Each handler in jarvis-export/cli/cli_commands.py             │
+   │  - cmd_cli: prompt_toolkit interactive session                 │
+   │  - cmd_code / cmd_build: AgentOrchestrator.code/build()       │
+   │  - cmd_tui: launches Textual TUI app                          │
+   │  - cmd_web/cmd_server: starts uvicorn FastAPI server          │
+   └────────────────────────────────────────────────────────────────┘
+```
+
+### 6.2 CLI Chat Path — Full Trace
+
+```
+  Terminal → "jarvis chat"
+      │
+      ▼
+  ┌─ jarvis.py:179 ──────────────────────────────────────────────────┐
+  │  p_chat.set_defaults(func=cmd_cli)                                │
+  └──────────────────────┬────────────────────────────────────────────┘
                          │
-           ┌─────────────┼─────────────┐
-           ▼             ▼             ▼
-    ┌──────────┐  ┌──────────┐  ┌──────────┐
-    │ cmd_cli  │  │ cmd_code │  │ cmd_tui  │
-    │(chat)    │  │(dev cmd) │  │(TUI)     │
-    └────┬─────┘  └────┬─────┘  └────┬─────┘
-         │             │             │
-         ▼             ▼             ▼
-    ┌─────────────────────────────────────────┐
-    │  cli_commands.py                         │
-    │  Each handler:                           │
-    │  - May call synchronous pipeline         │
-    │  - May start FastAPI server             │
-    │  - May launch TUI                        │
-    └─────────────────────────────────────────┘
-```
-
-**CLI Chat Path (`cmd_cli`):**
-
-```
-  jarvis chat [--new-session] [--session <id>]
-      │
-      ▼
-  ┌─ cli_commands.py ────────────────────────────────────────────────┐
-  │  cmd_cli(args):                                                   │
-  │    Calls synchronous chat loop:                                   │
-  │      from core.main import process_chat_message (deprecated)     │
-  │      OR calls FastAPI server then uses HTTP client               │
+                         ▼
+  ┌─ jarvis-export/cli/cli_commands.py:51 ──────────────────────────┐
+  │  def cmd_cli(args):                                               │
+  │    ensure_local_stack_running(env)  # starts FastAPI if needed   │
+  │    session = ConversationManager(session_id)    # JSON-file based │
+  │    loop:                                                          │
+  │      user_input = prompt_toolkit.PromptSession.prompt()          │
+  │      if input starts with '/':  → handle_cli_slash_command()    │
+  │      else:                                                        │
+  │        result = stream_chat_ws(base_url, payload)                │
+  │        # payload: { text, session_id, user_id, mode, ... }      │
+  │        session.add_message("user", user_input)                   │
+  │        session.add_message("assistant", result)                  │
+  │        session.save()   # JSON to ~/.jarvis/history/ .json       │
+  └──────────────────────┬────────────────────────────────────────────┘
+                         │
+                         ▼
+  ┌─ jarvis-export/cli/cli_requests.py:260 ─────────────────────────┐
+  │  def stream_chat_ws(base_url, payload) → str:                    │
+  │    ws_url = base_url.replace("http://", "ws://") + "/ws/chat_stream"
+  │    async with connect(ws_url) as ws:                              │
+  │      ws.send(json.dumps(payload))                                 │
+  │      while True:                                                  │
+  │        msg = ws.recv()                                            │
+  │        if type == "stream_token": print(token); full_reply += t  │
+  │        if type == "stream_end": break                             │
+  │        if type == "error": break                                  │
+  │    return full_reply                                              │
+  │    FAILURE → fallback to request_json(base_url, "/api/chat", ...)│
+  │             → extract_reply(result) → str                         │
+  └──────────────────────┬────────────────────────────────────────────┘
+                         │
+                         ▼
+  ┌─ core/routes/websocket.py:33 ─────────────────────────────────────┐
+  │  /ws/chat_stream → chat_stream_websocket()                        │
+  │    → ws_adapter.stream_via_pipeline()                              │
+  │    → stream_pipeline(request) → 19 canonical stages               │
   └───────────────────────────────────────────────────────────────────┘
 ```
 
-| Property | Value |
-|----------|-------|
-| **File** | `jarvis.py:175` (parser: chat) → `cli_commands.cmd_cli` |
-| **Routing** | `cmd_cli` at `cli_commands.py` (separate file, not read in audit) |
-| **Confidence** | Medium — CLI path requires reading `cli_commands.py` completely |
-| **Status** | `DRIFT` — CLI chat may bypass canonical pipeline entirely depending on implementation |
+**Arrow Details:**
 
-### 6.2 TUI Path (`cmd_tui`)
+| Arrow | File | Function | Norm. | Events | DB Read | DB Write | API | Return | Timing | Failure | Plugins | Perms | Confirm | Status |
+|-------|------|----------|-------|--------|---------|----------|-----|--------|--------|---------|---------|-------|---------|--------|
+| User→CLI | `jarvis.py:179` | `main()`→`cmd_cli()` | N/A | None | None | None | None | →handler | sync | argparse error | None | None | None | `CORRECT` |
+| CLI→Session | `cli_commands.py:88` | `ConversationManager()` | N/A | None | JSON history file | None | None | `CliState.session` | sync | LoadError→empty session | None | None | None | `CORRECT` |
+| CLI→WS | `cli_requests.py:260` | `stream_chat_ws()` | N/A | None | None | None | WS `/ws/chat_stream` | `str` | async await | fallback→POST `/api/chat` | None | None | None | `CORRECT` |
+| WS→Pipeline | `websocket.py:33` | `chat_stream_websocket()` | N/A | `stage_start/end/error` | None | None | `stream_pipeline()` | WS JSON msgs | per-word streaming | send `{"type":"error"}` | `on_request` hook | None | None | `CORRECT` |
+
+### 6.3 TUI Path — Full Trace
 
 ```
-  jarvis tui
+  Terminal → "jarvis tui"
       │
       ▼
-  ┌─ cli_commands.cmd_tui ───────────────────────────────────────────┐
-  │  Launches Textual TUI application                                 │
-  │  TUI connects to local FastAPI server via HTTP/WS                 │
-  │  OR runs synchronous mode directly                                │
+  ┌─ cli_commands.py:2589 ──────────────────────────────────────────┐
+  │  def cmd_tui(args):                                               │
+  │    ensure_server_running(base_url)                                │
+  │    from jarvis_tui.main import JarvisApp                          │
+  │    app = JarvisApp()                                              │
+  │    app.run()                                                      │
+  └──────────────────────┬────────────────────────────────────────────┘
+                         │
+                         ▼
+  ┌─ jarvis_tui/ (external package) ─────────────────────────────────┐
+  │  Textual-based TUI application.                                   │
+  │  Connects to local FastAPI server via HTTP and WebSocket.         │
+  │  Uses same /ws/chat_stream and /api/chat endpoints as CLI.        │
+  │  OR runs in standalone mode bypassing the server.                 │
   └───────────────────────────────────────────────────────────────────┘
 ```
 
-| Property | Value |
-|----------|-------|
-| **Status** | `DORMANT` — TUI likely routes through WS `chat_stream` if server is running, or bypasses pipeline if standalone |
+| Arrow | Detail | Status |
+|-------|--------|--------|
+| User→TUI | `cli_commands.cmd_tui()` → `JarvisApp.run()` | `DORMANT` — jarvis_tui external package, not traced |
+| TUI→Server | HTTP/WS to local FastAPI (same paths as CLI) | `DORMANT` — assumed but unconfirmed |
+| Reality score | Unknown — external package, standalone mode may bypass pipeline entirely | 2/10 |
 
-### 6.3 CLI Command Dispatch Table
+### 6.4 CLI Command Dispatch Table
 
-| Command | Handler | Pipeline Path | Status |
-|---------|---------|--------------|--------|
-| `chat` | `cmd_cli()` | Unknown (likely direct or server) | `DRIFT` |
-| `code` | `cmd_code()` | Direct agent pipeline | `DRIFT` |
-| `build` | `cmd_build()` | Direct build pipeline | `DRIFT` |
-| `run` | `cmd_run()` | Direct execution | `DRIFT` |
-| `understand` | `cmd_understand()` | Code analysis | `DRIFT` |
-| `workspace` | `cmd_workspace()` | File system | `DRIFT` |
-| `doctor` | `cmd_doctor()` | Diagnostics | `CORRECT` |
-| `tui` | `cmd_tui()` | Via WS or direct | `DORMANT` |
-| `web` | `cmd_web()` | Starts server | `CORRECT` |
-| `server` | `cmd_server()` | Starts uvicorn | `CORRECT` |
-| `gui` | `cmd_gui()` | Flutter GUI | `DORMANT` |
+| Command | Handler | File | Pipeline Path | Status | Reality |
+|---------|---------|------|--------------|--------|---------|
+| `chat` | `cmd_cli()` | `cli_commands.py:51` | WS `/ws/chat_stream` → canonical pipeline (fallback POST) | `CORRECT` | 8/10 |
+| `code` | `cmd_code()` | `cli_commands.py` | `AgentOrchestrator.code()` → `AutomationLoop` | `DRIFT` | 5/10 — bypasses canonical pipeline |
+| `build` | `cmd_build()` | `cli_commands.py` | `AgentOrchestrator.build()` → `AutomationLoop` | `DRIFT` | 5/10 |
+| `run` | `cmd_run()` | `cli_commands.py` | Direct subprocess execution | `DRIFT` | 4/10 |
+| `understand` | `cmd_understand()` | `cli_commands.py` | `RepositoryAnalyzer` | `DRIFT` | 4/10 |
+| `workspace` | `cmd_workspace()` | `cli_commands.py` | File system operations | `DRIFT` | 4/10 |
+| `doctor` | `cmd_doctor()` | `cli_commands.py` | Diagnostics | `CORRECT` | 7/10 |
+| `tui` | `cmd_tui()` | `cli_commands.py:2589` | External Textual app → WS | `DORMANT` | 2/10 |
+| `web` | `cmd_web()` | `cli_commands.py` | Starts uvicorn | `CORRECT` | 9/10 |
+| `server` | `cmd_server()` | `cli_commands.py` | Starts uvicorn | `CORRECT` | 9/10 |
+| `gui` | `cmd_gui()` | `cli_commands.py` | Flutter GUI | `DORMANT` | 1/10 |
+| `advanced` | `cmd_advanced()` | `cli_commands.py` | Sub-dispatch to scheduler, etc. | `DRIFT` | 3/10 |
 
 ---
 
