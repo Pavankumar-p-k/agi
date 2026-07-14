@@ -974,7 +974,7 @@ class AutomationLoop:
 
     MAX_REPAIR_ATTEMPTS = 10
 
-    def __init__(self, goal_manager: UnifiedStore, memory_manager: MemoryManager | None = None,
+    def __init__(self, goal_manager: UnifiedStore, memory_manager=None,
                  poll_interval: float = 5.0, project_dir: str = "",
                  execution_manager: ExecutionManager | None = None):
         self.goals = goal_manager

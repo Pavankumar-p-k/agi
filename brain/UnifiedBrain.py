@@ -15,8 +15,7 @@ from .cognitive_patterns import CognitivePatterns
 from .epistemic_tagger import EpistemicTagger
 from .reasoning_engine import reasoning_engine
 
-from memory.memory_facade import memory as _canonical_memory
-from .memory import MemoryManager as _MemoryManager
+from memory.memory_facade import memory as _memory
 from core.planner.protocol import Plan, PlanStatus
 from core.planner.unified_store import UnifiedStore
 from core.planner.dag import TaskGraph, TaskNode
@@ -90,48 +89,19 @@ class UnifiedBrain:
         self.tagger = EpistemicTagger()
 
         # Autonomous OS subsystems
-        self.memory = _MemoryManager(db_path)
+        self.memory = _memory
         self.goals = UnifiedStore(db_path)
         self.planner = None  # replaced by CorePlanner via core/planner
         self.executor = _executor_singleton
         self.verifier = Verifier()
 
         # World model (situational awareness)
-        self.world = WorldModel(
-            goal_manager=self.goals,
-            memory_manager=self.memory,
-        )
-
-        # Learning engine (auto-improve from lessons)
-        self.learning = LearningEngine(
-            memory_manager=self.memory,
-            goal_manager=self.goals,
-        )
-
-        # Goal generator (autonomous goal creation)
-        self.goal_generator = GoalGenerator(
-            goal_manager=self.goals,
-            world_model=self.world,
-            event_bus=self.events,
-        )
-
-        # Self-improvement engine (recursive A/B testing)
-        self.self_improvement = SelfImprovementEngine(
-            memory_manager=self.memory,
-            goal_manager=self.goals,
-        )
-
-        # Project persistence (multi-day checkpoint/resume)
-        self.persistence = ProjectPersistence(
-            db_path=db_path,
-            goal_manager=self.goals,
-        )
-
-        # Skill acquisition (pattern detection → reusable workflows)
-        self.skill_acquisition = SkillAcquisition(
-            memory_manager=self.memory,
-            goal_manager=self.goals,
-        )
+        self.world = WorldModel(goal_manager=self.goals)
+        self.learning = LearningEngine(goal_manager=self.goals)
+        self.goal_generator = GoalGenerator(goal_manager=self.goals, world_model=self.world, event_bus=self.events)
+        self.self_improvement = SelfImprovementEngine(goal_manager=self.goals)
+        self.persistence = ProjectPersistence(db_path=db_path, goal_manager=self.goals)
+        self.skill_acquisition = SkillAcquisition(goal_manager=self.goals)
 
         # Tool bridge (existing core/tools/ implementations)
         self.tool_registry = ToolRegistry()
@@ -151,11 +121,7 @@ class UnifiedBrain:
         self.executor.register_tool("build_project", self.project_tool.build_project)
 
         # Automation loop (lazy started)
-        self.automation = AutomationLoop(
-            goal_manager=self.goals,
-            memory_manager=self.memory,
-            project_dir=data_dir,
-        )
+        self.automation = AutomationLoop(goal_manager=self.goals, project_dir=data_dir)
 
         # Observer manager (environment observation)
         self.observers = ObserverManager(event_bus=self.events)

@@ -16,8 +16,6 @@ from .reasoning_engine import ReasoningEngine
 from .cognitive_patterns import PATTERNS
 from .UnifiedBrain import UnifiedBrain
 
-# Autonomous OS subsystems
-from .memory import MemoryManager, EpisodicMemory, SemanticMemory, TaskMemory, DecisionMemory
 from core.planner.protocol import Plan as Goal, PlanStatus as GoalStatus
 from core.planner.unified_store import UnifiedStore as GoalManager
 from core.planner.dag import TaskGraph, TaskNode
@@ -58,12 +56,6 @@ __all__ = [
     "ReasoningEngine",
     "PATTERNS",
     "UnifiedBrain",
-    # Memory
-    "MemoryManager",
-    "EpisodicMemory",
-    "SemanticMemory",
-    "TaskMemory",
-    "DecisionMemory",
     # Goals
     "Goal",
     "GoalStatus",
