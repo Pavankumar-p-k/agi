@@ -48,7 +48,7 @@ async def _emit_progress(progress_cb, phase: str, detail: str, elapsed_s: float 
 async def do_build_project(task: str, project_dir: str, progress_cb: Callable[[dict], Awaitable[None]] | None = None, **kwargs) -> dict:
     _start = time.time()
     await _ensure_automation(project_dir)
-    goal = _GOAL_MANAGER.create(objective=task, priority=10, tags=["build"])
+    goal = _GOAL_MANAGER.create(goal=task, priority=10, tags=["build"])
     await _emit_progress(progress_cb, "plan", f"Created build goal: {task[:80]}")
 
     await _BUILD_LOOP._build_project(goal)
@@ -89,7 +89,7 @@ async def do_run_tests(project_dir: str, progress_cb: Callable[[dict], Awaitable
     _start = time.time()
     await _ensure_automation(project_dir)
     plan = {"test_command": kwargs.get("test_command", "")}
-    goal_id = _GOAL_MANAGER.create(objective="Run tests", priority=0, tags=["test"]).id if _GOAL_MANAGER else ""
+    goal_id = _GOAL_MANAGER.create(goal="Run tests", priority=0, tags=["test"]).id if _GOAL_MANAGER else ""
     await _emit_progress(progress_cb, "test", f"Running tests in {project_dir}")
 
     passed = await _BUILD_LOOP._phase_test("Run tests", str(Path(project_dir).resolve()), plan.get("test_command", ""), goal_id)
@@ -107,7 +107,7 @@ async def do_runtime_validate(project_dir: str, progress_cb: Callable[[dict], Aw
     _start = time.time()
     await _ensure_automation(project_dir)
     plan = {}
-    goal_id = _GOAL_MANAGER.create(objective="Runtime validate", priority=0, tags=["validate"]).id if _GOAL_MANAGER else ""
+    goal_id = _GOAL_MANAGER.create(goal="Runtime validate", priority=0, tags=["validate"]).id if _GOAL_MANAGER else ""
     await _emit_progress(progress_cb, "validate", f"Running runtime validation in {project_dir}")
 
     valid = await _BUILD_LOOP._phase_runtime_validation("Validate", str(Path(project_dir).resolve()), plan, goal_id)

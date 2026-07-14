@@ -18,8 +18,10 @@ from .UnifiedBrain import UnifiedBrain
 
 # Autonomous OS subsystems
 from .memory import MemoryManager, EpisodicMemory, SemanticMemory, TaskMemory, DecisionMemory
-from .goals import Goal, GoalStatus, GoalManager
-from .planner import TaskGraph, TaskNode, Planner
+from core.planner.protocol import Plan as Goal, PlanStatus as GoalStatus
+from core.planner.unified_store import UnifiedStore as GoalManager
+from core.planner.dag import TaskGraph, TaskNode
+from core.planner.protocol import Planner
 from .executor import Executor, ActionResult, Verifier, VerificationResult
 from .automation import AutomationLoop
 

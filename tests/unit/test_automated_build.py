@@ -406,22 +406,22 @@ class TestDoAutomatedBuild(TestCase):
                           completion=100.0, repair_cycles=0, repaired_errors=0):
         """Create a context manager that patches build_tools module."""
 
-        from brain.goals.goal import GoalStatus
+        from core.planner.protocol import PlanStatus
 
         class MockGoal:
-            def __init__(self, objective, priority=10, tags=None):
+            def __init__(self, goal, priority=10, tags=None):
                 self.id = f"goal_{uuid.uuid4().hex[:8]}"
-                self.objective = objective
+                self.goal = goal
                 self.priority = priority
                 self.tags = tags or []
-                self.status = GoalStatus.COMPLETED if build_success else GoalStatus.FAILED
+                self.status = PlanStatus.COMPLETED if build_success else PlanStatus.FAILED
 
         class MockGoalManager:
-            def create(self, objective, priority=0, tags=None):
-                return MockGoal(objective, priority, tags)
+            def create(self, goal, priority=0, tags=None):
+                return MockGoal(goal, priority, tags)
             def get(self, goal_id):
                 g = MockGoal("test")
-                g.status = GoalStatus.COMPLETED if build_success else GoalStatus.FAILED
+                g.status = PlanStatus.COMPLETED if build_success else PlanStatus.FAILED
                 g.id = goal_id
                 return g
             def fail(self, goal_id, reason):
@@ -442,7 +442,7 @@ class TestDoAutomatedBuild(TestCase):
             _build_history = {}
 
             async def _build_project(self, goal):
-                goal.status = GoalStatus.COMPLETED if build_success else GoalStatus.FAILED
+                goal.status = PlanStatus.COMPLETED if build_success else PlanStatus.FAILED
                 return None
 
         mock_module = type(sys)("build_tools")

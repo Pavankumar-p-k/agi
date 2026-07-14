@@ -406,7 +406,7 @@ async def do_automated_build(
         await _ensure_automation(project_dir)
 
         # Create a Goal for this build
-        goal = _GOAL_MANAGER.create(objective=task, priority=10, tags=["automated_build"])
+        goal = _GOAL_MANAGER.create(goal=task, priority=10, tags=["automated_build"])
 
         phase_plan.status = "completed"
         phase_plan.completed_at = datetime.now(timezone.utc)
