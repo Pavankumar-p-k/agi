@@ -451,7 +451,7 @@ class UnifiedBrain:
             "decisions": _canonical_memory.retrieve_decisions(query, top_k=top_k // 2),
         }
 
-    async def auto_generate_goals(self) -> list[Goal]:
+    async def auto_generate_goals(self) -> list[Plan]:
         """Autonomously detect opportunities/threats and create goals."""
         return await self.goal_generator.evaluate_world()
 
