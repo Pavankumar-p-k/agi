@@ -23,8 +23,8 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from brain.executor.executor import executor, ActionResult
-from brain.goals.goal import Goal
-from brain.goals.goal_manager import GoalManager
+from core.planner.protocol import Plan
+from core.planner.unified_store import UnifiedStore
 from brain.task_resolver import task_resolver
 from memory.memory_facade import memory as _memory_facade
 from core.execution import ExecutionManager
@@ -974,7 +974,7 @@ class AutomationLoop:
 
     MAX_REPAIR_ATTEMPTS = 10
 
-    def __init__(self, goal_manager: GoalManager, memory_manager: MemoryManager | None = None,
+    def __init__(self, goal_manager: UnifiedStore, memory_manager: MemoryManager | None = None,
                  poll_interval: float = 5.0, project_dir: str = "",
                  execution_manager: ExecutionManager | None = None):
         self.goals = goal_manager
@@ -1044,14 +1044,14 @@ class AutomationLoop:
                 await asyncio.sleep(self.poll_interval)
 
     async def _tick(self):
-        active = self.goals.list_active(sort_by="priority")
+        active = self.goals.list_all(status="active", sort_by="priority")
         if not active:
             await asyncio.sleep(self.poll_interval)
             return
         goal = self.goals.get_highest_priority()
         if not goal:
             return
-        logger.info("[AutoBuild] === tick %d: %s ===", self._iteration_count, goal.objective[:80])
+        logger.info("[AutoBuild] === tick %d: %s ===", self._iteration_count, goal.goal[:80])
         await self._build_project(goal)
 
     async def _call_llm(self, system: str, prompt: str,
@@ -1108,10 +1108,10 @@ class AutomationLoop:
         logger.warning("[AutoBuild] tool '%s' not available, skipping build", base)
         return ""
 
-    async def _build_project(self, goal: Goal):
+    async def _build_project(self, goal: Plan):
         """Main build loop with verification gates + targeted repair + failure memory + plan evolution + completion tracking."""
         goal_id = goal.id
-        objective = goal.objective
+        objective = goal.goal
         proj_dir = self.project_dir
 
         exec_ctx = self.execution_manager.create_context(
@@ -2606,7 +2606,6 @@ android.enableJetifier=true
             logger.info("[AutoBuild] test: no test source directories found, skipping")
             return True
 
-        _ensure_workflow_engine()
         for attempt in range(self.MAX_REPAIR_ATTEMPTS):
             logger.info("[AutoBuild] test attempt %d/%d: %s", attempt + 1, self.MAX_REPAIR_ATTEMPTS, test_cmd)
             result = await self._execute_step(
@@ -2738,13 +2737,13 @@ android.enableJetifier=true
 
         return modified > 0
 
-    async def run_once(self, goal: Goal) -> dict:
+    async def run_once(self, goal: Plan) -> dict:
         """Run a single build cycle for a given goal."""
         await self._build_project(goal)
         g = self.goals.get(goal.id)
         return {
             "goal_id": goal.id,
-            "goal": goal.objective,
+            "goal": goal.goal,
             "status": g.status if g else "unknown",
             "progress": g.progress if g else 0,
             "completion_pct": round(self._completion, 1),
@@ -2759,7 +2758,7 @@ android.enableJetifier=true
             "paused": self._paused,
             "iterations": self._iteration_count,
             "uptime_seconds": round(self.uptime, 1),
-            "active_goals": len(self.goals.list_active()),
+            "active_goals": len(self.goals.list_all(status="active")),
             "project_dir": self.project_dir,
             "completion_pct": round(self._completion, 1),
             "pattern_memory_count": FailureMemory._generalization_count,

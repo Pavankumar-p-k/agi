@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
 
-from brain.goals.goal_manager import GoalManager
+from core.planner.unified_store import UnifiedStore
 from memory.memory_facade import memory as _memory_facade
 from brain.events.event_bus import Event, global_event_bus
 from brain.events.event_types import LearningApplied
@@ -46,7 +46,7 @@ class SelfImprovementEngine:
     """
 
     def __init__(self, memory_manager=None,
-                 goal_manager: GoalManager | None = None):
+                 goal_manager: UnifiedStore | None = None):
         self.memory = memory_manager or _memory_facade
         self.goals = goal_manager
         self._change_log: list[dict] = []

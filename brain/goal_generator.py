@@ -7,8 +7,8 @@ from typing import Any
 
 from brain.events.event_bus import Event, global_event_bus, EventBus
 from brain.events.event_types import GoalAutoCreated
-from brain.goals.goal import Goal, GoalStatus
-from brain.goals.goal_manager import GoalManager
+from core.planner.protocol import Plan, PlanStatus
+from core.planner.unified_store import UnifiedStore
 from brain.reasoning_engine import reasoning_engine
 from brain.world_model import WorldModel
 
@@ -41,7 +41,7 @@ class GoalGenerator:
       - Failed task repeated -> Create investigate/improve goal
     """
 
-    def __init__(self, goal_manager: GoalManager, world_model: WorldModel,
+    def __init__(self, goal_manager: UnifiedStore, world_model: WorldModel,
                  event_bus: EventBus | None = None):
         self.goals = goal_manager
         self.world = world_model
@@ -49,16 +49,16 @@ class GoalGenerator:
         self._engine = reasoning_engine
         self._generated_count = 0
 
-    async def evaluate_world(self) -> list[Goal]:
+    async def evaluate_world(self) -> list[Plan]:
         """Observe the current world state and autonomously create goals.
 
-        Returns newly created goals.
+        Returns newly created plans.
         """
         state = self.world.get_state()
         context = state.to_prompt_context()
 
         # Check for obvious conditions that don't need LLM
-        new_goals: list[Goal] = []
+        new_goals: list[Plan] = []
 
         # Disk low -> cleanup goal
         if state.resources.disk_free_percent < 10.0 and state.resources.disk_free_percent > 0:
@@ -102,16 +102,16 @@ class GoalGenerator:
 
     async def _create_goal(self, objective: str, priority: int,
                            reason: str, next_action: str,
-                           source_observation: str) -> Goal:
+                           source_observation: str) -> Plan:
         # Check if a similar goal already exists
-        existing = self.goals.list_active(sort_by="priority")
+        existing = self.goals.list_all(status="active", sort_by="priority")
         for g in existing:
-            if objective[:50].lower() in g.objective.lower():
+            if objective[:50].lower() in g.goal.lower():
                 logger.debug("[GoalGenerator] skipping duplicate: %s", objective[:60])
                 return g
 
         goal = self.goals.create(
-            objective=objective,
+            goal=objective,
             priority=priority,
             next_action=next_action,
             tags=["auto_generated", "goal_generator"],
@@ -121,7 +121,7 @@ class GoalGenerator:
                     objective[:80], priority, reason[:60])
         return goal
 
-    async def _llm_goal_generation(self, context: str) -> list[Goal]:
+    async def _llm_goal_generation(self, context: str) -> list[Plan]:
         """Use LLM to detect opportunities/threats from world context."""
         try:
             result = await asyncio.wait_for(

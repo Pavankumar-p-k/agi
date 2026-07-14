@@ -17,9 +17,9 @@ from .reasoning_engine import reasoning_engine
 
 from memory.memory_facade import memory as _canonical_memory
 from .memory import MemoryManager as _MemoryManager
-from .goals import Goal, GoalStatus, GoalManager
-from .planner import Planner
-from core.planner.dag import TaskGraph
+from core.planner.protocol import Plan, PlanStatus
+from core.planner.unified_store import UnifiedStore
+from core.planner.dag import TaskGraph, TaskNode
 from .executor import Executor, Verifier, executor as _executor_singleton
 from .automation import AutomationLoop
 
@@ -91,8 +91,8 @@ class UnifiedBrain:
 
         # Autonomous OS subsystems
         self.memory = _MemoryManager(db_path)
-        self.goals = GoalManager(db_path)
-        self.planner = Planner()
+        self.goals = UnifiedStore(db_path)
+        self.planner = None  # replaced by CorePlanner via core/planner
         self.executor = _executor_singleton
         self.verifier = Verifier()
 
@@ -321,10 +321,10 @@ class UnifiedBrain:
     async def create_goal(self, objective: str, priority: int = 0,
                           blockers: list[str] | None = None,
                           next_action: str = "",
-                          tags: list[str] | None = None) -> Goal:
+                          tags: list[str] | None = None) -> Plan:
         """Create a new persistent goal and publish a GoalCreated event."""
         goal = self.goals.create(
-            objective=objective,
+            goal=objective,
             priority=priority,
             blockers=blockers,
             next_action=next_action,
@@ -341,7 +341,7 @@ class UnifiedBrain:
         ))
         return goal
 
-    async def complete_goal(self, goal_id: str, result: str = "") -> Goal | None:
+    async def complete_goal(self, goal_id: str, result: str = "") -> Plan | None:
         """Complete a goal and publish a GoalCompleted event."""
         goal = self.goals.complete(goal_id, result)
         if goal:
@@ -350,13 +350,13 @@ class UnifiedBrain:
                 source="brain",
                 payload=GoalCompletedEvent(
                     goal_id=goal_id,
-                    objective=goal.objective,
+                    objective=goal.goal,
                     result=result,
                 ).__dict__,
             ))
         return goal
 
-    async def fail_goal(self, goal_id: str, reason: str = "") -> Goal | None:
+    async def fail_goal(self, goal_id: str, reason: str = "") -> Plan | None:
         """Fail a goal and publish a GoalFailed event."""
         goal = self.goals.fail(goal_id, reason)
         if goal:
@@ -365,7 +365,7 @@ class UnifiedBrain:
                 source="brain",
                 payload=GoalFailedEvent(
                     goal_id=goal_id,
-                    objective=goal.objective,
+                    objective=goal.goal,
                     reason=reason,
                 ).__dict__,
             ))
@@ -373,10 +373,16 @@ class UnifiedBrain:
 
     async def plan_goal(self, goal_id: str) -> TaskGraph:
         """Generate a DAG-based task graph for a goal."""
+        from core.planner.decomposer import GoalDecomposer
+        from core.planner.executor import PlannerExecutor
+        decomposer = GoalDecomposer()
         goal = self.goals.get(goal_id)
         if not goal:
             raise ValueError(f"Goal not found: {goal_id}")
-        graph = await self.planner.plan(goal.objective, goal.next_action)
+        graph = TaskGraph(goal.goal)
+        subgoals = decomposer.decompose(goal.goal, context=goal.next_action)
+        for sg in subgoals:
+            graph.add_task(sg)
         return graph
 
     async def execute_with_verification(self, action_name: str,

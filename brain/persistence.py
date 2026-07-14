@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
 
-from brain.goals.goal_manager import GoalManager
+from core.planner.unified_store import UnifiedStore
 from core.planner.dag import TaskGraph
 
 logger = logging.getLogger(__name__)
@@ -58,7 +58,7 @@ class ProjectPersistence:
         - Context summary for LLM re-hydration
     """
 
-    def __init__(self, db_path: str, goal_manager: GoalManager | None = None):
+    def __init__(self, db_path: str, goal_manager: UnifiedStore | None = None):
         self._db_path = db_path
         self.goals = goal_manager
         self._lock = threading.Lock()
@@ -231,7 +231,7 @@ class ProjectPersistence:
 
         lines = ["=== PROJECT RESUME ==="]
         if goal:
-            lines.append(f"Goal: {goal.objective}")
+            lines.append(f"Goal: {goal.goal}")
             lines.append(f"Status: {goal.status.value}")
             lines.append(f"Progress: {goal.progress:.0%}")
             if goal.blockers:

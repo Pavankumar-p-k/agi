@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
 
-from brain.goals.goal_manager import GoalManager
+from core.planner.unified_store import UnifiedStore
 from brain.executor.executor import executor
 from memory.memory_facade import memory as _memory_facade
 
@@ -87,7 +87,7 @@ class WorldModel:
     of operating on isolated prompts.
     """
 
-    def __init__(self, goal_manager: GoalManager | None = None,
+    def __init__(self, goal_manager: UnifiedStore | None = None,
                  memory_manager=None):
         self.goals = goal_manager
         self.memory = memory_manager or _memory_facade
@@ -117,7 +117,7 @@ class WorldModel:
 
         goal_list = []
         if self.goals:
-            for g in self.goals.list_active(sort_by="priority")[:20]:
+            for g in self.goals.list_all(status="active", sort_by="priority")[:20]:
                 goal_list.append(g.to_dict())
 
         resources = ResourceState()

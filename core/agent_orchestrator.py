@@ -40,10 +40,10 @@ class AgentOrchestrator:
         """Lazy init automation loop with goal manager and memory."""
         if self._loop is not None:
             return
-        from brain.goals.goal_manager import GoalManager
+        from core.planner.unified_store import UnifiedStore
         from brain.automation.loop import AutomationLoop
 
-        self._goal_manager = GoalManager()
+        self._goal_manager = UnifiedStore()
         self._memory_manager = None  # uses MemoryFacade via AutomationLoop default
         self._loop = AutomationLoop(
             goal_manager=self._goal_manager,

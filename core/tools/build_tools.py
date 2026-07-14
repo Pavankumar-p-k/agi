@@ -21,10 +21,10 @@ async def _ensure_automation(project_dir: str = ""):
     global _BUILD_LOOP, _GOAL_MANAGER, _MEMORY_MANAGER
     if _BUILD_LOOP is not None:
         return
-    from brain.goals.goal_manager import GoalManager
+    from core.planner.unified_store import UnifiedStore
     from brain.automation.loop import AutomationLoop
 
-    _GOAL_MANAGER = GoalManager()
+    _GOAL_MANAGER = UnifiedStore()
     _MEMORY_MANAGER = None  # uses MemoryFacade via AutomationLoop default
     _BUILD_LOOP = AutomationLoop(
         goal_manager=_GOAL_MANAGER,

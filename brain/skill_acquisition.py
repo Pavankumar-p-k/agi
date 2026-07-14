@@ -10,7 +10,7 @@ from typing import Any
 
 from brain.events.event_bus import Event, global_event_bus
 from brain.events.event_types import LearningApplied
-from brain.goals.goal_manager import GoalManager
+from core.planner.unified_store import UnifiedStore
 from memory.memory_facade import memory as _memory_facade
 from brain.tools.project_tool import project_tool
 
@@ -46,7 +46,7 @@ class SkillAcquisition:
     """
 
     def __init__(self, memory_manager=None,
-                 goal_manager: GoalManager | None = None):
+                 goal_manager: UnifiedStore | None = None):
         self.memory = memory_manager or _memory_facade
         self.goals = goal_manager
         self._skills: dict[str, SkillTemplate] = {}

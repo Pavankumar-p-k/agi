@@ -5,7 +5,7 @@ from typing import Any
 
 from brain.events.event_bus import Event, global_event_bus
 from brain.events.event_types import LearningApplied
-from brain.goals.goal_manager import GoalManager
+from core.planner.unified_store import UnifiedStore
 from memory.memory_facade import memory as _memory_facade
 
 logger = logging.getLogger(__name__)
@@ -27,7 +27,7 @@ class LearningEngine:
     """
 
     def __init__(self, memory_manager=None,
-                 goal_manager: GoalManager | None = None):
+                 goal_manager: UnifiedStore | None = None):
         self.memory = memory_manager or _memory_facade
         self.goals = goal_manager
         self._lesson_prompt_suffix: str = ""
@@ -129,7 +129,7 @@ class LearningEngine:
 
         # If we have suppressed actions, suggest goal adjustments
         if self._suppressed_actions and self.goals:
-            active = self.goals.list_active(sort_by="priority")[:5]
+            active = self.goals.list_all(status="active", sort_by="priority")[:5]
             for goal in active:
                 for suppressed in self._suppressed_actions:
                     if suppressed in goal.next_action.lower():
