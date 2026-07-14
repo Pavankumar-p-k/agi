@@ -33,6 +33,10 @@ from brain.automation.failure_memory import FailureMemory, KnownFix
 from brain.automation.architectural_memory import ArchitecturalMemory
 from brain.automation.requirement_tracker import RequirementTracker, Requirement
 from brain.automation.error_classifier import classify_error, apply_fix
+from brain.automation.prompts import (
+    RUNTIME_VALIDATE_PROMPT, ANALYZE_BUILD_ERRORS_PROMPT, ANALYZE_TEST_ERRORS_PROMPT,
+    REPAIR_PROMPT, ROOT_CAUSE_PROMPT, list_project_files, json_from_llm, fallback_plan,
+)
 
 # DEPRECATED: Use ``self.execution_manager.engine`` instead.
 # Kept for backward compatibility during Phase 5 migration.
@@ -53,26 +57,6 @@ def _ensure_workflow_engine():
         _WORKFLOW_ENGINE = False
 
 logger = logging.getLogger(__name__)
-
-
-# ── Runtime Validation ──────────────────────────────────────────
-
-RUNTIME_VALIDATE_PROMPT = """You are validating a running {project_type} application.
-
-Requirements: {requirements}
-
-Screenshot analysis:
-{vision_report}
-
-Does the running application satisfy the requirements? Focus on visible UI elements.
-Output JSON:
-{{
-  "validated": true/false,
-  "visible_elements": ["list of what was seen"],
-  "missing_elements": ["list of required but unseen elements"],
-  "issues": ["any visual defects or incorrect behavior"]
-}}
-"""
 
 
 # ── Priority 3: Verification Gates ──────────────────────────────
@@ -245,204 +229,6 @@ def _check_imports(root: str) -> dict:
         "passed": len(issues) == 0,
         "detail": "; ".join(issues[:5]) if issues else "OK",
     }
-
-PLAN_PROMPT = """Goal: {goal}
-
-Available tools on this system: python, node, javac, gradle, cargo
-
-Create a detailed build plan using ONLY the available tools above.
-
-Output a JSON object with:
-  - "project_name": short name for the project directory
-  - "language": programming language (must match available tools)
-  - "files": list of file paths to create (relative to project root)
-  - "build_command": shell command to compile/build with available tools
-  - "test_command": shell command to run tests with available tools
-
-Output ONLY the JSON object, no markdown, no explanation.
-"""
-
-VERIFY_PROMPT = """Goal: {goal}
-Project directory: {project_dir}
-
-Verify this project meets all requirements. Check:
-
-1. All requested features implemented
-2. All referenced files exist
-3. No missing imports
-4. No missing resources
-5. No build errors
-6. No test failures
-7. Application starts successfully (check for main class / entry point)
-
-Output a JSON object:
-  {{
-    "verified": true/false,
-    "failures": ["description of each unmet requirement"],
-    "repair_instructions": "what to fix if verification failed"
-  }}
-"""
-
-ANALYZE_BUILD_ERRORS_PROMPT = """Goal: {goal}
-Build command: {build_command}
-Build output (stdout/stderr):
-{build_output}
-
-Analyze the build errors. For each error:
-1. Identify the root cause
-2. Find the affected file
-3. Explain what needs to be fixed
-
-Output a JSON object:
-  {{
-    "errors": [
-      {{"file": "path/to/file", "line": N, "message": "error text", "fix": "what to change"}}
-    ],
-    "summary": "overall assessment of what's wrong and how to repair"
-  }}
-"""
-
-ANALYZE_TEST_ERRORS_PROMPT = """Goal: {goal}
-Test command: {test_command}
-Test output (stdout/stderr):
-{test_output}
-
-Analyze the test failures. For each failure:
-1. Identify which test failed
-2. Find the root cause in the implementation
-3. Explain what needs to be fixed
-
-Output a JSON object:
-  {{
-    "failures": [
-      {{"test": "test name", "file": "affected source file", "message": "error text", "fix": "what to change"}}
-    ],
-    "summary": "overall assessment of what's wrong and how to repair"
-  }}
-"""
-
-REPAIR_PROMPT = """Goal: {goal}
-Project directory: {project_dir}
-
-The following issues need to be fixed:
-
-{analysis}
-
-For each affected file, generate the COMPLETE corrected content.
-Output a JSON array of repair actions:
-  [
-    {{"action": "write_file", "params": {{"path": "...", "content": "..."}}}},
-    {{"action": "edit_file", "params": {{"path": "...", "old_string": "...", "new_string": "..."}}}}
-  ]
-
-Include ALL imports, declarations, and correct syntax in each file.
-Output ONLY the JSON array, no markdown, no explanation.
-"""
-
-ROOT_CAUSE_PROMPT = """Goal: {goal}
-
-Current plan: {plan_json}
-
-Build errors encountered (after {attempts} repair attempts):
-{build_history}
-
-Project files:
-{files}
-
-The build keeps failing on the same class of errors. Analyze the ROOT CAUSE.
-
-Is the problem:
-1. Missing architectural layer (Repository, ViewModel, DAO, DI)?
-2. Incorrect build configuration?
-3. Missing files / incorrect file structure?
-4. The planner never generated a necessary component?
-
-Output JSON:
-{{
-  "root_cause": "one-line description of the architectural issue",
-  "affected_areas": ["list of missing or incorrect components"],
-  "plan_mutation": {{
-    "new_files": ["files to add"],
-    "steps": [{{"step": "...", "tool": "shell|file_tools|vision_browser|search"}}],
-    "build_command": "updated build command",
-    "test_command": "updated test command"
-  }}
-}}
-"""
-
-
-def _list_files(project_dir: str) -> list[str]:
-    files = []
-    if os.path.isdir(project_dir):
-        for root, dirs, fnames in os.walk(project_dir):
-            for f in fnames:
-                rel = os.path.relpath(os.path.join(root, f), project_dir)
-                if not rel.startswith(".") and not rel.startswith("brain"):
-                    files.append(rel.replace("\\", "/"))
-    return sorted(files)
-
-
-def _json_from_llm(raw: str) -> dict | list | None:
-    """Extract JSON from LLM output (handles code fences)."""
-    for prefix in ["```json", "```JSON", "```"]:
-        if raw.startswith(prefix):
-            raw = raw[len(prefix):]
-    for suffix in ["```"]:
-        if raw.endswith(suffix):
-            raw = raw[:-len(suffix)]
-    raw = raw.strip()
-    try:
-        return json.loads(raw)
-    except json.JSONDecodeError:
-        return None
-
-
-def _fallback_plan(objective: str) -> dict:
-    """Return a safe fallback plan when LLM fails."""
-    lo = objective.lower()
-    lang = "python" if "python" in lo else "java"
-    project_name = "app"
-    for word in objective.split():
-        w = word.strip("- ").lower()
-        if w not in ("build", "a", "an", "the", "with", "android", "app", "in", "using", "and", "for"):
-            project_name = w[:20]
-            break
-    if "android" in lo or "gradle" in lo:
-        pkg = "com/example/" + project_name.lower()
-        return {
-            "project_name": project_name,
-            "language": "java",
-            "steps": [
-                {"step": "Generate project files", "tool": "file_tools"},
-                {"step": "Build the project", "tool": "shell"},
-                {"step": "Run tests", "tool": "shell"},
-            ],
-            "files": [
-                "build.gradle",
-                "settings.gradle",
-                "gradle.properties",
-                "src/main/AndroidManifest.xml",
-                f"src/main/java/{pkg}/MainActivity.java",
-                "src/main/res/layout/activity_main.xml",
-                "src/main/res/values/strings.xml",
-                "src/main/res/values/themes.xml",
-            ],
-            "build_command": "gradle assembleDebug",
-            "test_command": "gradle test",
-        }
-    return {
-        "project_name": project_name,
-        "language": lang,
-        "steps": [
-            {"step": "Generate project files", "tool": "file_tools"},
-            {"step": "Build the project", "tool": "shell"},
-            {"step": "Run tests", "tool": "shell"},
-        ],
-        "files": [],
-        "build_command": "",
-        "test_command": "",
-    }
-
 
 class AutomationLoop:
     """Strict phase-based autonomous build loop with targeted repair + verification gates + failure memory.
@@ -755,14 +541,14 @@ class AutomationLoop:
         )
         if not raw:
             logger.warning("[AutoBuild] plan: LLM returned nothing, using fallback")
-            return _fallback_plan(objective)
-        plan = _json_from_llm(raw)
+            return fallback_plan(objective)
+        plan = json_from_llm(raw)
         if isinstance(plan, dict):
             logger.info("[AutoBuild] plan created: %s (%d steps)",
                         plan.get("project_name", "?"), len(plan.get("steps", [])))
             return plan
         logger.warning("[AutoBuild] plan: JSON parse failed, using fallback")
-        return _fallback_plan(objective)
+        return fallback_plan(objective)
 
     async def _phase_generate(self, objective: str, proj_dir: str, plan: dict) -> int:
         """Generate all project files, one at a time via LLM."""
@@ -1496,7 +1282,7 @@ android.enableJetifier=true
                 model_group="code",
                 timeout=120,
             )
-            analysis = _json_from_llm(analysis_raw) if analysis_raw else None
+            analysis = json_from_llm(analysis_raw) if analysis_raw else None
             if not analysis:
                 logger.warning("[AutoBuild] build: could not analyze errors, retrying")
                 await asyncio.sleep(2)
@@ -1551,7 +1337,7 @@ android.enableJetifier=true
                     fix_prompt, timeout=120,
                 )
                 if raw:
-                    actions = _json_from_llm(raw)
+                    actions = json_from_llm(raw)
                     if isinstance(actions, list):
                         for action in actions:
                             act_type = action.get("action", "")
@@ -1695,7 +1481,7 @@ android.enableJetifier=true
             return None
 
         plan_json = json.dumps({k: v for k, v in plan.items() if k != "steps"}, indent=2, default=str)
-        files = _list_files(os.path.join(proj_dir, plan.get("project_name", "project")))
+        files = list_project_files(os.path.join(proj_dir, plan.get("project_name", "project")))
         history_text = "\n".join(build_history[-10:]) if build_history else "no prior errors"
 
         prompt = ROOT_CAUSE_PROMPT.replace("{goal}", objective)
@@ -1709,7 +1495,7 @@ android.enableJetifier=true
             "You are a software architecture analyst. Identify root causes, not symptoms.",
             prompt, timeout=120,
         )
-        analysis = _json_from_llm(raw) if raw else None
+        analysis = json_from_llm(raw) if raw else None
         if not analysis:
             return None
 
@@ -1879,7 +1665,7 @@ android.enableJetifier=true
             "You are a QA engineer validating UI against requirements using screenshot, UI hierarchy, and logcat.",
             verify_prompt, timeout=120,
         )
-        validation = _json_from_llm(raw) if raw else None
+        validation = json_from_llm(raw) if raw else None
 
         if validation and validation.get("validated"):
             logger.info("[Runtime] validation PASSED")
@@ -2108,7 +1894,7 @@ android.enableJetifier=true
                 model_group="code",
                 timeout=120,
             )
-            analysis = _json_from_llm(analysis_raw) if analysis_raw else None
+            analysis = json_from_llm(analysis_raw) if analysis_raw else None
             if not analysis:
                 logger.warning("[AutoBuild] test: could not analyze failures, retrying")
                 continue
@@ -2123,7 +1909,7 @@ android.enableJetifier=true
 
     async def _phase_verify(self, objective: str, proj_dir: str, goal_id: str, plan: dict = None) -> bool:
         """Deterministic verification: file structure + completion check. No LLM."""
-        files = _list_files(proj_dir)
+        files = list_project_files(proj_dir)
         if not files:
             logger.warning("[AutoBuild] verify: no files in project directory")
             return False
@@ -2148,7 +1934,7 @@ android.enableJetifier=true
         repair_prompt = repair_prompt.replace("{project_dir}", proj_dir)
         repair_prompt = repair_prompt.replace("{analysis}", summary)
 
-        files = _list_files(proj_dir)
+        files = list_project_files(proj_dir)
         if files:
             repair_prompt += "\n\nCurrent file contents:"
             for f in files[:5]:
@@ -2169,7 +1955,7 @@ android.enableJetifier=true
         if not raw:
             return False
 
-        actions = _json_from_llm(raw)
+        actions = json_from_llm(raw)
         if not isinstance(actions, list):
             extracted = task_resolver._extract_individual_objects(raw)
             if extracted:
