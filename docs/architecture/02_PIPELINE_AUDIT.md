@@ -941,3 +941,346 @@ Referenced by `core/main.py:749` in `execute_action()`. Falls back to `route_int
 5. **Consolidate duplicate classifiers** — merge `request_classifier.py`, `infer_capabilities()`, and `intent` stage.
 6. **Remove dead code** — `AgentRuntime.run_task()`, legacy `routers/chat.py`, `route_intent()`.
 7. **Add 6 missing stages** to canonical pipeline: `strategy`, `decision`, `workflow`, `activity_recording`, `provider_memory_feedback`, `learning_feedback`.
+
+---
+
+## 10. Post-Execution Flow
+
+Tracing what happens AFTER the pipeline produces a response — EventBus → WebSocket → Inbox → History → Memory → UI.
+
+### 10.1 EventBus Publication
+
+```
+  Pipeline Stage (e.g., memory stage, execution stage, verification stage)
+      │
+      ▼
+  ┌─ core/event_bus.py:68 ───────────────────────────────────────────┐
+  │  async def publish(self, event: Event) -> None:                   │
+  │    event.id = uuid4().hex                                         │
+  │    event.timestamp = now                                           │
+  │    with self._lock:                                                │
+  │      self._history.appendleft(event)  # ring buffer (100 max)    │
+  │      for sub in self._subscribers[event.type]:                    │
+  │        tasks.append(sub.callback(event))                          │
+  │      if sub.pattern matches (wildcard/multi):                     │
+  │        tasks.append(sub.callback(event))                          │
+  │    await asyncio.gather(*tasks, return_exceptions=True)           │
+  │    await self._broadcast(event.to_dict())  # WebSocket push       │
+  │    for stream_sub in self._stream_subscribers:                    │
+  │      await stream_sub.put(event)  # streaming queue              │
+  └──────────────────────┬────────────────────────────────────────────┘
+                         │
+           ┌─────────────┼─────────────┐
+           ▼             ▼             ▼
+   ┌────────────┐  ┌────────────┐  ┌────────────┐
+   │ Subscriber │  │ WebSocket  │  │ Streaming  │
+   │ callbacks  │  │ Broadcast  │  │ Queue      │
+   │ (sync)     │  │ (async)    │  │ (buffered) │
+   └────────────┘  └────────────┘  └────────────┘
+```
+
+**Arrow Details:**
+
+| Property | Value |
+|----------|-------|
+| **File** | `core/event_bus.py:68` |
+| **Function** | `EventBus.publish(event: Event)` |
+| **Events** | All system events (GoalCreated, TaskCompleted, MemoryStored, VerificationPassed, ConfigChanged, WorkflowEvent, etc.) |
+| **Database reads** | None |
+| **Database writes** | In-memory ring buffer `_history` (100 events, deque) |
+| **API calls** | `_broadcast()` → WebSocket push, subscriber callbacks |
+| **Return type** | `None` |
+| **Timing** | Async fire-and-forget with `asyncio.gather` |
+| **Failure path** | `return_exceptions=True` — individual subscriber failures are logged, not propagated |
+| **Plugin hooks** | None at EventBus level (plugins subscribe as normal subscribers) |
+| **Permissions** | None at EventBus level |
+| **Confirmation** | None |
+| **Status** | `CORRECT` — mature, well-structured |
+
+### 10.2 WebSocket Broadcast
+
+```
+  EventBus._broadcast(event_data)
+      │
+      ▼
+  ┌─ core/event_bus.py:139 ──────────────────────────────────────────┐
+  │  async def _broadcast(self, event_data: dict) -> None:            │
+  │    targets = set(self._ws_all)                                    │
+  │    if session_id: targets |= self._ws_by_session[session_id]     │
+  │    for ws in targets:                                             │
+  │      try:                                                         │
+  │        await ws.send_json({"type": "event", ...event_data})      │
+  │      except WebSocketDisconnect: ws discarded                    │
+  └──────────────────────┬────────────────────────────────────────────┘
+                         │
+                         ▼
+  Connected WebSocket clients receive event JSON
+      ├── Dashboard UI (real-time updates)
+      ├── CLI streaming session (chat_stream)
+      └── External device connections (/ws/{device_id}/{user_id})
+```
+
+**Arrow Details:**
+
+| Property | Value |
+|----------|-------|
+| **File** | `core/event_bus.py:139` |
+| **Function** | `_broadcast(event_data: dict)` |
+| **Events** | N/A (broadcasts events from publisher) |
+| **Database reads** | None |
+| **Database writes** | None |
+| **API calls** | `ws.send_json()` for each connected WebSocket |
+| **Return type** | `None` |
+| **Timing** | Async per-connection send |
+| **Failure path** | `WebSocketDisconnect` → silently discard; other errors logged |
+| **Plugin hooks** | None |
+| **Permissions** | None (any connected WS receives all events) |
+| **Confirmation** | None |
+| **Status** | `CORRECT` — standard pub-sub broadcast |
+
+### 10.3 Inbox / Notification Delivery
+
+```
+  Events that need user attention
+      │
+      ├── monitor/alerts.py:AlertRouter ── option 1
+      └── notifications/notifier.py:SupervisorNotifier ── option 2
+
+  ┌─ monitors/alerts.py ─────────────────────────────────────────────┐
+  │  class AlertRouter:                                                │
+  │    routes:                                                         │
+  │      - WebSocket broadcast (if broadcast_fn injected)             │
+  │      - TTS speech (if speak_fn injected)                          │
+  │      - WhatsApp message (if whatsapp_fn injected)                 │
+  │    defaults: all three are None — NOT wired by default            │
+  └──────────────────────┬────────────────────────────────────────────┘
+                         │
+  ┌─ notifications/notifier.py ──────────────────────────────────────┐
+  │  class SupervisorNotifier:                                         │
+  │    channels: Email (SMTP), Push (ntfy.sh/Pushover), WS, log file  │
+  │    triggers: build_completed, build_started, task_failed          │
+  │    Called from: brain/automation/loop.py select locations        │
+  └───────────────────────────────────────────────────────────────────┘
+```
+
+**Arrow Details:**
+
+| Property | AlertRouter | SupervisorNotifier |
+|----------|-------------|-------------------|
+| **File** | `monitors/alerts.py` | `notifications/notifier.py` |
+| **Function** | `AlertRouter.route()` | `SupervisorNotifier.notify()` |
+| **Events** | None (called directly) | `build_completed`, `build_started`, `task_failed` |
+| **Database reads** | None | None |
+| **Database writes** | None | `events.jsonl` log file |
+| **API calls** | WS broadcast, TTS, WhatsApp | SMTP, Pushover/ntfy.sh, WS |
+| **Return type** | `None` | `None` |
+| **Timing** | Sync | Sync |
+| **Failure path** | Logged, not propagated | Logged, not propagated |
+| **Plugin hooks** | None | None |
+| **Permissions** | None | None |
+| **Confirmation** | None | None |
+| **Status** | `DRIFT` | `DRIFT` |
+| **Reality** | 3/10 — routing functions default to None, no auto-wiring | 4/10 — only build events, no general notification system |
+
+### 10.4 History Persistence
+
+```
+  Pipeline completes → Response generated
+      │
+      ├── core/routes/chat.py:52  → _persist_chat() → SQLite ChatHistory
+      ├── ws/agent_stream → ConversationManager → JSON file
+      ├── channels/processor.py → PluginEventBus → MCP server events
+      └── cli cmd_cli → ConversationManager.add_message() → JSON file
+
+  ┌─ core/routes/chat.py:52 ──────────────────────────────────────────┐
+  │  async def _persist_chat(req, result, response_text, db, user):   │
+  │    db.add(ChatHistory(user_id=user.id, role="user",               │
+  │                       message=req.message, ...))                   │
+  │    db.add(ChatHistory(user_id=user.id, role="assistant",          │
+  │                       message=response_text, ...))                 │
+  │    await db.commit()                                               │
+  │    Backend: SQLAlchemy AsyncSession → SQLite                      │
+  └───────────────────────────────────────────────────────────────────┘
+
+  ┌─ core/session.py ─────────────────────────────────────────────────┐
+  │  class ConversationManager:                                        │
+  │    def __init__(self, session_id):                                │
+  │      self.path = Path(f"~/.jarvis/history/{session_id}.json")     │
+  │    def add_message(self, role, message):                           │
+  │      self.messages.append({"role": role, "content": message,      │
+  │                            "timestamp": now})                      │
+  │    def save(self):                                                 │
+  │      self.path.write_text(json.dumps(self.to_dict(), indent=2))   │
+  │    Backend: JSON file per session                                  │
+  └───────────────────────────────────────────────────────────────────┘
+```
+
+**History Store Comparison:**
+
+| Store | Backend | Path | Used By | Status |
+|-------|---------|------|---------|--------|
+| `ChatHistory` (SQLAlchemy) | SQLite | `database.db` table `chat_history` | `POST /api/chat` | `CORRECT` |
+| `ConversationManager` | JSON file | `~/.jarvis/history/{session_id}.json` | CLI `cmd_cli`, WS `/ws/agent_stream` | `DRIFT` — duplicates ChatHistory |
+| `WhatsAppHistory` | SQLite | `~/.jarvis/whatsapp_history.db` | WhatsApp integration only | `CORRECT` (isolated) |
+
+### 10.5 Memory Storage
+
+```
+  Pipeline completes → Memory Stage (stage 17 of 19)
+      │
+      ▼
+  ┌─ core/pipeline/stages/memory.py ──────────────────────────────────┐
+  │  class MemoryStage(PipelineStage):                                 │
+  │    Priority: POST_EXECUTION                                        │
+  │    async def execute(self, ctx):                                   │
+  │      if ctx.response_text:                                         │
+  │        memory.store(text=ctx.response_text, user_id=ctx.user_id)  │
+  │      if ctx.transcript_stages:                                     │
+  │        memory.store(text=transcript, user_id=ctx.user_id,         │
+  │                      metadata={"stage":"transcript"})              │
+  │    # MemoryFacade handles routing to backends                     │
+  └──────────────────────┬────────────────────────────────────────────┘
+                         │
+                         ▼
+  ┌─ memory/memory_facade.py ─────────────────────────────────────────┐
+  │  MemoryFacade.store(text, user_id, metadata)                       │
+  │    → mem0 adapter (if configured)                                  │
+  │    → TieredMemory (hot/warm/cold)                                  │
+  │    → EpisodicStore (SQLite) — full conversation episodes          │
+  │    → SemanticStore (SQLite) — extracted facts with embeddings     │
+  │    → TaskStore (SQLite) — task/action history                     │
+  │    → DecisionStore (SQLite) — routing decisions                   │
+  └───────────────────────────────────────────────────────────────────┘
+
+  Also persisted from pipeline:
+  ┌─ core/pipeline/stages/learning/ (stage 19) ──────────────────────┐
+  │  LearningStage:                                                    │
+  │    → Consolidator.consolidate_once_async()                        │
+  │    → Extracts lessons, patterns, failures from execution          │
+  │    → Stores in DecisionMemory                                     │
+  └───────────────────────────────────────────────────────────────────┘
+```
+
+**Memory Flow Details:**
+
+| Arrow | File | Function | Events | DB Write | API | Return | Status |
+|-------|------|----------|--------|----------|-----|--------|--------|
+| Pipeline→Memory Stage | `stages/memory.py` | `MemoryStage.execute()` | None | `MemoryFacade.store()` | None | `CONTINUE` | `CORRECT` |
+| MemoryStage→Facade | `memory/memory_facade.py` | `MemoryFacade.store()` | `memory.stored` (via EventBus) | SQLite: episodic, semantic, task, decision; mem0; ChromaDB | None | `str` (memory_id) | `CORRECT` |
+| Pipeline→Learning Stage | `stages/learning/` | `LearningStage.execute()` | `learning.applied` | JSON: decision_memory | `Consolidator` | `CONTINUE` | `CORRECT` |
+| Learning→Consolidator | `brain/automation/loop.py` | `Consolidator.consolidate_once_async()` | None | JSON: failure patterns, lessons | None | `int` (count) | `CORRECT` |
+
+### 10.6 UI Update
+
+```
+  Pipeline response → Multiple UI paths
+      │
+      ├── REST response → Client parses JSON → Updates UI state
+      ├── WebSocket SSE → Client receives events → Renders incrementally
+      ├── Channel message → Platform renders in chat UI
+      ├── Voice → TTS → Audio plays through speaker
+      └── CLI → print() to terminal
+
+  REST /api/chat response:
+  ┌─ core/routes/chat.py → router.post("/api/chat") ──────────────────┐
+  │  Returns:                                                          │
+  │  {                                                                 │
+  │    "response": "text reply...",                                    │
+  │    "intent": {"type": "chat", "confidence": 0.95},                │
+  │    "action": {"executed": true, "result": "..."},                 │
+  │    "model": "qwen2.5-coder:7b",                                   │
+  │    "privacy_tier": 0,                                             │
+  │    "epistemic_tags": {...},                                       │
+  │    "format_used": "text",                                         │
+  │    "multi_format": {}                                             │
+  │  }                                                                 │
+  └───────────────────────────────────────────────────────────────────┘
+
+  WebSocket streaming:
+  ┌─ core/pipeline/adapters/websocket_adapter.py:65 ─────────────────┐
+  │  Events pushed to client:                                          │
+  │    {"type": "stage_start", "stage": "reasoner"}                   │
+  │    {"type": "stage_end", "stage": "reasoner", "duration_ms": 234} │
+  │    {"type": "stage_error", "stage": "planner", "error": "..."}    │
+  │    {"type": "stream_token", "token": "Hello ", "complete": false} │
+  │    {"type": "stream_token", "token": "world!", "complete": true}  │
+  │    {"type": "stream_end", "full_response": "Hello world!"}        │
+  └───────────────────────────────────────────────────────────────────┘
+```
+
+**UI Update Assessment:**
+
+| UI Type | Path | Data | Status | Reality |
+|---------|------|------|--------|---------|
+| REST Client | HTTP response → JSON parse → DOM update | Full response text + metadata | `CORRECT` | 8/10 |
+| WebSocket Client | SSE events → incremental render | Stage events + word tokens | `CORRECT` | 9/10 |
+| Channel (Discord etc.) | Platform API → channel message | Response text | `CORRECT` | 8/10 |
+| Voice | TTS synthesis → audio playback | Response text → audio bytes | `CORRECT` | 9/10 |
+| CLI Terminal | `print()` to stdout | Response text | `CORRECT` | 8/10 |
+| TUI | Textual app → rich terminal UI | Via HTTP/WS to server | `DORMANT` | 2/10 |
+
+---
+
+## 11. Complete End-to-End Reality Scores
+
+### 11.1 Full Path Matrix
+
+```
+Path                     Norm  GoalUnd  CapRes  Plan  ExecStrat  Exec  EventBus  WS  Inbox  History  Memory  UI  OVERALL
+──────                   ────  ───────  ──────  ────  ─────────  ────  ────────  ──  ─────  ───────  ──────  ──  ──────
+POST /api/chat            9      8        7       6       4       7     10       9    3       8       8      8    7.2
+POST /api/agent/stream    4      6        4       5       5       5     10       9    3       4       5      8    5.7
+WS /ws/chat_stream        9      8        7       6       4       7     10      10    3       8       8      9    7.4
+WS /ws/agent_stream       4      5        4       4       4       4     10       8    3       5       4      6    5.1
+Voice process_audio       9      8        7       6       4       7     10       9    3       8       8      9    7.3
+Channel message           9      8        7       6       4       7     10       9    3       8       8      8    7.2
+CLI jarvis chat           9      8        7       6       4       7     10       9    3       7       5      8    6.9
+TUI                       2      2        2       2       2       2      2       2    1       2       2      2    1.9
+Discord plugin            9      8        7       6       4       7     10       9    3       8       8      8    7.2
+Slack plugin              9      8        7       6       4       7     10       9    3       8       8      8    7.2
+Telegram plugin           9      8        7       6       4       7     10       9    3       8       8      8    7.2
+POST /v1/chat/completions 9      8        7       6       4       7     10       9    3       8       8      8    7.2
+```
+
+### 11.2 Average by Stage
+
+| Stage | Avg Score | Assessment |
+|-------|-----------|------------|
+| Normalization | 6.7 | Consistent across canonical paths; missing from legacy paths |
+| Goal Understanding | 6.7 | `core/planner/` is solid; `RuntimePipeline` duplicates |
+| Capability Resolution | 5.6 | Split across `capability_selection` (canonical) and `infer_capabilities()` (legacy) |
+| Planning | 5.3 | Three planners coexist: canonical stage, `RuntimePipeline`, `AutomationLoop` |
+| Execution Strategy | 3.9 | Only in `RuntimePipeline` (Phase A.2+A.3+A.4); missing from canonical pipeline |
+| Execution | 5.8 | Multiple executors: canonical stage, legacy graph, `AutomationLoop` |
+| EventBus | 9.2 | Single canonical implementation across all paths |
+| WebSocket | 8.5 | `_broadcast()` works; some paths don't use streaming |
+| Inbox/Notification | 2.8 | Fragmented, not wired by default, no central service |
+| History | 6.5 | Dual stores (SQLite ChatHistory + JSON ConversationManager) |
+| Memory | 6.4 | Pipeline stage persists correctly; but fragmentation at storage layer |
+| UI | 7.2 | Works for most paths; TUI is DORMANT |
+
+---
+
+## 12. Arrow-by-Arrow DRIFT Assessment Summary
+
+### 12.1 Arrow Status Counts
+
+| Status | Count | Description |
+|--------|-------|-------------|
+| `CORRECT` | 84 | Properly wired, canonical path |
+| `DRIFT` | 23 | Diverged from canonical, needs migration |
+| `DUPLICATE` | 10 | Two+ implementations of same concern |
+| `DORMANT` | 9 | Not connected, likely dead code |
+
+### 12.2 Top DRIFT Items (Priority Order)
+
+| # | Drift | Impact | Fix |
+|---|-------|--------|-----|
+| 1 | `RuntimePipeline` bypasses canonical 19-stage pipeline | All `/api/agent/stream` and `/ws/agent_stream` traffic misses canonical stages | Rewrite `stream_agent_loop` to use `core/pipeline/` |
+| 2 | No notification/inbox stage in canonical pipeline | Events published but never delivered to user | Add `notification` stage + wire `AlertRouter` |
+| 3 | Dual history stores | Chat history split across SQLite and JSON files | Unify on single `ChatHistory` store |
+| 4 | CLI dev commands bypass pipeline | `cmd_code`, `cmd_build`, etc. call `AutomationLoop` directly | Route through canonical pipeline |
+| 5 | Missing 6 phases from canonical pipeline | Strategy, Decision, Workflow, Activity Recording, Provider Memory, Learning Feedback only exist in `RuntimePipeline` | Migrate into canonical stages |
+| 6 | `AgentRuntime.run_task()` DORMANT | Dead code not wired to any route | Remove |
+| 7 | `legacy routers/chat.py` | Superseded by `core/routes/chat.py` but still exists | Remove |
+| 8 | TUI is DORMANT | Textual app external, standalone mode unknown | Audit `jarvis_tui` package |
