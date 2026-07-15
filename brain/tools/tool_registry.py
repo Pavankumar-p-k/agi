@@ -5,7 +5,7 @@ import importlib
 import logging
 from typing import Any
 
-from brain.executor.executor import executor, ActionResult
+from brain.executor import executor, ActionResult
 
 logger = logging.getLogger(__name__)
 

@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from core.planner.unified_store import UnifiedStore
-from brain.executor.executor import executor
+from brain.executor import executor
 from memory.memory_facade import memory as _memory_facade
 
 logger = logging.getLogger(__name__)
@@ -173,7 +173,7 @@ class WorldModel:
 
     def refresh_tools(self):
         """Refresh the cached tool list from the executor."""
-        from brain.executor.executor import executor
+        from brain.executor import executor
         self._tools_cache = [
             {"name": name, "type": type(tool).__name__}
             for name, tool in executor._tools.items()

@@ -21,7 +21,7 @@ import time
 from dataclasses import dataclass, field
 from typing import Any
 
-from brain.executor.executor import executor, ActionResult
+from brain.executor import executor, ActionResult
 from core.planner.protocol import Plan
 from core.planner.unified_store import UnifiedStore
 from brain.task_resolver import task_resolver
