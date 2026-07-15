@@ -37,8 +37,8 @@ def test_no_circular_imports_core_brain():
 def test_subagents_respect_base_class():
     """Ensure all sub-agents inherit from SubAgent."""
     from core.agents._sub_agent_base import SubAgent
-    from core.agents._legacy.nexus import NexusAgent
-    from core.agents._legacy.forge import ForgeAgent
+    from core.agents.adapters.nexus_adapter import NexusAgent
+    from core.agents.adapters.forge_adapter import ForgeAgent
     
     assert issubclass(NexusAgent, SubAgent)
     assert issubclass(ForgeAgent, SubAgent)

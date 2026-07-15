@@ -15,15 +15,15 @@ from __future__ import annotations
 
 import asyncio
 
-from core.agents._legacy.atlas import AtlasAgent
-from core.agents._legacy.cipher import CipherAgent
-from core.agents._legacy.forge import ForgeAgent
-from core.agents._legacy.herald import HeraldAgent
-from core.agents._legacy.nexus import NexusAgent
-from core.agents._legacy.oracle import OracleAgent
-from core.agents._legacy.phantom import PhantomAgent
-from core.agents._legacy.scribe import ScribeAgent
-from core.agents._legacy.sentinel import SentinelAgent
+from core.agents.adapters.atlas_adapter import AtlasAgent
+from core.agents.adapters.cipher_adapter import CipherAgent
+from core.agents.adapters.forge_adapter import ForgeAgent
+from core.agents.adapters.herald_adapter import HeraldAgent
+from core.agents.adapters.nexus_adapter import NexusAgent
+from core.agents.adapters.oracle_adapter import OracleAgent
+from core.agents.adapters.phantom_adapter import PhantomAgent
+from core.agents.adapters.scribe_adapter import ScribeAgent
+from core.agents.adapters.sentinel_adapter import SentinelAgent
 from core.agents._sub_agent_base import AgentResult, SubAgent
 
 _REGISTRY: dict[str, type[SubAgent]] = {
