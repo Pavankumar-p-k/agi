@@ -375,6 +375,14 @@ MILESTONE = "milestone"
 FOCUS_CHANGED = "focus_changed"
 
 
+# ── Build event types ──────────────────────────────────────────────────────────
+
+BUILD_STARTED = "build.started"
+BUILD_COMPLETED = "build.completed"
+BUILD_FAILED = "build.failed"
+BUILD_FIX_REQUESTED = "build.fix_requested"
+
+
 class WorkflowEvent:
     """Legacy workflow event — kept for backward compatibility."""
 

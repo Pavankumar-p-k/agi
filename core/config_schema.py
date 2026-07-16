@@ -334,6 +334,24 @@ class _LegacyTopLevelAttrs:
         return os.getenv("SUPABASE_SERVICE_KEY")
 
 
+@dataclass
+class ConfigEntry:
+    """Configuration registry entry."""
+    key: str
+    default: Any
+    type: str
+    category: str
+    description: str
+    ui: str = "text"
+    options: list = None
+    options_provider: str = None
+    restart_required: bool = False
+    min_value: float = None
+    max_value: float = None
+    env_var: str = None
+    secret: bool = False
+
+
 _legacy_attrs = _LegacyTopLevelAttrs()
 
 
@@ -382,4 +400,7 @@ class JarvisConfig:
 
 jarvis_config = JarvisConfig()
 
-__all__ = ["jarvis_config", "JarvisConfig"]
+# Backward-compat registry for code importing _REGISTRY from config_registry
+_REGISTRY = []
+
+__all__ = ["jarvis_config", "JarvisConfig", "_REGISTRY", "ConfigEntry"]

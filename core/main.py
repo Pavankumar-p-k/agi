@@ -405,15 +405,7 @@ try:
 except Exception as e:
     logger.warning("[Router] RAGFlow routes not loaded: %s", e)
 
-# Cowork Mode routes
-try:
-    from core.routes.cowork import router as cowork_router
-    app.include_router(cowork_router)
-    logger.info("[Router] Cowork Mode routes loaded [OK]")
-except Exception as e:
-    import traceback
-    logger.warning("[Router] Cowork Mode routes not loaded: %s", e)
-    traceback.print_exc()
+
 
 # Pydantic schemas — extracted to core/schemas.py
 
