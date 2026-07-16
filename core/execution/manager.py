@@ -4,7 +4,7 @@ import logging
 import uuid
 from typing import Any
 
-from core.event_bus import Event, global_event_bus
+from core.event_bus import Event, global_event_bus, EXECUTION_TRACE, EXECUTION_DECISION
 from core.execution.context import ExecutionContext
 from core.workflow.engine import WorkflowEngine
 from core.workflow.models import StepDefinition, WorkflowStatus
@@ -118,9 +118,9 @@ class ExecutionManager:
         context.status = "failed"
         self._publish_event("failed", context, {"error": error})
 
-    # ── Memory recording ──────────────────────────────────────────────
+    # ── Event-driven memory recording ───────────────────────────────────────
 
-    def record_trace(
+    async def record_trace(
         self,
         context: ExecutionContext,
         action_name: str,
@@ -130,40 +130,48 @@ class ExecutionManager:
         duration_ms: float = 0.0,
         tags: list[str] | None = None,
     ) -> None:
+        """Record execution trace via EventBus (MemoryFacade subscribes)."""
         try:
-            from memory.memory_facade import memory
-            memory.store_trace(
-                action_name=action_name,
-                action_params=action_params,
-                observation=observation,
-                success=success,
-                duration_ms=duration_ms,
-                task_id=context.workflow_id,
-                context=context.to_event_payload(),
-                tags=tags or [],
-                user_id=context.user_id or "default",
-            )
+            await global_event_bus.publish(Event(
+                type=EXECUTION_TRACE,
+                source="execution_manager",
+                payload={
+                    "action_name": action_name,
+                    "action_params": action_params or {},
+                    "observation": observation,
+                    "success": success,
+                    "duration_ms": duration_ms,
+                    "task_id": context.workflow_id,
+                    "context": context.to_event_payload() if hasattr(context, 'to_event_payload') else str(context),
+                    "tags": tags or [],
+                    "user_id": context.user_id or "default",
+                },
+            ))
         except Exception as e:
-            logger.debug("Memory trace recording skipped: %s", e)
+            logger.debug("Execution trace recording skipped: %s", e)
 
-    def record_decision(
+    async def record_decision(
         self,
         context: ExecutionContext,
         decision: str,
         outcome: str,
         success: bool = True,
     ) -> None:
+        """Record execution decision via EventBus (MemoryFacade subscribes)."""
         try:
-            from memory.memory_facade import memory
-            memory.store_decision(
-                context=context.phase,
-                decision=decision,
-                outcome=outcome,
-                success=success,
-                user_id=context.user_id or "default",
-            )
+            await global_event_bus.publish(Event(
+                type=EXECUTION_DECISION,
+                source="execution_manager",
+                payload={
+                    "context": context.phase,
+                    "decision": decision,
+                    "outcome": outcome,
+                    "success": success,
+                    "user_id": context.user_id or "default",
+                },
+            ))
         except Exception as e:
-            logger.debug("Memory decision recording skipped: %s", e)
+            logger.debug("Execution decision recording skipped: %s", e)
 
     # ── Convenience factory ───────────────────────────────────────────
 

@@ -383,6 +383,12 @@ BUILD_FAILED = "build.failed"
 BUILD_FIX_REQUESTED = "build.fix_requested"
 
 
+# ── Execution trace/decision event types ───────────────────────────────────────
+EXECUTION_TRACE = "execution.trace"
+EXECUTION_DECISION = "execution.decision"
+EXECUTION_PROGRESS = "execution.progress"
+
+
 class WorkflowEvent:
     """Legacy workflow event — kept for backward compatibility."""
 
