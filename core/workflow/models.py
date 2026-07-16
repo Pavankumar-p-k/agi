@@ -5,6 +5,14 @@ from datetime import datetime
 from typing import Any
 
 
+class WorkflowType(str, enum.Enum):
+    AGENT_TASK = "agent_task"
+    BUILD = "build"
+    RESEARCH = "research"
+    AUTOMATION = "automation"
+    PIPELINE = "pipeline"
+
+
 class WorkflowStatus(str, enum.Enum):
     PENDING = "PENDING"
     RUNNING = "RUNNING"

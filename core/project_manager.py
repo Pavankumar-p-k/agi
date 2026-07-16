@@ -47,7 +47,7 @@ DEFAULT_MAX_WORKERS = 2
 class ProjectManager:
     """Multi-project queue with priorities, concurrent limits, and lifecycle."""
 
-def __init__(self, max_workers: int = DEFAULT_MAX_WORKERS):
+    def __init__(self, max_workers: int = DEFAULT_MAX_WORKERS):
         self.max_workers = max_workers
         self._projects: dict[str, ProjectEntry] = {}
         self._queue: list[str] = []
@@ -125,7 +125,7 @@ def __init__(self, max_workers: int = DEFAULT_MAX_WORKERS):
 
             await asyncio.sleep(0.5)
 
-async def _run_project(self, name: str):
+    async def _run_project(self, name: str):
         """Execute a single project using BuildService."""
         from core.build.service import build_service
         entry = self._projects[name]
