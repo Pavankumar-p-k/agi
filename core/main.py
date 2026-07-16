@@ -156,7 +156,7 @@ app = FastAPI(
 )
 
 # Mount settings REST API
-from core.routes.settings import router as _settings_router
+from core.routes.settings import settings_router as _settings_router
 app.include_router(_settings_router, prefix="/api")
 
 app.add_middleware(
@@ -420,167 +420,167 @@ except Exception as e:
 # ── Extracted route modules ──
 
 try:
-    from core.routes.auth import router as auth_router
+    from core.routes.auth import auth_router
     app.include_router(auth_router)
     logger.info("[Router] Auth routes loaded [OK]")
 except Exception as e:
     logger.warning("[Router] Auth routes not loaded: %s", e)
 
 try:
-    from core.routes.chat import router as chat_router
+    from core.routes.chat import chat_router
     app.include_router(chat_router)
     logger.info("[Router] Chat routes loaded [OK]")
 except Exception as e:
     logger.warning("[Router] Chat routes not loaded: %s", e)
 
 try:
-    from core.routes.infrastructure import router as infra_router
-    app.include_router(infra_router)
+    from core.routes.system import infrastructure_router
+    app.include_router(infrastructure_router)
     logger.info("[Router] Infrastructure routes loaded [OK]")
 except Exception as e:
     logger.warning("[Router] Infrastructure routes not loaded: %s", e)
 
 try:
-    from core.routes.operations import router as ops_router
-    app.include_router(ops_router)
+    from core.routes.build import operations_router
+    app.include_router(operations_router)
     logger.info("[Router] Operations routes loaded [OK]")
 except Exception as e:
     logger.warning("[Router] Operations routes not loaded: %s", e)
 
 try:
-    from core.routes.activity import router as activity_router
+    from core.routes.system import activity_router
     app.include_router(activity_router)
     logger.info("[Router] Activity Graph routes loaded [OK]")
 except Exception as e:
     logger.warning("[Router] Activity Graph routes not loaded: %s", e)
 
 try:
-    from core.routes.artifacts import router as artifacts_router
+    from core.routes.files import artifacts_router
     app.include_router(artifacts_router)
     logger.info("[Router] Artifact Store routes loaded [OK]")
 except Exception as e:
     logger.warning("[Router] Artifact Store routes not loaded: %s", e)
 
 try:
-    from core.routes.workflows import router as workflows_router
+    from core.routes.build import workflows_router
     app.include_router(workflows_router)
     logger.info("[Router] Workflow Engine routes loaded [OK]")
 except Exception as e:
     logger.warning("[Router] Workflow Engine routes not loaded: %s", e)
 
 try:
-    from core.routes.scheduler import router as scheduler_router
+    from core.routes.scheduler import scheduler_router
     app.include_router(scheduler_router)
     logger.info("[Router] Scheduler routes loaded [OK]")
 except Exception as e:
     logger.warning("[Router] Scheduler routes not loaded: %s", e)
 
 try:
-    from core.routes.planner import router as planner_router
+    from core.routes.agents import planner_router
     app.include_router(planner_router)
     logger.info("[Router] Planner routes loaded [OK]")
 except Exception as e:
     logger.warning("[Router] Planner routes not loaded: %s", e)
 
 try:
-    from core.routes.knowledge import router as knowledge_router
+    from core.routes.memory import knowledge_router
     app.include_router(knowledge_router)
     logger.info("[Router] Knowledge Store routes loaded [OK]")
 except Exception as e:
     logger.warning("[Router] Knowledge Store routes not loaded: %s", e)
 
 try:
-    from core.routes.research import router as research_router
+    from core.routes.agents import research_router
     app.include_router(research_router)
     logger.info("[Router] Research Memory routes loaded [OK]")
 except Exception as e:
     logger.warning("[Router] Research Memory routes not loaded: %s", e)
 
 try:
-    from core.routes.websocket import router as ws_router
-    app.include_router(ws_router)
+    from core.routes.chat import websocket_router
+    app.include_router(websocket_router)
     logger.info("[Router] WebSocket routes loaded [OK]")
 except Exception as e:
     logger.warning("[Router] WebSocket routes not loaded: %s", e)
 
 try:
-    from core.routes.intelligence import router as intelligence_router
+    from core.routes.agents import intelligence_router
     app.include_router(intelligence_router)
     logger.info("[Router] Intelligence routes loaded [OK]")
 except Exception as e:
     logger.warning("[Router] Intelligence routes not loaded: %s", e)
 
 try:
-    from core.routes.control import router as control_router
+    from core.routes.build import control_router
     app.include_router(control_router)
     logger.info("[Router] Control routes loaded [OK]")
 except Exception as e:
     logger.warning("[Router] Control routes not loaded: %s", e)
 
 try:
-    from core.routes.utility import router as utility_router
+    from core.routes.system import utility_router
     app.include_router(utility_router)
     logger.info("[Router] Utility routes loaded [OK]")
 except Exception as e:
     logger.warning("[Router] Utility routes not loaded: %s", e)
 
 try:
-    from core.routes.features import router as features_router
+    from core.routes.build import features_router
     app.include_router(features_router)
     logger.info("[Router] Feature registry routes loaded [OK]")
 except Exception as e:
     logger.warning("[Router] Feature registry routes not loaded: %s", e)
 
 try:
-    from core.routes.integrations import router as integrations_router
+    from core.routes.integrations import integrations_router
     app.include_router(integrations_router)
     logger.info("[Router] Integration management routes loaded [OK]")
 except Exception as e:
     logger.warning("[Router] Integration management routes not loaded: %s", e)
 
 try:
-    from core.routes.terminal import router as terminal_router
+    from core.routes.system import terminal_router
     app.include_router(terminal_router)
     logger.info("[Router] Terminal WebSocket routes loaded [OK]")
 except Exception as e:
     logger.warning("[Router] Terminal routes not loaded: %s", e)
 
 try:
-    from core.routes.diagnostics import router as diagnostics_router
+    from core.routes.diagnostics import diagnostics_router
     app.include_router(diagnostics_router)
     logger.info("[Router] Diagnostics routes loaded [OK]")
 except Exception as e:
     logger.warning("[Router] Diagnostics routes not loaded: %s", e)
 
 try:
-    from core.routes.mcp import router as mcp_router
+    from core.routes.integrations import mcp_router
     app.include_router(mcp_router)
     logger.info("[Router] MCP tools routes loaded [OK]")
 except Exception as e:
     logger.warning("[Router] MCP tools routes not loaded: %s", e)
 
 try:
-    from core.routes.analytics import router as analytics_router
+    from core.routes.diagnostics import analytics_router
     app.include_router(analytics_router)
     logger.info("[Router] Analytics routes loaded [OK]")
 except Exception as e:
     logger.warning("[Router] Analytics routes not loaded: %s", e)
 
 try:
-    from core.routes.improvements import router as improvements_router
+    from core.routes.build import improvements_router
     app.include_router(improvements_router)
     logger.info("[Router] Improvement system routes loaded [OK]")
 except Exception as e:
     logger.warning("[Router] Improvement system routes not loaded: %s", e)
 
 try:
-    from core.routes.negotiations import router as negotiations_router
+    from core.routes.build import negotiations_router
     app.include_router(negotiations_router)
-    from core.routes.opportunities import router as opportunities_router
+    from core.routes.build import opportunities_router
     app.include_router(opportunities_router)
-    from core.routes.autonomous import router as autonomous_router
+    from core.routes.agents import autonomous_router
     app.include_router(autonomous_router)
-    from core.routes.evidence import router as evidence_router
+    from core.routes.build import evidence_router
     app.include_router(evidence_router)
     logger.info("[Router] Negotiation routes loaded [OK]")
 except Exception as e:
@@ -590,14 +590,14 @@ except Exception as e:
 # ── MJ v3 routes ────────────────────────────────────────────────────────────
 
 try:
-    from core.routes.inbox import router as inbox_router
+    from core.routes.chat import inbox_router
     app.include_router(inbox_router)
     logger.info("[Router] Inbox routes loaded [OK]")
 except Exception as e:
     logger.warning("[Router] Inbox routes not loaded: %s", e)
 
 try:
-    from core.routes.progress import router as progress_router
+    from core.routes.build import progress_router
     app.include_router(progress_router)
     logger.info("[Router] Progress routes loaded [OK]")
 except Exception as e:
@@ -671,7 +671,7 @@ else:
 # ── Voice routes ──
 
 try:
-    from core.routes.voice import router as voice_router
+    from core.routes.chat import voice_router
     app.include_router(voice_router)
     logger.info("[Router] Voice routes loaded [OK]")
 except Exception as e:
