@@ -52,8 +52,8 @@ def _rate_limiter_for_profile(profile: str) -> SlidingWindowRateLimiter:
 
 
 def _resolve_client_identifier(context: PipelineContext) -> str:
-    if context.identity and context.identity.user_id:
-        return context.identity.user_id
+    if context.identity and context.identity.user and context.identity.user.id:
+        return context.identity.user.id
     if context.parsed_request and isinstance(context.parsed_request, dict):
         ip = context.parsed_request.get("client_ip") or context.parsed_request.get("ip")
         if ip:

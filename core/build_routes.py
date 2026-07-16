@@ -11,16 +11,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """core/build_routes.py
-FastAPI routes for the new JARVIS autonomous build system.
-Control loop, project management, daemon control.
+FastAPI routes for the JARVIS autonomous build system.
+Uses BuildService (ExecutionManager + WorkflowEngine) instead of legacy control_loop.
 """
 import logging
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
+from core.build.service import build_service
 from core.checkpoint_manager import checkpoint_manager
-from core.control_loop import control_loop
 from core.environment_monitor import environment_monitor
 from core.interrupt_override import interrupt_manager
 from core.nondet_control import decision_logger
@@ -56,7 +56,7 @@ async def start_build(req: BuildStartRequest):
 
 @router.get("/status/{project_name}")
 async def get_build_status(project_name: str):
-    status = control_loop.get_status(project_name)
+    status = build_service.get_status(project_name)
     if not status:
         state = ProjectState.load(project_name)
         if not state:
@@ -77,7 +77,7 @@ async def get_build_status(project_name: str):
 
 @router.post("/cancel/{project_name}")
 async def cancel_build(project_name: str):
-    ok = control_loop.cancel_build(project_name)
+    ok = build_service.cancel(project_name)
     if not ok:
         raise HTTPException(404, "Project not found")
     return {"status": "cancelled", "project": project_name}
@@ -260,7 +260,7 @@ async def interrupt_build(project_name: str):
 
 @router.post("/cancel/{project_name}")
 async def cancel_build_alt(project_name: str):
-    ok = control_loop.cancel_build(project_name)
+    ok = build_service.cancel(project_name)
     if not ok:
         raise HTTPException(404, "Project not found or already done")
     return {"status": "cancel_signaled", "project": project_name}
@@ -268,7 +268,7 @@ async def cancel_build_alt(project_name: str):
 
 @router.post("/override/{project_name}")
 async def override_build(project_name: str, overrides: dict):
-    ok = control_loop.override_build(project_name, overrides)
+    ok = build_service.override(project_name, overrides)
     if not ok:
         raise HTTPException(404, "Project not found")
     return {"status": "override_applied", "project": project_name, "overrides": overrides}
@@ -276,7 +276,7 @@ async def override_build(project_name: str, overrides: dict):
 
 @router.post("/resume/{project_name}")
 async def resume_build(project_name: str):
-    ok = control_loop.resume_paused(project_name)
+    ok = build_service.resume(project_name)
     if not ok:
         raise HTTPException(404, "Project not found or not paused")
     return {"status": "resumed", "project": project_name}

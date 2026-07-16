@@ -17,6 +17,9 @@ venv/
 .env.*
 firebase-credentials.json
 google-services.json
+*.pem
+*.key
+.app_key
 
 # Android local dev config
 apps/jarvis_app/android/local.properties

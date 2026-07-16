@@ -482,13 +482,16 @@ class RealValidator:
                     vision_text = " ".join(raw_responses)
                     failed_criteria = self._extract_visual_failures(vision_text)
                     if failed_criteria:
-                        from core.control_loop import control_loop
-                        project_dir = str(workspace)
-                        await control_loop.request_fix(
-                            failures=[f"visual_quality:{c}" for c in failed_criteria],
-                            project_dir=project_dir,
-                            interpreted=state.interpreted_goal,
-                        )
+                        from core.event_bus import global_event_bus, Event, BUILD_FIX_REQUESTED
+                        await global_event_bus.publish(Event(
+                            type=BUILD_FIX_REQUESTED,
+                            source="real_validator",
+                            payload={
+                                "failures": [f"visual_quality:{c}" for c in failed_criteria],
+                                "project_dir": str(workspace),
+                                "interpreted": state.interpreted_goal,
+                            }
+                        ))
                         return await self.check_visual_quality(
                             state, workspace, _correction_depth=_correction_depth + 1
                         )

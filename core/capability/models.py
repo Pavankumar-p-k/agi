@@ -10,6 +10,7 @@ class Capability:
     version: int = 1
     category: str = ""
     description: str = ""
+    risk: str = "medium"
     permissions: tuple[str, ...] = ()
     inputs: tuple[str, ...] = ()
     outputs: tuple[str, ...] = ()
@@ -39,7 +40,7 @@ class Capability:
 
 _BUILTIN_CAPABILITIES: dict[str, Capability] = {
     "coding": Capability(
-        id="coding", version=1, category="development",
+        id="coding", version=1, category="development", risk="medium",
         description="Software development and code generation",
         permissions=("filesystem.read", "filesystem.write"),
         inputs=("requirement", "specification", "task"),
@@ -47,7 +48,7 @@ _BUILTIN_CAPABILITIES: dict[str, Capability] = {
         tags=("code", "programming", "develop", "implement", "feature"),
     ),
     "browser": Capability(
-        id="browser", version=1, category="automation",
+        id="browser", version=1, category="automation", risk="high",
         description="Web browsing and page interaction",
         permissions=("network.http",),
         inputs=("url", "search_query", "selector"),
@@ -55,7 +56,7 @@ _BUILTIN_CAPABILITIES: dict[str, Capability] = {
         tags=("web", "browse", "navigate", "search", "scrape"),
     ),
     "vision": Capability(
-        id="vision", version=1, category="perception",
+        id="vision", version=1, category="perception", risk="medium",
         description="Image understanding and analysis",
         permissions=(),
         inputs=("image", "screenshot"),
@@ -63,7 +64,7 @@ _BUILTIN_CAPABILITIES: dict[str, Capability] = {
         tags=("image", "see", "screen", "ocr", "read"),
     ),
     "deployment": Capability(
-        id="deployment", version=1, category="operations",
+        id="deployment", version=1, category="operations", risk="critical",
         description="Application deployment and hosting",
         permissions=("network.http", "filesystem.read"),
         inputs=("build_artifact", "configuration"),
@@ -71,7 +72,7 @@ _BUILTIN_CAPABILITIES: dict[str, Capability] = {
         tags=("deploy", "publish", "host", "release"),
     ),
     "testing": Capability(
-        id="testing", version=1, category="development",
+        id="testing", version=1, category="development", risk="low",
         description="Automated test execution and generation",
         permissions=("filesystem.read", "filesystem.write"),
         inputs=("source_code", "test_file"),
@@ -79,7 +80,7 @@ _BUILTIN_CAPABILITIES: dict[str, Capability] = {
         tags=("test", "assert", "verify", "validate", "coverage"),
     ),
     "documentation": Capability(
-        id="documentation", version=1, category="development",
+        id="documentation", version=1, category="development", risk="low",
         description="Documentation generation and management",
         permissions=("filesystem.read", "filesystem.write"),
         inputs=("source_code", "api_schema"),
@@ -87,7 +88,7 @@ _BUILTIN_CAPABILITIES: dict[str, Capability] = {
         tags=("doc", "document", "readme", "wiki"),
     ),
     "security": Capability(
-        id="security", version=1, category="analysis",
+        id="security", version=1, category="analysis", risk="medium",
         description="Security analysis and auditing",
         permissions=("filesystem.read",),
         inputs=("source_code", "dependency_list"),
@@ -95,7 +96,7 @@ _BUILTIN_CAPABILITIES: dict[str, Capability] = {
         tags=("security", "audit", "vulnerability", "cve"),
     ),
     "research": Capability(
-        id="research", version=1, category="knowledge",
+        id="research", version=1, category="knowledge", risk="low",
         description="Information gathering and analysis",
         permissions=("network.http",),
         inputs=("question", "topic", "query"),
@@ -103,7 +104,7 @@ _BUILTIN_CAPABILITIES: dict[str, Capability] = {
         tags=("search", "research", "investigate", "learn", "gather"),
     ),
     "database": Capability(
-        id="database", version=1, category="data",
+        id="database", version=1, category="data", risk="high",
         description="Database operations and management",
         permissions=("network.http", "filesystem.read"),
         inputs=("query", "schema", "connection_string"),
@@ -111,7 +112,7 @@ _BUILTIN_CAPABILITIES: dict[str, Capability] = {
         tags=("db", "sql", "database", "query", "migrate"),
     ),
     "notifications": Capability(
-        id="notifications", version=1, category="communication",
+        id="notifications", version=1, category="communication", risk="medium",
         description="Push notifications and alerts",
         permissions=("network.http",),
         inputs=("message", "recipient", "channel"),
@@ -119,7 +120,7 @@ _BUILTIN_CAPABILITIES: dict[str, Capability] = {
         tags=("notify", "alert", "push"),
     ),
     "filesystem": Capability(
-        id="filesystem", version=1, category="infrastructure",
+        id="filesystem", version=1, category="infrastructure", risk="high",
         description="File system operations",
         permissions=("filesystem.read", "filesystem.write"),
         inputs=("path", "pattern"),
@@ -127,7 +128,7 @@ _BUILTIN_CAPABILITIES: dict[str, Capability] = {
         tags=("file", "read", "write", "list", "search"),
     ),
     "desktop": Capability(
-        id="desktop", version=1, category="automation",
+        id="desktop", version=1, category="automation", risk="critical",
         description="Desktop automation",
         permissions=(
             "desktop.window.read", "desktop.mouse.move",
@@ -139,7 +140,7 @@ _BUILTIN_CAPABILITIES: dict[str, Capability] = {
         tags=("desktop", "automation", "window", "mouse", "keyboard", "screen"),
     ),
     "email": Capability(
-        id="email", version=1, category="communication",
+        id="email", version=1, category="communication", risk="medium",
         description="Email sending and management",
         permissions=("network.smtp",),
         inputs=("to", "subject", "body", "attachment"),
@@ -147,7 +148,7 @@ _BUILTIN_CAPABILITIES: dict[str, Capability] = {
         tags=("email", "mail", "send", "inbox"),
     ),
     "messaging": Capability(
-        id="messaging", version=1, category="communication",
+        id="messaging", version=1, category="communication", risk="medium",
         description="Messaging platform integration",
         permissions=("network.http",),
         inputs=("message", "recipient", "platform"),
@@ -155,7 +156,7 @@ _BUILTIN_CAPABILITIES: dict[str, Capability] = {
         tags=("message", "chat", "slack", "discord", "whatsapp"),
     ),
     "terminal": Capability(
-        id="terminal", version=1, category="infrastructure",
+        id="terminal", version=1, category="infrastructure", risk="critical",
         description="Terminal and shell operations",
         permissions=("process.list", "process.control", "filesystem.read"),
         inputs=("command", "working_directory"),
@@ -163,7 +164,7 @@ _BUILTIN_CAPABILITIES: dict[str, Capability] = {
         tags=("terminal", "shell", "command", "exec", "run"),
     ),
     "voice": Capability(
-        id="voice", version=1, category="perception",
+        id="voice", version=1, category="perception", risk="low",
         description="Voice processing and synthesis",
         permissions=(),
         inputs=("text", "audio"),
@@ -171,7 +172,7 @@ _BUILTIN_CAPABILITIES: dict[str, Capability] = {
         tags=("voice", "speak", "speech", "audio"),
     ),
     "speech": Capability(
-        id="speech", version=1, category="perception",
+        id="speech", version=1, category="perception", risk="low",
         description="Speech-to-text and text-to-speech",
         permissions=(),
         inputs=("audio", "text"),
@@ -179,7 +180,7 @@ _BUILTIN_CAPABILITIES: dict[str, Capability] = {
         tags=("stt", "tts", "transcribe", "synthesize"),
     ),
     "translation": Capability(
-        id="translation", version=1, category="knowledge",
+        id="translation", version=1, category="knowledge", risk="low",
         description="Language translation",
         permissions=("network.http",),
         inputs=("text", "source_language", "target_language"),
@@ -187,7 +188,7 @@ _BUILTIN_CAPABILITIES: dict[str, Capability] = {
         tags=("translate", "lang"),
     ),
     "image_generation": Capability(
-        id="image_generation", version=1, category="creative",
+        id="image_generation", version=1, category="creative", risk="medium",
         description="AI image generation",
         permissions=("network.http",),
         inputs=("prompt", "style", "size"),
@@ -195,7 +196,7 @@ _BUILTIN_CAPABILITIES: dict[str, Capability] = {
         tags=("generate", "create", "draw", "art"),
     ),
     "automation": Capability(
-        id="automation", version=1, category="infrastructure",
+        id="automation", version=1, category="infrastructure", risk="high",
         description="General workflow automation",
         permissions=(
             "filesystem.read", "filesystem.write", "network.http",

@@ -139,14 +139,14 @@ class TestExecutionManagerMemory:
 
 class TestControlLoopIntegration:
     def test_control_loop_has_execution_manager(self):
-        from core.control_loop import control_loop
+        from core.legacy.control_loop import control_loop
         assert hasattr(control_loop, "execution_manager")
         from core.execution import ExecutionManager
         assert isinstance(control_loop.execution_manager, ExecutionManager)
 
     def test_run_build_publishes_start_event(self):
         """Verify that run_build publishes a progress event on build_started."""
-        from core.control_loop import ControlLoop
+        from core.legacy.control_loop import ControlLoop
         loop = ControlLoop(auto_approve=True, autonomous=True)
         loop.execution_manager = MagicMock()
         ctx_mock = MagicMock()

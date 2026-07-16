@@ -161,8 +161,10 @@ class JarvisDaemon:
 
         # Core: resume pending projects
         try:
-            from core.control_loop import control_loop
-            resumed = await control_loop.run_pending()
+            from core.build.service import build_service
+            # The build service processes its queue automatically via process_queue()
+            # Just trigger a scan for pending projects
+            resumed = await build_service._scan_pending()
             if resumed:
                 logger.info(f"[SERVICE] Resumed {len(resumed)} projects: {resumed}")
         except Exception as e:
@@ -171,8 +173,8 @@ class JarvisDaemon:
     async def _check_projects(self):
         """Public helper used by tests: trigger run_pending and return discovered projects."""
         try:
-            from core.control_loop import control_loop
-            resumed = await control_loop.run_pending()
+            from core.build.service import build_service
+            resumed = await build_service._scan_pending()
             return resumed or []
         except Exception as e:
             logger.warning("[SERVICE] _check_projects error: %s", e)

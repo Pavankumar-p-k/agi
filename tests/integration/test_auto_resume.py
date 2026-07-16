@@ -33,7 +33,7 @@ async def test_resume_detection():
     state.save()
     assert state.state_path.exists(), "State file should exist"
 
-    from core.control_loop import control_loop
+    from core.legacy.control_loop import control_loop
     pending = await control_loop.run_pending()
     assert "test_resume_project" in pending, f"run_pending should find the project, got: {pending}"
 
@@ -63,7 +63,7 @@ async def test_resume_rebuild():
     )
     state.save()
 
-    from core.control_loop import control_loop
+    from core.legacy.control_loop import control_loop
     result = await control_loop.resume_build("test_resume_rebuild")
     assert result is not None, "resume_build should return a state"
     print(f"[PASS] Resume rebuild: returned status='{result.status}' after {result.retries} retries")
@@ -103,7 +103,7 @@ async def test_ignore_done_projects():
         )
         state.save()
 
-    from core.control_loop import control_loop
+    from core.legacy.control_loop import control_loop
     pending = await control_loop.run_pending()
     for status in ("done", "failed", "cancelled"):
         assert f"test_ignore_{status}" not in pending, f"Should not resume {status} projects"

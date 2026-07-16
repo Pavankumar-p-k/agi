@@ -88,6 +88,7 @@ class ConfigurationService:
         self._scan_env_vars()
         self._init_settings_store()
         self._load_providers()
+        self._load_encrypted_secrets()
         self._loaded = True
 
         self._fire_config_reloaded()
@@ -148,6 +149,35 @@ class ConfigurationService:
                 logger.warning("Failed to load %s: %s, using defaults", providers_path, e)
         self._providers = dict(_DEFAULT_PROVIDERS)
         self._save_providers()
+
+    def _load_encrypted_secrets(self):
+        """Load secrets from encrypted ~/.jarvis/api_keys.json"""
+        secrets_path = self.config_dir / "api_keys.json"
+        if secrets_path.exists():
+            try:
+                from core.secret_storage import decrypt
+                encrypted_data = json.loads(secrets_path.read_text(encoding="utf-8"))
+                for key, encrypted_value in encrypted_data.items():
+                    try:
+                        self._env_cache[key] = decrypt(encrypted_value)
+                    except Exception as e:
+                        logger.warning(f"Failed to decrypt secret {key}: {e}")
+            except Exception as e:
+                logger.warning("Failed to load encrypted secrets: %s", e)
+
+        # Also load OAuth tokens if present
+        oauth_path = self.config_dir / "oauth_tokens.json"
+        if oauth_path.exists():
+            try:
+                from core.secret_storage import decrypt
+                encrypted_data = json.loads(oauth_path.read_text(encoding="utf-8"))
+                for key, encrypted_value in encrypted_data.items():
+                    try:
+                        self._env_cache[key] = decrypt(encrypted_value)
+                    except Exception as e:
+                        logger.warning(f"Failed to decrypt oauth token {key}: {e}")
+            except Exception as e:
+                logger.warning("Failed to load encrypted oauth tokens: %s", e)
 
     def _save_providers(self):
         providers_path = self.config_dir / PROVIDERS_FILE
@@ -291,10 +321,18 @@ class ConfigurationService:
             for entry in _REGISTRY:
                 if category and entry.category != category:
                     continue
-                result[entry.key] = self.get(entry.key)
+                resolved = self.get(entry.key)
+                result[entry.key] = self._mask_secret(resolved) if entry.secret else resolved
             return result
         except ImportError:
-            return dict(self._flat_config)
+            # Fallback: mask any values that look like secrets
+            result = {}
+            for k, v in self._flat_config.items():
+                if any(s in k.lower() for s in ("key", "secret", "token", "password", "pass")):
+                    result[k] = self._mask_secret(v)
+                else:
+                    result[k] = v
+            return result
 
     def _mask_secret(self, value: Any) -> Any:
         if value and isinstance(value, str) and len(value) > 8:

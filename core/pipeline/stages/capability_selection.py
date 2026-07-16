@@ -1,10 +1,13 @@
 ﻿from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from core.pipeline.base import PipelineStage, StageOutcome, StageResult
 from core.pipeline.context import PipelineContext
+
+if TYPE_CHECKING:
+    from core.capability.registry import CapabilityRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +22,13 @@ _PROFILE_RISK_ORDER: dict[str, int] = {
 
 
 class CapabilitySelectionStage(PipelineStage):
+    def __init__(self, capability_registry: CapabilityRegistry | None = None) -> None:
+        if capability_registry is not None:
+            self._registry = capability_registry
+        else:
+            from core.capability.registry import capability_registry as _default_registry
+            self._registry = _default_registry
+
     @property
     def name(self) -> str:
         return "capability_selection"
@@ -36,8 +46,7 @@ class CapabilitySelectionStage(PipelineStage):
 
         for i, step in enumerate(steps):
             intent = step.get("intent", "")
-            capabilities = self._resolve(intent)
-            # Filter capabilities by policy profile risk tolerance
+            capabilities = self._registry.resolve_intent(intent)
             if capabilities:
                 filtered = _filter_by_profile(capabilities, profile_risk)
                 if filtered:
@@ -45,11 +54,6 @@ class CapabilitySelectionStage(PipelineStage):
 
         context.selected_capabilities = bindings
         return StageResult(outcome=StageOutcome.CONTINUE, context=context)
-
-    def _resolve(self, intent: str) -> list[Any]:
-        from core.capability.registry import capability_registry
-
-        return capability_registry.resolve_intent(intent)
 
 
 def _filter_by_profile(

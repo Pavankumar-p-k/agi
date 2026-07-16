@@ -24,7 +24,7 @@ from pathlib import Path
 
 logger = logging.getLogger("project_manager")
 
-from core.control_loop import control_loop as shared_control_loop
+from core.build.service import build_service
 from core.project_state import ProjectState, list_projects
 
 
@@ -47,9 +47,8 @@ DEFAULT_MAX_WORKERS = 2
 class ProjectManager:
     """Multi-project queue with priorities, concurrent limits, and lifecycle."""
 
-    def __init__(self, max_workers: int = DEFAULT_MAX_WORKERS):
+def __init__(self, max_workers: int = DEFAULT_MAX_WORKERS):
         self.max_workers = max_workers
-        self.control_loop = shared_control_loop
         self._projects: dict[str, ProjectEntry] = {}
         self._queue: list[str] = []
         self._running: set[str] = set()
@@ -126,14 +125,20 @@ class ProjectManager:
 
             await asyncio.sleep(0.5)
 
-    async def _run_project(self, name: str):
-        """Execute a single project in the control loop."""
+async def _run_project(self, name: str):
+        """Execute a single project using BuildService."""
+        from core.build.service import build_service
         entry = self._projects[name]
         try:
-            state = await self.control_loop.run_build(entry.goal)
-            entry.status = state.status
+            # Enqueue and run via BuildService
+            build_entry = build_service.enqueue(entry.goal)
+            await build_service._run_project(build_entry.name)
+            # Load the final state
+            from core.project_state import ProjectState
+            state = ProjectState.load(build_entry.name)
+            entry.status = state.status if state else "failed"
             entry.error = ""
-            logger.info(f"[MANAGER] {name} completed: {state.status}")
+            logger.info(f"[MANAGER] {name} completed: {entry.status}")
         except Exception as e:
             entry.status = "failed"
             entry.error = str(e)[:200]

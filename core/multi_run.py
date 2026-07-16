@@ -13,6 +13,7 @@
 """core/multi_run.py
 Multi-run / Best-of-N executor.
 Runs multiple strategies in parallel, scores each, picks the best result.
+Uses BuildService (ExecutionManager + WorkflowEngine) instead of legacy ControlLoop.
 """
 import asyncio
 import logging
@@ -23,7 +24,7 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-from core.control_loop import ControlLoop
+from core.build.service import BuildService
 from core.quality_scorer import QualityScorer, ScoreBreakdown
 
 
@@ -74,7 +75,7 @@ class MultiRunExecutor:
         score_results = []
         sem = asyncio.Semaphore(active)
 
-        async def run_strategy(sv: StrategyVariant) -> RunResult:
+async def run_strategy(sv: StrategyVariant) -> RunResult:
             async with sem:
                 start = datetime.now()
                 variant_goal = goal
@@ -84,20 +85,26 @@ class MultiRunExecutor:
                 safe_name = f"multirun_{sv.name}_{int(start.timestamp())}"
                 ws = Path(workspace_base) / safe_name if workspace_base else Path.cwd() / safe_name
 
-                cl = ControlLoop(auto_approve=True)
+                build_service = BuildService()
                 try:
-                    state = await cl.run_build(variant_goal, str(ws))
+                    entry = build_service.enqueue(variant_goal)
+                    # Run the project synchronously
+                    await build_service._run_project(entry.name)
+                    # Load the final state
+                    from core.project_state import ProjectState
+                    state = ProjectState.load(entry.name)
                     scorer = QualityScorer(str(ws))
-                    score = scorer.score_all(safe_name)
+                    score = scorer.score_all(safe_name) if state else None
                     duration = (datetime.now() - start).total_seconds()
 
                     result = RunResult(
                         strategy=sv.name,
                         project_name=safe_name,
-                        state={"status": state.status, "pages": state.pages, "retries": state.retries},
+                        state={"status": state.status if state else "failed", "pages": state.pages if state else [], "retries": state.retries if state else 0},
                         score=score,
                         duration=duration,
-                        success=state.status == "done",
+                        success=state.status == "done" if state else False,
+                    )
                         deploy_url=state.outputs.get("deploy_url", "") if hasattr(state, "outputs") else "",
                     )
                     score_results.append(result)

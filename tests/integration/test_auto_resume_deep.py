@@ -27,7 +27,7 @@ from core.project_state import ProjectState, PROJECTS_DIR, delete_project
 
 @pytest.fixture(autouse=True)
 def cleanup():
-    from core.control_loop import control_loop
+    from core.legacy.control_loop import control_loop
     control_loop.running_builds.clear()
     yield
     for name in ["test_deep_1", "test_deep_2", "test_deep_3", "test_deep_4",
@@ -46,7 +46,7 @@ async def test_resume_detection():
     """Create interrupted projects in all pending states and verify detection."""
     state = ProjectState(project_name="test_deep_1", goal="test", status="building")
     state.save()
-    from core.control_loop import control_loop
+    from core.legacy.control_loop import control_loop
     pending = await control_loop.run_pending()
     assert "test_deep_1" in pending
     loaded = ProjectState.load("test_deep_1")
@@ -59,7 +59,7 @@ async def test_resume_ignores_done():
     for status in ["done", "failed", "cancelled"]:
         s = ProjectState(project_name=f"test_deep_2_{status}", goal="test", status=status)
         s.save()
-    from core.control_loop import control_loop
+    from core.legacy.control_loop import control_loop
     pending = await control_loop.run_pending()
     for status in ["done", "failed", "cancelled"]:
         assert f"test_deep_2_{status}" not in pending, f"{status} should not be resumed"
@@ -77,7 +77,7 @@ async def test_resume_after_interrupt():
     assert state.status == "paused", "Should be paused"
     state.status = "building"
     state.save()
-    from core.control_loop import control_loop
+    from core.legacy.control_loop import control_loop
     pending = await control_loop.run_pending()
     assert "test_deep_3" in pending, "Paused project should be resumed after status change"
     print("[PASS] Interrupt -> pause -> resume cycle")

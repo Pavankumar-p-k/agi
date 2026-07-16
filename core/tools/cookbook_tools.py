@@ -1422,13 +1422,20 @@ async def do_vault_get(content: str, owner: str | None = None) -> dict:
     except Exception as _e:
         logger.debug("do_vault_get item access failed: %s", _e)
 
+    def _mask(v: str) -> str:
+        if not v or v == "(none)":
+            return v
+        if len(v) <= 8:
+            return "****"
+        return v[:4] + "****" + v[-4:]
+
     output = [
         f"Vault item: {name}",
         f"Username: {login.get('username', '(none)')}",
-        f"Password: {login.get('password', '(none)')}",
+        f"Password: {_mask(login.get('password', '(none)'))}",
     ]
     if login.get("totp"):
-        output.append(f"TOTP secret: {login['totp']}")
+        output.append(f"TOTP secret: {_mask(login['totp'])}")
     uris = login.get("uris") or []
     if uris:
         output.append("URLs: " + ", ".join(u.get("uri", "") for u in uris))
