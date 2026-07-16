@@ -19,14 +19,14 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..auth import verify_token
-from ..database import User, get_db
+from core.auth import verify_token
+from core.database import User, get_db
 
 logger = logging.getLogger("jarvis")
 
 router = APIRouter(tags=["Chat"])
 
-from ..schemas import ChatRequest
+from core.schemas import ChatRequest
 
 
 @router.post("/api/chat")
@@ -49,7 +49,7 @@ async def chat_route(
     return result
 
 
-def _persist_chat(
+async def _persist_chat(
     req: ChatRequest,
     result: dict,
     response_text: str,
