@@ -19,6 +19,7 @@ from typing import Any, Awaitable, Callable
 
 from core.planner.executor import PlannerExecutor
 from core.planner.models import SubGoal
+from core.planner.strategies import StrategyGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +73,11 @@ class PlannerStateMachine:
     Mode 2 — Callback-based (legacy benchmarks):
         sm = PlannerStateMachine(executor)
         await sm.run(goal, execute_fn=my_fn)
+
+    Intelligent Planning Features:
+      - StrategyGenerator: creates multiple strategy options at PLAN phase
+      - ReplanEngine: auto-replans on verification failure using comparative scoring
+      - PlanHealthEngine: evaluates plan health for proactive replanning
     """
 
     def __init__(self, executor: PlannerExecutor, router: Any = None,
@@ -82,6 +88,7 @@ class PlannerStateMachine:
         self.activity_recorder = activity_recorder
         self.health_engine = health_engine
         self.replan_engine = replan_engine
+        self.strategy_generator = StrategyGenerator()
         self.state = State.PLAN
         self.plan: SubGoal | None = None
         self.verification_results: list[dict[str, Any]] = []
@@ -131,6 +138,18 @@ class PlannerStateMachine:
 
         # ── PLAN ────────────────────────────────────────────────────────
         logger.info("StateMachine: PLAN goal=%r", goal[:60])
+        
+        # Generate strategy options and pick the best
+        strategies = self.strategy_generator.generate(goal)
+        if strategies:
+            # Use the first strategy (highest confidence) to influence planning
+            best_strategy = strategies[0]
+            logger.info("StateMachine: Selected strategy=%s for goal", best_strategy.get("strategy_label", "unknown"))
+            # Augment goal with strategy context
+            strategy_context = best_strategy.get("strategy_description", "")
+            if strategy_context:
+                goal = f"{goal} [Strategy: {strategy_context}]"
+        
         template_id = self.executor.get_plan_id(goal)
 
         if not template_id:
@@ -185,9 +204,18 @@ class PlannerStateMachine:
                         if self.replan_engine:
                             replan_opts = self.replan_engine.get_options(template_id or goal)
                             if replan_opts and "error" not in replan_opts:
-                                _replan_attempted = True
-                                self._verify_retries = 0
-                                continue
+                                # Pick the best replan option (highest delta)
+                                best_option = replan_opts.get("options", [])[0] if replan_opts.get("options") else None
+                                if best_option:
+                                    logger.info("StateMachine: Replanning with strategy=%s (delta=%.2f)",
+                                                best_option.get("strategy"), best_option.get("delta", {}).get("overall_change", 0))
+                                    from core.planner.replan import execute_replan
+                                    new_plan = execute_replan(template_id or goal, best_option.get("strategy_key"))
+                                    if new_plan:
+                                        logger.info("StateMachine: Replan executed successfully")
+                                        _replan_attempted = True
+                                        self._verify_retries = 0
+                                        continue
                 result["error"] = execution_result["error"]
                 self.state = State.FAILED
                 break
@@ -216,10 +244,18 @@ class PlannerStateMachine:
                             if self.replan_engine:
                                 replan_opts = self.replan_engine.get_options(template_id or goal)
                                 if replan_opts and "error" not in replan_opts:
-                                    _replan_attempted = True
-                                    health_replanned = True
-                                    self._verify_retries = 0
-                                    self.state = State.EXECUTE
+                                    best_option = replan_opts.get("options", [])[0] if replan_opts.get("options") else None
+                                    if best_option:
+                                        logger.info("StateMachine: Replanning with strategy=%s (delta=%.2f)",
+                                                    best_option.get("strategy"), best_option.get("delta", {}).get("overall_change", 0))
+                                        from core.planner.replan import execute_replan
+                                        new_plan = execute_replan(template_id or goal, best_option.get("strategy_key"))
+                                        if new_plan:
+                                            logger.info("StateMachine: Replan executed successfully")
+                                            _replan_attempted = True
+                                            health_replanned = True
+                                            self._verify_retries = 0
+                                            self.state = State.EXECUTE
                     if not health_replanned:
                         logger.warning("StateMachine: verification failed after %d retries", _MAX_VERIFY_RETRIES)
                         self.state = State.FAILED

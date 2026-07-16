@@ -1,7 +1,5 @@
 from core.pipeline.stages.auth import AuthenticationStage
 from core.pipeline.stages.authorization import AuthorizationStage
-from core.pipeline.stages.resource_access import ResourceAccessStage
-from core.pipeline.stages.tenant_resolution import TenantResolutionStage
 from core.pipeline.stages.capability_selection import CapabilitySelectionStage
 from core.pipeline.stages.context_retrieval import ContextRetrievalStage
 from core.pipeline.stages.epistemic import EpistemicTaggingStage
@@ -14,6 +12,7 @@ from core.pipeline.stages.learning import LearningStage
 from core.pipeline.stages.load_context import LoadContextStage
 from core.pipeline.stages.memory import MemoryStage
 from core.pipeline.stages.metrics import MetricsStage
+from core.pipeline.stages.notification import NotificationStage
 from core.pipeline.stages.plan_validator import PlanValidatorStage
 from core.pipeline.stages.planner import PlannerStage
 from core.pipeline.stages.policy_optimization import PolicyOptimizationStage
@@ -22,6 +21,8 @@ from core.pipeline.stages.reasoner import ReasonerStage  # legacy, use Reasoning
 from core.pipeline.stages.reasoning import ReasoningStage
 from core.pipeline.stages.reflection import ReflectionStage
 from core.pipeline.stages.receive import ReceiveStage
+from core.pipeline.stages.resource_access import ResourceAccessStage
+from core.pipeline.stages.tenant_resolution import TenantResolutionStage
 from core.pipeline.stages.verification import VerificationStage
 
 __all__ = [
@@ -41,6 +42,7 @@ __all__ = [
     "LoadContextStage",
     "MemoryStage",
     "MetricsStage",
+    "NotificationStage",
     "PlanValidatorStage",
     "PlannerStage",
     "PolicyOptimizationStage",
@@ -75,6 +77,7 @@ DEFAULT_STAGES = [
     ("learning", LearningStage),
     ("policy_optimization", PolicyOptimizationStage),
     ("memory", MemoryStage),
+    ("notification", NotificationStage),
     ("metrics", MetricsStage),
     ("explainability", ExplainabilityStage),
     ("formatter", FormatterStage),

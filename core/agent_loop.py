@@ -27,6 +27,7 @@ import json
 import logging
 from collections.abc import AsyncGenerator
 
+from core.control import kill_switch
 from core.graph import build_default_graph
 from core.graph.state import AgentState
 from core.pipeline import process_message
@@ -78,6 +79,9 @@ async def stream_agent_loop(
     # Try the canonical pipeline first
     if not _disable_pipeline:
         try:
+            # Check kill switch before starting
+            kill_switch.check()
+
             # Extract user goal from messages
             user_text = ""
             for msg in reversed(messages):
@@ -165,6 +169,8 @@ async def stream_agent_loop(
         mode=mode,
         project_context=project_context,
     )
+    # Check kill switch before legacy execution
+    kill_switch.check()
     async for event in graph.execute(state):
         yield event
 
