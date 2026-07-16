@@ -96,6 +96,21 @@ class ProjectManager:
         self._queue.sort(key=lambda n: self._projects[n].priority, reverse=True)
         self._save_state()
         logger.info(f"[MANAGER] Enqueued {safe_name} (priority {priority})")
+
+        # Publish BUILD_STARTED event for event-driven architecture
+        from core.event_bus import global_event_bus, Event, BUILD_STARTED
+        import asyncio
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                asyncio.create_task(global_event_bus.publish(Event(
+                    type=BUILD_STARTED,
+                    source="project_manager",
+                    payload={"goal": goal, "project": safe_name},
+                )))
+        except RuntimeError:
+            pass  # No event loop running yet
+
         return entry
 
     async def process_queue(self):
@@ -126,19 +141,31 @@ class ProjectManager:
             await asyncio.sleep(0.5)
 
     async def _run_project(self, name: str):
-        """Execute a single project using BuildService."""
+        """Execute a single project by publishing BUILD_STARTED event."""
+        from core.event_bus import global_event_bus, Event, BUILD_STARTED
         from core.build.service import build_service
         entry = self._projects[name]
         try:
-            # Enqueue and run via BuildService
-            build_entry = build_service.enqueue(entry.goal)
-            await build_service._run_project(build_entry.name)
-            # Load the final state
-            from core.project_state import ProjectState
-            state = ProjectState.load(build_entry.name)
-            entry.status = state.status if state else "failed"
-            entry.error = ""
-            logger.info(f"[MANAGER] {name} completed: {entry.status}")
+            # Publish BUILD_STARTED event instead of direct call
+            await global_event_bus.publish(Event(
+                type=BUILD_STARTED,
+                source="project_manager",
+                payload={"goal": entry.goal, "project": name},
+            ))
+            # BuildService will handle via event subscription
+            # Wait for completion by polling ProjectState
+            for _ in range(720):  # up to 36 minutes
+                await asyncio.sleep(5)
+                from core.project_state import ProjectState
+                state = ProjectState.load(name)
+                if state and state.status in ("done", "failed", "cancelled"):
+                    entry.status = state.status
+                    entry.error = ""
+                    logger.info(f"[MANAGER] {name} completed: {entry.status}")
+                    break
+            else:
+                entry.status = "failed"
+                entry.error = "Timeout waiting for build completion"
         except Exception as e:
             entry.status = "failed"
             entry.error = str(e)[:200]

@@ -77,9 +77,13 @@ def chat(message: str, model: Optional[str], session: Optional[str], stream: boo
 def build(goal: str, workspace: Optional[str]) -> None:
     """Start an autonomous build."""
     async def _build() -> None:
-        entry = build_service.enqueue(goal, workspace=workspace)
-        console.print(f"[green]Build queued:[/green] {entry.name}")
-        console.print(f"Goal: {goal}")
+        from core.event_bus import global_event_bus, Event, BUILD_STARTED
+        await global_event_bus.publish(Event(
+            type=BUILD_STARTED,
+            source="cli",
+            payload={"goal": goal, "project": None},
+        ))
+        console.print(f"[green]Build queued via EventBus:[/green] {goal}")
 
     asyncio.run(_build())
 
@@ -108,6 +112,10 @@ def builds() -> None:
 @click.argument("name", required=True)
 def cancel(name: str) -> None:
     """Cancel a build."""
+    from core.event_bus import global_event_bus, Event
+    from core.build.service import build_service
+    from core.event_bus import BUILD_FIX_REQUESTED
+
     if build_service.cancel(name):
         console.print(f"[green]Cancelled:[/green] {name}")
     else:
@@ -118,6 +126,8 @@ def cancel(name: str) -> None:
 @click.argument("name", required=True)
 def resume(name: str) -> None:
     """Resume a paused build."""
+    from core.event_bus import global_event_bus, Event, BUILD_STARTED
+
     if build_service.resume(name):
         console.print(f"[green]Resumed:[/green] {name}")
     else:

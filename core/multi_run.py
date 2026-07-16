@@ -13,18 +13,20 @@
 """core/multi_run.py
 Multi-run / Best-of-N executor.
 Runs multiple strategies in parallel, scores each, picks the best result.
-Uses BuildService (ExecutionManager + WorkflowEngine) instead of legacy ControlLoop.
+Uses EventBus for event-driven architecture (BUILD_STARTED, BUILD_COMPLETED, etc.).
 """
 import asyncio
 import logging
+import re
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
-from core.build.service import BuildService
+from core.event_bus import global_event_bus, Event, BUILD_STARTED, BUILD_COMPLETED, BUILD_FAILED
 from core.quality_scorer import QualityScorer, ScoreBreakdown
 
 
@@ -59,42 +61,93 @@ class MultiRunExecutor:
     def __init__(self, max_parallel: int = 3):
         self.max_parallel = max_parallel
         self.results: list[RunResult] = []
+        self._pending: dict[str, asyncio.Future] = {}
+        self._subscriptions: list = []
+
+    def _subscribe_events(self):
+        """Subscribe to build events."""
+        from core.event_bus import global_event_bus, BUILD_COMPLETED, BUILD_FAILED
+        self._subscriptions.append(
+            global_event_bus.subscribe(BUILD_COMPLETED, self._on_build_completed)
+        )
+        self._subscriptions.append(
+            global_event_bus.subscribe(BUILD_FAILED, self._on_build_failed)
+        )
+
+    def _unsubscribe_events(self):
+        for sub in self._subscriptions:
+            global_event_bus.unsubscribe(sub)
+        self._subscriptions.clear()
+
+    async def _on_build_completed(self, event):
+        project = event.payload.get("project")
+        if project in self._pending:
+            fut = self._pending.pop(project)
+            if not fut.done():
+                fut.set_result({"status": "completed", "payload": event.payload})
+
+    async def _on_build_failed(self, event):
+        project = event.payload.get("project")
+        if project in self._pending:
+            fut = self._pending.pop(project)
+            if not fut.done():
+                fut.set_result({"status": "failed", "payload": event.payload})
 
     async def execute(
         self,
         goal: str,
-        strategies: list[StrategyVariant] = None,
+        strategies: list = None,
         workspace_base: str = "",
         progress_callback: Callable | None = None,
-    ) -> RunResult:
+    ):
+        from core.event_bus import global_event_bus, Event, BUILD_STARTED
+        from core.quality_scorer import QualityScorer
+        from core.project_state import ProjectState
+
         strategies = strategies or DEFAULT_STRATEGIES
         active = min(len(strategies), self.max_parallel)
 
         logger.info(f"[MULTIRUN] Starting {len(strategies)} strategies ({active} parallel)")
 
-        score_results = []
+        self._subscribe_events()
+        self.results = []
+        self._pending = {}
         sem = asyncio.Semaphore(active)
 
-async def run_strategy(sv: StrategyVariant) -> RunResult:
+        async def run_strategy(sv):
             async with sem:
                 start = datetime.now()
                 variant_goal = goal
                 if sv.goal_modifier:
                     variant_goal = f"{goal}, {sv.goal_modifier}" if "with" not in sv.goal_modifier else sv.goal_modifier
 
-                safe_name = f"multirun_{sv.name}_{int(start.timestamp())}"
+                safe_name = f"multirun_{sv.name}_{int(datetime.now().timestamp())}"
                 ws = Path(workspace_base) / safe_name if workspace_base else Path.cwd() / safe_name
 
-                build_service = BuildService()
+                # Create future to wait for build completion
+                fut = asyncio.get_event_loop().create_future()
+                safe_name = re.sub(r'[^a-zA-Z0-9_-]+', '_', variant_goal)[:40].strip("_").lower() or "project"
+                self._pending[safe_name] = fut
+
+                # Publish BUILD_STARTED event
+                await global_event_bus.publish(Event(
+                    type=BUILD_STARTED,
+                    source="multi_run",
+                    payload={"goal": variant_goal, "project": safe_name},
+                ))
+
+                # Wait for completion
                 try:
-                    entry = build_service.enqueue(variant_goal)
-                    # Run the project synchronously
-                    await build_service._run_project(entry.name)
-                    # Load the final state
+                    result = await asyncio.wait_for(fut, timeout=1800)
+                    duration = (datetime.now() - datetime.now()).total_seconds()
+
+                    # Load final state
                     from core.project_state import ProjectState
-                    state = ProjectState.load(entry.name)
+                    from core.quality_scorer import QualityScorer
+                    state = ProjectState.load(safe_name)
                     scorer = QualityScorer(str(ws))
                     score = scorer.score_all(safe_name) if state else None
+
                     duration = (datetime.now() - start).total_seconds()
 
                     result = RunResult(
@@ -104,31 +157,30 @@ async def run_strategy(sv: StrategyVariant) -> RunResult:
                         score=score,
                         duration=duration,
                         success=state.status == "done" if state else False,
+                        deploy_url=state.outputs.get("deploy_url", "") if hasattr(state, "outputs") and state.outputs else "",
                     )
-                        deploy_url=state.outputs.get("deploy_url", "") if hasattr(state, "outputs") else "",
-                    )
-                    score_results.append(result)
                     logger.info(f"[MULTIRUN] {sv.name}: score={score.average:.1f} status={state.status} {duration:.0f}s")
 
                     if progress_callback:
                         await progress_callback(sv.name, score, state)
 
                     return result
+                except asyncio.TimeoutError:
+                    logger.error(f"[MULTIRUN] {sv.name} timed out")
+                    return RunResult(strategy=sv.name, project_name=safe_name, state={}, duration=1800, success=False)
                 except Exception as e:
                     logger.error(f"[MULTIRUN] {sv.name} failed: {e}")
-                    result = RunResult(strategy=sv.name, project_name=safe_name, state={}, duration=0, success=False)
-                    score_results.append(result)
-                    return result
+                    return RunResult(strategy=sv.name, project_name=safe_name, state={}, duration=0, success=False)
 
         tasks = [asyncio.create_task(run_strategy(sv)) for sv in strategies]
-        await asyncio.gather(*tasks, return_exceptions=True)
+        results = await asyncio.gather(*tasks, return_exceptions=True)
 
-        self.results = score_results
+        self.results = [r for r in results if isinstance(r, RunResult)]
         best = self.pick_best()
         logger.info(f"[MULTIRUN] Best: {best.strategy} (score={best.score.average:.1f})" if best.score else f"[MULTIRUN] Best: {best.strategy} (no score)")
         return best
 
-    def pick_best(self) -> RunResult | None:
+    def pick_best(self) -> "RunResult | None":
         scored = [r for r in self.results if r.score and r.success]
         if not scored:
             if self.results:
