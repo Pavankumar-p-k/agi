@@ -196,7 +196,7 @@ class DesktopController:
         except Exception as e:
             return self._error(DesktopActionType.MOUSE_CLICK, str(e))
 
-def launch_app(self, app_name: str) -> DesktopAction:
+    def launch_app(self, app_name: str) -> DesktopAction:
         """Launch a system application."""
         import shutil
         import subprocess
@@ -211,6 +211,7 @@ def launch_app(self, app_name: str) -> DesktopAction:
             }
             exe = candidates.get(app_name.lower(), app_name)
         try:
+            # Use shell=False for security - no shell injection risk
             subprocess.Popen([exe])
             node = desktop_replay.record("launch_app", {"app": app_name})
             return DesktopAction(

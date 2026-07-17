@@ -36,7 +36,7 @@ BROKEN_TOOLS: frozenset[str] = frozenset()
 
 # Tools that are fully implemented and available for execution.
 AVAILABLE_TOOLS: frozenset[str] = frozenset({
-
+    "generate_pdf",
 })  # populated below
 
 # Tools that are ALWAYS included regardless of retrieval results.
@@ -238,6 +238,7 @@ BUILTIN_TOOL_DESCRIPTIONS: dict[str, str] = {
     # Email provider tools
     "email_send": "Send an email via the MCP email server. Provide recipient (to), subject, body, and optional attachments. Use instead of send_email when you need structured email delivery through the email provider.",
     "email_send_email": "Alias for email_send. Send an email via the MCP email server.",
+    "generate_pdf": "Generate a PDF document from title and content. Provide title, content (markdown or plain text), optional output_filename, and author. Returns the path to the generated PDF file.",
 }
 
 
@@ -552,6 +553,10 @@ class ToolIndex:
                    "search for", "type in", "click on", "fill form", "take screenshot",
                    "automate browser", "vision agent", "control my computer"}):
             {"vision_browser"},
+        # PDF generation intent
+        frozenset({"generate pdf", "create pdf", "make pdf", "pdf report", "export pdf",
+                   "export to pdf", "save as pdf", "generate report", "pdf export"}):
+            {"generate_pdf"},
         # DOM browser navigation
         frozenset({"go to", "navigate to", "open website", "open url",
                    "load page", "visit site"}):
