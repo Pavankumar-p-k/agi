@@ -1,15 +1,18 @@
-"""BaseAgent — abstract interface for all specialized agents.
+"""BaseAgent — unified interface for all specialized agents.
 
 Each agent owns a capability domain: research, build, test, browse, memory, email.
 The agent lifecycle is:
 
-  can_handle(goal: str) -> bool
+  initialize(config: dict) -> bool
     ↓ True
   plan(context: dict) -> list[StepDefinition] | None
     ↓ plan exists
   execute(context: ExecutionContext) -> dict
     ↓ finished
   verify(context: ExecutionContext, result: dict) -> bool
+    ↓ True/False
+  report(context: ExecutionContext, result: dict) -> dict
+    ↓ reports metrics/metadata
 """
 
 from __future__ import annotations
