@@ -712,9 +712,18 @@ async def execute_action(intent_data: dict, message: str = "", session_id: str =
             result = await supervisor.start_build(target)
             return {"executed": True, "action": f"Build started: {target}", "result": result}
         elif intent == "pc_control":
-            from automation.pc_automation import execute_command as pc_exec
-            result = pc_exec(message)
-            return {"executed": True, "action": result.get("speech", f"Executed: {target}"), "result": result}
+            from core.desktop.controller import desktop_controller
+            cmd = message.strip().lower()
+            if cmd.startswith("open ") or cmd.startswith("launch "):
+                app = cmd[5:] if cmd.startswith("open ") else cmd[7:]
+                result = desktop_controller.launch_app(app.strip())
+                speech = f"Launched {app}" if result.success else f"Failed: {result.error}"
+            elif cmd.startswith("http://") or cmd.startswith("https://"):
+                result = desktop_controller.open_url(cmd)
+                speech = f"Opened URL" if result.success else f"Failed: {result.error}"
+            else:
+                speech = f"Unknown pc_control command: {message}"
+            return {"executed": True, "action": speech, "result": {}}
         elif intent in ("browser_task", "code_task", "vision_browser"):
             return {
                 "executed": False,

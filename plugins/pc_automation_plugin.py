@@ -33,11 +33,11 @@ class Plugin(AutomationPlugin):
     async def on_load(self, app_state: dict | None = None) -> None:
         await super().on_load(app_state)
         try:
-            from pc_agent.computer_agent import ComputerAgent
-            self._agent = ComputerAgent()
-            logger.info("[PCAutomationPlugin] ComputerAgent acquired")
+            from core.desktop.controller import desktop_controller
+            self._agent = desktop_controller
+            logger.info("[PCAutomationPlugin] DesktopController acquired")
         except Exception as e:
-            logger.warning("[PCAutomationPlugin] Could not acquire ComputerAgent: %s", e)
+            logger.warning("[PCAutomationPlugin] Could not acquire DesktopController: %s", e)
         try:
             from governance.GovernanceValidator import GovernanceValidator
             self._governance = GovernanceValidator()
@@ -68,11 +68,23 @@ class Plugin(AutomationPlugin):
         if not self._agent:
             return None
         try:
-            command = params.get("command", action)
+            command = params.get("command", action).strip().lower()
             logger.info("[PCAutomationPlugin] Executing: %.80s", command)
-            result = await self._agent.execute_command(command)
-            self._last_action = {"command": command[:80], "status": "ok"}
-            return {"success": True, "result": str(result)}
+
+            from core.desktop.controller import desktop_controller
+
+            if command.startswith("open ") or command.startswith("launch "):
+                app = command[5:] if command.startswith("open ") else command[7:]
+                result = desktop_controller.launch_app(app.strip())
+                self._last_action = {"command": command[:80], "status": "ok" if result.success else "failed"}
+                return {"success": result.success, "result": result.details or f"Launched {app}"}
+            if command.startswith("http://") or command.startswith("https://"):
+                result = desktop_controller.open_url(command)
+                self._last_action = {"command": command[:80], "status": "ok" if result.success else "failed"}
+                return {"success": result.success, "result": f"Opened URL" if result.success else result.error}
+
+            self._last_action = {"command": command[:80], "status": "unknown"}
+            return {"success": False, "error": f"Unknown command: {command}"}
         except Exception as e:
             logger.warning("[PCAutomationPlugin] Execution failed: %s", e)
             self._last_action = {"command": action[:80], "status": "failed"}

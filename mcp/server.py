@@ -440,10 +440,22 @@ class MCPServer:
 
     async def _handle_computer(self, command: str) -> str:
         try:
-            from pc_agent.computer_agent import ComputerAgent
-            agent = ComputerAgent()
-            result = await agent.run(command)
-            return str(result)
+            from core.desktop.controller import desktop_controller
+
+            cmd = command.strip().lower()
+            if cmd.startswith("open ") or cmd.startswith("launch "):
+                app = command[5:] if cmd.startswith("open ") else command[7:]
+                result = desktop_controller.launch_app(app.strip())
+                if result.success:
+                    return f"Launched: {app}"
+                return f"Failed to launch {app}: {result.error}"
+            if cmd.startswith("http://") or cmd.startswith("https://"):
+                result = desktop_controller.open_url(command.strip())
+                if result.success:
+                    return f"Opened URL: {command}"
+                return f"Failed to open URL: {result.error}"
+
+            return f"Unknown command: {command}. Try 'open <app>' or a URL."
         except Exception as e:
             return f"PC command failed: {e}"
 
