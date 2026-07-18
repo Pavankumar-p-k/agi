@@ -20,6 +20,7 @@ import logging
 import os
 import sqlite3
 
+from core.storage import MEMORY_DB
 from .supabase_client import get_client, is_connected
 
 logger = logging.getLogger("jarvis.cloud.memory")
@@ -34,9 +35,9 @@ class CloudMemory:
     - Fallback: SQLite at *local_db_path*
     """
 
-    def __init__(self, user_id: str = _DEFAULT_USER, local_db_path: str = "ai_os_memory.db"):
+    def __init__(self, user_id: str = _DEFAULT_USER, local_db_path: str | None = None):
         self._user_id = user_id
-        self._db_path = local_db_path
+        self._db_path = local_db_path or MEMORY_DB
         self._ensure_local_schema()
 
     # ------------------------------------------------------------------ #

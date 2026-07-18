@@ -6,7 +6,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from core.storage.registry import APP_DB, HOME_DIR, SYSTEM_DB, USER_DB, ensure_db_dir
+from core.storage.registry import APP_DB, HOME_DIR, MEMORY_DB, PLANNER_DB, SYSTEM_DB, USER_DB, ensure_db_dir
 
 logger = logging.getLogger(__name__)
 
@@ -115,19 +115,19 @@ def merge_brain_db_to_system() -> dict[str, int]:
     return copy_tables(LEGACY_BRAIN_DB, SYSTEM_DB)
 
 
-def merge_goals_db_to_system() -> dict[str, int]:
+def merge_goals_db_to_planner() -> dict[str, int]:
     from core.storage.registry import LEGACY_GOALS_DB
-    return copy_tables(LEGACY_GOALS_DB, SYSTEM_DB)
+    return copy_tables(LEGACY_GOALS_DB, PLANNER_DB)
 
 
-def merge_jarvis_memory_to_system() -> dict[str, int]:
+def merge_jarvis_memory_to_memory() -> dict[str, int]:
     from core.storage.registry import LEGACY_JARVIS_MEMORY_DB
-    return copy_tables(LEGACY_JARVIS_MEMORY_DB, SYSTEM_DB)
+    return copy_tables(LEGACY_JARVIS_MEMORY_DB, MEMORY_DB)
 
 
-def merge_browser_facts_to_system() -> dict[str, int]:
+def merge_browser_facts_to_memory() -> dict[str, int]:
     from core.storage.registry import LEGACY_BROWSER_FACTS_DB
-    return copy_tables(LEGACY_BROWSER_FACTS_DB, SYSTEM_DB)
+    return copy_tables(LEGACY_BROWSER_FACTS_DB, MEMORY_DB)
 
 
 def merge_inbox_to_system() -> dict[str, int]:
@@ -145,9 +145,9 @@ def merge_training_log_to_system() -> dict[str, int]:
     return copy_tables(LEGACY_TRAINING_LOG_DB, SYSTEM_DB)
 
 
-def merge_failure_memory_to_system() -> dict[str, int]:
+def merge_failure_memory_to_memory() -> dict[str, int]:
     from core.storage.registry import LEGACY_FAILURE_MEMORY_DB
-    return copy_tables(LEGACY_FAILURE_MEMORY_DB, SYSTEM_DB)
+    return copy_tables(LEGACY_FAILURE_MEMORY_DB, MEMORY_DB)
 
 
 def merge_plugin_state_to_system() -> dict[str, int]:
@@ -241,13 +241,13 @@ def run_all(delete_legacy: bool = False) -> dict[str, dict[str, int]]:
     results: dict[str, dict[str, int]] = {}
     results["workflow"] = merge_workflow_db_to_system()
     results["brain"] = merge_brain_db_to_system()
-    results["goals"] = merge_goals_db_to_system()
-    results["jarvis_memory"] = merge_jarvis_memory_to_system()
-    results["browser_facts"] = merge_browser_facts_to_system()
+    results["goals"] = merge_goals_db_to_planner()
+    results["jarvis_memory"] = merge_jarvis_memory_to_memory()
+    results["browser_facts"] = merge_browser_facts_to_memory()
     results["inbox"] = merge_inbox_to_system()
     results["benchmark"] = merge_benchmark_to_system()
     results["training_log"] = merge_training_log_to_system()
-    results["failure_memory"] = merge_failure_memory_to_system()
+    results["failure_memory"] = merge_failure_memory_to_memory()
     results["plugin_state"] = merge_plugin_state_to_system()
     results["plugin_secrets"] = merge_plugin_secrets_to_system()
 

@@ -2,7 +2,7 @@
 
 Each plan stores a serialized goal decomposition tree (PlanNode) with
 lifecycle status (draft → approved → executing → completed/failed).
-Lives in the same `data/workflow.db` as the rest of the system.
+Lives in data/planner.db as part of the planner bounded context.
 """
 
 from __future__ import annotations
@@ -17,11 +17,11 @@ from pathlib import Path
 from typing import Any
 
 from core.planner.models import SubGoal
-from core.storage import SYSTEM_DB
+from core.storage import PLANNER_DB
 
 logger = logging.getLogger(__name__)
 
-_DEFAULT_DB = SYSTEM_DB
+_DEFAULT_DB = PLANNER_DB
 
 _TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS plans (

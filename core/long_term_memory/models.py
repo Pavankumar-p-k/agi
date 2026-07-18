@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
 
-from core.storage import SYSTEM_DB
+from core.storage import MEMORY_DB
 
 
 @dataclass
@@ -105,4 +105,4 @@ class KnowledgeQuery:
     limit: int = 20
 
 
-UNIFIED_DB = SYSTEM_DB
+UNIFIED_DB = MEMORY_DB

@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from core.planner.protocol import Plan, PlanStatus
-from core.storage import SYSTEM_DB
+from core.storage import PLANNER_DB
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +39,7 @@ _MIGRATION_DONE = False
 
 class UnifiedStore:
     def __init__(self, db_path: str | None = None):
-        self._db_path = db_path or SYSTEM_DB
+        self._db_path = db_path or PLANNER_DB
         self._lock = threading.Lock()
         self._init_db()
 

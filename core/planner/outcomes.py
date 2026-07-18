@@ -16,11 +16,11 @@ from pathlib import Path
 from typing import Any
 
 from core.planner.store import PlanStore
-from core.storage import SYSTEM_DB
+from core.storage import PLANNER_DB
 
 logger = logging.getLogger(__name__)
 
-_DEFAULT_DB = SYSTEM_DB
+_DEFAULT_DB = PLANNER_DB
 
 _TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS plan_outcomes (

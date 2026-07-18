@@ -5,11 +5,11 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from core.storage import SYSTEM_DB
+from core.storage import MEMORY_DB
 from .models import ExtractedFact
 
 
-_DEFAULT_DB_PATH = Path(SYSTEM_DB)
+_DEFAULT_DB_PATH = Path(MEMORY_DB)
 
 
 class BrowserFactStore:
