@@ -234,7 +234,7 @@ except Exception as e:
 # ── Optional routers (kept separate so missing optional deps don't break startup) ──
 
 try:
-    from api.cookbook_routes import router as cookbook_router
+    from core.routes.build.cookbook_routes import router as cookbook_router
     app.include_router(cookbook_router)
     logger.info("[Router] Cookbook routes loaded")
 except Exception as e:
@@ -285,35 +285,35 @@ except Exception as e:
 #     logger.warning("[Router] Hybrid Automation routes not loaded: %s", e)
 
 try:
-    from routers.screen import router as screen_router
+    from core.routes.system import screen_router
     app.include_router(screen_router)
     logger.info("[Router] Screen understanding routes loaded [OK]")
 except Exception as e:
     logger.warning("[Router] Screen understanding routes not loaded: %s", e)
 
 try:
-    from routers.setup import router as setup_router
+    from core.routes.system import setup_router
     app.include_router(setup_router)
     logger.info("[Router] Setup wizard routes loaded [OK]")
 except Exception as e:
     logger.warning("[Router] Setup wizard routes not loaded: %s", e)
 
 try:
-    from core.routes.setup import router as setup_engine_router
+    from core.routes.system import setup_routes_router as setup_engine_router
     app.include_router(setup_engine_router)
     logger.info("[Router] Setup engine routes loaded [OK]")
 except Exception as e:
     logger.warning("[Router] Setup engine routes not loaded: %s", e)
 
 try:
-    from routers.dot_routes import router as dot_router
+    from core.routes.files.dot_routes import router as dot_router
     app.include_router(dot_router)
     logger.info("[Router] Dot panel data routes loaded [OK]")
 except Exception as e:
     logger.warning("[Router] Dot panel data routes not loaded: %s", e)
 
 try:
-    from routers.jarvishub import router as jarvishub_router
+    from core.routes.agents import jarvishub_router
     app.include_router(jarvishub_router)
     logger.info("[Router] JarvisHub skill index route loaded [OK]")
 except Exception as e:
@@ -345,14 +345,7 @@ try:
 except Exception as e:
     logger.warning("[Router] Build system routes not loaded: %s", e)
 
-try:
-    from api.settings_routes import router as settings_router
-    app.include_router(settings_router)
-    logger.info("[Router] Settings routes loaded [OK]")
-except Exception as e:
-    logger.warning("[Router] Settings routes not loaded: %s", e)
-
-# JARVIS Sub-Agents (deferred to lifespan — ~4.6s import via sub_agents.registry → llm_router)
+# Settings routes loaded above (line 159) (deferred to lifespan — ~4.6s import via sub_agents.registry → llm_router)
 
 # AGI routes
 # try:
@@ -367,7 +360,7 @@ except Exception as e:
 
 # Plugin System routes
 try:
-    from api.plugin_routes import router as plugin_router
+    from core.routes.integrations import plugin_router
     app.include_router(plugin_router)
     logger.info("[Router] Plugin System routes loaded [OK]")
 except Exception as e:
@@ -375,7 +368,7 @@ except Exception as e:
 
 # Cloud / Project routes
 try:
-    from api.cloud_routes import router as cloud_router
+    from core.routes.integrations import cloud_router
     app.include_router(cloud_router)
     logger.info("[Router] Cloud routes loaded [OK]")
 except Exception as e:
@@ -383,7 +376,7 @@ except Exception as e:
 
 # Governance routes
 try:
-    from api.governance_routes import router as gov_router
+    from core.routes.agents.governance_routes import router as gov_router
     app.include_router(gov_router)
     logger.info("[Router] Governance routes loaded [OK]")
 except Exception as e:
@@ -391,7 +384,7 @@ except Exception as e:
 
 # Memory routes
 try:
-    from api.memory_routes import router as memory_router
+    from core.routes.memory import research_router as memory_router
     app.include_router(memory_router)
     logger.info("[Router] Memory routes loaded [OK]")
 except Exception as e:
@@ -399,8 +392,8 @@ except Exception as e:
 
 # RAGFlow routes
 try:
-    from api.ragflow_routes import router as rag_router
-    app.include_router(rag_router)
+    from core.routes.integrations import ragflow_router
+    app.include_router(ragflow_router)
     logger.info("[Router] RAGFlow routes loaded [OK]")
 except Exception as e:
     logger.warning("[Router] RAGFlow routes not loaded: %s", e)
@@ -503,7 +496,7 @@ except Exception as e:
     logger.warning("[Router] Intelligence routes not loaded: %s", e)
 
 try:
-    from core.routes.build import control_router
+    from core.routes.build import build_control_router as control_router
     app.include_router(control_router)
     logger.info("[Router] Control routes loaded [OK]")
 except Exception as e:
@@ -663,7 +656,7 @@ else:
 # ── Voice routes ──
 
 try:
-    from core.routes.chat import voice_router
+    from core.routes.voice import voice_router
     app.include_router(voice_router)
     logger.info("[Router] Voice routes loaded [OK]")
 except Exception as e:
@@ -749,7 +742,7 @@ async def execute_action(intent_data: dict, message: str = "", session_id: str =
 # ── Vision routes ──
 
 try:
-    from core.routes.vision import router as vision_router
+    from core.routes.agents import vision_router
     app.include_router(vision_router)
     logger.info("[Router] Vision routes loaded [OK]")
 except Exception as e:

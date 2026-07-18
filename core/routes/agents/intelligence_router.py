@@ -14,7 +14,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
-from ..auth import User, verify_token
+from core.auth import User, verify_token
 
 router = APIRouter(tags=["Intelligence & Memory"])
 

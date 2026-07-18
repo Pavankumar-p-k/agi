@@ -17,7 +17,7 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from ..auth import User, verify_token
+from core.auth import User, verify_token
 
 router = APIRouter(tags=["Utilities & Code"])
 

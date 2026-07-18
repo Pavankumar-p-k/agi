@@ -16,8 +16,8 @@ import time
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 
-from ..auth import require_scope
-from ..authz import Scope
+from core.auth import require_scope
+from core.authz.schema import Scope
 
 logger = logging.getLogger("jarvis")
 

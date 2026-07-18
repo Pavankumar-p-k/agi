@@ -41,7 +41,7 @@ async def password_login(body: LoginRequest, request: Request):
 @router.get("/auth/status")
 async def auth_status():
     try:
-        from ..auth import get_auth_manager
+        from core.auth import get_auth_manager
         from ..oauth import oauth_manager
         am = get_auth_manager()
         providers = oauth_manager.get_providers() if hasattr(oauth_manager, "get_providers") else []
