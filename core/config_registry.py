@@ -14,6 +14,10 @@ from typing import Any
 from core.configuration import configuration as _configuration
 from core.config_schema import _REGISTRY as _REGISTRY
 from core.config_schema import ConfigEntry as ConfigEntry
+from core.config_schema import _REGISTRY_MAP as _REGISTRY_MAP
+from core.config_schema import all_categories as all_categories
+from core.config_schema import entries_by_category as entries_by_category
+from core.config_schema import get_entry as get_entry
 
 _warned = False
 

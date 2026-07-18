@@ -403,4 +403,67 @@ jarvis_config = JarvisConfig()
 # Backward-compat registry for code importing _REGISTRY from config_registry
 _REGISTRY = []
 
-__all__ = ["jarvis_config", "JarvisConfig", "_REGISTRY", "ConfigEntry"]
+def _build_registry():
+    """Populate _REGISTRY and _REGISTRY_MAP from _SUB_CONFIG_DEFAULTS."""
+    entries = []
+    for category, config in _SUB_CONFIG_DEFAULTS.items():
+        for field_name in dir(config):
+            if field_name.startswith("_"):
+                continue
+            default = getattr(config, field_name, None)
+            val_type = type(default).__name__ if default is not None else "str"
+            if val_type == "list":
+                ui = "list"
+            elif val_type == "bool":
+                ui = "toggle"
+            elif val_type == "int":
+                ui = "number"
+            else:
+                ui = "text"
+            entry = ConfigEntry(
+                key=f"{category}.{field_name}",
+                default=default,
+                type=val_type,
+                category=category,
+                description=field_name.replace("_", " ").title(),
+                ui=ui,
+            )
+            entries.append(entry)
+    # Add top-level env-var keys
+    env_keys = [
+        ("claude_api_key", str, True),
+        ("openai_api_key", str, True),
+        ("gemini_api_key", str, True),
+        ("github_token", str, True),
+        ("supabase_url", str, False),
+        ("supabase_service_key", str, True),
+        ("host", str, False),
+        ("port", int, False),
+    ]
+    for key, typ, secret in env_keys:
+        entry = ConfigEntry(
+            key=key,
+            default=None,
+            type=typ.__name__,
+            category="env",
+            description=key.replace("_", " ").title(),
+            secret=secret,
+        )
+        entries.append(entry)
+    return entries
+
+_REGISTRY_ENTRIES = _build_registry()
+_REGISTRY_MAP = {e.key: e for e in _REGISTRY_ENTRIES}
+_REGISTRY = _REGISTRY_ENTRIES  # backward compat
+
+def all_categories() -> list[str]:
+    return sorted({e.category for e in _REGISTRY_ENTRIES})
+
+def entries_by_category(cat: str) -> list[ConfigEntry]:
+    return [e for e in _REGISTRY_ENTRIES if e.category == cat]
+
+def get_entry(key: str) -> ConfigEntry | None:
+    return _REGISTRY_MAP.get(key)
+
+__all__ = ["jarvis_config", "JarvisConfig", "_REGISTRY", "_REGISTRY_MAP", "ConfigEntry",
+           "all_categories", "entries_by_category", "get_entry"]
