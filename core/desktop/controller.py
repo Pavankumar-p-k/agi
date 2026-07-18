@@ -6,6 +6,7 @@ from typing import Any
 
 from core.desktop.replay import ReplayNode, desktop_replay
 from core.desktop.safety import DesktopActionType, SafetyManager, safety_manager
+from core.event_bus import global_event_bus, Event
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +41,24 @@ class DesktopController:
             self._pyautogui = pyautogui
         return self._pyautogui
 
+    async def _emit(self, event_type: str, action: "DesktopAction", details: dict | None = None) -> None:
+        """Emit desktop action event to EventBus."""
+        try:
+            await global_event_bus.publish(Event(
+                type=f"desktop.{event_type}",
+                source="desktop_controller",
+                payload={
+                    "action_type": action.action_type.value,
+                    "success": action.success,
+                    "error": action.error,
+                    "details": action.details,
+                    "replay_node_id": action.replay_node_id,
+                    **(details or {}),
+                },
+            ))
+        except Exception as e:
+            logger.debug(f"Failed to emit desktop event: {e}")
+
     # ── Mouse Primitives ──────────────────────────────────────────────────
 
     def move_mouse(self, x: int, y: int, duration: float = 0.2) -> DesktopAction:
@@ -49,12 +68,15 @@ class DesktopController:
         try:
             self._get_pyautogui().moveTo(x, y, duration=duration)
             node = desktop_replay.record("move_mouse", {"x": x, "y": y, "duration": duration})
-            return DesktopAction(
+            action = DesktopAction(
                 action_type=DesktopActionType.MOUSE_MOVE,
                 success=True,
                 details={"x": x, "y": y},
                 replay_node_id=node.node_id,
             )
+            import asyncio
+            asyncio.create_task(self._emit("mouse_move", action))
+            return action
         except Exception as e:
             return self._error(DesktopActionType.MOUSE_MOVE, str(e))
 
@@ -65,12 +87,15 @@ class DesktopController:
         try:
             self._get_pyautogui().click(x, y, button=button)
             node = desktop_replay.record("click", {"x": x, "y": y, "button": button})
-            return DesktopAction(
+            action = DesktopAction(
                 action_type=DesktopActionType.MOUSE_CLICK,
                 success=True,
                 details={"x": x, "y": y, "button": button},
                 replay_node_id=node.node_id,
             )
+            import asyncio
+            asyncio.create_task(self._emit("mouse_click", action))
+            return action
         except Exception as e:
             return self._error(DesktopActionType.MOUSE_CLICK, str(e))
 
@@ -81,12 +106,15 @@ class DesktopController:
         try:
             self._get_pyautogui().doubleClick(x, y)
             node = desktop_replay.record("double_click", {"x": x, "y": y})
-            return DesktopAction(
+            action = DesktopAction(
                 action_type=DesktopActionType.MOUSE_DOUBLE_CLICK,
                 success=True,
                 details={"x": x, "y": y},
                 replay_node_id=node.node_id,
             )
+            import asyncio
+            asyncio.create_task(self._emit("mouse_double_click", action))
+            return action
         except Exception as e:
             return self._error(DesktopActionType.MOUSE_DOUBLE_CLICK, str(e))
 
@@ -97,12 +125,15 @@ class DesktopController:
         try:
             self._get_pyautogui().scroll(clicks, x=x, y=y)
             node = desktop_replay.record("scroll", {"clicks": clicks, "x": x, "y": y})
-            return DesktopAction(
+            action = DesktopAction(
                 action_type=DesktopActionType.MOUSE_SCROLL,
                 success=True,
                 details={"clicks": clicks},
                 replay_node_id=node.node_id,
             )
+            import asyncio
+            asyncio.create_task(self._emit("mouse_scroll", action))
+            return action
         except Exception as e:
             return self._error(DesktopActionType.MOUSE_SCROLL, str(e))
 
@@ -118,16 +149,17 @@ class DesktopController:
                 "start_x": start_x, "start_y": start_y,
                 "end_x": end_x, "end_y": end_y,
             })
-            return DesktopAction(
+            action = DesktopAction(
                 action_type=DesktopActionType.MOUSE_DRAG,
                 success=True,
                 details={"start_x": start_x, "start_y": start_y, "end_x": end_x, "end_y": end_y},
                 replay_node_id=node.node_id,
             )
+            import asyncio
+            asyncio.create_task(self._emit("mouse_drag", action))
+            return action
         except Exception as e:
             return self._error(DesktopActionType.MOUSE_DRAG, str(e))
-
-    # ── Keyboard Primitives ───────────────────────────────────────────────
 
     def type_text(self, text: str, interval: float = 0.05) -> DesktopAction:
         decision = self._safety.check(DesktopActionType.KEYBOARD_TYPE, {
@@ -138,12 +170,15 @@ class DesktopController:
         try:
             self._get_pyautogui().typewrite(text, interval=interval)
             node = desktop_replay.record("type_text", {"text_length": len(text)})
-            return DesktopAction(
+            action = DesktopAction(
                 action_type=DesktopActionType.KEYBOARD_TYPE,
                 success=True,
                 details={"text_length": len(text), "interval": interval},
                 replay_node_id=node.node_id,
             )
+            import asyncio
+            asyncio.create_task(self._emit("keyboard_type", action))
+            return action
         except Exception as e:
             return self._error(DesktopActionType.KEYBOARD_TYPE, str(e))
 
@@ -154,12 +189,15 @@ class DesktopController:
         try:
             self._get_pyautogui().press(key)
             node = desktop_replay.record("press_key", {"key": key})
-            return DesktopAction(
+            action = DesktopAction(
                 action_type=DesktopActionType.KEYBOARD_PRESS,
                 success=True,
                 details={"key": key},
                 replay_node_id=node.node_id,
             )
+            import asyncio
+            asyncio.create_task(self._emit("keyboard_press", action))
+            return action
         except Exception as e:
             return self._error(DesktopActionType.KEYBOARD_PRESS, str(e))
 
@@ -170,12 +208,15 @@ class DesktopController:
         try:
             self._get_pyautogui().hotkey(*keys)
             node = desktop_replay.record("hotkey", {"keys": list(keys)})
-            return DesktopAction(
+            action = DesktopAction(
                 action_type=DesktopActionType.KEYBOARD_HOTKEY,
                 success=True,
                 details={"keys": list(keys)},
                 replay_node_id=node.node_id,
             )
+            import asyncio
+            asyncio.create_task(self._emit("keyboard_hotkey", action))
+            return action
         except Exception as e:
             return self._error(DesktopActionType.KEYBOARD_HOTKEY, str(e))
 
@@ -187,12 +228,15 @@ class DesktopController:
             import webbrowser
             webbrowser.open(url)
             node = desktop_replay.record("open_url", {"url": url})
-            return DesktopAction(
+            action = DesktopAction(
                 action_type=DesktopActionType.MOUSE_CLICK,
                 success=True,
                 details={"url": url},
                 replay_node_id=node.node_id,
             )
+            import asyncio
+            asyncio.create_task(self._emit("open_url", action))
+            return action
         except Exception as e:
             return self._error(DesktopActionType.MOUSE_CLICK, str(e))
 
@@ -214,12 +258,15 @@ class DesktopController:
             # Use shell=False for security - no shell injection risk
             subprocess.Popen([exe])
             node = desktop_replay.record("launch_app", {"app": app_name})
-            return DesktopAction(
+            action = DesktopAction(
                 action_type=DesktopActionType.KEYBOARD_HOTKEY,
                 success=True,
                 details={"app": app_name},
                 replay_node_id=node.node_id,
             )
+            import asyncio
+            asyncio.create_task(self._emit("launch_app", action))
+            return action
         except Exception as e:
             return self._error(DesktopActionType.KEYBOARD_HOTKEY, str(e))
 
