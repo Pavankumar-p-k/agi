@@ -1,0 +1,11 @@
+{
+  "name": "knowledge.fact_check",
+  "version": "1.0.0",
+  "description": "JARVIS Skill for Fact Check",
+  "author": "JARVIS Core",
+  "entry_point": "main.py",
+  "enabled": true,
+  "tools": [
+    "fact_check"
+  ]
+}

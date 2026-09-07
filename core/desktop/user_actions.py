@@ -1,0 +1,590 @@
+"""
+Module: core.desktop.user_actions
+Real "human-like" desktop capabilities: file system, storage, time,
+clipboard, and VISION (see the screen + find+click UI elements like a real user).
+
+Extends the raw controller so JARVIS can genuinely do what a real user does.
+"""
+from __future__ import annotations
+from typing import Any
+import os
+import sys
+import time
+import shutil
+import platform
+import socket
+from datetime import datetime
+from pathlib import Path
+
+import pyautogui
+
+# Vision deps (optional but available)
+try:
+    import cv2
+    import numpy as np
+    from PIL import Image
+    VISION_AVAILABLE = True
+except ImportError:
+    VISION_AVAILABLE = False
+
+
+class UserActions:
+    """High-level, human-like operations on top of the raw desktop controller."""
+
+    # ---------- FILE SYSTEM ----------
+    @staticmethod
+    def list_files(path: str = ".", recursive: bool = False) -> list[dict[str, Any]]:
+        p = Path(path).expanduser()
+        if not p.exists():
+            return {"error": f"Path not found: {path}"}
+        entries = []
+        items = p.rglob("*") if recursive else p.iterdir()
+        for item in items:
+            try:
+                is_dir = item.is_dir()
+                info = item.stat()
+                entries.append({
+                    "name": item.name,
+                    "path": str(item),
+                    "type": "dir" if is_dir else "file",
+                    "size": None if is_dir else info.st_size,
+                    "ext": item.suffix.lstrip(".") if not is_dir else "",
+                    "modified": datetime.fromtimestamp(info.st_mtime).isoformat(),
+                })
+            except (PermissionError, OSError):
+                continue
+        entries.sort(key=lambda e: (e["type"] != "dir", e["name"].lower()))
+        return entries
+
+    @staticmethod
+    def create_file(path: str, content: str = "") -> dict:
+        p = Path(path).expanduser()
+        try:
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_text(content, encoding="utf-8")
+            return {"success": True, "path": str(p), "action": "created"}
+        except Exception as e:
+            return {"error": str(e)}
+
+    @staticmethod
+    def create_folder(path: str) -> dict:
+        p = Path(path).expanduser()
+        try:
+            p.mkdir(parents=True, exist_ok=True)
+            return {"success": True, "path": str(p), "action": "created"}
+        except Exception as e:
+            return {"error": str(e)}
+
+    @staticmethod
+    def read_file(path: str, max_chars: int = 5000) -> dict:
+        p = Path(path).expanduser()
+        if not p.exists():
+            return {"error": f"File not found: {path}"}
+        try:
+            text = p.read_text(encoding="utf-8", errors="replace")
+            return {"success": True, "path": str(p), "content": text[:max_chars], "length": len(text)}
+        except Exception as e:
+            return {"error": str(e)}
+
+    @staticmethod
+    def write_file(path: str, content: str) -> dict:
+        p = Path(path).expanduser()
+        try:
+            p.write_text(content, encoding="utf-8")
+            return {"success": True, "path": str(p), "action": "written"}
+        except Exception as e:
+            return {"error": str(e)}
+
+    @staticmethod
+    def move_file(src: str, dst: str) -> dict:
+        try:
+            shutil.move(src, dst)
+            return {"success": True, "from": src, "to": dst}
+        except Exception as e:
+            return {"error": str(e)}
+
+    @staticmethod
+    def copy_file(src: str, dst: str) -> dict:
+        try:
+            shutil.copy2(src, dst)
+            return {"success": True, "from": src, "to": dst}
+        except Exception as e:
+            return {"error": str(e)}
+
+    @staticmethod
+    def delete_path(path: str, recursive: bool = False) -> dict:
+        p = Path(path).expanduser()
+        if not p.exists():
+            return {"error": f"Path not found: {path}"}
+        try:
+            if p.is_dir():
+                shutil.rmtree(p) if recursive else p.rmdir()
+            else:
+                p.unlink()
+            return {"success": True, "path": str(p), "action": "deleted"}
+        except Exception as e:
+            return {"error": str(e)}
+
+    @staticmethod
+    def rename_file(path: str, new_name: str) -> dict:
+        p = Path(path).expanduser()
+        if not p.exists():
+            return {"error": f"Path not found: {path}"}
+        try:
+            new_path = p.parent / new_name
+            p.rename(new_path)
+            return {"success": True, "from": str(p), "to": str(new_path)}
+        except Exception as e:
+            return {"error": str(e)}
+
+    # ---------- STORAGE / DISK ----------
+    @staticmethod
+    def storage_info() -> dict:
+        result = {"drives": []}
+        if sys.platform == "win32":
+            import ctypes
+            drives = []
+            bitmask = ctypes.windll.kernel32.GetLogicalDrives()
+            for i in range(26):
+                if bitmask & (1 << i):
+                    drives.append(chr(65 + i) + ":\\")
+            for d in drives:
+                try:
+                    usage = shutil.disk_usage(d)
+                    result["drives"].append({
+                        "drive": d,
+                        "total_gb": round(usage.total / (1024**3), 2),
+                        "used_gb": round(usage.used / (1024**3), 2),
+                        "free_gb": round(usage.free / (1024**3), 2),
+                        "percent_used": round(usage.used / usage.total * 100, 1),
+                    })
+                except OSError:
+                    continue
+        return result
+
+    # ---------- TIME / TIMEZONE ----------
+    @staticmethod
+    def current_time() -> dict:
+        now = datetime.now()
+        return {
+            "date": now.strftime("%Y-%m-%d"),
+            "time": now.strftime("%H:%M:%S"),
+            "weekday": now.strftime("%A"),
+            "tz": time.tzname,
+            "tz_offset_sec": time.timezone,
+            "iso": now.isoformat(),
+            "timestamp": now.timestamp(),
+        }
+
+    @staticmethod
+    def system_info() -> dict:
+        return {
+            "os": platform.system(),
+            "os_version": platform.version(),
+            "release": platform.release(),
+            "platform": platform.platform(),
+            "machine": platform.machine(),
+            "python": platform.python_version(),
+            "hostname": socket.gethostname(),
+            "cpu_count": os.cpu_count(),
+            "arch": platform.architecture()[0],
+        }
+
+    # ---------- VISION ----------
+    @staticmethod
+    def take_screenshot(path: str | None = None) -> dict:
+        try:
+            img = pyautogui.screenshot()
+            if path:
+                img.save(path)
+                return {"success": True, "path": path, "size": img.size}
+            return {"success": True, "size": img.size, "mode": img.mode}
+        except Exception as e:
+            return {"error": str(e)}
+
+    @staticmethod
+    def find_on_screen(image_path: str, confidence: float = 0.8) -> dict:
+        """Find a UI element (button/icon) image on the screen and return its coords.
+        This is how JARVIS 'sees' and clicks real buttons like a user."""
+        try:
+            if not VISION_AVAILABLE:
+                return {"error": "OpenCV not available"}
+            loc = pyautogui.locateOnScreen(image_path, confidence=confidence)
+            if not loc:
+                return {"found": False, "confidence": confidence}
+            x, y = pyautogui.center(loc)
+            left, top, width, height = loc.left, loc.top, loc.width, loc.height
+            return {
+                "found": True,
+                "x": int(x), "y": int(y),
+                "bbox": {"left": left, "top": top, "width": width, "height": height},
+                "confidence": confidence,
+            }
+        except Exception as e:
+            return {"error": str(e)}
+
+    @staticmethod
+    def click_image(image_path: str, confidence: float = 0.8) -> dict:
+        """Find an image on screen and click it (like clicking a real button)."""
+        try:
+            loc = pyautogui.locateOnScreen(image_path, confidence=confidence)
+            if not loc:
+                return {"found": False}
+            x, y = pyautogui.center(loc)
+            pyautogui.click(x, y)
+            return {"found": True, "clicked": (x, y)}
+        except Exception as e:
+            return {"error": str(e)}
+
+    # ---------- APP LAUNCH (smart) ----------
+    @staticmethod
+    def open_with(path: str, app: str | None = None) -> dict:
+        """Open a file. If app given, open in that app (e.g., notepad, excel)."""
+        try:
+            if app:
+                if sys.platform == "win32":
+                    os.startfile(path, app) if False else os.system(f'start "" "{app}" "{path}"')
+                return {"success": True, "opened": path, "with": app}
+            else:
+                os.startfile(path) if sys.platform == "win32" else None
+                return {"success": True, "opened": path}
+        except Exception as e:
+            return {"error": str(e)}
+
+    # ---------- NETWORK ----------
+    @staticmethod
+    def network_info() -> dict:
+        """Current network interfaces, IPs, uptime."""
+        try:
+            import psutil
+            addrs = psutil.net_if_addrs()
+            stats = psutil.net_if_stats()
+            interfaces = []
+            for name, addr_list in addrs.items():
+                ipv4 = ipv6 = mac = None
+                for a in addr_list:
+                    if a.family == socket.AF_INET:
+                        ipv4 = a.address
+                    elif a.family == socket.AF_INET6:
+                        ipv6 = a.address
+                    elif a.family == psutil.AF_LINK:
+                        mac = a.address
+                is_up = stats[name].isup if name in stats else None
+                speed = stats[name].speed if name in stats else None
+                interfaces.append({
+                    "name": name,
+                    "ipv4": ipv4,
+                    "ipv6": ipv6,
+                    "mac": mac,
+                    "is_up": is_up,
+                    "link_speed_mbps": speed,
+                })
+            net_io = psutil.net_io_counters()
+            boot = datetime.fromtimestamp(psutil.boot_time())
+            return {
+                "interfaces": interfaces,
+                "bytes_sent": net_io.bytes_sent,
+                "bytes_recv": net_io.bytes_recv,
+                "packets_sent": net_io.packets_sent,
+                "packets_recv": net_io.packets_recv,
+                "system_boot": boot.isoformat(),
+            }
+        except Exception as e:
+            return {"error": str(e)}
+
+    @staticmethod
+    def network_speed_test(measure_secs: float = 2.0) -> dict:
+        """Measure current download/upload speed by actual data transfer.
+        Uses a known fast endpoint and measures bytes moved."""
+        try:
+            import psutil
+            import time as _t
+            def _measure() -> dict:
+                before = psutil.net_io_counters()
+                t0 = _t.time()
+                _t.sleep(measure_secs)
+                after = psutil.net_io_counters()
+                dt = _t.time() - t0
+                down_mbps = (after.bytes_recv - before.bytes_recv) * 8 / dt / 1_000_000
+                up_mbps = (after.bytes_sent - before.bytes_sent) * 8 / dt / 1_000_000
+                return {"download_mbps": round(down_mbps, 2), "upload_mbps": round(up_mbps, 2)}
+
+            # Cross-traffic avg over a few samples
+            samples = [_measure() for _ in range(3)]
+            avg_down = sum(s["download_mbps"] for s in samples) / len(samples)
+            avg_up = sum(s["upload_mbps"] for s in samples) / len(samples)
+            return {
+                "download_mbps": round(avg_down, 2),
+                "upload_mbps": round(avg_up, 2),
+                "samples": samples,
+                "note": "This measures current real traffic (not a forced speedtest). Higher = faster connection.",
+            }
+        except Exception as e:
+            return {"error": str(e)}
+
+    @staticmethod
+    def ping(host: str = "8.8.8.8") -> dict:
+        """Ping a host to check connectivity/latency."""
+        try:
+            import subprocess
+            cmd = ["ping", "-n", "1", "-w", "2000", host]
+            res = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+            if res.returncode == 0:
+                # extract time=XXms
+                import re
+                m = re.search(r"time[=<](\d+)ms", res.stdout)
+                latency = int(m.group(1)) if m else None
+                return {"reachable": True, "host": host, "latency_ms": latency}
+            return {"reachable": False, "host": host, "output": res.stdout.strip()}
+        except Exception as e:
+            return {"error": str(e)}
+
+    # ---------- BLUETOOTH ----------
+    @staticmethod
+    def bluetooth_devices() -> dict:
+        """List paired Bluetooth devices using Windows PowerShell."""
+        try:
+            import subprocess
+            ps = (
+                "$t=@(); Get-PnpDevice -Class Bluetooth 2>$null | "
+                "Where-Object {$_.FriendlyName -and ($_.FriendlyName -notmatch 'Radio|Adapter|Service|Registry|Generic')} | "
+                "ForEach-Object { $t += [PSCustomObject]@{ "
+                "Name=$_.FriendlyName; Status=$_.Status; ID=$_.InstanceId } }; "
+                "$t | ConvertTo-Json -Compress"
+            )
+            res = subprocess.run(
+                ["powershell", "-NoProfile", "-Command", ps],
+                capture_output=True, text=True, timeout=30,
+            )
+            out = res.stdout.strip()
+            import json
+            if not out or out == "null":
+                return {"devices": []}
+            data = json.loads(out)
+            if not isinstance(data, list):
+                data = [data]
+            devs = []
+            for d in data:
+                devs.append({
+                    "name": d.get("Name"),
+                    "status": d.get("Status"),
+                    "id": d.get("ID"),
+                })
+            return {"devices": devs}
+        except Exception as e:
+            return {"error": str(e)}
+
+    @staticmethod
+    def _bluetooth_by_name_or_id(target: str) -> str | None:
+        """Find a Bluetooth device InstanceId by partial name or id."""
+        devs = UserActions.bluetooth_devices().get("devices", [])
+        for d in devs:
+            name = (d.get("name") or "").lower()
+            did = (d.get("id") or "").lower()
+            t = target.lower()
+            if t in name or t in did:
+                return d.get("id")
+        return None
+
+    @staticmethod
+    def bluetooth_connect(target: str) -> dict:
+        """Connect (enable) a Bluetooth device by name/id."""
+        try:
+            import subprocess
+            inst = UserActions._bluetooth_by_name_or_id(target)
+            if not inst:
+                return {"success": False, "error": f"Bluetooth device not found: {target}"}
+            ps = f'Enable-PnpDevice -InstanceId "{inst}" -Confirm:$false; Start-Sleep -Milliseconds 800; Get-PnpDevice -InstanceId "{inst}" | Select-Object -ExpandProperty Status'
+            res = subprocess.run(["powershell", "-NoProfile", "-Command", ps], capture_output=True, text=True, timeout=30)
+            status = res.stdout.strip() or res.stderr.strip()
+            return {"success": True, "device": target, "instance_id": inst, "status": status}
+        except Exception as e:
+            return {"error": str(e)}
+
+    @staticmethod
+    def bluetooth_disconnect(target: str) -> dict:
+        """Disconnect (disable) a Bluetooth device by name/id."""
+        try:
+            import subprocess
+            inst = UserActions._bluetooth_by_name_or_id(target)
+            if not inst:
+                return {"success": False, "error": f"Bluetooth device not found: {target}"}
+            ps = f'Disable-PnpDevice -InstanceId "{inst}" -Confirm:$false; Start-Sleep -Milliseconds 800; Get-PnpDevice -InstanceId "{inst}" | Select-Object -ExpandProperty Status'
+            res = subprocess.run(["powershell", "-NoProfile", "-Command", ps], capture_output=True, text=True, timeout=30)
+            status = res.stdout.strip() or res.stderr.strip()
+            return {"success": True, "device": target, "instance_id": inst, "status": status}
+        except Exception as e:
+            return {"error": str(e)}
+
+    # ---------- INSTALL / UNINSTALL PROGRAMS ----------
+    @staticmethod
+    def installed_programs() -> dict:
+        """List installed programs (from registry) on Windows."""
+        try:
+            import subprocess
+            ps = (
+                "$r=@(); $keys=@('HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*',"
+                "'HKLM:\\Software\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*',"
+                "'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*');"
+                "$keys | ForEach-Object { Get-ItemProperty $_ -ErrorAction SilentlyContinue } | "
+                "Where-Object {$_.DisplayName} | ForEach-Object { $r += [PSCustomObject]@{"
+                "Name=$_.DisplayName; Version=$_.DisplayVersion; InstallLocation=$_.InstallLocation; "
+                "UninstallString=$_.UninstallString} }; "
+                "$r | Sort-Object Name | ConvertTo-Json -Compress"
+            )
+            res = subprocess.run(["powershell", "-NoProfile", "-Command", ps], capture_output=True, text=True, timeout=60)
+            out = res.stdout.strip()
+            import json
+            if not out or out == "null":
+                return {"programs": []}
+            data = json.loads(out)
+            if not isinstance(data, list):
+                data = [data]
+            return {"count": len(data), "programs": data}
+        except Exception as e:
+            return {"error": str(e)}
+
+    @staticmethod
+    def install_program(installer_path: str, silent_args: str | None = None) -> dict:
+        """Run an installer. If silent_args given, installs silently (no UI).
+        Otherwise launches the installer UI for the user to confirm."""
+        try:
+            import subprocess
+            if silent_args:
+                cmd = [installer_path] + silent_args.split()
+                subprocess.Popen(cmd)
+                return {"success": True, "action": "install_started_silent", "installer": installer_path, "args": silent_args}
+            os.startfile(installer_path)
+            return {"success": True, "action": "installer_launched", "installer": installer_path, "note": "Installer UI opened - complete the install on screen"}
+        except Exception as e:
+            return {"error": str(e)}
+
+    @staticmethod
+    def uninstall_program(name: str) -> dict:
+        """Uninstall a program by name. Uses the registry UninstallString.
+        Silently removes if a silent flag is detected, otherwise launches uninstaller for confirmation."""
+        try:
+            import subprocess
+            progs = UserActions.installed_programs().get("programs", [])
+            target = next((p for p in progs if name.lower() in (p.get("Name") or "").lower()), None)
+            if not target:
+                return {"success": False, "error": f"Program not found: {name}"}
+            uninstall_str = target.get("UninstallString") or ""
+            if not uninstall_str:
+                return {"success": False, "error": f"No uninstall string for {target.get('Name')}"}
+            # Try wingset uninstall as a clean method
+            try:
+                res = subprocess.run(
+                    ["winget", "uninstall", "--id", target.get("Name"), "--silent", "--accept-source-agreements"],
+                    capture_output=True, text=True, timeout=120,
+                )
+                if res.returncode == 0 or "successfully uninstalled" in res.stdout.lower():
+                    return {"success": True, "program": target.get("Name"), "method": "winget"}
+            except Exception:
+                pass
+            # Fallback: run the uninstall string
+            cleaned = uninstall_str.strip().strip('"')
+            subprocess.Popen(f'start "" "{cleaned}"', shell=True)
+            return {
+                "success": True,
+                "program": target.get("Name"),
+                "method": "uninstall_launched",
+                "note": "Uninstaller opened - confirm on screen",
+            }
+        except Exception as e:
+            return {"error": str(e)}
+
+    # ---------- CONTROL / USE APPS (Windowkit + vision) ----------
+    @staticmethod
+    def list_running_apps() -> dict:
+        """List currently running GUI apps (processes with a main window)."""
+        try:
+            import subprocess, json
+            ps = "Get-Process | Where-Object {$_.MainWindowTitle} | ForEach-Object { [PSCustomObject]@{Name=$_.ProcessName; Title=$_.MainWindowTitle; PID=$_.Id} } | ConvertTo-Json -Compress"
+            res = subprocess.run(["powershell", "-NoProfile", "-Command", ps], capture_output=True, text=True, timeout=20)
+            out = res.stdout.strip()
+            if not out or out == "null":
+                return {"apps": []}
+            data = json.loads(out)
+            if not isinstance(data, list):
+                data = [data]
+            return {"count": len(data), "apps": data}
+        except Exception as e:
+            return {"error": str(e)}
+
+    @staticmethod
+    def use_app_ui(action: str, app: str = "", **params: Any) -> dict:
+        """High-level 'use an app like a real user'.
+        action: focus | close | open_new | type | click_image | screenshot
+        Combines window management + vision so Jarvis can drive app UIs."""
+        try:
+            from core.desktop.window import window_controller
+        except ImportError:
+            window_controller = None
+
+        app_lower = app.lower()
+        if action == "focus":
+            # find matching window by partial title
+            if window_controller:
+                for w in window_controller.list_windows():
+                    if app_lower in w["title"].lower():
+                        r = window_controller.focus(w["title"])
+                        return {"success": r.success, "window": w["title"]}
+            # fallback: launch app
+            if params.get("launch_if_missing", True):
+                pyautogui.hotkey("win")
+                time.sleep(0.3)
+                pyautogui.typewrite(app, interval=0.02)
+                time.sleep(0.3)
+                pyautogui.press("enter")
+                return {"success": True, "action": "launched_via_start_menu", "app": app}
+            return {"success": False, "error": f"App window not found: {app}"}
+
+        elif action == "close":
+            if window_controller:
+                for w in window_controller.list_windows():
+                    if app_lower in w["title"].lower():
+                        r = window_controller.close(w["title"])
+                        return {"success": r.success, "window": w["title"]}
+            return {"success": False, "error": f"App window not found: {app}"}
+
+        elif action == "type":
+            pyautogui.typewrite(str(params.get("text", "")), interval=0.02)
+            return {"success": True, "typed": params.get("text", "")}
+
+        elif action == "press":
+            pyautogui.press(str(params.get("key", "")))
+            return {"success": True, "key": params.get("key", "")}
+
+        elif action == "click":
+            x, y = params.get("x"), params.get("y")
+            if x is not None and y is not None:
+                pyautogui.click(int(x), int(y))
+                return {"success": True, "clicked": (x, y)}
+            return {"success": False, "error": "x,y required for click"}
+
+        elif action == "screenshot":
+            img = pyautogui.screenshot()
+            from io import BytesIO
+            import base64
+            buf = BytesIO()
+            img.save(buf, format="PNG")
+            b64 = base64.b64encode(buf.getvalue()).decode()
+            return {"success": True, "size": img.size, "png_base64": b64}
+
+        elif action == "find_click":
+            import os as _os
+            img_path = params.get("image")
+            if not img_path or not _os.path.exists(img_path):
+                return {"success": False, "error": "image path required"}
+            loc = pyautogui.locateOnScreen(img_path, confidence=params.get("confidence", 0.8))
+            if not loc:
+                return {"success": False, "found": False}
+            cx, cy = pyautogui.center(loc)
+            pyautogui.click(cx, cy)
+            return {"success": True, "found": True, "clicked": (int(cx), int(cy))}
+
+        return {"success": False, "error": f"Unknown ui action: {action}"}
+
+
+user_actions = UserActions()

@@ -1,0 +1,18 @@
+> Task :app:compileDebugJavaWithJavac FAILED
+D8: Program type already present: org.apache.commons.logging.Log
+Duplicate class org.apache.commons.logging.Log found in modules (commons-logging-1.2.jar) and (log4j-1.2-api-2.17.1.jar)
+Duplicate class org.apache.commons.logging.LogConfigurationException found in modules (commons-logging-1.2.jar) and (log4j-1.2-api-2.17.1.jar)
+Duplicate class org.apache.commons.logging.LogFactory found in modules (commons-logging-1.2.jar) and (log4j-1.2-api-2.17.1.jar)
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileDebugJavaWithJavac'.
+> Compilation error while running D8. See logs.
+
+* Try:
+Run with --stacktrace option for more details.
+
+* What went wrong:
+Execution failed for task ':app:mergeExtDexDebug'.
+> There were multiple dex files. Merging failed.

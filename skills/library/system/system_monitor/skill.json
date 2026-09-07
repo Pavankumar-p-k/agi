@@ -1,0 +1,11 @@
+{
+  "name": "system.system_monitor",
+  "version": "1.0.0",
+  "description": "JARVIS Skill for System Monitor",
+  "author": "JARVIS Core",
+  "entry_point": "main.py",
+  "enabled": true,
+  "tools": [
+    "system_monitor"
+  ]
+}

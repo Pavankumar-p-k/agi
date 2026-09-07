@@ -1,0 +1,12 @@
+{
+  "provider_id": "github",
+  "name": "GitHub Integration",
+  "version": "1.0.0",
+  "description": "Git and GitHub operations: clone, commit, push, pull, PRs, issues, releases",
+  "author": "JARVIS Team",
+  "capabilities": ["github", "git", "version_control", "pull_request", "repository", "ci_cd"],
+  "features": ["clone", "push", "pull", "branch", "pr_create", "pr_merge", "issue_list", "repo_info", "commit", "release"],
+  "adapter": "core/providers/adapters/github_provider.py",
+  "adapter_type": "python",
+  "priority": 10
+}

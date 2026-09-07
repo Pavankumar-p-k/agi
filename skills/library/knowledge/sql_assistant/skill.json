@@ -1,0 +1,11 @@
+{
+  "name": "knowledge.sql_assistant",
+  "version": "1.0.0",
+  "description": "JARVIS Skill for Sql Assistant",
+  "author": "JARVIS Core",
+  "entry_point": "main.py",
+  "enabled": true,
+  "tools": [
+    "sql_assistant"
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "provider_id": "email",
+  "name": "Email Provider",
+  "version": "1.0.0",
+  "description": "Send and compose emails via SMTP/MCP email server",
+  "author": "JARVIS Team",
+  "capabilities": ["email", "send_email", "compose_email", "email_attachments"],
+  "features": ["send", "compose", "attachments", "html_body"],
+  "adapter": "core/providers/adapters/email_provider.py",
+  "adapter_type": "python",
+  "priority": 10
+}

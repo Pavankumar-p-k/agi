@@ -1,0 +1,16 @@
+* What went wrong:
+Plugin with id 'kotlin-kapt' not found.
+Plugin with id 'dagger.hilt.android.plugin' not found.
+
+* Try:
+Run with --stacktrace option to get the stack trace. Run with --info or --debug option to get more log output. Run with --scan to get full insights.
+
+* Exception is:
+org.gradle.api.plugins.UnknownPluginException: Plugin with id 'kotlin-kapt' not found.
+  at org.gradle.plugin.use.internal.DefaultPluginRequestApplicator.resolvePlugin(DefaultPluginRequestApplicator.java:128)
+  ... 45 more
+Caused by: org.gradle.api.plugins.UnknownPluginException: Plugin with id 'dagger.hilt.android.plugin' not found.
+  at org.gradle.plugin.use.internal.DefaultPluginRequestApplicator.resolvePlugin(DefaultPluginRequestApplicator.java:128)
+  ... 45 more
+
+BUILD FAILED in 2s

@@ -1,0 +1,11 @@
+{
+  "name": "productivity.pdf_extractor",
+  "version": "1.0.0",
+  "description": "JARVIS Skill for Pdf Extractor",
+  "author": "JARVIS Core",
+  "entry_point": "main.py",
+  "enabled": true,
+  "tools": [
+    "pdf_extractor"
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "id": "system_monitor_skill",
+  "name": "System Monitor Skill",
+  "version": "1.0.0",
+  "description": "Reports CPU, RAM, GPU, disk usage; triggers alerts on thresholds",
+  "author": "JARVIS",
+  "entry": "skills.library.system.system_monitor.main",
+  "hooks": ["on_intent", "on_decision"],
+  "settings_schema": {
+    "type": "object",
+    "properties": {
+      "cpu_alert_threshold":  { "type": "integer", "description": "CPU % to trigger alert" },
+      "ram_alert_threshold":  { "type": "integer", "description": "RAM % to trigger alert" },
+      "poll_interval_secs":   { "type": "integer", "description": "How often to check stats" }
+    }
+  },
+  "requires": ["psutil>=5.9.0"],
+  "min_jarvis_version": "1.0.0",
+  "enabled": true
+}

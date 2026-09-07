@@ -1,0 +1,11 @@
+{
+  "name": "finance.loan_emi",
+  "version": "1.0.0",
+  "description": "JARVIS Skill for Loan Emi",
+  "author": "JARVIS Core",
+  "entry_point": "main.py",
+  "enabled": true,
+  "tools": [
+    "loan_emi"
+  ]
+}

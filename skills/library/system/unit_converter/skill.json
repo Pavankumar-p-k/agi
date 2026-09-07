@@ -1,0 +1,11 @@
+{
+  "name": "system.unit_converter",
+  "version": "1.0.0",
+  "description": "JARVIS Skill for Unit Converter",
+  "author": "JARVIS Core",
+  "entry_point": "main.py",
+  "enabled": true,
+  "tools": [
+    "unit_converter"
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "name": "finance.gold_price",
+  "version": "1.0.0",
+  "description": "JARVIS Skill for Gold Price",
+  "author": "JARVIS Core",
+  "entry_point": "main.py",
+  "enabled": true,
+  "tools": [
+    "gold_price"
+  ]
+}

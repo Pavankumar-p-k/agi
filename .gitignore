@@ -1,0 +1,99 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+*.egg-info/
+.hypothesis/
+
+# Virtual environments
+venv/
+.venv/
+.venv_prod/
+
+# Environment & secrets
+.env
+.env.local
+.env.*
+!.env.production.example
+firebase-credentials.json
+google-services.json
+*.pem
+*.key
+.app_key
+
+# Android local dev config
+apps/jarvis_app/android/local.properties
+
+# Databases
+*.db
+*.db-journal
+
+# Archives
+*.zip
+*.tar.gz
+
+# Data/cache
+data/
+vector_store.json
+media/
+
+# Build artifacts
+dist/
+build/
+*.spec
+
+# IDE / OS noise
+.idea/
+.vscode/
+*.iml
+Thumbs.db
+Desktop.ini
+
+# Export directory — UI code moved out of main repo
+jarvis-export/
+
+# Runtime state
+*.log
+*.tmp
+.DS_Store
+*.bak
+*.err
+*.out
+
+# Specific generated text files (not a blanket *.txt rule)
+apps/jarvis_app/analysis_output.txt
+analysis_status.txt
+
+# Test artifacts
+htmlcov/
+.coverage
+coverage/
+.pytest_cache/
+
+# Electron desktop app
+electron/node_modules/
+electron/out/
+electron/dist/
+experimental/**/node_modules/
+experimental/**/out/
+experimental/**/dist/
+experimental/**/*.lock
+
+# Package node_modules
+packages/**/node_modules/
+packages/**/package-lock.json
+
+# Archive cleanup artifacts (keep comparison docs, remove generated audit)
+archive/cleanup_20260602/
+archive/legacy_memory/
+archive/legacy_theater/
+
+# Generated reports
+reports/
+
+# Ephemeral runtime data
+memory.json
+
+# Docker
+.dockerignore

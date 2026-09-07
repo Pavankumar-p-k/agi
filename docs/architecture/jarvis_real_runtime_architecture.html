@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>JARVIS Real Runtime Architecture</title>
+  <style>
+    :root {
+      --bg: #f7f8fa;
+      --ink: #111827;
+      --muted: #586174;
+      --line: #cbd5e1;
+      --panel: #ffffff;
+      --blue: #1d4ed8;
+      --green: #047857;
+      --amber: #b45309;
+      --red: #b91c1c;
+      --violet: #6d28d9;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, Segoe UI, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.55;
+    }
+    header {
+      padding: 28px 32px 18px;
+      border-bottom: 1px solid var(--line);
+      background: #fff;
+    }
+    h1 { margin: 0 0 8px; font-size: 28px; letter-spacing: 0; }
+    h2 { margin: 32px 0 12px; font-size: 20px; letter-spacing: 0; }
+    h3 { margin: 20px 0 8px; font-size: 16px; letter-spacing: 0; }
+    p { margin: 8px 0; }
+    code, pre {
+      font-family: Consolas, "SFMono-Regular", Menlo, monospace;
+      font-size: 13px;
+    }
+    pre {
+      overflow: auto;
+      background: #111827;
+      color: #f9fafb;
+      padding: 14px;
+      border-radius: 6px;
+    }
+    main { max-width: 1220px; margin: 0 auto; padding: 18px 28px 52px; }
+    .meta {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .pill {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 4px 10px;
+      background: #fff;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 12px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+    }
+    .card h3 { margin-top: 0; }
+    .warn { border-left: 4px solid var(--amber); }
+    .bad { border-left: 4px solid var(--red); }
+    .ok { border-left: 4px solid var(--green); }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    th, td {
+      text-align: left;
+      vertical-align: top;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      font-size: 14px;
+    }
+    th { background: #eef2f7; }
+    tr:last-child td { border-bottom: 0; }
+    ul { padding-left: 20px; }
+    .diagram {
+      width: 100%;
+      overflow-x: auto;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+    }
+    svg text { font-family: Inter, Segoe UI, Arial, sans-serif; }
+    .small { color: var(--muted); font-size: 13px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>JARVIS Real Runtime Architecture</h1>
+    <div class="meta">
+      <span class="pill">Generated from local code on 2026-08-05</span>
+      <span class="pill">Core app: <code>core.main:app</code></span>
+      <span class="pill">Pipeline stages: 26</span>
+      <span class="pill">Runtime routes imported: 341</span>
+      <span class="pill">Registered tool names: 142</span>
+      <span class="pill">Skill manifests: 50</span>
+    </div>
+  </header>
+
+  <main>
+    <section>
+      <h2>What JARVIS Really Is</h2>
+      <div class="grid">
+        <div class="card ok">
+          <h3>Actual core</h3>
+          <p>JARVIS is a Python FastAPI service plus a transport-agnostic pipeline. The CLI, TUI, web UI, GUI, and voice surfaces are wrappers around the same internal service and pipeline objects.</p>
+        </div>
+        <div class="card ok">
+          <h3>Best no-special-command use</h3>
+          <p>Use direct Python imports: <code>core.pipeline.process_message</code> for assistant requests and <code>core.tools.executor.tool_executor</code> for direct tool execution.</p>
+        </div>
+        <div class="card warn">
+          <h3>Not magic automation</h3>
+          <p>Many features are present as route/tool/provider adapters, but real operation depends on optional services, API keys, local apps, Ollama models, Docker, browser tooling, email/OAuth credentials, and provider health.</p>
+        </div>
+      </div>
+      <p class="small">Implementation update: the headless automation roadmap now lives at <code>docs/architecture/HEADLESS_AUTOMATION_ROADMAP.md</code>. The first API slice adds <code>GET /api/tools</code>, <code>GET /api/tools/{name}/schema</code>, and <code>POST /api/tools/execute</code>, backed by the canonical <code>ToolExecutor</code>.</p>
+    </section>
+
+    <section>
+      <h2>Clean Architecture Diagram</h2>
+      <div class="diagram">
+        <svg width="1160" height="720" viewBox="0 0 1160 720" role="img" aria-label="JARVIS runtime architecture diagram">
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"></path>
+            </marker>
+            <style>
+              .box { fill: #fff; stroke: #94a3b8; stroke-width: 1.5; rx: 8; }
+              .core { fill: #eff6ff; stroke: #1d4ed8; }
+              .exec { fill: #ecfdf5; stroke: #047857; }
+              .store { fill: #fff7ed; stroke: #b45309; }
+              .ext { fill: #f5f3ff; stroke: #6d28d9; }
+              .badbox { fill: #fef2f2; stroke: #b91c1c; }
+              .label { font-size: 14px; fill: #111827; font-weight: 650; }
+              .sub { font-size: 12px; fill: #475569; }
+              .line { stroke: #64748b; stroke-width: 1.4; fill: none; marker-end: url(#arrow); }
+            </style>
+          </defs>
+
+          <rect x="30" y="40" width="220" height="120" class="box"></rect>
+          <text x="48" y="70" class="label">Input transports</text>
+          <text x="48" y="96" class="sub">Direct Python</text>
+          <text x="48" y="116" class="sub">REST: /api/chat, /v1/chat/completions</text>
+          <text x="48" y="136" class="sub">WebSocket: /ws/chat_stream</text>
+
+          <rect x="30" y="195" width="220" height="150" class="box"></rect>
+          <text x="48" y="225" class="label">Optional wrappers</text>
+          <text x="48" y="251" class="sub">jarvis.py CLI gate</text>
+          <text x="48" y="271" class="sub">jarvis_tui.py</text>
+          <text x="48" y="291" class="sub">web/out or static UI</text>
+          <text x="48" y="311" class="sub">voice routes and channels</text>
+
+          <rect x="315" y="70" width="255" height="180" class="core"></rect>
+          <text x="335" y="100" class="label">Canonical pipeline</text>
+          <text x="335" y="126" class="sub">core.pipeline.process_message()</text>
+          <text x="335" y="146" class="sub">Request -> PipelineContext -> Response</text>
+          <text x="335" y="174" class="sub">receive, auth, tenant, resource</text>
+          <text x="335" y="194" class="sub">intent, knowledge, reasoning, planner</text>
+          <text x="335" y="214" class="sub">execution, verification, memory</text>
+          <text x="335" y="234" class="sub">notification, metrics, formatter</text>
+
+          <rect x="645" y="40" width="230" height="155" class="exec"></rect>
+          <text x="665" y="70" class="label">Tool execution</text>
+          <text x="665" y="96" class="sub">ToolExecutor</text>
+          <text x="665" y="116" class="sub">execute_tool_block()</text>
+          <text x="665" y="136" class="sub">RBAC + approval + metrics</text>
+          <text x="665" y="156" class="sub">native, plugin, MCP tools</text>
+
+          <rect x="645" y="235" width="230" height="190" class="exec"></rect>
+          <text x="665" y="265" class="label">Providers and agents</text>
+          <text x="665" y="291" class="sub">ModelRouter: Ollama/cloud</text>
+          <text x="665" y="311" class="sub">Provider registry</text>
+          <text x="665" y="331" class="sub">Forge, browser, research</text>
+          <text x="665" y="351" class="sub">workspace, GitHub, email</text>
+          <text x="665" y="371" class="sub">desktop, deployment, messaging</text>
+          <text x="665" y="391" class="sub">Claude Code, Codex if installed</text>
+
+          <rect x="930" y="45" width="200" height="160" class="ext"></rect>
+          <text x="950" y="75" class="label">External systems</text>
+          <text x="950" y="101" class="sub">Ollama</text>
+          <text x="950" y="121" class="sub">OpenAI, Anthropic, Gemini</text>
+          <text x="950" y="141" class="sub">Groq, OpenRouter</text>
+          <text x="950" y="161" class="sub">Gmail, Calendar, GitHub</text>
+          <text x="950" y="181" class="sub">RAGFlow, MCP servers</text>
+
+          <rect x="930" y="245" width="200" height="145" class="store"></rect>
+          <text x="950" y="275" class="label">State and storage</text>
+          <text x="950" y="301" class="sub">SQLite databases</text>
+          <text x="950" y="321" class="sub">data/* stores</text>
+          <text x="950" y="341" class="sub">vector_store.json</text>
+          <text x="950" y="361" class="sub">~/.jarvis logs/config</text>
+
+          <rect x="315" y="300" width="255" height="170" class="store"></rect>
+          <text x="335" y="330" class="label">Background runtime</text>
+          <text x="335" y="356" class="sub">lifespan startup</text>
+          <text x="335" y="376" class="sub">plugin watchdog, monitoring</text>
+          <text x="335" y="396" class="sub">activity scheduler, cron</text>
+          <text x="335" y="416" class="sub">workflow recovery, heartbeat</text>
+          <text x="335" y="436" class="sub">MCP bridge, channels, skills</text>
+
+          <rect x="315" y="520" width="815" height="145" class="badbox"></rect>
+          <text x="335" y="550" class="label">Observed runtime limits in this checkout</text>
+          <text x="335" y="578" class="sub">automation.routes and chat package WhatsApp router import have been repaired in the first headless API slice</text>
+          <text x="335" y="600" class="sub">Docker is available in the current environment; some encrypted secrets still fail to decrypt</text>
+          <text x="335" y="622" class="sub">Several features are adapters and require configured credentials, local services, installed tools, or provider availability</text>
+          <text x="335" y="644" class="sub">Direct imports and /api/tools are now the preferred non-UI automation paths</text>
+
+          <path d="M250 100 C275 100 285 130 315 130" class="line"></path>
+          <path d="M250 270 C285 270 285 200 315 200" class="line"></path>
+          <path d="M570 150 C600 150 615 115 645 115" class="line"></path>
+          <path d="M570 210 C610 210 610 310 645 310" class="line"></path>
+          <path d="M875 110 C900 110 905 115 930 115" class="line"></path>
+          <path d="M875 330 C900 330 905 320 930 320" class="line"></path>
+          <path d="M442 250 C442 270 442 280 442 300" class="line"></path>
+          <path d="M760 425 C760 480 730 500 730 520" class="line"></path>
+        </svg>
+      </div>
+    </section>
+
+    <section>
+      <h2>How To Use Features Without JARVIS CLI, TUI, GUI, Or Special Commands</h2>
+      <h3>1. Send a normal assistant request directly through the canonical pipeline</h3>
+      <pre><code>import asyncio
+from core.pipeline import process_message
+from core.pipeline.messages import Request
+
+async def main():
+    req = Request(
+        text="Summarize this repo and suggest the next build task",
+        transport="python",
+        user_id="local-user",
+        session_id="scratch-1",
+        metadata={"context": "No UI, direct Python call"},
+    )
+    res = await process_message(req)
+    print(res.text)
+    print(res.metadata)
+
+asyncio.run(main())</code></pre>
+
+      <h3>2. Execute a tool directly</h3>
+      <pre><code>import asyncio
+from core.tools._constants import ToolBlock
+from core.tools.executor import tool_executor
+
+async def main():
+    block = ToolBlock("web_search", "latest Python packaging recommendations")
+    desc, result = await tool_executor.execute(block, session_id="scratch-1", owner="local-user")
+    print(desc)
+    print(result)
+
+asyncio.run(main())</code></pre>
+
+      <h3>3. Discover available tools from code</h3>
+      <pre><code>from core.tools.execution.handlers import get_registered_tools
+
+tools = get_registered_tools()
+print(len(tools))
+for name, kind in sorted(tools.items()):
+    print(name, kind)</code></pre>
+
+      <h3>4. Use the server without Jarvis commands</h3>
+      <pre><code># Start with standard Python/uvicorn, not jarvis.py:
+python -m uvicorn core.main:app --host 127.0.0.1 --port 8000
+
+# Then call standard HTTP endpoints:
+POST http://127.0.0.1:8000/api/chat
+POST http://127.0.0.1:8000/v1/chat/completions
+GET  http://127.0.0.1:8000/api/diagnostics
+GET  http://127.0.0.1:8000/mcp/tools</code></pre>
+      <p class="small">This still uses the FastAPI web service as a transport, but it avoids the Jarvis-specific CLI, TUI, GUI, and web UI wrappers.</p>
+
+      <h3>5. Execute tools through the new headless API</h3>
+      <pre><code>GET  http://127.0.0.1:8000/api/tools
+GET  http://127.0.0.1:8000/api/tools/list_models/schema
+
+POST http://127.0.0.1:8000/api/tools/execute
+Content-Type: application/json
+
+{
+  "tool": "list_models",
+  "args": {},
+  "session_id": "headless-1",
+  "owner": "local-user"
+}</code></pre>
+    </section>
+
+    <section>
+      <h2>Real Capability Map</h2>
+      <table>
+        <thead><tr><th>Area</th><th>Real implementation path</th><th>What it can do when dependencies are configured</th><th>Important limits</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Chat and reasoning</td>
+            <td><code>core.pipeline</code>, <code>core.pipeline.adapters</code>, <code>core.model_providers</code></td>
+            <td>Transport-independent message processing, intent/reasoning/planning stages, OpenAI-compatible endpoint.</td>
+            <td>Model output depends on Ollama or cloud provider health and keys.</td>
+          </tr>
+          <tr>
+            <td>Tool execution</td>
+            <td><code>core.tools.executor</code>, <code>core.tools.execution.handlers</code></td>
+            <td>Runs native tools, plugin tools, MCP tools, file/search/shell/build/browser/email/scheduler/workflow tools with RBAC and approval checks.</td>
+            <td>Some tools are wrappers over missing or optional services; direct shell/browser actions are machine-sensitive.</td>
+          </tr>
+          <tr>
+            <td>Memory and knowledge</td>
+            <td><code>memory/*</code>, <code>core.long_term_memory</code>, <code>core.routes.memory</code>, <code>core.research</code></td>
+            <td>Fact extraction, vector/semantic stores, episodic and long-term memory, research fact storage, consolidation loop.</td>
+            <td>Quality depends on embedding/model config and persistence health.</td>
+          </tr>
+          <tr>
+            <td>Build and coding</td>
+            <td><code>core.tools.build_tools</code>, <code>core.tools.automated_build</code>, <code>brain.repair_modules</code>, build routes</td>
+            <td>Project analysis, build/test execution, repair loops, runtime validation, workflow artifacts.</td>
+            <td>Only as good as project build commands, local toolchains, and permissions.</td>
+          </tr>
+          <tr>
+            <td>Browser and research</td>
+            <td><code>core.tools.browser_*</code>, <code>core.research</code>, <code>tools.search_tool</code></td>
+            <td>Search, fetch, browser navigation/click/fill/screenshot/history/fact extraction/research flows.</td>
+            <td>Browser automation needs browser/provider setup. Network and search providers may need keys.</td>
+          </tr>
+          <tr>
+            <td>Voice and vision</td>
+            <td><code>assistant/*</code>, <code>core.routes.voice</code>, <code>core.routes.agents.vision_router</code>, <code>pc_agent</code></td>
+            <td>STT/TTS endpoints, screen understanding, screenshots, vision task runner, local voice providers.</td>
+            <td>Depends on audio devices, STT/TTS packages, vision model/provider, and OS permissions.</td>
+          </tr>
+          <tr>
+            <td>Integrations</td>
+            <td><code>integrations/*</code>, <code>channels/*</code>, <code>core.routes.integrations</code>, <code>mcp/*</code></td>
+            <td>Gmail, Google Calendar, WhatsApp, Slack, Telegram, Discord, Matrix, IRC, RAGFlow, MCP, plugin management.</td>
+            <td>Several require OAuth/API tokens; encrypted secrets failed to decrypt in this checkout.</td>
+          </tr>
+          <tr>
+            <td>Schedulers and workflows</td>
+            <td><code>core.scheduler</code>, <code>core.workflow</code>, <code>core.cron</code></td>
+            <td>Activity queue, chains, recurring jobs, workflow start/resume/cancel/status, crash recovery and heartbeat.</td>
+            <td>Background loops start only through FastAPI lifespan or explicit initialization.</td>
+          </tr>
+          <tr>
+            <td>Providers and plugins</td>
+            <td><code>core.providers.bootstrap</code>, <code>provider_sdk</code>, <code>core.plugins</code>, <code>skills/library</code></td>
+            <td>Internal providers plus external provider manifests, plugin watchdog, marketplace refresh, 50 skill manifests.</td>
+            <td>External providers load only if installed and configured. Marketplace is best-effort/offline tolerant.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>Pipeline Stages</h2>
+      <p>The runtime pipeline order from <code>core.pipeline.stages.DEFAULT_STAGES</code> is:</p>
+      <p><code>receive -> load_context -> authentication -> tenant_resolution -> authorization -> resource_access -> rate_limit -> intent -> context_retrieval -> knowledge -> reasoning -> planner -> plan_validator -> activity -> capability_selection -> execution -> verification -> epistemic -> reflection -> learning -> policy_optimization -> memory -> notification -> metrics -> explainability -> formatter</code></p>
+    </section>
+
+    <section>
+      <h2>Tool Categories</h2>
+      <div class="grid">
+        <div class="card"><h3>Files and code</h3><p><code>read_file</code>, <code>write_file</code>, <code>edit_file</code>, <code>batch_edit_file</code>, <code>refactor</code>, <code>semantic_search</code>, <code>watch_file</code>, <code>shell</code>, <code>python</code>.</p></div>
+        <div class="card"><h3>Build automation</h3><p><code>automated_build</code>, <code>build_project</code>, <code>repair_project</code>, <code>run_tests</code>, <code>runtime_validate</code>, <code>cancel_build</code>.</p></div>
+        <div class="card"><h3>Browser and research</h3><p><code>web_search</code>, <code>web_fetch</code>, <code>browser_navigate</code>, <code>browser_click</code>, <code>browser_fill</code>, <code>browser_screenshot</code>, <code>browser_research</code>, <code>trigger_research</code>.</p></div>
+        <div class="card"><h3>Memory and sessions</h3><p><code>manage_memory</code>, <code>create_session</code>, <code>list_sessions</code>, <code>manage_session</code>, <code>search_chats</code>, <code>send_to_session</code>.</p></div>
+        <div class="card"><h3>Models</h3><p><code>list_models</code>, <code>download_model</code>, <code>serve_model</code>, <code>serve_preset</code>, <code>adopt_served_model</code>, <code>search_hf_models</code>.</p></div>
+        <div class="card"><h3>External services</h3><p><code>send_email</code>, <code>list_emails</code>, <code>manage_google_calendar</code>, <code>github_status</code>, <code>github_pr_create</code>, <code>manage_mcp</code>.</p></div>
+        <div class="card"><h3>Workflows and scheduler</h3><p><code>workflow_start</code>, <code>workflow_resume</code>, <code>scheduler_submit</code>, <code>scheduler_chain_submit</code>, <code>scheduler_tick</code>.</p></div>
+        <div class="card"><h3>Workspace and media</h3><p><code>workspace_snapshot</code>, <code>workspace_clipboard</code>, <code>workspace_system_stats</code>, <code>generate_image</code>, <code>edit_image</code>, <code>vision_browser</code>.</p></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Runtime Routes That Matter Most</h2>
+      <table>
+        <thead><tr><th>Purpose</th><th>Endpoint or socket</th><th>Backed by</th></tr></thead>
+        <tbody>
+          <tr><td>Chat request</td><td><code>POST /api/chat</code></td><td><code>core.routes.chat.router</code> to <code>rest_adapter</code> to pipeline. The package import was repaired to use the real WhatsApp router module.</td></tr>
+          <tr><td>Headless tools</td><td><code>GET /api/tools</code>, <code>GET /api/tools/{name}/schema</code>, <code>POST /api/tools/execute</code></td><td><code>core.routes.system.tools_api</code> to <code>core.tools.executor.tool_executor</code>.</td></tr>
+          <tr><td>OpenAI-compatible chat</td><td><code>POST /v1/chat/completions</code></td><td>Same pipeline through REST adapter.</td></tr>
+          <tr><td>Agent streaming</td><td><code>POST /api/agent/stream</code>, <code>WS /ws/agent_stream</code></td><td><code>core.agent_loop</code> or pipeline websocket adapter.</td></tr>
+          <tr><td>General chat socket</td><td><code>WS /ws/chat_stream</code></td><td><code>core.pipeline.adapters.ws_adapter</code>. Currently affected by the chat package import issue.</td></tr>
+          <tr><td>MCP bridge</td><td><code>WS /ws/mcp/bridge</code>, <code>GET /mcp/tools</code></td><td>MCP server and bridge from startup lifecycle.</td></tr>
+          <tr><td>Diagnostics</td><td><code>GET /api/diagnostics</code>, <code>/api/diagnostics/models</code>, <code>/api/diagnostics/integrations</code></td><td>Diagnostic routers.</td></tr>
+          <tr><td>Build control</td><td><code>/api/build/*</code></td><td>Build routes, queues, checkpoints, governor history, decisions.</td></tr>
+          <tr><td>Planner</td><td><code>/api/plans/*</code></td><td>Planner, strategy, evidence, confidence, replan routes.</td></tr>
+          <tr><td>Memory and knowledge</td><td><code>/api/memory/*</code>, <code>/api/knowledge/*</code>, <code>/api/research/*</code></td><td>Memory facade, knowledge store, research storage.</td></tr>
+          <tr><td>Voice</td><td><code>POST /stt</code>, <code>POST /tts</code>, <code>WS /voice</code>, <code>WS /tts/stream</code></td><td>Assistant STT/TTS providers and voice pipeline.</td></tr>
+          <tr><td>Vision</td><td><code>/api/vision/*</code>, <code>/api/screen/*</code></td><td>Screen understanding and PC agent/vision tools.</td></tr>
+          <tr><td>Integrations</td><td><code>/api/integrations/*</code>, <code>/api/plugins/*</code>, <code>/rag/*</code></td><td>Integration router, plugin router, RAGFlow tool.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>Observed Real Limits In This Working Copy</h2>
+      <div class="grid">
+        <div class="card bad">
+          <h3>Broken route import</h3>
+          <p>Fixed in the first headless automation slice: <code>core.routes.chat.__init__</code> now imports the actual router from <code>core.routes.chat.whatsapp_routes</code>, and that router imports its chat handler locally from <code>whatsapp_chat_routes</code>.</p>
+        </div>
+        <div class="card bad">
+          <h3>Missing automation router</h3>
+          <p>Fixed in the first headless automation slice: <code>automation.routes</code> now exposes <code>/api/automation/status</code>, <code>/api/automation/whatsapp/send</code>, and <code>/api/automation/instagram/send</code>. The status endpoint does not launch Selenium.</p>
+        </div>
+        <div class="card warn">
+          <h3>Docker sandbox unavailable</h3>
+          <p>Corrected after verification: Docker Desktop is available in the current environment, and <code>core.sandbox.docker_sandbox.docker_sandbox.available</code> reports <code>True</code>. The earlier unavailable message was stale or process-context-specific.</p>
+        </div>
+        <div class="card warn">
+          <h3>Secret decryption failures</h3>
+          <p>Several stored secrets failed to decrypt during app import, including provider and messaging keys. Integrations depending on those credentials will not work until secrets are repaired or reset.</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Where To Read The Source</h2>
+      <table>
+        <thead><tr><th>Concern</th><th>Files</th></tr></thead>
+        <tbody>
+          <tr><td>Main app and route wiring</td><td><code>core/main.py</code>, <code>core/lifespan.py</code></td></tr>
+          <tr><td>Canonical request flow</td><td><code>core/pipeline/pipeline.py</code>, <code>core/pipeline/messages.py</code>, <code>core/pipeline/stages/*</code></td></tr>
+          <tr><td>Tool execution</td><td><code>core/tools/executor.py</code>, <code>core/tools/execution/handlers.py</code>, <code>core/tools/_constants.py</code></td></tr>
+          <tr><td>Model routing</td><td><code>core/model_providers/router.py</code>, <code>core/llm_router.py</code></td></tr>
+          <tr><td>Providers</td><td><code>core/providers/bootstrap.py</code>, <code>core/providers/adapters/*</code>, <code>provider_sdk/*</code></td></tr>
+          <tr><td>Skills and plugins</td><td><code>skills/library/*</code>, <code>core/plugins/*</code>, <code>plugins/*</code></td></tr>
+          <tr><td>Integrations</td><td><code>integrations/*</code>, <code>channels/*</code>, <code>mcp/*</code></td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+</body>
+</html>

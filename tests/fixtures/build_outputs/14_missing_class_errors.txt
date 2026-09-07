@@ -1,0 +1,11 @@
+> Task :app:compileDebugJavaWithJavac FAILED
+/app/src/main/java/com/example/app/service/ApiService.java:8: error: cannot find symbol class Retrofit
+/app/src/main/java/com/example/app/service/ApiService.java:9: error: cannot find symbol class GsonConverterFactory
+/app/src/main/java/com/example/app/data/UserRepository.java:12: error: cannot find symbol class UserDao
+/app/src/main/java/com/example/app/ui/HomeFragment.java:15: error: cannot find symbol class NavController
+/app/src/main/java/com/example/app/ui/HomeFragment.java:16: error: cannot find symbol class NavHostFragment
+
+Note: Some input files use unchecked or unsafe operations.
+Note: Recompile with -Xlint:unchecked for details.
+
+FAILURE: Build failed with an exception.

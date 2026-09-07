@@ -1,0 +1,11 @@
+{
+  "name": "knowledge.code_snippet",
+  "version": "1.0.0",
+  "description": "JARVIS Skill for Code Snippet",
+  "author": "JARVIS Core",
+  "entry_point": "main.py",
+  "enabled": true,
+  "tools": [
+    "code_snippet"
+  ]
+}

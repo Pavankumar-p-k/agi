@@ -1,0 +1,11 @@
+{
+  "name": "knowledge.dictionary",
+  "version": "1.0.0",
+  "description": "JARVIS Skill for Dictionary",
+  "author": "JARVIS Core",
+  "entry_point": "main.py",
+  "enabled": true,
+  "tools": [
+    "dictionary"
+  ]
+}

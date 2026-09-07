@@ -1,0 +1,59 @@
+services:
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    volumes:
+      - qdrant_data:/qdrant/storage
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:6333/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  jarvis:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - path: .env.production
+        required: false
+    environment:
+      JARVIS_ENV: production
+      HOST: 0.0.0.0
+      PORT: 8000
+      OLLAMA_URL: http://ollama:11434
+      CHAT_MODEL: ollama/qwen2.5:3b
+      OLLAMA_MODEL: qwen2.5:3b
+      EMBEDDING_URL: http://ollama:11434/api/embed
+      QDRANT_HOST: qdrant
+      DESKTOP_BRIDGE_URL: ${DESKTOP_BRIDGE_URL:-http://host.docker.internal:8765}
+      DESKTOP_BRIDGE_TOKEN: ${DESKTOP_BRIDGE_TOKEN:-}
+      JARVIS_AUTH_PATH: /app/data/auth.json
+      JARVIS_SESSIONS_PATH: /app/data/sessions.json
+    depends_on:
+      ollama:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+    volumes:
+      - jarvis_data:/app/data
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+
+volumes:
+  jarvis_data:
+  ollama_data:
+  qdrant_data:

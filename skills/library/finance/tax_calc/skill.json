@@ -1,0 +1,11 @@
+{
+  "name": "finance.tax_calc",
+  "version": "1.0.0",
+  "description": "JARVIS Skill for Tax Calc",
+  "author": "JARVIS Core",
+  "entry_point": "main.py",
+  "enabled": true,
+  "tools": [
+    "tax_calc"
+  ]
+}

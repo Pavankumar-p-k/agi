@@ -1,0 +1,11 @@
+{
+  "name": "system.qr_gen",
+  "version": "1.0.0",
+  "description": "JARVIS Skill for Qr Gen",
+  "author": "JARVIS Core",
+  "entry_point": "main.py",
+  "enabled": true,
+  "tools": [
+    "qr_gen"
+  ]
+}

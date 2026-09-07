@@ -1,0 +1,21 @@
+{
+  "id": "spotify_skill",
+  "name": "Spotify Skill",
+  "version": "1.0.0",
+  "description": "Play music, control playback, search tracks via Spotify API",
+  "author": "JARVIS",
+  "entry": "skills.library.entertainment.spotify.main",
+  "hooks": ["on_intent", "on_decision"],
+  "settings_schema": {
+    "type": "object",
+    "required": ["client_id", "client_secret"],
+    "properties": {
+      "client_id":     { "type": "string", "description": "Spotify API client ID" },
+      "client_secret": { "type": "string", "description": "Spotify API client secret" },
+      "volume":        { "type": "integer", "description": "Default volume 0-100" }
+    }
+  },
+  "requires": ["spotipy>=2.23.0"],
+  "min_jarvis_version": "1.0.0",
+  "enabled": true
+}

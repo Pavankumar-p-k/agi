@@ -1,0 +1,138 @@
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# reminders/manager.py
+from __future__ import annotations
+
+import asyncio
+from datetime import datetime
+from typing import Optional, List
+
+from sqlalchemy import select, delete, update
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from core.database import Reminder, User, get_db
+
+
+class ReminderManager:
+    def __init__(self) -> None:
+        self._tts = None
+        self._loop_task = None
+
+    def inject_tts(self, tts_fn) -> None:
+        self._tts = tts_fn
+
+    async def load_and_schedule_all(self) -> None:
+        """Start the background reminder polling loop."""
+        if self._loop_task is None or self._loop_task.done():
+            self._loop_task = asyncio.create_task(self._reminder_loop())
+            print("[Reminders] Background scheduler started ✓")
+
+    async def _reminder_loop(self):
+        """Poll the database for due reminders every 30 seconds."""
+        while True:
+            try:
+                await self._check_due_reminders()
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).warning("Reminders loop error: %s", e, exc_info=True)
+                print("[Reminders] Reminder check failed. Check logs for details.")
+            await asyncio.sleep(30)
+
+    async def _check_due_reminders(self):
+        """Find reminders that are due and notify the user."""
+        async for db in get_db():
+            now = datetime.utcnow()
+            result = await db.execute(
+                select(Reminder).where(
+                    Reminder.remind_at <= now,
+                    Reminder.is_done == False
+                )
+            )
+            due = result.scalars().all()
+
+            for r in due:
+                msg = f"REMINDER: {r.title}"
+                if r.description:
+                    msg += f". {r.description}"
+
+                print(f"[Reminders] Firing: {msg}")
+
+                # Trigger TTS if available
+                if self._tts:
+                    try:
+                        self._tts.speak_async(msg)
+                    except Exception as e:
+                        import logging
+                        logging.getLogger(__name__).warning("Reminders TTS failed: %s", e, exc_info=True)
+                        print("[Reminders] TTS notification failed. Check logs for details.")
+
+                # Mark as done
+                r.is_done = True
+                db.add(r)
+
+            if due:
+                await db.commit()
+
+            break # Exit the generator after one session
+
+
+reminder_manager = ReminderManager()
+
+
+async def get_user_reminders(db: AsyncSession, user: User) -> List[Reminder]:
+    res = await db.execute(
+        select(Reminder).where(Reminder.user_id == user.id).order_by(Reminder.remind_at.asc())
+    )
+    return list(res.scalars().all())
+
+
+async def create_reminder(
+    db: AsyncSession,
+    user: User,
+    title: str,
+    remind_at: datetime,
+    description: Optional[str] = "",
+    repeat: Optional[str] = "none",
+) -> Reminder:
+    r = Reminder(
+        user_id=user.id,
+        title=title,
+        description=description,
+        remind_at=remind_at,
+        repeat=repeat,
+    )
+    db.add(r)
+    await db.commit()
+    await db.refresh(r)
+    return r
+
+
+async def delete_reminder(db: AsyncSession, user: User, reminder_id: int) -> bool:
+    res = await db.execute(
+        delete(Reminder).where(Reminder.user_id == user.id, Reminder.id == reminder_id)
+    )
+    await db.commit()
+    return res.rowcount > 0
+
+
+async def count_pending_reminders(db: AsyncSession, user: User) -> int:
+    now = datetime.utcnow()
+    res = await db.execute(
+        select(Reminder).where(Reminder.user_id == user.id, Reminder.remind_at >= now, Reminder.is_done == False)
+    )
+    return len(res.scalars().all())
+
+
+# Alias for compatibility — callers use `count_reminders`
+count_reminders = count_pending_reminders

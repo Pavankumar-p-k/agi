@@ -1,0 +1,11 @@
+{
+  "name": "productivity.email_summarizer",
+  "version": "1.0.0",
+  "description": "JARVIS Skill for Email Summarizer",
+  "author": "JARVIS Core",
+  "entry_point": "main.py",
+  "enabled": true,
+  "tools": [
+    "email_summarizer"
+  ]
+}

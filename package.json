@@ -1,0 +1,12 @@
+{
+  "name": "jarvis-root",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix jarvis-export/web run dev",
+    "server": "npm --prefix jarvis-export/web run server",
+    "serve": "npm --prefix jarvis-export/web run serve",
+    "web": "npm --prefix jarvis-export/web run server",
+    "backend": "python jarvis.py server --host 127.0.0.1 --port 8000",
+    "start": "npm run backend"
+  }
+}

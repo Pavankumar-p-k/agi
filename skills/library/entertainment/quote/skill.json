@@ -1,0 +1,11 @@
+{
+  "name": "entertainment.quote",
+  "version": "1.0.0",
+  "description": "JARVIS Skill for Quote",
+  "author": "JARVIS Core",
+  "entry_point": "main.py",
+  "enabled": true,
+  "tools": [
+    "quote"
+  ]
+}

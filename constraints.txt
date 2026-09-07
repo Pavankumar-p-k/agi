@@ -1,0 +1,14 @@
+# Production constraints generated from pip-audit
+aiohttp==3.13.4
+requests==2.33.0
+urllib3==2.7.0
+pillow==12.2.0
+pypdf==6.10.2
+gitpython==3.1.50
+litellm==1.83.10
+pyjwt==2.13.0
+lxml==6.1.0
+pytest==9.0.3
+starlette==1.0.1
+setuptools==78.1.1
+# Note: Some packages (chromadb, diskcache, smolagents) require manual review or upstream fixes

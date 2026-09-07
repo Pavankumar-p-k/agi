@@ -1,0 +1,6 @@
+# Production install
+# All dependencies are declared in pyproject.toml.
+# Use: pip install -e .          (editable, reads pyproject.toml)
+# Use: pip install -e ".[dev]"   (with dev tools)
+# Use: pip install -e ".[vision]" (with face recognition)
+# Use: pip install -e ".[firebase]" (with Firebase auth)

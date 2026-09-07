@@ -1,0 +1,12 @@
+{
+  "provider_id": "workspace",
+  "name": "Workspace Awareness",
+  "version": "1.0.0",
+  "description": "Provides desktop context: active window, clipboard, process info, browser awareness, system stats",
+  "author": "JARVIS Team",
+  "capabilities": ["workspace", "desktop_state", "active_window", "clipboard", "process_info", "system_stats", "browser_awareness"],
+  "features": ["active_window_detection", "clipboard_read_write", "process_listing", "system_resource_monitoring", "browser_observation"],
+  "adapter": "core/providers/adapters/workspace_provider.py",
+  "adapter_type": "python",
+  "priority": 10
+}

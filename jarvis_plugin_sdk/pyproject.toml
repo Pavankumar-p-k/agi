@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "jarvis-plugin-sdk"
+version = "0.1.0"
+description = "SDK for building JARVIS plugins"
+requires-python = ">=3.10"
+authors = [
+    {name = "Pavan"},
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/Pavankumar-p-k/agi"

@@ -1,0 +1,15 @@
+> Task :app:processDebugManifest FAILED
+AndroidManifest.xml:28: error: Activity class com.example.app.SettingsActivity has not been declared in AndroidManifest.xml
+AndroidManifest.xml:43: error: Activity class com.example.app.ProfileActivity has not been declared in AndroidManifest.xml
+AndroidManifest.xml:57: error: Activity class com.example.app.NotificationActivity has not been declared in AndroidManifest.xml
+
+See http://developer.android.com/guide/topics/manifest/manifest-intro.html for more information about declaring activities.
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:processDebugManifest'.
+> Manifest file has errors.
+
+* Try:
+Run with --stacktrace option to get the stack trace.

@@ -1,0 +1,95 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "jarvis"
+version = "0.1.0"
+description = "JARVIS — Autonomous AI Assistant"
+requires-python = ">=3.10"
+license = {text = "Apache-2.0"}
+authors = [
+    {name = "JARVIS Project"}
+]
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "pydantic",
+    "cryptography",
+    "aiohttp",
+    "requests",
+    "pillow",
+    "python-multipart",
+    "jinja2",
+    "websockets",
+    "aiofiles",
+    "python-dotenv",
+    "starlette",
+    "bcrypt",
+    "sqlalchemy",
+    "httpx",
+    "docker",
+    "pyotp",
+    "aiosqlite",
+    "psutil",
+    "litellm",
+    "alembic",
+    "firebase-admin",
+    "smolagents",
+    "numpy",
+    "trafilatura",
+    "pynvml",
+]
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["core*"]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio",
+    "pytest-cov",
+    "httpx",
+    "faker",
+    "hypothesis",
+]
+browser = [
+    "playwright",
+]
+voice = [
+    "sounddevice",
+    "soundfile",
+]
+vision = [
+    "pillow",
+    "numpy",
+]
+firebase = [
+    "firebase-admin",
+]
+
+[project.scripts]
+jarvis = "jarvis:main"
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+pythonpath = ["."]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "architecture: marks architecture gate tests",
+    "replay: marks replay validation tests (Sprint 5.5B)",
+    "trace: marks runtime trace validation tests (Sprint 5.5C)",
+    "snapshot: marks snapshot tests (Sprint 5.5D)",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]
+

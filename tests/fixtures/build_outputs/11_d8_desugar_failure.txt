@@ -1,0 +1,15 @@
+> Task :app:compileDebugJavaWithJavac FAILED
+
+D8 Desugar: Error: Could not desugar type `java.util.Optional`.
+D8 Desugar: Error: Could not desugar type `java.time.LocalDate`.
+D8 Desugar: Error: Lambda desugaring failed for method `MainActivity.lambda$onCreate$0`.
+D8: Interface `java.util.function.Consumer` does not have a `$deserializeLambda$` method.
+
+* What went wrong:
+Execution failed for task ':app:compileDebugJavaWithJavac'.
+> Desugaring failed. API level 26 is required but compileSdk 34 targets API 34.
+
+* Try:
+Run with --stacktrace option to get the stack trace. Run with --info or --debug option to get more log output.
+
+BUILD FAILED in 4s

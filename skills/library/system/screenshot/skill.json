@@ -1,0 +1,11 @@
+{
+  "name": "system.screenshot",
+  "version": "1.0.0",
+  "description": "JARVIS Skill for Screenshot",
+  "author": "JARVIS Core",
+  "entry_point": "main.py",
+  "enabled": true,
+  "tools": [
+    "screenshot"
+  ]
+}

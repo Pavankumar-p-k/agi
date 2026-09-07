@@ -1,0 +1,9 @@
+{
+  "name": "jarvis.piirouting",
+  "version": "1.0.0",
+  "description": "Privacy-safe routing override — forces LOCAL tier when PII is detected, even if upstream requests CLOUD",
+  "author": "JARVIS",
+  "entry_point": "pii_routing_plugin.py",
+  "enabled": true,
+  "hooks": ["on_routing_decision", "on_redact", "on_load", "on_unload"]
+}

@@ -1,0 +1,58 @@
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: jarvis-ollama
+    volumes:
+      - ollama_data:/root/.ollama
+    ports:
+      - "11435:11434"
+    restart: unless-stopped
+    networks:
+      - jarvis-net
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: jarvis-qdrant
+    ports:
+      - "6335:6333"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    restart: unless-stopped
+    networks:
+      - jarvis-net
+
+  jarvis:
+    build: .
+    container_name: jarvis-app
+    depends_on:
+      - ollama
+      - qdrant
+    ports:
+      - "8000:8000"
+    volumes:
+      - jarvis_data:/app/data
+      - .env:/app/.env:ro
+    env_file:
+      - .env
+    environment:
+      - OLLAMA_URL=http://ollama:11434
+      - CHAT_MODEL=ollama/qwen2.5:3b
+      - EMBEDDING_URL=http://ollama:11434/api/embed
+      - QDRANT_HOST=qdrant
+      - HOST=0.0.0.0
+      - PORT=8000
+      - DESKTOP_BRIDGE_URL=${DESKTOP_BRIDGE_URL:-http://host.docker.internal:8765}
+      - DESKTOP_BRIDGE_TOKEN=${DESKTOP_BRIDGE_TOKEN:-}
+    restart: unless-stopped
+    networks:
+      - jarvis-net
+
+
+networks:
+  jarvis-net:
+    driver: bridge
+
+volumes:
+  ollama_data:
+  qdrant_data:
+  jarvis_data:
