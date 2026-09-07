@@ -24,7 +24,7 @@ import re
 import os
 from pathlib import Path
 
-ROOT = Path("C:/Users/peter/Desktop/jarvis")
+ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT))
 
 from jarvis_provider import get_provider
@@ -93,6 +93,7 @@ TOOL_DOCS = {
     # APP CONTROL
     "list_running_apps": 'List running GUI apps. Args: none.',
     "use_app": 'Use app. Args: {"action":"focus|close|type|press|click|screenshot","app":"str","x":int,"y":int,"text":"str","key":"str"}',
+    "ask_user": 'Ask the user a short clarifying question when truly needed. Args: {"question":"str","options":["a","b"] or empty}. The user reply comes back as the result.',
 }
 
 
@@ -157,6 +158,15 @@ def install_program(installer_path, silent_args=None):
 def list_running_apps(): return U.list_running_apps()
 def use_app(action, app="", **kw): return U.use_app_ui(action, app=app, **kw)
 
+def ask_user(question, options=None):
+    """Ask the user a quick clarifying question mid-task and get a reply, then continue."""
+    options = options or []
+    opts = ""
+    if options:
+        opts = "  [" + " / ".join(str(o) for o in options) + "]"
+    ans = input(f"\n[JARVIS -> YOU] {question}{opts}\n[YOU -> JARVIS] ")
+    return {"asked": question, "user_answer": ans.strip()}
+
 
 TOOLS = {
     "list_windows": list_windows,
@@ -197,6 +207,7 @@ TOOLS = {
     "install_program": install_program,
     "list_running_apps": list_running_apps,
     "use_app": use_app,
+    "ask_user": ask_user,
 }
 
 # Vision: screenshot + describe (so Jarvis can "see" and understand UI)
@@ -205,10 +216,40 @@ def take_screenshot(path=None):
     return r
 
 
+# ---------- SELF-KNOWLEDGE (auto-detected so the model never guesses paths) ----------
+def _self_knowledge() -> str:
+    import getpass as _getpass
+    username = _getpass.getuser()
+    home = str(Path.home())
+    desktop = str(Path.home() / "Desktop")
+    docs = str(Path.home() / "Documents")
+    try:
+        si = U.system_info()
+        host = si.get("hostname", "unknown")
+        os_ = si.get("os", "unknown")
+        cpus = si.get("cpu_cores", "?")
+        drives = U.storage_info().get("drives", [])
+        free = drives[0].get("free_gb", "?") if drives else "?"
+        total = drives[0].get("total_gb", "?") if drives else "?"
+    except Exception:
+        host = os_ = cpus = free = total = "unknown"
+    return "\n".join([
+        "=== YOUR ENVIRONMENT (facts you MUST use — never invent usernames or paths) ===",
+        f"Current Windows user: '{username}'   Home: '{home}'",
+        f"Desktop folder: '{desktop}'   Documents: '{docs}'",
+        f"Hostname: '{host}'   OS: {os_}   CPU cores: {cpus}",
+        f"Disk C: {free} GB free / {total} GB total",
+        f"Active provider: {PROVIDER.provider_id}:{PROVIDER.model}",
+        "If a task needs a file/folder location, ALWAYS use the real paths above.",
+        "=============================================================================\n",
+    ])
+
+
 SYSTEM_PROMPT = (
     "You are JARVIS, a desktop automation agent that does what a real user does on Windows.\n"
             f"Active model provider: {PROVIDER.provider_id}/{PROVIDER.model}\n\n"
-    "Given a task, choose tools to complete it. Respond ONLY valid JSON, no markdown.\n"
+    + _self_knowledge()
+    + "Given a task, choose tools to complete it. Respond ONLY valid JSON, no markdown.\n"
     "You may call these tools:\n"
     + json.dumps(TOOL_DOCS, indent=2)
     + "\n\nRules:\n"
@@ -216,6 +257,8 @@ SYSTEM_PROMPT = (
     '"then_wait" = seconds to wait after action (default 1.0).\n'
     "Do multiple tools across multiple responses. Start with ONE action. Gather info first if needed.\n"
     "For reading a file's content, use read_file. For checking the screen, use take_screenshot.\n"
+    "If a tool fails, adapt: use a working tool or a real path from your environment, NEVER repeat the same failed action.\n"
+    "Only use ask_user when genuinely ambiguous (e.g. which file/app the user means). Never ask about things you can detect yourself.\n"
     'When done respond: {"tool": "done", "args": {}, "then_wait": 0}\n'
 )
 
@@ -276,6 +319,7 @@ def main():
     history = SYSTEM_PROMPT + f"\n\nUSER TASK: {goal}\n"
 
     max_steps = 20
+    recent_actions: list[str] = []
     for step in range(max_steps):
         print(f"\n--- Step {step+1}: {PROVIDER.provider_id}/{PROVIDER.model} thinking... ---")
         try:
@@ -295,6 +339,20 @@ def main():
         for single in actions:
             if not isinstance(single, dict):
                 continue
+            tool_sig = f"{single.get('tool')}:{json.dumps(single.get('args', {}), sort_keys=True)}"
+            recent_actions.append(tool_sig)
+
+            # --- SELF-CORRECTION: break out of a repetition loop ---
+            if len(recent_actions) >= 4 and len(set(recent_actions[-4:])) == 1:
+                print(f"[SELF-CORRECT] Repeating same action {tool_sig} — redirecting.")
+                history += (
+                    f"\nYou repeated the same action ({single.get('tool')}) many times and it's not completing the task. "
+                    "This action is NOT working. Choose a DIFFERENT tool or DIFFERENT arguments to make real progress, "
+                    "or finish with 'done' if the task is actually complete.\n"
+                )
+                recent_actions.clear()
+                break
+
             print(f"[ACTION] {single.get('tool')}({single.get('args', {})})")
             result, is_done = execute_action(single)
             print(f"[RESULT] {result}")
