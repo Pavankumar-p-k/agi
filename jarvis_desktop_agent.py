@@ -124,6 +124,11 @@ TOOL_DOCS = {
     "radio_state": 'Overall wifi/bluetooth/airplane state. Args: none.',
     "power_state": 'Lock or sleep the PC. Args: {"action":"lock|sleep"}.',
     "cpu_ram_usage": 'Current CPU % and RAM usage. Args: none.',
+
+    # TABS & FOCUS
+    "list_tabs": 'List tabs in ANY tabbed app (Chrome, Edge, Explorer, VS Code, Notepad++, etc.). Args: {"app_name":"chrome|msedge|explorer|Code|notepad++|..."}.' ,
+    "focus_tab": 'Switch to a specific tab in a tabbed app by title. Args: {"app_name":"chrome|msedge|Code|...","tab_title":"partial tab name or URL"}.' ,
+    "reveal_in_explorer": 'Reveal/focus a file or folder in Windows Explorer (selects it). Args: {"path":"C:\\...\\file"}.',
 }
 
 
@@ -145,10 +150,15 @@ def hotkey(key1, key2=None):
 def open_url(url): return dc.open_url(str(url)).success
 def launch_app(app): return dc.launch_app(str(app)).success
 def focus_window(title):
+    """Focus a window by title substring. Uses reliable Win32 foregrounding."""
+    r = U.focus_window_win32(str(title))
+    if r.get("success"):
+        return {"focused": True, "window": r["window"]}
+    # Fallback: pygetwindow
     for w in wc.list_windows():
         if str(title).lower() in w["title"].lower():
-            return wc.focus(w["title"]).success
-    return False
+            return {"focused": wc.focus(w["title"]).success, "window": w["title"]}
+    return {"focused": False, "error": f"No window matches '{title}'", **r}
 def close_window(title):
     for w in wc.list_windows():
         if str(title).lower() in w["title"].lower():
@@ -268,6 +278,11 @@ def radio_state(): return U.radio_state()
 def power_state(action): return U.power_state(action)
 def cpu_ram_usage(): return U.cpu_ram_usage()
 
+# Tabs & focus enhancement (works for ALL tabbed apps, not just browsers)
+def list_tabs(app_name): return U.list_tabs(app_name)
+def focus_tab(app_name, tab_title): return U.focus_tab(app_name, tab_title)
+def reveal_in_explorer(path): return U.reveal_in_explorer(path)
+
 def ask_user(question, options=None):
     """Ask the user a quick clarifying question mid-task and get a reply, then continue."""
     options = options or []
@@ -375,6 +390,9 @@ TOOLS = {
     "radio_state": radio_state,
     "power_state": power_state,
     "cpu_ram_usage": cpu_ram_usage,
+    "list_tabs": list_tabs,
+    "focus_tab": focus_tab,
+    "reveal_in_explorer": reveal_in_explorer,
 }
 
 # ---------- SELF-KNOWLEDGE (auto-detected so the model never guesses paths) ----------
@@ -417,9 +435,16 @@ SYSTEM_PROMPT = (
     'Format: {"tool": "tool_name", "args": {...}, "then_wait": 1.0}\n'
     '"then_wait" = seconds to wait after action (default 1.0).\n'
     "Do multiple tools across multiple responses. Start with ONE action. Gather info first if needed.\n"
-    "For reading a file's content, use read_file. For checking the screen, use take_screenshot.\n"
+    "For reading a file's content, use read_file.\n"
+    "Use ONLY tool names listed above. NEVER invent or guess a tool name.\n"
+    "VISION IS OPTIONAL - only use take_screenshot/describe_screen when you must LOOK at the screen "
+    "(clicking browser buttons, filling forms, verifying a page, finding an element). "
+    "For opening/launching apps, creating/writing/deleting files, opening URLs, and system/network tasks, act DIRECTLY without vision.\n"
+    "AFTER creating, writing, renaming, or moving any file/folder, reveal/focus it with reveal_in_explorer "
+    "UNLESS the user explicitly said not to focus. After opening a file in an app, focus_that app window.\n"
     "If a tool fails, adapt: use a working tool or a real path from your environment, NEVER repeat the same failed action.\n"
     "Only use ask_user when genuinely ambiguous (e.g. which file/app the user means). Never ask about things you can detect yourself.\n"
+    "If you are unsure which tool to use, respond with 'done' rather than guessing.\n"
     'When done respond: {"tool": "done", "args": {}, "then_wait": 0}\n'
 )
 
@@ -432,8 +457,8 @@ def execute_action(action):
     if tool == "take_screenshot":
         r = take_screenshot(args.get("path"))
         return f"Screenshot: {json.dumps(r) if not isinstance(r, str) else r}", False
-    if tool not in TOOLS:
-        return f"Unknown tool: {tool}", False
+    if not isinstance(tool, str) or tool not in TOOLS:
+        return f"Unknown tool: {tool}. Stick to the tools listed above.", False
     fn = TOOLS[tool]
     try:
         result = fn(**args)

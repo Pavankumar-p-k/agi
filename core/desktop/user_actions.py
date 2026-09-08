@@ -820,5 +820,170 @@ class UserActions:
             wifi = "unknown"
         return {"wifi": wifi, "bluetooth": bt, "airplane_mode": "on" if (wifi == "off" and bt.get("bluetooth") == "off") else "off"}
 
+    # ---------- TABS & WINDOW FOCUS (all tabbed apps via UI Automation) ----------
+    @staticmethod
+    def focus_window_win32(title: str) -> dict:
+        """Reliably bring a window to the foreground using Win32 APIs."""
+        import win32gui, win32con, win32api, win32process, time as _t
+        target_lower = str(title).lower()
+        found = []
+
+        def _enum(hwnd, _):
+            if not win32gui.IsWindowVisible(hwnd):
+                return True
+            text = win32gui.GetWindowText(hwnd)
+            if text and target_lower in text.lower():
+                found.append((hwnd, text))
+            return True
+
+        win32gui.EnumWindows(_enum, None)
+        if not found:
+            return {"success": False, "error": f"No visible window matches '{title}'"}
+
+        hwnd, win_title = found[0]
+        try:
+            if win32gui.IsIconic(hwnd):
+                win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
+            # Attach input thread so SetForegroundWindow is allowed, then restore.
+            fg = win32gui.GetForegroundWindow()
+            cur = win32api.GetCurrentThreadId()
+            fg_tid, _ = win32process.GetWindowThreadProcessId(fg)
+            win_tid, _ = win32process.GetWindowThreadProcessId(hwnd)
+            win32process.AttachThreadInput(cur, fg_tid, True)
+            win32process.AttachThreadInput(cur, win_tid, True)
+            win32gui.BringWindowToTop(hwnd)
+            win32gui.SetForegroundWindow(hwnd)
+            win32process.AttachThreadInput(cur, fg_tid, False)
+            win32process.AttachThreadInput(cur, win_tid, False)
+            _t.sleep(0.15)
+            return {"success": True, "window": win_title, "hwnd": hwnd}
+        except Exception as e:
+            # Final fallback: ShowWindow minimized trick
+            try:
+                win32gui.ShowWindow(hwnd, win32con.SW_MINIMIZE)
+                win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
+                _t.sleep(0.15)
+                return {"success": True, "window": win_title, "hwnd": hwnd, "note": str(e)}
+            except Exception as e2:
+                return {"success": False, "error": str(e2)}
+
+    @staticmethod
+    def _app_pids(app_name: str) -> list[int]:
+        """Find pids of an app by process executable name (e.g. chrome -> msedge/chrome)."""
+        import psutil
+        app_lower = str(app_name).lower().replace(".exe", "").strip()
+        names = {app_lower, app_lower + ".exe"}
+        if app_lower in ("chrome", "msedge", "edge", "brave", "opera", "firefox", "vivaldi", "yandex"):
+            for alias in ("chrome", "msedge", "brave", "opera", "firefox", "vivaldi"):
+                names.add(alias)
+                names.add(alias + ".exe")
+        results = []
+        for p in psutil.process_iter(["pid", "name"]):
+            try:
+                n = (p.info.get("name") or "").lower().replace(".exe", "")
+                if n in names:
+                    results.append(p.info["pid"])
+            except Exception:
+                continue
+        return results
+
+    @staticmethod
+    def list_tabs(app_name: str) -> dict:
+        """Enumerate tabs of ANY tabbed app (Chrome, Edge, Explorer, VS Code, Notepad++, etc.)
+        using Windows UI Automation. Returns per-window tab list + total count."""
+        pids = UserActions._app_pids(app_name)
+        if not pids:
+            return {"success": False, "app": app_name, "error": f"No running '{app_name}' process found."}
+
+        windows = []
+        total = 0
+        for pid in pids:
+            ps = (
+                "Add-Type -AssemblyName UIAutomationClient; "
+                "Add-Type -AssemblyName UIAutomationTypes; "
+                f"$pidT = {pid}; "
+                "$root = [System.Windows.Automation.AutomationElement]::RootElement; "
+                "$cond = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ProcessIdProperty, $pidT); "
+                "$wins = $root.FindAll([System.Windows.Automation.TreeScope]::Children, $cond); "
+                "$out = @(); "
+                "foreach ($w in $wins) { "
+                "  $tabs = @(); "
+                "  $tcond = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::TabItem); "
+                "  $items = $w.FindAll([System.Windows.Automation.TreeScope]::Descendants, $tcond); "
+                "  foreach ($i in $items) { $tabs += $i.Current.Name } "
+                "  $out += [PSCustomObject]@{window=$w.Current.Name; pid=$pidT; tabs=$tabs} "
+                "} "
+                "[PSCustomObject]@{pid=$pidT; windows=$out} | ConvertTo-Json -Compress -Depth 6"
+            )
+            import subprocess, json
+            try:
+                res = subprocess.run(
+                    ["powershell", "-NoProfile", "-NonInteractive", "-STA", "-Command", ps],
+                    capture_output=True, text=True, timeout=40,
+                )
+                raw = (res.stdout or "").strip()
+                if raw:
+                    data = json.loads(raw)
+                    for win in data.get("windows", []):
+                        total += len(win.get("tabs", []))
+                    windows.extend(data.get("windows", []))
+            except Exception:
+                continue
+        return {
+            "success": bool(windows),
+            "app": app_name,
+            "total_tabs": total,
+            "windows": windows,
+        }
+
+    @staticmethod
+    def focus_tab(app_name: str, tab_title: str) -> dict:
+        """Switch to a specific tab (by title substring) in ANY tabbed app via UI Automation."""
+        pids = UserActions._app_pids(app_name)
+        if not pids:
+            return {"success": False, "error": f"No running '{app_name}' process found."}
+        needle = str(tab_title).lower()
+        for pid in pids:
+            ps = (
+                "Add-Type -AssemblyName UIAutomationClient; "
+                "Add-Type -AssemblyName UIAutomationTypes; "
+                f"$pidT = {pid}; "
+                "$root = [System.Windows.Automation.AutomationElement]::RootElement; "
+                "$cond = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ProcessIdProperty, $pidT); "
+                "$wins = $root.FindAll([System.Windows.Automation.TreeScope]::Children, $cond); "
+                "foreach ($w in $wins) { "
+                "  $tcond = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::TabItem); "
+                "  $items = $w.FindAll([System.Windows.Automation.TreeScope]::Descendants, $tcond); "
+                "  foreach ($i in $items) { "
+                f"    if ($i.Current.Name.ToLower().Contains('{needle}')) {{ "
+                "      try { $pat = $i.GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern); $pat.Select(); [void]$w.SetFocus() } catch {} "
+                "      Write-Output ('SWITCHED:' + $i.Current.Name); exit "
+                "    } "
+                "  } "
+                "}"
+            )
+            import subprocess
+            try:
+                res = subprocess.run(
+                    ["powershell", "-NoProfile", "-NonInteractive", "-STA", "-Command", ps],
+                    capture_output=True, text=True, timeout=30,
+                )
+                out = (res.stdout or "").strip()
+                if out.startswith("SWITCHED:"):
+                    return {"success": True, "app": app_name, "tab": out[len("SWITCHED:"):]}
+            except Exception:
+                continue
+        return {"success": False, "app": app_name, "error": f"Tab '{tab_title}' not found."}
+
+    @staticmethod
+    def reveal_in_explorer(path: str) -> dict:
+        """Reveal/focus a file or folder in Windows Explorer."""
+        import subprocess
+        try:
+            subprocess.Popen(f'explorer /select,"{path}"')
+            return {"success": True, "path": path, "revealed_in_explorer": True}
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
 
 user_actions = UserActions()
