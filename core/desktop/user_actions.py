@@ -347,9 +347,22 @@ class UserActions:
     # ---------- APP LAUNCH (smart) ----------
     @staticmethod
     def open_with(path: str, app: str | None = None) -> dict:
-        """Open a file. If app given, open in that app (e.g., notepad, excel)."""
+        """Open a file or URL. If app given, open in that app (e.g., notepad, excel, chrome).
+        VERIFIES the path exists first so it never returns success for a nonexistent file."""
+        import subprocess, os as _os
+        path = str(path).strip().strip('"').strip()
+        low = path.lower()
+        is_url = low.startswith(("http://", "https://", "file://", "ftp://"))
+        if not is_url and not _os.path.exists(path):
+            return {
+                "success": False,
+                "error": f"Path does not exist: {path}. Check the path (open_file only opens real files/folders, not made-up names).",
+                "path": path,
+            }
         try:
-            import subprocess
+            if is_url:
+                subprocess.Popen(f'start "" "{path}"', shell=True)
+                return {"success": True, "opened": path, "kind": "url"}
             if app:
                 if app.lower() in ("notepad", "editor", "text", "txt"):
                     subprocess.Popen(["notepad.exe", path], shell=True)
@@ -359,13 +372,13 @@ class UserActions:
                     subprocess.Popen(["chrome", path])
                 else:
                     subprocess.Popen(f'start "" "{app}" "{path}"', shell=True)
-                return {"success": True, "opened": path, "with": app}
+                return {"success": True, "opened": path, "with": app, "path_exists": True}
             else:
                 if sys.platform == "win32":
-                    os.startfile(path)
-                return {"success": True, "opened": path}
+                    _os.startfile(path)
+                return {"success": True, "opened": path, "path_exists": True}
         except Exception as e:
-            return {"error": str(e)}
+            return {"success": False, "error": str(e)}
 
     # ---------- NETWORK ----------
     @staticmethod
@@ -1090,7 +1103,10 @@ class UserActions:
     @staticmethod
     def reveal_in_explorer(path: str) -> dict:
         """Reveal/focus a file or folder in Windows Explorer."""
-        import subprocess
+        import subprocess, os as _os
+        path = str(path).strip().strip('"').strip()
+        if not _os.path.exists(path):
+            return {"success": False, "error": f"Path does not exist: {path}", "path": path}
         try:
             subprocess.Popen(f'explorer /select,"{path}"')
             return {"success": True, "path": path, "revealed_in_explorer": True}
@@ -1100,30 +1116,38 @@ class UserActions:
     # ---------- UIA FORM FIELD DISCOVERY (reliable click into web/app forms) ----------
     @staticmethod
     def list_form_fields(app_name: str) -> dict:
-        """Find editable input fields (Edit controls) inside app windows via UI Automation.
-        Returns fields with their pixel click positions so the agent can type into forms
-        without relying on vision OR fragile Tab order."""
+        """Find interactive form controls (Edit, ComboBox, RadioButton, CheckBox, Button)
+        inside app windows via UI Automation. Returns controls with pixel click positions
+        and their control type, so the agent can type into or click forms semantically
+        instead of relying on vision OR fragile Tab order."""
         pids = UserActions._app_pids(app_name)
         if not pids:
             return {"success": False, "app": app_name, "error": f"No running '{app_name}' process found."}
         ps = (
             "Add-Type -AssemblyName UIAutomationClient; "
             "Add-Type -AssemblyName UIAutomationTypes; "
+            "$out = @(); "
+            "$types = @('Edit','ComboBox','RadioButton','CheckBox','Button'); "
             "foreach ($pidT in @(" + ",".join(str(p) for p in pids) + ")) { "
             "$root = [System.Windows.Automation.AutomationElement]::RootElement; "
             "$cond = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ProcessIdProperty, $pidT); "
             "$wins = $root.FindAll([System.Windows.Automation.TreeScope]::Children, $cond); "
             "foreach ($w in $wins) { "
-            "  $econd = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::Edit); "
-            "  $edits = $w.FindAll([System.Windows.Automation.TreeScope]::Descendants, $econd); "
-            "  foreach ($e in $edits) { "
-            "    $r = $e.Current.BoundingRectangle; "
-            "    if ($r.Width -gt 20 -and $r.Height -gt 8) { "
-            "      [PSCustomObject]@{ window=$w.Current.Name; pid=$pidT; name=$e.Current.Name; automationid=$e.Current.AutomationId; "
-            "        x=[int]$r.X; y=[int]$r.Y; w=[int]$r.Width; h=[int]$r.Height } "
+            "  foreach ($t in $types) { "
+            "    $ct = [System.Windows.Automation.ControlType]::$t; "
+            "    $tc = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, $ct); "
+            "    $items = $w.FindAll([System.Windows.Automation.TreeScope]::Descendants, $tc); "
+            "    foreach ($e in $items) { "
+            "      $r = $e.Current.BoundingRectangle; "
+            "      $n = $e.Current.Name; "
+            "      if ($r.Width -gt 10 -and $r.Height -gt 8 -and $n -and $n -notin @('Minimize','Restore','Close','Back','Forward','Reload','New Tab','Tab search','Extensions','Bookmark this tab','View site information')) { "
+            "        $out += [PSCustomObject]@{ window=$w.Current.Name; pid=$pidT; type=$t; name=$n; automationid=$e.Current.AutomationId; "
+            "          x=[int]$r.X; y=[int]$r.Y; w=[int]$r.Width; h=[int]$r.Height } "
+            "      } "
             "    } "
             "  } "
-            "} } | ConvertTo-Json -Compress -Depth 5"
+            "} } "
+            "if ($out.Count -eq 0) { Write-Output '[]' } else { $out | ConvertTo-Json -Compress -Depth 5 }"
         )
         import subprocess, json
         try:
@@ -1137,29 +1161,26 @@ class UserActions:
             fields = json.loads(raw)
             if not isinstance(fields, list):
                 fields = [fields]
-            # only keep fields of the ACTIVE/visible window (largest edit-bearing window) to avoid cross-tab junk
             return {"success": True, "app": app_name, "fields": fields, "count": len(fields)}
         except Exception as e:
             return {"success": False, "error": str(e), "raw": raw if 'raw' in dir() else str(e)}
 
     @staticmethod
     def click_form_field(app_name: str, index: int = 0, field_label: str | None = None) -> dict:
-        """Click into a form input found via UIA (by index or partial label), then focus it."""
+        """Click/activate a form control found via UIA (Edit to type, RadioButton/CheckBox/
+        Button to activate). Args: {"app_name":str,"index":int,"field_label":"partial label or id"}."""
         import time as _t
         res = UserActions.list_form_fields(app_name)
         fields = res.get("fields", [])
         if not fields:
             return {"success": False, "error": "No input fields found", "detail": res}
-        target = None
+        candidates = fields
         if field_label:
             low = field_label.lower()
-            for f in fields:
-                if low in f.get("name", "").lower() or low in f.get("automationid", "").lower():
-                    target = f
-                    break
-        if target is None:
-            idx = max(0, min(int(index), len(fields) - 1))
-            target = fields[idx]
+            candidates = [f for f in fields if low in f.get("name", "").lower() or low in f.get("automationid", "").lower()]
+            if not candidates:
+                return {"success": False, "error": f"No form control matches label '{field_label}'", "available": [f.get("name") for f in fields]}
+        target = candidates[min(int(index), len(candidates) - 1)] if index else candidates[0]
         cx = int(target["x"] + target["w"] / 2)
         cy = int(target["y"] + target["h"] / 2)
         from core.desktop.controller import desktop_controller as _dc
@@ -1167,7 +1188,7 @@ class UserActions:
         _t.sleep(0.4)
         return {
             "success": True,
-            "field": {"name": target.get("name"), "id": target.get("automationid"), "index": index, "pos": (cx, cy)},
+            "field": {"name": target.get("name"), "id": target.get("automationid"), "type": target.get("type"), "index": index, "pos": (cx, cy)},
         }
 
 

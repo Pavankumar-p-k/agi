@@ -40,11 +40,23 @@ from core.desktop.user_actions import user_actions as U
 PROVIDER = get_provider("chat")
 VISION_PROVIDER = get_provider("vision")
 
+INVOCATION_LOG = ROOT / "logs" / "tool_invocations.jsonl"
+
+def _log_invocation(tool: str, args: dict, status: str):
+    """Append one tool invocation to logs/tool_invocations.jsonl so usage can be audited."""
+    try:
+        evt = {"t": time.time(), "tool": str(tool), "args": {k: str(v)[:200] for k, v in (args or {}).items()}, "status": status}
+        INVOCATION_LOG.parent.mkdir(parents=True, exist_ok=True)
+        with open(INVOCATION_LOG, "a", encoding="utf-8") as f:
+            f.write(json.dumps(evt) + "\n")
+    except Exception:
+        pass
+
 
 # ---------- TOOL DOCS ----------
 TOOL_DOCS = {
     # Core desktop
-    "list_windows": 'Lists all open window titles. Args: none.',
+    "list_windows": 'Lists open window titles. Args: {"filter":"optional substring, e.g. chrome"}. Returns count + names.',
     "get_screen_size": 'Gets screen width and height. Args: none.',
     "get_mouse_position": 'Gets current mouse x,y. Args: none.',
     "move_mouse": 'Moves mouse. Args: {"x":int,"y":int}.',
@@ -61,11 +73,8 @@ TOOL_DOCS = {
     "clipboard_set": 'Writes clipboard. Args: {"text":"str"}.',
 
     # SMART APP CONTROL
-    "count_windows": 'Counts open windows/apps. Args: {"filter":"optional substring, e.g. chrome"}. Returns count + names.',
-    "count_running_apps": 'Counts running GUI apps. Args: none.',
     "focus_or_launch": 'If app is already running, focus it; otherwise launch it. Args: {"app":"notepad|chrome|code", "window_title":"optional partial title"}. Fixes duplicate reopening.',
     "new_window": 'Opens a NEW additional window/instance of an app even if already running. Args: {"app":"notepad|chrome", "cmd_extra":"optional e.g. --new-window"}.',
-    "open_in_app": 'Open a file in a specific app/IDE. Args: {"path":"C:\\...\\file.txt","app":"notepad|code|chrome"}.',
     "app_state": 'Show instances/windows of one app. Args: {"app_name":"chrome|notepad|code"}.',
 
     # FILE SYSTEM
@@ -100,17 +109,20 @@ TOOL_DOCS = {
     "install_program": 'Install/launch installer. Args: {"installer_path":"str"}.',
 
     # APP CONTROL
-    "list_running_apps": 'List running GUI apps. Args: none.',
+    "list_running_apps": 'List running GUI apps. Args: none. Returns count + names.',
     "use_app": 'Use app. Args: {"action":"focus|close|type|press|click|screenshot","app":"str","x":int,"y":int,"text":"str","key":"str"}',
     "ask_user": 'Ask the user a short clarifying question when truly needed. Args: {"question":"str","options":["a","b"] or empty}. The user reply comes back as the result.',
 
-    # VISION
+    # VISION (verification ONLY - descriptions, never click coordinates)
     "take_screenshot": 'Takes a screenshot. Args: {"path":"optional path"}. Returns image info.',
-    "describe_screen": 'Takes a screenshot and asks the VISION MODEL to describe what is on screen (windows, text, buttons). Args: {"prompt":"optional question"}.',
-    "find_on_screen": 'Find a UI element image on the screen. Args: {"image_path":"path to image","confidence":0.8}. Returns x,y.',
-    "click_image": 'Find a UI element image on screen and CLICK it. Args: {"image_path":"path to image","confidence":0.8}. Returns click coords.',
-    "crop_image": 'Crop a region from a screenshot and SAVE as a template image, so it can be found/clicked. Args: {"image_path":"screenshot.png","x":0,"y":0,"w":100,"h":40,"out_path":"template.png"}. Use after take_screenshot to make a button/image template.',
-    "click_element_named": 'Click a UI element by its NAME using the vision model (e.g. "Search" box, "Submit" button, "Continue"). Args: {"target":"button/text name"}. Preferred for form filling and button clicks.',
+    "describe_screen": 'Takes a screenshot and asks the VISION MODEL to describe what is on screen (windows, text, buttons). Args: {"prompt":"optional question"}. Use ONLY to verify/understand the screen, NEVER to get click coordinates.',
+    "find_on_screen": 'Find a UI element image on the screen. Args: {"image_path":"path to image","confidence":0.8}. Returns x,y. Uses template matching (reliable).',
+    "click_image": 'Find a UI element image on screen and CLICK it. Args: {"image_path":"path to image","confidence":0.8}. Returns click coords. Uses template matching (reliable).',
+    "crop_image": 'Crop a region from a screenshot and SAVE as a template image, so it can be found/clicked. Args: {"image_path":"screenshot.png","x":0,"y":0,"w":100,"h":40,"out_path":"template.png"}.',
+
+    # UIA FORM ACCESS (semantic, coordinate-free) - prefer over vision clicks
+    "list_form_fields": 'List editable input fields in an app window via UI Automation (name + pixel position). Args: {"app_name":"chrome|notepad|..."}. Use to find where to type without guessing coordinates.',
+    "click_form_field": 'Click INTO a form input found via UI Automation so typing lands there. Args: {"app_name":"str","index":0,"field_label":"optional partial label"}.',
 
     # SYSTEM CONTROLS (device settings)
     "get_brightness": 'Get current screen brightness 0-100. Args: none.',
@@ -137,7 +149,12 @@ TOOL_DOCS = {
 
 
 # ---------- TOOL IMPLEMENTATIONS ----------
-def list_windows(): return [w["title"] for w in wc.list_windows()]
+def list_windows(filter=None):
+    wins = wc.list_windows()
+    if filter:
+        f = str(filter).lower()
+        wins = [w for w in wins if f in w["title"].lower()]
+    return {"count": len(wins), "windows": [w["title"] for w in wins], "filter": filter}
 def get_screen_size():
     s = dc.get_screen_size()
     return {"width": s.width, "height": s.height}
@@ -171,19 +188,6 @@ def close_window(title):
 def process_running(name): return ProcessMonitor().is_running(str(name))
 
 # ---------- SMART APP CONTROL IMPLEMENTATIONS ----------
-def count_windows(filter=None):
-    wins = wc.list_windows()
-    if filter:
-        f = str(filter).lower()
-        wins = [w for w in wins if f in w["title"].lower()]
-    return {"count": len(wins), "windows": [w["title"] for w in wins], "filter": filter}
-
-def count_running_apps():
-    pm = ProcessMonitor()
-    procs = [p for p in pm.list_processes(limit=200) if p.name]
-    gui_names = set(p.name for p in procs if p.name)
-    return {"count": len(gui_names), "apps": sorted(gui_names)}
-
 def focus_or_launch(app, window_title=None):
     """If app already running, focus its window. Otherwise launch it."""
     try:
@@ -217,10 +221,6 @@ def new_window(app, cmd_extra=None):
         return {"success": True, "app": app, "extra_window_opened": True, "cmd_extra": cmd_extra}
     except Exception as e:
         return {"error": str(e)}
-
-def open_in_app(path, app):
-    """Open a file in a specific app/IDE."""
-    return U.open_with(path, app)
 
 def app_state(app_name):
     """Instances/windows of one app."""
@@ -264,7 +264,11 @@ def uninstall_program(name): return U.uninstall_program(name)
 def install_program(installer_path, silent_args=None):
     return U.install_program(installer_path, silent_args)
 
-def list_running_apps(): return U.list_running_apps()
+def list_running_apps():
+    r = U.list_running_apps()
+    if isinstance(r, dict) and r.get("apps"):
+        r["count"] = len(r["apps"])
+    return r
 def use_app(action, app="", **kw): return U.use_app_ui(action, app=app, **kw)
 
 # System controls (brightness / volume / power / radio) via real Windows APIs
@@ -350,11 +354,13 @@ def crop_image(image_path, x, y, w, h, out_path):
     Args: {"image_path":"screenshot.png","x":0,"y":0,"w":100,"h":40,"out_path":"template.png"}."""
     return U.crop_image(image_path, x, y, w, h, out_path)
 
-def click_element_named(target, region=None):
-    """Vision-model-guided click: screenshot -> vision model estimates where
-    '{target}' is -> crops a template -> template-matches and clicks it.
-    Args: {"target":"Submit button / search box / 'Continue'"}. region optional."""
-    return U.click_vision_element(VISION_PROVIDER, target)
+def list_form_fields(app_name):
+    """Discover editable input fields in an app window via UI Automation (name + pixel position)."""
+    return U.list_form_fields(app_name)
+
+def click_form_field(app_name, index=0, field_label=None):
+    """Click INTO a form input found via UI Automation so typing lands there (no coordinate guessing)."""
+    return U.click_form_field(app_name, index=index, field_label=field_label)
 
 
 TOOLS = {
@@ -397,11 +403,8 @@ TOOLS = {
     "list_running_apps": list_running_apps,
     "use_app": use_app,
     "ask_user": ask_user,
-    "count_windows": count_windows,
-    "count_running_apps": count_running_apps,
     "focus_or_launch": focus_or_launch,
     "new_window": new_window,
-    "open_in_app": open_in_app,
     "app_state": app_state,
     "take_screenshot": take_screenshot,
     "describe_screen": describe_screen,
@@ -426,7 +429,8 @@ TOOLS = {
     "open_file": open_file,
     "browse_to": browse_to,
     "crop_image": crop_image,
-    "click_element_named": click_element_named,
+    "list_form_fields": list_form_fields,
+    "click_form_field": click_form_field,
 }
 
 # ---------- SELF-KNOWLEDGE (auto-detected so the model never guesses paths) ----------
@@ -471,8 +475,10 @@ SYSTEM_PROMPT = (
     "Do multiple tools across multiple responses. Start with ONE action. Gather info first if needed.\n"
     "For reading a file's content, use read_file.\n"
     "Use ONLY tool names listed above. NEVER invent or guess a tool name.\n"
-    "VISION IS OPTIONAL - only use take_screenshot/describe_screen when you must LOOK at the screen "
-    "(clicking browser buttons, filling forms, verifying a page, finding an element). "
+    "VISION IS FOR VERIFICATION ONLY - take_screenshot/describe_screen tell you WHAT is on screen (page state, result of an action). "
+    "NEVER use describe_screen, click_image coordinates from the vision model, or any vision-based click to land a click or type - "
+    "the vision model's coordinates are NOT reliable. Use UIA (list_form_fields, click_form_field) or keyboard (type_text/press_key -> tab -> enter) "
+    "for all interaction. Use find_on_screen/click_image ONLY for template images you already cropped with crop_image.\n"
     "For opening/launching apps, creating/writing/deleting files, opening URLs, and system/network tasks, act DIRECTLY without vision.\n"
     "AFTER creating, writing, renaming, or moving any file/folder, reveal it with reveal_in_explorer "
     "AND open the file with open_file (default app) so the user can see its contents, "
@@ -484,9 +490,9 @@ SYSTEM_PROMPT = (
     "Do NOT use focus_window/focus_or_launch to 'open' a URL — those only focus existing windows. "
     "Use browse_to (not open_url) when you will TYPE or CLICK inside the page — it FOCUSES the right tab so input lands correctly.\n"
     "FORMS: after browse_to/focus on a form page, fill fields with keyboard: type_text into the focused field, "
-    "press 'tab' to move to the next field, and press 'enter' to submit. This is RELIABLE — do NOT rely on the vision model "
-    "to click precise coordinates (its coordinates are not accurate). Use take_screenshot + describe_screen only to CHECK "
-    "the page state or find what to type, not for exact clicks.\n"
+    "press 'tab' to move to the next field, and press 'enter' to submit. This is RELIABLE. "
+    "If keyboard Tab order is unknown, use list_form_fields to discover the fields and click_form_field to focus one, "
+    "then type_text. Do NOT ask the vision model for click coordinates - they are inaccurate.\n"
     'When done respond: {"tool": "done", "args": {}, "then_wait": 0}\n'
 )
 
@@ -500,6 +506,7 @@ def execute_action(action):
         r = take_screenshot(args.get("path"))
         return f"Screenshot: {json.dumps(r) if not isinstance(r, str) else r}", False
     if not isinstance(tool, str) or tool not in TOOLS:
+        _log_invocation(tool, args, "unknown_tool")
         return f"Unknown tool: {tool}. Stick to the tools listed above.", False
     fn = TOOLS[tool]
     try:
@@ -508,9 +515,17 @@ def execute_action(action):
         try:
             result = fn(*list(args.values()))
         except Exception as e:
+            _log_invocation(tool, args, "error")
             return f"Tool '{tool}' error: {e}", False
     except Exception as e:
+        _log_invocation(tool, args, "error")
         return f"Tool '{tool}' error: {e}", False
+    ok = True
+    if isinstance(result, dict):
+        ok = result.get("success", True)
+    elif result is False or result == "False" or isinstance(result, str) and result.lower().startswith(("false", "error")):
+        ok = False
+    _log_invocation(tool, args, "ok" if ok else "failed")
     return f"Tool '{tool}' result: {json.dumps(result, default=str, ensure_ascii=False) if not isinstance(result, (str, bool)) else result}", False
 
 
