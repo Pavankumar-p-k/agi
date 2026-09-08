@@ -129,6 +129,7 @@ TOOL_DOCS = {
     "list_tabs": 'List tabs in ANY tabbed app (Chrome, Edge, Explorer, VS Code, Notepad++, etc.). Args: {"app_name":"chrome|msedge|explorer|Code|notepad++|..."}.' ,
     "focus_tab": 'Switch to a specific tab in a tabbed app by title. Args: {"app_name":"chrome|msedge|Code|...","tab_title":"partial tab name or URL"}.' ,
     "reveal_in_explorer": 'Reveal/focus a file or folder in Windows Explorer (selects it). Args: {"path":"C:\\...\\file"}.',
+    "open_file": 'Open a file in its DEFAULT app, or a specific app. Args: {"path":"C:\\...\\file.txt","app":"optional, e.g. notepad|code|chrome"}.',
 }
 
 
@@ -282,6 +283,7 @@ def cpu_ram_usage(): return U.cpu_ram_usage()
 def list_tabs(app_name): return U.list_tabs(app_name)
 def focus_tab(app_name, tab_title): return U.focus_tab(app_name, tab_title)
 def reveal_in_explorer(path): return U.reveal_in_explorer(path)
+def open_file(path, app=None): return U.open_with(path, app)
 
 def ask_user(question, options=None):
     """Ask the user a quick clarifying question mid-task and get a reply, then continue."""
@@ -393,6 +395,7 @@ TOOLS = {
     "list_tabs": list_tabs,
     "focus_tab": focus_tab,
     "reveal_in_explorer": reveal_in_explorer,
+    "open_file": open_file,
 }
 
 # ---------- SELF-KNOWLEDGE (auto-detected so the model never guesses paths) ----------
@@ -440,8 +443,9 @@ SYSTEM_PROMPT = (
     "VISION IS OPTIONAL - only use take_screenshot/describe_screen when you must LOOK at the screen "
     "(clicking browser buttons, filling forms, verifying a page, finding an element). "
     "For opening/launching apps, creating/writing/deleting files, opening URLs, and system/network tasks, act DIRECTLY without vision.\n"
-    "AFTER creating, writing, renaming, or moving any file/folder, reveal/focus it with reveal_in_explorer "
-    "UNLESS the user explicitly said not to focus. After opening a file in an app, focus_that app window.\n"
+    "AFTER creating, writing, renaming, or moving any file/folder, reveal it with reveal_in_explorer "
+    "AND open the file with open_file (default app) so the user can see its contents, "
+    "UNLESS the user explicitly said not to focus/open. After opening a file in an app, focus that app window.\n"
     "If a tool fails, adapt: use a working tool or a real path from your environment, NEVER repeat the same failed action.\n"
     "Only use ask_user when genuinely ambiguous (e.g. which file/app the user means). Never ask about things you can detect yourself.\n"
     "If you are unsure which tool to use, respond with 'done' rather than guessing.\n"
@@ -479,18 +483,32 @@ def parse_actions(response_text: str):
         response_text = response_text[4:].lstrip()
     try:
         parsed = json.loads(response_text)
-        return parsed if isinstance(parsed, list) else [parsed]
+        parsed = parsed if isinstance(parsed, list) else [parsed]
+        return [a for a in parsed if isinstance(a, dict) and isinstance(a.get("tool"), str) and a["tool"] != "None"]
     except json.JSONDecodeError:
-        objects = re.findall(r'\{[^{}]*\}', response_text)
-        actions = []
-        for obj in objects:
-            try:
-                a = json.loads(obj)
-                if isinstance(a, dict):
-                    actions.append(a)
-            except json.JSONDecodeError:
-                continue
-        return actions
+        pass
+
+    # Brace-balanced scan: extract each top-level {...} object, tolerating nested braces.
+    actions = []
+    depth = 0
+    start = None
+    for i, ch in enumerate(response_text):
+        if ch == "{":
+            if depth == 0:
+                start = i
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0 and start is not None:
+                chunk = response_text[start:i + 1]
+                try:
+                    a = json.loads(chunk)
+                    if isinstance(a, dict) and isinstance(a.get("tool"), str) and a["tool"] != "None":
+                        actions.append(a)
+                except json.JSONDecodeError:
+                    pass
+                start = None
+    return actions
 
 
 def main():
