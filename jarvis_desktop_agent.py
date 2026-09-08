@@ -449,6 +449,9 @@ SYSTEM_PROMPT = (
     "If a tool fails, adapt: use a working tool or a real path from your environment, NEVER repeat the same failed action.\n"
     "Only use ask_user when genuinely ambiguous (e.g. which file/app the user means). Never ask about things you can detect yourself.\n"
     "If you are unsure which tool to use, respond with 'done' rather than guessing.\n"
+    "BROWSER TASKS: to open a website use open_url with the full URL, and use new_window first if a new tab is wanted. "
+    "Do NOT use focus_window/focus_or_launch to 'open' a URL — those only focus existing windows. "
+    "To read/click web pages use take_screenshot + describe_screen (vision) and click/type_text to interact.\n"
     'When done respond: {"tool": "done", "args": {}, "then_wait": 0}\n'
 )
 
@@ -524,6 +527,7 @@ def main():
 
     max_steps = 20
     recent_actions: list[str] = []
+    invalid_tries = 0
     for step in range(max_steps):
         print(f"\n--- Step {step+1}: {PROVIDER.provider_id}/{PROVIDER.model} thinking... ---")
         try:
@@ -535,8 +539,18 @@ def main():
 
         actions = parse_actions(raw)
         if not actions:
+            invalid_tries += 1
             print(f"[RAW] {raw[:300]}")
-            history += "\nInvalid output. Respond with exactly one JSON object.\n"
+            if invalid_tries >= 3:
+                history += (
+                    f"\nYou must make progress on the ORIGINAL TASK: {goal}\n"
+                    "Output exactly ONE JSON action from the tool list to continue. "
+                    "Do NOT output prose, explanations, errors, or markdown. "
+                    "If the remaining task needs no more actions, output {\"tool\":\"done\",\"args\":{}}.\n"
+                )
+                invalid_tries = 0
+            else:
+                history += "\nInvalid output. Output exactly one JSON action object, no prose.\n"
             continue
 
         done = False
@@ -559,8 +573,11 @@ def main():
 
             print(f"[ACTION] {single.get('tool')}({single.get('args', {})})")
             result, is_done = execute_action(single)
-            print(f"[RESULT] {result}")
-            history += f"\nExecuted: {json.dumps(single)}\nResult: {result}\n"
+            clipped = str(result)
+            if len(clipped) > 900:
+                clipped = clipped[:900] + f" ... [truncated, {len(str(result))-900} chars omitted]"
+            print(f"[RESULT] {clipped}")
+            history += f"\nExecuted: {json.dumps(single)}\nResult: {clipped}\n"
             if is_done:
                 done = True
                 break
