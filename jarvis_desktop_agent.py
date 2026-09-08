@@ -109,6 +109,8 @@ TOOL_DOCS = {
     "describe_screen": 'Takes a screenshot and asks the VISION MODEL to describe what is on screen (windows, text, buttons). Args: {"prompt":"optional question"}.',
     "find_on_screen": 'Find a UI element image on the screen. Args: {"image_path":"path to image","confidence":0.8}. Returns x,y.',
     "click_image": 'Find a UI element image on screen and CLICK it. Args: {"image_path":"path to image","confidence":0.8}. Returns click coords.',
+    "crop_image": 'Crop a region from a screenshot and SAVE as a template image, so it can be found/clicked. Args: {"image_path":"screenshot.png","x":0,"y":0,"w":100,"h":40,"out_path":"template.png"}. Use after take_screenshot to make a button/image template.',
+    "click_element_named": 'Click a UI element by its NAME using the vision model (e.g. "Search" box, "Submit" button, "Continue"). Args: {"target":"button/text name"}. Preferred for form filling and button clicks.',
 
     # SYSTEM CONTROLS (device settings)
     "get_brightness": 'Get current screen brightness 0-100. Args: none.',
@@ -130,6 +132,7 @@ TOOL_DOCS = {
     "focus_tab": 'Switch to a specific tab in a tabbed app by title. Args: {"app_name":"chrome|msedge|Code|...","tab_title":"partial tab name or URL"}.' ,
     "reveal_in_explorer": 'Reveal/focus a file or folder in Windows Explorer (selects it). Args: {"path":"C:\\...\\file"}.',
     "open_file": 'Open a file in its DEFAULT app, or a specific app. Args: {"path":"C:\\...\\file.txt","app":"optional, e.g. notepad|code|chrome"}.',
+    "browse_to": 'Open a URL in Chrome and FOCUS that tab so keyboard/vision input lands in the page. Args: {"url":"https://...","new_tab":bool(default true)}. Use this for web pages you will interact with.',
 }
 
 
@@ -285,6 +288,20 @@ def focus_tab(app_name, tab_title): return U.focus_tab(app_name, tab_title)
 def reveal_in_explorer(path): return U.reveal_in_explorer(path)
 def open_file(path, app=None): return U.open_with(path, app)
 
+def browse_to(url, new_tab=True):
+    """Open a URL in a NEW dedicated Chrome window and FOCUS that window so typing
+    and clicks land inside that page (fixes 'input went to wrong window')."""
+    import re as _re, subprocess as _sp
+    _sp.Popen(f'start chrome --new-window "{url}"', shell=True)
+    time.sleep(5)
+    host = _re.sub(r"^https?://(www\.)?", "", str(url)).split("/")[0].split(":")[0] or "chrome"
+    focused = U.focus_tab("chrome", host)
+    if not focused.get("success"):
+        U.focus_tab("chrome", url)
+    # ensure the matching window is actually foreground before typing
+    time.sleep(0.5)
+    return {"success": True, "url": url, "focused_tab": host}
+
 def ask_user(question, options=None):
     """Ask the user a quick clarifying question mid-task and get a reply, then continue."""
     options = options or []
@@ -327,6 +344,17 @@ def find_on_screen(image_path, confidence=0.8):
 def click_image(image_path, confidence=0.8):
     """Find a UI element on screen and physically click it."""
     return U.click_image(image_path, confidence)
+
+def crop_image(image_path, x, y, w, h, out_path):
+    """Crop a region of a screenshot into a template image that find_on_screen/click_image can match.
+    Args: {"image_path":"screenshot.png","x":0,"y":0,"w":100,"h":40,"out_path":"template.png"}."""
+    return U.crop_image(image_path, x, y, w, h, out_path)
+
+def click_element_named(target, region=None):
+    """Vision-model-guided click: screenshot -> vision model estimates where
+    '{target}' is -> crops a template -> template-matches and clicks it.
+    Args: {"target":"Submit button / search box / 'Continue'"}. region optional."""
+    return U.click_vision_element(VISION_PROVIDER, target)
 
 
 TOOLS = {
@@ -396,6 +424,9 @@ TOOLS = {
     "focus_tab": focus_tab,
     "reveal_in_explorer": reveal_in_explorer,
     "open_file": open_file,
+    "browse_to": browse_to,
+    "crop_image": crop_image,
+    "click_element_named": click_element_named,
 }
 
 # ---------- SELF-KNOWLEDGE (auto-detected so the model never guesses paths) ----------
@@ -451,7 +482,11 @@ SYSTEM_PROMPT = (
     "If you are unsure which tool to use, respond with 'done' rather than guessing.\n"
     "BROWSER TASKS: to open a website use open_url with the full URL, and use new_window first if a new tab is wanted. "
     "Do NOT use focus_window/focus_or_launch to 'open' a URL — those only focus existing windows. "
-    "To read/click web pages use take_screenshot + describe_screen (vision) and click/type_text to interact.\n"
+    "Use browse_to (not open_url) when you will TYPE or CLICK inside the page — it FOCUSES the right tab so input lands correctly.\n"
+    "FORMS: after browse_to/focus on a form page, fill fields with keyboard: type_text into the focused field, "
+    "press 'tab' to move to the next field, and press 'enter' to submit. This is RELIABLE — do NOT rely on the vision model "
+    "to click precise coordinates (its coordinates are not accurate). Use take_screenshot + describe_screen only to CHECK "
+    "the page state or find what to type, not for exact clicks.\n"
     'When done respond: {"tool": "done", "args": {}, "then_wait": 0}\n'
 )
 
@@ -528,6 +563,7 @@ def main():
     max_steps = 20
     recent_actions: list[str] = []
     invalid_tries = 0
+    done = False
     for step in range(max_steps):
         print(f"\n--- Step {step+1}: {PROVIDER.provider_id}/{PROVIDER.model} thinking... ---")
         try:

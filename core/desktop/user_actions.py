@@ -236,6 +236,114 @@ class UserActions:
         except Exception as e:
             return {"error": str(e)}
 
+    # ---------- VISION: CROP TEMPLATE FROM SCREENSHOT ----------
+    @staticmethod
+    def crop_image(image_path: str, x: int, y: int, w: int, h: int, out_path: str) -> dict:
+        """Crop a region from an existing screenshot and save it as a standalone template
+        image. THIS is how a UI element (button/icon/text box) becomes a template that
+        find_on_screen and click_image can locate. Covers whole screen: x,y are pixels."""
+        try:
+            from PIL import Image
+            img = Image.open(image_path)
+            box = (int(x), int(y), int(x) + int(w), int(y) + int(h))
+            region = img.crop(box)
+            region.save(out_path)
+            return {
+                "success": True,
+                "template": out_path,
+                "region": {"x": x, "y": y, "w": w, "h": h},
+            }
+        except Exception as e:
+            return {"error": str(e)}
+
+    # ---------- VISION: ELEMENT COORDINATES VIA VISION MODEL ----------
+    @staticmethod
+    def _vision_element_hint(provider, screenshot: str, target: str) -> dict:
+        """Ask the vision model for a rough screen location of an element to guide clicks.
+        Returns a region guess + raw answer; pixel-accurate clicks still use click_image."""
+        import re as _re, json as _json
+        def _ask(prompt) -> dict:
+            raw = provider.vision(screenshot, prompt).strip()
+            m = _re.search(r'\{[^{}]*\}', raw)
+            if m:
+                try:
+                    return _json.loads(m.group(0))
+                except Exception:
+                    return {"error": raw[:200]}
+            return {"error": raw[:200], "raw": True}
+        prompt1 = (
+            f"The screen is 1920 pixels wide and 1080 tall. Locate the '{target}' on screen. "
+            f'Give its approximate x y width height in pixels as JSON: '
+            '{"x":Number,"y":Number,"w":Number,"h":Number}. Reply with only that JSON.'
+        )
+        hint = _ask(prompt1)
+        if "x" in hint:
+            return hint
+        # Retry with simpler phrasing if model refused first time
+        prompt2 = (
+            f"Where is the {target} on this screenshot? The image is 1920x1080. "
+            f'Answer JSON only: {"x":center,"y":center,"w":width,"h":height}.'
+        )
+        hint = _ask(prompt2)
+        return hint
+
+    @staticmethod
+    def click_vision_element(provider, target: str, verify_brightness: bool = False) -> dict:
+        """Find a UI element by NAME using the vision model, then click it.
+        Flow: screenshot -> vision estimate -> crop template -> click_image -> verify.
+        Degenerate or off-screen estimates are rejected so the agent never mis-clicks."""
+        import time as _t, subprocess as _sp, tempfile as _tf, os as _os
+        SW, SH = 1920, 1080
+        try:
+            shot = _tf.mktemp(suffix=".png", prefix="jarvis_scan_")
+            UserActions.take_screenshot(shot)
+            hint = UserActions._vision_element_hint(provider, shot, target)
+            if not hint or "x" not in hint:
+                return {"success": False, "error": f"Vision model did not locate '{target}'", "hint": hint}
+            if not isinstance(hint.get("x"), (int, float)):
+                return {"success": False, "error": "Malformed vision location", "hint": hint}
+
+            x, y = float(hint["x"]), float(hint["y"])
+            w = float(hint.get("w", 60))
+            h = float(hint.get("h", 30))
+            # detect normalized (0..1) coords and scale to real pixels
+            if x <= 1.0 and y <= 1.0:
+                x, y = round(x * SW), round(y * SH)
+            if w <= 1.0 and h <= 1.0:
+                w, h = round(w * SW), round(h * SH)
+            x, y, w, h = int(round(x)), int(round(y)), int(round(w)), int(round(h))
+
+            # SAFETY: reject degenerate/off-screen guesses
+            if w <= 0 or h <= 0 or x < 0 or y < 0 or x > SW or y > SH:
+                return {"success": False, "error": f"Vision rejected unsafe location for '{target}': {(x,y,w,h)}"}
+            if (x, y) == (0, 0) and (w >= SW or h >= SH):
+                return {"success": False, "error": f"Vision returned whole-screen bbox for '{target}'"}
+
+            # expand a bit to catch the whole element
+            pad = 10
+            x0, y0 = max(0, x - w // 2 - pad), max(0, y - h // 2 - pad)
+            w0, h0 = min(SW, w + 2 * pad), min(SH, h + 2 * pad)
+            tpl = _tf.mktemp(suffix=".png", prefix="jarvis_tpl_")
+            crop = UserActions.crop_image(shot, x0, y0, w0, h0, tpl)
+            if not crop.get("success"):
+                return {"success": False, "error": crop.get("error")}
+            res = UserActions.click_image(tpl, confidence=0.75)
+            if not res.get("found"):
+                # Try a wider search: click the estimated center as fallback only if it's
+                # inside the viewport and not a whole-screen estimate.
+                center = UserActions.find_on_screen(tpl, confidence=0.6)
+                if not center.get("found"):
+                    return {"success": False, "error": "Template match failed for target", "target": target, "hint": hint}
+                res = UserActions.click_image(tpl, confidence=0.6)
+            return {
+                "success": bool(res.get("found")),
+                "target": target,
+                "vision_guess": {"x": x, "y": y, "w": w, "h": h},
+                "click": res,
+            }
+        except Exception as e:
+            return {"error": str(e)}
+
     # ---------- APP LAUNCH (smart) ----------
     @staticmethod
     def open_with(path: str, app: str | None = None) -> dict:
@@ -957,7 +1065,7 @@ class UserActions:
                 "  foreach ($i in $items) { "
                 f"    if ($i.Current.Name.ToLower().Contains('{needle}')) {{ "
                 "      try { $pat = $i.GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern); $pat.Select(); [void]$w.SetFocus() } catch {} "
-                "      Write-Output ('SWITCHED:' + $i.Current.Name); exit "
+                "      Write-Output ('SWITCHED:' + $i.Current.Name + '|' + $w.Current.Name); exit "
                 "    } "
                 "  } "
                 "}"
@@ -970,7 +1078,11 @@ class UserActions:
                 )
                 out = (res.stdout or "").strip()
                 if out.startswith("SWITCHED:"):
-                    return {"success": True, "app": app_name, "tab": out[len("SWITCHED:"):]}
+                    _, _, rest = out.partition("SWITCHED:")
+                    tab_name, _, win_title = rest.partition("|")
+                    # bring the owning window to the foreground too
+                    UserActions.focus_window_win32(win_title)
+                    return {"success": True, "app": app_name, "tab": tab_name, "window": win_title}
             except Exception:
                 continue
         return {"success": False, "app": app_name, "error": f"Tab '{tab_title}' not found."}
@@ -984,6 +1096,79 @@ class UserActions:
             return {"success": True, "path": path, "revealed_in_explorer": True}
         except Exception as e:
             return {"success": False, "error": str(e)}
+
+    # ---------- UIA FORM FIELD DISCOVERY (reliable click into web/app forms) ----------
+    @staticmethod
+    def list_form_fields(app_name: str) -> dict:
+        """Find editable input fields (Edit controls) inside app windows via UI Automation.
+        Returns fields with their pixel click positions so the agent can type into forms
+        without relying on vision OR fragile Tab order."""
+        pids = UserActions._app_pids(app_name)
+        if not pids:
+            return {"success": False, "app": app_name, "error": f"No running '{app_name}' process found."}
+        ps = (
+            "Add-Type -AssemblyName UIAutomationClient; "
+            "Add-Type -AssemblyName UIAutomationTypes; "
+            "foreach ($pidT in @(" + ",".join(str(p) for p in pids) + ")) { "
+            "$root = [System.Windows.Automation.AutomationElement]::RootElement; "
+            "$cond = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ProcessIdProperty, $pidT); "
+            "$wins = $root.FindAll([System.Windows.Automation.TreeScope]::Children, $cond); "
+            "foreach ($w in $wins) { "
+            "  $econd = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::Edit); "
+            "  $edits = $w.FindAll([System.Windows.Automation.TreeScope]::Descendants, $econd); "
+            "  foreach ($e in $edits) { "
+            "    $r = $e.Current.BoundingRectangle; "
+            "    if ($r.Width -gt 20 -and $r.Height -gt 8) { "
+            "      [PSCustomObject]@{ window=$w.Current.Name; pid=$pidT; name=$e.Current.Name; automationid=$e.Current.AutomationId; "
+            "        x=[int]$r.X; y=[int]$r.Y; w=[int]$r.Width; h=[int]$r.Height } "
+            "    } "
+            "  } "
+            "} } | ConvertTo-Json -Compress -Depth 5"
+        )
+        import subprocess, json
+        try:
+            res = subprocess.run(
+                ["powershell", "-NoProfile", "-NonInteractive", "-STA", "-Command", ps],
+                capture_output=True, text=True, timeout=40,
+            )
+            raw = (res.stdout or "").strip()
+            if not raw or raw == "null":
+                return {"success": True, "app": app_name, "fields": [], "count": 0}
+            fields = json.loads(raw)
+            if not isinstance(fields, list):
+                fields = [fields]
+            # only keep fields of the ACTIVE/visible window (largest edit-bearing window) to avoid cross-tab junk
+            return {"success": True, "app": app_name, "fields": fields, "count": len(fields)}
+        except Exception as e:
+            return {"success": False, "error": str(e), "raw": raw if 'raw' in dir() else str(e)}
+
+    @staticmethod
+    def click_form_field(app_name: str, index: int = 0, field_label: str | None = None) -> dict:
+        """Click into a form input found via UIA (by index or partial label), then focus it."""
+        import time as _t
+        res = UserActions.list_form_fields(app_name)
+        fields = res.get("fields", [])
+        if not fields:
+            return {"success": False, "error": "No input fields found", "detail": res}
+        target = None
+        if field_label:
+            low = field_label.lower()
+            for f in fields:
+                if low in f.get("name", "").lower() or low in f.get("automationid", "").lower():
+                    target = f
+                    break
+        if target is None:
+            idx = max(0, min(int(index), len(fields) - 1))
+            target = fields[idx]
+        cx = int(target["x"] + target["w"] / 2)
+        cy = int(target["y"] + target["h"] / 2)
+        from core.desktop.controller import desktop_controller as _dc
+        _dc.click(cx, cy)
+        _t.sleep(0.4)
+        return {
+            "success": True,
+            "field": {"name": target.get("name"), "id": target.get("automationid"), "index": index, "pos": (cx, cy)},
+        }
 
 
 user_actions = UserActions()
