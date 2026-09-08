@@ -355,11 +355,15 @@ def crop_image(image_path, x, y, w, h, out_path):
     return U.crop_image(image_path, x, y, w, h, out_path)
 
 def list_form_fields(app_name):
-    """Discover editable input fields in an app window via UI Automation (name + pixel position)."""
+    """Discover interactive form controls (Edit/ComboBox/Radio/CheckBox/Button) in an app
+    window via UI Automation. Self-healing: if live UIA is empty it returns the cached
+    element map (from_cache=true) so typing/clicks still work after UI drift."""
     return U.list_form_fields(app_name)
 
 def click_form_field(app_name, index=0, field_label=None):
-    """Click INTO a form input found via UI Automation so typing lands there (no coordinate guessing)."""
+    """Click INTO a form control via UI Automation (semantic, no coordinate guessing).
+    Self-healing: if the exact automation id is gone, recovers via cached map using
+    name-similarity + relative offset from a live anchor (drift_recovered=true)."""
     return U.click_form_field(app_name, index=index, field_label=field_label)
 
 
@@ -433,6 +437,64 @@ TOOLS = {
     "click_form_field": click_form_field,
 }
 
+# ---------- CONSENT / RISK TIER ----------
+# Every tool carries a risk level. Destructive tools REQUIRE explicit user confirmation
+# before execute_action fires (chained multi-step tasks can otherwise destroy data
+# silently). Levels:
+#   read        - no side effects; safe to run freely
+#   write-safe  - modifies state but reversible/low blast radius; runs if the task implies it
+#   destructive - irreversible or high-impact (delete/overwrite/uninstall/radio-off/lock);
+#                 blocked until the user types yes in the console
+RISK_LEVELS = {
+    # read
+    "list_windows": "read", "get_screen_size": "read", "get_mouse_position": "read",
+    "process_running": "read", "clipboard_get": "read", "list_files": "read",
+    "read_file": "read", "storage_info": "read", "current_time": "read",
+    "system_info": "read", "network_info": "read", "network_speed": "read", "ping": "read",
+    "bluetooth_devices": "read", "bluetooth_radio_state": "read", "installed_programs": "read",
+    "list_running_apps": "read", "app_state": "read", "describe_screen": "read",
+    "take_screenshot": "read", "find_on_screen": "read", "get_brightness": "read",
+    "get_volume": "read", "radio_state": "read", "cpu_ram_usage": "read",
+    "list_tabs": "read", "list_form_fields": "read", "ask_user": "read",
+    "crop_image": "read",
+    # write-safe
+    "move_mouse": "write-safe", "click": "write-safe", "type_text": "write-safe",
+    "press_key": "write-safe", "hotkey": "write-safe", "open_url": "write-safe",
+    "launch_app": "write-safe", "focus_window": "write-safe", "clipboard_set": "write-safe",
+    "focus_or_launch": "write-safe", "new_window": "write-safe", "use_app": "write-safe",
+    "create_file": "write-safe", "create_folder": "write-safe", "open_file": "write-safe",
+    "browse_to": "write-safe", "focus_tab": "write-safe", "reveal_in_explorer": "write-safe",
+    "copy_file": "write-safe", "click_image": "write-safe", "click_form_field": "write-safe",
+    "set_brightness": "write-safe", "set_volume": "write-safe", "mute": "write-safe",
+    "unmute": "write-safe", "bluetooth_connect": "write-safe", "bluetooth_disconnect": "write-safe",
+    # destructive (need confirmation)
+    "delete_path": "destructive", "move_file": "destructive", "rename_file": "destructive",
+    "write_file": "destructive", "uninstall_program": "destructive",
+    "install_program": "destructive", "power_state": "destructive",
+    "bluetooth_radio": "destructive", "wifi_radio": "destructive", "airplane_mode": "destructive",
+    "close_window": "destructive",
+}
+
+def _confirm_destructive(tool: str, args: dict) -> bool:
+    """Ask the human for explicit yes before a destructive action fires."""
+    try:
+        summary = json.dumps(args, ensure_ascii=False)[:300]
+    except Exception:
+        summary = str(args)[:300]
+    print(f"\n  [CONSENT REQUIRED] Tool '{tool}' is DESTRUCTIVE.\n  Args: {summary}")
+    ans = input("  Type 'yes' to allow, anything else to block: ").strip().lower()
+    return ans in ("yes", "y")
+
+def _maybe_confirm(tool: str, args: dict) -> str | None:
+    """Returns None if ok to run, else a user-block message (tool not executed)."""
+    if RISK_LEVELS.get(tool, "write-safe") != "destructive":
+        return None
+    if _confirm_destructive(tool, args):
+        _log_invocation(tool, args, "approved")
+        return None
+    _log_invocation(tool, args, "blocked_by_user")
+    return f"Tool '{tool}' BLOCKED: you (the user) declined confirmation. Do NOT retry it; adapt (e.g. skip the action or ask)."
+
 # ---------- SELF-KNOWLEDGE (auto-detected so the model never guesses paths) ----------
 def _self_knowledge() -> str:
     import getpass as _getpass
@@ -475,6 +537,11 @@ SYSTEM_PROMPT = (
     "Do multiple tools across multiple responses. Start with ONE action. Gather info first if needed.\n"
     "For reading a file's content, use read_file.\n"
     "Use ONLY tool names listed above. NEVER invent or guess a tool name.\n"
+    "DESTRUCTIVE TOOLS (delete_path, write_file, move_file, rename_file, uninstall_program, "
+    "install_program, power_state, bluetooth_radio, wifi_radio, airplane_mode, close_window) "
+    "require the user to type 'yes' in the console. If one gets blocked, the user refused - "
+    "ADAPT, do not retry the same destructive call. Prefer reversible alternatives (e.g. copy_file instead of move, "
+    "create_file instead of overwriting) whenever possible, and ask_user before destroying data.\n"
     "VISION IS FOR VERIFICATION ONLY - take_screenshot/describe_screen tell you WHAT is on screen (page state, result of an action). "
     "NEVER use describe_screen, click_image coordinates from the vision model, or any vision-based click to land a click or type - "
     "the vision model's coordinates are NOT reliable. Use UIA (list_form_fields, click_form_field) or keyboard (type_text/press_key -> tab -> enter) "
@@ -508,6 +575,9 @@ def execute_action(action):
     if not isinstance(tool, str) or tool not in TOOLS:
         _log_invocation(tool, args, "unknown_tool")
         return f"Unknown tool: {tool}. Stick to the tools listed above.", False
+    blocked = _maybe_confirm(tool, args)
+    if blocked:
+        return blocked, False
     fn = TOOLS[tool]
     try:
         result = fn(**args)
@@ -522,7 +592,7 @@ def execute_action(action):
         return f"Tool '{tool}' error: {e}", False
     ok = True
     if isinstance(result, dict):
-        ok = result.get("success", True)
+        ok = result.get("success", not bool(result.get("error")))
     elif result is False or result == "False" or isinstance(result, str) and result.lower().startswith(("false", "error")):
         ok = False
     _log_invocation(tool, args, "ok" if ok else "failed")

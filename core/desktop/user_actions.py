@@ -27,6 +27,51 @@ try:
 except ImportError:
     VISION_AVAILABLE = False
 
+# ---------- SELF-HEALING ELEMENT MAP (drift-tolerant UIA lookup) ----------
+# Cache of per-app/window form-element maps, so when a control's automation id or
+# position drifts between runs, we can still locate it by name + relative offset
+# from a last-known-good anchor, and every such recovery is logged as a drift event.
+import json as _json
+
+CACHE_DIR = Path(__file__).resolve().parents[2] / "data"
+ELEMENT_CACHE_FILE = CACHE_DIR / "element_cache.json"
+DRIFT_LOG_FILE = Path(__file__).resolve().parents[2] / "logs" / "element_drift.jsonl"
+
+
+def _load_element_cache() -> dict:
+    try:
+        if ELEMENT_CACHE_FILE.exists():
+            with open(ELEMENT_CACHE_FILE, "r", encoding="utf-8") as f:
+                data = _json.load(f)
+                return data if isinstance(data, dict) else {}
+    except Exception:
+        pass
+    return {}
+
+
+def _save_element_cache(cache: dict):
+    try:
+        CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        with open(ELEMENT_CACHE_FILE, "w", encoding="utf-8") as f:
+            _json.dump(cache, f, ensure_ascii=False, indent=1)
+    except Exception:
+        pass
+
+
+def _log_drift(event: dict):
+    try:
+        DRIFT_LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
+        with open(DRIFT_LOG_FILE, "a", encoding="utf-8") as f:
+            f.write(_json.dumps(event) + "\n")
+    except Exception:
+        pass
+
+
+def _name_similarity(a: str, b: str) -> float:
+    """0..1 similarity for control names (covers spacing/case/typos)."""
+    import difflib
+    return difflib.SequenceMatcher(None, str(a).lower().strip(), str(b).lower().strip()).ratio()
+
 
 class UserActions:
     """High-level, human-like operations on top of the raw desktop controller."""
@@ -1115,11 +1160,96 @@ class UserActions:
 
     # ---------- UIA FORM FIELD DISCOVERY (reliable click into web/app forms) ----------
     @staticmethod
+    def _cache_key(app_name: str, window: str) -> str:
+        return f"{str(app_name).lower()}|{window}"
+
+    @staticmethod
+    def _update_element_cache(app_name: str, fields: list[dict]) -> dict:
+        """Merge a live UIA field scan into the persistent element map keyed by app+window."""
+        cache = _load_element_cache()
+        by_win: dict[str, list] = {}
+        for f in fields:
+            by_win.setdefault(f.get("window", "?"), []).append(f)
+        for window, flist in by_win.items():
+            key = UserActions._cache_key(app_name, window)
+            entry = {"window": window, "app": app_name, "fields": flist, "updated": time.time()}
+            cache[key] = entry
+        _save_element_cache(cache)
+        return cache
+
+    @staticmethod
+    def _cached_fields_for(app_name: str) -> list[dict]:
+        """All cached fields for an app (any window), for drift-recovery matching."""
+        cache = _load_element_cache()
+        out = []
+        for key, entry in (cache or {}).items():
+            if key.startswith(f"{str(app_name).lower()}|"):
+                out.extend(entry.get("fields", []))
+        return out
+
+    @staticmethod
+    def _drift_recover(app_name: str, label: str, live_fields: list[dict]) -> dict | None:
+        """Try to locate a form control that UIA no longer exposes by exact id/name.
+        Strategy: match cached element by (name similarity + control type), then
+        re-anchor its position using a live field that matches a cached anchor.
+        Every recovery is logged as a drift event."""
+        cache = _load_element_cache()
+        cached = UserActions._cached_fields_for(app_name)
+        if not cached:
+            return None
+        low = str(label).lower()
+        # 1) find best cached candidate by name-similarity or id-substring
+        best = None
+        for f in cached:
+            sim = _name_similarity(f.get("name", ""), low)
+            id_hit = low in f.get("automationid", "").lower() or low in f.get("name", "").lower()
+            if best is None or (id_hit and not best[1]) or (sim > best[1]):
+                best = (f, sim, id_hit)
+        if best is None:
+            return None
+        cand, sim, id_hit = best
+        # 2) find a shared anchor between live scan and cache (same automationid or exact name)
+        anchor_cached = None
+        anchor_live = None
+        for cf in cached:
+            if cf.get("automationid"):
+                for lf in live_fields:
+                    if lf.get("automationid") and lf["automationid"] == cf["automationid"]:
+                        anchor_cached, anchor_live = cf, lf
+                        break
+                if anchor_cached:
+                    break
+        if anchor_cached and anchor_live:
+            dx = cand["x"] - anchor_cached["x"]
+            dy = cand["y"] - anchor_cached["y"]
+            nx = anchor_live["x"] + dx
+            ny = anchor_live["y"] + dy
+            method = "reanchored"
+        else:
+            # fall back to cached absolute position (window may have moved — warn)
+            nx, ny = cand["x"], cand["y"]
+            method = "cached_absolute"
+        _log_drift({
+            "t": time.time(), "app": app_name, "target_label": label,
+            "matched_name": cand.get("name"), "matched_id": cand.get("automationid"),
+            "similarity": round(sim, 2), "id_hit": id_hit, "method": method,
+            "live_fields": [f.get("automationid") for f in live_fields][:10],
+            "new_pos": [int(nx), int(ny)],
+        })
+        return {
+            "name": cand.get("name"), "automationid": cand.get("automationid"),
+            "x": int(nx), "y": int(ny),
+            "w": int(cand.get("w", 10)), "h": int(cand.get("h", 10)),
+            "type": cand.get("type"), "drift_recovered": True, "drift_method": method,
+        }
+
+    @staticmethod
     def list_form_fields(app_name: str) -> dict:
         """Find interactive form controls (Edit, ComboBox, RadioButton, CheckBox, Button)
         inside app windows via UI Automation. Returns controls with pixel click positions
-        and their control type, so the agent can type into or click forms semantically
-        instead of relying on vision OR fragile Tab order."""
+        and their control type. Every successful scan is cached for drift recovery.
+        If live UIA returns nothing but a cached map exists, cached positions are returned
+        with from_cache=True so the agent can still act without re-discovering."""
         pids = UserActions._app_pids(app_name)
         if not pids:
             return {"success": False, "app": app_name, "error": f"No running '{app_name}' process found."}
@@ -1157,29 +1287,56 @@ class UserActions:
             )
             raw = (res.stdout or "").strip()
             if not raw or raw == "null":
-                return {"success": True, "app": app_name, "fields": [], "count": 0}
-            fields = json.loads(raw)
-            if not isinstance(fields, list):
-                fields = [fields]
-            return {"success": True, "app": app_name, "fields": fields, "count": len(fields)}
+                fields = []
+            else:
+                fields = json.loads(raw)
+                if not isinstance(fields, list):
+                    fields = [fields]
+            window = fields[0].get("window", "?") if fields else "?"
+            UserActions._update_element_cache(app_name, fields)
+            if not fields:
+                cached = UserActions._cached_fields_for(app_name)
+                if cached:
+                    _log_drift({"t": time.time(), "app": app_name, "uia_blind": True,
+                                "fell_back_to_cache": len(cached), "live_fields": 0})
+                    return {"success": True, "app": app_name, "fields": cached, "count": len(cached),
+                            "from_cache": True, "warning": "Live UIA empty; used cached element map (drift-recovered)."}
+            return {"success": True, "app": app_name, "fields": fields, "count": len(fields), "window": window}
         except Exception as e:
             return {"success": False, "error": str(e), "raw": raw if 'raw' in dir() else str(e)}
 
     @staticmethod
     def click_form_field(app_name: str, index: int = 0, field_label: str | None = None) -> dict:
-        """Click/activate a form control found via UIA (Edit to type, RadioButton/CheckBox/
-        Button to activate). Args: {"app_name":str,"index":int,"field_label":"partial label or id"}."""
+        """Click/activate a form control found via UIA. If the exact automation id is gone
+        (layout/app update), recover via cached map: name-similarity + control type +
+        relative offset from a live anchor. Args: {"app_name":str,"index":int,"field_label":str}."""
         import time as _t
         res = UserActions.list_form_fields(app_name)
         fields = res.get("fields", [])
+        drift_recovered = False
         if not fields:
             return {"success": False, "error": "No input fields found", "detail": res}
         candidates = fields
         if field_label:
             low = field_label.lower()
-            candidates = [f for f in fields if low in f.get("name", "").lower() or low in f.get("automationid", "").lower()]
-            if not candidates:
-                return {"success": False, "error": f"No form control matches label '{field_label}'", "available": [f.get("name") for f in fields]}
+            exact = [f for f in fields if low in f.get("name", "").lower() or low in f.get("automationid", "").lower()]
+            if not exact:
+                # live match failed -> attempt drift recovery against the cache
+                rec = None
+                for f in fields:
+                    if f.get("window"):
+                        rec = UserActions._drift_recover(app_name, str(field_label), fields)
+                        if rec:
+                            break
+                if rec is None:
+                    rec = UserActions._drift_recover(app_name, str(field_label), fields)
+                if rec:
+                    candidates = [rec]
+                    drift_recovered = True
+                else:
+                    return {"success": False, "error": f"No form control matches label '{field_label}'", "available": [f.get("name") for f in fields]}
+            else:
+                candidates = exact
         target = candidates[min(int(index), len(candidates) - 1)] if index else candidates[0]
         cx = int(target["x"] + target["w"] / 2)
         cy = int(target["y"] + target["h"] / 2)
@@ -1189,6 +1346,7 @@ class UserActions:
         return {
             "success": True,
             "field": {"name": target.get("name"), "id": target.get("automationid"), "type": target.get("type"), "index": index, "pos": (cx, cy)},
+            "drift_recovered": drift_recovered,
         }
 
 
