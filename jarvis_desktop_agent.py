@@ -34,6 +34,7 @@ from core.desktop.window import window_controller as wc
 from core.workspace.process_monitor import ProcessMonitor
 from core.workspace.clipboard_manager import ClipboardManager
 from core.desktop.user_actions import user_actions as U
+from core.desktop.task_graph import TaskGraph, TaskGraphError
 
 # ---------- ACTIVE PROVIDER ----------
 # Use the unified top-level provider (jarvis_provider). Role-chosen via CHAT_MODEL in .env.
@@ -51,6 +52,66 @@ def _log_invocation(tool: str, args: dict, status: str):
             f.write(json.dumps(evt) + "\n")
     except Exception:
         pass
+
+
+# ---------- TOOL HEALTH FEEDBACK LOOP ----------
+HEALTH_WINDOW = 200  # latest N invocations used for the summary
+TOOL_HEALTH_FILE = ROOT / "data" / "tool_health.json"
+
+def _aggregate_health(lines: list[str]) -> dict[str, dict[str, int]]:
+    stats: dict[str, dict[str, int]] = {}
+    for ln in lines:
+        try:
+            e = json.loads(ln)
+        except Exception:
+            continue
+        t = e.get("tool", "?")
+        s = e.get("status", "?")
+        d = stats.setdefault(t, {})
+        d[s] = d.get(s, 0) + 1
+    return stats
+
+def _health_block(stats: dict[str, dict[str, int]], label: str) -> str:
+    if not stats:
+        return "[TOOL HEALTH] no invocation data yet."
+    total = sum(sum(v.values()) for v in stats.values())
+    worst = sorted(
+        stats.items(),
+        key=lambda kv: -(kv[1].get("failed", 0) + kv[1].get("error", 0) + kv[1].get("blocked_by_user", 0)) * 1000 - kv[1].get("ok", 0),
+    )[:5]
+    parts = []
+    for tool, ds in worst:
+        parts.append(f"{tool}(ok={ds.get('ok', 0)},fail={ds.get('failed', 0)},err={ds.get('error', 0)},blocked={ds.get('blocked_by_user', 0)})")
+    return f"[TOOL HEALTH ({label}, {total} invocations, worst first)] {' | '.join(parts)} | Tools with high fail/error/blocked rates are UNRELIABLE - avoid them or use an alternative."
+
+def _tool_health(refresh: bool = True) -> str:
+    """Aggregate recent invocation-log statuses per tool and return a compact health block.
+    Persists the summary so later runs can inject it even without new invocations."""
+    try:
+        lines = []
+        if INVOCATION_LOG.exists():
+            lines = INVOCATION_LOG.read_text(encoding="utf-8").splitlines()[-HEALTH_WINDOW:]
+        stats = _aggregate_health(lines)
+        if refresh:
+            try:
+                TOOL_HEALTH_FILE.parent.mkdir(parents=True, exist_ok=True)
+                TOOL_HEALTH_FILE.write_text(json.dumps(stats, indent=1), encoding="utf-8")
+            except Exception:
+                pass
+        return _health_block(stats, "live")
+    except Exception:
+        return "[TOOL HEALTH] health aggregation unavailable."
+
+def _load_tool_health_for_prompt() -> str:
+    """Return persisted health block for prompt injection (works even after a restart)."""
+    try:
+        if TOOL_HEALTH_FILE.exists():
+            stats = json.loads(TOOL_HEALTH_FILE.read_text(encoding="utf-8"))
+            if stats:
+                return _health_block(stats, "persisted")
+    except Exception:
+        pass
+    return ""
 
 
 # ---------- TOOL DOCS ----------
@@ -123,6 +184,7 @@ TOOL_DOCS = {
     # UIA FORM ACCESS (semantic, coordinate-free) - prefer over vision clicks
     "list_form_fields": 'List editable input fields in an app window via UI Automation (name + pixel position). Args: {"app_name":"chrome|notepad|..."}. Use to find where to type without guessing coordinates.',
     "click_form_field": 'Click INTO a form input found via UI Automation so typing lands there. Args: {"app_name":"str","index":0,"field_label":"optional partial label"}.',
+    "run_graph": 'Execute a dependency-aware multi-step action graph deterministically. Args: {"graph": <dict or JSON string of {"id","goal","steps":[{id,desc,tool,args,depends_on,wait,rollback?,rollback_capture?,verify?}]}>}. Each step runs through the same consent gate + self-healing layer as normal tools; destructive tools inside the graph STILL require user confirmation. On any failure or consent-block, completed steps roll back in reverse order. Use for multi-step tasks that must not leave partial state (e.g. create->modify->cleanup).',
 
     # SYSTEM CONTROLS (device settings)
     "get_brightness": 'Get current screen brightness 0-100. Args: none.',
@@ -366,6 +428,23 @@ def click_form_field(app_name, index=0, field_label=None):
     name-similarity + relative offset from a live anchor (drift_recovered=true)."""
     return U.click_form_field(app_name, index=index, field_label=field_label)
 
+def run_graph(graph):
+    """Execute a dependency-aware multi-step action graph (list of {"id","tool","args",
+    "depends_on","rollback"...} steps) deterministically. Each step runs through the SAME
+    consent gate + self-healing layer as normal tools. On any failure/consent-block, earlier
+    steps roll back in reverse order (declared 'rollback' action or captured pre-state).
+    Accepts a graph dict or a JSON string. Returns a full plan report."""
+    if isinstance(graph, str):
+        try:
+            graph = json.loads(graph)
+        except Exception as e:
+            return {"success": False, "error": f"graph must be valid JSON or a dict: {e}"}
+    try:
+        plan = TaskGraph(graph)
+        return plan.run(execute_action)
+    except TaskGraphError as e:
+        return {"success": False, "error": str(e)}
+
 
 TOOLS = {
     "list_windows": list_windows,
@@ -435,6 +514,7 @@ TOOLS = {
     "crop_image": crop_image,
     "list_form_fields": list_form_fields,
     "click_form_field": click_form_field,
+    "run_graph": run_graph,
 }
 
 # ---------- CONSENT / RISK TIER ----------
@@ -458,6 +538,7 @@ RISK_LEVELS = {
     "list_tabs": "read", "list_form_fields": "read", "ask_user": "read",
     "crop_image": "read",
     # write-safe
+    "run_graph": "write-safe",
     "move_mouse": "write-safe", "click": "write-safe", "type_text": "write-safe",
     "press_key": "write-safe", "hotkey": "write-safe", "open_url": "write-safe",
     "launch_app": "write-safe", "focus_window": "write-safe", "clipboard_set": "write-safe",
@@ -476,14 +557,20 @@ RISK_LEVELS = {
 }
 
 def _confirm_destructive(tool: str, args: dict) -> bool:
-    """Ask the human for explicit yes before a destructive action fires."""
+    """Ask the human for explicit yes before a destructive action fires.
+    No interactive stdin (EOF/automation context) = DENY: destructive actions never run
+    without a live typed 'yes'."""
     try:
         summary = json.dumps(args, ensure_ascii=False)[:300]
     except Exception:
         summary = str(args)[:300]
     print(f"\n  [CONSENT REQUIRED] Tool '{tool}' is DESTRUCTIVE.\n  Args: {summary}")
-    ans = input("  Type 'yes' to allow, anything else to block: ").strip().lower()
-    return ans in ("yes", "y")
+    try:
+        ans = input("  Type 'yes' to allow, anything else to block: ").strip().lower()
+        return ans in ("yes", "y")
+    except EOFError:
+        print("  [CONSENT] no interactive stdin -> treating as DENIED.")
+        return False
 
 def _maybe_confirm(tool: str, args: dict) -> str | None:
     """Returns None if ok to run, else a user-block message (tool not executed)."""
@@ -642,8 +729,10 @@ def main():
     goal = " ".join(sys.argv[1:])
     print(f"\n[GOAL] {goal}")
     print(f"[PROVIDER] {PROVIDER.provider_id}/{PROVIDER.model}")
+    print(_tool_health() + "\n")
 
-    history = SYSTEM_PROMPT + f"\n\nUSER TASK: {goal}\n"
+    health_hint = _load_tool_health_for_prompt()
+    history = SYSTEM_PROMPT + (f"\n\n{health_hint}\n" if health_hint else "") + f"\n\nUSER TASK: {goal}\n"
 
     max_steps = 20
     recent_actions: list[str] = []
@@ -711,6 +800,7 @@ def main():
     print("\n" + "=" * 50)
     print(" TASK COMPLETED" if done else " Stopped at max steps")
     print("=" * 50)
+    print(_tool_health() + "\n")
 
 
 if __name__ == "__main__":

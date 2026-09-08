@@ -36,6 +36,10 @@ import json as _json
 CACHE_DIR = Path(__file__).resolve().parents[2] / "data"
 ELEMENT_CACHE_FILE = CACHE_DIR / "element_cache.json"
 DRIFT_LOG_FILE = Path(__file__).resolve().parents[2] / "logs" / "element_drift.jsonl"
+# Below this confidence score a drift-recovered click is refused (stale or anchor-less),
+# because clicking from a wrong guess is worse than returning a corrective error.
+MIN_RECOVERY_CONFIDENCE = 0.6
+HOURS = 3600.0
 
 
 def _load_element_cache() -> dict:
@@ -1202,7 +1206,7 @@ class UserActions:
         best = None
         for f in cached:
             sim = _name_similarity(f.get("name", ""), low)
-            id_hit = low in f.get("automationid", "").lower() or low in f.get("name", "").lower()
+            id_hit = low in (f.get("automationid") or "").lower() or low in (f.get("name") or "").lower()
             if best is None or (id_hit and not best[1]) or (sim > best[1]):
                 best = (f, sim, id_hit)
         if best is None:
@@ -1226,22 +1230,55 @@ class UserActions:
             ny = anchor_live["y"] + dy
             method = "reanchored"
         else:
-            # fall back to cached absolute position (window may have moved — warn)
+            # fall back to cached absolute position (window may have moved — low confidence)
             nx, ny = cand["x"], cand["y"]
             method = "cached_absolute"
+        anchor_found = anchor_cached is not None and anchor_live is not None
+        if anchor_found:
+            # a live anchor matched by automation id proves the layout is current:
+            # relative offsets are trustworthy regardless of cache age.
+            confidence = 0.95
+        else:
+            # anchor-less fallback degrades quickly, and worse with cache age
+            confidence = 0.55
+            age_hours = UserActions._cache_age_hours(app_name)
+            if age_hours is not None and age_hours > 1.0:
+                confidence *= max(0.35, 1.0 - (age_hours - 1.0) / 24.0)
+        confidence = round(confidence, 2)
+        age_hours = UserActions._cache_age_hours(app_name)
         _log_drift({
             "t": time.time(), "app": app_name, "target_label": label,
             "matched_name": cand.get("name"), "matched_id": cand.get("automationid"),
             "similarity": round(sim, 2), "id_hit": id_hit, "method": method,
+            "cache_age_hours": None if age_hours is None else round(age_hours, 2),
+            "confidence": confidence,
             "live_fields": [f.get("automationid") for f in live_fields][:10],
             "new_pos": [int(nx), int(ny)],
         })
-        return {
+        rec = {
             "name": cand.get("name"), "automationid": cand.get("automationid"),
             "x": int(nx), "y": int(ny),
             "w": int(cand.get("w", 10)), "h": int(cand.get("h", 10)),
             "type": cand.get("type"), "drift_recovered": True, "drift_method": method,
+            "confidence": confidence,
         }
+        if confidence < MIN_RECOVERY_CONFIDENCE:
+            rec["low_confidence"] = True
+        return rec
+
+    @staticmethod
+    def _cache_age_hours(app_name: str) -> float | None:
+        """Age of the newest cached element map for an app (None if untracked/absent)."""
+        cache = _load_element_cache()
+        newest = None
+        for key, entry in (cache or {}).items():
+            if key.startswith(f"{str(app_name).lower()}|"):
+                u = entry.get("updated")
+                if u and (newest is None or u > newest):
+                    newest = u
+        if newest is None:
+            return None
+        return max(0.0, (time.time() - newest) / HOURS)
 
     @staticmethod
     def list_form_fields(app_name: str) -> dict:
@@ -1297,10 +1334,14 @@ class UserActions:
             if not fields:
                 cached = UserActions._cached_fields_for(app_name)
                 if cached:
+                    age_hours = UserActions._cache_age_hours(app_name)
+                    stale = age_hours is not None and age_hours > 24.0
                     _log_drift({"t": time.time(), "app": app_name, "uia_blind": True,
-                                "fell_back_to_cache": len(cached), "live_fields": 0})
+                                "fell_back_to_cache": len(cached), "live_fields": 0,
+                                "cache_age_hours": None if age_hours is None else round(age_hours, 1)})
                     return {"success": True, "app": app_name, "fields": cached, "count": len(cached),
-                            "from_cache": True, "warning": "Live UIA empty; used cached element map (drift-recovered)."}
+                            "from_cache": True, "cache_age_hours": age_hours, "stale": stale,
+                            "warning": "Live UIA empty; used cached element map (drift-recovered). Stale cache -> verify visually before clicking." if stale else "Live UIA empty; used cached element map (drift-recovered)."}
             return {"success": True, "app": app_name, "fields": fields, "count": len(fields), "window": window}
         except Exception as e:
             return {"success": False, "error": str(e), "raw": raw if 'raw' in dir() else str(e)}
@@ -1316,6 +1357,18 @@ class UserActions:
         drift_recovered = False
         if not fields:
             return {"success": False, "error": "No input fields found", "detail": res}
+        if res.get("from_cache"):
+            # fields came from the CACHE because UIA is currently blind -> absolute
+            # positions may be stale (app/window moved since last successful scan)
+            age_hours = res.get("cache_age_hours")
+            if age_hours is None or age_hours > 24.0:
+                _log_drift({"t": time.time(), "app": app_name, "refused_from_cache_click": True,
+                            "target_label": str(field_label), "cache_age_hours": age_hours})
+                return {"success": False, "error": "UIA is blind and the cached element map is stale "
+                        "(age=%s). Refusing to click a cached absolute position. Re-discover first: "
+                        "screenshot + find_on_screen/click_image, or keyboard Tab order." % (
+                            None if age_hours is None else round(age_hours, 1))}
+            drift_recovered = True
         candidates = fields
         if field_label:
             low = field_label.lower()
@@ -1331,6 +1384,14 @@ class UserActions:
                 if rec is None:
                     rec = UserActions._drift_recover(app_name, str(field_label), fields)
                 if rec:
+                    if rec.get("low_confidence"):
+                        _log_drift({"t": time.time(), "app": app_name, "refused_low_confidence": True,
+                                    "target_label": str(field_label)})
+                        return {"success": False, "error": "Drift-recovered control has low confidence "
+                                "(stale cache and no live anchor). Refusing to click blind. "
+                                "Re-discover first: take a screenshot and use find_on_screen/click_image "
+                                "or keyboard Tab order instead.", "detail": {k: rec.get(k) for k in
+                                ("name", "automationid", "confidence", "drift_method", "cache_age_hours")}}
                     candidates = [rec]
                     drift_recovered = True
                 else:
