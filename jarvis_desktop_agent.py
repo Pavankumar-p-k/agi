@@ -38,6 +38,7 @@ from core.desktop.user_actions import user_actions as U
 # ---------- ACTIVE PROVIDER ----------
 # Use the unified top-level provider (jarvis_provider). Role-chosen via CHAT_MODEL in .env.
 PROVIDER = get_provider("chat")
+VISION_PROVIDER = get_provider("vision")
 
 
 # ---------- TOOL DOCS ----------
@@ -58,6 +59,14 @@ TOOL_DOCS = {
     "process_running": 'Checks if process runs. Args: {"name":"chrome"}.',
     "clipboard_get": 'Reads clipboard. Args: none.',
     "clipboard_set": 'Writes clipboard. Args: {"text":"str"}.',
+
+    # SMART APP CONTROL
+    "count_windows": 'Counts open windows/apps. Args: {"filter":"optional substring, e.g. chrome"}. Returns count + names.',
+    "count_running_apps": 'Counts running GUI apps. Args: none.',
+    "focus_or_launch": 'If app is already running, focus it; otherwise launch it. Args: {"app":"notepad|chrome|code", "window_title":"optional partial title"}. Fixes duplicate reopening.',
+    "new_window": 'Opens a NEW additional window/instance of an app even if already running. Args: {"app":"notepad|chrome", "cmd_extra":"optional e.g. --new-window"}.',
+    "open_in_app": 'Open a file in a specific app/IDE. Args: {"path":"C:\\...\\file.txt","app":"notepad|code|chrome"}.',
+    "app_state": 'Show instances/windows of one app. Args: {"app_name":"chrome|notepad|code"}.',
 
     # FILE SYSTEM
     "list_files": 'List files/folders. Args: {"path":"str","recursive":bool}.',
@@ -94,6 +103,27 @@ TOOL_DOCS = {
     "list_running_apps": 'List running GUI apps. Args: none.',
     "use_app": 'Use app. Args: {"action":"focus|close|type|press|click|screenshot","app":"str","x":int,"y":int,"text":"str","key":"str"}',
     "ask_user": 'Ask the user a short clarifying question when truly needed. Args: {"question":"str","options":["a","b"] or empty}. The user reply comes back as the result.',
+
+    # VISION
+    "take_screenshot": 'Takes a screenshot. Args: {"path":"optional path"}. Returns image info.',
+    "describe_screen": 'Takes a screenshot and asks the VISION MODEL to describe what is on screen (windows, text, buttons). Args: {"prompt":"optional question"}.',
+    "find_on_screen": 'Find a UI element image on the screen. Args: {"image_path":"path to image","confidence":0.8}. Returns x,y.',
+    "click_image": 'Find a UI element image on screen and CLICK it. Args: {"image_path":"path to image","confidence":0.8}. Returns click coords.',
+
+    # SYSTEM CONTROLS (device settings)
+    "get_brightness": 'Get current screen brightness 0-100. Args: none.',
+    "set_brightness": 'Set screen brightness. Args: {"level":0..100}.',
+    "get_volume": 'Get current master volume 0-100. Args: none.',
+    "set_volume": 'Set master volume. Args: {"level":0..100}.',
+    "mute": 'Mute audio. Args: none.',
+    "unmute": 'Unmute audio (set to 50%). Args: none.',
+    "bluetooth_radio": 'Turn the Bluetooth ADAPTER on/off (real radio). Args: {"on":true/false}. Requests admin.',
+    "bluetooth_radio_state": 'Is the Bluetooth adapter on/off. Args: none.',
+    "wifi_radio": 'Turn the Wi-Fi adapter on/off. Args: {"on":true/false}. Requests admin.',
+    "airplane_mode": 'Turn airplane mode on/off (toggles Wi-Fi + Bluetooth). Args: {"on":true/false}. Requests admin.',
+    "radio_state": 'Overall wifi/bluetooth/airplane state. Args: none.',
+    "power_state": 'Lock or sleep the PC. Args: {"action":"lock|sleep"}.',
+    "cpu_ram_usage": 'Current CPU % and RAM usage. Args: none.',
 }
 
 
@@ -125,6 +155,71 @@ def close_window(title):
             return wc.close(w["title"]).success
     return False
 def process_running(name): return ProcessMonitor().is_running(str(name))
+
+# ---------- SMART APP CONTROL IMPLEMENTATIONS ----------
+def count_windows(filter=None):
+    wins = wc.list_windows()
+    if filter:
+        f = str(filter).lower()
+        wins = [w for w in wins if f in w["title"].lower()]
+    return {"count": len(wins), "windows": [w["title"] for w in wins], "filter": filter}
+
+def count_running_apps():
+    pm = ProcessMonitor()
+    procs = [p for p in pm.list_processes(limit=200) if p.name]
+    gui_names = set(p.name for p in procs if p.name)
+    return {"count": len(gui_names), "apps": sorted(gui_names)}
+
+def focus_or_launch(app, window_title=None):
+    """If app already running, focus its window. Otherwise launch it."""
+    try:
+        running = ProcessMonitor().is_running(str(app))
+        if running:
+            if window_title:
+                for w in wc.list_windows():
+                    if str(window_title).lower() in w["title"].lower():
+                        ok = wc.focus(w["title"]).success
+                        return {"status": "focused_existing", "app": app, "window": w["title"], "success": ok}
+            for w in wc.list_windows():
+                if str(app).lower() in w["title"].lower():
+                    ok = wc.focus(w["title"]).success
+                    return {"status": "focused_existing", "app": app, "window": w["title"], "success": ok}
+            return {"status": "running_but_no_window", "app": app, "running": True}
+        else:
+            dc.launch_app(str(app))
+            return {"status": "launched", "app": app, "success": True}
+    except Exception as e:
+        return {"error": str(e)}
+
+def new_window(app, cmd_extra=None):
+    """Open an ADDITIONAL window/instance of an app (fixes multiple tabs/reopen issue)."""
+    try:
+        import subprocess
+        base = str(app)
+        if cmd_extra:
+            subprocess.Popen(f'start "" "{base}" {cmd_extra}', shell=True)
+        else:
+            subprocess.Popen(f'start "" "{base}"', shell=True)
+        return {"success": True, "app": app, "extra_window_opened": True, "cmd_extra": cmd_extra}
+    except Exception as e:
+        return {"error": str(e)}
+
+def open_in_app(path, app):
+    """Open a file in a specific app/IDE."""
+    return U.open_with(path, app)
+
+def app_state(app_name):
+    """Instances/windows of one app."""
+    pm = ProcessMonitor()
+    procs = pm.find_by_name(str(app_name))
+    wins = [w["title"] for w in wc.list_windows() if str(app_name).lower() in w["title"].lower()]
+    return {
+        "app": app_name,
+        "running_instances": [{"name": p.name, "pid": p.pid} for p in procs],
+        "windows": wins,
+        "window_count": len(wins),
+    }
+
 def clipboard_get(): return ClipboardManager().get_text()
 def clipboard_set(text): return ClipboardManager().set_text(str(text)).success
 
@@ -158,6 +253,21 @@ def install_program(installer_path, silent_args=None):
 def list_running_apps(): return U.list_running_apps()
 def use_app(action, app="", **kw): return U.use_app_ui(action, app=app, **kw)
 
+# System controls (brightness / volume / power / radio) via real Windows APIs
+def get_brightness(): return U.get_brightness()
+def set_brightness(level): return U.set_brightness(level)
+def get_volume(): return U.get_volume()
+def set_volume(level): return U.set_volume(level)
+def mute(): return U.mute()
+def unmute(): return U.unmute()
+def bluetooth_radio(on): return U.bluetooth_radio(on)
+def bluetooth_radio_state(): return U.bluetooth_radio_state()
+def wifi_radio(on): return U.wifi_radio(on)
+def airplane_mode(on): return U.airplane_mode(on)
+def radio_state(): return U.radio_state()
+def power_state(action): return U.power_state(action)
+def cpu_ram_usage(): return U.cpu_ram_usage()
+
 def ask_user(question, options=None):
     """Ask the user a quick clarifying question mid-task and get a reply, then continue."""
     options = options or []
@@ -166,6 +276,40 @@ def ask_user(question, options=None):
         opts = "  [" + " / ".join(str(o) for o in options) + "]"
     ans = input(f"\n[JARVIS -> YOU] {question}{opts}\n[YOU -> JARVIS] ")
     return {"asked": question, "user_answer": ans.strip()}
+
+
+# Vision: screenshot + describe (so Jarvis can "see" and understand UI)
+def take_screenshot(path=None):
+    r = U.take_screenshot(path)
+    return r
+
+def _save_screenshot_to_temp() -> str:
+    """Take screenshot, save to temp path, return path."""
+    import tempfile
+    tmp = tempfile.mktemp(suffix=".png", prefix="jarvis_")
+    r = U.take_screenshot(tmp)
+    if r.get("success"):
+        return tmp
+    return None
+
+def describe_screen(prompt=None):
+    """Take a screenshot and ask the vision model what is on screen."""
+    path = _save_screenshot_to_temp()
+    if not path:
+        return {"error": "screenshot failed"}
+    try:
+        desc = VISION_PROVIDER.vision(path, prompt or "Describe what is on this screen in detail: windows, text, buttons, positions.")
+        return {"description": desc, "screenshot": path}
+    except Exception as e:
+        return {"error": f"vision failed: {e}", "screenshot": path}
+
+def find_on_screen(image_path, confidence=0.8):
+    """Find a UI element (button image) on the screen. Returns coords."""
+    return U.find_on_screen(image_path, confidence)
+
+def click_image(image_path, confidence=0.8):
+    """Find a UI element on screen and physically click it."""
+    return U.click_image(image_path, confidence)
 
 
 TOOLS = {
@@ -208,13 +352,30 @@ TOOLS = {
     "list_running_apps": list_running_apps,
     "use_app": use_app,
     "ask_user": ask_user,
+    "count_windows": count_windows,
+    "count_running_apps": count_running_apps,
+    "focus_or_launch": focus_or_launch,
+    "new_window": new_window,
+    "open_in_app": open_in_app,
+    "app_state": app_state,
+    "take_screenshot": take_screenshot,
+    "describe_screen": describe_screen,
+    "find_on_screen": find_on_screen,
+    "click_image": click_image,
+    "get_brightness": get_brightness,
+    "set_brightness": set_brightness,
+    "get_volume": get_volume,
+    "set_volume": set_volume,
+    "mute": mute,
+    "unmute": unmute,
+    "bluetooth_radio": bluetooth_radio,
+    "bluetooth_radio_state": bluetooth_radio_state,
+    "wifi_radio": wifi_radio,
+    "airplane_mode": airplane_mode,
+    "radio_state": radio_state,
+    "power_state": power_state,
+    "cpu_ram_usage": cpu_ram_usage,
 }
-
-# Vision: screenshot + describe (so Jarvis can "see" and understand UI)
-def take_screenshot(path=None):
-    r = U.take_screenshot(path)
-    return r
-
 
 # ---------- SELF-KNOWLEDGE (auto-detected so the model never guesses paths) ----------
 def _self_knowledge() -> str:

@@ -241,12 +241,20 @@ class UserActions:
     def open_with(path: str, app: str | None = None) -> dict:
         """Open a file. If app given, open in that app (e.g., notepad, excel)."""
         try:
+            import subprocess
             if app:
-                if sys.platform == "win32":
-                    os.startfile(path, app) if False else os.system(f'start "" "{app}" "{path}"')
+                if app.lower() in ("notepad", "editor", "text", "txt"):
+                    subprocess.Popen(["notepad.exe", path], shell=True)
+                elif app.lower() in ("code", "vscode", "visual studio code", "vs code"):
+                    subprocess.Popen(["code", path])
+                elif app.lower() in ("chrome", "google chrome"):
+                    subprocess.Popen(["chrome", path])
+                else:
+                    subprocess.Popen(f'start "" "{app}" "{path}"', shell=True)
                 return {"success": True, "opened": path, "with": app}
             else:
-                os.startfile(path) if sys.platform == "win32" else None
+                if sys.platform == "win32":
+                    os.startfile(path)
                 return {"success": True, "opened": path}
         except Exception as e:
             return {"error": str(e)}
@@ -585,6 +593,232 @@ class UserActions:
             return {"success": True, "found": True, "clicked": (int(cx), int(cy))}
 
         return {"success": False, "error": f"Unknown ui action: {action}"}
+
+    # ---------- SYSTEM CONTROLS (brightness / volume / power / display) ----------
+    @staticmethod
+    def run_ps(code: str, timeout: int = 20) -> dict:
+        """Run a PowerShell snippet and return parsed output."""
+        import subprocess
+        try:
+            res = subprocess.run(
+                ["powershell", "-NoProfile", "-NonInteractive", "-Command", code],
+                capture_output=True, text=True, timeout=timeout,
+            )
+            out = (res.stdout or "").strip()
+            err = (res.stderr or "").strip()
+            return {"exit": res.returncode, "stdout": out, "stderr": err}
+        except Exception as e:
+            return {"error": str(e)}
+
+    @staticmethod
+    def get_brightness() -> dict:
+        """Current display brightness (0-100)."""
+        code = "(Get-CimInstance -Namespace root/WMI -ClassName WmiMonitorBrightness).CurrentBrightness"
+        r = UserActions.run_ps(code)
+        try:
+            val = int(float(r.get("stdout", "-1")))
+            return {"brightness": val, "range": [0, 100]}
+        except Exception:
+            return {"error": "Brightness service not available", "raw": r.get("stdout") or r.get("error")}
+
+    @staticmethod
+    def set_brightness(level: int) -> dict:
+        """Set display brightness. level 0-100."""
+        level = max(0, min(100, int(level)))
+        code = (
+            f"$m = Get-CimInstance -Namespace root/WMI -ClassName WmiMonitorBrightnessMethods; "
+            f"$m.WmiSetBrightness(1, {level})"
+        )
+        r = UserActions.run_ps(code)
+        if r.get("stderr"):
+            return {"success": False, "error": r["stderr"]}
+        return {"success": True, "brightness": level}
+
+    @staticmethod
+    def get_volume() -> dict:
+        """Current master volume (0-100) + mute state."""
+        ps = (
+            "Add-Type -Namespace Audio -Name Volume -MemberDefinition '[DllImport(\"winmm.dll\")]"
+            "public static extern int waveOutGetVolume(IntPtr hwo, out uint dwVolume);' -ErrorAction SilentlyContinue; "
+            "Add-Type -TypeDefinition 'using System; using System.Runtime.InteropServices;"
+            "public class Vol { [DllImport(\"winmm.dll\")] public static extern int waveOutGetVolume(IntPtr hwo, out uint dw); }' -ErrorAction SilentlyContinue; "
+            "$v = 0; [Audio.Volume]::waveOutGetVolume([IntPtr]::Zero, [ref]$v) | Out-Null; "
+            "$pct = [math]::Round(($v -band 0xFFFF) / 65535 * 100); "
+            "Write-Output \"$pct\""
+        )
+        r = UserActions.run_ps(ps)
+        try:
+            val = int(float(r.get("stdout", "-1")))
+            return {"volume": max(0, min(100, val)), "range": [0, 100]}
+        except Exception:
+            return {"error": "Volume read failed", "raw": r.get("stdout") or r.get("error")}
+
+    @staticmethod
+    def set_volume(level: int) -> dict:
+        """Set master volume. level 0-100. (Uses winmm waveOutSetVolume.)"""
+        level = max(0, min(100, int(level)))
+        raw = int(65535 * level / 100)
+        ps = (
+            "Add-Type -TypeDefinition 'using System; using System.Runtime.InteropServices;"
+            "public class Vol2 { [DllImport(\"winmm.dll\")] public static extern int waveOutSetVolume(IntPtr hwo, uint dwVolume); }' -ErrorAction SilentlyContinue; "
+            f"[Vol2]::waveOutSetVolume([IntPtr]::Zero, {raw}) | Out-Null"
+        )
+        r = UserActions.run_ps(ps)
+        if r.get("stderr"):
+            return {"success": False, "error": r["stderr"]}
+        return {"success": True, "volume": level}
+
+    @staticmethod
+    def mute() -> dict:
+        """Mute master volume."""
+        ps = (
+            "Add-Type -TypeDefinition 'using System; using System.Runtime.InteropServices;"
+            "public class Vol3 { [DllImport(\"winmm.dll\")] public static extern int waveOutSetVolume(IntPtr hwo, uint dwVolume); }' -ErrorAction SilentlyContinue; "
+            "[Vol3]::waveOutSetVolume([IntPtr]::Zero, 0) | Out-Null"
+        )
+        r = UserActions.run_ps(ps)
+        return {"success": not bool(r.get("stderr")), "muted": True}
+
+    @staticmethod
+    def unmute() -> dict:
+        """Unmute (set volume to 50% if previously 0)."""
+        return UserActions.set_volume(50)
+
+    @staticmethod
+    def power_state(action: str) -> dict:
+        """Lock/sleep/restart/shutdown. action: lock|sleep."""  
+        if action == "lock":
+            r = UserActions.run_ps("rundll32.exe user32.dll,LockWorkStation")
+        elif action == "sleep":
+            r = UserActions.run_ps("rundll32.exe powrprof.dll,SetSuspendState 0,1,0")
+        else:
+            return {"error": f"Unsupported power action: {action}"}
+        return {"success": not bool(r.get("error") or r.get("stderr"))}
+
+    @staticmethod
+    def display_off_after(minutes: int) -> dict:
+        """Set display sleep timeout (minutes). Uses powercfg."""
+        code = f"powercfg /change monitor-timeout-ac {int(minutes)}"
+        r = UserActions.run_ps(code)
+        return {"success": not bool(r.get("error") or r.get("stderr")), "minutes": minutes}
+
+    @staticmethod
+    def cpu_ram_usage() -> dict:
+        """Current CPU % and RAM used GB."""
+        import psutil as _p
+        try:
+            mem = _p.virtual_memory()
+            return {
+                "cpu_percent": _p.cpu_percent(interval=0.5),
+                "ram_used_gb": round(mem.used / (1024 ** 3), 2),
+                "ram_total_gb": round(mem.total / (1024 ** 3), 2),
+                "ram_percent": mem.percent,
+            }
+        except Exception as e:
+            return {"error": str(e)}
+
+    # ---------- RADIO CONTROLS (Bluetooth / Wi-Fi / Airplane mode) ----------
+    @staticmethod
+    def _pnp_devices(class_name: str = "Bluetooth") -> list[dict]:
+        """Query PnP devices of a class. Returns id + friendly name + status."""
+        ps = (
+            f"Get-PnpDevice -Class {class_name} -PresentOnly | "
+            "ForEach-Object { [PSCustomObject]@{Id=$_.InstanceId; Name=$_.FriendlyName; Status=$_.Status; Problem=$_.Problem} } | ConvertTo-Json -Compress"
+        )
+        import subprocess, json
+        try:
+            res = subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-Command", ps],
+                                 capture_output=True, text=True, timeout=25)
+            out = res.stdout.strip()
+            if not out or out == "null":
+                return []
+            data = json.loads(out)
+            if not isinstance(data, list):
+                data = [data]
+            return data
+        except Exception:
+            return []
+
+    @staticmethod
+    def _set_pnp_device(instance_id: str, enable: bool) -> dict:
+        """Enable or disable a PnP device (requires admin)."""
+        verb = "Enable" if enable else "Disable"
+        ps = f"$d = Get-PnpDevice -InstanceId '{instance_id}'; {verb}-PnpDevice -InputObject $d -Confirm:$false"
+        r = UserActions.run_ps(ps, timeout=30)
+        if r.get("stderr"):
+            return {"success": False, "action": verb, "instance_id": instance_id, "error": r["stderr"].strip()}
+        return {"success": True, "action": verb, "instance_id": instance_id}
+
+    @staticmethod
+    def _find_adapter(class_name: str, name_hint: str = "Adapter") -> str | None:
+        """Find the instance id of a hardware adapter (e.g. Bluetooth Adapter, Wi-Fi card)."""
+        for dev in UserActions._pnp_devices(class_name):
+            if name_hint.lower() in str(dev.get("Name", "")).lower():
+                return dev.get("Id")
+        return None
+
+    @staticmethod
+    def bluetooth_radio(on: bool) -> dict:
+        """Turn the Bluetooth ADAPTER radio on (True) or off (False). REQUIRES ADMIN (run PS as admin)."""
+        adapter = UserActions._find_adapter("Bluetooth", "Adapter")
+        if not adapter:
+            # fallback: any device whose name has no services (raw adapter)
+            for dev in UserActions._pnp_devices("Bluetooth"):
+                name = str(dev.get("Name", ""))
+                if "Avrcp" not in name and "RFCOMM" not in name and "Enumerator" not in name and "Service" not in name:
+                    adapter = dev.get("Id")
+                    break
+        if not adapter:
+            return {"success": False, "error": "Bluetooth adapter not found"}
+        return UserActions._set_pnp_device(adapter, enable=on)
+
+    @staticmethod
+    def bluetooth_radio_state() -> dict:
+        """Whether the Bluetooth adapter is currently on/off."""
+        devs = UserActions._pnp_devices("Bluetooth")
+        on_devices = [d for d in devs if d.get("Status") == "OK"]
+        adapter = UserActions._find_adapter("Bluetooth", "Adapter")
+        for d in on_devices:
+            if adapter and d.get("Id") == adapter:
+                return {"bluetooth": "on", "adapter": d.get("Name"), "status": d.get("Status")}
+        return {"bluetooth": "off", "reason": "adapter not enabled", "devices": len(devs)}
+
+    @staticmethod
+    def wifi_radio(on: bool) -> dict:
+        """Turn the Wi-Fi adapter on (True) or off (False). REQUIRES ADMIN."""
+        adapter = UserActions._find_adapter("Net", "Wi-Fi")
+        if not adapter:
+            for dev in UserActions._pnp_devices("Net"):
+                name = str(dev.get("Name", ""))
+                if "Wireless" in name or "WLAN" in name or "Wi-Fi" in name:
+                    if "Virtual" not in name:
+                        adapter = dev.get("Id")
+                        break
+        if not adapter:
+            return {"success": False, "error": "Wi-Fi adapter not found"}
+        return UserActions._set_pnp_device(adapter, enable=on)
+
+    @staticmethod
+    def airplane_mode(on: bool) -> dict:
+        """Enable (True) or disable (False) AIRPLANE MODE — toggles both Wi-Fi and Bluetooth."""
+        results = {"wifi": UserActions.wifi_radio(on), "bluetooth": UserActions.bluetooth_radio(on)}
+        ok = any(r.get("success") for r in results.values())
+        return {"success": ok, "airplane_mode": ("on" if on else "off"), "results": results}
+
+    @staticmethod
+    def radio_state() -> dict:
+        """Overall radio state: wifi, bluetooth on/off."""
+        bt = UserActions.bluetooth_radio_state()
+        try:
+            import subprocess
+            r = subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-Command",
+                                "(Get-NetAdapter -Physical | Where-Object Status -eq 'Up').Name"],
+                               capture_output=True, text=True, timeout=20)
+            wifi_up = any("Wi-Fi" in l or "Wireless" in l for l in (r.stdout or "").splitlines())
+            wifi = "on" if wifi_up else "off"
+        except Exception:
+            wifi = "unknown"
+        return {"wifi": wifi, "bluetooth": bt, "airplane_mode": "on" if (wifi == "off" and bt.get("bluetooth") == "off") else "off"}
 
 
 user_actions = UserActions()

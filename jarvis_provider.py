@@ -86,7 +86,10 @@ class OllamaLLM(LLMProvider):
     def __init__(self, model: str = "qwen2.5-coder:3b", url: str = "http://localhost:11434"):
         self.model = model
         self.url = url.rstrip("/")
-        self._vision_model = _env("OLLAMA_VISION_MODEL", self.model)
+        # Detect vision model: explicit OLLAMA_VISION_MODEL, else VISION_MODEL, else this model.
+        vision_ref = _env("OLLAMA_VISION_MODEL") or _env("VISION_MODEL") or f"ollama/{model}"
+        _, _, vmodel = vision_ref.partition("/")
+        self._vision_model = vmodel or model
 
     def _generate(self, model, prompt, temperature, images=None, timeout=240):
         payload = {"model": model, "prompt": prompt, "stream": False, "options": {"temperature": temperature}}
@@ -100,7 +103,11 @@ class OllamaLLM(LLMProvider):
         return self._generate(self.model, prompt, temperature)
 
     def vision(self, image_path, prompt="Describe what you see in detail."):
-        return self._generate(self._vision_model, prompt, 0.1, images=[str(image_path)])
+        """Ollama /api/generate expects images as base64 strings."""
+        import base64
+        with open(image_path, "rb") as f:
+            b64 = base64.b64encode(f.read()).decode()
+        return self._generate(self._vision_model, prompt, 0.1, images=[b64])
 
 
 # ---------- OPENAI-COMPATIBLE ----------
