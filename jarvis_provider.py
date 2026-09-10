@@ -91,7 +91,8 @@ class OllamaLLM(LLMProvider):
         _, _, vmodel = vision_ref.partition("/")
         self._vision_model = vmodel or model
 
-    def _generate(self, model, prompt, temperature, images=None, timeout=240):
+    def _generate(self, model, prompt, temperature, images=None, timeout=None):
+        timeout = float(_env("OLLAMA_REQUEST_TIMEOUT", "90")) if timeout is None else timeout
         payload = {"model": model, "prompt": prompt, "stream": False, "options": {"temperature": temperature}}
         if images:
             payload["images"] = images

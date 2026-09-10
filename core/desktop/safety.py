@@ -80,7 +80,7 @@ class SafetyConfig:
     allowed_regions: list[Rect] = field(default_factory=list)
     max_mouse_speed_px_per_sec: float = 5000.0
     max_typing_chars_per_sec: float = 100.0
-    max_typing_text_length: int = 10000
+    max_typing_text_length: int = 500
     max_hotkey_combo_length: int = 5
     emergency_stop_enabled: bool = False
     blocked_action_types: set[DesktopActionType] = field(default_factory=set)
@@ -108,9 +108,16 @@ class SafetyManager:
     min_cooldown_sec: float = 0.0
     max_mouse_speed_px_per_sec: float = 5000.0
     _last_action_time: float = field(default_factory=_time.time)
+    _last_mouse_action_time: float = field(default_factory=_time.time)
     _last_mouse_pos: tuple[int, int] = (0, 0)
 
-    def check(self, action_type: DesktopActionType, params: dict[str, Any] | None = None) -> SafetyDecision:
+    def check(
+        self,
+        action_type: DesktopActionType,
+        params: dict[str, Any] | None = None,
+        *,
+        update_state: bool = True,
+    ) -> SafetyDecision:
         params = params or {}
 
         if self.config.emergency_stop_enabled:
@@ -122,6 +129,10 @@ class SafetyManager:
 
         if action_type in self.config.blocked_action_types:
             return self._deny(action_type, f"Action type '{action_type.value}' is blocked", params)
+
+        now = _time.time()
+        if self.min_cooldown_sec > 0 and now - self._last_action_time < self.min_cooldown_sec:
+            return self._deny(action_type, "Minimum action cooldown has not elapsed", params)
 
         x = params.get("x")
         y = params.get("y")
@@ -137,19 +148,21 @@ class SafetyManager:
             if not allowed:
                 return self._deny(action_type, f"Position {position} not in any allowed region", params)
 
-        if action_type in (DesktopActionType.MOUSE_MOVE, DesktopActionType.MOUSE_CLICK, DesktopActionType.MOUSE_DRAG):
+        if action_type in (DesktopActionType.MOUSE_MOVE, DesktopActionType.MOUSE_DRAG):
             if position:
                 speed = self._compute_mouse_speed(position)
-                if speed > self.max_mouse_speed_px_per_sec:
-                    return self._deny(action_type, f"Mouse speed {speed:.0f} exceeds max {self.max_mouse_speed_px_per_sec:.0f} px/sec", params)
-                self._last_mouse_pos = position
-                self._last_action_time = _time.time()
+                max_speed = min(self.max_mouse_speed_px_per_sec, self.config.max_mouse_speed_px_per_sec)
+                if speed > max_speed:
+                    return self._deny(action_type, f"Mouse speed {speed:.0f} exceeds max {max_speed:.0f} px/sec", params)
+                if update_state:
+                    self._last_mouse_pos = position
+                    self._last_mouse_action_time = _time.time()
 
         if action_type == DesktopActionType.KEYBOARD_TYPE:
             text = params.get("text", "")
             rate = params.get("rate_char_per_sec", 0)
-            if len(text) > 500:
-                return self._deny(action_type, f"Text too long: {len(text)} chars (max 500)", params)
+            if len(text) > self.config.max_typing_text_length:
+                return self._deny(action_type, f"Text too long: {len(text)} chars (max {self.config.max_typing_text_length})", params)
             if rate >= self.config.max_typing_chars_per_sec:
                 return self._deny(action_type, f"Typing rate {rate} chars/sec exceeds max {self.config.max_typing_chars_per_sec}", params)
 
@@ -158,17 +171,30 @@ class SafetyManager:
             if len(text) > self.config.max_hotkey_combo_length:
                 return self._deny(action_type, f"Hotkey combo length {len(text)} exceeds max {self.config.max_hotkey_combo_length}", params)
 
+        if update_state:
+            self._last_action_time = now
         return SafetyDecision(verdict=SafetyVerdict.PASS, action_type=action_type, reason="All safety checks passed", metadata=params)
 
     def _compute_mouse_speed(self, current_pos: tuple[int, int]) -> float:
         now = _time.time()
-        dt = now - self._last_action_time
+        timestamp = self._last_mouse_action_time
+        # Preserve compatibility with callers that seed _last_action_time directly.
+        if self._last_action_time < timestamp:
+            timestamp = self._last_action_time
+        dt = now - timestamp
         if dt <= 0:
             return 0.0
         dx = current_pos[0] - self._last_mouse_pos[0]
         dy = current_pos[1] - self._last_mouse_pos[1]
         dist = math.sqrt(dx * dx + dy * dy)
         return dist / dt
+
+    def sync_mouse_position(self, position: tuple[int, int] | None = None) -> None:
+        """Synchronize safety state after the user or another app moves the cursor."""
+        if position is None:
+            return
+        self._last_mouse_pos = position
+        self._last_mouse_action_time = _time.time()
 
     def _check_forbidden_regions(self, x: int, y: int) -> str | None:
         for region in self.config.forbidden_regions:

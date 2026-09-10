@@ -77,8 +77,8 @@ def _agent_tool_result(text: str) -> dict:
             ok = val if isinstance(val, bool) else True
             return {"status": "ok" if ok else "failed", "ok": bool(ok), "detail": text[:400]}
         except Exception:
-            return {"status": "ok", "ok": True, "detail": text[:400]}
-    return {"status": "ok", "ok": True, "detail": text[:400]}
+            return {"status": "unverified", "ok": False, "detail": text[:400]}
+    return {"status": "unverified", "ok": False, "detail": text[:400]}
 
 
 def _capture(kind: str, target: str) -> Any:
@@ -211,7 +211,10 @@ class TaskGraph:
                                      "snapshot": _capture(cap.get("kind", ""), cap.get("path", cap.get("target", "")))}
             action = {"tool": step["tool"], "args": step.get("args", {}), "then_wait": step.get("wait", 1.0)}
             t0 = time.time()
-            text, _ = execute_action(action)
+            try:
+                text, _ = execute_action(action)
+            except Exception as exc:
+                text = f"Tool '{step['tool']}' error: {exc}"
             dur_ms = (time.time() - t0) * 1000.0
             cls = _agent_tool_result(text)
             entry = {"id": step_id, "tool": step["tool"], "status": cls["status"], "duration_ms": round(dur_ms, 1),
@@ -232,8 +235,11 @@ class TaskGraph:
                 for vact in verify.get("also", []):
                     vtext2, _ = execute_action({"tool": vact["tool"], "args": vact.get("args", {}), "then_wait": 0.5})
                     vtext += vtext2 + "\n"
+                    if not _agent_tool_result(vtext2)["ok"]:
+                        verified = False
                 expect = verify.get("expect", "")
-                verified = expect in (vtext + cls["detail"])
+                combined = vtext + cls["detail"]
+                verified = verified and bool(expect) and str(expect).casefold() in combined.casefold()
                 if not verified:
                     entry["status"] = "verify_failed"
                     status = "rolled_back"
@@ -262,6 +268,9 @@ class TaskGraph:
         report = {
             "plan_id": self.plan_id, "goal": self.goal, "status": status,
             "steps": trace, "rollback": rollback_trace, "error": error,
+            "success": status == "completed" and bool(trace) and all(
+                item.get("status") == "ok" for item in trace
+            ),
         }
         self._persist(report)
         return report

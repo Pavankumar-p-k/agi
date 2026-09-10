@@ -54,6 +54,9 @@ def _validate(request: ActionRequest) -> None:
     elif request.action == "type_text":
         if not isinstance(request.params.get("text"), str) or len(request.params["text"]) > 10000:
             raise HTTPException(status_code=400, detail="Text is required and must be at most 10000 characters")
+        interval = request.params.get("interval", 0.05)
+        if not isinstance(interval, (int, float)) or interval <= 0 or interval > 10:
+            raise HTTPException(status_code=400, detail="interval must be between 0 and 10 seconds")
     elif request.action == "press_key":
         if not isinstance(request.params.get("key"), str) or not re.fullmatch(r"[A-Za-z0-9_+-]{1,32}", request.params["key"]):
             raise HTTPException(status_code=400, detail="A valid key is required")
@@ -100,8 +103,7 @@ def action(request: ActionRequest, x_desktop_bridge_token: str | None = Header(d
     elif request.action == "press_key":
         result = desktop_controller.press_key(request.params["key"])
     elif request.action == "focus_window":
-        from core.workspace.window import window_controller
-        result = window_controller.focus(request.params["window_title"])
+        result = desktop_controller.focus_window(request.params["window_title"])
     else:
         from core.workspace.desktop_state import DesktopState
         import asyncio

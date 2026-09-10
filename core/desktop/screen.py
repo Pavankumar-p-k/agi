@@ -9,6 +9,8 @@ from datetime import datetime, timezone
 import uuid
 import time
 import logging
+import os
+from core.desktop.safety import DesktopActionType
 
 logger = logging.getLogger(__name__)
 
@@ -68,16 +70,60 @@ class ScreenCapture:
     _captures: list[CaptureResult] = field(default_factory=list)
     _max_captures: int = 100
 
+    @staticmethod
+    def _remove_file(capture: CaptureResult) -> None:
+        if capture.file_path:
+            try:
+                os.unlink(capture.file_path)
+            except FileNotFoundError:
+                pass
+            except OSError:
+                logger.warning("Unable to remove capture artifact %s", capture.file_path)
+
     def capture(self, region: CaptureRegion | None = None, format: str = "PNG", monitor_index: int = 0, metadata: dict[str, Any] | None = None) -> CaptureResult:
+        import io
+        import tempfile
+        import pyautogui
+        from core.desktop.controller import desktop_controller
+        decision = desktop_controller.safety.check(DesktopActionType.SCREEN_CAPTURE)
+        if not decision.allowed:
+            raise PermissionError(decision.reason)
+        if format.upper() not in {"PNG", "JPEG", "BMP"}:
+            raise ValueError(f"Unsupported capture format: {format}")
+        image = pyautogui.screenshot(region=tuple(region.to_dict().values()) if region else None)
+        buffer = io.BytesIO()
+        image.save(buffer, format=format.upper())
+        suffix = f".{format.lower()}"
+        artifact = tempfile.NamedTemporaryFile(prefix="jarvis_capture_", suffix=suffix, delete=False)
+        try:
+            artifact.write(buffer.getvalue())
+        except Exception:
+            artifact.close()
+            try:
+                os.unlink(artifact.name)
+            except OSError:
+                pass
+            raise
+        finally:
+            if not artifact.closed:
+                artifact.close()
         result = CaptureResult(
             artifact_id=f"sc_{uuid.uuid4().hex[:12]}",
-            format=format,
+            format=format.upper(),
             monitor_index=monitor_index,
             metadata=metadata or {},
+            width=image.width,
+            height=image.height,
+            size_bytes=buffer.tell(),
+            file_path=artifact.name,
+            region=region.to_dict() if region else None,
         )
         self._captures.append(result)
         if len(self._captures) > self._max_captures:
+            evicted = self._captures[:-self._max_captures]
             self._captures = self._captures[-self._max_captures:]
+            for capture in evicted:
+                self._remove_file(capture)
         return result
 
     def recent(self, limit: int = 10) -> list[CaptureResult]:
@@ -91,6 +137,8 @@ class ScreenCapture:
 
     def clear(self) -> int:
         count = len(self._captures)
+        for capture in self._captures:
+            self._remove_file(capture)
         self._captures.clear()
         return count
 
