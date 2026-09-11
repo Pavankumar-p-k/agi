@@ -1,43 +1,24 @@
-"""
-Module: core.scheduler.store
-Auto-reconstructed backend component.
-"""
 from __future__ import annotations
-from typing import Any, Callable, Optional
-from dataclasses import dataclass, field
-import logging
 
-logger = logging.getLogger(__name__)
-
-class DynamicMeta(type):
-    def __getattr__(cls, name: str) -> Any:
-        return name
-
-@dataclass
-class SchedulerStore(metaclass=DynamicMeta):
-    def __init__(self, *args, **kwargs):
-        for k, v in kwargs.items():
-            setattr(self, k, v)
-    def __getattr__(self, name: str) -> Any:
-        return lambda *a, **kw: None
-    def __call__(self, *args, **kwargs) -> Any:
-        return self
-    async def __aenter__(self):
-        return self
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        pass
+from core.scheduler.models import ScheduledActivity
 
 
-def __getattr__(name: str) -> Any:
-    class DynamicStub(metaclass=DynamicMeta):
-        def __init__(self, *args, **kwargs):
-            pass
-        def __call__(self, *args, **kwargs):
-            return self
-        def __getattr__(self, item):
-            return DynamicStub()
-        async def __aenter__(self):
-            return self
-        async def __aexit__(self, exc_type, exc_val, exc_tb):
-            pass
-    return DynamicStub()
+_STORES: dict[str, dict[str, ScheduledActivity]] = {}
+
+
+class SchedulerStore:
+    def __init__(self, db_path: str = "scheduler.db", **_kwargs):
+        self._data = _STORES.setdefault(db_path, {})
+
+    def save(self, activity: ScheduledActivity) -> ScheduledActivity:
+        self._data[activity.activity_id] = activity
+        return activity
+
+    def get(self, activity_id: str) -> ScheduledActivity | None:
+        return self._data.get(activity_id)
+
+    def delete(self, activity_id: str) -> bool:
+        return self._data.pop(activity_id, None) is not None
+
+    def list(self) -> list[ScheduledActivity]:
+        return list(self._data.values())

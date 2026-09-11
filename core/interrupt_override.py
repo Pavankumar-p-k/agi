@@ -1,34 +1,16 @@
-"""
-Module: core.interrupt_override
-Auto-reconstructed backend component.
-"""
-from __future__ import annotations
-from typing import Any, Callable, Optional
-from dataclasses import dataclass, field
-import logging
+class InterruptManager:
+    def __init__(self):
+        self._paused: set[str] = set()
 
-logger = logging.getLogger(__name__)
+    def signal_pause(self, project_name: str) -> None:
+        self._paused.add(project_name)
 
-class DynamicMeta(type):
-    def __getattr__(cls, name: str) -> Any:
-        return name
-
-def interrupt_manager(*args, **kwargs) -> Any:
-    return None
-async def async_interrupt_manager(*args, **kwargs) -> Any:
-    return None
+    def check_and_handle(self, state) -> bool:
+        if state.project_name in self._paused:
+            state.status = "paused"
+            state.save()
+            return True
+        return False
 
 
-def __getattr__(name: str) -> Any:
-    class DynamicStub(metaclass=DynamicMeta):
-        def __init__(self, *args, **kwargs):
-            pass
-        def __call__(self, *args, **kwargs):
-            return self
-        def __getattr__(self, item):
-            return DynamicStub()
-        async def __aenter__(self):
-            return self
-        async def __aexit__(self, exc_type, exc_val, exc_tb):
-            pass
-    return DynamicStub()
+interrupt_manager = InterruptManager()

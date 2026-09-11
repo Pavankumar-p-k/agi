@@ -32,13 +32,19 @@ class SupervisorNotifier:
         self._push_enabled = bool(os.getenv("PUSHOVER_USER") or os.getenv("NTFY_TOPIC"))
 
     async def notify(self, project: str, event: str, data: dict):
+        # The local event log is the authoritative safety/audit channel.
+        # Let filesystem failures surface instead of turning them into success.
+        await self._write_event_log(project, event, data)
         tasks = []
-        tasks.append(self._write_event_log(project, event, data))
         if self._email_enabled and event in ("build_completed", "task_failed"):
             tasks.append(self._send_email(project, event, data))
         if self._push_enabled and event in ("build_completed", "build_started", "task_failed"):
             tasks.append(self._send_push(project, event, data))
-        await asyncio.gather(*tasks, return_exceptions=True)
+        if tasks:
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            for result in results:
+                if isinstance(result, Exception):
+                    logger.warning("[NOTIFIER] optional delivery failed: %s", result)
 
     async def _write_event_log(self, project: str, event: str, data: dict):
         log_dir = PROJECTS_DIR / project

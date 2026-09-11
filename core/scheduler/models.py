@@ -1,48 +1,52 @@
-"""
-Module: core.scheduler.models
-Auto-reconstructed backend component.
-"""
 from __future__ import annotations
-from typing import Any, Callable, Optional
+
 from dataclasses import dataclass, field
-import logging
+from datetime import datetime
+from typing import Any
 
-logger = logging.getLogger(__name__)
-
-class DynamicMeta(type):
-    def __getattr__(cls, name: str) -> Any:
-        return name
 
 @dataclass
-class ScheduledActivity(metaclass=DynamicMeta):
-    def __init__(self, *args, **kwargs):
-        for k, v in kwargs.items():
-            setattr(self, k, v)
-    def __getattr__(self, name: str) -> Any:
-        return lambda *a, **kw: None
-    def __call__(self, *args, **kwargs) -> Any:
-        return self
-    async def __aenter__(self):
-        return self
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        pass
-
-def activity_status_from_node(*args, **kwargs) -> Any:
-    return None
-async def async_activity_status_from_node(*args, **kwargs) -> Any:
-    return None
+class ScheduleModel:
+    schedule_id: str = ""
+    name: str = ""
+    activities: list[Any] = field(default_factory=list)
 
 
-def __getattr__(name: str) -> Any:
-    class DynamicStub(metaclass=DynamicMeta):
-        def __init__(self, *args, **kwargs):
-            pass
-        def __call__(self, *args, **kwargs):
-            return self
-        def __getattr__(self, item):
-            return DynamicStub()
-        async def __aenter__(self):
-            return self
-        async def __aexit__(self, exc_type, exc_val, exc_tb):
-            pass
-    return DynamicStub()
+@dataclass
+class ScheduledActivity:
+    activity_id: str
+    status: str = "pending"
+    priority: int = 0
+    goal: str = ""
+    node_type: str = "goal"
+    created_at: datetime = field(default_factory=datetime.now)
+    last_resumed_at: datetime | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
+    score: float = 0.0
+    _blocked: bool = False
+
+    @property
+    def is_blocked(self) -> bool:
+        return self._blocked
+
+    @property
+    def is_ready(self) -> bool:
+        return not self._blocked and self.status in {"pending", "running", "suspended"}
+
+    def block(self) -> None:
+        self._blocked = True
+
+    def unblock(self) -> None:
+        self._blocked = False
+
+
+def activity_status_from_node(status: Any) -> str:
+    value = getattr(status, "value", status)
+    value = str(value).upper()
+    if value in {"COMPLETED", "FAILED", "CANCELLED"}:
+        return "completed"
+    if value == "RUNNING":
+        return "running"
+    if value == "SUSPENDED":
+        return "suspended"
+    return "pending"

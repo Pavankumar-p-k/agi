@@ -1,57 +1,19 @@
-"""
-Module: core.scheduler.policies
-Auto-reconstructed backend component.
-"""
 from __future__ import annotations
-from typing import Any, Callable, Optional
-from dataclasses import dataclass, field
-import logging
 
-logger = logging.getLogger(__name__)
-
-class DynamicMeta(type):
-    def __getattr__(cls, name: str) -> Any:
-        return name
-
-@dataclass
-class DecisionPriorityPolicy(metaclass=DynamicMeta):
-    def __init__(self, *args, **kwargs):
-        for k, v in kwargs.items():
-            setattr(self, k, v)
-    def __getattr__(self, name: str) -> Any:
-        return lambda *a, **kw: None
-    def __call__(self, *args, **kwargs) -> Any:
-        return self
-    async def __aenter__(self):
-        return self
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        pass
-
-@dataclass
-class PriorityPolicy(metaclass=DynamicMeta):
-    def __init__(self, *args, **kwargs):
-        for k, v in kwargs.items():
-            setattr(self, k, v)
-    def __getattr__(self, name: str) -> Any:
-        return lambda *a, **kw: None
-    def __call__(self, *args, **kwargs) -> Any:
-        return self
-    async def __aenter__(self):
-        return self
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        pass
+from datetime import datetime
+from typing import Any
 
 
-def __getattr__(name: str) -> Any:
-    class DynamicStub(metaclass=DynamicMeta):
-        def __init__(self, *args, **kwargs):
-            pass
-        def __call__(self, *args, **kwargs):
-            return self
-        def __getattr__(self, item):
-            return DynamicStub()
-        async def __aenter__(self):
-            return self
-        async def __aexit__(self, exc_type, exc_val, exc_tb):
-            pass
-    return DynamicStub()
+class PriorityPolicy:
+    def rank(self, activities: list[Any], now: datetime | None = None) -> list[Any]:
+        now = now or datetime.now()
+        for activity in activities:
+            waiting = max(0.0, (now - activity.created_at).total_seconds() / 3600)
+            retry = 2.0 if activity.metadata.get("previous_status") == "failed" else 0.0
+            user = 1.0 if activity.node_type == "goal" else 0.0
+            activity.score = activity.priority * 10.0 + retry + user + waiting
+        return sorted(activities, key=lambda item: item.score, reverse=True)
+
+
+class DecisionPriorityPolicy(PriorityPolicy):
+    pass

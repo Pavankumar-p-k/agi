@@ -1,43 +1,19 @@
-"""
-Module: core.strategy.selector
-Auto-reconstructed backend component.
-"""
+"""Minimal strategy selector surface."""
 from __future__ import annotations
-from typing import Any, Callable, Optional
-from dataclasses import dataclass, field
-import logging
 
-logger = logging.getLogger(__name__)
+from datetime import datetime
 
-class DynamicMeta(type):
-    def __getattr__(cls, name: str) -> Any:
-        return name
-
-@dataclass
-class StrategySelector(metaclass=DynamicMeta):
-    def __init__(self, *args, **kwargs):
-        for k, v in kwargs.items():
-            setattr(self, k, v)
-    def __getattr__(self, name: str) -> Any:
-        return lambda *a, **kw: None
-    def __call__(self, *args, **kwargs) -> Any:
-        return self
-    async def __aenter__(self):
-        return self
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        pass
+from core.strategy.models import StrategyDecision
 
 
-def __getattr__(name: str) -> Any:
-    class DynamicStub(metaclass=DynamicMeta):
-        def __init__(self, *args, **kwargs):
-            pass
-        def __call__(self, *args, **kwargs):
-            return self
-        def __getattr__(self, item):
-            return DynamicStub()
-        async def __aenter__(self):
-            return self
-        async def __aexit__(self, exc_type, exc_val, exc_tb):
-            pass
-    return DynamicStub()
+class StrategySelector:
+    def select(self, goal: str, strategies):
+        chosen = strategies[0] if strategies else None
+        return chosen, StrategyDecision(
+            decision_id="default_strategy",
+            goal=goal,
+            timestamp=datetime.utcnow(),
+            strategies_considered=list(strategies),
+            chosen_strategy=chosen,
+            confidence=chosen.prediction.confidence if chosen else 0.0,
+        )

@@ -1,57 +1,103 @@
-"""
-Module: core.activity.resume
-Auto-reconstructed backend component.
-"""
 from __future__ import annotations
-from typing import Any, Callable, Optional
+
 from dataclasses import dataclass, field
-import logging
+from typing import Any
 
-logger = logging.getLogger(__name__)
+from core.activity.models import ActivityNode, ActivityStatus
 
-class DynamicMeta(type):
-    def __getattr__(cls, name: str) -> Any:
-        return name
 
 @dataclass
-class ResumeContext(metaclass=DynamicMeta):
-    def __init__(self, *args, **kwargs):
-        for k, v in kwargs.items():
-            setattr(self, k, v)
-    def __getattr__(self, name: str) -> Any:
-        return lambda *a, **kw: None
-    def __call__(self, *args, **kwargs) -> Any:
-        return self
-    async def __aenter__(self):
-        return self
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        pass
+class ResumeContext:
+    activity_id: str
+    target_node: ActivityNode
+    ancestors: list[ActivityNode] = field(default_factory=list)
+    root_goal: str = ""
+    accumulated_artifacts: dict[str, Any] = field(default_factory=dict)
+    accumulated_input: dict[str, Any] = field(default_factory=dict)
 
-@dataclass
-class ResumeEngine(metaclass=DynamicMeta):
-    def __init__(self, *args, **kwargs):
-        for k, v in kwargs.items():
-            setattr(self, k, v)
-    def __getattr__(self, name: str) -> Any:
-        return lambda *a, **kw: None
-    def __call__(self, *args, **kwargs) -> Any:
-        return self
-    async def __aenter__(self):
-        return self
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        pass
+    @property
+    def target_label(self) -> str:
+        return self.target_node.label
+
+    @property
+    def is_for_agent(self) -> bool:
+        return bool(self.target_node.agent_id)
+
+    @property
+    def agent_id(self) -> str | None:
+        return self.target_node.agent_id
 
 
-def __getattr__(name: str) -> Any:
-    class DynamicStub(metaclass=DynamicMeta):
-        def __init__(self, *args, **kwargs):
-            pass
-        def __call__(self, *args, **kwargs):
-            return self
-        def __getattr__(self, item):
-            return DynamicStub()
-        async def __aenter__(self):
-            return self
-        async def __aexit__(self, exc_type, exc_val, exc_tb):
-            pass
-    return DynamicStub()
+class ResumeEngine:
+    def __init__(self, manager: Any):
+        self.manager = manager
+
+    def _context(self, activity_id: str, target: ActivityNode) -> ResumeContext:
+        nodes = self.manager.get_tree(activity_id)
+        by_id = {node.node_id: node for node in nodes}
+        chain: list[ActivityNode] = []
+        current: ActivityNode | None = target
+        while current is not None:
+            chain.append(current)
+            current = by_id.get(current.parent_id) if current.parent_id else None
+        ancestors = list(reversed(chain))
+        artifacts: dict[str, Any] = {}
+        inputs: dict[str, Any] = {}
+        for node in nodes:
+            if node.status == ActivityStatus.COMPLETED:
+                artifacts.update(node.artifacts)
+        for node in ancestors:
+            inputs.update(node.input)
+        root = nodes[0] if nodes else target
+        return ResumeContext(
+            activity_id=activity_id,
+            target_node=target,
+            ancestors=ancestors,
+            root_goal=root.label,
+            accumulated_artifacts=artifacts,
+            accumulated_input=inputs,
+        )
+
+    def find_resume_point(self, activity_id: str) -> ResumeContext | None:
+        nodes = self.manager.get_tree(activity_id)
+        if not nodes:
+            return None
+        root = nodes[0]
+        if root.status in {ActivityStatus.COMPLETED, ActivityStatus.FAILED, ActivityStatus.CANCELLED}:
+            return None
+        candidates = self.manager.resume_candidates(activity_id)
+        if not candidates:
+            candidates = [root] if root.status in {ActivityStatus.PENDING, ActivityStatus.RUNNING, ActivityStatus.SUSPENDED} else []
+        if not candidates:
+            return None
+        target = sorted(candidates, key=lambda node: (node.depth, node.created_at, node.node_id))[0]
+        return self._context(activity_id, target)
+
+    def resume_all_candidates(self, activity_id: str) -> list[ResumeContext]:
+        nodes = self.manager.get_tree(activity_id)
+        if not nodes or nodes[0].status in {ActivityStatus.COMPLETED, ActivityStatus.FAILED, ActivityStatus.CANCELLED}:
+            return []
+        candidates = self.manager.resume_candidates(activity_id)
+        if not candidates:
+            root = nodes[0]
+            candidates = [root] if root.status in {ActivityStatus.PENDING, ActivityStatus.RUNNING, ActivityStatus.SUSPENDED} else []
+        return [self._context(activity_id, node) for node in sorted(candidates, key=lambda n: (n.depth, n.created_at, n.node_id))]
+
+    def mark_resumed(self, context: ResumeContext) -> None:
+        for node in context.ancestors:
+            if node.status in {ActivityStatus.PENDING, ActivityStatus.SUSPENDED}:
+                self.manager.mark_running(node.node_id)
+
+    def activity_summary(self, activity_id: str) -> str:
+        nodes = self.manager.get_tree(activity_id)
+        if not nodes:
+            return f"Activity {activity_id} not found"
+        root = nodes[0]
+        leaves = self.manager.resume_candidates(activity_id)
+        labels = ", ".join(node.label for node in leaves) or "none"
+        return (
+            f"{root.label} ({root.status.value})\n"
+            f"Nodes: {len(nodes)}\n"
+            f"Incomplete leaves: {len(leaves)}\n"
+            f"Resume candidates: {labels}"
+        )

@@ -13,6 +13,18 @@ from core.desktop.controller import DesktopController, DesktopAction, desktop_co
 from core.desktop.screen import ScreenCapture, CaptureResult, CaptureRegion, screen_capture
 from core.desktop.window import WindowController, WindowActionResult, window_controller
 from core.desktop.replay import ReplayNode, ReplayGraph, ReplayEdge, NodeType, desktop_replay
+from core.desktop.desktop_ai import DesktopAI
+from core.desktop.specialist import (
+    DesktopActionRecord,
+    DesktopExecutionRequest,
+    DesktopExecutionResult,
+    DesktopExecutionStatus,
+    DesktopRecoveryAttempt,
+    DesktopSpecialist,
+    DesktopVerification,
+)
+from core.desktop.specialist_state import DesktopLocalState
+from core.desktop.tool_bridge import register_desktop_tools
 
 
 def __getattr__(name: str) -> Any:
@@ -40,6 +52,16 @@ def __getattr__(name: str) -> Any:
         "ReplayEdge": ReplayEdge,
         "NodeType": NodeType,
         "desktop_replay": desktop_replay,
+        "DesktopAI": DesktopAI,
+        "DesktopActionRecord": DesktopActionRecord,
+        "DesktopExecutionRequest": DesktopExecutionRequest,
+        "DesktopExecutionResult": DesktopExecutionResult,
+        "DesktopExecutionStatus": DesktopExecutionStatus,
+        "DesktopRecoveryAttempt": DesktopRecoveryAttempt,
+        "DesktopSpecialist": DesktopSpecialist,
+        "DesktopVerification": DesktopVerification,
+        "DesktopLocalState": DesktopLocalState,
+        "register_desktop_tools": register_desktop_tools,
     }
     if name in _exports:
         return _exports[name]

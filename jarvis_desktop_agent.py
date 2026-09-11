@@ -41,12 +41,52 @@ from core.workspace.process_monitor import ProcessMonitor
 from core.workspace.clipboard_manager import ClipboardManager
 from core.desktop.user_actions import user_actions as U
 from core.desktop.task_graph import TaskGraph, TaskGraphError
+from core.desktop.routines import DesktopRoutineManager
+from core.desktop.discovery import create_desktop_discovery
+from core.desktop.control import SemanticControlService
+from core.desktop.applications import ApplicationRegistry
+from core.desktop.adapters import AdapterRegistry, FileExplorerAdapter, TextEditorAdapter, ProcessInspectionAdapter, ClipboardAdapter, WindowManagementAdapter
+from core.desktop.capabilities import CapabilityCatalog
+from core.routes.progress import DesktopProgressReporter
 
 # ---------- ACTIVE PROVIDER ----------
 # Use the unified top-level provider (jarvis_provider). Role-chosen via CHAT_MODEL in .env.
 PROVIDER = get_provider("chat")
 REASONING_PROVIDER = get_provider("reasoning")
 VISION_PROVIDER = get_provider("vision")
+ROUTINE_MANAGER = DesktopRoutineManager()
+DESKTOP_DISCOVERY = create_desktop_discovery(wc)
+
+
+def _execute_semantic_control(title, control, operation):
+    if operation != "invoke":
+        return {"success": False, "verified": False, "error": f"Unsupported operation: {operation}"}
+    result = U.click_form_field(app_name=title, field_label=control.name or control.automation_id)
+    return {
+        **result,
+        "verified": bool(result.get("success") and not result.get("drift_recovered", False)),
+        "interaction_method": "semantic_uia",
+    }
+
+
+SEMANTIC_CONTROLS = SemanticControlService(DESKTOP_DISCOVERY, executor=_execute_semantic_control)
+APPLICATION_REGISTRY = ApplicationRegistry(
+    ROOT / "data" / "installed_applications.json",
+    U.installed_programs,
+    wc.list_windows,
+)
+FILE_EXPLORER = FileExplorerAdapter()
+TEXT_EDITOR = TextEditorAdapter()
+PROCESS_INSPECTION = ProcessInspectionAdapter()
+CLIPBOARD = ClipboardAdapter()
+WINDOWS = WindowManagementAdapter()
+ADAPTERS = AdapterRegistry([FILE_EXPLORER, TEXT_EDITOR, PROCESS_INSPECTION, CLIPBOARD, WINDOWS])
+CAPABILITIES = CapabilityCatalog(
+    APPLICATION_REGISTRY,
+    ADAPTERS,
+    ROOT / "data" / "desktop_capabilities.json",
+)
+PROGRESS_LOG = ROOT / "logs" / "desktop_progress.jsonl"
 
 INVOCATION_LOG = ROOT / "logs" / "tool_invocations.jsonl"
 
@@ -175,10 +215,75 @@ def _load_tool_health_for_prompt() -> str:
     return ""
 
 
+def _capability_context_for_prompt() -> str:
+    """Keep planning grounded in registered native capabilities."""
+    try:
+        APPLICATION_REGISTRY.refresh()
+        CAPABILITIES.refresh()
+        profiles = CAPABILITIES.list()
+        supported = [
+            {
+                "application": profile.application,
+                "adapter": profile.adapter,
+                "actions": profile.supported_actions,
+                "task_packs": profile.safe_task_packs,
+            }
+            for profile in profiles
+            if profile.adapter and profile.supported_actions
+        ]
+        return (
+            "[DESKTOP CAPABILITIES]\n"
+            + json.dumps(
+                {
+                    "registered_adapters": ADAPTERS.applications(),
+                    "supported_profiles": supported[:50],
+                    "supported_profile_count": len(supported),
+                    "rule": "Do not claim an app-specific capability unless it appears here or is verified live.",
+                },
+                ensure_ascii=False,
+            )
+        )
+    except (TypeError, ValueError, OSError):
+        return "[DESKTOP CAPABILITIES] unavailable; discover and verify before acting."
+
+
+def _observe_verified_action(goal: str, action: dict[str, Any], record: dict[str, Any]) -> None:
+    """Learn only from successful actions with explicit observable verification."""
+    if action.get("tool") == "done":
+        return
+    payload = record.get("payload") or {}
+    if payload.get("verified") is not True or payload.get("success") is False:
+        return
+    proposal = ROUTINE_MANAGER.observe(
+        goal,
+        [{"tool": action.get("tool"), "args": action.get("args", {})}],
+        verified=True,
+    )
+    if proposal is not None and proposal.status == "pending":
+        print(
+            f"[ROUTINE PROPOSAL] {proposal.proposal_id}: "
+            f"'{proposal.label}' ({proposal.confidence:.0%} confidence). "
+            "Explicit approval is required before execution."
+        )
+
+
+def _write_progress_event(event: dict[str, Any]) -> None:
+    PROGRESS_LOG.parent.mkdir(parents=True, exist_ok=True)
+    with PROGRESS_LOG.open("a", encoding="utf-8") as stream:
+        stream.write(json.dumps(event, ensure_ascii=False) + "\n")
+
+
 # ---------- TOOL DOCS ----------
 TOOL_DOCS = {
     # Core desktop
     "list_windows": 'Lists open window titles. Args: {"filter":"optional substring, e.g. chrome"}. Returns count + names.',
+    "discover_window": 'Inspect a native window and its UI Automation controls. Args: {"title":"partial window title","include_controls":true}.',
+    "desktop_capabilities": 'Build a capability snapshot for a native window. Args: {"title":"partial window title"}.',
+    "find_desktop_control": 'Find one native control semantically. Args: {"title":"window title","name":"control name","control_type":"optional UIA type"}.',
+    "invoke_desktop_control": 'Invoke one uniquely matched native control through UIA. Args: {"title":"window title","name":"control name","control_type":"optional UIA type"}. Refuses ambiguity and unavailable UIA.',
+    "installed_app_registry": 'Refresh or query the local installed native application registry. Args: {"query":"optional name filter","refresh":true/false}.',
+    "desktop_adapter_status": 'List registered native desktop adapters and supported action. Args: {"application":"explorer","action":"optional"}.',
+    "desktop_capability_profiles": 'Refresh or query integrated application capability profiles. Args: {"query":"optional application filter","refresh":true/false}.',
     "get_screen_size": 'Gets screen width and height. Args: none.',
     "get_mouse_position": 'Gets current mouse x,y. Args: none.',
     "move_mouse": 'Moves mouse. Args: {"x":int,"y":int}.',
@@ -290,6 +395,44 @@ def list_windows(filter=None):
         f = str(filter).lower()
         wins = [w for w in wins if f in w["title"].lower()]
     return {"count": len(wins), "windows": [w["title"] for w in wins], "filter": filter}
+def discover_window(title, include_controls=True):
+    window = DESKTOP_DISCOVERY.discover_window(str(title), bool(include_controls))
+    return {
+        "success": window is not None,
+        "backend": DESKTOP_DISCOVERY.backend_name,
+        "window": window.to_dict() if window else None,
+    }
+def desktop_capabilities(title):
+    return DESKTOP_DISCOVERY.capability_snapshot(str(title))
+def find_desktop_control(title, name, control_type=None):
+    matches = SEMANTIC_CONTROLS.find(str(title), str(name), control_type)
+    return {
+        "success": bool(matches),
+        "verified": bool(len(matches) == 1),
+        "matches": [match.to_dict() for match in matches[:5]],
+        "backend": DESKTOP_DISCOVERY.backend_name,
+    }
+def invoke_desktop_control(title, name, control_type=None):
+    return SEMANTIC_CONTROLS.invoke(str(title), str(name), control_type)
+def installed_app_registry(query=None, refresh=True):
+    if refresh:
+        APPLICATION_REGISTRY.refresh()
+    records = APPLICATION_REGISTRY.list(query)
+    return {"count": len(records), "applications": [record.__dict__ for record in records]}
+def desktop_adapter_status(application=None, action=None):
+    if application and action:
+        return {
+            "application": application,
+            "action": action,
+            "supported": ADAPTERS.supports(str(application), str(action)),
+        }
+    return {"adapters": ADAPTERS.applications()}
+def desktop_capability_profiles(query=None, refresh=True):
+    if refresh:
+        APPLICATION_REGISTRY.refresh()
+        CAPABILITIES.refresh()
+    profiles = CAPABILITIES.list(query)
+    return {"count": len(profiles), "profiles": [profile.to_dict() for profile in profiles]}
 def get_screen_size():
     s = dc.get_screen_size()
     return {"width": s.width, "height": s.height}
@@ -725,8 +868,8 @@ def cpu_ram_usage(): return U.cpu_ram_usage()
 # Tabs & focus enhancement (works for ALL tabbed apps, not just browsers)
 def list_tabs(app_name): return U.list_tabs(app_name)
 def focus_tab(app_name, tab_title): return U.focus_tab(app_name, tab_title)
-def reveal_in_explorer(path): return U.reveal_in_explorer(path)
-def open_file(path, app=None): return U.open_with(path, app)
+def reveal_in_explorer(path): return FILE_EXPLORER.reveal(path, U)
+def open_file(path, app=None): return FILE_EXPLORER.open(path, U, app)
 
 def browse_to(url, new_tab=True):
     """Reuse a matching tab or navigate an existing Chrome window before launching."""
@@ -759,12 +902,13 @@ def browse_to(url, new_tab=True):
             time.sleep(3)
             focused_tab = U.focus_tab("chrome", host)
             return {
-                "success": bool(focused_tab.get("success") or focused.get("success")),
+                "success": bool(focused_tab.get("success")),
                 "url": url,
                 "focused_tab": host,
                 "reused": False,
                 "opened_new_tab": True,
                 "window": focused.get("window"),
+                "error": "Unable to verify the requested tab" if not focused_tab.get("success") else "",
             }
     if chrome_running and not new_tab:
         focused = U.focus_window_win32("Chrome")
@@ -988,6 +1132,13 @@ def run_graph(graph):
 
 TOOLS = {
     "list_windows": list_windows,
+    "discover_window": discover_window,
+    "desktop_capabilities": desktop_capabilities,
+    "find_desktop_control": find_desktop_control,
+    "invoke_desktop_control": invoke_desktop_control,
+    "installed_app_registry": installed_app_registry,
+    "desktop_adapter_status": desktop_adapter_status,
+    "desktop_capability_profiles": desktop_capability_profiles,
     "get_screen_size": get_screen_size,
     "get_mouse_position": get_mouse_position,
     "move_mouse": move_mouse,
@@ -1093,6 +1244,12 @@ RISK_LEVELS = {
     "whatsapp_prepare_draft": "write-safe",
     "whatsapp_focus_probe": "write-safe",
     "crop_image": "read",
+    # memory query tools (read-only)
+    "query_history": "read",
+    "get_user_profile": "read",
+    "recall_similar_task": "read",
+    "get_lessons_learned": "read",
+    "get_task_stats": "read",
     # write-safe
     "run_graph": "write-safe",
     "move_mouse": "write-safe", "click": "write-safe", "type_text": "write-safe",
@@ -1145,6 +1302,140 @@ def _maybe_confirm(tool: str, args: dict) -> str | None:
         return None
     _log_invocation(tool, args, "blocked_by_user")
     return f"Tool '{tool}' BLOCKED: you (the user) declined confirmation. Do NOT retry it; adapt (e.g. skip the action or ask)."
+
+# ---------- MEMORY QUERY TOOLS ----------
+def query_history(query: str, period: str = "month") -> dict:
+    """Search past task traces by keyword and time period.
+
+    Parameters
+    ----------
+    query : str
+        Keyword(s) to search for in task actions/observations.
+    period : str
+        Time window: "day", "week", "month", "year".
+
+    Returns
+    -------
+    dict with "success" and "results" keys.
+    """
+    from sqlalchemy import or_, and_
+    from core.database import init_db, get_db
+
+    period_map = {"day": 1, "week": 7, "month": 30, "year": 365}
+    days = period_map.get(period, 30)
+    cutoff = datetime.utcnow() - timedelta(days=days)
+
+    try:
+        async def _query():
+            await init_db()
+            db = get_db()
+            # Search task_memories table for matching actions
+            from core.memory.task_store import TaskStore
+            ts = TaskStore()
+            results = ts.get_recent(limit=50, user_id="default")
+            # Filter by keyword match in action_names or observations
+            matched = []
+            for r in results:
+                qlower = query.lower()
+                if qlower in (r.get("action_name") or "").lower() or qlower in (r.get("observation") or "").lower():
+                    matched.append(r)
+            await db.close()
+            return {"success": True, "results": matched[:20], "period": period, "query": query}
+
+        import asyncio
+        return asyncio.run(_query())
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+def get_user_profile() -> dict:
+    """Return what JARVIS knows about the user from preference facts."""
+    from core.memory.fact_store import FactStore
+    from core.memory.preference_profile import PreferenceProfile
+
+    try:
+        fs = FactStore()
+        profile = PreferenceProfile.build(fs)
+        facts = fs.get_user_facts("default", category="preference", limit=100)
+        return {
+            "success": True,
+            "profile": profile,
+            "recent_facts": [
+                {"subject": f.subject, "value": f.object, "confidence": f.confidence}
+                for f in facts[:10]
+            ],
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+def recall_similar_task(goal: str, top_k: int = 3) -> dict:
+    """Find past similar tasks using episodic memory similarity."""
+    from core.memory.episodic_store import EpisodicStore
+
+    try:
+        es = EpisodicStore()
+        # Search for episodes with similar goal
+        results = es.retrieve(query=goal, top_k=top_k * 3, min_importance=0.1)
+        # Return top_k best matches
+        matched = results[:top_k]
+        return {
+            "success": True,
+            "results": [
+                {
+                    "goal": r.get("goal", ""),
+                    "actions": r.get("actions", [])[:5],
+                    "result": r.get("result", {}),
+                    "importance": r.get("importance", 0),
+                    "access_count": r.get("access_count", 0),
+                }
+                for r in matched
+            ],
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+def get_lessons_learned(limit: int = 10) -> dict:
+    """Get what JARVIS has learned from past failures."""
+    from core.memory.decision_store import DecisionStore
+
+    try:
+        ds = DecisionStore()
+        failures = ds.get_failures(limit=limit)
+        return {
+            "success": True,
+            "lessons": [
+                {
+                    "context": f.get("context", "")[:200],
+                    "decision": f.get("decision", ""),
+                    "outcome": f.get("outcome", "")[:200],
+                    "lesson": f.get("lesson", "")[:200],
+                    "success": f.get("success", 0),
+                }
+                for f in failures
+            ],
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+def get_task_stats() -> dict:
+    """Get success rates and common patterns from task history."""
+    from core.memory.task_store import TaskStore
+
+    try:
+        ts = TaskStore()
+        patterns = ts.get_action_patterns(action_name="", min_samples=3, user_id="default")
+        recent = ts.get_recent(limit=20, user_id="default")
+        return {
+            "success": True,
+            "patterns": patterns,
+            "recent_count": len(recent),
+            "overall_success_rate": sum(1 for r in recent if r.get("success")) / max(len(recent), 1),
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
 # ---------- SELF-KNOWLEDGE (auto-detected so the model never guesses paths) ----------
 def _self_knowledge() -> str:
@@ -1422,6 +1713,8 @@ _OBSERVATION_TOOLS = {
     "process_running", "desktop_state", "clipboard_get", "current_time",
     "system_info", "storage_info", "network_info", "bluetooth_devices",
     "installed_programs", "list_tabs", "list_form_fields", "list_ui_controls",
+    "discover_window", "desktop_capabilities", "find_desktop_control",
+    "invoke_desktop_control",
     "describe_screen", "take_screenshot", "focus_tab", "run_graph",
 }
 
@@ -1471,7 +1764,12 @@ def main():
     print(_tool_health() + "\n")
 
     health_hint = _load_tool_health_for_prompt()
-    history = SYSTEM_PROMPT + (f"\n\n{health_hint}\n" if health_hint else "") + f"\n\nUSER TASK: {goal}\n"
+    capability_hint = _capability_context_for_prompt()
+    history = (
+        SYSTEM_PROMPT
+        + (f"\n\n{health_hint}\n" if health_hint else "")
+        + f"\n\n{capability_hint}\n\nUSER TASK: {goal}\n"
+    )
 
     max_steps = 20
     max_runtime_seconds = 600
@@ -1481,9 +1779,13 @@ def main():
     done = False
     steps_executed = 0  # track how many non-done actions have run
     execution_records: list[dict[str, Any]] = []
+    activity_id = f"desktop_{int(time.time() * 1000)}"
+    progress = DesktopProgressReporter(_write_progress_event)
+    progress.report(activity_id, "running", 0.0, "desktop task started", {"goal": goal})
     for step in range(max_steps):
         if time.monotonic() - started_at >= max_runtime_seconds:
             print(f"[STOP] Task runtime exceeded {max_runtime_seconds} seconds.")
+            progress.report(activity_id, "stopped", step / max_steps, "runtime limit reached")
             break
         print(f"\n--- Step {step+1}: {REASONING_PROVIDER.provider_id}/{REASONING_PROVIDER.model} thinking... ---")
         try:
@@ -1533,6 +1835,13 @@ def main():
             if len(clipped) > 900:
                 clipped = clipped[:900] + f" ... [truncated, {len(str(result))-900} chars omitted]"
             print(f"[RESULT] {clipped}")
+            progress.report(
+                activity_id,
+                "running",
+                min(0.99, (step + 1) / max_steps),
+                f"executed {single.get('tool')}",
+                {"tool": single.get("tool"), "step": step + 1},
+            )
             history += f"\nExecuted: {json.dumps(single)}\nResult: {clipped}\n"
             record = {
                 "tool": single.get("tool"),
@@ -1541,6 +1850,7 @@ def main():
                 "payload": _parse_action_result(str(result)),
             }
             execution_records.append(record)
+            _observe_verified_action(goal, single, record)
             if single.get("tool") != "done":
                 steps_executed += 1
             if single.get("tool") == "done":
@@ -1575,12 +1885,15 @@ def main():
             time.sleep(max(0.5, single.get("then_wait", 1.0)))
 
         if done:
+            progress.report(activity_id, "completed", 1.0, "desktop task verified")
             break
         history += "Continue.\n"
 
     print("\n" + "=" * 50)
     print(" TASK COMPLETED" if done else " Stopped at max steps")
     print("=" * 50)
+    if not done and progress.latest(activity_id) and progress.latest(activity_id).status == "running":
+        progress.report(activity_id, "stopped", min(0.99, steps_executed / max_steps), "desktop task stopped")
     print(_tool_health() + "\n")
 
 

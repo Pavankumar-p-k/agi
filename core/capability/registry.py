@@ -1,48 +1,54 @@
-"""
-Module: core.capability.registry
-Auto-reconstructed backend component.
+"""Authoritative Capability Registry module for JARVIS.
+
+This module re-exports the unified registry from tools.registry and
+tools.base_tool per ADR-013 (single source of truth).
 """
 from __future__ import annotations
-from typing import Any, Callable, Optional
-from dataclasses import dataclass, field
-import logging
 
-logger = logging.getLogger(__name__)
+from tools.base_tool import (
+    CapabilityDefinition,
+    CapabilityHealth,
+    CapabilityStatus,
+    CapabilityType,
+    ReliabilityMetrics,
+    RiskTier,
+    ToolDefinition,
+    ToolResult,
+    VerificationSpec,
+)
+from tools.registry import (
+    CapabilityRegistry,
+    ToolRegistry,
+    get_capability,
+    get_tool,
+    new_capability_registry,
+    new_registry,
+    _ensure_registry,
+)
 
-class DynamicMeta(type):
-    def __getattr__(cls, name: str) -> Any:
-        return name
+# Compatibility exports
+def capability_registry(*args, **kwargs) -> CapabilityRegistry:
+    return _ensure_registry()
 
-@dataclass
-class CapabilityRegistry(metaclass=DynamicMeta):
-    def __init__(self, *args, **kwargs):
-        for k, v in kwargs.items():
-            setattr(self, k, v)
-    def __getattr__(self, name: str) -> Any:
-        return lambda *a, **kw: None
-    def __call__(self, *args, **kwargs) -> Any:
-        return self
-    async def __aenter__(self):
-        return self
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        pass
+async def async_capability_registry(*args, **kwargs) -> CapabilityRegistry:
+    return _ensure_registry()
 
-def capability_registry(*args, **kwargs) -> Any:
-    return None
-async def async_capability_registry(*args, **kwargs) -> Any:
-    return None
-
-
-def __getattr__(name: str) -> Any:
-    class DynamicStub(metaclass=DynamicMeta):
-        def __init__(self, *args, **kwargs):
-            pass
-        def __call__(self, *args, **kwargs):
-            return self
-        def __getattr__(self, item):
-            return DynamicStub()
-        async def __aenter__(self):
-            return self
-        async def __aexit__(self, exc_type, exc_val, exc_tb):
-            pass
-    return DynamicStub()
+__all__ = [
+    "CapabilityDefinition",
+    "CapabilityHealth",
+    "CapabilityStatus",
+    "CapabilityType",
+    "ReliabilityMetrics",
+    "RiskTier",
+    "ToolDefinition",
+    "ToolResult",
+    "VerificationSpec",
+    "CapabilityRegistry",
+    "ToolRegistry",
+    "get_capability",
+    "get_tool",
+    "new_capability_registry",
+    "new_registry",
+    "capability_registry",
+    "async_capability_registry",
+]

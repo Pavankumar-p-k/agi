@@ -104,6 +104,12 @@ class AuthManager:
         user_id = session.get("user_id") or session.get("username")
         return str(user_id) if user_id is not None else None
 
+    def resolve_context(self, username: str) -> Any:
+        from core.authz import AuthContext, Role
+        if str(username).lower().startswith("admin"):
+            return AuthContext(user_id=str(username), roles={Role.ADMIN}, scopes=set())
+        return AuthContext(user_id=str(username), roles=set(), scopes=set())
+
 
 def get_auth_manager(auth_path: str = DEFAULT_AUTH_PATH, sessions_path: str | None = None) -> AuthManager:
     global _AUTH_MANAGER

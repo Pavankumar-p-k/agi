@@ -2,6 +2,7 @@ import pytest
 
 import desktop_bridge
 from core.action_engine import ActionEngine
+from core.desktop.controller import DesktopController
 
 
 def test_bridge_rejects_missing_or_invalid_token(monkeypatch):
@@ -25,6 +26,13 @@ def test_bridge_validates_allowlisted_actions_and_inputs(monkeypatch, action_req
     with pytest.raises(desktop_bridge.HTTPException) as exc:
         desktop_bridge.action(action_request, "secret")
     assert exc.value.status_code == 400
+
+
+def test_open_url_rejects_browser_false_success(monkeypatch):
+    monkeypatch.setattr("webbrowser.open", lambda _url: False)
+    result = DesktopController().open_url("https://example.com")
+    assert result.success is False
+    assert "could not be opened" in result.error
 
 
 @pytest.mark.asyncio

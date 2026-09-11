@@ -17,31 +17,70 @@ import threading
 from collections import OrderedDict
 from typing import Any, Callable, Iterable, List, Optional
 
-from .base_tool import ToolDefinition, ToolResult
+from .base_tool import (
+    CapabilityDefinition,
+    CapabilityHealth,
+    CapabilityStatus,
+    CapabilityType,
+    ReliabilityMetrics,
+    RiskTier,
+    ToolDefinition,
+    ToolResult,
+    VerificationSpec,
+)
 
 
 class ToolRegistry:
     def __init__(self) -> None:
         self._definitions: OrderedDict[str, ToolDefinition] = OrderedDict()
+        self._capabilities: OrderedDict[str, CapabilityDefinition] = OrderedDict()
         self._lock = threading.Lock()
 
-    def register(self, definition: ToolDefinition) -> ToolDefinition:
+    def register(self, definition: ToolDefinition | CapabilityDefinition, owner_module: str = "Core") -> ToolDefinition:
         with self._lock:
-            self._definitions[definition.name] = definition
-        return definition
+            if isinstance(definition, CapabilityDefinition):
+                self._capabilities[definition.name] = definition
+                tool_def = definition.to_tool_definition()
+                self._definitions[definition.name] = tool_def
+                return tool_def
+            else:
+                self._definitions[definition.name] = definition
+                if definition.name not in self._capabilities:
+                    self._capabilities[definition.name] = definition.to_capability_definition(owner_module=owner_module)
+                return definition
 
-    def extend(self, definitions: Iterable[ToolDefinition]) -> None:
+    def register_capability(self, capability: CapabilityDefinition) -> CapabilityDefinition:
+        with self._lock:
+            self._capabilities[capability.name] = capability
+            self._definitions[capability.name] = capability.to_tool_definition()
+        return capability
+
+    def extend(self, definitions: Iterable[ToolDefinition | CapabilityDefinition]) -> None:
         with self._lock:
             for definition in definitions:
-                self._definitions[definition.name] = definition
+                if isinstance(definition, CapabilityDefinition):
+                    self._capabilities[definition.name] = definition
+                    self._definitions[definition.name] = definition.to_tool_definition()
+                else:
+                    self._definitions[definition.name] = definition
+                    if definition.name not in self._capabilities:
+                        self._capabilities[definition.name] = definition.to_capability_definition()
 
     def get(self, name: str) -> ToolDefinition:
         with self._lock:
             return self._definitions[name]
 
+    def get_capability(self, name: str) -> CapabilityDefinition | None:
+        with self._lock:
+            return self._capabilities.get(name)
+
     def has(self, name: str) -> bool:
         with self._lock:
-            return name in self._definitions
+            return name in self._definitions or name in self._capabilities
+
+    def has_capability(self, name: str) -> bool:
+        with self._lock:
+            return name in self._capabilities
 
     def list(self, *, category: Optional[str] = None) -> List[ToolDefinition]:
         with self._lock:
@@ -49,6 +88,84 @@ class ToolRegistry:
         if category:
             items = [item for item in items if item.category == category]
         return items
+
+    def list_capabilities(
+        self,
+        *,
+        owner_module: Optional[str] = None,
+        cap_type: Optional[CapabilityType | str] = None,
+        health: Optional[CapabilityHealth | str] = None,
+        risk: Optional[RiskTier | str] = None,
+        status: Optional[CapabilityStatus | str] = None,
+    ) -> List[CapabilityDefinition]:
+        with self._lock:
+            items = list(self._capabilities.values())
+        if owner_module:
+            owner_module_lower = owner_module.lower()
+            items = [c for c in items if c.owner_module.lower() == owner_module_lower]
+        if cap_type:
+            type_val = cap_type.value if isinstance(cap_type, CapabilityType) else cap_type
+            items = [c for c in items if c.type.value == type_val]
+        if health:
+            health_val = health.value if isinstance(health, CapabilityHealth) else health
+            items = [c for c in items if c.health.value == health_val]
+        if risk:
+            risk_val = risk.value if isinstance(risk, RiskTier) else risk
+            items = [c for c in items if c.risk.value == risk_val]
+        if status:
+            status_val = status.value if isinstance(status, CapabilityStatus) else status
+            items = [c for c in items if c.status.value == status_val]
+        return items
+
+    def record_execution(self, name: str, success: bool, failure_reason: str | None = None) -> ReliabilityMetrics | None:
+        with self._lock:
+            cap = self._capabilities.get(name)
+            if not cap:
+                return None
+            if success:
+                cap.reliability.record_success()
+                if cap.health in (CapabilityHealth.DEGRADED, CapabilityHealth.UNHEALTHY) and cap.reliability.consecutive_failures == 0:
+                    cap.health = CapabilityHealth.HEALTHY
+            else:
+                cap.reliability.record_failure(failure_reason)
+                if cap.reliability.consecutive_failures >= 3:
+                    cap.health = CapabilityHealth.DEGRADED
+                if cap.reliability.consecutive_failures >= 5:
+                    cap.health = CapabilityHealth.UNHEALTHY
+            if name in self._definitions:
+                self._definitions[name].metadata["reliability_score"] = cap.reliability.score
+                self._definitions[name].metadata["health"] = cap.health.value
+            return cap.reliability
+
+    def set_capability_health(self, name: str, health: CapabilityHealth, reason: str | None = None) -> bool:
+        with self._lock:
+            cap = self._capabilities.get(name)
+            if not cap:
+                return False
+            cap.health = health
+            if reason:
+                cap.metadata["last_health_reason"] = reason
+            if name in self._definitions:
+                self._definitions[name].metadata["health"] = health.value
+            return True
+
+    def run_health_checks(self) -> dict[str, CapabilityHealth]:
+        results: dict[str, CapabilityHealth] = {}
+        with self._lock:
+            caps = list(self._capabilities.values())
+        for cap in caps:
+            if cap.health_check:
+                try:
+                    ok = cap.health_check()
+                    health = CapabilityHealth.HEALTHY if ok else CapabilityHealth.UNHEALTHY
+                    self.set_capability_health(cap.name, health)
+                    results[cap.name] = health
+                except Exception as ex:
+                    self.set_capability_health(cap.name, CapabilityHealth.UNHEALTHY, reason=str(ex))
+                    results[cap.name] = CapabilityHealth.UNHEALTHY
+            else:
+                results[cap.name] = cap.health
+        return results
 
     def as_dicts(self) -> list[dict]:
         with self._lock:
@@ -68,21 +185,25 @@ class ToolRegistry:
             for definition in definitions
         ]
 
+    def capabilities_as_dicts(self) -> list[dict]:
+        with self._lock:
+            caps = list(self._capabilities.values())
+        return [cap.to_dict() for cap in caps]
+
     def catalog(self) -> str:
         with self._lock:
-            if not self._definitions:
-                return "AVAILABLE TOOLS: (none)"
-            lines = ["AVAILABLE TOOLS:"]
-            for t in self._definitions.values():
-                lines.append(f"\n- {t.name}: {t.description}")
-                lines.append(f"  params: {json.dumps(t.input_schema)}")
-                if t.examples:
-                    ex = t.examples[0]
-                    inp = json.dumps(ex.get("input", {}))
-                    out = str(ex.get("output", ""))[:80]
-                    lines.append(f"  example: input={inp} -> output={out}")
+            if not self._definitions and not self._capabilities:
+                return "AVAILABLE TOOLS & CAPABILITIES: (none)"
+            lines = ["AVAILABLE CAPABILITIES:"]
+            for cap in self._capabilities.values():
+                status_icon = "✓" if cap.health == CapabilityHealth.HEALTHY else ("!" if cap.health == CapabilityHealth.DEGRADED else "✗")
+                lines.append(f"\n- [{status_icon}] {cap.name} ({cap.owner_module}) [{cap.type.value}] - Reliability: {int(cap.reliability.score*100)}%")
+                lines.append(f"  {cap.description}")
+                lines.append(f"  params: {json.dumps(cap.inputs)}")
+                if cap.requirements:
+                    lines.append(f"  requires: {', '.join(cap.requirements)}")
             lines.append(
-                '\nTo call a tool output exactly: {"tool": "name", "params": {...}}'
+                '\nTo call a tool output exactly: {\"tool\": \"name\", \"params\": {...}}'
             )
             return "\n".join(lines)
 
@@ -100,33 +221,51 @@ class ToolRegistry:
     async def execute(self, name: str, params: dict) -> ToolResult:
         with self._lock:
             tool = self._definitions.get(name)
+            cap = self._capabilities.get(name)
         if not tool:
             with self._lock:
                 available = list(self._definitions.keys())
+            self.record_execution(name, success=False, failure_reason="Unknown tool")
             return ToolResult(
                 error=f"Unknown tool: '{name}'. Available: {available}",
                 retryable=False,
             )
-        if not tool.handler:
+        handler = tool.handler or (cap.handler if cap else None)
+        if not handler:
+            self.record_execution(name, success=False, failure_reason="No handler")
             return ToolResult(error=f"Tool '{name}' has no handler", retryable=False)
         try:
-            result = await tool.handler(**params) if hasattr(tool.handler, '__await__') else tool.handler(**params)
-            return ToolResult(output=str(result))
+            result = await handler(**params) if hasattr(handler, '__await__') else handler(**params)
+            res = ToolResult(output=str(result))
+            self.record_execution(name, success=True)
+            return res
         except TypeError as e:
+            err = f"Wrong params for '{name}': {e}. Schema: {json.dumps(tool.input_schema)}"
+            self.record_execution(name, success=False, failure_reason=err)
             return ToolResult(
-                error=f"Wrong params for '{name}': {e}. Schema: {json.dumps(tool.input_schema)}",
+                error=err,
                 retryable=True,
             )
         except Exception as e:
-            return ToolResult(error=f"'{name}' failed: {str(e)}", retryable=True)
+            err = f"'{name}' failed: {str(e)}"
+            self.record_execution(name, success=False, failure_reason=err)
+            return ToolResult(error=err, retryable=True)
 
     def __len__(self) -> int:
         with self._lock:
-            return len(self._definitions)
+            return max(len(self._definitions), len(self._capabilities))
+
+
+# Single Authoritative Registry alias
+CapabilityRegistry = ToolRegistry
 
 
 def new_registry() -> ToolRegistry:
     return ToolRegistry()
+
+
+def new_capability_registry() -> ToolRegistry:
+    return new_registry()
 
 
 _default_tool_registry_lock = threading.Lock()
@@ -145,3 +284,7 @@ def _ensure_registry() -> ToolRegistry:
 
 def get_tool(name: str) -> ToolDefinition:
     return _ensure_registry().get(name)
+
+
+def get_capability(name: str) -> CapabilityDefinition | None:
+    return _ensure_registry().get_capability(name)

@@ -1,48 +1,17 @@
-"""
-Module: core.strategy.generator
-Auto-reconstructed backend component.
-"""
+"""Minimal strategy generator surface."""
 from __future__ import annotations
-from typing import Any, Callable, Optional
-from dataclasses import dataclass, field
-import logging
 
-logger = logging.getLogger(__name__)
-
-class DynamicMeta(type):
-    def __getattr__(cls, name: str) -> Any:
-        return name
-
-@dataclass
-class StrategyGenerator(metaclass=DynamicMeta):
-    def __init__(self, *args, **kwargs):
-        for k, v in kwargs.items():
-            setattr(self, k, v)
-    def __getattr__(self, name: str) -> Any:
-        return lambda *a, **kw: None
-    def __call__(self, *args, **kwargs) -> Any:
-        return self
-    async def __aenter__(self):
-        return self
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        pass
-
-def classify_goal(*args, **kwargs) -> Any:
-    return None
-async def async_classify_goal(*args, **kwargs) -> Any:
-    return None
+from core.strategy.models import Prediction, Strategy
 
 
-def __getattr__(name: str) -> Any:
-    class DynamicStub(metaclass=DynamicMeta):
-        def __init__(self, *args, **kwargs):
-            pass
-        def __call__(self, *args, **kwargs):
-            return self
-        def __getattr__(self, item):
-            return DynamicStub()
-        async def __aenter__(self):
-            return self
-        async def __aexit__(self, exc_type, exc_val, exc_tb):
-            pass
-    return DynamicStub()
+class StrategyGenerator:
+    def generate(self, goal: str):
+        return [Strategy(name="Default", description="Default implementation strategy", goal=goal, prediction=Prediction())]
+
+
+def classify_goal(goal: str) -> str:
+    return "coding" if any(token in goal.lower() for token in ("build", "fix", "code", "app")) else "general"
+
+
+async def async_classify_goal(goal: str) -> str:
+    return classify_goal(goal)

@@ -1,43 +1,166 @@
-"""
-Module: core.research.models
-Auto-reconstructed backend component.
-"""
+# Copyright (c) 2024-2026 JARVIS Project
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 from __future__ import annotations
-from typing import Any, Callable, Optional
+
 from dataclasses import dataclass, field
-import logging
+from typing import List, Dict, Any, Optional
+from datetime import datetime
 
-logger = logging.getLogger(__name__)
-
-class DynamicMeta(type):
-    def __getattr__(cls, name: str) -> Any:
-        return name
 
 @dataclass
-class Fact(metaclass=DynamicMeta):
-    def __init__(self, *args, **kwargs):
-        for k, v in kwargs.items():
-            setattr(self, k, v)
-    def __getattr__(self, name: str) -> Any:
-        return lambda *a, **kw: None
-    def __call__(self, *args, **kwargs) -> Any:
-        return self
-    async def __aenter__(self):
-        return self
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        pass
+class ResearchTask:
+    """A research task / goal to be accomplished."""
+    id: str = field(default_factory=lambda: str(uuid4()) if False else "")
+    query: str = ""
+    description: str = ""
+    created_at: datetime = field(default_factory=datetime.now)
+    status: str = "pending"  # pending, researching, completed, failed
+    priority: float = 0.5
 
 
-def __getattr__(name: str) -> Any:
-    class DynamicStub(metaclass=DynamicMeta):
-        def __init__(self, *args, **kwargs):
-            pass
-        def __call__(self, *args, **kwargs):
-            return self
-        def __getattr__(self, item):
-            return DynamicStub()
-        async def __aenter__(self):
-            return self
-        async def __aexit__(self, exc_type, exc_val, exc_tb):
-            pass
-    return DynamicStub()
+def uuid4():
+    import uuid
+    return uuid.uuid4()
+
+
+@dataclass
+class ResearchPlan:
+    """A structured research plan breaking a task into steps."""
+    id: str = field(default_factory=uuid4)
+    task_id: str = ""
+    goal: str = ""
+    steps: List[dict] = field(default_factory=list)
+    status: str = "pending"  # pending, in_progress, completed, failed
+    created_at: datetime = field(default_factory=datetime.now)
+
+
+@dataclass
+class ResearchStep:
+    """A single step in a research plan."""
+    id: str = field(default_factory=uuid4)
+    step_number: int = 0
+    action: str = ""  # e.g., "search", "fetch", "extract", "synthesize"
+    description: str = ""
+    input: dict = field(default_factory=dict)
+    output: Any = None
+    status: str = "pending"  # pending, completed, failed
+    error: str = ""
+
+
+@dataclass
+class Source:
+    """A research source (web page, document, etc.)."""
+    id: str = field(default_factory=uuid4)
+    url: str = ""
+    title: str = ""
+    content: str = ""
+    snippet: str = ""
+    fetched_at: datetime = field(default_factory=datetime.now)
+    credibility: float = 0.5  # 0.0-1.0
+    relevance: float = 0.0  # 0.0-1.0 to query
+
+
+@dataclass
+class Evidence:
+    """Evidence supporting a claim."""
+    id: str = field(default_factory=uuid4)
+    claim_id: str = ""
+    source_id: str = ""
+    content: str = ""
+    relevance: float = 0.5  # 0.0-1.0
+    confidence: float = 0.5  # 0.0-1.0 in claim
+    extracted_at: datetime = field(default_factory=datetime.now)
+
+
+@dataclass
+class Claim:
+    """A claim made during research."""
+    id: str = field(default_factory=uuid4)
+    text: str = ""
+    research_task_id: str = ""
+    status: str = "unverified"  # unverified, supported, contradicted, false
+    evidence_ids: List[str] = field(default_factory=list)
+    confidence: float = 0.5  # 0.0-1.0
+    created_at: datetime = field(default_factory=datetime.now)
+
+
+@dataclass
+class Fact:
+    """A extracted fact from a source."""
+    id: str = field(default_factory=uuid4)
+    claim: str = ""
+    source_url: str = ""
+    source_title: str = ""
+    text: str = ""
+    confidence: float = 0.5  # 0.0-1.0
+    extracted_at: datetime = field(default_factory=datetime.now)
+
+
+@dataclass
+class Hypothesis:
+    """A hypothesis generated during research."""
+    id: str = field(default_factory=uuid4)
+    text: str = ""
+    research_task_id: str = ""
+    status: str = "unsubstantiated"  # unsubstantiated, supported, rejected
+    supporting_evidence: List[str] = field(default_factory=list)
+    contradicting_evidence: List[str] = field(default_factory=list)
+    confidence: float = 0.5
+    created_at: datetime = field(default_factory=datetime.now)
+
+
+@dataclass
+class ResearchResult:
+    """The final result of a research task."""
+    id: str = field(default_factory=uuid4)
+    task_id: str = ""
+    summary: str = ""
+    key_findings: List[str] = field(default_factory=list)
+    sources: List[Source] = field(default_factory=list)
+    claims: List[Claim] = field(default_factory=list)
+    hypotheses: List[Hypothesis] = field(default_factory=list)
+    conclusion: str = ""
+    overall_confidence: float = 0.0  # 0.0-1.0
+    status: str = "completed"  # completed, failed
+    completed_at: datetime = field(default_factory=datetime.now)
+
+
+@dataclass
+class ResearchReport:
+    """Structured research report output."""
+    summary: str = ""
+    key_findings: List[str] = field(default_factory=list)
+    sources: List[Dict[str, Any]] = field(default_factory=list)
+    claims: List[Dict[str, Any]] = field(default_factory=list)
+    overall_confidence: float = 0.0
+    status: str = "completed"
+    generated_at: datetime = field(default_factory=datetime.now)
+
+
+@dataclass
+class ResearchConfidence:
+    """Confidence assessment for research results."""
+    overall: float = 0.5
+    source_quality: float = 0.5
+    evidence_coverage: float = 0.5
+    contradiction_count: int = 0
+    missing_info: List[str] = field(default_factory=list)
+
+
+@dataclass
+class ResearchError:
+    """Error information from research failure."""
+    code: str = ""
+    message: str = ""
+    recoverable: bool = True
+    suggested_action: str = ""

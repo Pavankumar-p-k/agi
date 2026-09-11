@@ -16,6 +16,13 @@ class ConfigurationService:
         if data:
             self._data.update(data)
 
+    @property
+    def browser(self) -> Any:
+        """Compatibility view for browser acceptance harnesses."""
+        if "browser" not in self._data or not isinstance(self._data["browser"], dict):
+            self._data["browser"] = {}
+        return _ConfigSection(self._data["browser"])
+
     def _resolve_key(self, key: str) -> tuple[dict[str, Any], str] | None:
         parts = key.split(".")
         if not parts:
@@ -113,3 +120,14 @@ class ConfigurationService:
 
 configuration = ConfigurationService()
 configuration.load()
+
+
+class _ConfigSection:
+    def __init__(self, data: dict[str, Any]):
+        self.__dict__["_data"] = data
+
+    def __getattr__(self, key: str) -> Any:
+        return self._data.get(key)
+
+    def __setattr__(self, key: str, value: Any) -> None:
+        self._data[key] = value

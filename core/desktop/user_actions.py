@@ -805,7 +805,10 @@ class UserActions:
                 "UninstallString=$_.UninstallString} }; "
                 "$r | Sort-Object Name | ConvertTo-Json -Compress"
             )
-            res = subprocess.run(["powershell", "-NoProfile", "-Command", ps], capture_output=True, text=True, timeout=60)
+            res = subprocess.run(
+                ["powershell", "-NoProfile", "-Command", ps],
+                capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60,
+            )
             out = res.stdout.strip()
             import json
             if not out or out == "null":
@@ -2474,7 +2477,10 @@ class UserActions:
                 "UninstallString=$_.UninstallString} }; "
                 "$r | Sort-Object Name | ConvertTo-Json -Compress"
             )
-            res = subprocess.run(["powershell", "-NoProfile", "-Command", ps], capture_output=True, text=True, timeout=60)
+            res = subprocess.run(
+                ["powershell", "-NoProfile", "-Command", ps],
+                capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60,
+            )
             out = res.stdout.strip()
             import json
             if not out or out == "null":

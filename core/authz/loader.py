@@ -1,43 +1,20 @@
-"""
-Module: core.authz.loader
-Auto-reconstructed backend component.
-"""
 from __future__ import annotations
-from typing import Any, Callable, Optional
-from dataclasses import dataclass, field
-import logging
 
-logger = logging.getLogger(__name__)
+from pathlib import Path
+import yaml
 
-class DynamicMeta(type):
-    def __getattr__(cls, name: str) -> Any:
-        return name
-
-@dataclass
-class PolicyLoader(metaclass=DynamicMeta):
-    def __init__(self, *args, **kwargs):
-        for k, v in kwargs.items():
-            setattr(self, k, v)
-    def __getattr__(self, name: str) -> Any:
-        return lambda *a, **kw: None
-    def __call__(self, *args, **kwargs) -> Any:
-        return self
-    async def __aenter__(self):
-        return self
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        pass
+from core.authz.engine import authz_engine
+from core.authz.schema import Role
 
 
-def __getattr__(name: str) -> Any:
-    class DynamicStub(metaclass=DynamicMeta):
-        def __init__(self, *args, **kwargs):
-            pass
-        def __call__(self, *args, **kwargs):
-            return self
-        def __getattr__(self, item):
-            return DynamicStub()
-        async def __aenter__(self):
-            return self
-        async def __aexit__(self, exc_type, exc_val, exc_tb):
-            pass
-    return DynamicStub()
+class PolicyLoader:
+    def __init__(self, roles_path: str = "config/roles.yaml") -> None:
+        self.roles_path = Path(roles_path)
+
+    def load_all(self) -> None:
+        if not self.roles_path.exists():
+            return
+        payload = yaml.safe_load(self.roles_path.read_text(encoding="utf-8")) or {}
+        for name, scopes in payload.items():
+            role = Role(str(name).lower()) if str(name).lower() in {r.value for r in Role} else Role.ANALYST
+            authz_engine.register_role(role, set(scopes or []))

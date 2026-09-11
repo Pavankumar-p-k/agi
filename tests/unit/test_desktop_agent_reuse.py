@@ -74,6 +74,25 @@ def test_browse_to_opens_new_tab_without_replacing_active_tab(monkeypatch):
     assert ("hotkey", ("ctrl", "t")) in calls
     assert ("hotkey", ("ctrl", "l")) not in calls
 
+def test_browse_to_rejects_unverified_new_tab(monkeypatch):
+    monkeypatch.setattr(agent.U, "focus_tab", lambda *_args: {"success": False})
+    monkeypatch.setattr(agent.U, "_app_pids", lambda _name: [3333])
+    monkeypatch.setattr(agent.U, "focus_window_win32", lambda _title: {
+        "success": True, "window": "Chrome"
+    })
+    monkeypatch.setattr(agent.dc, "hotkey", lambda *_keys: None)
+    monkeypatch.setattr(agent.dc, "type_text", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(agent.dc, "press_key", lambda *_args: None)
+    monkeypatch.setattr(agent.time, "sleep", lambda _seconds: None)
+    agent.TASK_BROWSER_TABS_OPENED = 0
+
+    result = agent.browse_to("https://www.youtube.com/watch?v=controlled", new_tab=True)
+
+    assert result["success"] is False
+    assert result["opened_new_tab"] is True
+    assert "verify" in result["error"].lower()
+
+
 
 def test_browse_to_reuses_matching_tab(monkeypatch):
     monkeypatch.setattr(agent.U, "focus_tab", lambda _app, _title: {

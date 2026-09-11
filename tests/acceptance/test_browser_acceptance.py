@@ -725,5 +725,10 @@ async def main():
 
 
 if __name__ == "__main__":
-    runner = asyncio.run(main())
+    async def run_and_cleanup():
+        runner = await main()
+        await BrowserManager.instance().stop()
+        return runner
+
+    runner = asyncio.run(run_and_cleanup())
     sys.exit(0 if runner.summary()[2] == 0 else 1)

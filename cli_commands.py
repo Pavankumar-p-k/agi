@@ -43,3 +43,7 @@ else:
     for _name in dir(_MODULE):
         if not _name.startswith("_"):
             globals()[_name] = getattr(_MODULE, _name)
+    # Preserve the historical private import used by the CLI test and
+    # integration callers while keeping the public alias available.
+    if hasattr(_MODULE, "_cmd_activity"):
+        _cmd_activity = _MODULE._cmd_activity

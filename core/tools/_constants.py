@@ -1,45 +1,28 @@
-"""
-Module: core.tools._constants
-Auto-reconstructed backend component.
-"""
+"""Shared tool parsing constants."""
 from __future__ import annotations
-from typing import Any, Callable, Optional
+
 from dataclasses import dataclass, field
-import logging
+from typing import Any
 
-logger = logging.getLogger(__name__)
 
-class DynamicMeta(type):
-    def __getattr__(cls, name: str) -> Any:
-        return name
+TOOL_TAGS = frozenset({
+    "build_project", "repair_project", "run_tests", "runtime_validate", "cancel_build",
+    "manage_memory", "create_session", "chat_with_model",
+})
 
-TOOL_TAGS = frozenset()
 
 @dataclass
-class ToolBlock(metaclass=DynamicMeta):
-    def __init__(self, *args, **kwargs):
-        for k, v in kwargs.items():
-            setattr(self, k, v)
-    def __getattr__(self, name: str) -> Any:
-        return lambda *a, **kw: None
-    def __call__(self, *args, **kwargs) -> Any:
-        return self
-    async def __aenter__(self):
-        return self
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        pass
+class ToolBlock:
+    tool_type: str
+    arguments: Any = None
 
+    @property
+    def tool(self) -> str:
+        return self.tool_type
 
-def __getattr__(name: str) -> Any:
-    class DynamicStub(metaclass=DynamicMeta):
-        def __init__(self, *args, **kwargs):
-            pass
-        def __call__(self, *args, **kwargs):
-            return self
-        def __getattr__(self, item):
-            return DynamicStub()
-        async def __aenter__(self):
-            return self
-        async def __aexit__(self, exc_type, exc_val, exc_tb):
-            pass
-    return DynamicStub()
+    @property
+    def content(self) -> Any:
+        return self.arguments
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"tool": self.tool_type, "arguments": self.arguments}

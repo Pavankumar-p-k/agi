@@ -1,48 +1,30 @@
-"""
-Module: core.authz.engine
-Auto-reconstructed backend component.
-"""
 from __future__ import annotations
-from typing import Any, Callable, Optional
-from dataclasses import dataclass, field
-import logging
 
-logger = logging.getLogger(__name__)
-
-class DynamicMeta(type):
-    def __getattr__(cls, name: str) -> Any:
-        return name
-
-@dataclass
-class PolicyEngine(metaclass=DynamicMeta):
-    def __init__(self, *args, **kwargs):
-        for k, v in kwargs.items():
-            setattr(self, k, v)
-    def __getattr__(self, name: str) -> Any:
-        return lambda *a, **kw: None
-    def __call__(self, *args, **kwargs) -> Any:
-        return self
-    async def __aenter__(self):
-        return self
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        pass
-
-def authz_engine(*args, **kwargs) -> Any:
-    return None
-async def async_authz_engine(*args, **kwargs) -> Any:
-    return None
+from core.authz.schema import AuthContext, Role
 
 
-def __getattr__(name: str) -> Any:
-    class DynamicStub(metaclass=DynamicMeta):
-        def __init__(self, *args, **kwargs):
-            pass
-        def __call__(self, *args, **kwargs):
-            return self
-        def __getattr__(self, item):
-            return DynamicStub()
-        async def __aenter__(self):
-            return self
-        async def __aexit__(self, exc_type, exc_val, exc_tb):
-            pass
-    return DynamicStub()
+class PolicyEngine:
+    def __init__(self) -> None:
+        self.roles: dict[Role, set[str]] = {}
+
+    def register_role(self, role: Role, scopes: set[str]) -> None:
+        self.roles[role] = {str(scope.value if hasattr(scope, "value") else scope) for scope in scopes}
+
+    def _scope_covers(self, granted: str, requested: str) -> bool:
+        if granted == requested:
+            return True
+        if granted.endswith(":*"):
+            return requested.startswith(granted[:-1])
+        return False
+
+    def evaluate(self, context: AuthContext, requested: str) -> bool:
+        requested = str(requested.value if hasattr(requested, "value") else requested)
+        if Role.ADMIN in context.roles:
+            return True
+        granted = set(context.scopes)
+        for role in context.roles:
+            granted.update(self.roles.get(role, set()))
+        return any(self._scope_covers(scope, requested) for scope in granted)
+
+
+authz_engine = PolicyEngine()

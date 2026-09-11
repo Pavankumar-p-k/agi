@@ -228,7 +228,12 @@ class DesktopController:
             return blocked
         try:
             import webbrowser
-            webbrowser.open(url)
+            if not webbrowser.open(url):
+                return DesktopAction(
+                    action_type="open_url",
+                    params={"url": url},
+                    error="Browser reported that the URL could not be opened",
+                )
             return DesktopAction(
                 action_type="open_url",
                 params={"url": url},
