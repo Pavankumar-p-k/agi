@@ -1,29 +1,53 @@
-"""
-Module: core.planner.outcomes
-Auto-reconstructed backend component.
+"""Module: core.planner.outcomes
+Outcome model for planner execution results.
+
+At minimum distinguish:
+    SUCCESS
+    FAILURE
+    BLOCKED
+    UNCONFIRMED
+    REPLANNED
+
+Critical rule:
+    No verification
+    → UNCONFIRMED
+
+    Not SUCCESS
 """
 from __future__ import annotations
-from typing import Any, Callable, Optional
-from dataclasses import dataclass, field
-import logging
 
-logger = logging.getLogger(__name__)
-
-class DynamicMeta(type):
-    def __getattr__(cls, name: str) -> Any:
-        return name
+from enum import Enum, auto
+from typing import Any
 
 
-def __getattr__(name: str) -> Any:
-    class DynamicStub(metaclass=DynamicMeta):
-        def __init__(self, *args, **kwargs):
-            pass
-        def __call__(self, *args, **kwargs):
-            return self
-        def __getattr__(self, item):
-            return DynamicStub()
-        async def __aenter__(self):
-            return self
-        async def __aexit__(self, exc_type, exc_val, exc_tb):
-            pass
-    return DynamicStub()
+class PlannerOutcome(str, Enum):
+    """Outcome of a planner execution cycle."""
+
+    SUCCESS = "success"
+    FAILURE = "failure"
+    BLOCKED = "blocked"
+    UNCONFIRMED = "unconfirmed"
+    REPLANNED = "replanned"
+
+
+def determine_outcome(
+    *,
+    success: bool,
+    verified: bool,
+    replanned: bool = False,
+) -> PlannerOutcome:
+    """Determine the planner outcome from execution facts.
+
+    Rules:
+    1. If not success → FAILURE
+    2. If success but not verified → UNCONFIRMED
+    3. If success and verified and replanned → REPLANNED
+    4. If success and verified and not replanned → SUCCESS
+    """
+    if not success:
+        return PlannerOutcome.FAILURE
+    if not verified:
+        return PlannerOutcome.UNCONFIRMED
+    if replanned:
+        return PlannerOutcome.REPLANNED
+    return PlannerOutcome.SUCCESS

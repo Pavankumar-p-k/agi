@@ -32,6 +32,7 @@ class MemoryFacade:
         self._semantic = None
         self._task = None
         self._decision = None
+        self._experience = None
 
     # ------------------------------------------------------------------ #
     # Lazy backend accessors
@@ -91,6 +92,17 @@ class MemoryFacade:
                 logger.debug("TaskStore unavailable: %s", exc)
                 self._task = False
         return self._task if self._task is not False else None
+
+    @property
+    def _experience_recorder(self):
+        if self._experience is None:
+            try:
+                from memory.experience import ExperienceRecorder
+                self._experience = ExperienceRecorder(self._episodic_store)
+            except Exception as exc:
+                logger.debug("ExperienceRecorder unavailable: %s", exc)
+                self._experience = False
+        return self._experience if self._experience is not False else None
 
     @property
     def _decision_store(self):
@@ -341,6 +353,65 @@ class MemoryFacade:
         if store is not None:
             return store.get_lessons(limit, user_id)
         return []
+
+    # ------------------------------------------------------------------ #
+    # Public API — Experience (goal-level procedures)
+    # ------------------------------------------------------------------ #
+
+    def record_experience(
+        self,
+        goal: str,
+        actions: list[dict],
+        *,
+        verified: bool,
+        context: dict | None = None,
+        error: str | None = None,
+        evidence: dict | None = None,
+        specialist: str = "",
+        episode_type: str = "task",
+        tags: list[str] | None = None,
+        user_id: str = "default",
+    ) -> str:
+        """Record one verified execution outcome for later reuse.
+
+        Backed by the episodic store — see memory/experience.py.  "Verified"
+        must come from a verification engine (actual observed state), never
+        from an action's return value.
+        """
+        recorder = self._experience_recorder
+        if recorder is None:
+            return ""
+        return recorder.record_outcome(
+            goal,
+            actions,
+            verified=verified,
+            context=context,
+            error=error,
+            evidence=evidence,
+            specialist=specialist,
+            episode_type=episode_type,
+            tags=tags,
+            user_id=user_id,
+        )
+
+    def recall_experience(self, goal: str, top_k: int = 5,
+                          user_id: str = "default") -> list[dict]:
+        """Return past episodes similar to ``goal`` with freshness/expiry info."""
+        recorder = self._experience_recorder
+        if recorder is None:
+            return []
+        return recorder.recall_outcomes(goal, top_k=top_k, user_id=user_id)
+
+    def best_procedure(self, goal: str, user_id: str = "default") -> dict | None:
+        """Aggregate similar past episodes into one reusable procedure summary.
+
+        Returns None when nothing similar was ever recorded — the honest
+        "no memory, plan from scratch" answer.
+        """
+        recorder = self._experience_recorder
+        if recorder is None:
+            return None
+        return recorder.best_procedure(goal, user_id=user_id)
 
     # ------------------------------------------------------------------ #
     # Vector store (ChromaDB)

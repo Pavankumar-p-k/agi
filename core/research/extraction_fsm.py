@@ -12,6 +12,8 @@
 # limitations under the License.
 from __future__ import annotations
 
+from enum import Enum
+
 import logging
 from typing import List, Dict, Any, Optional
 from datetime import datetime

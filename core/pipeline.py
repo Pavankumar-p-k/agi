@@ -1,8 +1,11 @@
 """
 Module: core.pipeline
 Auto-reconstructed backend component.
-"""
-from __future__ import annotations
+
+.. deprecated:: 2026-01
+   This module is obsolete. Use `core.pipeline` (the package) instead.
+   The canonical pipeline implementation lives in `core/pipeline/`.
+   ``core/pipeline.py`` will be removed in a future release.from __future__ import annotations
 from typing import Any, Callable, Optional
 from dataclasses import dataclass, field
 import logging

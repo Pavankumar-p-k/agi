@@ -25,6 +25,7 @@ from core.coding.impact_analyzer import ImpactAnalyzer
 from core.coding.refactor_safety import RefactorSafetyEngine
 from core.coding.refactoring_engine import RefactoringEngine
 from core.coding.repository_indexer import RepositoryIndexer
+from core.coding.tool_broker import CodingToolBroker
 from core.coding.verification import CodingVerifier
 from core.specialist import SpecialistModule, SpecialistResult
 from tools.base_tool import (
@@ -69,6 +70,7 @@ class CodingAI(SpecialistModule):
         self.simulator = ChangeSimulation(self.indexer, self.dependency_graph, self.architecture, self.impact)
         self.refactoring = RefactoringEngine(self.indexer, self.dependency_graph, self.architecture, self.impact)
         self.verifier = verifier or CodingVerifier(self.repository)
+        self.tool_broker = CodingToolBroker(self)
 
     @property
     def name(self) -> str:
@@ -330,28 +332,77 @@ class CodingAI(SpecialistModule):
         simulation = self.simulator.simulate(plan)
         actions.append(CodingAction("simulation", "Predicted affected files, conflicts, and breakages", simulation.to_dict()))
 
+        # When no implementer is injected, ask the tool broker to select a
+        # capability for observability. Selection alone does not authorize
+        # filesystem changes; execution remains explicit via an implementer.
+        active_implementer = implementer
+        broker_selection: dict | None = None
+        broker_implementer = None
+        if active_implementer is None:
+            sel = self.tool_broker.select_capability(plan)
+            broker_selection = sel.to_dict()
+            actions.append(CodingAction(
+                "tool_selection",
+                f"Broker selected capability: {sel.capability.value}",
+                broker_selection,
+            ))
+            # A broker-supplied implementer is only meaningful when a
+            # verification signal exists; without commands every attempt would
+            # fail identically, so execution stays off (honest UNKNOWN).
+            if constraints.commands:
+                broker_implementer = self.tool_broker.build_implementer(plan)
+
         implementation_records: list[dict[str, Any]] = []
-        if implementer:
-            for attempt in range(1, max(1, constraints.max_attempts) + 1):
-                records = implementer(plan)
-                implementation_records.extend(records)
-                actions.append(CodingAction("implementation", f"Implementation attempt {attempt}", {"records": records}))
-                verification = self.verifier.verify(constraints.commands)
-                actions.append(CodingAction("verification", f"Verification attempt {attempt}", verification.to_dict()))
-                if verification.status == "success":
-                    return CodingResult(
-                        CodingStatus.SUCCESS,
-                        objective,
-                        plan.to_dict(),
-                        actions,
-                        files_changed=verification.files_changed,
-                        tests=[check.to_dict() for check in verification.checks],
-                        verification=verification.to_dict(),
-                        evidence={"risk": risk, "implementation": implementation_records, "contract": self.capability_contract()},
-                    )
-                failures.extend(f"{check.command} failed" for check in verification.checks if not check.success)
-        verification = self.verifier.verify(constraints.commands)
-        status = CodingStatus.UNKNOWN if not implementer and not failures else CodingStatus.FAILED
+        # A repair loop only makes sense when verification commands exist:
+        # with no commands there is no failure signal to repair against, so
+        # the implementer gets exactly one attempt (never blind retries).
+        max_attempts = max(1, constraints.max_attempts) if constraints.commands else 1
+        attempts_used = 0
+        last_verification = None
+        for attempt in range(1, max_attempts + 1):
+            attempt_implementer = active_implementer or broker_implementer
+            if attempt_implementer is None:
+                break
+            if attempt > 1:
+                actions.append(CodingAction(
+                    "repair",
+                    f"Repair attempt {attempt} after failed verification",
+                    {"attempt": attempt, "prior_failures": list(failures)},
+                ))
+            attempts_used = attempt
+            records = attempt_implementer(plan)
+            implementation_records.extend(records)
+            actions.append(CodingAction("implementation", f"Implementation attempt {attempt}", {"records": records}))
+            last_verification = self.verifier.verify(constraints.commands)
+            actions.append(CodingAction("verification", f"Verification attempt {attempt}", last_verification.to_dict()))
+            if last_verification.status == "success":
+                return CodingResult(
+                    CodingStatus.SUCCESS,
+                    objective,
+                    plan.to_dict(),
+                    actions,
+                    files_changed=last_verification.files_changed,
+                    tests=[check.to_dict() for check in last_verification.checks],
+                    verification=last_verification.to_dict(),
+                    evidence={
+                        "risk": risk,
+                        "implementation": implementation_records,
+                        "attempts": attempts_used,
+                        "contract": self.capability_contract(),
+                    },
+                )
+            failures.extend(
+                f"{check.command} failed"
+                for check in (last_verification.checks or [])
+                if not check.success
+            )
+
+        # Honest outcome: if an implementer acted but verification never
+        # confirmed success, the result is FAILED — never optimistic. When
+        # nothing was implemented, the outcome cannot be established: UNKNOWN.
+        implementer_ran = attempts_used > 0
+        verification = last_verification if last_verification is not None else self.verifier.verify(constraints.commands)
+        status = CodingStatus.FAILED if implementer_ran else CodingStatus.UNKNOWN
         return CodingResult(
             status,
             objective,
@@ -361,6 +412,11 @@ class CodingAI(SpecialistModule):
             tests=[check.to_dict() for check in verification.checks],
             verification=verification.to_dict(),
             failures=failures,
-            evidence={"risk": risk, "contract": self.capability_contract()},
+            evidence={
+                "risk": risk,
+                "implementation": implementation_records,
+                "attempts": attempts_used,
+                "contract": self.capability_contract(),
+            },
             remaining_risks=[item.message for item in simulation.breakages],
         )

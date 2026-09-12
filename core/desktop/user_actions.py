@@ -42,6 +42,56 @@ MIN_RECOVERY_CONFIDENCE = 0.6
 HOURS = 3600.0
 
 
+def _reuse_explorer_window(path: str) -> dict[str, Any] | None:
+    """Navigate an existing visible Explorer window before creating another."""
+    import pygetwindow as gw
+
+    explorers = [
+        window for window in gw.getAllWindows()
+        if window.title.strip()
+        and ("file explorer" in window.title.casefold() or window.title.casefold() in {"documents", "downloads"})
+        and window.width > 300
+        and window.height > 200
+    ]
+    if not explorers:
+        return None
+
+    target = Path(path)
+    folder = target if target.is_dir() else target.parent
+    window = next((item for item in explorers if item.isActive), explorers[0])
+    if window.isMinimized:
+        window.restore()
+    window.activate()
+    time.sleep(0.25)
+    pyautogui.hotkey("ctrl", "l")
+    pyautogui.write(str(folder), interval=0.01)
+    pyautogui.press("enter")
+    time.sleep(0.8)
+
+    clicked = False
+    if target.is_file():
+        try:
+            from pywinauto import Desktop
+
+            uia_window = Desktop(backend="uia").window(handle=window._hWnd)
+            expected = target.stem.casefold()
+            for item in uia_window.descendants(control_type="ListItem"):
+                if item.window_text().strip().casefold() == expected:
+                    item.click_input()
+                    clicked = True
+                    break
+        except Exception:
+            clicked = False
+
+    return {
+        "success": True,
+        "path": str(path),
+        "folder": str(folder),
+        "reused_existing_window": True,
+        "clicked_target": clicked,
+    }
+
+
 def _load_element_cache() -> dict:
     try:
         if ELEMENT_CACHE_FILE.exists():
@@ -1434,6 +1484,9 @@ class UserActions:
         if not _os.path.exists(path):
             return {"success": False, "error": f"Path does not exist: {path}", "path": path}
         try:
+            reused = _reuse_explorer_window(path)
+            if reused is not None:
+                return reused
             subprocess.Popen(["explorer.exe", f"/select,{path}"], shell=False)
             return {"success": True, "path": path, "revealed_in_explorer": True}
         except Exception as e:
@@ -3106,6 +3159,9 @@ class UserActions:
         if not _os.path.exists(path):
             return {"success": False, "error": f"Path does not exist: {path}", "path": path}
         try:
+            reused = _reuse_explorer_window(path)
+            if reused is not None:
+                return reused
             subprocess.Popen(["explorer.exe", f"/select,{path}"], shell=False)
             return {"success": True, "path": path, "revealed_in_explorer": True}
         except Exception as e:

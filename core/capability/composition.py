@@ -1,12 +1,19 @@
-"""
-Module: core.capability.composition
-Composition engine for building multi-capability plans.
+"""Composition engine: goal → ordered capability plan with providers.
+
+Completed from the committed contract in tests/architecture/test_capability_gates.py
+(Gates 5, 8).  ``compose`` resolves the goal's capability subgraph through the
+existing CapabilityGraph, negotiates a provider per step via the
+CapabilityNegotiator (which consults the live provider router), and resolves
+permissions through the existing PermissionManager — composition never grants
+authority the permission layer does not allow.
 """
 from __future__ import annotations
-from typing import Any
-from dataclasses import dataclass, field
-from hashlib import sha256
+
 import logging
+from dataclasses import dataclass, field
+from typing import Any, Optional
+
+from core.capability.graph import CapabilityGraph
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +25,8 @@ class CompositionStep:
     permission: dict[str, Any] = field(default_factory=dict)
     action: str = ""
     params: dict[str, Any] = field(default_factory=dict)
+    score: float = 0.0
+    reason: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -26,93 +35,92 @@ class CompositionStep:
             "permission": self.permission,
             "action": self.action,
             "params": self.params,
+            "score": self.score,
+            "reason": self.reason,
         }
 
 
 @dataclass
 class CompositionPlan:
+    goal: str = ""
     steps: tuple[CompositionStep, ...] = ()
     blocked: bool = False
     subgraph_fingerprint: str = ""
+    total_score: float = 0.0
+    avg_confidence: float = 0.0
 
     def to_dict(self) -> dict[str, Any]:
         return {
+            "goal": self.goal,
             "steps": [s.to_dict() for s in self.steps],
             "blocked": self.blocked,
             "subgraph_fingerprint": self.subgraph_fingerprint,
+            "total_score": self.total_score,
+            "avg_confidence": self.avg_confidence,
         }
 
 
-_TASK_CAPABILITY_MAP: dict[str, list[str]] = {
-    "build app": ["coding", "filesystem"],
-    "browse web": ["browser", "network"],
-    "write code": ["coding", "filesystem"],
-    "read file": ["filesystem"],
-    "send email": ["network"],
-    "search web": ["browser", "network"],
-    "manage desktop": ["desktop"],
-    "take screenshot": ["desktop"],
-}
-
-_TASK_CAPABILITY_PLAN: dict[str, list[dict[str, Any]]] = {
-    "build app": [
-        {"capability_id": "coding", "action": "compile"},
-        {"capability_id": "filesystem", "action": "write_file"},
-    ],
-    "browse web": [
-        {"capability_id": "browser", "action": "navigate"},
-        {"capability_id": "network", "action": "http_request"},
-    ],
-    "write code": [
-        {"capability_id": "coding", "action": "edit"},
-        {"capability_id": "filesystem", "action": "write_file"},
-    ],
-    "read file": [
-        {"capability_id": "filesystem", "action": "read_file"},
-    ],
-    "send email": [
-        {"capability_id": "network", "action": "smtp_send"},
-    ],
-    "search web": [
-        {"capability_id": "browser", "action": "search"},
-        {"capability_id": "network", "action": "http_request"},
-    ],
-}
-
-
 class CompositionEngine:
+    """Builds multi-capability plans on top of graph + negotiator."""
+
+    def __init__(
+        self,
+        graph: Optional[CapabilityGraph] = None,
+        negotiator: Any = None,
+        registry: Any = None,
+    ) -> None:
+        self.graph = graph or CapabilityGraph()
+        self.negotiator = negotiator
+        self.registry = registry
+
+    def _get_negotiator(self) -> Any:
+        if self.negotiator is not None:
+            return self.negotiator
+        from core.capability.negotiation import capability_negotiator
+        return capability_negotiator
+
     def compose(self, task: str) -> CompositionPlan:
-        task_lower = task.lower().strip()
-        plan_steps = _TASK_CAPABILITY_PLAN.get(task_lower)
-        if plan_steps is None:
-            cap_ids = _TASK_CAPABILITY_MAP.get(task_lower, [])
-            plan_steps = [{"capability_id": c, "action": "execute"} for c in cap_ids]
+        subgraph = self.graph.resolve_goal(task)
+        steps: list[CompositionStep] = []
+        blocked = False
+        scores: list[float] = []
 
-        if not plan_steps:
-            return CompositionPlan(steps=(), blocked=False, subgraph_fingerprint="")
+        for node in subgraph.nodes:
+            try:
+                from core.permission.manager import PermissionManager
+                result = PermissionManager().resolve(node.capability_id)
+                permission = result.to_dict() if hasattr(result, "to_dict") else {}
+                if getattr(result, "denied", False):
+                    blocked = True
+            except Exception as exc:
+                logger.debug("[composition] permission resolve failed for %s: %s",
+                             node.capability_id, exc)
+                permission = {}
 
-        steps = []
-        has_deny = False
-        for s in plan_steps:
-            cap_id = s["capability_id"]
-            from core.permission.manager import PermissionManager
-            mgr = PermissionManager()
-            result = mgr.resolve(cap_id)
-            perm_dict = result.to_dict()
-            if result.denied:
-                has_deny = True
+            negotiation = self._get_negotiator().resolve(node)
+            provider_id = negotiation.chosen_provider_id
+            if getattr(permission, "get", lambda _k, d=None: None)("denied"):
+                provider_id = ""
+
             steps.append(CompositionStep(
-                capability_id=cap_id,
-                provider_id="" if result.denied else cap_id,
-                permission=perm_dict,
-                action=s.get("action", "execute"),
+                capability_id=node.capability_id,
+                provider_id=provider_id,
+                permission=permission,
+                action="execute",
+                score=negotiation.score,
+                reason=negotiation.reason,
             ))
+            scores.append(negotiation.score)
 
-        fp = sha256(task.encode()).hexdigest()[:16]
+        total = round(sum(scores), 4)
+        avg_conf = round(total / len(scores), 4) if scores else 0.0
         return CompositionPlan(
+            goal=str(task or ""),
             steps=tuple(steps),
-            blocked=has_deny,
-            subgraph_fingerprint=fp,
+            blocked=blocked,
+            subgraph_fingerprint=subgraph.fingerprint,
+            total_score=total,
+            avg_confidence=avg_conf,
         )
 
 

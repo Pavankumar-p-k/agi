@@ -1,29 +1,73 @@
-"""
-Module: core.pipeline.stages.plan_validator
-Auto-reconstructed backend component.
+"""Module: core.pipeline.stages.plan_validator
+Plan validator stage that validates the execution plan from the planner stage.
+
+Validates that the plan is sound, all required capabilities are available,
+and the plan can be safely executed. Records validation evidence for the
+pipeline's evidence trail.
 """
 from __future__ import annotations
-from typing import Any, Callable, Optional
-from dataclasses import dataclass, field
-import logging
 
-logger = logging.getLogger(__name__)
-
-class DynamicMeta(type):
-    def __getattr__(cls, name: str) -> Any:
-        return name
+from core.pipeline.base import PipelineStage, StageOutcome, StageResult
+from core.pipeline.context import PipelineContext
 
 
-def __getattr__(name: str) -> Any:
-    class DynamicStub(metaclass=DynamicMeta):
-        def __init__(self, *args, **kwargs):
-            pass
-        def __call__(self, *args, **kwargs):
-            return self
-        def __getattr__(self, item):
-            return DynamicStub()
-        async def __aenter__(self):
-            return self
-        async def __aexit__(self, exc_type, exc_val, exc_tb):
-            pass
-    return DynamicStub()
+class PlanValidatorStage(PipelineStage):
+    """Stage that validates the execution plan produced by the planner stage.
+
+    Validates:
+    - Plan has sub-goals defined
+    - Execution graph is well-formed
+    - Required capabilities are identifiable
+    - Plan structure is consistent and complete
+
+    If validation fails, the stage short-circuits the pipeline and
+    propagates the failure reason for downstream handling.
+    """
+
+    async def execute(self, context: PipelineContext) -> StageResult:
+        """Validate the plan produced by the planner stage."""
+        metadata = getattr(context, "metadata", {}) or {}
+
+        sub_goals = metadata.get("sub_goals", [])
+        execution_graph_data = metadata.get("execution_graph", [])
+        planning_status = metadata.get("planning_status", "")
+
+        validation_errors: list[str] = []
+
+        # Check that sub-goals exist
+        if not sub_goals:
+            validation_errors.append("No sub-goals defined in plan")
+
+        # Check that execution graph has content
+        if not execution_graph_data:
+            validation_errors.append("No execution graph defined")
+
+        # Check planning status is not a failure state
+        if planning_status in ("failed", "unconfirmed"):
+            validation_errors.append(
+                f"Plan in failure/unconfirmed state: {planning_status}"
+            )
+
+        if validation_errors:
+            # Build validation result metadata
+            val_metadata = dict(metadata)
+            val_metadata["plan_validator_errors"] = validation_errors
+            val_metadata["plan_validator_status"] = "failed"
+
+            return StageResult(
+                outcome=StageOutcome.FAIL,
+                context=context,
+                metadata=val_metadata,
+                error="; ".join(validation_errors),
+            )
+
+        # Plan validation passed
+        val_metadata = dict(metadata)
+        val_metadata["plan_validator_status"] = "passed"
+        val_metadata["plan_validator_errors"] = []
+
+        return StageResult(
+            outcome=StageOutcome.CONTINUE,
+            context=context,
+            metadata=val_metadata,
+        )

@@ -16,6 +16,7 @@ USER CONFIGURES EVERYTHING HERE (via .env / .env.local):
   ANTHROPIC_API_KEY=...
   GEMINI_API_KEY=...
   GROQ_API_KEY=...
+  OPENROUTER_API_KEY=...
   DEEPSEEK_API_KEY=...
 
 Any module calls get_provider("chat") or get_provider("vision") and gets the
@@ -39,7 +40,10 @@ ROOT = Path(__file__).resolve().parent
 # ---------- .env LOADER (no extra dep; we avoid python-dotenv if missing) ----------
 def _load_dotenv(paths=None):
     if paths is None:
-        paths = [ROOT / ".env.local", ROOT / ".env"]
+        # Load shared defaults first, then let machine-local settings override
+        # them. Existing process environment variables remain authoritative.
+        paths = [ROOT / ".env", ROOT / ".env.local"]
+    process_keys = set(os.environ)
     for p in paths:
         p = Path(p)
         if not p.exists():
@@ -52,7 +56,7 @@ def _load_dotenv(paths=None):
                 key, _, value = line.partition("=")
                 key = key.strip()
                 value = value.strip().strip('"').strip("'")
-                if key and key not in os.environ:
+                if key and key not in process_keys:
                     os.environ[key] = value
         except Exception:
             continue
@@ -226,6 +230,44 @@ class GroqLLM(LLMProvider):
         return resp.json()["choices"][0]["message"]["content"]
 
 
+# ---------- OPENROUTER ----------
+class OpenRouterLLM(LLMProvider):
+    provider_id = "openrouter"
+    supports_vision = False
+
+    def __init__(self, api_key=None, model=None):
+        self.api_key = api_key or _env("OPENROUTER_API_KEY")
+        self.model = model or _env("OPENROUTER_MODEL", "openai/gpt-4o-mini")
+        self.base_url = _env(
+            "OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1"
+        ).rstrip("/")
+        if not self.api_key:
+            raise RuntimeError("OPENROUTER_API_KEY not set")
+
+    def chat(self, prompt, temperature=0.1, max_tokens=None):
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": _env("OPENROUTER_SITE_URL", "http://localhost"),
+            "X-Title": _env("OPENROUTER_APP_NAME", "JARVIS"),
+        }
+        body = {
+            "model": self.model,
+            "temperature": temperature,
+            "messages": [{"role": "user", "content": prompt}],
+        }
+        if max_tokens is not None:
+            body["max_tokens"] = max_tokens
+        resp = requests.post(
+            f"{self.base_url}/chat/completions",
+            headers=headers,
+            json=body,
+            timeout=240,
+        )
+        resp.raise_for_status()
+        return resp.json()["choices"][0]["message"]["content"]
+
+
 # ---------- MODEL FACTORY / REGISTRY ----------
 _PROVIDER_CLASSES = {
     "ollama": OllamaLLM,
@@ -233,6 +275,7 @@ _PROVIDER_CLASSES = {
     "anthropic": AnthropicLLM,
     "gemini": GeminiLLM,
     "groq": GroqLLM,
+    "openrouter": OpenRouterLLM,
 }
 
 
@@ -250,7 +293,7 @@ def _build(provider_id: str, model: str) -> LLMProvider:
         # try aliases
         aliases = {"codex": "openai", "gpt": "openai", "claude": "anthropic", "deepseek": "openai",
                    "ollama": "ollama", "mistral": "openai", "together": "openai", "fireworks": "openai",
-                   "nvidia": "openai", "xai": "openai", "openrouter": "openai"}
+                   "nvidia": "openai", "xai": "openai"}
         provider_id = aliases.get(provider_id, provider_id)
         cls = _PROVIDER_CLASSES.get(provider_id)
         if cls is None:
@@ -289,7 +332,10 @@ def get_provider(role: str = "chat") -> LLMProvider:
     try:
         provider = _build(provider_id, model)
     except RuntimeError as e:
-        # graceful fallback to Ollama so modules never break during testing
+        # Explicit cloud configuration must fail visibly; otherwise a missing
+        # key silently routes long-task reasoning back to the small local model.
+        if provider_id != "ollama" and _env(role_key):
+            raise
         print(f"[jarvis_provider] WARNING: {e} — falling back to Ollama for role '{role}'")
         provider = OllamaLLM(model=_env("OLLAMA_MODEL", "qwen2.5-coder:3b"))
     _MODEL_CACHE[ref] = provider

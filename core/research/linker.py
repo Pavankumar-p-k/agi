@@ -16,7 +16,8 @@ import logging
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 
-from core.research.models import Fact, Claim, Evidence, Source, KnowledgeGraph, GraphNode, GraphEdge
+from core.research.models import Fact, Claim, Evidence, Source
+from core.research.graph_models import KnowledgeGraph, GraphNode, GraphEdge
 from core.research.evidence_tracker import EvidenceTracker
 
 logger = logging.getLogger("jarvis.research.linker")

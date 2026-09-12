@@ -18,6 +18,8 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime
 
 from core.research.models import ResearchResult, ResearchConfidence, Fact, Claim, Hypothesis
+from core.research.evidence_tracker import EvidenceTracker
+from core.research.graph_store import GraphStore
 
 logger = logging.getLogger("jarvis.research.reflection")
 

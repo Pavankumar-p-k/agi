@@ -17,6 +17,8 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime
 
 from core.research.models import Hypothesis, Fact, Claim, Evidence, ResearchResult
+from core.research.evidence_tracker import EvidenceTracker
+from core.research.reasoner import FactReasoner
 
 logger = logging.getLogger("jarvis.research.hypothesis")
 

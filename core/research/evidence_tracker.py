@@ -170,7 +170,7 @@ class EvidenceTracker:
             evidence_coverage=1.0 - stats["contradiction_rate"],
             contradiction_count=stats["contradicted"],
             missing_info=[]  # Would be computed from gaps
-        }
+        )
     
     def clear(self) -> None:
         """Clear all tracked data."""

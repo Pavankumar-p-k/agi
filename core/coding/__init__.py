@@ -28,6 +28,7 @@ from core.coding.refactoring_engine import (
     ValidationResult,
 )
 from core.coding.repository_indexer import FileEntry, RepositoryIndexer
+from core.coding.tool_broker import CapabilityInfo, CodingCapability, CodingToolBroker, ToolSelection
 from core.coding.verification import CheckResult, CodingVerifier, VerificationResult
 
 __all__ = [
@@ -73,6 +74,10 @@ __all__ = [
     "ValidationResult",
     "FileEntry",
     "RepositoryIndexer",
+    "CapabilityInfo",
+    "CodingCapability",
+    "CodingToolBroker",
+    "ToolSelection",
     "CheckResult",
     "CodingVerifier",
     "VerificationResult",

@@ -1,5 +1,30 @@
 """
-Module: core.agents._legacy.sentinel
+Module: core.agents._legacy.sentinel.deprecated:: 2026-01
+   This module is retained for compatibility. It will be removed once all
+   importers have migrated to the canonical active path.
+
+   Canonical active path:
+   - core.agents.graph
+   - core.agents.executor
+   - core.planner
+   - core.pipeline.pipeline
+
+   Do not import from this module in new code. Existing importers should
+   migrate away as part of routine archive/deprecation cycles.
+
+.. deprecated:: 2026-01
+   This module is retained for compatibility. It will be removed once all
+   importers have migrated to the canonical active path.
+
+   Canonical active path:
+   - core.agents.graph
+   - core.agents.executor
+   - core.planner
+   - core.pipeline.pipeline
+
+   Do not import from this module in new code. Existing importers should
+   migrate away as part of routine archive/deprecation cycles.
+
 Auto-reconstructed backend component.
 """
 from __future__ import annotations

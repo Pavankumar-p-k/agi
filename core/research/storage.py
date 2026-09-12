@@ -77,8 +77,8 @@ class ResearchStorage:
                             'predicate': "research_claim",
                             'object': claim.evidence_ids.__len__() if claim.evidence_ids else 0,
                             'confidence': claim.confidence,
-                            'category": "research",
-                            'user_id": "jarvis",
+                            'category': 'research',
+                            'user_id': 'jarvis',
                             "tenant_id": "default",
                         })()
                     ], force=True)

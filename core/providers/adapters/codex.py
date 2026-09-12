@@ -1,43 +1,96 @@
-"""
-Module: core.providers.adapters.codex
-Auto-reconstructed backend component.
+"""CodexProvider: external Codex CLI as a capability provider.
+
+Completed from the committed contract in tests/unit/test_provider_ecosystem.py
+(TestExternalProviders).
 """
 from __future__ import annotations
-from typing import Any, Callable, Optional
-from dataclasses import dataclass, field
+
+import asyncio
 import logging
+import shutil
+import time
+from typing import Any, Optional
+
+from core.providers.base import (
+    ExecutionProvider,
+    ExecutionResult,
+    ProviderCapabilities,
+    ProviderHealth,
+    ProviderHealthStatus,
+)
 
 logger = logging.getLogger(__name__)
 
-class DynamicMeta(type):
-    def __getattr__(cls, name: str) -> Any:
-        return name
-
-@dataclass
-class CodexProvider(metaclass=DynamicMeta):
-    def __init__(self, *args, **kwargs):
-        for k, v in kwargs.items():
-            setattr(self, k, v)
-    def __getattr__(self, name: str) -> Any:
-        return lambda *a, **kw: None
-    def __call__(self, *args, **kwargs) -> Any:
-        return self
-    async def __aenter__(self):
-        return self
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        pass
+_CLI = "codex"
 
 
-def __getattr__(name: str) -> Any:
-    class DynamicStub(metaclass=DynamicMeta):
-        def __init__(self, *args, **kwargs):
-            pass
-        def __call__(self, *args, **kwargs):
-            return self
-        def __getattr__(self, item):
-            return DynamicStub()
-        async def __aenter__(self):
-            return self
-        async def __aexit__(self, exc_type, exc_val, exc_tb):
-            pass
-    return DynamicStub()
+class CodexProvider(ExecutionProvider):
+    provider_id = "codex"
+    name = "Codex CLI"
+    version = "1.0.0"
+    priority = 70
+
+    def __init__(self) -> None:
+        super().__init__()
+
+    @property
+    def installed(self) -> bool:
+        """Detected live from PATH (class attr when patched by tests)."""
+        return shutil.which(_CLI) is not None
+
+    def capabilities(self) -> ProviderCapabilities:
+        return ProviderCapabilities(
+            capability_names=["coding", "scaffold", "review", "testing"],
+            languages=["python", "javascript", "typescript"],
+        )
+
+    async def health(self) -> ProviderHealth:
+        if not self.installed:
+            return self._cache_health(ProviderHealth(
+                status=ProviderHealthStatus.DOWN,
+                error="codex CLI not found on PATH",
+            ))
+        return self._cache_health(ProviderHealth(status=ProviderHealthStatus.HEALTHY))
+
+    async def execute(
+        self, task: dict[str, Any], context: Optional[dict[str, Any]] = None
+    ) -> ExecutionResult:
+        start = time.time()
+        if not self.installed:
+            return ExecutionResult(
+                success=False,
+                error="codex CLI not installed",
+                duration_ms=round((time.time() - start) * 1000.0, 3),
+            )
+        goal = str(task.get("goal", "") or "")
+        cmd = [_CLI, "exec", goal] if goal else [_CLI, "--version"]
+        try:
+            proc = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            try:
+                stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=600)
+            except asyncio.TimeoutError:
+                proc.kill()
+                return ExecutionResult(
+                    success=False,
+                    error="codex CLI timed out",
+                    duration_ms=round((time.time() - start) * 1000.0, 3),
+                )
+            output = stdout.decode("utf-8", errors="replace").strip()
+            err = stderr.decode("utf-8", errors="replace").strip()
+            return ExecutionResult(
+                success=proc.returncode == 0,
+                output=output,
+                error=err or None,
+                exit_code=proc.returncode,
+                duration_ms=round((time.time() - start) * 1000.0, 3),
+            )
+        except Exception as exc:
+            return ExecutionResult(
+                success=False,
+                error=f"{type(exc).__name__}: {exc}",
+                duration_ms=round((time.time() - start) * 1000.0, 3),
+            )

@@ -33,7 +33,13 @@ class BrowserManager:
             return
         from playwright.async_api import async_playwright
         self._playwright = await async_playwright().start()
-        self.browser = await self._playwright.chromium.launch(headless=not headed)
+        # Prefer the real installed Chrome (channel="chrome"): far better
+        # fingerprint than bundled Chromium — search engines and hardened sites
+        # serve bot-challenges to raw Chromium builds.  Fall back gracefully.
+        try:
+            self.browser = await self._playwright.chromium.launch(headless=not headed, channel="chrome")
+        except Exception:
+            self.browser = await self._playwright.chromium.launch(headless=not headed)
         self._started = True
 
     async def ensure_browser_alive(self) -> None:

@@ -55,9 +55,13 @@ from core.research.knowledge_graph import KnowledgeGraphManager
 
 from core.research.graph_store import GraphStore
 
-from core.research.synthesizer import Synthesizer, FactSynthesizer, ResearchReport
+from core.research.synthesizer import Synthesizer, ResearchReport
 
 from core.research.reflection import ResearchReflection
+
+import logging
+
+logger = logging.getLogger("jarvis.research.ai")
 
 from core.research.storage import ResearchStorage
 
@@ -164,6 +168,7 @@ class ResearchAI:
             else:
                 return loop.run_until_complete(
                     self._aresearch(query, task_description, max_sources, max_rounds)
+                )
         except Exception as e:
             logger.error(f"Research AI error: {e}", exc_info=True)
             return {

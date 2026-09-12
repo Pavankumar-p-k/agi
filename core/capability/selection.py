@@ -80,6 +80,7 @@ class CapabilitySelector:
         min_reliability: float = 0.0,
         required_types: Optional[list[CapabilityType | str]] = None,
         available_requirements: Optional[list[str]] = None,
+        include_capabilities: Optional[list[str]] = None,
     ) -> list[CapabilityRecommendation]:
         """Rank and recommend available capabilities for a goal without dictating the plan."""
         goal_tokens = set(goal.lower().replace("-", " ").replace(".", " ").split())
@@ -123,9 +124,13 @@ class CapabilitySelector:
             # 6. Score relevance
             cap_text = f"{cap.name} {cap.description} {cap.owner_module} {' '.join(cap.risk_tags)}".lower()
             overlap = sum(1 for token in goal_tokens if token in cap_text)
+            is_explicitly_included = bool(include_capabilities and cap.name in include_capabilities)
 
-            if overlap == 0 and len(goal_tokens) > 0:
+            if overlap == 0 and len(goal_tokens) > 0 and not is_explicitly_included:
                 continue
+
+            if is_explicitly_included:
+                overlap = max(1, overlap)
 
             # Base score from overlap
             base_score = overlap / max(1, len(goal_tokens))

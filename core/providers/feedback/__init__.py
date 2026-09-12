@@ -1,35 +1,35 @@
-"""
-Module: core.providers.feedback.__init__
-Auto-reconstructed backend component.
+"""Provider decision-feedback engine (X.6).
+
+Components:
+- ``models``      — ProviderResult, ScoreBreakdown, RoutingDecision,
+                    RoutingOutcome, CalibrationEntry, CalibrationConfig.
+- ``store``       — FeedbackStore (SQLite persistence for decisions,
+                    outcomes, calibrations).
+- ``recorder``    — DecisionRecorder (records decisions + outcomes).
+- ``calibrator``  — CalibrationEngine (context-aware adjustments).
 """
 from __future__ import annotations
-from typing import Any, Callable, Optional
-from dataclasses import dataclass, field
-import logging
 
-logger = logging.getLogger(__name__)
-
-class DynamicMeta(type):
-    def __getattr__(cls, name: str) -> Any:
-        return name
-
-# Re-exports
-from core.providers.feedback.models import CalibrationEntry, RoutingDecision, RoutingOutcome, ScoreBreakdown
+from core.providers.feedback.models import (
+    CalibrationConfig,
+    CalibrationEntry,
+    ProviderResult,
+    RoutingDecision,
+    RoutingOutcome,
+    ScoreBreakdown,
+)
 from core.providers.feedback.recorder import DecisionRecorder
 from core.providers.feedback.calibrator import CalibrationEngine
 from core.providers.feedback.store import FeedbackStore
 
-
-def __getattr__(name: str) -> Any:
-    class DynamicStub(metaclass=DynamicMeta):
-        def __init__(self, *args, **kwargs):
-            pass
-        def __call__(self, *args, **kwargs):
-            return self
-        def __getattr__(self, item):
-            return DynamicStub()
-        async def __aenter__(self):
-            return self
-        async def __aexit__(self, exc_type, exc_val, exc_tb):
-            pass
-    return DynamicStub()
+__all__ = [
+    "CalibrationConfig",
+    "CalibrationEntry",
+    "CalibrationEngine",
+    "DecisionRecorder",
+    "FeedbackStore",
+    "ProviderResult",
+    "RoutingDecision",
+    "RoutingOutcome",
+    "ScoreBreakdown",
+]

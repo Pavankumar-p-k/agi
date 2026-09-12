@@ -73,11 +73,13 @@ class CapabilityAI:
         """Recommend capabilities to Super-Brain for solving a sub-goal."""
         # 1. First check if a previously learned operational recipe exists
         learned = self.experience.find_experience(goal)
+        include_caps = learned.capabilities_used if learned else None
         recs = self.selector.recommend_capabilities(
             goal,
             max_risk=max_risk,
             min_reliability=min_reliability,
             required_types=required_types,
+            include_capabilities=include_caps,
         )
         # If we have a learned recipe, boost matching capabilities
         if learned:

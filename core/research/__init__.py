@@ -20,10 +20,10 @@ from core.research.models import (
     ResearchReport,
     ResearchConfidence,
     ResearchError,
-    Belief,
-    BeliefState,
     Conclusion,
     CounterHypothesis,
+    Belief,
+    BeliefState,
 )
 
 from core.research.graph_models import (
@@ -31,7 +31,6 @@ from core.research.graph_models import (
     GraphEdge,
     EdgeType,
     KnowledgeGraph,
-    KnowledgeGraphManager,
 )
 
 from core.research.extractor import Extractor
@@ -40,7 +39,7 @@ from core.research.evidence_tracker import EvidenceTracker
 
 from core.research.linker import Linker
 
-from core.research.planner import ResearchPlanner, ResearchPlan, ResearchStep, uuid4
+from core.research.planner import ResearchPlanner, ResearchPlan, ResearchStep
 
 from core.research.reasoner import FactReasoner, ComparisonEngine
 
@@ -56,7 +55,7 @@ from core.research.knowledge_graph import KnowledgeGraphManager
 
 from core.research.graph_store import GraphStore
 
-from core.research.synthesizer import Synthesizer, FactSynthesizer, ResearchReport
+from core.research.synthesizer import Synthesizer, ResearchReport
 
 from core.research.reflection import ResearchReflection
 
@@ -91,7 +90,6 @@ __all__ = [
     "GraphEdge",
     "EdgeType",
     "KnowledgeGraph",
-    "KnowledgeGraphManager",
     "Extractor",
     "EvidenceTracker",
     "Linker",
@@ -104,7 +102,6 @@ __all__ = [
     "Hypothesis",
     "HypothesisGenerator",
     "Synthesizer",
-    "FactSynthesizer",
     "ResearchReport",
     "ResearchReflection",
     "ResearchStorage",

@@ -12,6 +12,7 @@
 # limitations under the License.
 from memory.extraction import ExtractedFact, extract_facts, extract_facts_from_messages
 from memory.fact_store import FactStore, get_fact_store
+from memory.experience import ExperienceRecorder
 
 try:
     from memory.episodic_store import EpisodicStore
@@ -30,6 +31,7 @@ __all__ = [
     "SemanticStore",
     "TaskStore",
     "DecisionStore",
+    "ExperienceRecorder",
     "extract_facts",
     "extract_facts_from_messages",
 ]

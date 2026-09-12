@@ -12,6 +12,8 @@
 # limitations under the License.
 from __future__ import annotations
 
+from enum import Enum
+
 import asyncio
 import json
 import logging
@@ -48,7 +50,7 @@ class Retriever:
         self.research_in_progress: Dict[str, bool] = {}
     
     async def research(self, query: str, max_sources: int = 15, 
-                       max rounds: int = 8, use_ragflow: bool = False,
+                       max_rounds: int = 8, use_ragflow: bool = False,
                        rag_dataset_ids: Optional[List[str]] = None) -> Result[Dict[str, Any], ProviderError]:
         """Perform research on a query, returning gathered evidence."""
         

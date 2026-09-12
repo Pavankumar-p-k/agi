@@ -12,15 +12,22 @@
 # limitations under the License.
 from __future__ import annotations
 
+import uuid
+import logging
 from dataclasses import dataclass, field
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 
 
+def uuid4_str():
+    """Generate a UUID string for default field values."""
+    return str(uuid.uuid4())
+
+
 @dataclass
 class ResearchTask:
     """A research task / goal to be accomplished."""
-    id: str = field(default_factory=lambda: str(uuid4()) if False else "")
+    id: str = field(default_factory=uuid4_str)
     query: str = ""
     description: str = ""
     created_at: datetime = field(default_factory=datetime.now)
@@ -28,15 +35,10 @@ class ResearchTask:
     priority: float = 0.5
 
 
-def uuid4():
-    import uuid
-    return uuid.uuid4()
-
-
 @dataclass
 class ResearchPlan:
     """A structured research plan breaking a task into steps."""
-    id: str = field(default_factory=uuid4)
+    id: str = field(default_factory=uuid4_str)
     task_id: str = ""
     goal: str = ""
     steps: List[dict] = field(default_factory=list)
@@ -47,7 +49,7 @@ class ResearchPlan:
 @dataclass
 class ResearchStep:
     """A single step in a research plan."""
-    id: str = field(default_factory=uuid4)
+    id: str = field(default_factory=uuid4_str)
     step_number: int = 0
     action: str = ""  # e.g., "search", "fetch", "extract", "synthesize"
     description: str = ""
@@ -60,7 +62,7 @@ class ResearchStep:
 @dataclass
 class Source:
     """A research source (web page, document, etc.)."""
-    id: str = field(default_factory=uuid4)
+    id: str = field(default_factory=uuid4_str)
     url: str = ""
     title: str = ""
     content: str = ""
@@ -73,7 +75,7 @@ class Source:
 @dataclass
 class Evidence:
     """Evidence supporting a claim."""
-    id: str = field(default_factory=uuid4)
+    id: str = field(default_factory=uuid4_str)
     claim_id: str = ""
     source_id: str = ""
     content: str = ""
@@ -85,7 +87,7 @@ class Evidence:
 @dataclass
 class Claim:
     """A claim made during research."""
-    id: str = field(default_factory=uuid4)
+    id: str = field(default_factory=uuid4_str)
     text: str = ""
     research_task_id: str = ""
     status: str = "unverified"  # unverified, supported, contradicted, false
@@ -97,7 +99,7 @@ class Claim:
 @dataclass
 class Fact:
     """A extracted fact from a source."""
-    id: str = field(default_factory=uuid4)
+    id: str = field(default_factory=uuid4_str)
     claim: str = ""
     source_url: str = ""
     source_title: str = ""
@@ -109,7 +111,7 @@ class Fact:
 @dataclass
 class Hypothesis:
     """A hypothesis generated during research."""
-    id: str = field(default_factory=uuid4)
+    id: str = field(default_factory=uuid4_str)
     text: str = ""
     research_task_id: str = ""
     status: str = "unsubstantiated"  # unsubstantiated, supported, rejected
@@ -122,7 +124,7 @@ class Hypothesis:
 @dataclass
 class ResearchResult:
     """The final result of a research task."""
-    id: str = field(default_factory=uuid4)
+    id: str = field(default_factory=uuid4_str)
     task_id: str = ""
     summary: str = ""
     key_findings: List[str] = field(default_factory=list)
@@ -155,6 +157,57 @@ class ResearchConfidence:
     evidence_coverage: float = 0.5
     contradiction_count: int = 0
     missing_info: List[str] = field(default_factory=list)
+
+
+@dataclass
+class Belief:
+    """A belief state representing what the research AI 'believes' about a claim."""
+    id: str = field(default_factory=uuid4_str)
+    claim_id: str = ""
+    state: str = "unverified"  # verified, unverified, contradicted
+    confidence: float = 0.5
+    evidence_ids: List[str] = field(default_factory=list)
+    last_updated: datetime = field(default_factory=datetime.now)
+
+
+@dataclass
+class BeliefState:
+    """Container for tracking multiple belief states."""
+    beliefs: Dict[str, Belief] = field(default_factory=dict)
+    updated_at: datetime = field(default_factory=datetime.now)
+
+    def update(self, belief: Belief) -> None:
+        """Update or add a belief state."""
+        self.beliefs[belief.id] = belief
+        self.updated_at = datetime.now()
+
+    def get(self, belief_id: str) -> Optional[Belief]:
+        """Get a belief by ID."""
+        return self.beliefs.get(belief_id)
+
+
+@dataclass
+class Conclusion:
+    """A conclusion drawn from research evidence."""
+    claim_id: str = ""
+    claim_text: str = ""
+    support_level: str = "unverified"  # verified, unverified, contradicted
+    confidence: float = 0.5
+    supporting_evidence_count: int = 0
+    contradicting_evidence_count: int = 0
+    evidence_summary: str = ""
+    overall_confidence: float = 0.5
+
+
+@dataclass
+class CounterHypothesis:
+    """An alternative hypothesis to explain the same evidence."""
+    id: str = field(default_factory=uuid4_str)
+    text: str = ""
+    related_claim: str = ""
+    evidence_required: List[str] = field(default_factory=list)
+    status: str = "unsubstantiated"  # unsubstantiated, supported, rejected
+    confidence: float = 0.3
 
 
 @dataclass

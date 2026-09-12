@@ -16,7 +16,8 @@ class Capability:
     id: str = field(default_factory=lambda: str(uuid.uuid4()))
     name: str = ""
     description: str = ""
-    version: str = "1.0.0"
+    version: Any = 1
+    tags: tuple[str, ...] = ()
     permissions: tuple[str, ...] = ()
     required_permissions: list[str] = field(default_factory=list)
     metadata: dict[str, Any] = field(default_factory=dict)
@@ -27,6 +28,7 @@ class Capability:
             "name": self.name,
             "description": self.description,
             "version": self.version,
+            "tags": list(self.tags),
             "permissions": self.permissions,
             "required_permissions": self.required_permissions,
             "metadata": self.metadata,

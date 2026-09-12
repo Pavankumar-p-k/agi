@@ -20,5 +20,9 @@ class ToolPolicyEngine:
     def get(self, tool_name: str) -> ToolPolicy | None:
         return self.policies.get(tool_name)
 
+    def get_policy(self, tool_name: str) -> ToolPolicy | None:
+        """Alias of :meth:`get` (dispatch/fuzz contract patch target)."""
+        return self.get(tool_name)
+
 
 policy_engine = ToolPolicyEngine()
