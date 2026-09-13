@@ -105,7 +105,7 @@ class Extractor:
                 continue
             
             # Heuristic: sentences with "is", "are", "was", "were" often contain claims
-            if any(kw in sentence_lower for kw in [" is ", " are ", " was ", " were ", " supports ", " requires ", " uses "]):
+            if any(kw in sentence.lower() for kw in [" is ", " are ", " was ", " were ", " supports ", " requires ", " uses "]):
                 # Skip if it looks like a question or command
                 if sentence.startswith(("How ", "Why ", "What ", "Please ")):
                     continue

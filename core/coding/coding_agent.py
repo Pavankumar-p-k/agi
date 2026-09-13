@@ -120,7 +120,7 @@ class CodingAI(SpecialistModule):
                 verification=VerificationSpec(method="indexed_entries_present"),
                 health=CapabilityHealth.HEALTHY,
                 health_check=lambda: bool(self.health_check()["status"] == "healthy"),
-                handler=lambda force=False: self.indexer.index(force=force).summary(),
+                handler=lambda force=False: (self.indexer.index(force=force), self.indexer.summary())[1],
             ),
             CapabilityDefinition(
                 name="coding.map_architecture",
