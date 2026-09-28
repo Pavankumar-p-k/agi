@@ -1,0 +1,443 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.14.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: C:\Users\peter\jarvis-recovered
+configfile: pyproject.toml
+plugins: anyio-4.15.1, hypothesis-6.168.0, asyncio-1.4.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+collected 87 items
+
+tests\architecture\test_pipeline_reasoning.py ..F...........FFFFFFFFFFFF [ 29%]
+F.FFF....F..F..F..FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF.FFF....F            [100%]
+
+================================== FAILURES ===================================
+E   AssertionError: assert 0.0 is None
+     +  where 0.0 = Decision(activity_id='act_001', stage='test', timestamp=1000.0, inputs={}, outputs={}, rationale='', confidence=0.0, metadata={}).confidence
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:81: AssertionError: assert 0.0 is None
+E   AssertionError: assert 'ReasonerStage' == 'reasoner'
+      
+      - reasoner
+      + ReasonerStage
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:173: AssertionError: assert 'ReasonerStage' == 'reasoner'
+E   AssertionError: assert <StageOutcome.FAIL: 'fail'> == <StageOutcome...E: 'continue'>
+      
+      - continue
+      + fail
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:180: AssertionError: assert <StageOutcome.FAIL: 'fail'> == <StageOutcome...E: 'continue'>
+E   TypeError: 'NoneType' object is not subscriptable
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:193: TypeError: 'NoneType' object is not subscriptable
+E   TypeError: 'NoneType' object is not subscriptable
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:203: TypeError: 'NoneType' object is not subscriptable
+E   TypeError: 'NoneType' object is not subscriptable
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:211: TypeError: 'NoneType' object is not subscriptable
+E   TypeError: 'NoneType' object is not subscriptable
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:219: TypeError: 'NoneType' object is not subscriptable
+E   AssertionError: assert <StageOutcome.FAIL: 'fail'> == <StageOutcome...E: 'continue'>
+      
+      - continue
+      + fail
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:228: AssertionError: assert <StageOutcome.FAIL: 'fail'> == <StageOutcome...E: 'continue'>
+E   AssertionError: assert <StageOutcome.FAIL: 'fail'> == <StageOutcome...E: 'continue'>
+      
+      - continue
+      + fail
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:245: AssertionError: assert <StageOutcome.FAIL: 'fail'> == <StageOutcome...E: 'continue'>
+E   assert 'complexity' in 'class ReasonerStage(PipelineStage):\n    """Stage that reasons about the detected intent and prepares for planning.\n...ning_status": "planning_failed",\n                    "planning_error": str(exc),\n                },\n            )\n'
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:253: assert 'complexity' in 'class ReasonerStage(PipelineStage):\n    """Stage that reasons about the detected intent and prepares for planning.\n...ning_status": "planning_failed",\n                    "planning_error": str(exc),\n                },\n            )\n'
+E   AssertionError: assert 'PlannerStage' == 'planner'
+      
+      - planner
+      + PlannerStage
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:273: AssertionError: assert 'PlannerStage' == 'planner'
+E   AssertionError: assert <StageOutcome.FAIL: 'fail'> == <StageOutcome...E: 'continue'>
+      
+      - continue
+      + fail
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:280: AssertionError: assert <StageOutcome.FAIL: 'fail'> == <StageOutcome...E: 'continue'>
+E   AttributeError: 'PipelineContext' object has no attribute 'planner_result'
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:296: AttributeError: 'PipelineContext' object has no attribute 'planner_result'
+E   TypeError: 'NoneType' object is not subscriptable
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:313: TypeError: 'NoneType' object is not subscriptable
+E   AssertionError: assert 'PlanValidatorStage' == 'plan_validator'
+      
+      - plan_validator
+      + PlanValidatorStage
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:346: AssertionError: assert 'PlanValidatorStage' == 'plan_validator'
+E   AssertionError: assert <StageOutcome.FAIL: 'fail'> == <StageOutcome...E: 'continue'>
+      
+      - continue
+      + fail
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:356: AssertionError: assert <StageOutcome.FAIL: 'fail'> == <StageOutcome...E: 'continue'>
+E   AssertionError: assert True is False
+     +  where True = PipelineContext(request_id='r1', transport='test', user_id=None, session_id=None, identity=None, authentication_result..._id=None, trace_id='', span_stack=[], cancelled=False, formatted_response=None, services=None, metrics={}, metadata={}).plan_validated
+     +    where PipelineContext(request_id='r1', transport='test', user_id=None, session_id=None, identity=None, authentication_result..._id=None, trace_id='', span_stack=[], cancelled=False, formatted_response=None, services=None, metrics={}, metadata={}) = StageResult(outcome=<StageOutcome.FAIL: 'fail'>, context=PipelineContext(request_id='r1', transport='test', user_id=No... 'failed'}, error='No sub-goals defined in plan; No execution graph defined', retry_count=0, metrics={}, span_stack=[]).context
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:365: AssertionError: assert True is False
+E   AssertionError: assert <StageOutcome.FAIL: 'fail'> == <StageOutcome...E: 'continue'>
+      
+      - continue
+      + fail
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:407: AssertionError: assert <StageOutcome.FAIL: 'fail'> == <StageOutcome...E: 'continue'>
+E   AssertionError: assert 0 in {}
+     +  where {} = PipelineContext(request_id='r1', transport='test', user_id=None, session_id=None, identity=None, authentication_result..._id=None, trace_id='', span_stack=[], cancelled=False, formatted_response=None, services=None, metrics={}, metadata={}).selected_capabilities
+     +    where PipelineContext(request_id='r1', transport='test', user_id=None, session_id=None, identity=None, authentication_result..._id=None, trace_id='', span_stack=[], cancelled=False, formatted_response=None, services=None, metrics={}, metadata={}) = StageResult(outcome=<StageOutcome.CONTINUE: 'continue'>, context=PipelineContext(request_id='r1', transport='test', us...thentication_result=None, authorization_result=None, metadata={}, error=None, retry_count=0, metrics={}, span_stack=[]).context
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:453: AssertionError: assert 0 in {}
+E   assert 0 in {}
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:487: assert 0 in {}
+E   TypeError: 'DynamicStub' object can't be awaited
+------------------------------ Captured log call ------------------------------
+WARNING  jarvis.memory.mem0:mem0_adapter.py:30 mem0 not installed ù pip install mem0ai. Using no-op memory.
+ERROR    memory.embedding_memory:embedding_memory.py:87 [Memory] Embedding error
+Traceback (most recent call last):
+  File "C:\Users\peter\jarvis-recovered\.venv\Lib\site-packages\urllib3\connection.py", line 204, in _new_conn
+    sock = connection.create_connection(
+        (self._dns_host, self.port),
+    ...<2 lines>...
+        socket_options=self.socket_options,
+    )
+  File "C:\Users\peter\jarvis-recovered\.venv\Lib\site-packages\urllib3\util\connection.py", line 85, in create_connection
+    raise err
+  File "C:\Users\peter\jarvis-recovered\.venv\Lib\site-packages\urllib3\util\connection.py", line 73, in create_connection
+    sock.connect(sa)
+    ~~~~~~~~~~~~^^^^
+ConnectionRefusedError: [WinError 10061] No connection could be made because the target machine actively refused it
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\peter\jarvis-recovered\.venv\Lib\site-packages\urllib3\connectionpool.py", line 788, in urlopen
+    response = self._make_request(
+        conn,
+    ...<10 lines>...
+        **response_kw,
+    )
+  File "C:\Users\peter\jarvis-recovered\.venv\Lib\site-packages\urllib3\connectionpool.py", line 493, in _make_request
+    conn.request(
+    ~~~~~~~~~~~~^
+        method,
+        ^^^^^^^
+    ...<6 lines>...
+        enforce_content_length=enforce_content_length,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\peter\jarvis-recovered\.venv\Lib\site-packages\urllib3\connection.py", line 500, in request
+    self.endheaders()
+    ~~~~~~~~~~~~~~~^^
+  File "C:\Users\peter\AppData\Local\Python\pythoncore-3.14-64\Lib\http\client.py", line 1353, in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\peter\AppData\Local\Python\pythoncore-3.14-64\Lib\http\client.py", line 1113, in _send_output
+    self.send(msg)
+    ~~~~~~~~~^^^^^
+  File "C:\Users\peter\AppData\Local\Python\pythoncore-3.14-64\Lib\http\client.py", line 1057, in send
+    self.connect()
+    ~~~~~~~~~~~~^^
+  File "C:\Users\peter\jarvis-recovered\.venv\Lib\site-packages\urllib3\connection.py", line 331, in connect
+    self.sock = self._new_conn()
+                ~~~~~~~~~~~~~~^^
+  File "C:\Users\peter\jarvis-recovered\.venv\Lib\site-packages\urllib3\connection.py", line 219, in _new_conn
+    raise NewConnectionError(
+        self, f"Failed to establish a new connection: {e}"
+    ) from e
+urllib3.exceptions.NewConnectionError: HTTPConnection(host='localhost', port=11434): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\peter\jarvis-recovered\.venv\Lib\site-packages\requests\adapters.py", line 696, in send
+    resp = conn.urlopen(
+        method=request.method,
+    ...<9 lines>...
+        chunked=chunked,
+    )
+  File "C:\Users\peter\jarvis-recovered\.venv\Lib\site-packages\urllib3\connectionpool.py", line 842, in urlopen
+    retries = retries.increment(
+        method, url, error=new_e, _pool=self, _stacktrace=sys.exc_info()[2]
+    )
+  File "C:\Users\peter\jarvis-recovered\.venv\Lib\site-packages\urllib3\util\retry.py", line 543, in increment
+    raise MaxRetryError(_pool, url, reason) from reason  # type: ignore[arg-type]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+urllib3.exceptions.MaxRetryError: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/embed (Caused by NewConnectionError("HTTPConnection(host='localhost', port=11434): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it"))
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\peter\jarvis-recovered\memory\embedding_memory.py", line 70, in embed
+    resp = requests.post(self.ollama_url, json={
+        "model": os.getenv("EMBEDDING_MODEL", "nomic-embed-text"),
+        "input": text
+    }, timeout=10)
+  File "C:\Users\peter\jarvis-recovered\.venv\Lib\site-packages\requests\api.py", line 134, in post
+    return request("post", url, data=data, json=json, **kwargs)
+  File "C:\Users\peter\jarvis-recovered\.venv\Lib\site-packages\requests\api.py", line 71, in request
+    return session.request(method=method, url=url, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\peter\jarvis-recovered\.venv\Lib\site-packages\requests\sessions.py", line 651, in request
+    resp = self.send(prep, **send_kwargs)
+  File "C:\Users\peter\jarvis-recovered\.venv\Lib\site-packages\requests\sessions.py", line 784, in send
+    r = adapter.send(request, **kwargs)
+  File "C:\Users\peter\jarvis-recovered\.venv\Lib\site-packages\requests\adapters.py", line 729, in send
+    raise ConnectionError(e, request=request)
+requests.exceptions.ConnectionError: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/embed (Caused by NewConnectionError("HTTPConnection(host='localhost', port=11434): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it"))
+WARNING  memory.tiered_memory:tiered_memory.py:173 [Memory] Semantic search failed: Embedding failed: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/embed (Caused by NewConnectionError("HTTPConnection(host='localhost', port=11434): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it"))
+C:\Users\peter\jarvis-recovered\core\pipeline\pipeline.py:77: TypeError: 'DynamicStub' object can't be awaited
+E   TypeError: 'DynamicStub' object can't be awaited
+------------------------------ Captured log call ------------------------------
+ERROR    memory.embedding_memory:embedding_memory.py:87 [Memory] Embedding error
+Traceback (most recent call last):
+  File "C:\Users\peter\jarvis-recovered\.venv\Lib\site-packages\urllib3\connection.py", line 204, in _new_conn
+    sock = connection.create_connection(
+        (self._dns_host, self.port),
+    ...<2 lines>...
+        socket_options=self.socket_options,
+    )
+  File "C:\Users\peter\jarvis-recovered\.venv\Lib\site-packages\urllib3\util\connection.py", line 85, in create_connection
+    raise err
+  File "C:\Users\peter\jarvis-recovered\.venv\Lib\site-packages\urllib3\util\connection.py", line 73, in create_connection
+    sock.connect(sa)
+    ~~~~~~~~~~~~^^^^
+ConnectionRefusedError: [WinError 10061] No connection could be made because the target machine actively refused it
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\peter\jarvis-recovered\.venv\Lib\site-packages\urllib3\connectionpool.py", line 788, in urlopen
+    response = self._make_request(
+        conn,
+    ...<10 lines>...
+        **response_kw,
+    )
+  File "C:\Users\peter\jarvis-recovered\.venv\Lib\site-packages\urllib3\connectionpool.py", line 493, in _make_request
+    conn.request(
+    ~~~~~~~~~~~~^
+        method,
+        ^^^^^^^
+    ...<6 lines>...
+        enforce_content_length=enforce_content_length,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\peter\jarvis-recovered\.venv\Lib\site-packages\urllib3\connection.py", line 500, in request
+    self.endheaders()
+    ~~~~~~~~~~~~~~~^^
+  File "C:\Users\peter\AppData\Local\Python\pythoncore-3.14-64\Lib\http\client.py", line 1353, in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\peter\AppData\Local\Python\pythoncore-3.14-64\Lib\http\client.py", line 1113, in _send_output
+    self.send(msg)
+    ~~~~~~~~~^^^^^
+  File "C:\Users\peter\AppData\Local\Python\pythoncore-3.14-64\Lib\http\client.py", line 1057, in send
+    self.connect()
+    ~~~~~~~~~~~~^^
+  File "C:\Users\peter\jarvis-recovered\.venv\Lib\site-packages\urllib3\connection.py", line 331, in connect
+    self.sock = self._new_conn()
+                ~~~~~~~~~~~~~~^^
+  File "C:\Users\peter\jarvis-recovered\.venv\Lib\site-packages\urllib3\connection.py", line 219, in _new_conn
+    raise NewConnectionError(
+        self, f"Failed to establish a new connection: {e}"
+    ) from e
+urllib3.exceptions.NewConnectionError: HTTPConnection(host='localhost', port=11434): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\peter\jarvis-recovered\.venv\Lib\site-packages\requests\adapters.py", line 696, in send
+    resp = conn.urlopen(
+        method=request.method,
+    ...<9 lines>...
+        chunked=chunked,
+    )
+  File "C:\Users\peter\jarvis-recovered\.venv\Lib\site-packages\urllib3\connectionpool.py", line 842, in urlopen
+    retries = retries.increment(
+        method, url, error=new_e, _pool=self, _stacktrace=sys.exc_info()[2]
+    )
+  File "C:\Users\peter\jarvis-recovered\.venv\Lib\site-packages\urllib3\util\retry.py", line 543, in increment
+    raise MaxRetryError(_pool, url, reason) from reason  # type: ignore[arg-type]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+urllib3.exceptions.MaxRetryError: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/embed (Caused by NewConnectionError("HTTPConnection(host='localhost', port=11434): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it"))
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\peter\jarvis-recovered\memory\embedding_memory.py", line 70, in embed
+    resp = requests.post(self.ollama_url, json={
+        "model": os.getenv("EMBEDDING_MODEL", "nomic-embed-text"),
+        "input": text
+    }, timeout=10)
+  File "C:\Users\peter\jarvis-recovered\.venv\Lib\site-packages\requests\api.py", line 134, in post
+    return request("post", url, data=data, json=json, **kwargs)
+  File "C:\Users\peter\jarvis-recovered\.venv\Lib\site-packages\requests\api.py", line 71, in request
+    return session.request(method=method, url=url, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\peter\jarvis-recovered\.venv\Lib\site-packages\requests\sessions.py", line 651, in request
+    resp = self.send(prep, **send_kwargs)
+  File "C:\Users\peter\jarvis-recovered\.venv\Lib\site-packages\requests\sessions.py", line 784, in send
+    r = adapter.send(request, **kwargs)
+  File "C:\Users\peter\jarvis-recovered\.venv\Lib\site-packages\requests\adapters.py", line 729, in send
+    raise ConnectionError(e, request=request)
+requests.exceptions.ConnectionError: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/embed (Caused by NewConnectionError("HTTPConnection(host='localhost', port=11434): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it"))
+WARNING  memory.tiered_memory:tiered_memory.py:173 [Memory] Semantic search failed: Embedding failed: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/embed (Caused by NewConnectionError("HTTPConnection(host='localhost', port=11434): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it"))
+C:\Users\peter\jarvis-recovered\core\pipeline\pipeline.py:77: TypeError: 'DynamicStub' object can't be awaited
+E   ImportError: cannot import name 'LLMStepExecutor' from 'core.pipeline.stages.execution' (C:\Users\peter\jarvis-recovered\core\pipeline\stages\execution.py)
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:627: ImportError: cannot import name 'LLMStepExecutor' from 'core.pipeline.stages.execution' (C:\Users\peter\jarvis-recovered\core\pipeline\stages\execution.py)
+E   ImportError: cannot import name 'LLMStepExecutor' from 'core.pipeline.stages.execution' (C:\Users\peter\jarvis-recovered\core\pipeline\stages\execution.py)
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:641: ImportError: cannot import name 'LLMStepExecutor' from 'core.pipeline.stages.execution' (C:\Users\peter\jarvis-recovered\core\pipeline\stages\execution.py)
+E   ImportError: cannot import name 'Runtime' from 'core.pipeline.stages.execution' (C:\Users\peter\jarvis-recovered\core\pipeline\stages\execution.py)
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:655: ImportError: cannot import name 'Runtime' from 'core.pipeline.stages.execution' (C:\Users\peter\jarvis-recovered\core\pipeline\stages\execution.py)
+E   ImportError: cannot import name 'Runtime' from 'core.pipeline.stages.execution' (C:\Users\peter\jarvis-recovered\core\pipeline\stages\execution.py)
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:672: ImportError: cannot import name 'Runtime' from 'core.pipeline.stages.execution' (C:\Users\peter\jarvis-recovered\core\pipeline\stages\execution.py)
+E   ImportError: cannot import name 'Runtime' from 'core.pipeline.stages.execution' (C:\Users\peter\jarvis-recovered\core\pipeline\stages\execution.py)
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:692: ImportError: cannot import name 'Runtime' from 'core.pipeline.stages.execution' (C:\Users\peter\jarvis-recovered\core\pipeline\stages\execution.py)
+E   ImportError: cannot import name 'Runtime' from 'core.pipeline.stages.execution' (C:\Users\peter\jarvis-recovered\core\pipeline\stages\execution.py)
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:706: ImportError: cannot import name 'Runtime' from 'core.pipeline.stages.execution' (C:\Users\peter\jarvis-recovered\core\pipeline\stages\execution.py)
+E   ImportError: cannot import name 'LLMStepExecutor' from 'core.pipeline.stages.execution' (C:\Users\peter\jarvis-recovered\core\pipeline\stages\execution.py)
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:722: ImportError: cannot import name 'LLMStepExecutor' from 'core.pipeline.stages.execution' (C:\Users\peter\jarvis-recovered\core\pipeline\stages\execution.py)
+E   AssertionError: assert 'ExecutionStage' == 'execution'
+      
+      - execution
+      + ExecutionStage
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:735: AssertionError: assert 'ExecutionStage' == 'execution'
+E   AssertionError: assert <StageOutcome.FAIL: 'fail'> == <StageOutcome...E: 'continue'>
+      
+      - continue
+      + fail
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:747: AssertionError: assert <StageOutcome.FAIL: 'fail'> == <StageOutcome...E: 'continue'>
+E   AssertionError: assert <StageOutcome.FAIL: 'fail'> == <StageOutcome...E: 'continue'>
+      
+      - continue
+      + fail
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:758: AssertionError: assert <StageOutcome.FAIL: 'fail'> == <StageOutcome...E: 'continue'>
+E   AssertionError: assert <StageOutcome.FAIL: 'fail'> == <StageOutcome...E: 'continue'>
+      
+      - continue
+      + fail
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:779: AssertionError: assert <StageOutcome.FAIL: 'fail'> == <StageOutcome...E: 'continue'>
+E   AssertionError: assert 'pending' == 'failed'
+      
+      - failed
+      + pending
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:807: AssertionError: assert 'pending' == 'failed'
+E   AttributeError: 'ExecutionStage' object has no attribute 'with_default_providers'
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:813: AttributeError: 'ExecutionStage' object has no attribute 'with_default_providers'
+E   Failed: DID NOT RAISE AttributeError
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:827: Failed: DID NOT RAISE AttributeError
+E   AssertionError: assert <core.pipeline.stages.verification.__getattr__.<locals>.DynamicStub object at 0x000002B6069FE990> == 'safety'
+     +  where <core.pipeline.stages.verification.__getattr__.<locals>.DynamicStub object at 0x000002B6069FE990> = <core.pipeline.stages.verification.__getattr__.<locals>.DynamicStub object at 0x000002B606E24D70>.verifier_name
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:834: AssertionError: assert <core.pipeline.stages.verification.__getattr__.<locals>.DynamicStub object at 0x000002B6069FE990> == 'safety'
+E   AssertionError: assert <core.pipeline.stages.verification.__getattr__.<locals>.DynamicStub object at 0x000002B6069FEC10> == ''
+     +  where <core.pipeline.stages.verification.__getattr__.<locals>.DynamicStub object at 0x000002B6069FEC10> = <core.pipeline.stages.verification.__getattr__.<locals>.DynamicStub object at 0x000002B606E256A0>.message
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:842: AssertionError: assert <core.pipeline.stages.verification.__getattr__.<locals>.DynamicStub object at 0x000002B6069FEC10> == ''
+E   TypeError: 'DynamicStub' object can't be awaited
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:853: TypeError: 'DynamicStub' object can't be awaited
+E   TypeError: 'DynamicStub' object can't be awaited
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:863: TypeError: 'DynamicStub' object can't be awaited
+E   TypeError: 'DynamicStub' object can't be awaited
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:873: TypeError: 'DynamicStub' object can't be awaited
+E   TypeError: 'DynamicStub' object can't be awaited
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:885: TypeError: 'DynamicStub' object can't be awaited
+E   TypeError: 'DynamicStub' object can't be awaited
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:895: TypeError: 'DynamicStub' object can't be awaited
+E   TypeError: 'DynamicStub' object can't be awaited
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:905: TypeError: 'DynamicStub' object can't be awaited
+E   TypeError: 'DynamicStub' object can't be awaited
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:915: TypeError: 'DynamicStub' object can't be awaited
+E   TypeError: 'DynamicStub' object can't be awaited
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:927: TypeError: 'DynamicStub' object can't be awaited
+E   TypeError: 'DynamicStub' object can't be awaited
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:937: TypeError: 'DynamicStub' object can't be awaited
+E   TypeError: 'DynamicStub' object can't be awaited
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:947: TypeError: 'DynamicStub' object can't be awaited
+E   AssertionError: assert <core.pipeline.stages.verification.__getattr__.<locals>.DynamicStub object at 0x000002B67FF35F90> == 'verification'
+     +  where <core.pipeline.stages.verification.__getattr__.<locals>.DynamicStub object at 0x000002B67FF35F90> = <core.pipeline.stages.verification.__getattr__.<locals>.DynamicStub object at 0x000002B60687FA10>.name
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:957: AssertionError: assert <core.pipeline.stages.verification.__getattr__.<locals>.DynamicStub object at 0x000002B67FF35F90> == 'verification'
+E   TypeError: 'DynamicStub' object can't be awaited
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:966: TypeError: 'DynamicStub' object can't be awaited
+E   TypeError: 'DynamicStub' object can't be awaited
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:977: TypeError: 'DynamicStub' object can't be awaited
+E   TypeError: __mro_entries__ must return a tuple
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:985: TypeError: __mro_entries__ must return a tuple
+E   TypeError: __mro_entries__ must return a tuple
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:1006: TypeError: __mro_entries__ must return a tuple
+E   TypeError: 'DynamicStub' object can't be awaited
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:1031: TypeError: 'DynamicStub' object can't be awaited
+E   AssertionError: assert <core.pipeline.store_decision.__getattr__.<locals>.DynamicStub object at 0x000002B67FBB3750> == <core.pipeline.store_decision.__getattr__.<locals>.DynamicStub object at 0x000002B67FBB3610>
+     +  where <core.pipeline.store_decision.__getattr__.<locals>.DynamicStub object at 0x000002B67FBB3750> = StoreDecision().action
+     +    where StoreDecision() = PipelineContext(request_id='r1', transport='test', user_id=None, session_id=None, identity=None, authentication_result..._id=None, trace_id='', span_stack=[], cancelled=False, formatted_response=None, services=None, metrics={}, metadata={}).store_decision
+     +      where PipelineContext(request_id='r1', transport='test', user_id=None, session_id=None, identity=None, authentication_result..._id=None, trace_id='', span_stack=[], cancelled=False, formatted_response=None, services=None, metrics={}, metadata={}) = StageResult(outcome=<StageOutcome.CONTINUE: 'continue'>, context=PipelineContext(request_id='r1', transport='test', us...thentication_result=None, authorization_result=None, metadata={}, error=None, retry_count=0, metrics={}, span_stack=[]).context
+     +  and   <core.pipeline.store_decision.__getattr__.<locals>.DynamicStub object at 0x000002B67FBB3610> = <core.pipeline.store_decision.__getattr__.<locals>.DynamicStub object at 0x000002B67FFAC6E0>.IGNORE
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:1064: AssertionError: assert <core.pipeline.store_decision.__getattr__.<locals>.DynamicStub object at 0x000002B67FBB3750> == <core.pipeline.store_decision.__getattr__.<locals>.DynamicStub object at 0x000002B67FBB3610>
+E   AssertionError: assert <core.pipeline.store_decision.__getattr__.<locals>.DynamicStub object at 0x000002B67FBB3390> == <core.pipeline.store_decision.__getattr__.<locals>.DynamicStub object at 0x000002B67FBB2D50>
+     +  where <core.pipeline.store_decision.__getattr__.<locals>.DynamicStub object at 0x000002B67FBB3390> = StoreDecision().action
+     +    where StoreDecision() = PipelineContext(request_id='r1', transport='test', user_id=None, session_id=None, identity=None, authentication_result..._id=None, trace_id='', span_stack=[], cancelled=False, formatted_response=None, services=None, metrics={}, metadata={}).store_decision
+     +      where PipelineContext(request_id='r1', transport='test', user_id=None, session_id=None, identity=None, authentication_result..._id=None, trace_id='', span_stack=[], cancelled=False, formatted_response=None, services=None, metrics={}, metadata={}) = StageResult(outcome=<StageOutcome.CONTINUE: 'continue'>, context=PipelineContext(request_id='r1', transport='test', us...thentication_result=None, authorization_result=None, metadata={}, error=None, retry_count=0, metrics={}, span_stack=[]).context
+     +  and   <core.pipeline.store_decision.__getattr__.<locals>.DynamicStub object at 0x000002B67FBB2D50> = <core.pipeline.store_decision.__getattr__.<locals>.DynamicStub object at 0x000002B67FEDABA0>.IGNORE
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:1076: AssertionError: assert <core.pipeline.store_decision.__getattr__.<locals>.DynamicStub object at 0x000002B67FBB3390> == <core.pipeline.store_decision.__getattr__.<locals>.DynamicStub object at 0x000002B67FBB2D50>
+E   AssertionError: assert <core.pipelin...002B67FBB2C10> == <core.pipelin...002B67FBB2850>
+      
+      (pytest_assertion plugin: representation of details failed: C:\Users\peter\AppData\Local\Python\pythoncore-3.14-64\Lib\dataclasses.py:1460: TypeError: 'DynamicStub' object is not iterable.
+       Probably an object has a faulty __repr__.)
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:1101: AssertionError: assert <core.pipelin...002B67FBB2C10> == <core.pipelin...002B67FBB2850>
+E   AssertionError: assert <core.pipelin...002B67FBB2350> == <core.pipelin...002B67FBB20D0>
+      
+      (pytest_assertion plugin: representation of details failed: C:\Users\peter\AppData\Local\Python\pythoncore-3.14-64\Lib\dataclasses.py:1460: TypeError: 'DynamicStub' object is not iterable.
+       Probably an object has a faulty __repr__.)
+C:\Users\peter\jarvis-recovered\tests\architecture\test_pipeline_reasoning.py:1167: AssertionError: assert <core.pipelin...002B67FBB2350> == <core.pipelin...002B67FBB20D0>
+=========================== short test summary info ===========================
+FAILED tests/architecture/test_pipeline_reasoning.py::TestDecisionDataclass::test_decision_defaults
+FAILED tests/architecture/test_pipeline_reasoning.py::TestReasonerStage::test_name
+FAILED tests/architecture/test_pipeline_reasoning.py::TestReasonerStage::test_simple_chat
+FAILED tests/architecture/test_pipeline_reasoning.py::TestReasonerStage::test_multi_step_research
+FAILED tests/architecture/test_pipeline_reasoning.py::TestReasonerStage::test_agentic_request
+FAILED tests/architecture/test_pipeline_reasoning.py::TestReasonerStage::test_coding_requirements
+FAILED tests/architecture/test_pipeline_reasoning.py::TestReasonerStage::test_constraints_detected
+FAILED tests/architecture/test_pipeline_reasoning.py::TestReasonerStage::test_no_llm_call
+FAILED tests/architecture/test_pipeline_reasoning.py::TestReasonerStage::test_empty_classification_defaults
+FAILED tests/architecture/test_pipeline_reasoning.py::TestReasonerStage::test_assessment_schema
+FAILED tests/architecture/test_pipeline_reasoning.py::TestPlannerStage::test_name
+FAILED tests/architecture/test_pipeline_reasoning.py::TestPlannerStage::test_simple_chat_produces_one_step
+FAILED tests/architecture/test_pipeline_reasoning.py::TestPlannerStage::test_multi_step_produces_multiple_strategies
+FAILED tests/architecture/test_pipeline_reasoning.py::TestPlannerStage::test_steps_have_logical_schema
+FAILED tests/architecture/test_pipeline_reasoning.py::TestPlanValidatorStage::test_name
+FAILED tests/architecture/test_pipeline_reasoning.py::TestPlanValidatorStage::test_valid_plan_passes
+FAILED tests/architecture/test_pipeline_reasoning.py::TestPlanValidatorStage::test_none_plan_fails
+FAILED tests/architecture/test_pipeline_reasoning.py::TestPlanValidatorStage::test_validates_no_side_effects
+FAILED tests/architecture/test_pipeline_reasoning.py::TestCapabilitySelectionStage::test_respond_intent_resolves
+FAILED tests/architecture/test_pipeline_reasoning.py::TestCapabilitySelectionStage::test_unknown_intent_gets_fallback
+FAILED tests/architecture/test_pipeline_reasoning.py::TestEndToEnd::test_simple_request_flows_through_new_stages
+FAILED tests/architecture/test_pipeline_reasoning.py::TestEndToEnd::test_complex_request_flows_through_all_stages
+FAILED tests/architecture/test_pipeline_reasoning.py::TestStepExecutor::test_llm_executor_wraps_provider
+FAILED tests/architecture/test_pipeline_reasoning.py::TestStepExecutor::test_llm_executor_includes_raw_input
+FAILED tests/architecture/test_pipeline_reasoning.py::TestRuntime::test_runtime_executes_plan_steps
+FAILED tests/architecture/test_pipeline_reasoning.py::TestRuntime::test_runtime_uses_registered_executor
+FAILED tests/architecture/test_pipeline_reasoning.py::TestRuntime::test_runtime_falls_back_to_llm
+FAILED tests/architecture/test_pipeline_reasoning.py::TestRuntime::test_runtime_step_results_accumulate
+FAILED tests/architecture/test_pipeline_reasoning.py::TestRuntime::test_runtime_register_accepts_executor_class
+FAILED tests/architecture/test_pipeline_reasoning.py::TestExecutionStage::test_name
+FAILED tests/architecture/test_pipeline_reasoning.py::TestExecutionStage::test_simple_no_plan_fallback
+FAILED tests/architecture/test_pipeline_reasoning.py::TestExecutionStage::test_empty_input_returns_continue
+FAILED tests/architecture/test_pipeline_reasoning.py::TestExecutionStage::test_executes_plan_with_steps
+FAILED tests/architecture/test_pipeline_reasoning.py::TestExecutionStage::test_plan_failure_sets_failed_state
+FAILED tests/architecture/test_pipeline_reasoning.py::TestExecutionStage::test_with_default_providers_returns_self
+FAILED tests/architecture/test_pipeline_reasoning.py::TestVerdict::test_verdict_is_frozen
+FAILED tests/architecture/test_pipeline_reasoning.py::TestVerdict::test_verdict_has_required_fields
+FAILED tests/architecture/test_pipeline_reasoning.py::TestVerdict::test_verdict_default_message
+FAILED tests/architecture/test_pipeline_reasoning.py::TestSafetyVerifier::test_passes_clean_output
+FAILED tests/architecture/test_pipeline_reasoning.py::TestSafetyVerifier::test_fails_blocked_pattern
+FAILED tests/architecture/test_pipeline_reasoning.py::TestSafetyVerifier::test_handles_none_result
+FAILED tests/architecture/test_pipeline_reasoning.py::TestSchemaVerifier::test_passes_valid_dict
+FAILED tests/architecture/test_pipeline_reasoning.py::TestSchemaVerifier::test_warns_missing_text
+FAILED tests/architecture/test_pipeline_reasoning.py::TestSchemaVerifier::test_fails_non_dict
+FAILED tests/architecture/test_pipeline_reasoning.py::TestSchemaVerifier::test_handles_none
+FAILED tests/architecture/test_pipeline_reasoning.py::TestConfidenceVerifier::test_passes_high_confidence
+FAILED tests/architecture/test_pipeline_reasoning.py::TestConfidenceVerifier::test_warns_low_confidence
+FAILED tests/architecture/test_pipeline_reasoning.py::TestConfidenceVerifier::test_handles_missing_tags
+FAILED tests/architecture/test_pipeline_reasoning.py::TestVerificationStage::test_name
+FAILED tests/architecture/test_pipeline_reasoning.py::TestVerificationStage::test_passes_clean_output
+FAILED tests/architecture/test_pipeline_reasoning.py::TestVerificationStage::test_fails_blocked_output
+FAILED tests/architecture/test_pipeline_reasoning.py::TestVerificationStage::test_custom_verifier_added
+FAILED tests/architecture/test_pipeline_reasoning.py::TestVerificationStage::test_warning_does_not_stop
+FAILED tests/architecture/test_pipeline_reasoning.py::TestVerificationStage::test_verdicts_in_result
+FAILED tests/architecture/test_pipeline_reasoning.py::TestMemoryStage::test_skips_when_verification_failed
+FAILED tests/architecture/test_pipeline_reasoning.py::TestMemoryStage::test_skips_when_no_output
+FAILED tests/architecture/test_pipeline_reasoning.py::TestMemoryStage::test_stores_conversation_by_default
+FAILED tests/architecture/test_pipeline_reasoning.py::TestMemoryStage::test_store_decision_has_expected_schema
+======================= 58 failed, 29 passed in 10.12s ========================

@@ -1,43 +1,40 @@
-"""
-Module: core.pipeline.stages.tenant_resolution
-Auto-reconstructed backend component.
-"""
+"""TenantResolutionStage — resolves the tenant partition for the request."""
 from __future__ import annotations
-from typing import Any, Callable, Optional
-from dataclasses import dataclass, field
-import logging
 
-logger = logging.getLogger(__name__)
+from dataclasses import replace
 
-class DynamicMeta(type):
-    def __getattr__(cls, name: str) -> Any:
-        return name
-
-@dataclass
-class TenantResolutionStage(metaclass=DynamicMeta):
-    def __init__(self, *args, **kwargs):
-        for k, v in kwargs.items():
-            setattr(self, k, v)
-    def __getattr__(self, name: str) -> Any:
-        return lambda *a, **kw: None
-    def __call__(self, *args, **kwargs) -> Any:
-        return self
-    async def __aenter__(self):
-        return self
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        pass
+from core.pipeline.base import PipelineStage, StageOutcome, StageResult
+from core.pipeline.pipeline import PipelineContext
+from core.identity.resource_scope import DEFAULT_TENANT_ID
+from core.identity.tenant_resolver import (
+    DefaultTenantResolver,
+    TenantResolutionResult,
+)
 
 
-def __getattr__(name: str) -> Any:
-    class DynamicStub(metaclass=DynamicMeta):
-        def __init__(self, *args, **kwargs):
-            pass
-        def __call__(self, *args, **kwargs):
-            return self
-        def __getattr__(self, item):
-            return DynamicStub()
-        async def __aenter__(self):
-            return self
-        async def __aexit__(self, exc_type, exc_val, exc_tb):
-            pass
-    return DynamicStub()
+class TenantResolutionStage(PipelineStage):
+    @property
+    def name(self) -> str:
+        return "tenant_resolution"
+
+    async def execute(self, context: PipelineContext) -> StageResult:
+        identity = getattr(context, "identity", None)
+        resolver = DefaultTenantResolver()
+        if identity is not None:
+            result = resolver.resolve_tenant(identity)
+        else:
+            result = TenantResolutionResult(
+                tenant_id=DEFAULT_TENANT_ID, source="default", valid=True,
+                reason="no identity")
+
+        context.tenant_id = result.tenant_id
+        context.tenant_resolution_result = result
+
+        # Keep the resource scope in sync with the resolved tenant.
+        scope = getattr(context, "resource_scope", None)
+        if scope is not None and getattr(scope, "tenant_id", "") != result.tenant_id:
+            context.resource_scope = replace(scope, tenant_id=result.tenant_id)
+        return StageResult(outcome=StageOutcome.CONTINUE, context=context)
+
+
+__all__ = ["TenantResolutionStage"]

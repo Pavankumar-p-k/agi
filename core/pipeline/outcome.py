@@ -1,43 +1,39 @@
-"""
-Module: core.pipeline.outcome
-Auto-reconstructed backend component.
-"""
+"""Outcome — terminal runtime artifact of one Activity (Sprint 5.5C contract)."""
 from __future__ import annotations
-from typing import Any, Callable, Optional
+
 from dataclasses import dataclass, field
-import logging
+from typing import Any, List, Optional
 
-logger = logging.getLogger(__name__)
-
-class DynamicMeta(type):
-    def __getattr__(cls, name: str) -> Any:
-        return name
-
-@dataclass
-class Outcome(metaclass=DynamicMeta):
-    def __init__(self, *args, **kwargs):
-        for k, v in kwargs.items():
-            setattr(self, k, v)
-    def __getattr__(self, name: str) -> Any:
-        return lambda *a, **kw: None
-    def __call__(self, *args, **kwargs) -> Any:
-        return self
-    async def __aenter__(self):
-        return self
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        pass
+from core.pipeline.observation import Observation
 
 
-def __getattr__(name: str) -> Any:
-    class DynamicStub(metaclass=DynamicMeta):
-        def __init__(self, *args, **kwargs):
-            pass
-        def __call__(self, *args, **kwargs):
-            return self
-        def __getattr__(self, item):
-            return DynamicStub()
-        async def __aenter__(self):
-            return self
-        async def __aexit__(self, exc_type, exc_val, exc_tb):
-            pass
-    return DynamicStub()
+@dataclass(frozen=True)
+class Outcome:
+    """Immutable summary of one activity execution (Rule 30 scope carrier)."""
+
+    activity_id: str = ""
+    success: bool = False
+    observations: List[Observation] = field(default_factory=list)
+    status: str = ""
+    error: Optional[str] = None
+    resource_scope: Any = None
+    metrics: dict = field(default_factory=dict)
+    metadata: dict = field(default_factory=dict)
+
+    def to_dict(self) -> dict:
+        return {
+            "activity_id": self.activity_id,
+            "success": self.success,
+            "status": self.status,
+            "error": self.error,
+            "resource_scope": (
+                self.resource_scope.to_dict()
+                if hasattr(self.resource_scope, "to_dict")
+                else self.resource_scope
+            ),
+            "observations": [o.to_dict() for o in self.observations],
+            "metrics": dict(self.metrics),
+        }
+
+
+__all__ = ["Outcome"]

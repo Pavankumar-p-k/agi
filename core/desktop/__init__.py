@@ -1,68 +1,55 @@
-"""
-Module: core.desktop.__init__
-Desktop subsystem re-exports.
-"""
-from __future__ import annotations
-from typing import Any
-import logging
+"""core.desktop — desktop automation with safety-first gating.
 
-logger = logging.getLogger(__name__)
-
-from core.desktop.safety import SafetyManager, SafetyDecision, SafetyConfig, SafetyVerdict, DesktopActionType, ActionType, Rect, safety_manager
-from core.desktop.controller import DesktopController, DesktopAction, desktop_controller
-from core.desktop.screen import ScreenCapture, CaptureResult, CaptureRegion, screen_capture
-from core.desktop.window import WindowController, WindowActionResult, window_controller
-from core.desktop.replay import ReplayNode, ReplayGraph, ReplayEdge, NodeType, desktop_replay
-from core.desktop.desktop_ai import DesktopAI
-from core.desktop.specialist import (
-    DesktopActionRecord,
-    DesktopExecutionRequest,
-    DesktopExecutionResult,
-    DesktopExecutionStatus,
-    DesktopRecoveryAttempt,
-    DesktopSpecialist,
-    DesktopVerification,
+Layout:
+- safety:     SafetyManager — the single gate every action passes;
+- controller: DesktopController — check -> replay -> act;
+- replay:     ReplayGraph — append-only audit chain of actions;
+- screen:     ScreenCapture — screenshots as artifacts;
+- window:     WindowController — window focus/list/minimize;
+- desktop_ai: DesktopAI — specialist facade over this package.
+"""
+from core.desktop.safety import (
+    DesktopActionType,
+    SafetyDecision,
+    SafetyManager,
+    safety_manager,
 )
-from core.desktop.specialist_state import DesktopLocalState
-from core.desktop.tool_bridge import register_desktop_tools
+from core.desktop.controller import (
+    ActionResult,
+    DesktopAction,
+    DesktopController,
+    desktop_controller,
+)
+from core.desktop.replay import (
+    ReplayGraph,
+    ReplayNode,
+    desktop_replay,
+)
+from core.desktop.screen import (
+    CaptureResult,
+    ScreenCapture,
+    screen_capture,
+)
+from core.desktop.window import (
+    WindowActionResult,
+    WindowController,
+    window_controller,
+)
+
+__all__ = [
+    "DesktopActionType", "SafetyDecision", "SafetyManager", "safety_manager",
+    "ActionResult", "DesktopAction", "DesktopController", "desktop_controller",
+    "ReplayGraph", "ReplayNode", "desktop_replay",
+    "CaptureResult", "ScreenCapture", "screen_capture",
+    "WindowActionResult", "WindowController", "window_controller",
+    "DesktopAI",
+]
 
 
-def __getattr__(name: str) -> Any:
-    _exports = {
-        "SafetyManager": SafetyManager,
-        "SafetyDecision": SafetyDecision,
-        "SafetyConfig": SafetyConfig,
-        "SafetyVerdict": SafetyVerdict,
-        "DesktopActionType": DesktopActionType,
-        "ActionType": ActionType,
-        "Rect": Rect,
-        "safety_manager": safety_manager,
-        "DesktopController": DesktopController,
-        "DesktopAction": DesktopAction,
-        "desktop_controller": desktop_controller,
-        "ScreenCapture": ScreenCapture,
-        "CaptureResult": CaptureResult,
-        "CaptureRegion": CaptureRegion,
-        "screen_capture": screen_capture,
-        "WindowController": WindowController,
-        "WindowActionResult": WindowActionResult,
-        "window_controller": window_controller,
-        "ReplayNode": ReplayNode,
-        "ReplayGraph": ReplayGraph,
-        "ReplayEdge": ReplayEdge,
-        "NodeType": NodeType,
-        "desktop_replay": desktop_replay,
-        "DesktopAI": DesktopAI,
-        "DesktopActionRecord": DesktopActionRecord,
-        "DesktopExecutionRequest": DesktopExecutionRequest,
-        "DesktopExecutionResult": DesktopExecutionResult,
-        "DesktopExecutionStatus": DesktopExecutionStatus,
-        "DesktopRecoveryAttempt": DesktopRecoveryAttempt,
-        "DesktopSpecialist": DesktopSpecialist,
-        "DesktopVerification": DesktopVerification,
-        "DesktopLocalState": DesktopLocalState,
-        "register_desktop_tools": register_desktop_tools,
-    }
-    if name in _exports:
-        return _exports[name]
+def __getattr__(name: str):
+    # Lazy import: desktop_ai pulls in core.specialist, keeping this
+    # package import-light for the pipeline.
+    if name == "DesktopAI":
+        from core.desktop.desktop_ai import DesktopAI
+        return DesktopAI
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

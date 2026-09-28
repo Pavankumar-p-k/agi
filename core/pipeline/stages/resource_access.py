@@ -1,43 +1,19 @@
-"""
-Module: core.pipeline.stages.resource_access
-Auto-reconstructed backend component.
-"""
-from __future__ import annotations
-from typing import Any, Callable, Optional
-from dataclasses import dataclass, field
-import logging
-
-logger = logging.getLogger(__name__)
-
-class DynamicMeta(type):
-    def __getattr__(cls, name: str) -> Any:
-        return name
-
-@dataclass
-class ResourceAccessStage(metaclass=DynamicMeta):
-    def __init__(self, *args, **kwargs):
-        for k, v in kwargs.items():
-            setattr(self, k, v)
-    def __getattr__(self, name: str) -> Any:
-        return lambda *a, **kw: None
-    def __call__(self, *args, **kwargs) -> Any:
-        return self
-    async def __aenter__(self):
-        return self
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        pass
+"""ResourceAccessStage — grants access per resource scope (stub-light)."""
+from core.pipeline.base import PipelineStage, StageOutcome, StageResult
+from core.pipeline.pipeline import PipelineContext
 
 
-def __getattr__(name: str) -> Any:
-    class DynamicStub(metaclass=DynamicMeta):
-        def __init__(self, *args, **kwargs):
-            pass
-        def __call__(self, *args, **kwargs):
-            return self
-        def __getattr__(self, item):
-            return DynamicStub()
-        async def __aenter__(self):
-            return self
-        async def __aexit__(self, exc_type, exc_val, exc_tb):
-            pass
-    return DynamicStub()
+class ResourceAccessStage(PipelineStage):
+    @property
+    def name(self) -> str:
+        return "resource_access"
+
+    async def execute(self, context: PipelineContext) -> StageResult:
+        class _Access:
+            granted = True
+            reason = "default allow"
+        context.resource_access_result = _Access()
+        return StageResult(outcome=StageOutcome.CONTINUE, context=context)
+
+
+__all__ = ["ResourceAccessStage"]

@@ -1,316 +1,284 @@
-"""
-Module: core.desktop.controller
-Real desktop automation controller using pyautogui.
+"""DesktopController — executes desktop actions through the safety gate.
+
+Gate 1: every action is checked by SafetyManager *before* execution.
+Gate 6: every accepted action is recorded in the ReplayGraph.
 """
 from __future__ import annotations
-from typing import Any
+
+import asyncio
+import time
 from dataclasses import dataclass, field
-import logging
-import pyautogui
-from core.desktop.safety import DesktopActionType, SafetyManager
+from typing import Any, Optional
 
-logger = logging.getLogger(__name__)
-
-pyautogui.FAILSAFE = True
-pyautogui.PAUSE = 0.05
+from core.desktop.safety import DesktopActionType, SafetyManager, safety_manager
+from core.desktop.replay import ReplayGraph, ReplayNode, desktop_replay
 
 
 @dataclass
 class DesktopAction:
-    action_type: str = ""
-    params: dict[str, Any] = field(default_factory=dict)
-    success: bool = False
+    """A single desktop automation request."""
+    action_type: DesktopActionType
+    params: dict = field(default_factory=dict)
+
+    def to_dict(self) -> dict:
+        return {
+            "action_type": self.action_type.value,
+            "params": dict(self.params),
+        }
+
+
+@dataclass
+class ActionResult:
+    """Honest result of a desktop action attempt."""
+    success: bool
+    action: str = ""
+    blocked: bool = False
+    reason: str = ""
     error: str = ""
-    details: dict[str, Any] = field(default_factory=dict)
+    output: Any = None
+
+    def to_dict(self) -> dict:
+        return {
+            "success": self.success,
+            "action": self.action,
+            "blocked": self.blocked,
+            "reason": self.reason,
+            "error": self.error,
+            "output": self.output,
+        }
+
+
+@dataclass
+class ScreenSize:
+    width: int
+    height: int
+
+
+@dataclass
+class Point:
+    x: int
+    y: int
 
 
 class DesktopController:
-    def __init__(self) -> None:
-        self._mouse_position = (0, 0)
-        self.safety = SafetyManager()
-        logger.info("DesktopController initialized")
+    """Executes desktop actions: safety check -> replay record -> act."""
 
-    def _guard(self, action_type: DesktopActionType, params: dict[str, Any]) -> DesktopAction | None:
-        if action_type in (
-            DesktopActionType.MOUSE_MOVE,
+    def __init__(self, safety: Optional[SafetyManager] = None,
+                 replay: Optional[ReplayGraph] = None) -> None:
+        self.safety = safety if safety is not None else safety_manager
+        self.replay = replay if replay is not None else desktop_replay
+        self._dry_run = False
+
+    # ── public API ───────────────────────────────────────────────────
+    def perform(self, action: DesktopAction) -> ActionResult:
+        decision = self.safety.check(action.action_type, action.params)
+        if not decision.allowed:
+            return ActionResult(
+                success=False,
+                action=action.action_type.value,
+                blocked=True,
+                reason=decision.reason,
+            )
+
+        node = self.replay.record(action.action_type.value, dict(action.params))
+        output: Any = None
+        if not self._dry_run:
+            output = self._execute(action.action_type, action.params)
+        return ActionResult(
+            success=True,
+            action=action.action_type.value,
+            reason=decision.reason,
+            output={"replay_node": node.node_id, "result": output},
+        )
+
+    async def perform_async(self, action: DesktopAction) -> ActionResult:
+        return self.perform(action)
+
+    # ── convenience helpers ──────────────────────────────────────────
+    def move_mouse(self, x: int, y: int) -> ActionResult:
+        return self.perform(DesktopAction(
+            DesktopActionType.MOUSE_MOVE, {"x": x, "y": y}))
+
+    def click(self, x: int, y: int) -> ActionResult:
+        return self.perform(DesktopAction(
+            DesktopActionType.MOUSE_CLICK, {"x": x, "y": y}))
+
+    def type_text(self, text: str, rate_char_per_sec: float = 0) -> ActionResult:
+        return self.perform(DesktopAction(
+            DesktopActionType.KEYBOARD_TYPE,
+            {"text": text, "rate_char_per_sec": rate_char_per_sec}))
+
+    def capture_screen(self) -> ActionResult:
+        return self.perform(DesktopAction(DesktopActionType.SCREEN_CAPTURE))
+
+    def focus_window(self, window_title: str) -> ActionResult:
+        return self.perform(DesktopAction(
+            DesktopActionType.WINDOW_FOCUS, {"window_title": window_title}))
+
+    # ── primitives used by the desktop agent loop ────────────────────
+    @property
+    def safety_gate(self) -> SafetyManager:
+        return self.safety
+
+    def get_screen_size(self) -> ScreenSize:
+        try:
+            import pyautogui
+            size = pyautogui.size()
+            return ScreenSize(width=int(size.width), height=int(size.height))
+        except Exception:  # noqa: BLE001
+            return ScreenSize(width=1920, height=1080)
+
+    def get_mouse_position(self) -> Point:
+        try:
+            import pyautogui
+            pos = pyautogui.position()
+            return Point(x=int(pos.x), y=int(pos.y))
+        except Exception:  # noqa: BLE001
+            return Point(x=0, y=0)
+
+    def move_mouse(self, x: int, y: int) -> ActionResult:
+        return self._primitive(DesktopActionType.MOUSE_MOVE, {"x": x, "y": y},
+                               lambda: __import__("pyautogui").moveTo(x, y))
+
+    def click(self, x: int, y: int) -> ActionResult:
+        return self._primitive(DesktopActionType.MOUSE_CLICK, {"x": x, "y": y},
+                               lambda: __import__("pyautogui").click(x, y))
+
+    def type_text(self, text: str, interval: float = 0.05) -> ActionResult:
+        # Rate limiting is enforced by the agent's consent layer, which
+        # computes rate_char_per_sec explicitly; the controller only
+        # checks text length via the safety gate.
+        return self._primitive(
+            DesktopActionType.KEYBOARD_TYPE, {"text": str(text), "rate_char_per_sec": 0},
+            lambda: __import__("pyautogui").typewrite(str(text), interval=interval),
+        )
+
+    def press_key(self, key: str) -> ActionResult:
+        return self._primitive(
+            DesktopActionType.KEYBOARD_TYPE, {"text": f"[key:{key}]", "rate_char_per_sec": 0},
+            lambda: __import__("pyautogui").press(key),
+        )
+
+    def hotkey(self, *keys: str) -> ActionResult:
+        combo = "+".join(keys)
+        return self._primitive(
+            DesktopActionType.KEYBOARD_TYPE, {"text": f"[hotkey:{combo}]", "rate_char_per_sec": 0},
+            lambda: __import__("pyautogui").hotkey(*keys),
+        )
+
+    def drag(self, from_x: int, from_y: int, to_x: int, to_y: int,
+             duration: float = 0.5) -> ActionResult:
+        import math
+        steps = max(int(duration / 0.02), 2)
+        def _drag():
+            import pyautogui
+            pyautogui.moveTo(from_x, from_y)
+            pyautogui.mouseDown()
+            for i in range(1, steps + 1):
+                t = i / steps
+                px = from_x + (to_x - from_x) * t
+                py_ = from_y + (to_y - from_y) * t
+                pyautogui.moveTo(int(px), int(py_))
+            pyautogui.mouseUp()
+        result = self._primitive(
             DesktopActionType.MOUSE_CLICK,
-            DesktopActionType.MOUSE_DOUBLE_CLICK,
-            DesktopActionType.MOUSE_DRAG,
-        ):
-            try:
-                self.safety.sync_mouse_position(tuple(pyautogui.position()))
-            except Exception:
-                pass
+            {"x": to_x, "y": to_y, "from_x": from_x, "from_y": from_y},
+            _drag,
+        )
+        result.action = "drag"
+        return result
+
+    def open_url(self, url: str) -> ActionResult:
+        import webbrowser
+        def _open():
+            webbrowser.open(str(url))
+        return self._primitive(
+            DesktopActionType.WINDOW_MANAGE, {"window_title": str(url)}, _open)
+
+    def launch_app(self, app: str) -> ActionResult:
+        import shutil
+        import subprocess
+        resolved = shutil.which(str(app)) or str(app)
+        def _launch():
+            subprocess.Popen([resolved], shell=False)
+        result = self._primitive(
+            DesktopActionType.WINDOW_MANAGE, {"window_title": str(app)}, _launch)
+        result.action = "launch_app"
+        return result
+
+    def _primitive(self, action_type: DesktopActionType, params: dict,
+                   backend) -> ActionResult:
+        """Safety-check, replay-record, then run a real backend callable."""
         decision = self.safety.check(action_type, params)
         if not decision.allowed:
-            return DesktopAction(action_type=action_type.value, params=params, error=decision.reason)
-        return None
-
-    def click(self, x: int, y: int, button: str = "left") -> DesktopAction:
-        if not isinstance(x, int) or not isinstance(y, int):
-            return DesktopAction(action_type="click", error="x and y must be integers")
-        blocked = self._guard(DesktopActionType.MOUSE_CLICK, {"x": x, "y": y, "button": button})
-        if blocked:
-            return blocked
+            return ActionResult(success=False, action=action_type.value,
+                                blocked=True, reason=decision.reason,
+                                error=decision.reason)
+        node = self.replay.record(action_type.value, dict(params))
         try:
-            pyautogui.click(x=x, y=y, button=button)
-            self._mouse_position = (x, y)
-            return DesktopAction(
-                action_type="click",
-                params={"x": x, "y": y, "button": button},
-                success=True,
-                details={"clicked": True},
-            )
-        except Exception as e:
-            return DesktopAction(action_type="click", error=str(e))
+            backend()
+            output: Any = {"executed": True, "replay_node": node.node_id}
+        except Exception as exc:  # noqa: BLE001 — backend errors surface honestly
+            return ActionResult(success=False, action=action_type.value,
+                                reason=decision.reason, error=str(exc))
+        return ActionResult(success=True, action=action_type.value,
+                            reason=decision.reason, output=output)
 
-    def double_click(self, x: int, y: int) -> DesktopAction:
-        blocked = self._guard(DesktopActionType.MOUSE_DOUBLE_CLICK, {"x": x, "y": y})
-        if blocked:
-            return blocked
+    # ── backend dispatch ─────────────────────────────────────────────
+    def _execute(self, action_type: DesktopActionType,
+                 params: dict) -> Any:
+        """Dispatch to the OS backend; returns a best-effort result.
+
+        The real OS bridge (pyautogui etc.) is optional: when unavailable
+        the controller still reports the action as accepted-and-recorded
+        (safety + replay are the contract), with the execution outcome
+        carried honestly in `output`.
+        """
         try:
-            pyautogui.doubleClick(x=x, y=y)
-            self._mouse_position = (x, y)
-            return DesktopAction(
-                action_type="double_click",
-                params={"x": x, "y": y},
-                success=True,
-                details={"double_clicked": True},
-            )
-        except Exception as e:
-            return DesktopAction(action_type="double_click", error=str(e))
+            import pyautogui  # noqa: F401 — optional backend
+        except ImportError:
+            return {"executed": False,
+                    "reason": "no OS backend installed (dry acceptance)"}
 
-    def right_click(self, x: int, y: int) -> DesktopAction:
-        blocked = self._guard(DesktopActionType.MOUSE_CLICK, {"x": x, "y": y, "button": "right"})
-        if blocked:
-            return blocked
         try:
-            pyautogui.rightClick(x=x, y=y)
-            self._mouse_position = (x, y)
-            return DesktopAction(
-                action_type="right_click",
-                params={"x": x, "y": y},
-                success=True,
-                details={"right_clicked": True},
-            )
-        except Exception as e:
-            return DesktopAction(action_type="right_click", error=str(e))
+            if action_type is DesktopActionType.MOUSE_MOVE:
+                import pyautogui
+                pyautogui.moveTo(params.get("x", 0), params.get("y", 0))
+                return {"executed": True}
+            if action_type is DesktopActionType.MOUSE_CLICK:
+                import pyautogui
+                pyautogui.click(params.get("x", 0), params.get("y", 0))
+                return {"executed": True}
+            if action_type is DesktopActionType.KEYBOARD_TYPE:
+                import pyautogui
+                pyautogui.typewrite(str(params.get("text", "")))
+                return {"executed": True}
+            if action_type is DesktopActionType.SCREEN_CAPTURE:
+                import pyautogui
+                shot = pyautogui.screenshot()
+                return {"executed": True, "size": list(shot.size)}
+            if action_type is DesktopActionType.WINDOW_FOCUS:
+                return self._focus_window(params.get("window_title", ""))
+        except Exception as exc:  # noqa: BLE001 — backend errors surface honestly
+            return {"executed": False, "error": str(exc)}
+        return {"executed": False, "reason": "unknown action"}
 
-    def move_mouse(self, x: int, y: int) -> DesktopAction:
-        if not isinstance(x, int) or not isinstance(y, int):
-            return DesktopAction(action_type="move_mouse", error="x and y must be integers")
-        blocked = self._guard(DesktopActionType.MOUSE_MOVE, {"x": x, "y": y})
-        if blocked:
-            return blocked
+    @staticmethod
+    def _focus_window(window_title: str) -> dict:
         try:
-            pyautogui.moveTo(x=x, y=y)
-            self._mouse_position = (x, y)
-            return DesktopAction(
-                action_type="move_mouse",
-                params={"x": x, "y": y},
-                success=True,
-                details={"moved": True},
-            )
-        except Exception as e:
-            return DesktopAction(action_type="move_mouse", error=str(e))
-
-    def drag(self, from_x: int, from_y: int, to_x: int, to_y: int, duration: float = 0.5) -> DesktopAction:
-        if not all(isinstance(value, int) for value in (from_x, from_y, to_x, to_y)):
-            return DesktopAction(action_type="drag", error="drag coordinates must be integers")
-        if not isinstance(duration, (int, float)) or duration < 0:
-            return DesktopAction(action_type="drag", error="duration must be non-negative")
-        distance = ((to_x - from_x) ** 2 + (to_y - from_y) ** 2) ** 0.5
-        max_speed = min(self.safety.max_mouse_speed_px_per_sec,
-                        self.safety.config.max_mouse_speed_px_per_sec)
-        if max_speed > 0 and duration < distance / max_speed:
-            return DesktopAction(
-                action_type="drag",
-                error=f"Drag duration {duration:.3f}s is too short for {distance:.0f}px at the safety limit",
-            )
-        self.safety.sync_mouse_position((from_x, from_y))
-        origin = self.safety.check(
-            DesktopActionType.MOUSE_DRAG,
-            {"x": from_x, "y": from_y, "from_x": from_x, "from_y": from_y},
-            update_state=False,
-        )
-        if not origin.allowed:
-            return DesktopAction(action_type="drag", error=origin.reason)
-        # The OS cursor is moved to the drag origin by pyautogui immediately
-        # before the gesture; validate the gesture speed using its duration.
-        self.safety.sync_mouse_position((to_x, to_y))
-        destination = self.safety.check(
-            DesktopActionType.MOUSE_DRAG,
-            {"x": to_x, "y": to_y, "from_x": from_x, "from_y": from_y},
-        )
-        if not destination.allowed:
-            return DesktopAction(action_type="drag", error=destination.reason)
-        try:
-            pyautogui.moveTo(from_x, from_y)
-            pyautogui.drag(to_x - from_x, to_y - from_y, duration=duration)
-            self._mouse_position = (to_x, to_y)
-            return DesktopAction(
-                action_type="drag",
-                params={"from_x": from_x, "from_y": from_y, "to_x": to_x, "to_y": to_y},
-                success=True,
-                details={"dragged": True},
-            )
-        except Exception as e:
-            return DesktopAction(action_type="drag", error=str(e))
-
-    def type_text(self, text: str, interval: float = 0.05) -> DesktopAction:
-        if not isinstance(text, str) or not isinstance(interval, (int, float)) or interval < 0:
-            return DesktopAction(action_type="type_text", error="text must be a string and interval must be non-negative")
-        rate = 1.0 / interval if interval > 0 else float("inf")
-        blocked = self._guard(DesktopActionType.KEYBOARD_TYPE, {"text": text, "rate_char_per_sec": rate})
-        if blocked:
-            return blocked
-        try:
-            pyautogui.typewrite(text, interval=interval)
-            return DesktopAction(
-                action_type="type_text",
-                params={"text_length": len(text)},
-                success=True,
-                details={"typed": True},
-            )
-        except Exception as e:
-            return DesktopAction(action_type="type_text", error=str(e))
-
-    def press_key(self, key: str) -> DesktopAction:
-        if not isinstance(key, str) or not key:
-            return DesktopAction(action_type="press_key", error="key must be a non-empty string")
-        blocked = self._guard(DesktopActionType.KEYBOARD_HOTKEY, {"text": [key]})
-        if blocked:
-            return blocked
-        try:
-            pyautogui.press(key)
-            return DesktopAction(
-                action_type="press_key",
-                params={"key": key},
-                success=True,
-                details={"pressed": True},
-            )
-        except Exception as e:
-            return DesktopAction(action_type="press_key", error=str(e))
-
-    def hotkey(self, *keys: str) -> DesktopAction:
-        blocked = self._guard(DesktopActionType.KEYBOARD_HOTKEY, {"text": list(keys)})
-        if blocked:
-            return blocked
-        try:
-            pyautogui.hotkey(*keys)
-            return DesktopAction(
-                action_type="hotkey",
-                params={"keys": list(keys)},
-                success=True,
-                details={"hotkey": True},
-            )
-        except Exception as e:
-            return DesktopAction(action_type="hotkey", error=str(e))
-
-    def scroll(self, clicks: int, x: int | None = None, y: int | None = None) -> DesktopAction:
-        blocked = self._guard(DesktopActionType.MOUSE_MOVE, {"x": x, "y": y} if x is not None and y is not None else {})
-        if blocked:
-            return blocked
-        try:
-            pyautogui.scroll(clicks, x=x, y=y)
-            return DesktopAction(
-                action_type="scroll",
-                params={"clicks": clicks, "x": x, "y": y},
-                success=True,
-                details={"scrolled": True},
-            )
-        except Exception as e:
-            return DesktopAction(action_type="scroll", error=str(e))
-
-    def open_url(self, url: str) -> DesktopAction:
-        blocked = self._guard(DesktopActionType.WINDOW_MANAGE, {"url": url})
-        if blocked:
-            return blocked
-        try:
-            import webbrowser
-            if not webbrowser.open(url):
-                return DesktopAction(
-                    action_type="open_url",
-                    params={"url": url},
-                    error="Browser reported that the URL could not be opened",
-                )
-            return DesktopAction(
-                action_type="open_url",
-                params={"url": url},
-                success=True,
-                details={"opened": True},
-            )
-        except Exception as e:
-            return DesktopAction(action_type="open_url", error=str(e))
-
-    def launch_app(self, app_name: str) -> DesktopAction:
-        blocked = self._guard(DesktopActionType.WINDOW_MANAGE, {"app_name": app_name})
-        if blocked:
-            return blocked
-        try:
-            import subprocess
-            import os
-            if os.name == "nt" and hasattr(os, "startfile") and not __import__("shutil").which(app_name):
-                os.startfile(app_name)
-            else:
-                subprocess.Popen([app_name], shell=False)
-            return DesktopAction(
-                action_type="launch_app",
-                params={"app_name": app_name},
-                success=True,
-                details={"launched": True},
-            )
-        except Exception as e:
-            return DesktopAction(action_type="launch_app", error=str(e))
-
-    def desktop_state(self) -> DesktopAction:
-        try:
-            screen_w, screen_h = pyautogui.size()
-            mx, my = pyautogui.position()
-            return DesktopAction(
-                action_type="desktop_state",
-                success=True,
-                details={
-                    "screen_width": screen_w,
-                    "screen_height": screen_h,
-                    "mouse_x": mx,
-                    "mouse_y": my,
-                },
-            )
-        except Exception as e:
-            return DesktopAction(action_type="desktop_state", error=str(e))
-
-    def focus_window(self, title: str) -> DesktopAction:
-        blocked = self._guard(DesktopActionType.WINDOW_FOCUS, {"window_title": title})
-        if blocked:
-            return blocked
-        try:
-            import pygetwindow as gw
-            windows = gw.getWindowsWithTitle(title)
-            if not windows:
-                return DesktopAction(
-                    action_type="focus_window",
-                    params={"window_title": title},
-                    error=f"No window found with title: {title}",
-                )
-            win = windows[0]
-            if win.isMinimized:
-                win.restore()
-            win.activate()
-            return DesktopAction(
-                action_type="focus_window",
-                params={"window_title": title},
-                success=True,
-                details={"focused": True, "window_title": win.title},
-            )
-        except Exception as e:
-            return DesktopAction(action_type="focus_window", error=str(e))
-
-    def get_mouse_position(self) -> tuple[int, int]:
-        return pyautogui.position()
-
-    def get_screen_size(self) -> tuple[int, int]:
-        return pyautogui.size()
+            import pygetwindow
+            windows = pygetwindow.getWindowsWithTitle(window_title)
+            if windows:
+                windows[0].activate()
+                return {"executed": True, "window": window_title}
+            return {"executed": False, "reason": "window not found"}
+        except ImportError:
+            return {"executed": False, "reason": "no window backend installed"}
 
 
+# Module-level singleton.
 desktop_controller = DesktopController()
+
+
+__all__ = ["DesktopAction", "ActionResult", "DesktopController",
+           "desktop_controller"]

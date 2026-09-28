@@ -1,99 +1,45 @@
-"""
-Module: core.workspace.window_detector
-Real window detection using pygetwindow.
+"""WindowDetector — passive window awareness for the workspace layer.
+
+Distinct from core.desktop.window (Gate 8: awareness != control): this
+module only observes, it never focuses or closes anything.
 """
 from __future__ import annotations
-from typing import Any
-from dataclasses import dataclass, field
-import logging
 
-logger = logging.getLogger(__name__)
-
-
-@dataclass
-class DetectedWindow:
-    title: str = ""
-    left: int = 0
-    top: int = 0
-    width: int = 0
-    height: int = 0
-    isMinimized: bool = False
-    isMaximized: bool = False
-    isActive: bool = False
+from typing import Optional
 
 
 class WindowDetector:
-    def __init__(self) -> None:
-        logger.info("WindowDetector initialized")
+    """Enumerates windows and reports the active window (read-only)."""
 
-    def detect_all(self) -> list[DetectedWindow]:
+    def __init__(self) -> None:
+        self._pygetwindow = None
+
+    def _lazy_import(self):
+        if self._pygetwindow is None:
+            try:
+                import pygetwindow as gw
+                self._pygetwindow = gw
+            except ImportError:
+                self._pygetwindow = False
+        return self._pygetwindow
+
+    def list_windows(self) -> list:
+        gw = self._lazy_import()
+        if not gw:
+            return []
         try:
-            import pygetwindow as gw
-            windows = []
-            for w in gw.getAllWindows():
-                if not w.title.strip():
-                    continue
-                windows.append(DetectedWindow(
-                    title=w.title,
-                    left=w.left,
-                    top=w.top,
-                    width=w.width,
-                    height=w.height,
-                    isMinimized=w.isMinimized,
-                    isMaximized=w.isMaximized,
-                    isActive=w.isActive,
-                ))
-            return windows
-        except Exception as e:
-            logger.error("detect_all failed: %s", e)
+            return list(gw.getAllWindows())
+        except Exception:  # noqa: BLE001
             return []
 
-    def find_by_title(self, title: str) -> DetectedWindow | None:
+    def get_active_window(self) -> Optional[object]:
+        gw = self._lazy_import()
+        if not gw:
+            return None
         try:
-            import pygetwindow as gw
-            windows = gw.getWindowsWithTitle(title)
-            if not windows:
-                return None
-            w = windows[0]
-            return DetectedWindow(
-                title=w.title,
-                left=w.left,
-                top=w.top,
-                width=w.width,
-                height=w.height,
-                isMinimized=w.isMinimized,
-                isMaximized=w.isMaximized,
-                isActive=w.isActive,
-            )
-        except Exception as e:
-            logger.error("find_by_title failed: %s", e)
+            return gw.getActiveWindow()
+        except Exception:  # noqa: BLE001
             return None
 
-    def get_active(self) -> DetectedWindow | None:
-        try:
-            import pygetwindow as gw
-            w = gw.getActiveWindow()
-            if w is None:
-                return None
-            return DetectedWindow(
-                title=w.title,
-                left=w.left,
-                top=w.top,
-                width=w.width,
-                height=w.height,
-                isMinimized=w.isMinimized,
-                isMaximized=w.isMaximized,
-                isActive=w.isActive,
-            )
-        except Exception as e:
-            logger.error("get_active failed: %s", e)
-            return None
 
-    def snapshot(self) -> dict[str, Any]:
-        all_wins = self.detect_all()
-        active = self.get_active()
-        return {
-            "active_window": active.__dict__ if active else None,
-            "windows": [w.__dict__ for w in all_wins],
-            "total": len(all_wins),
-        }
+__all__ = ["WindowDetector"]

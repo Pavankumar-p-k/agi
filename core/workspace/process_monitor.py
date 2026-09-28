@@ -1,71 +1,59 @@
-"""
-Module: core.workspace.process_monitor
-Real process monitoring using psutil.
-"""
+"""ProcessMonitor — read-only process/system awareness."""
 from __future__ import annotations
-from typing import Any
-from dataclasses import dataclass, field
-import logging
-import psutil
 
-logger = logging.getLogger(__name__)
-
-
-@dataclass
-class ProcessSnapshot:
-    name: str = ""
-    pid: int = 0
-    status: str = ""
-    cpu_percent: float = 0.0
-    memory_mb: float = 0.0
+from typing import Optional
 
 
 class ProcessMonitor:
+    """Process listing and system stats via a lazy psutil backend."""
+
     def __init__(self) -> None:
-        logger.info("ProcessMonitor initialized")
+        self._psutil = None
 
-    def list_processes(self, limit: int = 100) -> list[ProcessSnapshot]:
-        processes = []
-        for proc in psutil.process_iter(["name", "pid", "status", "cpu_percent", "memory_info"]):
+    def _lazy_import(self):
+        if self._psutil is None:
             try:
-                info = proc.info
-                mem_mb = 0.0
-                if info.get("memory_info"):
-                    mem_mb = info["memory_info"].rss / (1024 * 1024)
-                processes.append(ProcessSnapshot(
-                    name=info.get("name", ""),
-                    pid=info.get("pid", 0),
-                    status=str(info.get("status", "")),
-                    cpu_percent=info.get("cpu_percent", 0.0) or 0.0,
-                    memory_mb=round(mem_mb, 1),
-                ))
-            except (psutil.NoSuchProcess, psutil.AccessDenied):
-                pass
-            if len(processes) >= limit:
-                break
-        return processes
+                import psutil
+                self._psutil = psutil
+            except ImportError:
+                self._psutil = False
+        return self._psutil
 
-    def find_by_name(self, name: str) -> list[ProcessSnapshot]:
-        results = []
-        for proc in psutil.process_iter(["name", "pid", "status"]):
-            try:
-                info = proc.info
-                if name.lower() in info.get("name", "").lower():
-                    results.append(ProcessSnapshot(
-                        name=info.get("name", ""),
-                        pid=info.get("pid", 0),
-                        status=str(info.get("status", "")),
-                    ))
-            except (psutil.NoSuchProcess, psutil.AccessDenied):
-                pass
-        return results
+    def list_processes(self) -> list:
+        psutil = self._lazy_import()
+        if not psutil:
+            return []
+        try:
+            return [{"pid": p.info.get("pid"), "name": p.info.get("name", "")}
+                    for p in psutil.process_iter(["pid", "name"])]
+        except Exception:  # noqa: BLE001
+            return []
 
-    def is_running(self, name: str) -> bool:
+    def find_by_name(self, name: str) -> list:
+        key = str(name).lower().replace(".exe", "")
+        return [p for p in self.list_processes()
+                if key in str(p.get("name", "")).lower().replace(".exe", "")]
+
+    def is_process_running(self, name: str) -> bool:
         return len(self.find_by_name(name)) > 0
 
-    def snapshot(self, limit: int = 100) -> dict[str, Any]:
-        procs = self.list_processes(limit)
-        return {
-            "total": len(procs),
-            "processes": [p.__dict__ for p in procs[:limit]],
-        }
+    def is_running(self, name: str) -> bool:
+        return self.is_process_running(name)
+
+    def get_system_stats(self) -> dict:
+        psutil = self._lazy_import()
+        if not psutil:
+            return {"available": False}
+        try:
+            return {
+                "available": True,
+                "cpu_percent": psutil.cpu_percent(interval=0.1),
+                "ram_total_gb": round(psutil.virtual_memory().total / 1024 ** 3, 2),
+                "ram_used_gb": round(psutil.virtual_memory().used / 1024 ** 3, 2),
+                "ram_percent": psutil.virtual_memory().percent,
+            }
+        except Exception:  # noqa: BLE001
+            return {"available": False}
+
+
+__all__ = ["ProcessMonitor"]

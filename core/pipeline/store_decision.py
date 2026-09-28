@@ -1,43 +1,28 @@
-"""
-Module: core.pipeline.store_decision
-Auto-reconstructed backend component.
-"""
+"""StoreDecision — what the Memory stage decided to persist (contract)."""
 from __future__ import annotations
-from typing import Any, Callable, Optional
+
 from dataclasses import dataclass, field
-import logging
+from enum import Enum
+from typing import Any
 
-logger = logging.getLogger(__name__)
 
-class DynamicMeta(type):
-    def __getattr__(cls, name: str) -> Any:
-        return name
+class StoreAction(str, Enum):
+    STORE = "store"
+    SKIP = "skip"
+    UPDATE = "update"
+    MERGE = "merge"
+    DELETE = "delete"
+    IGNORE = "ignore"
+
 
 @dataclass
-class StoreDecision(metaclass=DynamicMeta):
-    def __init__(self, *args, **kwargs):
-        for k, v in kwargs.items():
-            setattr(self, k, v)
-    def __getattr__(self, name: str) -> Any:
-        return lambda *a, **kw: None
-    def __call__(self, *args, **kwargs) -> Any:
-        return self
-    async def __aenter__(self):
-        return self
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        pass
+class StoreDecision:
+    action: StoreAction = StoreAction.SKIP
+    store_type: str = ""
+    reason: str = ""
+    confidence: float = 0.0
+    payload: Any = None
+    metadata: dict = field(default_factory=dict)
 
 
-def __getattr__(name: str) -> Any:
-    class DynamicStub(metaclass=DynamicMeta):
-        def __init__(self, *args, **kwargs):
-            pass
-        def __call__(self, *args, **kwargs):
-            return self
-        def __getattr__(self, item):
-            return DynamicStub()
-        async def __aenter__(self):
-            return self
-        async def __aexit__(self, exc_type, exc_val, exc_tb):
-            pass
-    return DynamicStub()
+__all__ = ["StoreAction", "StoreDecision"]

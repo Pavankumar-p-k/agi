@@ -1,8 +1,6 @@
-"""JARVIS core package."""
+"""JARVIS core package.
 
-from __future__ import annotations
-
-from .version import VERSION
-
-__all__ = ["VERSION"]
-__version__ = VERSION
+Submodules (auth, agents, pipeline, identity, providers, ...) are regular
+imports — no package-level attribute fallback: ``from core import auth``
+must resolve the real module.
+"""

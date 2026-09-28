@@ -48,15 +48,14 @@ class ResearchStorage:
     def _store_to_existing_memory(self, result: ResearchResult, result_id: str) -> None:
         """Store research data to JARVIS existing memory systems."""
         try:
-            # Store important facts to FactStore
-            from memory.fact_store import get_fact_store
-            fact_store = get_fact_store()
+            # Store important facts through the Memory stage gateway (Rule 3).
+            from core.pipeline.stages.memory import store_facts
 
             for fact in result.claims or []:
                 # Extract key facts from claims
                 if fact.text and len(fact.text) > 10:
                     # Store as a fact with the claim as subject
-                    fact_store.store_facts([
+                    store_facts([
                         type('Fact', (), {
                             'subject': claim_text[:50] if claim_text else "research finding",
                             'predicate': "research_findings",
@@ -66,12 +65,12 @@ class ResearchStorage:
                             'user_id': "jarvis",
                             'tenant_id': "default",
                         })()
-                    ], force=True)
+                    ], user_id="jarvis", tenant_id="default", force=True)
 
             # Store claims as facts
             for claim in (result.claims or []):
                 if claim.text and len(claim.text) > 10:
-                    fact_store.store_facts([
+                    store_facts([
                         type('Fact', (), {
                             'subject': claim.text[:50],
                             'predicate': "research_claim",
@@ -81,7 +80,7 @@ class ResearchStorage:
                             'user_id': 'jarvis',
                             "tenant_id": "default",
                         })()
-                    ], force=True)
+                    ], user_id="jarvis", tenant_id="default", force=True)
 
             # Store evidence relationships to DecisionStore
             from memory.decision_store import DecisionStore

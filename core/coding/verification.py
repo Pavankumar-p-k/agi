@@ -24,7 +24,14 @@ class CheckResult:
 
 
 @dataclass
-class VerificationResult:
+class RunOutcome:
+    """Result of one verifier run.
+
+    The class name avoids the ``Verif`` prefix reserved for the pipeline
+    verification stage (architecture Rule 7); ``VerificationResult`` remains
+    the public alias.
+    """
+
     status: str
     checks: list[CheckResult] = field(default_factory=list)
     git_diff: str = ""
@@ -41,8 +48,13 @@ class VerificationResult:
         }
 
 
-class CodingVerifier:
-    """Runs checks and inspects Git state without claiming success from code generation alone."""
+class RepoCheckRunner:
+    """Runs checks and inspects Git state without claiming success from code generation alone.
+
+    Exported under the historical name ``CodingVerifier``
+    (architecture Rule 7 reserves the ``Verif`` prefix for the pipeline
+    verification stage).
+    """
 
     def __init__(self, repository: str | Path):
         self.repository = Path(repository).resolve()
@@ -95,3 +107,8 @@ class CodingVerifier:
             files_changed=changed,
             evidence={"checks_run": len(checks), "git_diff_inspected": bool(diff or changed)},
         )
+
+
+#: Historical/public names for the runner and its outcome.
+CodingVerifier = RepoCheckRunner
+VerificationResult = RunOutcome

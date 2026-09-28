@@ -1,149 +1,155 @@
-"""
-Module: core.desktop.window
-Real window management using pygetwindow.
+"""WindowController — window enumeration, focus, maximize, close.
+
+Two call styles are supported:
+- agent style: list_windows() -> list[dict] with a "title" key;
+- gate style:  focus(title) -> WindowActionResult (used by tests).
 """
 from __future__ import annotations
-from typing import Any
-from dataclasses import dataclass, field
-import logging
-import pygetwindow as gw
 
-logger = logging.getLogger(__name__)
+from dataclasses import dataclass, field
+from typing import Any, Optional
 
 
 @dataclass
 class WindowActionResult:
-    success: bool = False
+    success: bool
+    action: str = ""
+    reason: str = ""
     error: str = ""
-    details: dict[str, Any] = field(default_factory=dict)
+    output: Any = None
+
+    def to_dict(self) -> dict:
+        return {
+            "success": self.success,
+            "action": self.action,
+            "reason": self.reason,
+            "error": self.error,
+            "output": self.output,
+        }
 
 
 class WindowController:
+    """Window management with a lazy pygetwindow backend."""
+
     def __init__(self) -> None:
-        logger.info("WindowController initialized")
+        self._pygetwindow = None
 
-    def list_windows(self) -> list[dict[str, Any]]:
-        try:
-            windows = gw.getAllWindows()
-            return [
-                {
-                    "title": w.title,
-                    "left": w.left,
-                    "top": w.top,
-                    "width": w.width,
-                    "height": w.height,
-                    "isMinimized": w.isMinimized,
-                    "isMaximized": w.isMaximized,
-                    "isActive": w.isActive,
-                }
-                for w in windows
-                if w.title.strip()
-            ]
-        except Exception as e:
-            logger.error("list_windows failed: %s", e)
-            return []
+    def _lazy_import(self):
+        if self._pygetwindow is None:
+            try:
+                import pygetwindow as gw
+                self._pygetwindow = gw
+            except ImportError:
+                self._pygetwindow = False
+        return self._pygetwindow
 
-    def focus(self, title: str) -> WindowActionResult:
-        try:
-            windows = gw.getWindowsWithTitle(title)
-            if not windows:
-                return WindowActionResult(error=f"No window found: {title}")
-            win = windows[0]
-            if win.isMinimized:
-                win.restore()
-            win.activate()
-            return WindowActionResult(
-                success=True,
-                details={"title": win.title, "action": "focus"},
-            )
-        except Exception as e:
-            return WindowActionResult(error=str(e))
+    # ── agent style ──────────────────────────────────────────────────
+    def list_windows(self, filter: str = "") -> list:
+        """Return [{'title': ...}, ...] of open windows, optionally filtered."""
+        gw = self._lazy_import()
+        windows: list = []
+        if gw:
+            try:
+                raw = list(gw.getAllWindows())
+                windows = [{"title": w.title} for w in raw
+                           if getattr(w, "title", "")]
+            except Exception:  # noqa: BLE001
+                windows = []
+        if not windows:
+            # Fallback: Win32 enumeration without third-party deps.
+            try:
+                windows = self._win32_windows()
+            except Exception:  # noqa: BLE001
+                windows = []
+        if filter:
+            f = str(filter).lower()
+            windows = [w for w in windows if f in str(w.get("title", "")).lower()]
+        return windows
 
-    def close(self, title: str) -> WindowActionResult:
-        try:
-            windows = gw.getWindowsWithTitle(title)
-            if not windows:
-                return WindowActionResult(error=f"No window found: {title}")
-            windows[0].close()
-            return WindowActionResult(success=True, details={"title": title, "action": "close"})
-        except Exception as e:
-            return WindowActionResult(error=str(e))
+    @staticmethod
+    def _win32_windows() -> list:
+        import ctypes
+        from ctypes import wintypes
 
-    def minimize(self, title: str) -> WindowActionResult:
-        try:
-            windows = gw.getWindowsWithTitle(title)
-            if not windows:
-                return WindowActionResult(error=f"No window found: {title}")
-            windows[0].minimize()
-            return WindowActionResult(success=True, details={"title": title, "action": "minimize"})
-        except Exception as e:
-            return WindowActionResult(error=str(e))
+        user32 = ctypes.windll.user32
+        titles: list = []
+
+        CBENUMPROC = ctypes.WINFUNCTYPE(
+            ctypes.c_int, wintypes.HWND, wintypes.LPARAM)
+
+        def _callback(hwnd, _lparam):
+            if user32.IsWindowVisible(hwnd):
+                length = user32.GetWindowTextLengthW(hwnd)
+                if length:
+                    buf = ctypes.create_unicode_buffer(length + 1)
+                    user32.GetWindowTextW(hwnd, buf, length + 1)
+                    if buf.value.strip():
+                        titles.append({"title": buf.value})
+            return 1
+
+        user32.EnumWindows(CBENUMPROC(_callback), 0)
+        return [{"title": t["title"]} for t in titles]
 
     def maximize(self, title: str) -> WindowActionResult:
-        try:
-            windows = gw.getWindowsWithTitle(title)
-            if not windows:
-                return WindowActionResult(error=f"No window found: {title}")
-            windows[0].maximize()
-            return WindowActionResult(success=True, details={"title": title, "action": "maximize"})
-        except Exception as e:
-            return WindowActionResult(error=str(e))
+        gw = self._lazy_import()
+        if not gw:
+            return WindowActionResult(success=False, action="maximize",
+                                      reason="no window backend",
+                                      error="no window backend installed")
+        for w in gw.getAllWindows():
+            if w.title == title:
+                try:
+                    w.maximize()
+                    return WindowActionResult(success=True, action="maximize",
+                                              output=title)
+                except Exception as exc:  # noqa: BLE001
+                    return WindowActionResult(success=False, action="maximize",
+                                              error=str(exc))
+        return WindowActionResult(success=False, action="maximize",
+                                  reason=f"window not found: {title}",
+                                  error=f"window not found: {title}")
 
-    def resize(self, title: str, width: int, height: int) -> WindowActionResult:
-        try:
-            windows = gw.getWindowsWithTitle(title)
-            if not windows:
-                return WindowActionResult(error=f"No window found: {title}")
-            windows[0].resizeTo(width, height)
-            return WindowActionResult(
-                success=True,
-                details={"title": title, "action": "resize", "width": width, "height": height},
-            )
-        except Exception as e:
-            return WindowActionResult(error=str(e))
+    def focus(self, title: str) -> WindowActionResult:
+        gw = self._lazy_import()
+        if not gw:
+            return WindowActionResult(success=False, action="focus",
+                                      reason="no window backend",
+                                      error="no window backend installed")
+        for w in gw.getAllWindows():
+            if w.title == title:
+                try:
+                    w.activate()
+                    return WindowActionResult(success=True, action="focus",
+                                              output=title)
+                except Exception as exc:  # noqa: BLE001
+                    return WindowActionResult(success=False, action="focus",
+                                              error=str(exc))
+        return WindowActionResult(success=False, action="focus",
+                                  reason=f"window not found: {title}",
+                                  error=f"window not found: {title}")
 
-    def move(self, title: str, x: int, y: int) -> WindowActionResult:
-        try:
-            windows = gw.getWindowsWithTitle(title)
-            if not windows:
-                return WindowActionResult(error=f"No window found: {title}")
-            windows[0].moveTo(x, y)
-            return WindowActionResult(
-                success=True,
-                details={"title": title, "action": "move", "x": x, "y": y},
-            )
-        except Exception as e:
-            return WindowActionResult(error=str(e))
-
-    def get_active_window(self) -> dict[str, Any] | None:
-        try:
-            win = gw.getActiveWindow()
-            if win is None:
-                return None
-            return {
-                "title": win.title,
-                "left": win.left,
-                "top": win.top,
-                "width": win.width,
-                "height": win.height,
-                "isMinimized": win.isMinimized,
-                "isMaximized": win.isMaximized,
-            }
-        except Exception as e:
-            logger.error("get_active_window failed: %s", e)
-            return None
-
-    def snapshot(self) -> dict[str, Any]:
-        try:
-            windows = self.list_windows()
-            active = self.get_active_window()
-            return {
-                "active_window": active,
-                "windows": windows,
-                "total_windows": len(windows),
-            }
-        except Exception as e:
-            return {"error": str(e)}
+    def close(self, title: str) -> WindowActionResult:
+        gw = self._lazy_import()
+        if not gw:
+            return WindowActionResult(success=False, action="close",
+                                      reason="no window backend",
+                                      error="no window backend installed")
+        for w in gw.getAllWindows():
+            if w.title == title:
+                try:
+                    w.close()
+                    return WindowActionResult(success=True, action="close",
+                                              output=title)
+                except Exception as exc:  # noqa: BLE001
+                    return WindowActionResult(success=False, action="close",
+                                              error=str(exc))
+        return WindowActionResult(success=False, action="close",
+                                  reason=f"window not found: {title}",
+                                  error=f"window not found: {title}")
 
 
+# Module-level singleton.
 window_controller = WindowController()
+
+
+__all__ = ["WindowActionResult", "WindowController", "window_controller"]

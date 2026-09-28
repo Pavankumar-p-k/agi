@@ -1,23 +1,28 @@
-"""Authentication result model."""
+"""AuthenticationResult — output of the authentication stage (frozen artifact)."""
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Optional
 
-from core.identity.models import AuthenticationState, UserIdentity, SessionIdentity
+from core.identity.models import AuthenticationState, UserIdentity
+
+
+@dataclass(frozen=True)
+class SessionInfo:
+    id: str = ""
+    user_id: Optional[str] = None
 
 
 @dataclass(frozen=True)
 class AuthenticationResult:
     authenticated: bool = False
     state: AuthenticationState = AuthenticationState.ANONYMOUS
-    principal: UserIdentity | None = None
-    session: SessionIdentity | None = None
-    reason: str | None = None
-    metadata: dict[str, Any] = field(default_factory=dict)
+    reason: Optional[str] = None
+    principal: Optional[UserIdentity] = None
+    session: Optional[SessionInfo] = None
+    user_id: Optional[str] = None
+    # Excluded from eq/hash so results stay hashable (dict not hashable).
+    metadata: dict = field(default_factory=dict, compare=False)
 
-    def __post_init__(self) -> None:
-        object.__setattr__(self, "metadata", dict(self.metadata or {}))
 
-    def __hash__(self) -> int:
-        return hash((self.authenticated, self.state, self.principal, self.session, self.reason, tuple(sorted(self.metadata.items()))))
+__all__ = ["AuthenticationResult", "SessionInfo"]

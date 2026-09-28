@@ -1,108 +1,82 @@
-"""Module: core.planner.models
-Data models for planner sub-goals, execution plans, and templates.
-"""
+"""Planner models: SubGoal tree, ExecutionPlan, PlannerTemplate, PlanStep."""
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from enum import Enum, auto
-from typing import Any, List, Optional
-
-
-class PlanStatus(str, Enum):
-    """Status of a planning cycle."""
-    PENDING = "pending"
-    IN_PROGRESS = "in_progress"
-    COMPLETED = "completed"
-    FAILED = "failed"
-    REPLANNED = "replanned"
-    ABORTED = "aborted"
+from typing import Any, Optional
 
 
 @dataclass
 class SubGoal:
-    """A sub-goal within a plan, with goal description and tracking info.
+    """A node in the goal decomposition tree.
 
-    SubGoal is the basic executable unit that the planner decomposes
-    a high-level goal into, and that the executor executes step by step.
+    Leaves (no children) are the executable units the agent system runs.
     """
     id: str = ""
-    goal: str = ""
-    status: PlanStatus = PlanStatus.PENDING
-    dependencies: list[str] = field(default_factory=list)
-    agent_id: str = ""
+    description: str = ""
+    step_name: str = ""
+    template_id: str = ""
     parameters: dict[str, Any] = field(default_factory=dict)
-    artifacts: dict[str, Any] = field(default_factory=dict)
-    started_at: float | None = None
-    completed_at: float | None = None
+    children: list["SubGoal"] = field(default_factory=list)
+    status: str = "pending"
+    result: Optional[Any] = None
 
     @property
-    def duration(self) -> float | None:
-        if self.started_at is None or self.completed_at is None:
-            return None
-        return self.completed_at - self.started_at
+    def is_leaf(self) -> bool:
+        return not self.children
 
-    def mark_running(self) -> None:
-        self.status = PlanStatus.IN_PROGRESS
-        self.started_at = self.started_at or __import__("time").time()
+    def flatten(self) -> list["SubGoal"]:
+        """All leaf nodes, depth-first."""
+        leaves: list[SubGoal] = []
+        if self.is_leaf:
+            return [self]
+        for child in self.children:
+            leaves.extend(child.flatten())
+        return leaves
 
-    def mark_completed(self, artifacts: dict[str, Any] | None = None) -> None:
-        self.status = PlanStatus.COMPLETED
-        self.completed_at = __import__("time").time()
-        if artifacts:
-            self.artifacts.update(artifacts)
+    def walk(self):
+        yield self
+        for child in self.children:
+            yield from child.walk()
 
-    def mark_failed(self, error: str) -> None:
-        self.status = PlanStatus.FAILED
-        self.started_at = None
-        self.completed_at = __import__("time").time()
+
+@dataclass
+class PlanStep:
+    name: str = ""
+    description: str = ""
+    agent_id: str = ""
+    parameters: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
 class ExecutionPlan:
-    """A complete execution plan composed of sub-goals.
-
-    An ExecutionPlan owns its sub-goals and tracks the overall plan
-    status, making it distinguishable from other plans (e.g. revised plans
-    have different hashes).
-    """
-    id: str = ""
+    """A plan: ordered steps derived from a goal."""
+    id: str = "plan"
     goal: str = ""
-    status: PlanStatus = PlanStatus.PENDING
-    sub_goals: list[SubGoal] = field(default_factory=list)
-    created_at: float | None = None
-    revised_from: str | None = None  # plan ID this was revised from
+    template_id: str = ""
+    steps: list[PlanStep] = field(default_factory=list)
+    subgoals: list[SubGoal] = field(default_factory=list)
+    status: str = "pending"
 
-    @property
-    def plan_hash(self) -> str:
-        """Deterministic hash identifying this plan version."""
-        description = f"{self.id}:{self.goal}:{[sg.id for sg in self.sub_goals]}"
-        return __import__("hashlib").sha256(description.encode()).hexdigest()[:16]
+    def add_step(self, step: PlanStep) -> None:
+        self.steps.append(step)
 
-    def add_sub_goal(self, sg: SubGoal) -> None:
-        self.sub_goals.append(sg)
-
-    def get_sub_goal(self, sg_id: str) -> SubGoal | None:
-        for sg in self.sub_goals:
-            if sg.id == sg_id:
-                return sg
-        return None
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id, "goal": self.goal, "template_id": self.template_id,
+            "status": self.status,
+            "steps": [{"name": s.name, "agent_id": s.agent_id} for s in self.steps],
+        }
 
 
 @dataclass
-class PlanTemplate:
-    """A template for plan decomposition, describing what sub-goals
-    a typical decomposition of a goal class should produce.
-
-    Templates are used by the decomposer to generate consistent
-    sub-goal structures for similar goal types.
-    """
+class PlannerTemplate:
+    """Named plan template: required steps + optional tool hints."""
+    id: str = ""
     name: str = ""
+    steps: list[str] = field(default_factory=list)
+    required_tools: list[str] = field(default_factory=list)
     description: str = ""
-    typical_sub_goals: list[str] = field(default_factory=list)
-    required_capabilities: list[str] = field(default_factory=list)
 
-
-def __getattr__(name: str) -> Any:
-    """Fallback for any undefined names (compat layer)."""
-    import types
-    return types.ModuleType(name)
+    def to_dict(self) -> dict[str, Any]:
+        return {"id": self.id, "name": self.name, "steps": list(self.steps),
+                "required_tools": list(self.required_tools)}

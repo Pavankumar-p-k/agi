@@ -1,184 +1,126 @@
-"""Structured discovery of native Windows windows and accessible controls."""
+"""DesktopDiscovery — inspect native windows and their UIA controls.
+
+Wraps the UserActions UIA helpers behind a small API with a backend
+name, so the agent can honestly report whether UI Automation is
+available before promising semantic control access.
+"""
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, field
-from typing import Any
-import logging
-
-logger = logging.getLogger(__name__)
+from dataclasses import dataclass, field
+from typing import Any, Optional
 
 
-@dataclass(frozen=True)
-class ControlInfo:
+@dataclass
+class DiscoveredControl:
     name: str = ""
     control_type: str = ""
     automation_id: str = ""
-    enabled: bool = True
-    visible: bool = True
-    bounds: dict[str, int] = field(default_factory=dict)
-    patterns: tuple[str, ...] = ()
+    x: int = 0
+    y: int = 0
+    width: int = 0
+    height: int = 0
 
-    def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
-
-
-@dataclass(frozen=True)
-class WindowInfo:
-    title: str
-    handle: int | None = None
-    process_id: int | None = None
-    class_name: str = ""
-    bounds: dict[str, int] = field(default_factory=dict)
-    active: bool = False
-    controls: tuple[ControlInfo, ...] = ()
-
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> dict:
         return {
-            **asdict(self),
-            "controls": [control.to_dict() for control in self.controls],
+            "name": self.name,
+            "control_type": self.control_type,
+            "automation_id": self.automation_id,
+            "x": self.x, "y": self.y,
+            "width": self.width, "height": self.height,
+        }
+
+
+@dataclass
+class DiscoveredWindow:
+    title: str = ""
+    backend: str = ""
+    controls: list = field(default_factory=list)
+
+    def to_dict(self) -> dict:
+        return {
+            "title": self.title,
+            "backend": self.backend,
+            "controls": [c.to_dict() if isinstance(c, DiscoveredControl)
+                         else dict(c) for c in self.controls],
         }
 
 
 class DesktopDiscovery:
-    """Best-effort discovery with an explicit backend indicator.
+    """Window + control discovery through the UserActions UIA layer."""
 
-    pywinauto is optional. Without it, window discovery still works through
-    pygetwindow, while control discovery returns an honest empty result.
-    """
+    def __init__(self, user_actions: Optional[Any] = None,
+                 backend_name: str = "uia") -> None:
+        if user_actions is None:
+            from core.desktop.user_actions import UserActions
+            user_actions = UserActions
+        self._ua = user_actions
+        self.backend_name = backend_name
 
-    def __init__(self, window_controller: Any | None = None, max_controls: int = 200):
-        if max_controls <= 0:
-            raise ValueError("max_controls must be positive")
-        self.window_controller = window_controller
-        self.max_controls = max_controls
-
-    def list_windows(self) -> list[WindowInfo]:
-        windows: list[WindowInfo] = []
-        raw_windows = (
-            self.window_controller.list_windows()
-            if self.window_controller is not None
-            else self._pygetwindow_list()
-        )
-        for window in raw_windows:
-            title = str(window.get("title", "") or "").strip()
-            if not title:
-                continue
-            windows.append(
-                WindowInfo(
-                    title=title,
-                    bounds={
-                        "left": int(window.get("left", 0)),
-                        "top": int(window.get("top", 0)),
-                        "width": int(window.get("width", 0)),
-                        "height": int(window.get("height", 0)),
-                    },
-                    active=bool(window.get("isActive", False)),
-                )
-            )
-        return windows
-
-    @staticmethod
-    def _pygetwindow_list() -> list[dict[str, Any]]:
-        import pygetwindow as gw
-        return [
-            {
-                "title": window.title,
-                "left": window.left,
-                "top": window.top,
-                "width": window.width,
-                "height": window.height,
-                "isActive": window.isActive,
-            }
-            for window in gw.getAllWindows()
-        ]
-
-    def discover_window(self, title: str, include_controls: bool = True) -> WindowInfo | None:
-        if not title:
-            raise ValueError("title is required")
-        candidates = [window for window in self.list_windows() if title.lower() in window.title.lower()]
-        if not candidates:
+    def discover_window(self, title: str,
+                        include_controls: bool = True) -> Optional[DiscoveredWindow]:
+        """Find a window by substring and optionally enumerate controls."""
+        wins = self._ua.list_running_apps().get("apps", [])
+        match = next((w for w in wins
+                      if str(title).lower() in str(w.get("Title", "")).lower()
+                      and w.get("Title")), None)
+        if match is None:
             return None
-        window = candidates[0]
-        if not include_controls:
-            return window
-        controls = self._discover_controls(title)
-        return WindowInfo(
-            title=window.title,
-            handle=window.handle,
-            process_id=window.process_id,
-            class_name=window.class_name,
-            bounds=window.bounds,
-            active=window.active,
-            controls=tuple(controls),
-        )
 
-    def capability_snapshot(self, title: str) -> dict[str, Any]:
-        window = self.discover_window(title)
-        if window is None:
-            return {"found": False, "title": title, "backend": self.backend_name}
+        window = DiscoveredWindow(title=str(match["Title"]),
+                                  backend=self.backend_name)
+        if include_controls:
+            snapshot = self.capability_snapshot(match["Title"])
+            for ctl in snapshot.get("controls", []):
+                window.controls.append(DiscoveredControl(
+                    name=str(ctl.get("name", "")),
+                    control_type=str(ctl.get("type", "")),
+                    automation_id=str(ctl.get("id", "")),
+                    x=int(ctl.get("x", 0)), y=int(ctl.get("y", 0)),
+                    width=int(ctl.get("width", 0)),
+                    height=int(ctl.get("height", 0)),
+                ))
+        return window
+
+    def capability_snapshot(self, title: str) -> dict:
+        """All UIA controls for the best-matching window."""
+        wins = self._ua.list_running_apps().get("apps", [])
+        match = next((w for w in wins
+                      if str(title).lower() in str(w.get("Title", "")).lower()
+                      and w.get("Title")), None)
+        if match is None:
+            return {"success": False,
+                    "error": f"no window matching '{title}'"}
+        controls = self._ua.list_ui_controls(match["Title"])
         return {
-            "found": True,
+            "success": True,
+            "window": match["Title"],
             "backend": self.backend_name,
-            "window": window.to_dict(),
-            "capabilities": sorted({pattern for control in window.controls for pattern in control.patterns}),
+            "controls": controls.get("controls", []),
         }
 
-    @property
-    def backend_name(self) -> str:
-        try:
-            import pywinauto  # noqa: F401
-        except ImportError:
-            return "pygetwindow"
-        return "pywinauto-uia"
-
-    def _discover_controls(self, title: str) -> list[ControlInfo]:
-        try:
-            from pywinauto import Desktop
-        except ImportError:
-            return []
-        try:
-            window = Desktop(backend="uia").window(title_re=f".*{title}.*")
-            controls: list[ControlInfo] = []
-            for element in window.descendants():
-                if len(controls) >= self.max_controls:
-                    break
-                info = element.element_info
-                rect = element.rectangle()
-                controls.append(
-                    ControlInfo(
-                        name=str(getattr(info, "name", "") or ""),
-                        control_type=str(getattr(info, "control_type", "") or ""),
-                        automation_id=str(getattr(info, "automation_id", "") or ""),
-                        enabled=bool(element.is_enabled()),
-                        visible=bool(element.is_visible()),
-                        bounds={
-                            "left": int(rect.left),
-                            "top": int(rect.top),
-                            "width": int(rect.width()),
-                            "height": int(rect.height()),
-                        },
-                        patterns=tuple(sorted(self._patterns(element))),
-                    )
-                )
-            return controls
-        except Exception as exc:
-            logger.warning("UIA discovery failed for %s: %s", title, exc)
-            return []
-
-    @staticmethod
-    def _patterns(element: Any) -> set[str]:
-        patterns = set()
-        for pattern, method in (
-            ("invoke", "invoke"),
-            ("value", "get_value"),
-            ("selection", "get_selection"),
-            ("toggle", "get_toggle_state"),
-        ):
-            if hasattr(element, method):
-                patterns.add(pattern)
-        return patterns
+    def find_control(self, title: str, name: str,
+                     control_type: Optional[str] = None) -> list:
+        """Controls whose name matches; unique matches are usable."""
+        snapshot = self.capability_snapshot(title)
+        wanted = str(name).lower()
+        matches = []
+        for ctl in snapshot.get("controls", []):
+            if wanted not in str(ctl.get("name", "")).lower():
+                continue
+            if control_type and str(ctl.get("type", "")) != control_type:
+                continue
+            matches.append(DiscoveredControl(
+                name=str(ctl.get("name", "")),
+                control_type=str(ctl.get("type", "")),
+                automation_id=str(ctl.get("id", "")),
+            ))
+        return matches
 
 
-def create_desktop_discovery(window_controller: Any) -> DesktopDiscovery:
-    """Create discovery against the repository's shared window controller."""
-    return DesktopDiscovery(window_controller=window_controller)
+def create_desktop_discovery(window_controller=None) -> DesktopDiscovery:
+    """Factory used by the desktop agent; WC is accepted for symmetry."""
+    return DesktopDiscovery()
+
+
+__all__ = ["DesktopDiscovery", "DiscoveredWindow", "DiscoveredControl",
+           "create_desktop_discovery"]

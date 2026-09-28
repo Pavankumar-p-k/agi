@@ -1,29 +1,39 @@
-"""
-Module: core.permission.manager
-Central permission manager: resolve, audit, policy profiles, runtime violation.
-"""
+"""PermissionManager — the single authorization point (Gate 4)."""
 from __future__ import annotations
-from typing import Any, Callable, Optional
+
 from dataclasses import dataclass, field
-import logging
+from typing import Optional
 
-from core.permission.models import Decision, Permission, PermissionCategory, RiskLevel, AuditEntry
-from core.permission.policy import PolicyEngine, PolicyProfile
 from core.permission.audit import PermissionAudit
-from core.permission.registry import PermissionRegistry
-from core.permission.observer import RuntimeObserver
-
-logger = logging.getLogger(__name__)
+from core.permission.models import Decision, Permission, PermissionCategory, RiskLevel
+from core.permission.policy import PolicyEngine, PolicyProfile
+from core.permission.registry import permission_registry
 
 
 @dataclass
 class PermissionResult:
-    capability_id: str = ""
-    required_permissions: list[str] = field(default_factory=list)
-    policy: str = ""
-    results: dict[str, str] = field(default_factory=dict)
-    overall: Decision = Decision.ALLOW
-    reason: str = ""
+    permission_id: str
+    decision: Decision
+    policy: str
+    reason: str
+
+    def to_dict(self) -> dict:
+        return {
+            "permission_id": self.permission_id,
+            "decision": self.decision.value,
+            "policy": self.policy,
+            "reason": self.reason,
+        }
+
+
+@dataclass
+class PermissionResolution:
+    capability_id: str
+    overall: Decision
+    required_permissions: tuple
+    policy: str
+    results: tuple
+    reason: str
 
     @property
     def allowed(self) -> bool:
@@ -37,81 +47,84 @@ class PermissionResult:
     def needs_confirmation(self) -> bool:
         return self.overall == Decision.NEED_CONFIRM
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> dict:
         return {
             "capability_id": self.capability_id,
-            "required_permissions": self.required_permissions,
+            "required_permissions": list(self.required_permissions),
             "policy": self.policy,
-            "results": self.results,
+            "results": [r.to_dict() for r in self.results],
             "overall": self.overall.value,
             "reason": self.reason,
         }
 
 
 class PermissionManager:
-    def __init__(self, registry: PermissionRegistry | None = None, policy_engine: PolicyEngine | None = None, audit: PermissionAudit | None = None, observer: RuntimeObserver | None = None):
-        self.registry = registry or PermissionRegistry()
-        self.policy_engine = policy_engine or PolicyEngine()
-        self.audit = audit or PermissionAudit()
-        self.observer = observer or RuntimeObserver()
-        self.registry.register_defaults()
+    def __init__(self, audit: Optional[PermissionAudit] = None,
+                 policy: Optional[PolicyEngine] = None) -> None:
+        self.audit = audit if audit is not None else PermissionAudit()
+        self.policy = policy if policy is not None else PolicyEngine()
 
-    def resolve(self, capability_id: str) -> PermissionResult:
-        required = self.registry.permissions_for_capability(capability_id)
-        profile_name = self.policy_engine.active_profile
-        results: dict[str, str] = {}
-        all_allowed = True
-        any_denied = False
-        any_need_confirm = False
-        deny_reason = ""
+    def resolve(self, capability_id: str) -> PermissionResolution:
+        perm_ids = permission_registry.permissions_for_capability(capability_id)
+        results = []
+        decisions: list = []
+        profile = self.policy.active_profile
 
-        for perm_name in required:
-            perm = self.registry.get(perm_name)
-            if perm is None:
-                decision = Decision.DENY
-            else:
-                decision = self.policy_engine.evaluate(perm)
-            results[perm_name] = decision.value
-            if decision == Decision.DENY:
-                all_allowed = False
-                any_denied = True
-                deny_reason = f"Permission '{perm_name}' denied by policy '{profile_name}'"
-            elif decision == Decision.NEED_CONFIRM:
-                all_allowed = False
-                any_need_confirm = True
-            self.audit.record(
-                permission_name=perm_name,
-                decision=decision,
+        if not perm_ids:
+            resolution = PermissionResolution(
                 capability_id=capability_id,
-                policy=profile_name,
-                reason=f"Policy evaluation: {decision.value}",
+                overall=Decision.ALLOW,
+                required_permissions=(),
+                policy=str(getattr(profile, "value", profile)),
+                results=(),
+                reason="capability declares no permissions",
             )
+            self.audit.record(capability_id, capability_id, Decision.ALLOW,
+                              policy=str(getattr(profile, "value", profile)),
+                              reason="no permissions declared")
+            return resolution
 
-        if any_denied:
+        for pid in perm_ids:
+            # Infer risk/category from the permission id prefix.
+            if pid.startswith("desktop."):
+                category, risk = PermissionCategory.DESKTOP, RiskLevel.CRITICAL
+            elif pid.startswith("system."):
+                category, risk = PermissionCategory.SHELL, RiskLevel.CRITICAL
+            elif pid.startswith("network."):
+                category, risk = PermissionCategory.NETWORK, RiskLevel.LOW
+            else:
+                category, risk = PermissionCategory.FILESYSTEM, RiskLevel.LOW
+            perm = Permission(pid, category=category, risk=risk)
+            decision = self.policy.evaluate(perm)
+            decisions.append(decision)
+            results.append(PermissionResult(
+                permission_id=pid, decision=decision,
+                policy=str(getattr(profile, "value", profile)),
+                reason=f"policy {getattr(profile, 'value', profile)}",
+            ))
+            self.audit.record(capability_id, pid, decision,
+                              policy=str(getattr(profile, "value", profile)),
+                              reason="policy evaluation")
+
+        if Decision.DENY in decisions:
             overall = Decision.DENY
-            reason = deny_reason
-        elif any_need_confirm:
+        elif Decision.NEED_CONFIRM in decisions:
             overall = Decision.NEED_CONFIRM
-            reason = f"Capability '{capability_id}' requires confirmation under profile '{profile_name}'"
         else:
             overall = Decision.ALLOW
-            reason = f"All permissions allowed under profile '{profile_name}'"
 
-        return PermissionResult(
+        return PermissionResolution(
             capability_id=capability_id,
-            required_permissions=required,
-            policy=profile_name,
-            results=results,
             overall=overall,
-            reason=reason,
+            required_permissions=tuple(perm_ids),
+            policy=str(getattr(profile, "value", profile)),
+            results=tuple(results),
+            reason=f"overall={overall.value} from {len(results)} permissions",
         )
-
-    def to_dict(self) -> dict[str, Any]:
-        return {
-            "registry": self.registry.to_dict(),
-            "policy_engine": self.policy_engine.to_dict(),
-            "audit": self.audit.to_dict(),
-        }
 
 
 permission_manager = PermissionManager()
+
+
+__all__ = ["PermissionManager", "PermissionResolution", "PermissionResult",
+           "permission_manager"]

@@ -14,9 +14,9 @@ class DynamicMeta(type):
         return name
 
 # Re-exports
-from .manager import SpawnResult, SubagentManager, subagent_manager
-from .orphan import OrphanRecovery, orphan_recovery
-from .store import SubagentStore
+from manager import SpawnResult, SubagentManager, subagent_manager
+from orphan import OrphanRecovery, orphan_recovery
+from store import SubagentStore
 
 
 def __getattr__(name: str) -> Any:

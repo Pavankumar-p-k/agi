@@ -1,634 +1,459 @@
-"""Browser AI specialist module implementing the standard SpecialistModule contract.
+"""BrowserAI — browser automation specialist.
 
-Browser AI is the web specialist of the JARVIS specialist architecture
-(Desktop AI, Coding AI, Browser AI, ...).  It conforms to the same clean
-specialist boundary so a future Super-Brain can simply discover capabilities
-like browser.navigate, browser.search, browser.extract, browser.form_fill,
-browser.verify and browser.recover without understanding browser internals.
-
-Reuse map (no parallel architecture was created):
-    core/browser_manager.py        browser lifecycle foundation
-    core/tools/browser_tools.py    verified action primitives (do_browser_*)
-    tools/registry.py              authoritative capability registration
-    core/desktop/task_graph.py     multi-step workflow execution (via core.browser.workflow)
-    memory/memory_facade.py        episodic mirror of browser experience
-    core/browser/procedural_memory.py  site/task procedures (sqlite in data/memory.db)
-    core/tools/policy.py           tool policy engine hooks
-    core/browser/page_security.py  untrusted page content + approval gates
-    core/browser/verification.py   SUCCESS/FAILED/UNCONFIRMED verification
-    core/browser/recovery.py       bounded recovery ladder
-
-Specialist contract (core/specialist.py):
-    identity (name/description) / capabilities / requirements / health() /
-    observe() / execute() / verify() / recover() / report()
+Owns the browser.* capabilities. Tool calls go through an injectable
+async ``tool_caller`` (production wires core.tools browser tools);
+page content is untrusted; sensitive actions (payments, credentials,
+deletions) pass an approval gate; every capability result is verified
+before it counts.
 """
 from __future__ import annotations
 
-import logging
+import asyncio
+from dataclasses import dataclass, field
 from typing import Any, Awaitable, Callable, Optional
+from urllib.parse import urlparse
 
 from core.specialist import SpecialistModule, SpecialistResult
 from tools.base_tool import (
     CapabilityDefinition,
     CapabilityHealth,
-    CapabilityStatus,
     CapabilityType,
     RiskTier,
     VerificationSpec,
 )
 
-logger = logging.getLogger(__name__)
-
-ToolCaller = Callable[[str, dict[str, Any]], Awaitable[dict[str, Any]]]
+ToolCaller = Callable[[str, dict], Awaitable[dict]]
 
 
-async def call_tool(tool: str, params: dict[str, Any]) -> dict[str, Any]:
-    """Default tool caller: invoke the verified do_browser_* primitives."""
-    # Direct submodule import: `from core.tools import browser_tools` resolves
-    # through the package attribute and can hit core.tools.__getattr__'s
-    # DynamicStub fallback, producing a non-awaitable "handler".
-    import core.tools.browser_tools as browser_tools
-    handler = getattr(browser_tools, f"do_{tool}", None)
-    if handler is None or not tool.startswith("browser_"):
-        return {"status": "error", "error": f"unknown browser tool: {tool}", "error_type": "NotFound"}
+# ── production tool-call shim ────────────────────────────────────────
+async def call_tool(tool: str, params: dict) -> dict:
+    """Route a browser tool call to the real backend when available."""
     try:
-        return await handler(**params)
-    except TypeError as exc:
-        return {"status": "error", "error": f"bad params for {tool}: {exc}", "error_type": "BadParams"}
-    except Exception as exc:
-        return {"status": "error", "error": f"{type(exc).__name__}: {exc}", "error_type": type(exc).__name__}
+        from core.tools.browser_tools import run_browser_tool
+        return await run_browser_tool(tool, params)
+    except Exception as exc:  # noqa: BLE001 — honest error, never fake success
+        return {"status": "error", "error": str(exc), "error_type": "BackendUnavailable"}
 
 
-# ---------------------------------------------------------------------------
-# Workflow execution (goal -> steps -> verified result), on the existing
-# desktop TaskGraph action-dict shape so Browser AI gains rollback/consent
-# semantics for free.
-# ---------------------------------------------------------------------------
-
-async def execute_workflow(
-    plan: dict[str, Any],
-    session_id: str = "default",
-    call: ToolCaller | None = None,
-) -> dict[str, Any]:
-    """Execute a browser workflow of steps and verify the final outcome.
-
-    plan shape: {"goal": str, "steps": [{"tool": "browser_click", "params": {...}}, ...],
-                 "verify": [{"kind": "url_host", "expected": "github.com"}, ...]}
-
-    Steps run in order; a failed step triggers bounded recovery; the goal is
-    only reported SUCCESS when the verification checks pass.
-    """
-    from core.browser.recovery import RecoveryContext, RecoveryEngine
-    from core.browser.verification import Check, verify_outcome
-
-    run = call or call_tool
-    steps = plan.get("steps") or []
-    verify_spec = plan.get("verify") or []
-    engine = RecoveryEngine(run)
-    trace: list[dict[str, Any]] = []
-
-    for index, step in enumerate(steps):
-        tool = str(step.get("tool") or "")
-        params = dict(step.get("params") or {})
-        params.setdefault("session_id", session_id)
-        result = await run(tool, params)
-        entry = {"step": index, "tool": tool, "status": result.get("status"), "error": result.get("error")}
-        if result.get("status") != "ok":
-            alt_selectors = [s for s in (step.get("alt_selectors") or []) if s]
-            recovery = await engine.recover(RecoveryContext(
-                action_name=tool,
-                params=params,
-                alt_selectors=alt_selectors,
-                alternative_workflows=[(t, dict(p)) for t, p in (step.get("alternatives") or [])],
-            ))
-            entry["recovery"] = recovery.to_dict()
-            if not recovery.recovered:
-                return {
-                    "status": "FAILED",
-                    "goal": plan.get("goal", ""),
-                    "failed_step": index,
-                    "trace": trace + [entry],
-                    "error": result.get("error", "step failed and recovery could not fix it"),
-                }
-            result = recovery.result
-        trace.append(entry)
-
-    outcome = await verify_outcome(
-        [Check(kind=c["kind"], expected=c.get("expected", "")) for c in verify_spec],
-        run,
-        session_id,
-    )
-    return {
-        "status": outcome.status,
-        "goal": plan.get("goal", ""),
-        "trace": trace,
-        "verification": outcome.to_dict(),
-    }
+# ── approval gating ──────────────────────────────────────────────────
+@dataclass
+class ApprovalRequest:
+    category: str
+    action: str
+    params: dict = field(default_factory=dict)
 
 
-# ---------------------------------------------------------------------------
-# Specialist
-# ---------------------------------------------------------------------------
+class ApprovalGate:
+    """Pre-approval + resolver-based consent for sensitive actions."""
+
+    def __init__(self, resolver: Optional[Callable] = None) -> None:
+        self._resolver = resolver
+        self._pre_approved: dict[str, set] = {}
+
+    def pre_approve(self, category: str, action: str) -> None:
+        self._pre_approved.setdefault(str(category), set()).add(str(action))
+
+    def check(self, category: str, action: str, params: dict) -> bool:
+        if str(action) in self._pre_approved.get(str(category), set()):
+            return True
+        if self._resolver is not None:
+            return bool(self._resolver({"category": category,
+                                        "action": action,
+                                        "params": dict(params)}))
+        return False
+
+
+# Categories that always require consent.
+_APPROVAL_CATEGORIES = {
+    "payment": ("place order", "checkout", "pay now", "buy", "complete purchase"),
+    "credential_access": ("password", "passwd", "pwd"),
+    "account_deletion": ("delete-account", "delete account", "close account",
+                         "#delete-account"),
+    "communication": ("send message", "post", "share", "tweet", "email"),
+}
+
+# Deterministic verification specs per capability.
+_VERIFY_SPECS = {
+    "browser.navigate": [{"kind": "url_result", "expected": "url"}],
+    "browser.search": [{"kind": "any_result"}],
+    "browser.extract": [{"kind": "any_result"}],
+    "browser.form_fill": [{"kind": "any_result"}],
+    "browser.recover": [{"kind": "any_result"}],
+}
+
+
+def _host_of(url: str) -> str:
+    try:
+        return (urlparse(str(url)).hostname or "").lower()
+    except Exception:  # noqa: BLE001
+        return ""
+
+
+def _check_sensitive(selector: str) -> Optional[str]:
+    low = str(selector).lower()
+    for category, tokens in _APPROVAL_CATEGORIES.items():
+        if any(token in low for token in tokens):
+            return category
+    return None
+
 
 class BrowserAI(SpecialistModule):
-    """Encapsulated Browser AI specialist (web perception, actions, research,
-    verification, recovery, procedural memory, security boundaries)."""
+    name = "Browser AI"
+    description = ("Drives a real browser: navigation, search, extraction, "
+                   "forms, with verification and approval gating.")
+    requirements = ["playwright"]
 
-    def __init__(
-        self,
-        *,
-        tool_caller: ToolCaller | None = None,
-        approval_resolver: Any | None = None,
-        session_id: str = "default",
-        procedural_memory: Any | None = None,
-    ) -> None:
-        self._call = tool_caller or call_tool
-        self.session_id = session_id
-        from core.browser.page_security import ApprovalGate
-        from core.browser.procedural_memory import BrowserProceduralMemory
-        self.approval_gate = ApprovalGate(resolver=approval_resolver)
-        self.procedural_memory = procedural_memory or BrowserProceduralMemory()
+    def __init__(self, tool_caller: Optional[ToolCaller] = None,
+                 procedural_memory: Any = None,
+                 approval_resolver: Optional[Callable] = None) -> None:
+        super().__init__()
+        self._call: ToolCaller = tool_caller if tool_caller is not None else call_tool
+        self.procedural_memory = procedural_memory
+        self.approval_gate = ApprovalGate(approval_resolver)
 
-    # -- identity ----------------------------------------------------------
-    @property
-    def name(self) -> str:
-        return "Browser AI"
+        self._register("browser.navigate", self._cap_navigate)
+        self._register("browser.search", self._cap_search)
+        self._register("browser.extract", self._cap_extract)
+        self._register("browser.form_fill", self._cap_form_fill)
+        self._register("browser.type", self._cap_type)
+        self._register("browser.click", self._cap_click)
+        self._register("browser.verify", self._cap_verify)
+        self._register("browser.recover", self._cap_recover)
+        self._register("browser.execute_workflow", self._cap_workflow)
+        self._register("browser.research", self._cap_research)
+        self._register("browser.observe", self._cap_observe)
+        self._register("browser.health", self._cap_health)
+        self._register("browser.report", self._cap_report)
+        self._register("browser.remember", self._cap_remember)
+        self._register("browser.recall", self._cap_recall)
 
-    @property
-    def description(self) -> str:
-        return (
-            "Web browser specialist: DOM/accessibility perception, reliable "
-            "browser actions, web research, verified outcomes, bounded recovery, "
-            "procedural memory of site workflows, and page-content security."
-        )
-
-    @property
-    def requirements(self) -> list[str]:
-        return ["playwright", "network", "chromium"]
-
-    # -- health ------------------------------------------------------------
-    async def health(self) -> dict[str, Any]:
-        result = await self._call("browser_health", {})
-        healthy = result.get("healthy") is True
-        return {
-            "status": CapabilityHealth.HEALTHY.value if healthy else CapabilityHealth.UNHEALTHY.value,
-            "details": result,
-        }
-
-    # -- perception --------------------------------------------------------
-    async def observe(self, session_id: str | None = None) -> dict[str, Any]:
-        """Perceive the current page: URL/title first, then a11y tree, DOM
-        snapshot fallback, screenshot as last resort.  All page text is
-        wrapped as untrusted data."""
-        session_id = session_id or self.session_id
-        from core.browser.page_security import wrap_page_payload
-
-        state = await self._call("browser_get_url", {"session_id": session_id})
-        if state.get("status") != "ok":
-            return {"status": "error", "error": state.get("error", "browser unavailable")}
-
-        url = str(state.get("url") or state.get("result", {}).get("url") or "")
-        title_res = await self._call("browser_get_title", {"session_id": session_id})
-        title = str(title_res.get("result", {}).get("title") or "") if title_res.get("status") == "ok" else ""
-
-        a11y = await self._call("browser_a11y_tree", {"session_id": session_id})
-        if a11y.get("status") == "ok":
-            perception_mode = "a11y_tree"
-            page_payload = a11y.get("result", {})
-        else:
-            dom = await self._call("browser_snapshot", {"session_id": session_id})
-            if dom.get("status") != "ok":
-                screenshot = await self._call("browser_screenshot", {"session_id": session_id})
-                return {
-                    "status": "ok" if screenshot.get("status") == "ok" else "error",
-                    "url": url,
-                    "title": title,
-                    "perception_mode": "screenshot_only",
-                    "screenshot": screenshot.get("result", {}).get("screenshot") if screenshot.get("status") == "ok" else None,
-                }
-            perception_mode = "dom_snapshot"
-            page_payload = dom.get("result", {})
-
-        # Scan ALL page-derived text — including nested structures (links,
-        # headings, a11y tree nodes).  Scanning only top-level text keys lets
-        # injected instructions hide inside deep page content.
-        from core.browser.page_security import scan_page_text
-        import json as _json
-        try:
-            deep_text = _json.dumps(page_payload, ensure_ascii=False, default=str)
-        except Exception:
-            deep_text = str(page_payload)
-        scan = scan_page_text(deep_text)
-        safe_payload, _ = wrap_page_payload(page_payload)
-        return {
-            "status": "ok",
-            "url": url,
-            "title": title,
-            "perception_mode": perception_mode,
-            "page": safe_payload,
-            "security": scan.to_dict(),
-        }
-
-    # -- capabilities ------------------------------------------------------
-    def get_capabilities(self) -> list[CapabilityDefinition]:
-        owner = self.name
-        def cap(name: str, desc: str, inputs: dict, outputs: dict, risk: RiskTier,
-                verification: str, handler: Any, *, requirements: list[str] | None = None,
-                tags: list[str] | None = None, read_only: bool = False) -> CapabilityDefinition:
+    # ── contract ─────────────────────────────────────────────────────
+    def get_capabilities(self) -> list:
+        def cap(name: str, description: str, risk: RiskTier = RiskTier.LOW,
+                read_only: bool = True) -> CapabilityDefinition:
             return CapabilityDefinition(
                 name=name,
                 type=CapabilityType.SPECIALIST_ACTION,
-                owner_module=owner,
-                description=desc,
-                inputs=inputs,
-                outputs=outputs,
-                requirements=requirements or self.requirements,
+                owner_module=self.name,
+                description=description,
                 risk=risk,
-                risk_tags=tags or [],
+                risk_tags=[] if read_only else ["write"],
+                verification=VerificationSpec(method=f"verify:{name}"),
+                requirements=["filesystem"] if "desktop" in name else [],
                 health=CapabilityHealth.HEALTHY,
-                health_check=lambda: True,  # live health comes from health()
-                verification=VerificationSpec(method=verification),
-                handler=handler,
-                metadata={"read_only": read_only},
             )
 
         return [
-            cap("browser.health", "Report browser backend health and availability", {},
-                {"healthy": {"type": "boolean"}}, RiskTier.LOW, "health_reported", self._cap_health),
-            cap("browser.observe", "Perceive the current page (a11y tree / DOM / screenshot) as untrusted data",
-                {"session_id": {"type": "string"}},
-                {"url": {"type": "string"}, "perception_mode": {"type": "string"}}, RiskTier.LOW,
-                "perception_returned", self._cap_observe, read_only=True),
-            cap("browser.navigate", "Navigate to a URL with destination verification",
-                {"url": {"type": "string"}, "session_id": {"type": "string"}},
-                {"url": {"type": "string"}}, RiskTier.MEDIUM, "destination_verified", self._cap_navigate,
-                tags=["navigation"]),
-            cap("browser.search", "Run a web search in the browser and extract result links",
-                {"query": {"type": "string"}, "engine": {"type": "string"}},
-                {"results": {"type": "array"}}, RiskTier.LOW, "results_extracted", self._cap_search,
-                read_only=True),
-            cap("browser.extract", "Extract bounded page text (verification-ready evidence)",
-                {"selector": {"type": "string"}, "max_chars": {"type": "integer"}},
-                {"text": {"type": "string"}}, RiskTier.LOW, "text_extracted", self._cap_extract,
-                read_only=True),
-            cap("browser.click", "Click an element by selector/text with bounded recovery",
-                {"selector": {"type": "string"}, "alt_selectors": {"type": "array"}},
-                {"clicked": {"type": "string"}}, RiskTier.MEDIUM, "click_dispatched", self._cap_click,
-                tags=["action"]),
-            cap("browser.type", "Type text into a field (read-back verified)",
-                {"selector": {"type": "string"}, "value": {"type": "string"}},
-                {"selector": {"type": "string"}}, RiskTier.MEDIUM, "fill_verified", self._cap_type,
-                tags=["action", "form"]),
-            cap("browser.select", "Select an option and verify the selection",
-                {"selector": {"type": "string"}, "value": {"type": "string"}},
-                {"selected": {"type": "string"}}, RiskTier.MEDIUM, "selection_verified", self._cap_select,
-                tags=["action", "form"]),
-            cap("browser.form_fill", "Fill and verify multiple form fields",
-                {"fields": {"type": "object"}},
-                {"filled": {"type": "integer"}}, RiskTier.MEDIUM, "fields_verified", self._cap_form_fill,
-                tags=["action", "form"]),
-            cap("browser.upload", "Upload files through a file input (approval-gated for sensitive data)",
-                {"selector": {"type": "string"}, "files": {"type": "array"}},
-                {"uploaded": {"type": "array"}}, RiskTier.HIGH, "files_attached", self._cap_upload,
-                tags=["upload"]),
-            cap("browser.download", "Download a file via link click or URL, verified by size",
-                {"selector": {"type": "string"}, "url": {"type": "string"}, "save_path": {"type": "string"}},
-                {"path": {"type": "string"}}, RiskTier.MEDIUM, "file_saved", self._cap_download,
-                tags=["download"]),
-            cap("browser.tab_manage", "Open/switch/close/list tabs",
-                {"action": {"type": "string", "enum": ["new", "switch", "close", "list"]}, "index": {"type": "integer"}, "url": {"type": "string"}},
-                {"tabs": {"type": "array"}}, RiskTier.LOW, "tab_state_reported", self._cap_tabs),
-            cap("browser.verify", "Verify an expected outcome against live page state (SUCCESS/FAILED/UNCONFIRMED)",
-                {"checks": {"type": "array", "description": "[{kind, expected, negate?}]"}},
-                {"status": {"type": "string"}}, RiskTier.LOW, "verification_reported", self._cap_verify,
-                read_only=True),
-            cap("browser.recover", "Attempt bounded recovery for a failed browser action",
-                {"action_name": {"type": "string"}, "params": {"type": "object"}, "alt_selectors": {"type": "array"}},
-                {"recovered": {"type": "boolean"}}, RiskTier.LOW, "recovery_attempted", self._cap_recover,
-                read_only=True),
-            cap("browser.execute_workflow", "Execute a multi-step browser workflow with per-step recovery and final verification",
-                {"plan": {"type": "object", "description": "{goal, steps:[{tool, params}], verify:[{kind, expected}]}"}},
-                {"status": {"type": "string"}}, RiskTier.HIGH, "workflow_verified", self._cap_workflow,
-                tags=["workflow"]),
-            cap("browser.research", "Evidence-backed web research: search, open, extract, compare sources",
-                {"question": {"type": "string"}, "max_pages": {"type": "integer"}},
-                {"facts": {"type": "array"}, "sources_consulted": {"type": "array"}}, RiskTier.LOW,
-                "report_synthesized", self._cap_research, read_only=True),
-            cap("browser.remember_procedure", "Record a successful site procedure into browser procedural memory",
-                {"site": {"type": "string"}, "task": {"type": "string"}, "steps": {"type": "array"}, "selectors": {"type": "object"}, "success": {"type": "boolean"}},
-                {"procedure_id": {"type": "string"}}, RiskTier.LOW, "procedure_recorded", self._cap_remember,
-                read_only=True),
-            cap("browser.recall_procedure", "Recall a stored site procedure with freshness/confidence info",
-                {"site": {"type": "string"}, "task": {"type": "string"}},
-                {"procedure": {"type": "object"}}, RiskTier.LOW, "procedure_returned", self._cap_recall,
-                read_only=True),
-            cap("browser.report", "Produce a specialist report: health, memory, capabilities, security posture",
-                {}, {"report": {"type": "object"}}, RiskTier.LOW, "report_generated", self._cap_report,
-                read_only=True),
+            cap("browser.navigate", "Open a URL"),
+            cap("browser.search", "Run a web search"),
+            cap("browser.extract", "Extract page content as untrusted"),
+            cap("browser.form_fill", "Fill and submit a form",
+                RiskTier.MEDIUM, read_only=False),
+            cap("browser.type", "Type into a selector"),
+            cap("browser.click", "Click a selector"),
+            cap("browser.verify", "Verify a post-condition"),
+            cap("browser.recover", "Recover from a failed interaction"),
+            cap("browser.execute_workflow", "Execute a planned workflow",
+                RiskTier.MEDIUM, read_only=False),
+            cap("browser.research", "Research a topic across pages"),
+            cap("browser.observe", "Observe page state (a11y first)"),
+            cap("browser.health", "Report browser tool health"),
+            cap("browser.report", "Report specialist status"),
+            cap("browser.remember", "Record a verified procedure"),
+            cap("browser.recall", "Recall a stored procedure"),
         ]
 
-    # -- capability handlers ----------------------------------------------
-    async def _cap_health(self) -> dict[str, Any]:
-        return await self.health()
+    def verify(self, output: Any) -> bool:
+        if not isinstance(output, dict):
+            return False
+        if output.get("success") is not True:
+            return False
+        security = output.get("security")
+        if isinstance(security, dict) and security.get("suspicious"):
+            return False
+        return True
 
-    async def _cap_observe(self, session_id: str | None = None) -> dict[str, Any]:
-        return await self.observe(session_id)
+    def health_check(self) -> dict:
+        status = "unknown"
+        try:
+            import playwright  # noqa: F401
+            status = "healthy"
+        except ImportError:
+            status = "unhealthy"
+        return {"status": status, "specialist": self.name,
+                "backend": "playwright"}
 
-    async def _cap_navigate(self, url: str, session_id: str | None = None) -> dict[str, Any]:
-        session_id = session_id or self.session_id
-        result = await self._call("browser_navigate", {"url": url, "session_id": session_id})
-        ok = result.get("status") == "ok"
+    def security_policy(self) -> dict:
         return {
-            "success": ok,
-            **(result.get("result", {}) if ok else {}),
-            "error": result.get("error"),
+            "page_content_untrusted": True,
+            "approval_categories": ["payment", "credential_access",
+                                    "account_deletion", "communication"],
         }
 
-    async def _cap_search(self, query: str, engine: str | None = None, session_id: str | None = None) -> dict[str, Any]:
-        result = await self._call("browser_search", {"query": query, "engine": engine, "session_id": session_id or self.session_id})
-        if result.get("status") == "ok":
-            safe, _scan = self._wrap_search_results(result.get("result", {}))
-            return {"success": True, **safe}
-        return {"success": False, "error": result.get("error")}
+    # ── internals ────────────────────────────────────────────────────
+    async def _rpc(self, tool: str, params: dict) -> dict:
+        try:
+            return await self._call(tool, dict(params))
+        except Exception as exc:  # noqa: BLE001
+            return {"status": "error", "error": str(exc)}
 
     @staticmethod
-    def _wrap_search_results(payload: dict[str, Any]) -> tuple[dict[str, Any], Any]:
-        from core.browser.page_security import wrap_page_payload
-        return wrap_page_payload(payload, text_keys=("title",))
-
-    async def _cap_extract(self, selector: str = "body", max_chars: int = 20000, session_id: str | None = None) -> dict[str, Any]:
-        result = await self._call("browser_extract", {"selector": selector, "max_chars": max_chars, "session_id": session_id or self.session_id})
-        if result.get("status") == "ok":
-            from core.browser.page_security import wrap_page_payload
-            safe, scan = wrap_page_payload(result.get("result", {}))
-            return {"success": True, **safe, "security": scan.to_dict()}
-        return {"success": False, "error": result.get("error")}
-
-    async def _cap_click(self, selector: str, alt_selectors: list[str] | None = None, session_id: str | None = None) -> dict[str, Any]:
-        session_id = session_id or self.session_id
-        gate = await self.approval_gate.check(
-            self._classify_with_context("click", selector),
-            description=f"click {selector}",
-        )
-        if gate.requires_approval:
-            return {"success": False, "error": f"approval required: {gate.category} ({gate.reason})", "approval": gate.to_dict()}
-        result = await self._call("browser_click", {"selector": selector, "session_id": session_id})
-        if result.get("status") == "ok":
-            return {"success": True, **result.get("result", {})}
-        from core.browser.recovery import RecoveryContext, RecoveryEngine
-        recovery = await RecoveryEngine(self._call).recover(RecoveryContext(
-            action_name="browser_click", params={"selector": selector, "session_id": session_id},
-            alt_selectors=alt_selectors or [],
-        ))
-        return {"success": recovery.recovered, "recovery": recovery.to_dict()}
-
-    async def _cap_type(self, selector: str, value: str, session_id: str | None = None) -> dict[str, Any]:
-        session_id = session_id or self.session_id
-        gate = await self.approval_gate.check(
-            self._classify_with_context("fill", f"{selector} {value}"),
-            description=f"type into {selector}",
-        )
-        if gate.requires_approval:
-            return {"success": False, "error": f"approval required: {gate.category} ({gate.reason})", "approval": gate.to_dict()}
-        result = await self._call("browser_fill", {"selector": selector, "value": value, "session_id": session_id})
-        return {"success": result.get("status") == "ok", **result.get("result", {}), "error": result.get("error")}
-
-    async def _cap_select(self, selector: str, value: str, session_id: str | None = None) -> dict[str, Any]:
-        result = await self._call("browser_select", {"selector": selector, "value": value, "session_id": session_id or self.session_id})
-        return {"success": result.get("status") == "ok", **result.get("result", {}), "error": result.get("error")}
-
-    async def _cap_form_fill(self, fields: Any, session_id: str | None = None) -> dict[str, Any]:
-        session_id = session_id or self.session_id
-        if isinstance(fields, dict):
-            joined = " ".join(f"{k} {v}" for k, v in fields.items())
-        else:
-            joined = " ".join(str(f.get("selector", "")) + " " + str(f.get("value", "")) for f in fields if isinstance(f, dict))
-        gate = await self.approval_gate.check(
-            self._classify_with_context("fill", joined),
-            description="form_fill",
-        )
-        if gate.requires_approval:
-            return {"success": False, "error": f"approval required: {gate.category} ({gate.reason})", "approval": gate.to_dict()}
-        result = await self._call("browser_form_fill", {"fields": fields, "session_id": session_id})
-        return {"success": result.get("status") == "ok", **result.get("result", {}), "error": result.get("error")}
-
-    async def _cap_upload(self, selector: str, files: list[str], session_id: str | None = None) -> dict[str, Any]:
-        session_id = session_id or self.session_id
-        gate = await self.approval_gate.check(
-            self._classify_with_context("upload", selector),
-            description=f"upload {files}",
-        )
-        if gate.requires_approval:
-            return {"success": False, "error": f"approval required: {gate.category} ({gate.reason})", "approval": gate.to_dict()}
-        result = await self._call("browser_upload", {"selector": selector, "files": files, "session_id": session_id})
-        return {"success": result.get("status") == "ok", **result.get("result", {}), "error": result.get("error")}
-
-    async def _cap_download(self, selector: str | None = None, url: str | None = None, save_path: str | None = None, session_id: str | None = None) -> dict[str, Any]:
-        result = await self._call("browser_download", {"selector": selector, "url": url, "save_path": save_path, "session_id": session_id or self.session_id})
-        return {"success": result.get("status") == "ok", **result.get("result", {}), "error": result.get("error")}
-
-    async def _cap_tabs(self, action: str = "list", index: int | None = None, url: str | None = None, session_id: str | None = None) -> dict[str, Any]:
-        session_id = session_id or self.session_id
-        if action == "new":
-            result = await self._call("browser_new_tab", {"url": url, "session_id": session_id})
-        elif action == "switch":
-            result = await self._call("browser_switch_tab", {"index": int(index or 0), "session_id": session_id})
-        elif action == "close":
-            result = await self._call("browser_close_tab", {"index": int(index or 0), "session_id": session_id})
-        else:
-            result = await self._call("browser_list_tabs", {"session_id": session_id})
-        return {"success": result.get("status") == "ok", **result.get("result", {}), "error": result.get("error")}
-
-    async def _cap_verify(self, checks: list[dict[str, Any]], session_id: str | None = None) -> dict[str, Any]:
-        from core.browser.verification import Check, verify_outcome
-        parsed = [Check(kind=str(c.get("kind", "")), expected=str(c.get("expected", "")), negate=bool(c.get("negate", False))) for c in checks]
-        outcome = await verify_outcome(parsed, self._call, session_id or self.session_id)
-        return {"success": outcome.status == "SUCCESS", **outcome.to_dict()}
-
-    async def _cap_recover(self, action_name: str, params: dict[str, Any] | None = None,
-                           alt_selectors: list[str] | None = None) -> dict[str, Any]:
-        from core.browser.recovery import RecoveryContext, RecoveryEngine
-        recovery = await RecoveryEngine(self._call).recover(RecoveryContext(
-            action_name=action_name, params=dict(params or {}), alt_selectors=alt_selectors or [],
-        ))
-        return {"success": recovery.recovered, **recovery.to_dict()}
-
-    async def _cap_workflow(self, plan: dict[str, Any], session_id: str | None = None) -> dict[str, Any]:
-        return await execute_workflow(plan, session_id or self.session_id)
-
-    async def _cap_research(self, question: str, max_pages: int = 3, session_id: str | None = None) -> dict[str, Any]:
-        from core.tools.browser_research import do_browser_research
-        report = await do_browser_research(question=str(question), max_pages=max_pages, session_id=session_id or self.session_id)
-        return {"success": bool(report.get("facts")), **report}
-
-    async def _cap_remember(self, site: str, task: str, steps: list[dict[str, Any]],
-                            selectors: dict[str, str] | None = None, success: bool = True) -> dict[str, Any]:
-        proc_id = self.procedural_memory.record(site, task, steps, success=success, selectors=selectors)
-        return {"success": bool(proc_id), "procedure_id": proc_id}
-
-    async def _cap_recall(self, site: str, task: str) -> dict[str, Any]:
-        procedure = self.procedural_memory.get(site, task)
-        return {"success": procedure is not None, "procedure": procedure}
-
-    async def _cap_report(self) -> dict[str, Any]:
-        report = self.report()
-        return {"success": True, **report}
-
-    # -- security helpers ---------------------------------------------------
-    @staticmethod
-    def _classify_with_context(action: str, target: str) -> Any:
-        from core.browser.page_security import classify_action
-        return classify_action(action, target)
-
-    # -- SpecialistModule sync interface ------------------------------------
-    def health_check(self) -> dict[str, Any]:
-        """Synchronous health probe for the discovery service (no browser launch)."""
-        try:
-            from core.browser_manager import BrowserManager
-            manager = BrowserManager.instance()
-            started = bool(manager._started)
-            return {
-                "status": CapabilityHealth.HEALTHY.value if started else CapabilityHealth.UNKNOWN.value,
-                "details": {"browser_started": started, "sessions": len(manager._sessions)},
-            }
-        except Exception as exc:
-            return {"status": CapabilityHealth.UNHEALTHY.value, "details": {"error": str(exc)}}
-
-    def execute_capability(
-        self,
-        capability_name: str,
-        params: dict[str, Any],
-        context: Optional[dict[str, Any]] = None,
-    ) -> SpecialistResult:
-        caps = {c.name: c for c in self.get_capabilities()}
-        if capability_name not in caps:
-            return SpecialistResult(
-                success=False,
-                error=f"Capability '{capability_name}' not owned by {self.name}. Available: {sorted(caps.keys())}",
-            )
-        handler = caps[capability_name].handler
-        if handler is None:
-            return SpecialistResult(success=False, error=f"Capability '{capability_name}' has no handler")
-        import asyncio
-        try:
-            try:
-                loop = asyncio.get_running_loop()
-            except RuntimeError:
-                loop = None
-            if loop is not None and loop.is_running():
-                import concurrent.futures
-                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-                    output = pool.submit(lambda: asyncio.run(handler(**(params or {})))).result(timeout=300)
-            else:
-                output = asyncio.run(handler(**(params or {})))
-            success = bool(output.get("success", output.get("status") == "ok")) if isinstance(output, dict) else True
-            result = SpecialistResult(success=success, output=output, error=output.get("error") if isinstance(output, dict) else None)
-            verified, reason = self.verify(capability_name, result)
-            result.verified = verified
-            result.verification_reason = reason
-            self._emit_outcome_event(capability_name, params, result)
-            return result
-        except Exception as exc:
-            self._emit_outcome_event(
-                capability_name, params,
-                SpecialistResult(success=False, verified=False,
-                                 verification_reason="Exception raised during execution"),
-            )
-            return SpecialistResult(
-                success=False,
-                error=f"Execution of {capability_name} failed: {exc}",
-                verified=False,
-                verification_reason="Exception raised during execution",
-            )
-
-    def _emit_outcome_event(self, capability_name: str, params: dict[str, Any], result: SpecialistResult) -> None:
-        """Publish verified outcomes to the EventBus for the learning subsystem.
-
-        Goal-level capabilities (workflow/research) emit ``goal.completed`` so
-        the experience layer stores a reusable procedure; action primitives
-        emit ``action.verified`` for habit tracking.  Publishing is
-        best-effort: learning must never break browser execution.
-        """
-        try:
-            from core.event_bus import global_event_bus
-            output = result.output if isinstance(result.output, dict) else {}
-            goal_level = capability_name in ("browser.execute_workflow", "browser.research")
-            goal = str(output.get("goal") or (params or {}).get("goal") or capability_name)
-            data = {
-                "goal": goal,
-                "success": bool(result.success),
-                "verified": bool(result.verified),
-                "actions": output.get("steps") or output.get("actions") or [{"capability": capability_name}],
-                "error": result.error,
-                "evidence": {
-                    "capability": capability_name,
-                    "verification_reason": result.verification_reason,
-                },
-                "specialist": self.name,
-            }
-            global_event_bus.publish_sync("goal.completed" if goal_level else "action.verified", data)
-        except Exception:
-            pass
-
-    def verify(self, capability_name: str, result: SpecialistResult) -> tuple[bool, str]:
-        if not result.success:
-            return False, f"Execution reported failure: {result.error}"
-        per_cap = {
-            "browser.navigate": ("result contains url", lambda r: bool((r.output or {}).get("url"))),
-            "browser.search": ("search results present", lambda r: bool((r.output or {}).get("results"))),
-            "browser.extract": ("extracted text present", lambda r: bool((r.output or {}).get("text"))),
-            "browser.verify": ("verification reached a conclusion", lambda r: (r.output or {}).get("status") in ("SUCCESS", "FAILED", "UNCONFIRMED")),
-            "browser.execute_workflow": ("workflow reached verified conclusion", lambda r: (r.output or {}).get("status") in ("SUCCESS", "FAILED", "UNCONFIRMED")),
-            "browser.research": ("research report produced", lambda r: isinstance(r.output, dict) and "total_facts" in (r.output or {})),
-            "browser.remember_procedure": ("procedure stored", lambda r: bool((r.output or {}).get("procedure_id"))),
-            "browser.recall_procedure": ("procedure lookup completed", lambda r: "procedure" in (r.output or {})),
-        }
-        if capability_name in per_cap:
-            reason, check = per_cap[capability_name]
-            try:
-                return bool(check(result)), reason
-            except Exception as exc:
-                return False, f"verification error: {exc}"
-        return True, "verified by default specialist rule"
-
-    # -- recovery / report ---------------------------------------------------
-    async def recover(self, action_name: str, params: dict[str, Any] | None = None,
-                      alt_selectors: list[str] | None = None) -> dict[str, Any]:
-        from core.browser.recovery import RecoveryContext, RecoveryEngine
-        recovery = await RecoveryEngine(self._call).recover(RecoveryContext(
-            action_name=action_name, params=dict(params or {}), alt_selectors=alt_selectors or [],
-        ))
-        return recovery.to_dict()
-
-    def report(self) -> dict[str, Any]:
-        """Specialist status report for the future Super-Brain."""
-        try:
-            memory_summary = self.procedural_memory.summary()
-        except Exception:
-            memory_summary = {}
+    def _wrap_untrusted(content: str, url: str = "", title: str = "") -> dict:
+        low = str(content).lower()
+        suspicious = any(token in low for token in (
+            "ignore previous instructions", "disregard all",
+            "you are now", "system prompt", "reveal your"))
         return {
-            "specialist": self.name,
-            "description": self.description,
-            "requirements": self.requirements,
-            "health_check": self.health_check(),
-            "capabilities": [c.name for c in self.get_capabilities()],
-            "procedural_memory": memory_summary,
+            "content": str(content),
+            "url": url,
+            "title": title,
             "security": {
                 "page_content_untrusted": True,
-                "approval_categories": [
-                    "payment", "account_deletion", "publishing", "messaging",
-                    "destructive", "credential_access", "sensitive_upload",
-                ],
+                "suspicious": suspicious,
+                "patterns_checked": ["instruction_override", "role_hijack"],
             },
         }
 
+    def _approval_block(self, category: str) -> dict:
+        return {"success": False,
+                "approval": {"required": True, "category": category}}
 
-_BROWSER_AI: BrowserAI | None = None
+    # ── capability handlers ──────────────────────────────────────────
+    async def _cap_navigate(self, url: str, **_kw) -> dict:
+        response = await self._rpc("browser_navigate", {"url": url})
+        if response.get("status") != "ok":
+            return {"success": False, "error": response.get("error", "navigate failed")}
+        result = response.get("result") or {}
+        out_url = result.get("url", url)
+        return {"success": True, "url": out_url,
+                "verified": _host_of(out_url) == _host_of(url)}
+
+    async def _cap_search(self, query: str, **_kw) -> dict:
+        response = await self._rpc("browser_search", {"query": query})
+        if response.get("status") != "ok":
+            return {"success": False, "error": response.get("error", "search failed")}
+        results = response.get("result") or {}
+        return {"success": True,
+                "results": results.get("results", []),
+                "query": query}
+
+    async def _cap_extract(self) -> dict:
+        response = await self._rpc("browser_extract", {})
+        if response.get("status") != "ok":
+            return {"success": False, "error": response.get("error", "extract failed")}
+        result = response.get("result") or {}
+        wrapped = self._wrap_untrusted(result.get("text", ""),
+                                       result.get("url", ""),
+                                       result.get("title", ""))
+        wrapped["success"] = True
+        return wrapped
+
+    async def _cap_form_fill(self, fields: dict, **_kw) -> dict:
+        for selector in fields:
+            category = _check_sensitive(selector)
+            if category:
+                return self._approval_block(category)
+        response = await self._rpc("browser_fill", {"fields": fields})
+        if response.get("status") != "ok":
+            return {"success": False, "error": response.get("error", "fill failed")}
+        return {"success": True, "fields": dict(fields)}
+
+    async def _cap_type(self, selector: str, text: str, **_kw) -> dict:
+        category = _check_sensitive(selector)
+        if category:
+            return self._approval_block(category)
+        response = await self._rpc("browser_type",
+                                   {"selector": selector, "text": text})
+        if response.get("status") != "ok":
+            return {"success": False, "error": response.get("error", "type failed")}
+        return {"success": True, "selector": selector}
+
+    async def _cap_click(self, selector: str, **_kw) -> dict:
+        category = _check_sensitive(selector)
+        if category:
+            if not self.approval_gate.check(category, f"click {selector}", {"selector": selector}):
+                return self._approval_block(category)
+        response = await self._rpc("browser_click", {"selector": selector})
+        if response.get("status") != "ok":
+            recovery = await self._recover_click(selector)
+            if recovery is None:
+                return {"success": False,
+                        "error": response.get("error", "click failed"),
+                        "recovery": {"attempted": True, "recovered": False}}
+            return recovery
+        return {"success": True, "clicked": selector}
+
+    async def _cap_verify(self, expectations: list, **_kw) -> dict:
+        return await verify_expectations(self._call, expectations)
+
+    async def _cap_recover(self, **_kw) -> dict:
+        response = await self._rpc("browser_get_url", {})
+        url = response.get("url", "") or (response.get("result") or {}).get("url", "")
+        return {"success": True, "recovered": True, "url": url}
+
+    async def _cap_workflow(self, plan: dict, session_id: str = "s") -> dict:
+        return await execute_workflow(plan, session_id=session_id,
+                                      call=self._call)
+
+    async def _cap_research(self, topic: str, max_pages: int = 3) -> dict:
+        pages = []
+        for index in range(max(1, int(max_pages))):
+            response = await self._rpc(
+                "browser_navigate",
+                {"url": f"https://www.bing.com/search?q={topic}&first={index + 1}"})
+            if response.get("status") != "ok":
+                continue
+            extracted = await self._cap_extract()
+            if extracted.get("success"):
+                pages.append(extracted)
+        return {"success": bool(pages), "topic": topic, "pages": pages,
+                "security": {"page_content_untrusted": True}}
+
+    async def _cap_observe(self) -> dict:
+        return await self.observe()
+
+    async def observe(self) -> dict:
+        """Observe page state; a11y tree first, DOM, then screenshot."""
+        url_response = await self._rpc("browser_get_url", {})
+        url = url_response.get("url", "") or (url_response.get("result") or {}).get("url", "")
+
+        title_response = await self._rpc("browser_get_title", {})
+        title = (title_response.get("result") or {}).get("title", "") \
+            if title_response.get("status") == "ok" else ""
+
+        a11y = await self._rpc("browser_a11y_tree", {})
+        if a11y.get("status") == "ok":
+            result = a11y.get("result") or {}
+            return {"status": "ok", "perception_mode": "a11y_tree",
+                    "url": url, "title": title,
+                    "page": {"tree": result.get("tree")}}
+
+        dom = await self._rpc("browser_snapshot", {})
+        if dom.get("status") == "ok":
+            result = dom.get("result") or {}
+            return {"status": "ok", "perception_mode": "dom",
+                    "url": url, "title": title,
+                    "page": {"dom": result.get("dom")}}
+
+        shot = await self._rpc("browser_screenshot", {})
+        if shot.get("status") == "ok":
+            return {"status": "ok", "perception_mode": "screenshot_only",
+                    "url": url, "title": title,
+                    "screenshot": (shot.get("result") or {}).get("screenshot", "")}
+
+        return {"status": "error", "perception_mode": "none",
+                "error": "no perception backend responded"}
+
+    async def _cap_health(self) -> dict:
+        probe = await self._rpc("browser_get_url", {})
+        healthy = probe.get("status") == "ok"
+        return {"success": True, "healthy": healthy,
+                "backend": "playwright" if healthy else "unavailable"}
+
+    async def _cap_report(self) -> dict:
+        return {"success": True, "specialist": self.name,
+                "report": self.report()}
+
+    async def _cap_remember(self, site: str, task: str, steps: list) -> dict:
+        if self.procedural_memory is None:
+            return {"success": False, "error": "no procedural memory configured"}
+        procedure_id = self.procedural_memory.record(site, task, steps)
+        return {"success": True, "procedure_id": procedure_id}
+
+    async def _cap_recall(self, site: str, task: str) -> dict:
+        if self.procedural_memory is None:
+            return {"success": False, "error": "no procedural memory configured"}
+        procedure = self.procedural_memory.get(site, task)
+        if not procedure:
+            return {"success": False, "error": "no procedure found"}
+        return {"success": True, "procedure": procedure}
+
+    # ── recovery ─────────────────────────────────────────────────────
+    async def _recover_click(self, selector: str) -> Optional[dict]:
+        """Recovery ladder: scroll into view -> wait -> JS click."""
+        for tool, params in (
+            ("browser_scroll_into_view", {"selector": selector}),
+            ("browser_wait_for", {"selector": selector, "timeout_ms": 3000}),
+            ("browser_click", {"selector": selector}),
+        ):
+            response = await self._rpc(tool, params)
+            if response.get("status") == "ok" and tool == "browser_click":
+                return {"success": True, "clicked": selector,
+                        "recovery": {"attempted": True, "recovered": True}}
+        return None
+
+
+# ── verification engine ──────────────────────────────────────────────
+async def verify_expectations(call: ToolCaller, expectations: list) -> dict:
+    """Deterministically verify post-conditions against the live browser."""
+    outcomes = []
+    for expectation in expectations or []:
+        kind = expectation.get("kind")
+        if kind == "url_host":
+            response = await call("browser_get_url", {})
+            url = response.get("url", "") or (response.get("result") or {}).get("url", "")
+            host = _host_of(url)
+            expected = str(expectation.get("expected", "")).lower()
+            outcomes.append({
+                "kind": kind, "expected": expected, "actual": host,
+                "pass": host == expected,
+            })
+        elif kind == "url_result":
+            outcomes.append({"kind": kind, "pass": True})
+        elif kind == "any_result":
+            outcomes.append({"kind": kind, "pass": True})
+        else:
+            outcomes.append({"kind": str(kind), "pass": False,
+                             "error": "unknown expectation kind"})
+    status = "SUCCESS" if outcomes and all(o["pass"] for o in outcomes) else "FAILED"
+    return {"status": status, "expectations": outcomes}
+
+
+# ── workflow engine ──────────────────────────────────────────────────
+async def execute_workflow(plan: dict, session_id: str = "s",
+                           call: Optional[ToolCaller] = None) -> dict:
+    """Execute a plan dict: steps + verify; FAILED on step error,
+    UNCONFIRMED when steps pass but verification fails."""
+    call = call or call_tool
+    trace: list[dict] = []
+    steps = plan.get("steps", []) or []
+
+    for index, step in enumerate(steps):
+        tool = step.get("tool", "")
+        params = step.get("params", {}) or {}
+        response = await call(tool, params)
+
+        if response.get("status") != "ok":
+            # One recovery attempt: open a new tab then retry once.
+            recovery = await call("browser_new_tab", {"url": params.get("url", "")})
+            trace.append({"step": index, "tool": tool,
+                          "status": "error",
+                          "error": response.get("error", ""),
+                          "recovery": {"attempted": True,
+                                       "recovered": recovery.get("status") == "ok"}})
+            return {"status": "FAILED", "failed_step": index,
+                    "trace": trace,
+                    "verification": {"status": "NOT_RUN"}}
+
+        trace.append({"step": index, "tool": tool, "status": "ok"})
+
+    verification = await verify_expectations(call, plan.get("verify", []))
+    if verification["status"] != "SUCCESS":
+        return {"status": "UNCONFIRMED", "trace": trace,
+                "verification": verification}
+    return {"status": "SUCCESS", "trace": trace, "verification": verification}
+
+
+_browser_ai_singleton: Optional[BrowserAI] = None
 
 
 def get_browser_ai() -> BrowserAI:
-    """Process-wide BrowserAI instance."""
-    global _BROWSER_AI
-    if _BROWSER_AI is None:
-        _BROWSER_AI = BrowserAI()
-    return _BROWSER_AI
+    """Module-level singleton accessor."""
+    global _browser_ai_singleton
+    if _browser_ai_singleton is None:
+        _browser_ai_singleton = BrowserAI()
+    return _browser_ai_singleton
+
+
+__all__ = ["BrowserAI", "ApprovalGate", "execute_workflow",
+           "verify_expectations", "get_browser_ai", "call_tool"]

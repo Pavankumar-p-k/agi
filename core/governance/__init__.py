@@ -13,10 +13,10 @@ class DynamicMeta(type):
     def __getattr__(cls, name: str) -> Any:
         return name
 
-# Re-exports (relative imports within governance package)
-from .resource_monitor import ResourceMonitor, ResourceSnapshot, resource_monitor
-from .task_router import RouteDecision, TaskRouter, task_router
-from .work_queue import TaskRecord, TaskStatus, WorkQueue, work_queue
+# Re-exports
+from resource_monitor import ResourceMonitor, ResourceSnapshot, resource_monitor
+from task_router import RouteDecision, TaskRouter, task_router
+from work_queue import TaskRecord, TaskStatus, WorkQueue, work_queue
 
 
 def __getattr__(name: str) -> Any:

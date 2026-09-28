@@ -1,52 +1,57 @@
+"""Scheduler models — ScheduledActivity with tenant partitioning."""
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any
+from enum import Enum
+from typing import Any, Optional
 
 
-@dataclass
-class ScheduleModel:
-    schedule_id: str = ""
-    name: str = ""
-    activities: list[Any] = field(default_factory=list)
+class ActivityStatus(str, Enum):
+    PENDING = "pending"
+    READY = "ready"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+
+
+def activity_status_from_node(status: Any) -> ActivityStatus:
+    """Map a generic status value onto the scheduler ActivityStatus."""
+    if isinstance(status, ActivityStatus):
+        return status
+    try:
+        return ActivityStatus(str(getattr(status, "value", status)).lower())
+    except ValueError:
+        return ActivityStatus.PENDING
 
 
 @dataclass
 class ScheduledActivity:
     activity_id: str
-    status: str = "pending"
-    priority: int = 0
     goal: str = ""
-    node_type: str = "goal"
-    created_at: datetime = field(default_factory=datetime.now)
-    last_resumed_at: datetime | None = None
-    metadata: dict[str, Any] = field(default_factory=dict)
-    score: float = 0.0
-    _blocked: bool = False
-
-    @property
-    def is_blocked(self) -> bool:
-        return self._blocked
+    priority: int = 1
+    tenant_id: str = "default"
+    status: ActivityStatus = ActivityStatus.PENDING
+    ready_at: Optional[datetime] = None
+    payload: dict = field(default_factory=dict)
 
     @property
     def is_ready(self) -> bool:
-        return not self._blocked and self.status in {"pending", "running", "suspended"}
+        if self.status == ActivityStatus.READY:
+            return True
+        if self.ready_at is None:
+            return self.status == ActivityStatus.PENDING
+        return self.ready_at <= datetime.utcnow()
 
-    def block(self) -> None:
-        self._blocked = True
+    def to_dict(self) -> dict:
+        return {
+            "activity_id": self.activity_id,
+            "goal": self.goal,
+            "priority": self.priority,
+            "tenant_id": self.tenant_id,
+            "status": self.status.value,
+        }
 
-    def unblock(self) -> None:
-        self._blocked = False
 
-
-def activity_status_from_node(status: Any) -> str:
-    value = getattr(status, "value", status)
-    value = str(value).upper()
-    if value in {"COMPLETED", "FAILED", "CANCELLED"}:
-        return "completed"
-    if value == "RUNNING":
-        return "running"
-    if value == "SUSPENDED":
-        return "suspended"
-    return "pending"
+__all__ = ["ActivityStatus", "ScheduledActivity", "activity_status_from_node"]

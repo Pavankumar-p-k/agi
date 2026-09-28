@@ -1,0 +1,122 @@
+{
+ "mission": "8",
+ "title": "Browser Task + Local Developer Workflow",
+ "goal": "Research the official installation requirements for Playwright (Python) on Windows. Compare the official documentation with the microsoft/playwright-python GitHub repository. Then inspect the local JARVIS project's current environment and determine whether the requirements are satisfied. Do not modify anything yet. Report what would need to change and provide evidence.",
+ "result": "SUCCESS",
+ "time": 3.2,
+ "total_actions": 6,
+ "failures": 0,
+ "recoveries": [],
+ "retries": 0,
+ "strategy_changes": 0,
+ "security": {
+  "injection_detected": [
+   "https://playwright.dev/python/docs/intro :: [{\"kind\": \"tool_invocation\", \"excerpt\": \"update Playwright to the latest version run the following command:  pip Poetry uv pip install pytest-play\"}]"
+  ],
+  "approval_required": [],
+  "sensitive_attempted": []
+ },
+ "evidence_urls": [
+  "https://playwright.dev/python/docs/intro",
+  "https://github.com/microsoft/playwright-python",
+  "https://pypi.org/project/playwright/"
+ ],
+ "extracts": {
+  "https://playwright.dev/python/docs/intro": "<<<UNTRUSTED_PAGE_CONTENT>>>Skip to main content Playwright for Python Docs API Python Community Search Ctrl K Getting Started Installation Writing tests Generating tests Running and debugging tests Trace viewer Setting up CI Pytest Plugin Reference Getting started - Library Release notes Guides Actions Auto-waiting API testing Assertions Authentication Browsers Chrome extensions Clock Debugging T",
+  "https://github.com/microsoft/playwright-python": "<<<UNTRUSTED_PAGE_CONTENT>>>Skip to content Navigation Menu Platform Solutions Resources Open Source Enterprise Pricing Sign in Sign up microsoft / playwright-python Public Notifications Fork 1.2k  Star 15k Code Issues 4 Pull requests 11 Actions Security and quality Insights main Branches Tags Code Latest commit   History 1,079 Commits Folders and files Name\tLast commit message\tLast commit date  .",
+  "https://pypi.org/project/playwright/": "<<<UNTRUSTED_PAGE_CONTENT>>>Skip to main content Search PyPI Search Help Docs Log in Register playwright 1.62.0  A high-level API to automate web browsers  pip install playwright Copy PIP instructions   Description  Download files  Release history 🎭 Playwright for Python    Playwright is a Python library to automate Chromium, Firefox and WebKit browsers with a single API. Playwright delivers autom"
+ },
+ "verifications": [
+  {
+   "expected": "url_host=playwright.dev",
+   "observed": "on https://playwright.dev/python/docs/intro",
+   "result": "SUCCESS"
+  },
+  {
+   "expected": "url_host=github.com",
+   "observed": "on https://github.com/microsoft/playwright-python",
+   "result": "SUCCESS"
+  },
+  {
+   "expected": "url_host=pypi.org",
+   "observed": "on https://pypi.org/project/playwright/",
+   "result": "SUCCESS"
+  }
+ ],
+ "observations": [
+  "GOAL: Research the official installation requirements for Playwright (Python) on Windows. Compare the official documentation with the microsoft/playwright-python GitHub repository. Then inspect the local JARVIS project's current environment and determine whether the requirements are satisfied. Do not modify anything yet. Report what would need to change and provide evidence.",
+  "navigated to https://playwright.dev/python/docs/intro (title=Playwright Python)",
+  "extracted 3884 chars from https://playwright.dev/python/docs/intro [body]",
+  "navigated to https://github.com/microsoft/playwright-python (title=GitHub - microsoft/playwright-python: Python version of the Playwright testing a)",
+  "extracted 3105 chars from https://github.com/microsoft/playwright-python [body]",
+  "navigated to https://pypi.org/project/playwright/ (title=playwright · PyPI)",
+  "extracted 3327 chars from https://pypi.org/project/playwright/ [body]",
+  "local probe (read-only): {\"python\": \"3.11.9\", \"os\": \"Windows-10-10.0.26200-SP0\", \"playwright_pkg\": \"1.62.0\", \"cli\": \"Version 1.62.0\", \"browser_cache\": [\".links\", \"chromium-1208\", \"chromium-1234\", \"chromium_headless_shell-1208\", \"chromium_headless_shell-1234\", \"ffmpeg-1011\"]}"
+ ],
+ "actions": [
+  {
+   "n": 1,
+   "tool": "browser.navigate",
+   "params": {
+    "url": "https://playwright.dev/python/docs/intro"
+   },
+   "ok": true,
+   "error": null,
+   "t": 0.1
+  },
+  {
+   "n": 2,
+   "tool": "browser.extract",
+   "params": {
+    "selector": "body"
+   },
+   "ok": true,
+   "error": null,
+   "t": 0.1
+  },
+  {
+   "n": 3,
+   "tool": "browser.navigate",
+   "params": {
+    "url": "https://github.com/microsoft/playwright-python"
+   },
+   "ok": true,
+   "error": null,
+   "t": 2.2
+  },
+  {
+   "n": 4,
+   "tool": "browser.extract",
+   "params": {
+    "selector": "body"
+   },
+   "ok": true,
+   "error": null,
+   "t": 2.3
+  },
+  {
+   "n": 5,
+   "tool": "browser.navigate",
+   "params": {
+    "url": "https://pypi.org/project/playwright/"
+   },
+   "ok": true,
+   "error": null,
+   "t": 2.7
+  },
+  {
+   "n": 6,
+   "tool": "browser.extract",
+   "params": {
+    "selector": "body"
+   },
+   "ok": true,
+   "error": null,
+   "t": 2.7
+  }
+ ],
+ "notes": [
+  "would need to change: nothing — requirements satisfied",
+  "evidence: {\"playwright install\": \"https://playwright.dev/python/docs/intro\", \"pip install playwright\": \"https://pypi.org/project/playwright/\"}"
+ ]
+}

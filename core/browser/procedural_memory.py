@@ -186,8 +186,9 @@ class BrowserProceduralMemory:
 
     def _mirror_episode(self, site: str, task: str, steps: list[dict[str, Any]], success: bool, failure_mode: str | None) -> None:
         try:
-            from memory.memory_facade import memory
-            memory.store_episode(
+            # Memory writes go through the Memory stage gateway (Rule 2).
+            from core.pipeline.stages.memory import store_episode
+            store_episode(
                 goal=f"browser procedure [{site}] {task}",
                 actions=steps,
                 context={"site": site, "task": task},

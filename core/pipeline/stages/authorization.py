@@ -1,11 +1,25 @@
-"""Authorization stage."""
+"""AuthorizationStage — decides allowed/denied for a requested scope.
+
+Only this stage (and core/identity/service.py) may construct
+AuthorizationResult (architecture audit Rule 16). Reads:
+
+  context.metadata["auth_scope"]  — requested scope string (optional)
+  context.identity                — IdentityContext snapshot
+
+Behavior:
+  no scope requested                     -> denied, scope="", "no scope requested"
+  identity state SYSTEM                  -> allowed, "system identity"
+  unknown scope                          -> denied, "unknown scope: <scope>"
+  otherwise                              -> IdentityService.authorize()
+"""
 from __future__ import annotations
 
-from core.identity.models import AuthenticationState
-from core.identity.service import get_identity_service
-from core.pipeline.authorization_result import AuthorizationResult
+from typing import Any
+
 from core.pipeline.base import PipelineStage, StageOutcome, StageResult
-from core.pipeline.context import PipelineContext
+from core.pipeline.pipeline import PipelineContext
+from core.identity.models import AuthenticationState
+from core.pipeline.authorization_result import AuthorizationResult
 
 
 class AuthorizationStage(PipelineStage):
@@ -14,43 +28,31 @@ class AuthorizationStage(PipelineStage):
         return "authorization"
 
     async def execute(self, context: PipelineContext) -> StageResult:
-        scope = ""
-        if isinstance(context.metadata, dict):
-            scope = str(context.metadata.get("auth_scope", ""))
+        scope = (context.metadata or {}).get("auth_scope") or ""
+        identity = getattr(context, "identity", None)
+
         if not scope:
-            result = AuthorizationResult(allowed=False, scope="", reason="no scope requested")
-            context.authorization_result = result
-            return StageResult(outcome=StageOutcome.CONTINUE, context=context, authorization_result=result)
+            context.authorization_result = AuthorizationResult(
+                allowed=False, reason="no scope requested", scope="")
+            return StageResult(outcome=StageOutcome.CONTINUE, context=context)
 
-        identity = context.identity
-        auth_result = context.authentication_result
+        state = getattr(identity, "authentication_state", None)
+        state_val = getattr(state, "value", state)
+        if state_val == AuthenticationState.SYSTEM.value:
+            from core.identity.models import UserIdentity
+            user = getattr(identity, "user", None) or UserIdentity(
+                id="system", roles=["admin"])
+            context.authorization_result = AuthorizationResult(
+                allowed=True, reason="system identity", scope=scope,
+                roles=frozenset({"admin"} | set(getattr(user, "roles", []) or [])),
+                permissions=frozenset({scope}),
+            )
+            return StageResult(outcome=StageOutcome.CONTINUE, context=context)
 
-        if identity is not None and identity.authentication_state == AuthenticationState.SYSTEM:
-            result = AuthorizationResult(allowed=True, scope=scope, reason="system identity")
-            context.authorization_result = result
-            return StageResult(outcome=StageOutcome.CONTINUE, context=context, authorization_result=result)
-
-        if auth_result is not None and not auth_result.authenticated:
-            missing_user = identity is None or identity.user is None or not getattr(identity.user, "id", None)
-            if missing_user and identity is not None and identity.authentication_state == AuthenticationState.AUTHENTICATED:
-                result = AuthorizationResult(allowed=False, scope=scope, reason="no user identity")
-            elif missing_user and auth_result.reason == "no identity context":
-                result = AuthorizationResult(allowed=False, scope=scope, reason=f"unknown scope: {scope}")
-            elif missing_user:
-                result = AuthorizationResult(allowed=False, scope=scope, reason=f"unknown scope: {scope}")
-            else:
-                result = AuthorizationResult(allowed=False, scope=scope, reason=auth_result.reason or "not authenticated")
-            context.authorization_result = result
-            return StageResult(outcome=StageOutcome.CONTINUE, context=context, authorization_result=result)
-
-        if identity is None or identity.user is None or not getattr(identity.user, "id", None):
-            result = AuthorizationResult(allowed=False, scope=scope, reason=f"unknown scope: {scope}")
-            context.authorization_result = result
-            return StageResult(outcome=StageOutcome.CONTINUE, context=context, authorization_result=result)
-
-        service = get_identity_service()
-        result = service.authorize(identity, scope)
-        if result is None:
-            result = AuthorizationResult(allowed=False, scope=scope, reason=f"unknown scope: {scope}")
+        from core.identity.service import get_identity_service
+        result = get_identity_service().authorize(identity, scope)
         context.authorization_result = result
-        return StageResult(outcome=StageOutcome.CONTINUE, context=context, authorization_result=result)
+        return StageResult(outcome=StageOutcome.CONTINUE, context=context)
+
+
+__all__ = ["AuthorizationStage"]

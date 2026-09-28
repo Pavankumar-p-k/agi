@@ -1,89 +1,148 @@
-"""Tenant-aware EventBus.
+"""Tenant-aware EventBus with a legacy convenience API.
 
-Central in-process event distribution.  Specialists and subsystems publish
-lifecycle events (e.g. ``goal.completed``, ``action.verified``) and learning
-components (pattern engine, habit tracker, experience recorder) subscribe
-without any direct coupling between them.
+Two publish styles coexist:
 
-Publishing never raises: a broken listener or consumer must not be able to
-take down the producer.  Handler errors are logged, not silently swallowed.
+1. Tenant-style: ``await bus.publish(Event(...))`` — every matching
+   subscription handler receives the Event object (used by the
+   tenant-isolation and observation tests).
+2. Legacy-style: ``bus.publish("event.type", {"k": v})`` (or
+   ``publish_sync``) — matching handlers receive the *payload* directly,
+   so specialist/learning handlers stay plain ``lambda data: ...``.
+
+Broken handlers are counted by ``failed_deliveries()`` and never break
+other listeners.
 """
 from __future__ import annotations
-import asyncio
-import logging
-from collections import defaultdict
-from typing import Callable, Any
-from dataclasses import dataclass, field
 
-logger = logging.getLogger(__name__)
+import asyncio
+import fnmatch
+from dataclasses import dataclass, field
+from typing import Any, Callable, Optional
 
 
 @dataclass
 class Event:
-    event_type: str = ""
-    data: Any = None
-    tenant_id: str = "default"
+    type: str
+    source: str = ""
+    payload: Any = None
+    resource_scope: dict = field(default_factory=dict)
+    metadata: dict = field(default_factory=dict)
+
+    @property
+    def tenant_id(self) -> str:
+        return (self.resource_scope or {}).get("tenant_id", "default")
+
+    def to_dict(self) -> dict:
+        return {
+            "type": self.type,
+            "source": self.source,
+            "payload": self.payload,
+            "resource_scope": dict(self.resource_scope),
+        }
+
+    def __getitem__(self, key: str):
+        """Dict-style access to payload fields (payload must be a dict)."""
+        if isinstance(self.payload, dict):
+            return self.payload[key]
+        raise KeyError(key)
+
+
+@dataclass
+class Subscription:
+    pattern: str
+    handler: Callable
+    tenant_id: Optional[str] = None
+
+    def matches(self, event: Event) -> bool:
+        if not fnmatch.fnmatch(event.type, self.pattern):
+            return False
+        if self.tenant_id is not None:
+            return event.tenant_id == self.tenant_id
+        return True
 
 
 class EventBus:
-    def __init__(self):
-        self._listeners: dict[str, list[Callable]] = defaultdict(list)
-        self._failed_deliveries = 0
+    def __init__(self) -> None:
+        self._subscriptions: list[Subscription] = []
+        self._failed = 0
 
-    def subscribe(self, event_type: str, handler: Callable):
-        self._listeners[event_type].append(handler)
+    # ── registration ─────────────────────────────────────────────────
+    def subscribe(self, pattern_or_type: str, handler: Callable,
+                  tenant_id: Optional[str] = None) -> Subscription:
+        sub = Subscription(pattern=pattern_or_type, handler=handler,
+                           tenant_id=tenant_id)
+        self._subscriptions.append(sub)
+        return sub
 
-    def unsubscribe(self, event_type: str, handler: Callable):
-        if handler in self._listeners[event_type]:
-            self._listeners[event_type].remove(handler)
-
-    async def publish(self, event_type: str, data: Any = None):
-        await self._dispatch(event_type, data, prefer_async=True)
-
-    def publish_sync(self, event_type: str, data: Any = None):
-        """Publish from synchronous (non-asyncio) contexts.
-
-        - Sync handlers run inline, in subscription order.
-        - Async handlers are scheduled on the running loop when one exists;
-          otherwise executed with ``asyncio.run`` on a fresh loop.
-        - Never raises: listener failures are logged and counted.
-        """
+    def unsubscribe(self, subscription: Subscription) -> None:
         try:
-            asyncio.get_running_loop()
-            running_loop = True
+            self._subscriptions.remove(subscription)
+        except ValueError:
+            pass
+
+    # ── publishing (async) ───────────────────────────────────────────
+    async def publish(self, type_or_event, payload: Any = None) -> None:
+        if isinstance(type_or_event, Event):
+            event = type_or_event
+            for sub in list(self._subscriptions):
+                if not sub.matches(event):
+                    continue
+                try:
+                    result = sub.handler(event)
+                    if asyncio.iscoroutine(result):
+                        await result
+                except Exception:  # noqa: BLE001 — handlers must not break the bus
+                    self._failed += 1
+            return
+
+        # Legacy: (event_type, payload) — handlers receive the payload.
+        event_type = str(type_or_event)
+        for sub in list(self._subscriptions):
+            if not fnmatch.fnmatch(event_type, sub.pattern):
+                continue
+            try:
+                result = sub.handler(payload)
+                if asyncio.iscoroutine(result):
+                    await result
+            except Exception:  # noqa: BLE001
+                self._failed += 1
+
+    # ── publishing (sync) ────────────────────────────────────────────
+    def publish_sync(self, type_or_event, payload: Any = None) -> None:
+        try:
+            loop = asyncio.get_running_loop()
         except RuntimeError:
-            running_loop = False
+            loop = None
 
-        for handler in self._listeners.get(event_type, []):
+        if isinstance(type_or_event, Event):
+            if loop is not None:
+                loop.create_task(self.publish(type_or_event))
+            else:
+                asyncio.run(self.publish(type_or_event))
+            return
+
+        # Legacy: run handlers inline so sync callers see immediate effects.
+        event_type = str(type_or_event)
+        for sub in list(self._subscriptions):
+            if not fnmatch.fnmatch(event_type, sub.pattern):
+                continue
             try:
-                res = handler(data)
-                if asyncio.iscoroutine(res):
-                    if running_loop:
-                        # We are inside a running loop's thread; schedule and move on.
-                        asyncio.ensure_future(res)
+                result = sub.handler(payload)
+                if asyncio.iscoroutine(result):
+                    if loop is not None:
+                        loop.create_task(result)
                     else:
-                        # No loop in this thread — own the coroutine's lifecycle.
-                        asyncio.run(self._await_handler(res))
-            except Exception as exc:
-                self._failed_deliveries += 1
-                logger.warning("[event_bus] handler error for %s: %s", event_type, exc)
+                        asyncio.run(result)
+            except Exception:  # noqa: BLE001
+                self._failed += 1
 
+    # ── diagnostics ──────────────────────────────────────────────────
     def failed_deliveries(self) -> int:
-        return self._failed_deliveries
-
-    async def _dispatch(self, event_type: str, data: Any, prefer_async: bool = True):
-        for handler in self._listeners.get(event_type, []):
-            try:
-                res = handler(data)
-                if asyncio.iscoroutine(res):
-                    await res
-            except Exception as exc:
-                self._failed_deliveries += 1
-                logger.warning("[event_bus] handler error for %s: %s", event_type, exc)
-
-    @staticmethod
-    async def _await_handler(coro):
-        await coro
+        return self._failed
 
 
+# Module-level default bus.
 global_event_bus = EventBus()
+
+
+__all__ = ["Event", "EventBus", "Subscription", "global_event_bus"]

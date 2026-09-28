@@ -1,122 +1,161 @@
-"""Authentication manager and Firebase initialization."""
+"""AuthManager — credential setup, session tokens, roles.
+
+Contract (tests/architecture/test_authentication.py,
+tests/architecture/test_authorization.py):
+- ``AuthManager(auth_path=...)`` persists users in auth.json and sessions in
+  ``sessions.json`` next to it (tests rewrite sessions[token]["expiry"]);
+- ``setup(username, password)``, ``create_session(username, password)``,
+  ``validate_token``, ``get_username_for_token``;
+- users carry ``is_admin``; expired sessions are rejected on reload.
+"""
 from __future__ import annotations
 
+import base64
+import hashlib
 import json
 import os
+import secrets
 import time
-from datetime import datetime
-from typing import Any
+from typing import Any, Dict, Optional
 
 DEFAULT_AUTH_PATH = os.path.expanduser("~/.jarvis/auth.json")
-DEFAULT_SESSIONS_PATH = os.path.expanduser("~/.jarvis/sessions.json")
 
-_AUTH_MANAGER: "AuthManager | None" = None
+SESSION_TTL_SECONDS = 24 * 3600
+
+
+def _hash_password(password: str, salt: str) -> str:
+    return hashlib.pbkdf2_hmac(
+        "sha256", password.encode("utf-8"), salt.encode("utf-8"), 120_000
+    ).hex()
 
 
 class AuthManager:
-    def __init__(self, auth_path: str = DEFAULT_AUTH_PATH, sessions_path: str | None = None):
+    def __init__(self, auth_path: str = DEFAULT_AUTH_PATH):
         self.auth_path = auth_path
-        self.sessions_path = sessions_path or os.path.join(os.path.dirname(auth_path), "sessions.json")
-        self.is_configured = False
-        self._config: dict[str, Any] = {"users": {}}
-        self.users: dict[str, dict[str, Any]] = {}
-        self.sessions: dict[str, dict[str, Any]] = {}
-        self._load_state()
-        self.is_configured = bool(self.users)
+        self.sessions_path = os.path.join(
+            os.path.dirname(auth_path) or ".", "sessions.json")
+        self.users: Dict[str, dict] = {}
+        self._config: Dict[str, Any] = {"users": self.users}
+        self.sessions: Dict[str, dict] = {}
+        self._load()
 
-    def _ensure_parent(self, path: str) -> None:
-        parent = os.path.dirname(path)
-        if parent and not os.path.exists(parent):
-            os.makedirs(parent, exist_ok=True)
-
-    def _load_state(self) -> None:
+    # ── persistence ──────────────────────────────────────────────────
+    def _load(self) -> None:
         if os.path.exists(self.auth_path):
             try:
-                with open(self.auth_path, "r", encoding="utf-8") as handle:
-                    payload = json.load(handle)
-                if isinstance(payload, dict):
-                    self._config = payload
-                    self.users = payload.get("users", {})
-            except (OSError, json.JSONDecodeError):
+                with open(self.auth_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                self._config = data if isinstance(data, dict) else {"users": {}}
+                self.users = self._config.setdefault("users", {})
+            except Exception:  # noqa: BLE001 — corrupt file: start clean
                 self._config = {"users": {}}
-                self.users = {}
+                self.users = self._config["users"]
         if os.path.exists(self.sessions_path):
             try:
-                with open(self.sessions_path, "r", encoding="utf-8") as handle:
-                    payload = json.load(handle)
-                if isinstance(payload, dict):
-                    self.sessions = payload.get("sessions", payload)
-            except (OSError, json.JSONDecodeError):
+                with open(self.sessions_path, "r", encoding="utf-8") as f:
+                    loaded = json.load(f)
+                if isinstance(loaded, dict):
+                    self.sessions = {
+                        tok: sess
+                        for tok, sess in loaded.items()
+                        if isinstance(sess, dict)
+                        and float(sess.get("expiry", 0)) > time.time()
+                    }
+            except Exception:  # noqa: BLE001
                 self.sessions = {}
-        self.users = {str(k): dict(v) if isinstance(v, dict) else {"username": str(k), "password": str(v)} for k, v in self.users.items()}
-        self.sessions = {str(k): dict(v) if isinstance(v, dict) else {"user_id": str(v)} for k, v in self.sessions.items()}
-        self._config["users"] = self.users
 
     def _save(self) -> None:
-        self._ensure_parent(self.auth_path)
-        self._ensure_parent(self.sessions_path)
-        if isinstance(self._config, dict):
-            user_map = self._config.get("users", self.users)
-            if isinstance(user_map, dict):
-                self.users = {str(k): dict(v) if isinstance(v, dict) else {"username": str(k), "password": str(v)} for k, v in user_map.items()}
-            self._config["users"] = self.users
-        with open(self.auth_path, "w", encoding="utf-8") as handle:
-            json.dump(self._config, handle, indent=2, sort_keys=True)
-        with open(self.sessions_path, "w", encoding="utf-8") as handle:
-            json.dump(self.sessions, handle, indent=2, sort_keys=True)
+        os.makedirs(os.path.dirname(self.auth_path) or ".", exist_ok=True)
+        with open(self.auth_path, "w", encoding="utf-8") as f:
+            json.dump(self._config, f, indent=2)
 
-    def _save_state(self) -> None:
+    def _save_sessions(self) -> None:
+        os.makedirs(os.path.dirname(self.sessions_path) or ".", exist_ok=True)
+        with open(self.sessions_path, "w", encoding="utf-8") as f:
+            json.dump(self.sessions, f, indent=2)
+
+    # ── users ────────────────────────────────────────────────────────
+    def setup(self, username: str, password: str,
+              is_admin: bool = True) -> bool:
+        """Register a user. Single-user personal assistant: the owner is
+        admin by default; pass is_admin=False to strip privileges."""
+        salt = secrets.token_hex(16)
+        self.users[username] = {
+            "salt": salt,
+            "password_hash": _hash_password(password, salt),
+            "is_admin": bool(is_admin),
+            "roles": ["admin"] if is_admin else [],
+            "created_at": time.time(),
+        }
         self._save()
-
-    def setup(self, username: str, password: str) -> bool:
-        self.is_configured = True
-        is_admin = username.lower().startswith("admin")
-        self.users[username] = {"username": username, "password": password, "is_admin": is_admin, "roles": ["admin" if is_admin else "user"]}
-        self._save_state()
         return True
 
-    def create_session(self, username: str, password: str) -> str:
-        user = self.users.get(username, {})
-        if isinstance(user, dict) and user.get("password") == password:
-            token = f"tok_{username}_{os.urandom(8).hex()}"
-            self.sessions[token] = {
-                "user_id": username,
-                "username": username,
-                "expiry": time.time() + 3600,
-            }
-            self._save_state()
-            return token
-        return ""
+    def verify_password(self, username: str, password: str) -> bool:
+        user = self.users.get(username)
+        if not user:
+            return False
+        return secrets.compare_digest(
+            user.get("password_hash", ""),
+            _hash_password(password, user.get("salt", "")),
+        )
+
+    def is_admin(self, username: str) -> bool:
+        user = self.users.get(username) or {}
+        return bool(user.get("is_admin"))
+
+    def roles(self, username: str) -> list:
+        user = self.users.get(username) or {}
+        # The admin role is derived strictly from the is_admin flag, so
+        # stripping the flag strips the role even if stale roles remain.
+        roles = [r for r in user.get("roles", []) if r != "admin"]
+        if user.get("is_admin"):
+            roles.append("admin")
+        return roles
+
+    # ── sessions ─────────────────────────────────────────────────────
+    def create_session(self, username: str, password: str,
+                       ttl_seconds: int = SESSION_TTL_SECONDS) -> Optional[str]:
+        if not self.verify_password(username, password):
+            return None
+        token = base64.urlsafe_b64encode(secrets.token_bytes(32)).decode().rstrip("=")
+        self.sessions[token] = {
+            "username": username,
+            "created": time.time(),
+            "expiry": time.time() + ttl_seconds,
+        }
+        self._save_sessions()
+        return token
 
     def validate_token(self, token: str) -> bool:
-        session = self.sessions.get(token)
-        if not isinstance(session, dict):
-            return False
-        expiry = session.get("expiry")
-        if expiry is not None and time.time() > float(expiry):
-            return False
-        return True
+        return self.get_username_for_token(token) is not None
 
-    def get_username_for_token(self, token: str) -> str | None:
-        session = self.sessions.get(token)
-        if not isinstance(session, dict):
+    def get_username_for_token(self, token: str) -> Optional[str]:
+        sess = self.sessions.get(token)
+        if not sess:
             return None
-        user_id = session.get("user_id") or session.get("username")
-        return str(user_id) if user_id is not None else None
+        if float(sess.get("expiry", 0)) <= time.time():
+            del self.sessions[token]
+            self._save_sessions()
+            return None
+        return sess.get("username")
 
-    def resolve_context(self, username: str) -> Any:
-        from core.authz import AuthContext, Role
-        if str(username).lower().startswith("admin"):
-            return AuthContext(user_id=str(username), roles={Role.ADMIN}, scopes=set())
-        return AuthContext(user_id=str(username), roles=set(), scopes=set())
-
-
-def get_auth_manager(auth_path: str = DEFAULT_AUTH_PATH, sessions_path: str | None = None) -> AuthManager:
-    global _AUTH_MANAGER
-    if _AUTH_MANAGER is None or _AUTH_MANAGER.auth_path != auth_path or _AUTH_MANAGER.sessions_path != (sessions_path or os.path.join(os.path.dirname(auth_path), "sessions.json")):
-        _AUTH_MANAGER = AuthManager(auth_path=auth_path, sessions_path=sessions_path)
-    return _AUTH_MANAGER
+    def revoke(self, token: str) -> bool:
+        if token in self.sessions:
+            del self.sessions[token]
+            self._save_sessions()
+            return True
+        return False
 
 
-def init_firebase():
+_auth_manager: Optional[AuthManager] = None
+
+
+def get_auth_manager() -> AuthManager:
+    global _auth_manager
+    if _auth_manager is None:
+        _auth_manager = AuthManager()
+    return _auth_manager
+
+
+def init_firebase():  # pragma: no cover — legacy hook kept for callers
     return None

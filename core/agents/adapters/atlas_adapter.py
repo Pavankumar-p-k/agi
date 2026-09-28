@@ -1,29 +1,49 @@
-"""
-Module: core.agents.adapters.atlas_adapter
-Auto-reconstructed backend component.
-"""
+"""AtlasAdapter — data/SQL specialist."""
 from __future__ import annotations
-from typing import Any, Callable, Optional
-from dataclasses import dataclass, field
-import logging
 
-logger = logging.getLogger(__name__)
+from typing import Any, Optional
 
-class DynamicMeta(type):
-    def __getattr__(cls, name: str) -> Any:
-        return name
+from core.agents._sub_agent_base import AgentResult, SubAgent
+from core.agents.base import AgentResult as _ToolResult
 
 
-def __getattr__(name: str) -> Any:
-    class DynamicStub(metaclass=DynamicMeta):
-        def __init__(self, *args, **kwargs):
-            pass
-        def __call__(self, *args, **kwargs):
-            return self
-        def __getattr__(self, item):
-            return DynamicStub()
-        async def __aenter__(self):
-            return self
-        async def __aexit__(self, exc_type, exc_val, exc_tb):
-            pass
-    return DynamicStub()
+class AtlasAgent(SubAgent):
+    """SQL generation, schema design, data analysis."""
+
+    NAME = "ATLAS"
+    DEFAULT_MODE = "query"
+    MODES = {
+        "query": "You are ATLAS, a data engineer. Output ONLY the SQL query that answers the request, then a one-line explanation.",
+        "schema": "You are ATLAS designing a schema. Output CREATE TABLE statements with keys and indexes.",
+        "analyze": "You are ATLAS analyzing data. Describe structure, quality issues, and notable patterns.",
+    }
+
+
+class AtlasAdapter:
+    agent_id = "atlas"
+    priority = 50
+    keywords = ["sql query", "database query", "select from", "schema",
+                "migrate database", "query the database"]
+
+    def __init__(self, **kwargs: Any):
+        self._agent = AtlasAgent(**kwargs)
+
+    @property
+    def agent(self) -> AtlasAgent:
+        return self._agent
+
+    def can_handle(self, goal: str) -> bool:
+        text = (goal or "").lower()
+        return any(kw.lower() in text for kw in self.keywords)
+
+    def info(self) -> dict[str, Any]:
+        return {**self._agent.info(), "agent_id": self.agent_id, "priority": self.priority}
+
+    async def run(self, task: str, mode: str = "", **kwargs: Any) -> Any:
+        return await self._agent.run(task, mode=mode, **kwargs)
+
+    async def execute(self, goal: str, context: Optional[Any] = None, **kwargs: Any) -> _ToolResult:
+        result = await self._agent.run(goal, **kwargs)
+        return _ToolResult(success=result.success, output=result.output,
+                           agent_id=self.agent_id, error=result.error,
+                           duration=result.duration_s, metadata={"mode": result.mode})

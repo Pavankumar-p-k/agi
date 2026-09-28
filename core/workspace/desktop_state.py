@@ -1,112 +1,57 @@
-"""
-Module: core.workspace.desktop_state
-Real desktop state snapshot - screen, windows, processes, browser tabs.
+"""DesktopState — one async snapshot of the whole workspace.
+
+Composes the awareness modules (windows, browser, clipboard, processes,
+system stats) into a single snapshot object. Awareness only — no
+control actions (Gate 8 separation).
 """
 from __future__ import annotations
-from typing import Any
+
 from dataclasses import dataclass, field
-import logging
-import pyautogui
-
-logger = logging.getLogger(__name__)
-
-
-@dataclass
-class WindowInfo:
-    title: str = ""
-    left: int = 0
-    top: int = 0
-    width: int = 0
-    height: int = 0
-    isMinimized: bool = False
-    isMaximized: bool = False
-    isActive: bool = False
-
-
-@dataclass
-class BrowserTabInfo:
-    title: str = ""
-    url: str = ""
-    index: int = 0
-
-
-@dataclass
-class ProcessInfo:
-    name: str = ""
-    pid: int = 0
-    status: str = ""
+from typing import Any, Optional
 
 
 @dataclass
 class DesktopSnapshot:
-    active_window: WindowInfo | None = None
-    windows: list[WindowInfo] = field(default_factory=list)
-    browser: Any = None
-    processes: list[ProcessInfo] = field(default_factory=list)
-    screen_width: int = 0
-    screen_height: int = 0
-    mouse_x: int = 0
-    mouse_y: int = 0
-
-
-class _BrowserTabs:
-    def __init__(self) -> None:
-        self.tabs: list[BrowserTabInfo] = []
+    active_window: Optional[str] = None
+    windows: list = field(default_factory=list)
+    browser: dict = field(default_factory=dict)
+    clipboard_text: str = ""
+    processes: list = field(default_factory=list)
+    system_stats: dict = field(default_factory=dict)
 
 
 class DesktopState:
+    """Aggregated workspace awareness snapshot."""
+
     def __init__(self) -> None:
-        logger.info("DesktopState initialized")
+        from core.workspace.window_detector import WindowDetector
+        from core.workspace.clipboard_manager import ClipboardManager
+        from core.workspace.process_monitor import ProcessMonitor
+        from core.workspace.browser_context import BrowserContextAwareness
+        self.windows = WindowDetector()
+        self.clipboard = ClipboardManager()
+        self.processes = ProcessMonitor()
+        self.browser = BrowserContextAwareness()
 
     async def snapshot(self) -> DesktopSnapshot:
-        try:
-            import pygetwindow as gw
-            import psutil
+        snap = DesktopSnapshot()
 
-            screen_w, screen_h = pyautogui.size()
-            mx, my = pyautogui.position()
+        active = self.windows.get_active_window()
+        if active is not None:
+            snap.active_window = getattr(active, "title", None)
+        snap.windows = [w for w in self.windows.list_windows()]
 
-            windows = []
-            active_win = None
-            for w in gw.getAllWindows():
-                if not w.title.strip():
-                    continue
-                info = WindowInfo(
-                    title=w.title,
-                    left=w.left,
-                    top=w.top,
-                    width=w.width,
-                    height=w.height,
-                    isMinimized=w.isMinimized,
-                    isMaximized=w.isMaximized,
-                    isActive=w.isActive,
-                )
-                windows.append(info)
-                if w.isActive:
-                    active_win = info
+        state = await self.browser.get_active_state()
+        snap.browser = {
+            "has_browser": state.has_browser,
+            "browser_name": state.browser_name,
+            "tab_count": state.tab_count,
+        }
 
-            processes = []
-            for proc in psutil.process_iter(["name", "pid", "status"]):
-                try:
-                    info = proc.info
-                    processes.append(ProcessInfo(
-                        name=info.get("name", ""),
-                        pid=info.get("pid", 0),
-                        status=str(info.get("status", "")),
-                    ))
-                except (psutil.NoSuchProcess, psutil.AccessDenied):
-                    pass
+        snap.clipboard_text = self.clipboard.get_text()
+        snap.processes = self.processes.list_processes()
+        snap.system_stats = self.processes.get_system_stats()
+        return snap
 
-            return DesktopSnapshot(
-                active_window=active_win,
-                windows=windows,
-                browser=_BrowserTabs(),
-                processes=processes,
-                screen_width=screen_w,
-                screen_height=screen_h,
-                mouse_x=mx,
-                mouse_y=my,
-            )
-        except Exception as e:
-            logger.error("snapshot failed: %s", e)
-            return DesktopSnapshot()
+
+__all__ = ["DesktopState", "DesktopSnapshot"]

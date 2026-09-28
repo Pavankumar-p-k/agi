@@ -1,88 +1,90 @@
-"""Local registry of installed native applications and observed windows."""
+"""ApplicationRegistry — installed-application records with query/refresh.
+
+Combines a persisted JSON registry with a live scan (UserActions.
+installed_programs / window titles) so the planner only claims apps
+that are actually present.
+"""
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, field
-from pathlib import Path
-from typing import Any, Callable
 import json
-import os
-import time
+import threading
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Callable, Optional
 
 
 @dataclass
-class ApplicationRecord:
+class AppRecord:
     name: str
-    version: str = ""
-    install_location: str = ""
-    source: str = "windows_registry"
-    windows: list[str] = field(default_factory=list)
-    approved: bool = False
-    updated_at: float = field(default_factory=time.time)
+    executable: str = ""
+    installed: bool = True
+    source: str = "scan"
+
+    def to_dict(self) -> dict:
+        return {
+            "name": self.name,
+            "executable": self.executable,
+            "installed": self.installed,
+            "source": self.source,
+        }
 
 
 class ApplicationRegistry:
-    def __init__(
-        self,
-        path: str | Path,
-        installed_provider: Callable[[], dict[str, Any]],
-        windows_provider: Callable[[], list[dict[str, Any]]],
-    ):
-        self.path = Path(path)
-        self.installed_provider = installed_provider
-        self.windows_provider = windows_provider
-        self.records: dict[str, ApplicationRecord] = {}
-        self._load()
+    """Registry of installed applications (persisted + live scan)."""
 
-    def refresh(self) -> list[ApplicationRecord]:
-        installed = self.installed_provider().get("programs", [])
-        windows = self.windows_provider()
-        titles = [str(item.get("title", "")).strip() for item in windows if item.get("title")]
-        for item in installed:
-            name = str(item.get("Name", "")).strip()
-            if not name:
-                continue
-            key = name.casefold()
-            current = self.records.get(key, ApplicationRecord(name=name))
-            current.name = name
-            current.version = str(item.get("Version") or "")
-            current.install_location = str(item.get("InstallLocation") or "")
-            current.windows = [title for title in titles if name.casefold() in title.casefold()]
-            current.updated_at = time.time()
-            self.records[key] = current
-        self._save()
-        return self.list()
+    def __init__(self, store_path: Optional[Path] = None,
+                 installed_programs_fn: Optional[Callable] = None,
+                 list_windows_fn: Optional[Callable] = None) -> None:
+        self._store_path = Path(store_path) if store_path else None
+        self._installed_programs_fn = installed_programs_fn
+        self._list_windows_fn = list_windows_fn
+        self._records: dict[str, AppRecord] = {}
+        self._lock = threading.Lock()
+        self.refresh()
 
-    def list(self, query: str | None = None) -> list[ApplicationRecord]:
-        records = list(self.records.values())
+    def refresh(self) -> None:
+        """Reload the persisted store, then merge the live scan."""
+        with self._lock:
+            self._records.clear()
+            if self._store_path and self._store_path.exists():
+                try:
+                    data = json.loads(
+                        self._store_path.read_text(encoding="utf-8"))
+                    for item in data.get("applications", []):
+                        record = AppRecord(
+                            name=str(item.get("name", "")),
+                            executable=str(item.get("executable", "")),
+                            source="stored",
+                        )
+                        if record.name:
+                            self._records[record.name.lower()] = record
+                except Exception:  # noqa: BLE001
+                    pass
+            if self._installed_programs_fn is not None:
+                try:
+                    result = self._installed_programs_fn()
+                    for prog in result.get("programs", []):
+                        name = str(prog.get("name", "")).strip()
+                        if not name:
+                            continue
+                        key = name.lower()
+                        if key in self._records:
+                            self._records[key].installed = True
+                        else:
+                            self._records[key] = AppRecord(
+                                name=name, source="scan")
+                except Exception:  # noqa: BLE001
+                    pass
+
+    def list(self, query: Optional[str] = None) -> list:
+        records = list(self._records.values())
         if query:
-            needle = query.casefold()
-            records = [record for record in records if needle in record.name.casefold()]
-        return sorted(records, key=lambda record: record.name.casefold())
+            q = str(query).lower()
+            records = [r for r in records if q in r.name.lower()]
+        return sorted(records, key=lambda r: r.name.lower())
 
-    def approve(self, name: str) -> ApplicationRecord:
-        record = self._find(name)
-        record.approved = True
-        record.updated_at = time.time()
-        self._save()
-        return record
+    def has(self, name: str) -> bool:
+        return str(name).lower() in self._records
 
-    def _find(self, name: str) -> ApplicationRecord:
-        record = self.records.get(name.casefold())
-        if record is None:
-            raise KeyError(f"application not found: {name}")
-        return record
 
-    def _save(self) -> None:
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        temp = self.path.with_suffix(".tmp")
-        temp.write_text(json.dumps({key: asdict(value) for key, value in self.records.items()}, indent=2), encoding="utf-8")
-        os.replace(temp, self.path)
-
-    def _load(self) -> None:
-        if not self.path.exists():
-            return
-        try:
-            payload = json.loads(self.path.read_text(encoding="utf-8"))
-            self.records = {key: ApplicationRecord(**value) for key, value in payload.items()}
-        except (OSError, json.JSONDecodeError, TypeError, ValueError):
-            self.records = {}
+__all__ = ["ApplicationRegistry", "AppRecord"]

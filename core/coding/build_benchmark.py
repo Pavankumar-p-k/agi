@@ -201,19 +201,20 @@ async def async_get_strategy_prediction(*args, **kwargs):
 
 async def _record_benchmark_graph(session: BenchmarkSession) -> None:
     try:
-        from core.activity.models import ActivityNode
+        # Node creation goes through the activity owner (Rule 25).
+        from core.activity.recorder import make_activity_node
         from core.activity.storage import ActivityStore
 
         store = ActivityStore()
         nodes = [
-            ActivityNode(node_type="benchmark_session", label=session.goal, output=session.to_dict()),
-            ActivityNode(node_type="benchmark_run", label="build_project", output=session.build_project_run.to_dict()),
-            ActivityNode(node_type="benchmark_run", label="automated_build", output=session.automated_build_run.to_dict()),
+            make_activity_node("benchmark_session", session.goal, session.to_dict()),
+            make_activity_node("benchmark_run", "build_project", session.build_project_run.to_dict()),
+            make_activity_node("benchmark_run", "automated_build", session.automated_build_run.to_dict()),
         ]
         if session.promotion_decision:
-            nodes.append(ActivityNode(node_type="promotion_decision", label=session.promotion_decision.action.value, output=session.promotion_decision.to_dict()))
+            nodes.append(make_activity_node("promotion_decision", session.promotion_decision.action.value, session.promotion_decision.to_dict()))
         for artifact in session.build_project_run.artifacts + session.automated_build_run.artifacts:
-            nodes.append(ActivityNode(node_type="artifact", label=str(artifact.get("path", artifact)), output=artifact))
+            nodes.append(make_activity_node("artifact", str(artifact.get("path", artifact)), artifact))
         for node in nodes:
             store.create_node(node)
     except Exception:

@@ -1,43 +1,34 @@
-"""
-Module: core.pipeline.security_context
-Auto-reconstructed backend component.
-"""
+"""SecurityContext — tenant/workspace/resource-scope snapshot for a request."""
 from __future__ import annotations
-from typing import Any, Callable, Optional
+
 from dataclasses import dataclass, field
-import logging
+from typing import Any, Optional
 
-logger = logging.getLogger(__name__)
-
-class DynamicMeta(type):
-    def __getattr__(cls, name: str) -> Any:
-        return name
 
 @dataclass
-class SecurityContext(metaclass=DynamicMeta):
-    def __init__(self, *args, **kwargs):
-        for k, v in kwargs.items():
-            setattr(self, k, v)
-    def __getattr__(self, name: str) -> Any:
-        return lambda *a, **kw: None
-    def __call__(self, *args, **kwargs) -> Any:
-        return self
-    async def __aenter__(self):
-        return self
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        pass
+class SecurityContext:
+    tenant_id: str = "default"
+    workspace_id: Optional[str] = None
+    owner_id: Optional[str] = None
+    visibility: str = "private"
+    resource_scope: Any = None
+    tenant_resolution: Any = None
+    authentication: Any = None
+    authorization: Any = None
+    scopes: frozenset = frozenset()
+
+    def to_dict(self) -> dict:
+        rs = self.resource_scope
+        tr = self.tenant_resolution
+        return {
+            "tenant_id": self.tenant_id,
+            "workspace_id": self.workspace_id,
+            "owner_id": self.owner_id,
+            "visibility": self.visibility,
+            "resource_scope": rs.to_dict() if hasattr(rs, "to_dict") else rs,
+            "tenant_resolution": tr.to_dict() if hasattr(tr, "to_dict") else tr,
+            "scopes": sorted(self.scopes),
+        }
 
 
-def __getattr__(name: str) -> Any:
-    class DynamicStub(metaclass=DynamicMeta):
-        def __init__(self, *args, **kwargs):
-            pass
-        def __call__(self, *args, **kwargs):
-            return self
-        def __getattr__(self, item):
-            return DynamicStub()
-        async def __aenter__(self):
-            return self
-        async def __aexit__(self, exc_type, exc_val, exc_tb):
-            pass
-    return DynamicStub()
+__all__ = ["SecurityContext"]

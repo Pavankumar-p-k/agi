@@ -1,51 +1,49 @@
-"""
-Module: core.pipeline.deterministic
-Auto-reconstructed backend component.
-"""
+"""DeterministicServices — injectable deterministic primitives for tests."""
 from __future__ import annotations
-from typing import Any, Callable, Optional
-from dataclasses import dataclass, field
-import logging
 
-logger = logging.getLogger(__name__)
+import uuid
+from typing import Any, Callable
 
-class DynamicMeta(type):
-    def __getattr__(cls, name: str) -> Any:
-        return name
 
-@dataclass
-class DeterministicServices(metaclass=DynamicMeta):
-    def __init__(self, *args, **kwargs):
-        for k, v in kwargs.items():
-            setattr(self, k, v)
+class DeterministicServices:
+    """Source of IDs/time with a .fake() preset for deterministic tests."""
 
-    @staticmethod
-    def fake() -> "DeterministicServices":
-        return DeterministicServices()
+    def __init__(self, uuid_fn: Callable[[], str] | None = None, clock: Any = None):
+        self._uuid_fn = uuid_fn
+        self._clock = clock
+
+    @classmethod
+    def fake(cls) -> "DeterministicServices":
+        """Deterministic UUID4s derived from a counter (stable per test run)."""
+        counter = {"n": 0}
+
+        def _uuid4() -> str:
+            counter["n"] += 1
+            return uuid.uuid5(uuid.NAMESPACE_OID, f"fake-{counter['n']}").hex
+
+        return cls(uuid_fn=_uuid4)
+
+    @classmethod
+    def fixed(cls) -> "DeterministicServices":
+        """Fully deterministic preset: fixed seed ids, frozen clock."""
+        counter = {"n": 0}
+
+        def _uuid4() -> str:
+            counter["n"] += 1
+            return uuid.uuid5(uuid.NAMESPACE_OID, f"fixed-{counter['n']}").hex
+
+        return cls(uuid_fn=_uuid4, clock=lambda: 1_700_000_000.0)
 
     def uuid4(self) -> str:
-        return "deterministic-uuid"
+        if self._uuid_fn is not None:
+            return str(self._uuid_fn())
+        return uuid.uuid4().hex
 
-    def __getattr__(self, name: str) -> Any:
-        return lambda *a, **kw: None
-    def __call__(self, *args, **kwargs) -> Any:
-        return self
-    async def __aenter__(self):
-        return self
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        pass
+    def now(self) -> float:
+        if self._clock is not None:
+            return self._clock()
+        import time
+        return time.time()
 
 
-def __getattr__(name: str) -> Any:
-    class DynamicStub(metaclass=DynamicMeta):
-        def __init__(self, *args, **kwargs):
-            pass
-        def __call__(self, *args, **kwargs):
-            return self
-        def __getattr__(self, item):
-            return DynamicStub()
-        async def __aenter__(self):
-            return self
-        async def __aexit__(self, exc_type, exc_val, exc_tb):
-            pass
-    return DynamicStub()
+__all__ = ["DeterministicServices"]

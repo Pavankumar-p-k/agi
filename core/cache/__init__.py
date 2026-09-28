@@ -14,9 +14,9 @@ class DynamicMeta(type):
         return name
 
 # Re-exports
-from .invalidation import TagInvalidator
-from .local import LRUCache, TTLCache
-from .redis_cache import RedisCache
+from invalidation import TagInvalidator
+from local import LRUCache, TTLCache
+from redis_cache import RedisCache
 
 
 def __getattr__(name: str) -> Any:

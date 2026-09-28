@@ -1,32 +1,23 @@
-"""
-Module: core.runtime.__init__
-Auto-reconstructed backend component.
-"""
-from __future__ import annotations
-from typing import Any, Callable, Optional
-from dataclasses import dataclass, field
-import logging
-
-logger = logging.getLogger(__name__)
-
-class DynamicMeta(type):
-    def __getattr__(cls, name: str) -> Any:
-        return name
-
-# Re-exports
+"""Runtime — RuntimeContext + ExecutionRuntime + service protocols."""
 from core.runtime.context import RuntimeContext
+from core.runtime.protocols import (
+    ActivityService,
+    EventBusProtocol,
+    MemoryService,
+    MetricsService,
+    ObservationService,
+    SchedulerService,
+)
+from core.runtime.providers import ExecutionRuntime, RuntimeServices
 
-
-def __getattr__(name: str) -> Any:
-    class DynamicStub(metaclass=DynamicMeta):
-        def __init__(self, *args, **kwargs):
-            pass
-        def __call__(self, *args, **kwargs):
-            return self
-        def __getattr__(self, item):
-            return DynamicStub()
-        async def __aenter__(self):
-            return self
-        async def __aexit__(self, exc_type, exc_val, exc_tb):
-            pass
-    return DynamicStub()
+__all__ = [
+    "RuntimeContext",
+    "ExecutionRuntime",
+    "RuntimeServices",
+    "MemoryService",
+    "ObservationService",
+    "SchedulerService",
+    "MetricsService",
+    "EventBusProtocol",
+    "ActivityService",
+]

@@ -273,17 +273,10 @@ def _rbac_allows(tool_type: str, owner: Optional[str]) -> bool:
     narrows execution — it never widens permissions.
     """
     try:
-        from core.authz import AuthContext
-        from core.authz.engine import authz_engine
-        from core.tools.security import owner_is_admin_or_single_user
-        if owner_is_admin_or_single_user(owner):
-            context = AuthContext(
-                user_id=owner or "single_user",
-                scopes={"tools:execute:*"},
-            )
-        else:
-            context = AuthContext(user_id=str(owner or "user"), scopes=set())
-        return bool(authz_engine.evaluate(context, "tools:execute:" + tool_type))
+        # Scope evaluation is owned by core.tools.security (architecture
+        # Rule 17) — dispatch code must not touch the policy engine directly.
+        from core.tools.security import authorize_tool_scope
+        return authorize_tool_scope(tool_type, owner)
     except Exception as exc:
         logger.debug("[execution] authz unavailable, denying %s: %s", tool_type, exc)
         return False

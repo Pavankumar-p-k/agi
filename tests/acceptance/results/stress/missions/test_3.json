@@ -1,0 +1,125 @@
+{
+ "mission": "3",
+ "title": "Dynamic Website Task",
+ "goal": "Open the Wikipedia encyclopedia. Using the site's own search interface (not a direct article URL), search for 'Playwright (software)', wait for the results to load, open the matching article, and verify you are on the article page by checking the page title and URL. Then extract the article's summary box. If the page changes dynamically, wait for the correct state before interacting.",
+ "result": "SUCCESS",
+ "time": 3.9,
+ "total_actions": 7,
+ "failures": 0,
+ "recoveries": [],
+ "retries": 0,
+ "strategy_changes": 0,
+ "security": {
+  "injection_detected": [],
+  "approval_required": [],
+  "sensitive_attempted": []
+ },
+ "evidence_urls": [
+  "https://en.wikipedia.org",
+  "https://en.wikipedia.org/wiki/Playwright_(software)#@playwright/test"
+ ],
+ "extracts": {
+  "https://en.wikipedia.org/wiki/Playwright_(software)#@playwright/test": "<<<UNTRUSTED_PAGE_CONTENT>>>Playwright  Developer\tMicrosoft Release\tJanuary 31, 2020; 6 years ago[1] Stable release\t 1.63.0[2]  / 4 September 2026; 8 days ago  Written in\tTypeScript Operating system\tMicrosoft Windows, macOS, Linux Type\tSoftware testing framework for web applications License\tApache License 2.0 Website\tplaywright.dev Repository\tgithub.com/microsoft/playwright<<<END_UNTRUSTED_PAGE_CO"
+ },
+ "verifications": [
+  {
+   "expected": "url_host=wikipedia.org",
+   "observed": "on https://en.wikipedia.org",
+   "result": "SUCCESS"
+  },
+  {
+   "expected": "url_host=wikipedia.org",
+   "observed": "on https://en.wikipedia.org/wiki/Playwright_(software)#@playwright/test",
+   "result": "SUCCESS"
+  },
+  {
+   "expected": "{\"kind\": \"url_contains\", \"expected\": \"wiki/Playwright\"}",
+   "observed": "SUCCESS",
+   "result": "SUCCESS"
+  },
+  {
+   "expected": "{\"kind\": \"title_contains\", \"expected\": \"Playwright\"}",
+   "observed": "SUCCESS",
+   "result": "SUCCESS"
+  }
+ ],
+ "observations": [
+  "GOAL: Open the Wikipedia encyclopedia. Using the site's own search interface (not a direct article URL), search for 'Playwright (software)', wait for the results to load, open the matching article, and verify you are on the article page by checking the page title and URL. Then extract the article's summary box. If the page changes dynamically, wait for the correct state before interacting.",
+  "navigated to https://en.wikipedia.org (title=Wikipedia, the free encyclopedia)",
+  "perceived inputs: [{\"type\": \"checkbox\", \"selector\": \"#vector-main-menu-dropdown-checkbox\"}, {\"type\": \"search\", \"selector\": \"#searchInput\"}, {\"type\": \"hidden\", \"selector\": \"[name=\\\"title\\\"]\"}, {\"type\": \"checkbox\", \"selector\": \"#vector-appearance-dropdown-checkbox\"}, {\"type\": \"checkbox\", \"selector\": \"#vector-user-links",
+  "after search: https://en.wikipedia.org/wiki/Playwright_(software)",
+  "navigated to https://en.wikipedia.org/wiki/Playwright_(software)#@playwright/test (title=Playwright (software) - Wikipedia)",
+  "extracted 408 chars from https://en.wikipedia.org/wiki/Playwright_(software)#@playwright/test [.infobox]"
+ ],
+ "actions": [
+  {
+   "n": 1,
+   "tool": "browser.navigate",
+   "params": {
+    "url": "https://en.wikipedia.org"
+   },
+   "ok": true,
+   "error": null,
+   "t": 0.7
+  },
+  {
+   "n": 2,
+   "tool": "browser_snapshot",
+   "params": {},
+   "ok": true,
+   "error": null,
+   "t": 0.8
+  },
+  {
+   "n": 3,
+   "tool": "browser.type",
+   "params": {
+    "selector": "#searchInput",
+    "value": "Playwright (software)"
+   },
+   "ok": true,
+   "error": null,
+   "t": 0.8
+  },
+  {
+   "n": 4,
+   "tool": "browser_press",
+   "params": {
+    "selector": "#searchInput",
+    "key": "Enter"
+   },
+   "ok": true,
+   "error": null,
+   "t": 2.3
+  },
+  {
+   "n": 5,
+   "tool": "browser_snapshot",
+   "params": {},
+   "ok": true,
+   "error": null,
+   "t": 3.9
+  },
+  {
+   "n": 6,
+   "tool": "browser.navigate",
+   "params": {
+    "url": "https://en.wikipedia.org/wiki/Playwright_(software)#@playwri"
+   },
+   "ok": true,
+   "error": null,
+   "t": 3.9
+  },
+  {
+   "n": 7,
+   "tool": "browser.extract",
+   "params": {
+    "selector": ".infobox"
+   },
+   "ok": true,
+   "error": null,
+   "t": 3.9
+  }
+ ],
+ "notes": []
+}

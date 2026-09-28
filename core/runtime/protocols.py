@@ -1,113 +1,48 @@
-"""
-Module: core.runtime.protocols
-Auto-reconstructed backend component.
-"""
+"""Runtime service protocols — typed interfaces for runtime side-effects."""
 from __future__ import annotations
-from typing import Any, Callable, Optional
-from dataclasses import dataclass, field
-import logging
 
-logger = logging.getLogger(__name__)
-
-class DynamicMeta(type):
-    def __getattr__(cls, name: str) -> Any:
-        return name
-
-@dataclass
-class ActivityService(metaclass=DynamicMeta):
-    def __init__(self, *args, **kwargs):
-        for k, v in kwargs.items():
-            setattr(self, k, v)
-    def __getattr__(self, name: str) -> Any:
-        return lambda *a, **kw: None
-    def __call__(self, *args, **kwargs) -> Any:
-        return self
-    async def __aenter__(self):
-        return self
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        pass
-
-@dataclass
-class EventBusProtocol(metaclass=DynamicMeta):
-    def __init__(self, *args, **kwargs):
-        for k, v in kwargs.items():
-            setattr(self, k, v)
-    def __getattr__(self, name: str) -> Any:
-        return lambda *a, **kw: None
-    def __call__(self, *args, **kwargs) -> Any:
-        return self
-    async def __aenter__(self):
-        return self
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        pass
-
-@dataclass
-class MemoryService(metaclass=DynamicMeta):
-    def __init__(self, *args, **kwargs):
-        for k, v in kwargs.items():
-            setattr(self, k, v)
-    def __getattr__(self, name: str) -> Any:
-        return lambda *a, **kw: None
-    def __call__(self, *args, **kwargs) -> Any:
-        return self
-    async def __aenter__(self):
-        return self
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        pass
-
-@dataclass
-class MetricsService(metaclass=DynamicMeta):
-    def __init__(self, *args, **kwargs):
-        for k, v in kwargs.items():
-            setattr(self, k, v)
-    def __getattr__(self, name: str) -> Any:
-        return lambda *a, **kw: None
-    def __call__(self, *args, **kwargs) -> Any:
-        return self
-    async def __aenter__(self):
-        return self
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        pass
-
-@dataclass
-class ObservationService(metaclass=DynamicMeta):
-    def __init__(self, *args, **kwargs):
-        for k, v in kwargs.items():
-            setattr(self, k, v)
-    def __getattr__(self, name: str) -> Any:
-        return lambda *a, **kw: None
-    def __call__(self, *args, **kwargs) -> Any:
-        return self
-    async def __aenter__(self):
-        return self
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        pass
-
-@dataclass
-class SchedulerService(metaclass=DynamicMeta):
-    def __init__(self, *args, **kwargs):
-        for k, v in kwargs.items():
-            setattr(self, k, v)
-    def __getattr__(self, name: str) -> Any:
-        return lambda *a, **kw: None
-    def __call__(self, *args, **kwargs) -> Any:
-        return self
-    async def __aenter__(self):
-        return self
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        pass
+from typing import Any, Protocol, runtime_checkable
 
 
-def __getattr__(name: str) -> Any:
-    class DynamicStub(metaclass=DynamicMeta):
-        def __init__(self, *args, **kwargs):
-            pass
-        def __call__(self, *args, **kwargs):
-            return self
-        def __getattr__(self, item):
-            return DynamicStub()
-        async def __aenter__(self):
-            return self
-        async def __aexit__(self, exc_type, exc_val, exc_tb):
-            pass
-    return DynamicStub()
+@runtime_checkable
+class MemoryService(Protocol):
+    # ``resource_scope`` carries the tenant/workspace partition for every
+    # persisted artifact (architecture Rule 30).
+    async def store_facts(self, ctx: Any, facts: list, *,
+                          resource_scope: Any = None, tenant_id: str = "") -> int: ...
+    async def search_facts(self, ctx: Any, query: str, **kwargs) -> list: ...
+    async def get_user_facts(self, ctx: Any, user_id: str) -> list: ...
+
+
+@runtime_checkable
+class ObservationService(Protocol):
+    async def publish(self, ctx: Any, observation: Any) -> None: ...
+
+
+@runtime_checkable
+class SchedulerService(Protocol):
+    async def create_activity(self, ctx: Any, goal: str, **kwargs) -> str: ...
+    async def get_queue(self, ctx: Any) -> list: ...
+
+
+@runtime_checkable
+class MetricsService(Protocol):
+    def record(self, ctx: Any, metrics: dict) -> None: ...
+
+
+@runtime_checkable
+class EventBusProtocol(Protocol):
+    async def publish(self, ctx: Any, event: Any) -> None: ...
+    async def subscribe(self, ctx: Any, handler: Any) -> None: ...
+
+
+@runtime_checkable
+class ActivityService(Protocol):
+    async def create_activity(self, ctx: Any, goal: str) -> Any: ...
+    async def create_node(self, ctx: Any, activity_id: str, **kwargs) -> Any: ...
+
+
+__all__ = [
+    "MemoryService", "ObservationService", "SchedulerService",
+    "MetricsService", "EventBusProtocol", "ActivityService",
+]

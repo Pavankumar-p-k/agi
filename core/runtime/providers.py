@@ -1,57 +1,47 @@
-"""
-Module: core.runtime.providers
-Auto-reconstructed backend component.
-"""
+"""ExecutionRuntime + RuntimeServices — executes plans against runtime services."""
 from __future__ import annotations
-from typing import Any, Callable, Optional
-from dataclasses import dataclass, field
-import logging
 
-logger = logging.getLogger(__name__)
+from dataclasses import dataclass
+from typing import Any, Optional
 
-class DynamicMeta(type):
-    def __getattr__(cls, name: str) -> Any:
-        return name
 
 @dataclass
-class ExecutionRuntime(metaclass=DynamicMeta):
-    def __init__(self, *args, **kwargs):
-        for k, v in kwargs.items():
-            setattr(self, k, v)
-    def __getattr__(self, name: str) -> Any:
-        return lambda *a, **kw: None
-    def __call__(self, *args, **kwargs) -> Any:
-        return self
-    async def __aenter__(self):
-        return self
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        pass
-
-@dataclass
-class RuntimeServices(metaclass=DynamicMeta):
-    def __init__(self, *args, **kwargs):
-        for k, v in kwargs.items():
-            setattr(self, k, v)
-    def __getattr__(self, name: str) -> Any:
-        return lambda *a, **kw: None
-    def __call__(self, *args, **kwargs) -> Any:
-        return self
-    async def __aenter__(self):
-        return self
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        pass
+class RuntimeServices:
+    memory: Any = None
+    observation: Any = None
+    scheduler: Any = None
+    metrics: Any = None
+    event_bus: Any = None
+    activity: Any = None
 
 
-def __getattr__(name: str) -> Any:
-    class DynamicStub(metaclass=DynamicMeta):
-        def __init__(self, *args, **kwargs):
-            pass
-        def __call__(self, *args, **kwargs):
-            return self
-        def __getattr__(self, item):
-            return DynamicStub()
-        async def __aenter__(self):
-            return self
-        async def __aexit__(self, exc_type, exc_val, exc_tb):
-            pass
-    return DynamicStub()
+class ExecutionRuntime:
+    """Runs a plan inside the runtime, publishing observations + metrics."""
+
+    def __init__(self, services: Optional[RuntimeServices] = None) -> None:
+        self.services = services or RuntimeServices()
+
+    async def execute(self, ctx: Any, plan: Optional[dict] = None,
+                      **kwargs: Any) -> dict:
+        steps = (plan or {}).get("steps", []) or []
+        texts: list[str] = []
+        for step in steps:
+            objective = str((step or {}).get("objective", ""))
+            intent = str((step or {}).get("intent", "respond"))
+            texts.append(f"executed {intent}: {objective}" if objective
+                         else f"executed {intent}")
+
+        output = {"text": "\n".join(texts) if texts else "", "steps": len(steps)}
+
+        observation = self.services.observation if self.services else None
+        if observation is not None:
+            await observation.publish(ctx, {
+                "type": "execution_result", "text": output["text"],
+            })
+        metrics = self.services.metrics if self.services else None
+        if metrics is not None:
+            metrics.record(ctx, {"steps": len(steps), "state": "completed"})
+        return output
+
+
+__all__ = ["ExecutionRuntime", "RuntimeServices"]

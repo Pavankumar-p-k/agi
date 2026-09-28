@@ -1,43 +1,28 @@
-"""
-Module: core.planner.__init__
-Planner subsystem re-exports.
-"""
+"""Planner package: decomposition, templates, state machine, execution."""
 from __future__ import annotations
+
 from typing import Any
-import logging
 
-logger = logging.getLogger(__name__)
-
-from core.planner.classifier import classify, extract_parameters
 from core.planner.decomposer import GoalDecomposer
-from core.planner.evidence import (
-    FailureEvidence,
-    PlannerEvidence,
-    ReplanEvidence,
-    StrategyComparisonEvidence,
-    VerificationEvidence,
-    EvidenceSource,
-)
-from core.planner.executor import PlannerExecutor, ExecutionResult, ExecutionMode
-from core.planner.health import PlannerHealth, PlannerHealthReport, PlannerAvailability
-from core.planner.outcomes import (
-    PlannerOutcome,
-    determine_outcome,
-)
-from core.planner.protocol import Plan, PlanStatus
-from core.planner.replan import (
-    ReplanDecision,
-    Replanner,
-    RevisedPlan,
-)
-from core.planner.state_machine import (
-    PlannerStateMachine,
-    PlannerStateName,
-)
-from core.planner.strategies import (
-    Strategy,
-    StrategyRegistry,
-    StrategyStatus,
-)
-from core.planner.models import ExecutionPlan, SubGoal
-from core.planner.templates import TEMPLATES, get_template, list_templates, match_required_tools
+from core.planner.executor import PlannerExecutor
+from core.planner.models import ExecutionPlan, PlannerTemplate, SubGoal
+
+__all__ = [
+    "GoalDecomposer", "PlannerExecutor", "ExecutionPlan",
+    "PlannerTemplate", "SubGoal",
+]
+
+
+def __getattr__(name: str) -> Any:
+    # Optional companions imported lazily so the core planner works even if
+    # these modules are absent (classifier/state_machine/templates).
+    if name == "classifier":
+        from core.planner import classifier
+        return classifier
+    if name in ("PlannerStateMachine", "State"):
+        from core.planner.state_machine import PlannerStateMachine, State
+        return PlannerStateMachine if name == "PlannerStateMachine" else State
+    if name in ("TEMPLATES", "get_template", "list_templates", "match_required_tools"):
+        from core.planner import templates
+        return getattr(templates, name)
+    raise AttributeError(f"module 'core.planner' has no attribute {name!r}")

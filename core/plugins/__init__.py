@@ -20,21 +20,7 @@ from core.plugins.base import Plugin, PluginManifest, PluginRegistry, plugin_reg
 from core.plugins.compatibility import CompatibilityChecker, CompatibilityMode, compatibility_checker
 from core.plugins.dependencies import DependencyResolver, dependency_resolver
 from core.plugins.errors import PluginConfigError, PluginDependencyError, PluginError, PluginHookError, PluginLoadError, PluginNetworkError
-try:
-    from brain.events import PluginEventBus
-except ImportError:
-    class PluginEventBus:
-        """Small fallback event bus used when the optional brain package is absent."""
-
-        def __init__(self) -> None:
-            self._handlers: dict[str, list[Any]] = {}
-
-        def subscribe(self, event: str, handler: Any) -> None:
-            self._handlers.setdefault(event, []).append(handler)
-
-        def emit(self, event: str, *args: Any, **kwargs: Any) -> None:
-            for handler in self._handlers.get(event, ()):
-                handler(*args, **kwargs)
+from brain.events import PluginEventBus
 from core.plugins.hot_reload import HotReloader
 from core.plugins.loader import PluginLoader, get_plugin_loader
 from core.plugins.manifest import PluginManifest as _PluginManifest

@@ -1,23 +1,19 @@
-"""Authorization result model."""
+"""AuthorizationResult — output of the authorization stage (frozen artifact)."""
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Optional
 
 
 @dataclass(frozen=True)
 class AuthorizationResult:
     allowed: bool = False
+    reason: Optional[str] = None
     scope: str = ""
-    reason: str | None = None
-    roles: frozenset[str] = frozenset()
-    permissions: frozenset[str] = frozenset()
-    metadata: dict[str, Any] = field(default_factory=dict)
+    roles: frozenset = frozenset()
+    permissions: frozenset = frozenset()
+    # Excluded from eq/hash so results stay hashable (dict not hashable).
+    metadata: dict = field(default_factory=dict, compare=False)
 
-    def __post_init__(self) -> None:
-        object.__setattr__(self, "roles", frozenset(self.roles or ()))
-        object.__setattr__(self, "permissions", frozenset(self.permissions or ()))
-        object.__setattr__(self, "metadata", dict(self.metadata or {}))
 
-    def __hash__(self) -> int:
-        return hash((self.allowed, self.scope, self.reason, tuple(sorted(self.roles)), tuple(sorted(self.permissions)), tuple(sorted(self.metadata.items()))))
+__all__ = ["AuthorizationResult"]

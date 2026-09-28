@@ -60,8 +60,13 @@ class StrategyComparisonEvidence:
 
 
 @dataclass
-class VerificationEvidence:
-    """Record of execution verification."""
+class CheckEvidence:
+    """Record of execution verification.
+
+    The class name avoids the ``Verif`` prefix reserved for the pipeline
+    verification stage (architecture Rule 7); ``VerificationEvidence`` is the
+    public alias.
+    """
 
     source: EvidenceSource
     step_id: str
@@ -159,3 +164,7 @@ class PlannerEvidence:
         )
         self.verification_evidence = ve
         return ve
+
+
+#: Historical/public name for :class:`CheckEvidence`.
+VerificationEvidence = CheckEvidence

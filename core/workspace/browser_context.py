@@ -1,57 +1,52 @@
-"""
-Module: core.workspace.browser_context
-Browser context awareness - detects open browser windows and tabs.
+"""BrowserContextAwareness — passive browser state detection.
+
+Read-only: detects whether a browser process is running and exposes a
+best-effort active state snapshot. Never drives the browser.
 """
 from __future__ import annotations
-from typing import Any
-from dataclasses import dataclass, field
-import logging
 
-logger = logging.getLogger(__name__)
+from dataclasses import dataclass, field
 
 
 @dataclass
-class BrowserTab:
-    title: str = ""
+class BrowserState:
+    has_browser: bool = False
     url: str = ""
-    index: int = 0
+    title: str = ""
+    tab_count: int = 0
+    browser_name: str = ""
+    metadata: dict = field(default_factory=dict)
 
 
 class BrowserContextAwareness:
+    """Detects running browsers via process inspection (no control)."""
+
+    BROWSER_PROCESSES = ("chrome", "msedge", "firefox", "brave", "opera")
+
     def __init__(self) -> None:
-        logger.info("BrowserContextAwareness initialized")
+        self._monitor = None
 
-    def detect_browsers(self) -> dict[str, list[dict[str, Any]]]:
-        try:
-            import pygetwindow as gw
-            browsers = {}
-            for w in gw.getAllWindows():
-                title = w.title.strip()
-                if not title:
-                    continue
-                lower = title.lower()
-                detected_name = None
-                for bname in ["chrome", "firefox", "edge", "brave", "opera", "vivaldi", "safari"]:
-                    if bname in lower:
-                        detected_name = bname
-                        break
-                if detected_name:
-                    browsers.setdefault(detected_name, []).append({
-                        "title": title,
-                        "left": w.left,
-                        "top": w.top,
-                        "width": w.width,
-                        "height": w.height,
-                        "isActive": w.isActive,
-                    })
-            return browsers
-        except Exception as e:
-            logger.error("detect_browsers failed: %s", e)
-            return {}
+    def _monitor_for(self):
+        if self._monitor is None:
+            from core.workspace.process_monitor import ProcessMonitor
+            self._monitor = ProcessMonitor()
+        return self._monitor
 
-    def snapshot(self) -> dict[str, Any]:
-        browsers = self.detect_browsers()
-        return {
-            "browsers": browsers,
-            "total_browser_windows": sum(len(v) for v in browsers.values()),
-        }
+    async def get_active_state(self) -> BrowserState:
+        monitor = self._monitor_for()
+        state = BrowserState()
+        for browser in self.BROWSER_PROCESSES:
+            procs = monitor.find_by_name(browser)
+            if procs:
+                state.has_browser = True
+                state.browser_name = browser
+                state.tab_count = len(procs)
+                break
+        return state
+
+    async def is_browser_active(self) -> bool:
+        state = await self.get_active_state()
+        return state.has_browser
+
+
+__all__ = ["BrowserContextAwareness", "BrowserState"]

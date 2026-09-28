@@ -1,78 +1,57 @@
-"""Identity model definitions compatible with the architecture tests."""
+"""Identity domain models."""
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any
+from typing import Any, Optional
 
 
 class AuthenticationState(str, Enum):
-    ANONYMOUS = "anonymous"
-    IDENTIFIED = "identified"
-    AUTHENTICATED = "authenticated"
-    SYSTEM = "system"
+    ANONYMOUS = "ANONYMOUS"
+    IDENTIFIED = "IDENTIFIED"
+    AUTHENTICATED = "AUTHENTICATED"
+    FAILED = "FAILED"
+    SYSTEM = "SYSTEM"
 
 
 @dataclass
 class UserIdentity:
-    id: str | None = None
-    username: str | None = None
-    email: str | None = None
-    roles: tuple[str, ...] = field(default_factory=tuple)
-    metadata: dict[str, Any] = field(default_factory=dict)
+    id: str = ""
+    username: str = ""
+    email: Optional[str] = None
+    roles: list[str] = field(default_factory=list)
 
-    def __post_init__(self) -> None:
-        if self.roles is None:
-            self.roles = ()
-        self.roles = tuple(self.roles)
-        self.metadata = dict(self.metadata or {})
+
+@dataclass
+class AgentIdentity:
+    id: str = ""
+    type: str = "agent"
+    version: str = ""
+    origin: str = ""
+    owner: Optional[str] = None
 
 
 @dataclass
 class SessionIdentity:
     id: str = ""
-    user_id: str = ""
-    token: str | None = None
-    expiry: float | None = None
-    metadata: dict[str, Any] = field(default_factory=dict)
-
-    def __post_init__(self) -> None:
-        self.metadata = dict(self.metadata or {})
+    user_id: Optional[str] = None
+    created_at: Optional[str] = None
 
 
 @dataclass
 class TenantIdentity:
     id: str = "default"
-    name: str = ""
+    organization_id: Optional[str] = None
+    workspace_id: Optional[str] = None
     metadata: dict[str, Any] = field(default_factory=dict)
-
-    def __post_init__(self) -> None:
-        self.metadata = dict(self.metadata or {})
-
-
-@dataclass
-class AgentIdentity:
-    id: str | None = None
-    type: str = "agent"
-    name: str | None = None
-    metadata: dict[str, Any] = field(default_factory=dict)
-
-    def __post_init__(self) -> None:
-        self.metadata = dict(self.metadata or {})
 
 
 @dataclass
 class IdentityContext:
-    user: UserIdentity | None = None
-    agent: AgentIdentity | None = None
-    session: SessionIdentity | None = None
-    tenant: TenantIdentity | None = None
+    """Full identity snapshot attached to a request."""
+    user: Optional[UserIdentity] = None
+    agent: Optional[AgentIdentity] = None
+    session: Optional[SessionIdentity] = None
+    tenant: Optional[TenantIdentity] = None
     authentication_state: AuthenticationState = AuthenticationState.ANONYMOUS
     metadata: dict[str, Any] = field(default_factory=dict)
-
-    def __post_init__(self) -> None:
-        self.metadata = dict(self.metadata or {})
-        if self.user is not None and self.user.id is None:
-            self.user.id = self.user.username or ""
-        if self.tenant is None:
-            self.tenant = TenantIdentity(id="default")

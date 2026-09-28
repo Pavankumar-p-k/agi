@@ -1,29 +1,29 @@
-"""
-Module: core.pipeline.stages.capability_selection
-Auto-reconstructed backend component.
-"""
-from __future__ import annotations
-from typing import Any, Callable, Optional
-from dataclasses import dataclass, field
-import logging
-
-logger = logging.getLogger(__name__)
-
-class DynamicMeta(type):
-    def __getattr__(cls, name: str) -> Any:
-        return name
+"""CapabilitySelectionStage — selects capabilities per plan step."""
+from core.pipeline.base import PipelineStage, StageOutcome, StageResult
+from core.pipeline.pipeline import PipelineContext
 
 
-def __getattr__(name: str) -> Any:
-    class DynamicStub(metaclass=DynamicMeta):
-        def __init__(self, *args, **kwargs):
-            pass
-        def __call__(self, *args, **kwargs):
-            return self
-        def __getattr__(self, item):
-            return DynamicStub()
-        async def __aenter__(self):
-            return self
-        async def __aexit__(self, exc_type, exc_val, exc_tb):
-            pass
-    return DynamicStub()
+class CapabilitySelectionStage(PipelineStage):
+    @property
+    def name(self) -> str:
+        return "capability_selection"
+
+    async def execute(self, context: PipelineContext) -> StageResult:
+        plan = context.plan
+        steps = plan.get("steps", []) if isinstance(plan, dict) else []
+        selection: dict = {}
+        for i, step in enumerate(steps or []):
+            intent = str((step or {}).get("intent", "respond"))
+            if any(k in intent for k in ("research", "search")):
+                selection[i] = [{"id": "research"}]
+            elif any(k in intent for k in ("code", "build", "write")):
+                selection[i] = [{"id": "coding"}]
+            elif "documentation" in intent or "doc" in intent:
+                selection[i] = [{"id": "documentation"}]
+            else:
+                selection[i] = [{"id": "chat"}]
+        context.selected_capabilities = selection
+        return StageResult(outcome=StageOutcome.CONTINUE, context=context)
+
+
+__all__ = ["CapabilitySelectionStage"]

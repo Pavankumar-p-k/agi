@@ -1,127 +1,153 @@
-"""Composition engine: goal → ordered capability plan with providers.
+"""CompositionEngine — composes capability graphs into replayable plans.
 
-Completed from the committed contract in tests/architecture/test_capability_gates.py
-(Gates 5, 8).  ``compose`` resolves the goal's capability subgraph through the
-existing CapabilityGraph, negotiates a provider per step via the
-CapabilityNegotiator (which consults the live provider router), and resolves
-permissions through the existing PermissionManager — composition never grants
-authority the permission layer does not allow.
+Gate 5: capabilities denied by the permission layer never reach
+negotiation — they produce blocked steps with no provider assigned.
 """
 from __future__ import annotations
 
-import logging
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any, Tuple
 
-from core.capability.graph import CapabilityGraph
-
-logger = logging.getLogger(__name__)
+from core.capability.graph import CapabilityGraph, capability_graph
+from core.capability.models import CapabilityNode
+from core.capability.negotiation import CapabilityNegotiator, capability_negotiator
+from core.permission.manager import permission_manager
+from core.permission.models import Decision
 
 
 @dataclass
 class CompositionStep:
-    capability_id: str = ""
-    provider_id: str = ""
-    permission: dict[str, Any] = field(default_factory=dict)
-    action: str = ""
-    params: dict[str, Any] = field(default_factory=dict)
-    score: float = 0.0
+    capability_id: str
+    capability_version: int
+    provider_id: str
+    provider_version: str
+    score: float
+    confidence: float
     reason: str = ""
+    permission: dict = field(default_factory=dict)
+    blocked: bool = False
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> dict:
         return {
             "capability_id": self.capability_id,
+            "capability_version": self.capability_version,
             "provider_id": self.provider_id,
-            "permission": self.permission,
-            "action": self.action,
-            "params": self.params,
+            "provider_version": self.provider_version,
             "score": self.score,
+            "confidence": self.confidence,
             "reason": self.reason,
+            "permission": dict(self.permission),
         }
 
 
 @dataclass
 class CompositionPlan:
-    goal: str = ""
-    steps: tuple[CompositionStep, ...] = ()
-    blocked: bool = False
+    goal: str
+    steps: Tuple[CompositionStep, ...] = ()
     subgraph_fingerprint: str = ""
     total_score: float = 0.0
     avg_confidence: float = 0.0
+    blocked: bool = False
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> dict:
         return {
             "goal": self.goal,
             "steps": [s.to_dict() for s in self.steps],
-            "blocked": self.blocked,
             "subgraph_fingerprint": self.subgraph_fingerprint,
             "total_score": self.total_score,
             "avg_confidence": self.avg_confidence,
+            "blocked": self.blocked,
         }
 
 
 class CompositionEngine:
-    """Builds multi-capability plans on top of graph + negotiator."""
+    """Composes a goal's capability subgraph into a provider plan.
 
-    def __init__(
-        self,
-        graph: Optional[CapabilityGraph] = None,
-        negotiator: Any = None,
-        registry: Any = None,
-    ) -> None:
-        self.graph = graph or CapabilityGraph()
-        self.negotiator = negotiator
+    Default-constructible: without arguments it wires the module-level
+    capability graph, negotiator and permission manager.
+    """
+
+    def __init__(self, graph: Any = None, negotiator: Any = None,
+                 registry: Any = None) -> None:
+        self.graph = graph if graph is not None else capability_graph
+        self.negotiator = negotiator if negotiator is not None else capability_negotiator
         self.registry = registry
 
-    def _get_negotiator(self) -> Any:
-        if self.negotiator is not None:
-            return self.negotiator
-        from core.capability.negotiation import capability_negotiator
-        return capability_negotiator
-
-    def compose(self, task: str) -> CompositionPlan:
-        subgraph = self.graph.resolve_goal(task)
-        steps: list[CompositionStep] = []
-        blocked = False
-        scores: list[float] = []
+    def compose(self, goal: str) -> CompositionPlan:
+        subgraph = self.graph.resolve_goal(goal)
+        steps: list = []
+        scores: list = []
+        confidences: list = []
+        any_denied = False
 
         for node in subgraph.nodes:
-            try:
-                from core.permission.manager import PermissionManager
-                result = PermissionManager().resolve(node.capability_id)
-                permission = result.to_dict() if hasattr(result, "to_dict") else {}
-                if getattr(result, "denied", False):
-                    blocked = True
-            except Exception as exc:
-                logger.debug("[composition] permission resolve failed for %s: %s",
-                             node.capability_id, exc)
-                permission = {}
+            node = self._as_node(node)
+            permission = permission_manager.resolve(node.capability_id).to_dict()
+            overall = permission.get("overall")
 
-            negotiation = self._get_negotiator().resolve(node)
-            provider_id = negotiation.chosen_provider_id
-            if getattr(permission, "get", lambda _k, d=None: None)("denied"):
-                provider_id = ""
+            if overall == Decision.DENY.value:
+                # Gate 5: denied capabilities stop before negotiation.
+                any_denied = True
+                steps.append(CompositionStep(
+                    capability_id=node.capability_id,
+                    capability_version=getattr(node, "version", 1),
+                    provider_id="",
+                    provider_version="",
+                    score=0.0,
+                    confidence=0.0,
+                    reason="denied by permission policy",
+                    permission=permission,
+                    blocked=True,
+                ))
+                continue
 
+            result = self.negotiator.resolve(node)
             steps.append(CompositionStep(
                 capability_id=node.capability_id,
-                provider_id=provider_id,
+                capability_version=getattr(node, "version", 1),
+                provider_id=result.chosen_provider_id,
+                provider_version=result.chosen_provider_version,
+                score=result.score,
+                confidence=result.confidence,
+                reason=result.reason,
                 permission=permission,
-                action="execute",
-                score=negotiation.score,
-                reason=negotiation.reason,
+                blocked=False,
             ))
-            scores.append(negotiation.score)
+            scores.append(result.score)
+            confidences.append(result.confidence)
 
-        total = round(sum(scores), 4)
-        avg_conf = round(total / len(scores), 4) if scores else 0.0
+        total = round(sum(scores), 3)
+        avg = round(sum(confidences) / len(confidences), 3) if confidences else 0.0
         return CompositionPlan(
-            goal=str(task or ""),
+            goal=goal,
             steps=tuple(steps),
-            blocked=blocked,
             subgraph_fingerprint=subgraph.fingerprint,
             total_score=total,
-            avg_confidence=avg_conf,
+            avg_confidence=avg,
+            blocked=any_denied,
+        )
+
+    @staticmethod
+    def _as_node(node: Any) -> CapabilityNode:
+        if isinstance(node, CapabilityNode):
+            return node
+        # Tolerate plain strings or dicts in the subgraph node list.
+        if isinstance(node, str):
+            return CapabilityNode(capability_id=node)
+        if isinstance(node, dict):
+            return CapabilityNode(
+                capability_id=node.get("capability_id", ""),
+                version=int(node.get("version", 1)),
+            )
+        return CapabilityNode(
+            capability_id=str(getattr(node, "capability_id", "")),
+            version=int(getattr(node, "version", 1)),
         )
 
 
+# Module-level default engine (tests import these singletons directly).
 composition_engine = CompositionEngine()
+
+
+__all__ = ["CompositionEngine", "CompositionPlan", "CompositionStep",
+           "composition_engine"]

@@ -408,10 +408,17 @@ class PermissionManager:
         return True
 
     def clear(self) -> None:
+        """Reset grants AND the audit log (used between test runs)."""
         with self._lock:
             self._grants.clear()
             with self._connect() as conn:
                 conn.execute("DELETE FROM permission_grants")
+                conn.execute("DELETE FROM permission_audit_log")
+                try:
+                    conn.execute(
+                        "DELETE FROM sqlite_sequence WHERE name = 'permission_audit_log'")
+                except Exception:  # noqa: BLE001 — sqlite_sequence may not exist
+                    pass
                 conn.commit()
 
 

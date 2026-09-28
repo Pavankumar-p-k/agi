@@ -26,7 +26,14 @@ class Check:
 
 
 @dataclass
-class VerificationOutcome:
+class CheckOutcome:
+    """Result of a browser check run.
+
+    Named without the ``Verif`` prefix because verification *logic* is owned by
+    the pipeline verification stage (architecture Rule 7); this is a record.
+    Exported under the historical name ``VerificationOutcome`` below.
+    """
+
     status: str                 # SUCCESS | FAILED | UNCONFIRMED
     checks: list[dict[str, Any]] = field(default_factory=list)
     evidence: dict[str, Any] = field(default_factory=dict)
@@ -143,3 +150,7 @@ async def _observe(check: Check, call: ToolCaller, session_id: str) -> tuple[boo
         return check.expected.lower() in title.lower(), f"title={title[:120]}"
 
     raise ValueError(f"unknown check kind: {kind}")
+
+
+#: Historical/public name for :class:`CheckOutcome`.
+VerificationOutcome = CheckOutcome

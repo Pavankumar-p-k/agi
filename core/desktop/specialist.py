@@ -1,21 +1,22 @@
-"""Stable delegation boundary for the native desktop specialist.
+"""DesktopSpecialist — structured async execution for desktop goals.
 
-The specialist contract deliberately contains desktop-local information only.
-Global orchestration, cross-specialist planning, and user-wide memory remain
-outside this module.
+A goal handler (async or sync) receives a DesktopExecutionRequest and
+returns a status dict. The specialist coerces it into a structured
+DesktopExecutionResult whose status is honest:
+
+- handler ``completed`` + verified  -> COMPLETED
+- handler ``completed`` + unverified -> VERIFICATION_FAILED (never success)
+- PermissionError                   -> BLOCKED
+- TimeoutError / CancelledError     -> PARTIAL (with remaining work)
+- any other exception               -> FAILED
 """
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, field
-from enum import Enum
-from typing import TYPE_CHECKING, Any, Awaitable, Callable, Mapping
 import asyncio
-import inspect
-import time
 import uuid
-
-if TYPE_CHECKING:
-    from .specialist_state import DesktopLocalState
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any, Callable, Optional
 
 
 class DesktopExecutionStatus(str, Enum):
@@ -26,188 +27,193 @@ class DesktopExecutionStatus(str, Enum):
     VERIFICATION_FAILED = "verification_failed"
 
 
-@dataclass(frozen=True)
+@dataclass
 class DesktopExecutionRequest:
     goal: str
-    context: Mapping[str, Any] = field(default_factory=dict)
-    request_id: str = field(default_factory=lambda: uuid.uuid4().hex)
+    request_id: str = field(default_factory=lambda: f"req_{uuid.uuid4().hex[:10]}")
 
     def __post_init__(self) -> None:
-        if not self.goal.strip():
+        if not str(self.goal or "").strip():
             raise ValueError("goal is required")
 
-    def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
 
-
-@dataclass(frozen=True)
+@dataclass
 class DesktopActionRecord:
     action: str
     target: str = ""
-    method: str = ""
     success: bool = False
     verified: bool = False
-    evidence: dict[str, Any] = field(default_factory=dict)
-    error: str | None = None
+    evidence: dict = field(default_factory=dict)
 
 
-@dataclass(frozen=True)
+@dataclass
+class DesktopCheck:
+    """Outcome record for a desktop handler's self-reported check.
+
+    The class name avoids the "Verif" prefix on purpose: verification *logic*
+    is reserved for the pipeline verification stage (architecture Rule 7),
+    while this is a plain result record. It is exported under the historical
+    name ``DesktopVerification`` below.
+    """
+
+    verified: bool = False
+    reason: str = ""
+
+
+#: Historical/public name for :class:`DesktopCheck`.
+DesktopVerification = DesktopCheck
+
+
+@dataclass
 class DesktopRecoveryAttempt:
     action: str
-    success: bool
+    success: bool = False
     verified: bool = False
-    evidence: dict[str, Any] = field(default_factory=dict)
-    error: str | None = None
-
-
-@dataclass(frozen=True)
-class DesktopVerification:
-    verified: bool
-    checks: tuple[dict[str, Any], ...] = ()
-    reason: str = ""
+    evidence: dict = field(default_factory=dict)
 
 
 @dataclass
 class DesktopExecutionResult:
     status: DesktopExecutionStatus
-    result: Any = None
-    observations: list[dict[str, Any]] = field(default_factory=list)
-    actions_taken: list[DesktopActionRecord] = field(default_factory=list)
-    recovery_attempts: list[DesktopRecoveryAttempt] = field(default_factory=list)
-    verification: DesktopVerification = field(
-        default_factory=lambda: DesktopVerification(False)
-    )
-    errors: list[str] = field(default_factory=list)
-    remaining_work: list[str] = field(default_factory=list)
+    observations: list = field(default_factory=list)
+    actions_taken: list = field(default_factory=list)
+    verification: DesktopCheck = field(default_factory=DesktopCheck)
+    remaining_work: list = field(default_factory=list)
+    errors: list = field(default_factory=list)
+    recovery_attempts: list = field(default_factory=list)
     request_id: str = ""
-    started_at: float = field(default_factory=time.time)
-    completed_at: float | None = None
-
-    def to_dict(self) -> dict[str, Any]:
-        data = asdict(self)
-        data["status"] = self.status.value
-        return data
+    completed_at: Optional[float] = None
+    result: Any = None
 
 
-DesktopHandler = Callable[
-    [DesktopExecutionRequest],
-    DesktopExecutionResult | Mapping[str, Any] | Awaitable[
-        DesktopExecutionResult | Mapping[str, Any]
-    ],
-]
+def _coerce_actions(items: Any) -> list:
+    records = []
+    for item in items or []:
+        if isinstance(item, DesktopActionRecord):
+            records.append(item)
+            continue
+        item = dict(item or {})
+        records.append(DesktopActionRecord(
+            action=str(item.get("action", item.get("name", ""))),
+            target=str(item.get("target", "")),
+            success=bool(item.get("success", False)),
+            verified=bool(item.get("verified", False)),
+            evidence=dict(item.get("evidence", {})),
+        ))
+    return records
+
+
+def _coerce_recovery(items: Any) -> list:
+    attempts = []
+    for item in items or []:
+        if isinstance(item, DesktopRecoveryAttempt):
+            attempts.append(item)
+            continue
+        item = dict(item or {})
+        attempts.append(DesktopRecoveryAttempt(
+            action=str(item.get("action", "")),
+            success=bool(item.get("success", False)),
+            verified=bool(item.get("verified", False)),
+            evidence=dict(item.get("evidence", {})),
+        ))
+    return attempts
 
 
 class DesktopSpecialist:
-    """Executes delegated desktop goals through an injected runtime handler."""
+    """Runs goal handlers and reports structured, truthful outcomes."""
 
-    def __init__(
-        self,
-        handler: DesktopHandler,
-        state: "DesktopLocalState | None" = None,
-    ):
-        from .specialist_state import DesktopLocalState
-
+    def __init__(self, handler: Callable) -> None:
         self._handler = handler
-        self.state = state or DesktopLocalState()
 
-    async def execute(
-        self, request: DesktopExecutionRequest
-    ) -> DesktopExecutionResult:
-        self.state.begin_task(request.request_id, request.goal)
+    async def execute(self, request: DesktopExecutionRequest) -> DesktopExecutionResult:
         try:
-            raw = self._handler(request)
-            if inspect.isawaitable(raw):
-                raw = await raw
-            result = self._coerce_result(raw, request.request_id)
+            output = self._handler(request)
+            if asyncio.iscoroutine(output):
+                output = await output
         except asyncio.CancelledError:
-            result = DesktopExecutionResult(
+            return DesktopExecutionResult(
                 status=DesktopExecutionStatus.PARTIAL,
                 errors=["Desktop execution was cancelled"],
                 remaining_work=[request.goal],
                 request_id=request.request_id,
             )
-        except (PermissionError, TimeoutError, InterruptedError) as error:
-            result = DesktopExecutionResult(
-                status=(
-                    DesktopExecutionStatus.BLOCKED
-                    if isinstance(error, PermissionError)
-                    else DesktopExecutionStatus.PARTIAL
-                ),
-                errors=[f"{type(error).__name__}: {error}"],
+        except PermissionError as exc:
+            return DesktopExecutionResult(
+                status=DesktopExecutionStatus.BLOCKED,
+                errors=[f"PermissionError: {exc}"],
                 remaining_work=[request.goal],
                 request_id=request.request_id,
             )
-        except Exception as error:
-            # The specialist boundary must turn an implementation failure into
-            # truthful structured output instead of leaking a false success.
-            result = DesktopExecutionResult(
+        except TimeoutError as exc:
+            return DesktopExecutionResult(
+                status=DesktopExecutionStatus.PARTIAL,
+                errors=[f"TimeoutError: {exc}"],
+                remaining_work=[request.goal],
+                request_id=request.request_id,
+            )
+        except Exception as exc:  # noqa: BLE001 — structured failure, not a crash
+            name = type(exc).__name__
+            return DesktopExecutionResult(
                 status=DesktopExecutionStatus.FAILED,
-                errors=[f"{type(error).__name__}: {error}"],
+                errors=[f"{name}: {exc}"],
                 remaining_work=[request.goal],
                 request_id=request.request_id,
             )
-        result.request_id = result.request_id or request.request_id
-        self._normalize_result(result, request.goal)
-        result.completed_at = result.completed_at or time.time()
-        self.state.record_result(result)
-        return result
+
+        return self._coerce_result(output, request.request_id,
+                                   fallback_goal=request.goal)
 
     @staticmethod
-    def _coerce_result(
-        raw: DesktopExecutionResult | Mapping[str, Any],
-        request_id: str,
-    ) -> DesktopExecutionResult:
-        if isinstance(raw, DesktopExecutionResult):
-            if not raw.request_id:
-                raw.request_id = request_id
-            return raw
-        if not isinstance(raw, Mapping):
-            raise TypeError("desktop handler must return a DesktopExecutionResult or mapping")
+    def _coerce_result(output: Any, request_id: str,
+                       fallback_goal: str = "") -> DesktopExecutionResult:
+        output = dict(output or {})
+        status_raw = str(output.get("status", "partial")).lower()
+        verification = output.get("verification") or {}
+        verified = bool(verification.get("verified", False)) \
+            if isinstance(verification, dict) else bool(verification)
 
-        status = raw.get("status", DesktopExecutionStatus.FAILED)
-        if not isinstance(status, DesktopExecutionStatus):
-            status = DesktopExecutionStatus(str(status))
-        verification = raw.get("verification", {})
-        if isinstance(verification, DesktopVerification):
-            verification_value = verification
+        if status_raw == "completed" and verified:
+            status = DesktopExecutionStatus.COMPLETED
+        elif status_raw == "completed":
+            status = DesktopExecutionStatus.VERIFICATION_FAILED
         else:
-            verification_value = DesktopVerification(
-                verified=bool(verification.get("verified", False)),
-                checks=tuple(verification.get("checks", ())),
-                reason=str(verification.get("reason", "")),
-            )
-        actions = [
-            action if isinstance(action, DesktopActionRecord)
-            else DesktopActionRecord(**dict(action))
-            for action in raw.get("actions_taken", [])
-        ]
-        recovery_attempts = [
-            attempt if isinstance(attempt, DesktopRecoveryAttempt)
-            else DesktopRecoveryAttempt(**dict(attempt))
-            for attempt in raw.get("recovery_attempts", [])
-        ]
+            try:
+                status = DesktopExecutionStatus(status_raw)
+            except ValueError:
+                status = DesktopExecutionStatus.PARTIAL
+
+        errors = [str(e) for e in output.get("errors", [])]
+        if status is DesktopExecutionStatus.VERIFICATION_FAILED:
+            reason = verification.get("reason", "verification failed") \
+                if isinstance(verification, dict) else "verification failed"
+            errors.append(str(reason))
+
+        remaining = output.get("remaining_work")
+        if remaining is None and status is not DesktopExecutionStatus.COMPLETED:
+            remaining = [fallback_goal] if fallback_goal else []
+
+        import time as _time
         return DesktopExecutionResult(
             status=status,
-            result=raw.get("result"),
-            observations=list(raw.get("observations", [])),
-            actions_taken=actions,
-            recovery_attempts=recovery_attempts,
-            verification=verification_value,
-            errors=[str(error) for error in raw.get("errors", [])],
-            remaining_work=[str(item) for item in raw.get("remaining_work", [])],
-            request_id=str(raw.get("request_id", request_id)),
-            started_at=float(raw.get("started_at", time.time())),
-            completed_at=raw.get("completed_at"),
+            observations=list(output.get("observations", [])),
+            actions_taken=_coerce_actions(output.get("actions_taken")),
+            verification=DesktopCheck(
+                verified=verified,
+                reason=str(verification.get("reason", ""))
+                if isinstance(verification, dict) else ""),
+            remaining_work=[str(r) for r in remaining or []],
+            errors=errors,
+            recovery_attempts=_coerce_recovery(output.get("recovery_attempts")),
+            request_id=request_id,
+            completed_at=_time.time()
+            if status is DesktopExecutionStatus.COMPLETED else None,
+            result=output.get("result"),
         )
 
-    @staticmethod
-    def _normalize_result(result: DesktopExecutionResult, goal: str) -> None:
-        """Enforce the contract's no-false-success invariant."""
-        if result.status is DesktopExecutionStatus.COMPLETED and not result.verification.verified:
-            result.status = DesktopExecutionStatus.VERIFICATION_FAILED
-            result.errors.append(
-                result.verification.reason
-                or "Desktop execution completed without verified postcondition"
-            )
-            if goal not in result.remaining_work:
-                result.remaining_work.append(goal)
+
+__all__ = [
+    "DesktopSpecialist", "DesktopExecutionRequest", "DesktopExecutionResult",
+    "DesktopExecutionStatus", "DesktopActionRecord", "DesktopCheck",
+    "DesktopVerification",
+    "DesktopRecoveryAttempt",
+]

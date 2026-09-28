@@ -1,31 +1,44 @@
-"""
-Module: core.agents.capabilities
-Auto-reconstructed backend component.
+"""CAPABILITIES — keyword routing table for all 15 agents.
+
+Maps agent_id -> keywords used by core.agents.router to pick the right
+specialist for a goal. Tool agents and adapter agents must not share
+keywords (routing ambiguity), which tests enforce.
 """
 from __future__ import annotations
-from typing import Any, Callable, Optional
-from dataclasses import dataclass, field
-import logging
 
-logger = logging.getLogger(__name__)
+# 6 tool agents (priority 10 — direct action on the local system)
+TOOL_AGENT_KEYWORDS: dict[str, list[str]] = {
+    "build": ["build", "compile", "apk", "package", "bundle", "artifact"],
+    "test": ["test", "unittest", "pytest", "run tests", "coverage"],
+    "email": ["email", "send mail", "inbox", "smtp", "mail"],
+    "research": ["research", "investigate", "explore topic", "search for information"],
+    "memory": ["remember", "recall", "memorize", "memory", "forget"],
+    "browser": ["browse", "open chrome", "screenshot", "tab", "url in browser"],
+}
 
-class DynamicMeta(type):
-    def __getattr__(cls, name: str) -> Any:
-        return name
+# 9 LLM specialist adapters (priority 50 — model-driven work)
+ADAPTER_AGENT_KEYWORDS: dict[str, list[str]] = {
+    "forge": ["codegen", "generate code", "write function", "implement function",
+              "code for", "refactor code", "write class"],
+    "nexus": ["compare", "versus", " vs ", "difference between", "evaluate options",
+              "trade-offs", "tradeoffs"],
+    "oracle": ["plan", "architecture", "design strategy", "roadmap",
+               "break down", "milestones"],
+    "phantom": ["scrape", "extract page", "extract text from url", "crawl",
+                "pull content", "website content"],
+    "cipher": ["security", "audit code", "vulnerability", "cve", "encrypt",
+               "threat model", "harden"],
+    "herald": ["draft", "newsletter", "announcement", "press release",
+               "write update", "compose message"],
+    "atlas": ["sql query", "database query", "select from", "schema",
+              "migrate database", "query the database"],
+    "scribe": ["documentation", "document the", "write docs", "readme",
+               "api reference", "changelog"],
+    "sentinel": ["diagnose", "debug error", "troubleshoot", "root cause",
+                 "log analysis", "why is it failing"],
+}
 
-CAPABILITIES = "CAPABILITIES"
+# Unified dict: all 15 agent ids.
+CAPABILITIES: dict[str, list[str]] = {**TOOL_AGENT_KEYWORDS, **ADAPTER_AGENT_KEYWORDS}
 
-
-def __getattr__(name: str) -> Any:
-    class DynamicStub(metaclass=DynamicMeta):
-        def __init__(self, *args, **kwargs):
-            pass
-        def __call__(self, *args, **kwargs):
-            return self
-        def __getattr__(self, item):
-            return DynamicStub()
-        async def __aenter__(self):
-            return self
-        async def __aexit__(self, exc_type, exc_val, exc_tb):
-            pass
-    return DynamicStub()
+__all__ = ["CAPABILITIES", "TOOL_AGENT_KEYWORDS", "ADAPTER_AGENT_KEYWORDS"]

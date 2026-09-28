@@ -1,19 +1,13 @@
-"""Workspace provider: desktop state inspection (snapshot/clipboard/processes).
+"""WorkspaceProvider — read-only workspace awareness as a provider.
 
-Completed from the committed contract in tests/unit/test_workspace_provider.py.
-
-Reuses the real desktop-state infrastructure:
-- ``core.workspace.desktop_state.DesktopState`` — window/process/screenshot
-  snapshot (no parallel implementation).
-- ``core.workspace.clipboard_manager.ClipboardManager`` — clipboard access.
-
-Read-only inspection only: this provider never mutates the desktop.  Actions
-that would change system state belong to the desktop specialist, not here.
+Gate 8: this provider is awareness-only. It never touches the desktop
+control layer — it composes the core.workspace observation modules
+instead, so awareness and control stay separate packages.
 """
 from __future__ import annotations
 
-import logging
-from typing import Any, Optional
+import asyncio
+from typing import Any
 
 from core.providers.base import (
     ExecutionProvider,
@@ -23,164 +17,133 @@ from core.providers.base import (
     ProviderHealthStatus,
 )
 
-logger = logging.getLogger(__name__)
-
-__all__ = ["WorkspaceProvider"]
-
-_TOOL_ACTIONS = {
-    "workspace_snapshot": "snapshot",
-}
-
 
 class WorkspaceProvider(ExecutionProvider):
-    """Read-only desktop-state inspection over the existing workspace stack."""
+    """Exposes workspace snapshot actions through the provider contract."""
 
     provider_id = "workspace"
-    name = "Workspace"
-    version = "1.0"
-    priority = 60
-    installed = True
-
-    def __init__(self) -> None:
-        super().__init__()
-        self._state: Any = None
-        self._clipboard: Any = None
-
-    # -- lifecycle ---------------------------------------------------------
+    name = "Workspace Awareness"
+    version = "1.0.0"
+    priority = 55
 
     def capabilities(self) -> ProviderCapabilities:
         return ProviderCapabilities(
-            capability_names=["workspace", "desktop_state", "clipboard"]
+            capability_names=["workspace", "desktop_state"],
+            version=self.version,
+            features=["snapshot", "processes", "clipboard", "windows"],
+            languages=[],
+            modalities=["workspace"],
         )
 
     async def health(self) -> ProviderHealth:
-        try:
-            from core.workspace.desktop_state import DesktopState
+        return ProviderHealth(status=ProviderHealthStatus.HEALTHY,
+                              detail="workspace awareness ready")
 
-            state = self._get_state()
-            snap = await state.snapshot()
-            status = (
-                ProviderHealthStatus.HEALTHY
-                if (snap.screen_width or snap.windows or snap.processes)
-                else ProviderHealthStatus.DEGRADED
-            )
-            return self._cache_health(
-                ProviderHealth(
-                    status=status,
-                    error=f"{len(snap.windows)} windows, {len(snap.processes)} processes",
-                )
-            )
-        except Exception as exc:
-            logger.debug("[workspace_provider] health probe failed: %s", exc)
-            return self._cache_health(
-                ProviderHealth(status=ProviderHealthStatus.DEGRADED, error=str(exc))
-            )
+    async def estimate_cost(self, task: dict) -> float:
+        return 0.0
 
-    def _get_state(self) -> Any:
-        if self._state is None:
-            from core.workspace.desktop_state import DesktopState
+    async def estimate_latency(self, task: dict) -> float:
+        return 10.0
 
-            self._state = DesktopState()
-        return self._state
-
-    def _get_clipboard(self) -> Any:
-        if self._clipboard is None:
-            from core.workspace.clipboard_manager import ClipboardManager
-
-            self._clipboard = ClipboardManager()
-        return self._clipboard
-
-    # -- execution -----------------------------------------------------------
-
-    async def execute(
-        self, task: dict[str, Any], context: Optional[dict[str, Any]] = None
-    ) -> ExecutionResult:
-        action = str((task or {}).get("action", "") or "")
-        try:
-            if action == "snapshot":
-                return await self._snapshot()
-            if action == "active_window":
-                return await self._active_window()
-            if action == "clipboard":
-                return self._clipboard_text()
-            if action == "processes":
-                return await self._processes()
-            if action == "system_stats":
-                return self._system_stats()
-            return ExecutionResult(
-                success=False, output="", error=f"unknown action: {action!r}"
-            )
-        except Exception as exc:
-            logger.debug("[workspace_provider] action %s failed: %s", action, exc)
-            return ExecutionResult(success=False, output="", error=str(exc))
-
-    async def handle_tool(self, tool_name: str, args: str) -> Optional[ExecutionResult]:
-        """Tool-broker entry point: route known workspace tools, else None."""
-        action = _TOOL_ACTIONS.get(tool_name)
+    async def handle_tool(self, tool: str, args: str):
+        """Tool-call entry point; None for tools this provider does not own."""
+        mapping = {
+            "workspace_snapshot": "snapshot",
+        }
+        action = mapping.get(str(tool))
         if action is None:
             return None
         return await self.execute({"action": action})
 
-    async def estimate_cost(self, task: dict[str, Any]) -> float:
-        return 0.0
+    async def execute(self, task: dict, context: Any = None) -> ExecutionResult:
+        task = dict(task or {})
+        action = str(task.get("action", "")).strip()
 
-    async def estimate_latency(self, task: dict[str, Any]) -> float:
-        return 10.0
+        if action == "snapshot":
+            return await self._snapshot()
+        if action == "active_window":
+            return self._active_window()
+        if action == "clipboard":
+            return self._clipboard()
+        if action == "processes":
+            return self._processes()
+        if action == "system_stats":
+            return self._system_stats()
+        return ExecutionResult(
+            success=False,
+            error=f"Unknown workspace action: {action!r}",
+            provider_id=self.provider_id,
+        )
 
-    # -- actions ---------------------------------------------------------------
-
+    # ── actions ──────────────────────────────────────────────────────
     async def _snapshot(self) -> ExecutionResult:
-        snap = await self._get_state().snapshot()
-        lines = ["Desktop Snapshot", "=" * 16]
-        if snap.active_window is not None:
-            aw = snap.active_window
-            lines.append(f"Active window: {aw.title}")
-        lines.append(f"Windows: {len(snap.windows)}")
-        lines.append(f"Screen: {snap.screen_width}x{snap.screen_height}")
-        lines.append(f"Mouse: ({snap.mouse_x}, {snap.mouse_y})")
-        return ExecutionResult(success=True, output="\n".join(lines))
+        from core.workspace.desktop_state import DesktopState
+        snap = await DesktopState().snapshot()
+        lines = [
+            "Desktop Snapshot",
+            f"active_window: {snap.active_window or 'unknown'}",
+            f"windows: {len(snap.windows)}",
+            f"browser: {snap.browser.get('browser_name') or 'none'} "
+            f"(tabs={snap.browser.get('tab_count', 0)})",
+            f"clipboard: {'set' if snap.clipboard_text else 'empty'}",
+            f"processes: {len(snap.processes)}",
+        ]
+        stats = snap.system_stats or {}
+        if stats.get("available"):
+            lines.append(f"cpu: {stats.get('cpu_percent')}%  "
+                         f"ram: {stats.get('ram_percent')}%")
+        return ExecutionResult(success=True, output="\n".join(lines),
+                               provider_id=self.provider_id,
+                               metadata={"snapshot": snap.__dict__})
 
-    async def _active_window(self) -> ExecutionResult:
-        snap = await self._get_state().snapshot()
-        if snap.active_window is not None:
-            aw = snap.active_window
+    def _active_window(self) -> ExecutionResult:
+        from core.workspace.window_detector import WindowDetector
+        window = WindowDetector().get_active_window()
+        if window is None:
+            return ExecutionResult(success=True, output="no active window",
+                                   exit_code=1, provider_id=self.provider_id)
+        return ExecutionResult(
+            success=True, output=str(getattr(window, "title", "")),
+            exit_code=0, provider_id=self.provider_id)
+
+    def _clipboard(self) -> ExecutionResult:
+        from core.workspace.clipboard_manager import ClipboardManager
+        manager = ClipboardManager()
+        if not manager.is_available():
             return ExecutionResult(
-                success=True,
-                output=aw.title,
-                exit_code=0,
-                artifacts={
-                    "title": aw.title,
-                    "left": aw.left,
-                    "top": aw.top,
-                    "width": aw.width,
-                    "height": aw.height,
-                },
-            )
-        # No active window is a legitimate observation, not an error.
-        return ExecutionResult(success=True, output="", exit_code=1)
+                success=True, output="clipboard unavailable",
+                provider_id=self.provider_id)
+        text = manager.get_text()
+        return ExecutionResult(success=True,
+                               output=text[:2000] or "(empty)",
+                               provider_id=self.provider_id)
 
-    def _clipboard_text(self) -> ExecutionResult:
-        text = self._get_clipboard().get_text()
-        return ExecutionResult(success=True, output=str(text or ""))
-
-    async def _processes(self) -> ExecutionResult:
-        snap = await self._get_state().snapshot()
-        lines = ["Processes", "=" * 9]
-        for proc in snap.processes:
-            lines.append(f"{proc.pid:>8}  {proc.name}  [{proc.status}]")
-        return ExecutionResult(success=True, output="\n".join(lines))
+    def _processes(self) -> ExecutionResult:
+        from core.workspace.process_monitor import ProcessMonitor
+        procs = ProcessMonitor().list_processes()
+        names = [p.get("name", "") for p in procs[:50]]
+        return ExecutionResult(
+            success=True,
+            output=f"Processes ({len(procs)}): " + ", ".join(n for n in names if n),
+            provider_id=self.provider_id)
 
     def _system_stats(self) -> ExecutionResult:
-        import psutil
+        from core.workspace.process_monitor import ProcessMonitor
+        stats = ProcessMonitor().get_system_stats()
+        if not stats.get("available"):
+            return ExecutionResult(
+                success=True, output="System Stats: unavailable",
+                provider_id=self.provider_id)
+        return ExecutionResult(
+            success=True,
+            output=(f"System Stats: CPU {stats.get('cpu_percent')}% | "
+                    f"RAM {stats.get('ram_percent')}% "
+                    f"({stats.get('ram_used_gb')}GB/"
+                    f"{stats.get('ram_total_gb')}GB)"),
+            provider_id=self.provider_id)
 
-        cpu = psutil.cpu_percent(interval=None)
-        mem = psutil.virtual_memory()
-        disk = psutil.disk_usage("C:\\" if psutil.WINDOWS else "/")
-        lines = [
-            "System Stats",
-            "=" * 12,
-            f"CPU: {cpu:.1f}%",
-            f"Memory: {mem.percent:.1f}% used ({mem.available // (1024**2)} MB free)",
-            f"Disk: {disk.percent:.1f}% used",
-        ]
-        return ExecutionResult(success=True, output="\n".join(lines))
+
+workspace_provider = WorkspaceProvider()
+
+
+__all__ = ["WorkspaceProvider", "workspace_provider"]

@@ -1,118 +1,102 @@
-"""Integrated native application capability profiles."""
+"""CapabilityCatalog — per-application capability profiles.
+
+Combines the ApplicationRegistry with the AdapterRegistry into profiles
+of what actions are genuinely supported per application, persisted to
+data/desktop_capabilities.json.
+"""
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, field
-from typing import Any
 import json
-import os
+import threading
+from dataclasses import dataclass, field
 from pathlib import Path
-
-from core.desktop.adapters import AdapterRegistry
-from core.desktop.applications import ApplicationRegistry, ApplicationRecord
-from core.desktop.task_packs import TaskPack
-
-
-CAPABILITY_ACTIONS = (
-    "open", "reveal", "invoke", "read", "write", "clear",
-    "list", "find", "is_running", "focus", "minimize", "maximize",
-)
+from typing import Optional
 
 
 @dataclass
 class CapabilityProfile:
     application: str
-    installed: bool
-    version: str = ""
-    adapter: str | None = None
-    supported_actions: list[str] = field(default_factory=list)
-    safe_task_packs: list[str] = field(default_factory=list)
-    approved: bool = False
+    adapter: str = ""
+    supported_actions: list = field(default_factory=list)
+    safe_task_packs: list = field(default_factory=list)
 
-    def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
+    def to_dict(self) -> dict:
+        return {
+            "application": self.application,
+            "adapter": self.adapter,
+            "supported_actions": list(self.supported_actions),
+            "safe_task_packs": list(self.safe_task_packs),
+        }
 
 
 class CapabilityCatalog:
-    def __init__(
-        self,
-        applications: ApplicationRegistry,
-        adapters: AdapterRegistry,
-        path: str | Path,
-    ):
-        self.applications = applications
-        self.adapters = adapters
-        self.path = Path(path)
-        self.profiles: dict[str, CapabilityProfile] = {}
-        self._load()
+    """Refreshable catalog of application capability profiles."""
 
-    def refresh(self, packs: list[TaskPack] | None = None) -> list[CapabilityProfile]:
-        pack_map: dict[str, list[str]] = {}
-        for pack in packs or []:
-            pack.validate()
-            pack_map.setdefault(pack.application.casefold(), []).append(pack.pack_id)
-        profiles = []
-        for record in self.applications.list():
-            adapter = self.adapters.get(record.name)
-            actions = []
-            if adapter:
-                for action in CAPABILITY_ACTIONS:
-                    if adapter.supports(action):
-                        actions.append(action)
-            profile = CapabilityProfile(
-                application=record.name,
-                installed=True,
-                version=record.version,
-                adapter=adapter.application if adapter else None,
-                supported_actions=actions,
-                safe_task_packs=pack_map.get(record.name.casefold(), []),
-                approved=record.approved,
-            )
-            self.profiles[record.name.casefold()] = profile
-            profiles.append(profile)
-        # A registered adapter is itself an explicit capability boundary, even
-        # when Windows does not expose the corresponding shell component in the
-        # uninstall registry.
-        for application in self.adapters.applications():
-            adapter = self.adapters.get(application)
-            actions = [
-                action for action in CAPABILITY_ACTIONS
-                if adapter is not None and adapter.supports(action)
-            ]
-            existing = self.profiles.get(application)
-            profile = CapabilityProfile(
-                application=application,
-                installed=True,
-                version=existing.version if existing else "",
-                adapter=application,
-                supported_actions=actions,
-                safe_task_packs=pack_map.get(application, []),
-                approved=existing.approved if existing else False,
-            )
-            self.profiles[application] = profile
-            profiles.append(profile)
-        self._save()
-        return self.list()
+    def __init__(self, application_registry, adapter_registry,
+                 store_path: Optional[Path] = None) -> None:
+        self._apps = application_registry
+        self._adapters = adapter_registry
+        self._store_path = Path(store_path) if store_path else None
+        self._profiles: dict[str, CapabilityProfile] = {}
+        self._lock = threading.Lock()
+        self.refresh()
 
-    def get(self, application: str) -> CapabilityProfile | None:
-        return self.profiles.get(application.casefold())
+    def refresh(self) -> None:
+        """Rebuild profiles from the persisted store + live registries."""
+        with self._lock:
+            self._profiles.clear()
+            if self._store_path and self._store_path.exists():
+                try:
+                    data = json.loads(
+                        self._store_path.read_text(encoding="utf-8"))
+                    for item in data.get("profiles", []):
+                        profile = CapabilityProfile(
+                            application=str(item.get("application", "")),
+                            adapter=str(item.get("adapter", "")),
+                            supported_actions=list(item.get("supported_actions", [])),
+                            safe_task_packs=list(item.get("safe_task_packs", [])),
+                        )
+                        if profile.application:
+                            self._profiles[profile.application.lower()] = profile
+                except Exception:  # noqa: BLE001
+                    pass
 
-    def list(self, query: str | None = None) -> list[CapabilityProfile]:
-        profiles = list(self.profiles.values())
+            # Merge adapter-declared capabilities for registered apps.
+            try:
+                for app in self._apps.list():
+                    for adapter_name in self._adapters.applications():
+                        actions = self._actions_for(adapter_name)
+                        if actions and self._adapters.supports(adapter_name, actions[0]):
+                            key = app.name.lower()
+                            profile = self._profiles.setdefault(
+                                key, CapabilityProfile(application=app.name))
+                            if not profile.adapter:
+                                profile.adapter = adapter_name
+                            for action in actions:
+                                if action not in profile.supported_actions:
+                                    profile.supported_actions.append(action)
+            except Exception:  # noqa: BLE001
+                pass
+
+    @staticmethod
+    def _actions_for(adapter_name: str) -> list:
+        # Mirror of the adapter declarations in core.desktop.adapters.
+        known = {
+            "explorer": ["reveal", "open", "list"],
+            "text_editor": ["open", "edit", "type"],
+            "process_inspection": ["list", "inspect", "running"],
+            "clipboard": ["get", "set"],
+            "window_management": ["focus", "close", "minimize",
+                                  "maximize", "list"],
+        }
+        return known.get(adapter_name, [])
+
+    def list(self, query: Optional[str] = None) -> list:
+        profiles = list(self._profiles.values())
         if query:
-            profiles = [p for p in profiles if query.casefold() in p.application.casefold()]
-        return sorted(profiles, key=lambda item: item.application.casefold())
+            q = str(query).lower()
+            profiles = [p for p in profiles if q in p.application.lower()]
+        return sorted(profiles, key=lambda p: p.application.lower())
 
-    def _save(self) -> None:
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        temp = self.path.with_suffix(".tmp")
-        temp.write_text(json.dumps({k: v.to_dict() for k, v in self.profiles.items()}, indent=2), encoding="utf-8")
-        os.replace(temp, self.path)
 
-    def _load(self) -> None:
-        if not self.path.exists():
-            return
-        try:
-            data = json.loads(self.path.read_text(encoding="utf-8"))
-            self.profiles = {key: CapabilityProfile(**value) for key, value in data.items()}
-        except (OSError, json.JSONDecodeError, TypeError, ValueError):
-            self.profiles = {}
+__all__ = ["CapabilityCatalog", "CapabilityProfile"]

@@ -1,108 +1,81 @@
-"""
-Module: core.capability.models
-Capability domain model with built-in capability registry.
-"""
+"""Capability domain models (capability-addressed execution layer)."""
 from __future__ import annotations
-from typing import Any
-from dataclasses import dataclass, field
-import uuid
-import logging
 
-logger = logging.getLogger(__name__)
+from dataclasses import dataclass, field
+from typing import Tuple
+
+from core.permission.models import ALL_PERMISSIONS
 
 
 @dataclass
 class Capability:
-    id: str = field(default_factory=lambda: str(uuid.uuid4()))
-    name: str = ""
+    """A capability: what the system can do, addressed by id + version."""
+    id: str
+    version: int = 1
     description: str = ""
-    version: Any = 1
-    tags: tuple[str, ...] = ()
-    permissions: tuple[str, ...] = ()
-    required_permissions: list[str] = field(default_factory=list)
-    metadata: dict[str, Any] = field(default_factory=dict)
-
-    def to_dict(self) -> dict[str, Any]:
-        return {
-            "id": self.id,
-            "name": self.name,
-            "description": self.description,
-            "version": self.version,
-            "tags": list(self.tags),
-            "permissions": self.permissions,
-            "required_permissions": self.required_permissions,
-            "metadata": self.metadata,
-        }
-
-    def __eq__(self, other: Any) -> bool:
-        if not isinstance(other, Capability):
-            return NotImplemented
-        return self.id == other.id
-
-    def __hash__(self) -> int:
-        return hash(self.id)
+    tags: Tuple[str, ...] = ()
+    permissions: Tuple[str, ...] = ()
+    metadata: dict = field(default_factory=dict)
 
 
-_BUILTIN_CAPABILITIES: dict[str, Capability] = {
-    "desktop": Capability(
-        id="desktop",
-        name="Desktop Control",
-        description="Desktop automation: mouse, keyboard, screen, window management",
-        permissions=(
-            "desktop.mouse.move",
-            "desktop.mouse.click",
-            "desktop.mouse.double_click",
-            "desktop.mouse.drag",
-            "desktop.keyboard.type",
-            "desktop.keyboard.hotkey",
-            "desktop.screen.capture",
-            "desktop.screen.record",
-            "desktop.window.read",
-            "desktop.window.move",
-            "desktop.replay.record",
-            "desktop.replay.execute",
-        ),
-    ),
-    "filesystem": Capability(
-        id="filesystem",
-        name="Filesystem",
-        description="File system read/write operations",
-        permissions=("filesystem.read", "filesystem.write", "filesystem.delete"),
-    ),
-    "network": Capability(
-        id="network",
-        name="Network",
-        description="Network access",
-        permissions=("network.http", "network.smtp", "network.websocket"),
-    ),
-    "browser": Capability(
-        id="browser",
-        name="Browser",
-        description="Browser automation",
-        permissions=("browser.tabs.read", "browser.tabs.control"),
-    ),
-    "coding": Capability(
-        id="coding",
-        name="Coding",
-        description="Code editing and execution",
-        permissions=("filesystem.read", "filesystem.write"),
-    ),
-    "system": Capability(
-        id="system",
-        name="System",
-        description="System-level operations",
-        permissions=("system.environment", "system.shell"),
-    ),
-    "process": Capability(
-        id="process",
-        name="Process",
-        description="Process management",
-        permissions=("process.list", "process.control"),
-    ),
-    "clipboard": Capability(
-        id="clipboard",
-        name="Clipboard",
-        description="Clipboard access",
-        permissions=("clipboard.read", "clipboard.write"),
-    ),
+def _cap(cid: str, description: str, permissions: Tuple[str, ...] = (),
+         tags: Tuple[str, ...] = ()) -> Capability:
+    # Only declare permissions that the permission model knows about.
+    safe = tuple(p for p in permissions if p in ALL_PERMISSIONS)
+    return Capability(id=cid, description=description,
+                      permissions=safe, tags=tags)
+
+
+# Built-in capabilities every deployment exposes, keyed by capability id.
+_BUILTIN_CAPABILITIES: dict = {
+    "chat": _cap("chat", "Conversational interaction with the user"),
+    "coding": _cap("coding", "Read, write and refactor code in the workspace",
+                   ("filesystem.read", "filesystem.write"),
+                   ("code", "filesystem")),
+    "research": _cap("research", "Search and gather information from the web",
+                     ("network.http",), ("web", "network")),
+    "testing": _cap("testing", "Run and report on test suites",
+                    ("filesystem.read",), ("test",)),
+    "deployment": _cap("deployment", "Build, release and deploy artifacts",
+                       ("system.shell",), ("deploy", "shell")),
+    "documentation": _cap("documentation", "Generate and maintain documentation",
+                          ("filesystem.read",), ("docs",)),
+    "review": _cap("review", "Review code and provide findings",
+                   ("filesystem.read",), ("review",)),
+    "security": _cap("security", "Security analysis and hardening",
+                     ("filesystem.read",), ("security",)),
+    "desktop": _cap("desktop", "Control the desktop: mouse, keyboard, screen, windows",
+                    ("desktop.mouse.move", "desktop.mouse.click",
+                     "desktop.keyboard.type", "desktop.screen.capture",
+                     "desktop.window.focus"),
+                    ("desktop", "gui")),
+    "browser": _cap("browser", "Automated web browsing and interaction",
+                    ("network.http",), ("browser", "web")),
 }
+
+# Convenience: builtin capability ids in declaration order.
+BUILTIN_CAPABILITY_IDS: Tuple[str, ...] = tuple(_BUILTIN_CAPABILITIES.keys())
+
+
+@dataclass
+class CapabilityNode:
+    """A node in the capability graph referencing a capability."""
+    capability_id: str
+    version: int = 1
+    metadata: dict = field(default_factory=dict)
+
+
+@dataclass
+class Subgraph:
+    """Resolved goal -> nodes + deterministic fingerprint."""
+    nodes: list = field(default_factory=list)
+    fingerprint: str = ""
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, Subgraph):
+            return self.fingerprint == other.fingerprint
+        return NotImplemented
+
+
+__all__ = ["Capability", "CapabilityNode", "Subgraph",
+           "_BUILTIN_CAPABILITIES", "BUILTIN_CAPABILITY_IDS"]

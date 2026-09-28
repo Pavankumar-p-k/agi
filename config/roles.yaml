@@ -1,0 +1,27 @@
+# Role → scope grants loaded by core.authz.loader.PolicyLoader.
+# Wildcards: tools:execute:* / :all / :admin cover the whole namespace.
+admin:
+  - "*"
+
+operator:
+  - tools:execute:all
+  - files:read
+  - memory:read
+  - memory:write
+
+developer:
+  - tools:execute:medium
+  - files:read
+  - files:write
+  - memory:read
+  - memory:write
+
+analyst:
+  - memory:read
+  - tools:execute:low
+
+user:
+  - chat.execute
+
+viewer: []
+guest: []

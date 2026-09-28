@@ -1,53 +1,54 @@
+"""Activity models — immutable-by-convention activity graph nodes/edges."""
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime
 from enum import Enum
-from typing import Any
-import uuid
+from typing import Any, Optional
 
 
 class ActivityStatus(str, Enum):
-    PENDING = "PENDING"
-    RUNNING = "RUNNING"
-    SUSPENDED = "SUSPENDED"
-    COMPLETED = "COMPLETED"
-    FAILED = "FAILED"
-    CANCELLED = "CANCELLED"
+    PENDING = "pending"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
 
 
 @dataclass
 class ActivityNode:
-    node_id: str = field(default_factory=lambda: uuid.uuid4().hex)
+    node_id: str
     activity_id: str = ""
     node_type: str = "goal"
     label: str = ""
-    depth: int = 0
     status: ActivityStatus = ActivityStatus.PENDING
-    parent_id: str | None = None
-    agent_id: str | None = None
-    workflow_id: str | None = None
-    origin_node_id: str | None = None
-    input: dict[str, Any] = field(default_factory=dict)
-    output: Any = None
-    artifacts: dict[str, Any] = field(default_factory=dict)
-    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-    started_at: datetime | None = None
-    completed_at: datetime | None = None
+    parent_id: Optional[str] = None
+    resource_scope: dict = field(default_factory=dict)
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    metadata: dict = field(default_factory=dict)
 
-    @property
-    def activity_id(self) -> str:
-        return self._activity_id if hasattr(self, "_activity_id") else self.node_id
-
-    @activity_id.setter
-    def activity_id(self, value: str) -> None:
-        self._activity_id = value
+    def to_dict(self) -> dict:
+        return {
+            "node_id": self.node_id,
+            "activity_id": self.activity_id,
+            "node_type": self.node_type,
+            "label": self.label,
+            "status": self.status.value,
+            "parent_id": self.parent_id,
+            "resource_scope": dict(self.resource_scope),
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
 
 
 @dataclass
 class ActivityEdge:
-    edge_id: str = field(default_factory=lambda: uuid.uuid4().hex)
-    from_node_id: str = ""
-    to_node_id: str = ""
-    edge_type: str = "depends_on"
-    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    src: str
+    dst: str
+    relation: str = "follows"
+
+    def to_dict(self) -> dict:
+        return {"src": self.src, "dst": self.dst, "relation": self.relation}
+
+
+__all__ = ["ActivityNode", "ActivityEdge", "ActivityStatus"]

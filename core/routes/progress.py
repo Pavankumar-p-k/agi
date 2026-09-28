@@ -1,61 +1,68 @@
-"""Progress contracts for native desktop activity reporting."""
+"""DesktopProgressReporter — structured progress events to a sink.
+
+The desktop agent loop emits one event per step into
+logs/desktop_progress.jsonl (or any callable sink) so progress can be
+observed externally while a task runs.
+"""
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, field
-from typing import Any, Callable
 import time
+from dataclasses import dataclass, field
+from typing import Any, Callable, Optional
 
 
-@dataclass(frozen=True)
+@dataclass
 class ProgressEvent:
     activity_id: str
     status: str
     progress: float
     message: str = ""
-    metadata: dict[str, Any] = field(default_factory=dict)
+    metadata: dict = field(default_factory=dict)
     timestamp: float = field(default_factory=time.time)
 
     def __post_init__(self) -> None:
         if not self.activity_id:
             raise ValueError("activity_id is required")
-        if not 0.0 <= self.progress <= 1.0:
-            raise ValueError("progress must be between 0 and 1")
         if not self.status:
             raise ValueError("status is required")
 
-    def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
+    def to_dict(self) -> dict:
+        return {
+            "activity_id": self.activity_id,
+            "status": self.status,
+            "progress": self.progress,
+            "message": self.message,
+            "metadata": dict(self.metadata),
+            "timestamp": self.timestamp,
+        }
 
 
 class DesktopProgressReporter:
-    """Publishes progress to an injected callback; no network is required."""
+    """Writes progress events through a sink callable and keeps the latest."""
 
-    def __init__(self, callback: Callable[[dict[str, Any]], Any] | None = None):
-        self.callback = callback
-        self.history: list[ProgressEvent] = []
+    def __init__(self, sink: Optional[Callable[[dict], Any]] = None) -> None:
+        self._sink = sink
+        self._latest: dict[str, ProgressEvent] = {}
 
-    def report(
-        self,
-        activity_id: str,
-        status: str,
-        progress: float,
-        message: str = "",
-        metadata: dict[str, Any] | None = None,
-    ) -> ProgressEvent:
+    def report(self, activity_id: str, status: str, progress: float,
+               message: str = "", metadata: Optional[dict] = None) -> ProgressEvent:
         event = ProgressEvent(
-            activity_id=activity_id,
-            status=status,
+            activity_id=str(activity_id),
+            status=str(status),
             progress=max(0.0, min(1.0, float(progress))),
-            message=message,
+            message=str(message),
             metadata=dict(metadata or {}),
         )
-        self.history.append(event)
-        if self.callback is not None:
-            self.callback(event.to_dict())
+        self._latest[event.activity_id] = event
+        if self._sink is not None:
+            try:
+                self._sink(event.to_dict())
+            except Exception:  # noqa: BLE001 — progress must never break the task
+                pass
         return event
 
-    def latest(self, activity_id: str) -> ProgressEvent | None:
-        for event in reversed(self.history):
-            if event.activity_id == activity_id:
-                return event
-        return None
+    def latest(self, activity_id: str) -> Optional[ProgressEvent]:
+        return self._latest.get(str(activity_id))
+
+
+__all__ = ["DesktopProgressReporter", "ProgressEvent"]

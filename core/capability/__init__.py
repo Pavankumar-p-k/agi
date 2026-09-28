@@ -1,85 +1,37 @@
-"""
-Module: core.capability.__init__
-Capability subsystem re-exports.
-"""
-from __future__ import annotations
-from typing import Any
-import logging
-
-logger = logging.getLogger(__name__)
-
-from core.capability.registry import (
-    CapabilityRegistry,
-    ToolRegistry,
-    capability_registry,
-    async_capability_registry,
-    new_capability_registry,
-    get_capability,
-    get_tool,
+"""Capability — capability-addressed execution layer."""
+from core.capability.models import (
+    Capability,
+    CapabilityNode,
+    Subgraph,
+    _BUILTIN_CAPABILITIES,
+    BUILTIN_CAPABILITY_IDS,
 )
-from tools.base_tool import (
-    CapabilityDefinition,
-    CapabilityHealth,
-    CapabilityStatus,
-    CapabilityType,
-    ReliabilityMetrics,
-    RiskTier,
-    ToolDefinition,
-    ToolResult,
-    VerificationSpec,
+from core.capability.registry import CapabilityRegistry, capability_registry
+from core.capability.graph import CapabilityGraph, capability_graph
+from core.capability.negotiation import (
+    CandidateScore,
+    CapabilityNegotiator,
+    NegotiationResult,
+    capability_negotiator,
 )
-from core.capability.discovery import CapabilityDiscoveryService
-from core.capability.selection import CapabilitySelector, CapabilityRecommendation, CapabilityGap
-from core.capability.acquisition import (
-    CapabilityAcquisitionPipeline,
-    AcquisitionCandidate,
-    QuarantineAudit,
-    TrustTier,
-    AcquisitionStage,
+from core.capability.composition import (
+    CompositionEngine,
+    CompositionPlan,
+    CompositionStep,
+    composition_engine,
 )
-from core.capability.experience import CapabilityExperienceStore, CapabilityExperienceEntry
-from core.capability.capability_ai import CapabilityAI
-
-# Compatibility stubs for legacy models
-from core.capability.models import Capability, _BUILTIN_CAPABILITIES
-from core.capability.graph import CapabilityGraph, CapabilityNode, capability_graph
-from core.capability.negotiation import CapabilityNegotiator, NegotiationResult, capability_negotiator
-from core.capability.composition import CompositionEngine, CompositionPlan, CompositionStep, composition_engine
 
 __all__ = [
-    "CapabilityRegistry",
-    "ToolRegistry",
-    "capability_registry",
-    "async_capability_registry",
-    "new_capability_registry",
-    "get_capability",
-    "get_tool",
-    "CapabilityDefinition",
-    "CapabilityHealth",
-    "CapabilityStatus",
-    "CapabilityType",
-    "ReliabilityMetrics",
-    "RiskTier",
-    "ToolDefinition",
-    "ToolResult",
-    "VerificationSpec",
-    "CapabilityDiscoveryService",
-    "CapabilitySelector",
-    "CapabilityRecommendation",
-    "CapabilityGap",
-    "CapabilityAcquisitionPipeline",
-    "AcquisitionCandidate",
-    "QuarantineAudit",
-    "TrustTier",
-    "AcquisitionStage",
-    "CapabilityExperienceStore",
-    "CapabilityExperienceEntry",
-    "CapabilityAI",
     "Capability",
-    "_BUILTIN_CAPABILITIES",
-    "CapabilityGraph",
     "CapabilityNode",
+    "Subgraph",
+    "_BUILTIN_CAPABILITIES",
+    "BUILTIN_CAPABILITY_IDS",
+    "CapabilityRegistry",
+    "capability_registry",
+    "CapabilityGraph",
     "capability_graph",
+    "CandidateScore",
     "CapabilityNegotiator",
     "NegotiationResult",
     "capability_negotiator",
@@ -87,4 +39,37 @@ __all__ = [
     "CompositionPlan",
     "CompositionStep",
     "composition_engine",
+    "CapabilityAI",
+    "CapabilityGap",
+    "CapabilityHealth",
+    "CapabilityRegistry",
+    "CapabilityStatus",
+    "CapabilityType",
+    "RiskTier",
+    "TrustTier",
+    "AcquisitionCandidate",
+    "AcquisitionStage",
+    "new_capability_registry",
 ]
+
+
+def __getattr__(name: str):
+    # Lazy imports keep the pipeline-light modules import-cheap.
+    lazy = {
+        "CapabilityAI": ("core.capability.capability_ai", "CapabilityAI"),
+        "CapabilityGap": ("core.capability.capability_ai", "CapabilityGap"),
+        "CapabilityHealth": ("tools.base_tool", "CapabilityHealth"),
+        "CapabilityStatus": ("tools.base_tool", "CapabilityStatus"),
+        "CapabilityType": ("tools.base_tool", "CapabilityType"),
+        "RiskTier": ("tools.base_tool", "RiskTier"),
+        "TrustTier": ("core.capability.capability_ai", "TrustTier"),
+        "AcquisitionCandidate": ("core.capability.capability_ai", "AcquisitionCandidate"),
+        "AcquisitionStage": ("core.capability.capability_ai", "AcquisitionStage"),
+        "new_capability_registry": ("tools.registry", "new_capability_registry"),
+    }
+    if name in lazy:
+        module_name, attr = lazy[name]
+        import importlib
+        module = importlib.import_module(module_name)
+        return getattr(module, attr)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

@@ -1,32 +1,11 @@
-"""
-Module: core.authz.__init__
-Auto-reconstructed backend component.
+"""Authorization vocabulary re-exports.
+
+Engine wiring lives in the ``engine`` submodule; this package surface only
+exposes the schema types so ordinary callers never touch the policy engine
+directly (see the architecture rules on policy access).
 """
 from __future__ import annotations
-from typing import Any, Callable, Optional
-from dataclasses import dataclass, field
-import logging
 
-logger = logging.getLogger(__name__)
-
-class DynamicMeta(type):
-    def __getattr__(cls, name: str) -> Any:
-        return name
-
-# Re-exports
 from .schema import AuthContext, Permission, Role, Scope
 
-
-def __getattr__(name: str) -> Any:
-    class DynamicStub(metaclass=DynamicMeta):
-        def __init__(self, *args, **kwargs):
-            pass
-        def __call__(self, *args, **kwargs):
-            return self
-        def __getattr__(self, item):
-            return DynamicStub()
-        async def __aenter__(self):
-            return self
-        async def __aexit__(self, exc_type, exc_val, exc_tb):
-            pass
-    return DynamicStub()
+__all__ = ["AuthContext", "Permission", "Role", "Scope"]
