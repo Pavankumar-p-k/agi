@@ -35,6 +35,7 @@ class PipelineContext:
     authentication_result: Any = None
     authorization_result: Any = None
     resource_access_result: Any = None
+    resource_grant: Any = None
     rate_limit_result: Any = None
     resource_scope: Any = None
     tenant_id: Optional[str] = None
@@ -79,10 +80,13 @@ class PipelineContext:
         """Aggregated security snapshot (tenant + scope), always current."""
         from core.pipeline.security_context import SecurityContext
         return SecurityContext(
-            resource_scope=self.resource_scope,
-            tenant_resolution=self.tenant_resolution_result,
+            identity=self.identity,
             authentication=self.authentication_result,
             authorization=self.authorization_result,
+            resource_scope=self.resource_scope,
+            resource_access=self.resource_access_result,
+            resource_grant=self.resource_grant,
+            tenant_resolution=self.tenant_resolution_result,
         )
 
     # ── dict-like helpers ────────────────────────────────────────────────

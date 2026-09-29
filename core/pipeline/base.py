@@ -30,7 +30,7 @@ STAGE_OWNERSHIP: dict[str, list[str]] = {
     "load_context": ["metadata.transport", "resource_scope"],
     "authentication": ["authentication_result"],
     "tenant_resolution": ["tenant_id", "tenant_resolution_result"],
-    "authorization": ["authorization_result"],
+    "authorization": ["authorization_result", "resource_grant"],
     "resource_access": ["resource_access_result"],
     "rate_limit": ["rate_limit_result"],
     "intent": ["classification"],

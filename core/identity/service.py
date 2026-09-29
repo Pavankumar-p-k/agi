@@ -12,6 +12,7 @@ from __future__ import annotations
 import uuid
 from typing import Any, Optional, Tuple
 
+from core.identity.models import AuthenticationState
 from core.pipeline.authorization_result import AuthorizationResult
 
 # Scopes the pipeline knows about; anything else is rejected explicitly.
@@ -121,7 +122,7 @@ class IdentityService:
         state_val = getattr(state, "value", state)
 
         # SYSTEM identities are always allowed (scheduler/internal calls).
-        if state_val == "SYSTEM":
+        if state_val == AuthenticationState.SYSTEM.value:
             roles = list(getattr(user, "roles", []) or []) or ["admin"]
             return AuthorizationResult(
                 allowed=True, reason="system identity", scope=scope,
@@ -129,7 +130,7 @@ class IdentityService:
                 permissions=frozenset({scope} if scope else ()),
             )
 
-        if state_val != "AUTHENTICATED":
+        if state_val != AuthenticationState.AUTHENTICATED.value:
             return AuthorizationResult(allowed=False, reason="not authenticated",
                                        scope=scope)
 

@@ -32,7 +32,7 @@ class AuthenticationStage(PipelineStage):
         # 0) SYSTEM identities are pre-authenticated (scheduler/internal).
         state0 = getattr(identity, "authentication_state", None)
         state0_val = getattr(state0, "value", state0)
-        if state0_val == "SYSTEM":
+        if state0_val == AuthenticationState.SYSTEM.value:
             from core.identity.models import UserIdentity as _UserIdentity
             from core.pipeline.authentication_result import SessionInfo as _SessionInfo
             user0 = getattr(identity, "user", None) or _UserIdentity(
