@@ -86,6 +86,92 @@ class Pipeline:
     def cancel(self) -> None:
         self._cancelled = True
 
+    # ── streaming ───────────────────────────────────────────────────
+    async def stream(self, ctx: Optional[PipelineContext] = None):
+        """Yield StreamEvents while running the stages (observability path).
+
+        Mirrors ``execute()`` stage-for-stage but reports every transition so
+        a transport can push progress to the client. Terminal events are
+        ``pipeline_end`` (success), ``pipeline_error`` (stage failure) and
+        ``pipeline_cancelled``.
+        """
+        from core.pipeline.stream import StreamEvent
+
+        if ctx is None:
+            ctx = PipelineContext(request_id=uuid.uuid4().hex, transport="unknown")
+
+        yield StreamEvent(
+            event_type="pipeline_start",
+            data={"request_id": ctx.request_id,
+                  "pipeline_version": ctx.pipeline_version},
+        )
+
+        if self._cancelled:
+            ctx.execution_state = "cancelled"
+            yield StreamEvent(event_type="pipeline_cancelled",
+                              data={"execution_state": "cancelled",
+                                    "_context": ctx})
+            return
+
+        for stage in self.stages:
+            stage_name = stage.name
+            if self._cancelled:
+                ctx.execution_state = "cancelled"
+                yield StreamEvent(event_type="pipeline_cancelled", stage=stage_name,
+                                  data={"execution_state": "cancelled",
+                                        "_context": ctx})
+                return
+
+            yield StreamEvent(event_type="stage_start", stage=stage_name)
+            await self.hooks.run_before(stage_name, ctx)
+            try:
+                result = await stage.execute(ctx)
+            except Exception as exc:  # noqa: BLE001 — reported as an event
+                ctx.execution_state = "failed"
+                ctx.error = str(exc)
+                yield StreamEvent(event_type="stage_error", stage=stage_name,
+                                  error=str(exc))
+                yield StreamEvent(event_type="pipeline_error", stage=stage_name,
+                                  error=str(exc),
+                                  data={"execution_state": "failed",
+                                        "_context": ctx})
+                return
+            await self.hooks.run_after(stage_name, ctx)
+
+            if getattr(result, "error", None):
+                ctx.error = result.error
+            outcome = getattr(result, "outcome", StageOutcome.CONTINUE)
+
+            if outcome == StageOutcome.CONTINUE:
+                yield StreamEvent(
+                    event_type="stage_end",
+                    stage=stage_name,
+                    data={"metrics": dict(getattr(result, "metrics", None) or {}),
+                          "context": ctx},
+                )
+                continue
+
+            ctx.execution_state = _STATE_BY_OUTCOME.get(outcome, "failed")
+            error_text = getattr(result, "error", None) or (
+                f"stage '{stage_name}' ended with "
+                f"{getattr(outcome, 'value', outcome)}"
+            )
+            yield StreamEvent(event_type="stage_error", stage=stage_name,
+                              error=error_text)
+            yield StreamEvent(event_type="pipeline_error", stage=stage_name,
+                              error=error_text,
+                              data={"execution_state": ctx.execution_state,
+                                    "_context": ctx})
+            return
+
+        self._finalize(ctx)
+        yield StreamEvent(
+            event_type="pipeline_end",
+            data={"execution_state": ctx.execution_state,
+                  "metadata": response_metadata(ctx),
+                  "_context": ctx},
+        )
+
     # ── execution ───────────────────────────────────────────────────
     async def execute(self, ctx: Optional[PipelineContext] = None) -> PipelineContext:
         if ctx is None:
@@ -234,8 +320,12 @@ def set_pipeline(pipeline: Pipeline) -> None:
     _default_pipeline = pipeline
 
 
-async def process_message(request: Request) -> Response:
-    """Full request → Response convenience over the default pipeline."""
+def build_context(request: Request) -> PipelineContext:
+    """Materialize a PipelineContext from a Request.
+
+    Resource scope is assigned here and nowhere else (Rule 19): the tenant
+    resolves later, but ownership is known from the request.
+    """
     ctx = PipelineContext(
         request_id=uuid.uuid4().hex,
         transport=request.transport,
@@ -245,14 +335,11 @@ async def process_message(request: Request) -> Response:
         attachments=request.attachments,
         metadata=dict(request.metadata or {}),
     )
-    # Resource scope is assigned here and nowhere else (Rule 19): the tenant
-    # resolves later, but ownership is known from the request.
     from core.identity.resource_scope import default_scope
     ctx.resource_scope = default_scope(
         owner_id=request.user_id or None,
         user_id=request.user_id or None,
     )
-    pipeline = get_pipeline()
     # Identity propagation: explicit identity wins; else resolve from the
     # raw user/session claims so downstream stages see the principal.
     if request.identity is not None:
@@ -265,13 +352,25 @@ async def process_message(request: Request) -> Response:
             session_id=ctx.session_id,
             agent_type=request.transport or "test",
         )
+    return ctx
+
+
+def response_metadata(ctx: PipelineContext) -> dict:
+    """Trace identifiers every response/stream-terminal event carries."""
+    return {
+        "activity_id": ctx.activity_id or ctx.request_id,
+        "trace_id": ctx.trace_id or ctx.request_id,
+        "pipeline_version": ctx.pipeline_version,
+    }
+
+
+async def process_message(request: Request) -> Response:
+    """Full request → Response convenience over the default pipeline."""
+    ctx = build_context(request)
+    pipeline = get_pipeline()
     result = await pipeline.execute(ctx)
 
-    metadata = {
-        "activity_id": result.activity_id or result.request_id,
-        "trace_id": result.trace_id or result.request_id,
-        "pipeline_version": result.pipeline_version,
-    }
+    metadata = response_metadata(result)
 
     if result.formatted_response:
         return Response(
