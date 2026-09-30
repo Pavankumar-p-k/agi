@@ -105,7 +105,40 @@ class Fact:
     source_title: str = ""
     text: str = ""
     confidence: float = 0.5  # 0.0-1.0
+    category: str = "general"
+    tags: List[str] = field(default_factory=list)
+    activity_id: Optional[str] = None
+    fact_id: str = ""
     extracted_at: datetime = field(default_factory=datetime.now)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "fact_id": self.fact_id or self.id,
+            "claim": self.claim,
+            "source_url": self.source_url,
+            "source_title": self.source_title,
+            "text": self.text,
+            "confidence": self.confidence,
+            "category": self.category,
+            "tags": list(self.tags),
+            "activity_id": self.activity_id,
+            "extracted_at": self.extracted_at.isoformat()
+            if isinstance(self.extracted_at, datetime) else self.extracted_at,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "Fact":
+        payload = dict(data)
+        extracted_at = payload.get("extracted_at")
+        if isinstance(extracted_at, str) and extracted_at:
+            try:
+                payload["extracted_at"] = datetime.fromisoformat(extracted_at)
+            except ValueError:
+                payload.pop("extracted_at", None)
+        payload.setdefault("fact_id", payload.get("id", ""))
+        known = {f.name for f in cls.__dataclass_fields__.values()}
+        return cls(**{key: value for key, value in payload.items() if key in known})
 
 
 @dataclass

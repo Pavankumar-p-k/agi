@@ -157,5 +157,102 @@ def uuid4():
     return uuid.uuid4()
 
 
+class FactStore:
+    """SQLite-backed persistence for research facts."""
+
+    def __init__(self, db_path: str = ":memory:") -> None:
+        import sqlite3
+
+        self.db_path = str(db_path)
+        self._conn = sqlite3.connect(self.db_path)
+        self._conn.execute(
+            "CREATE TABLE IF NOT EXISTS facts "
+            "(fact_id TEXT PRIMARY KEY, payload TEXT NOT NULL)"
+        )
+        self._conn.commit()
+
+    # ── helpers ──────────────────────────────────────────────────────
+    @staticmethod
+    def _key(fact: Fact) -> str:
+        return str(fact.fact_id or fact.id)
+
+    def _row_to_fact(self, row) -> Fact:
+        fact_id, payload = row
+        data = json.loads(payload)
+        data["fact_id"] = fact_id
+        return Fact.from_dict(data)
+
+    def _all_rows(self):
+        return self._conn.execute(
+            "SELECT fact_id, payload FROM facts").fetchall()
+
+    # ── CRUD ─────────────────────────────────────────────────────────
+    def insert_fact(self, fact: Fact) -> str:
+        key = self._key(fact)
+        payload = json.dumps(fact.to_dict(), default=str)
+        self._conn.execute(
+            "INSERT OR REPLACE INTO facts (fact_id, payload) VALUES (?, ?)",
+            (key, payload))
+        self._conn.commit()
+        return key
+
+    def get_fact(self, fact_id: str) -> Optional[Fact]:
+        row = self._conn.execute(
+            "SELECT fact_id, payload FROM facts WHERE fact_id = ?",
+            (str(fact_id),)).fetchone()
+        return self._row_to_fact(row) if row else None
+
+    def get_all_facts(self) -> List[Fact]:
+        return [self._row_to_fact(row) for row in self._all_rows()]
+
+    def search_facts(self, query: str) -> List[Fact]:
+        needle = str(query).lower()
+        return [fact for fact in self.get_all_facts()
+                if needle in (fact.claim or "").lower()]
+
+    def get_facts_by_activity(self, activity_id: str) -> List[Fact]:
+        return [fact for fact in self.get_all_facts()
+                if fact.activity_id == activity_id]
+
+    def get_facts_by_source(self, source_url: str) -> List[Fact]:
+        return [fact for fact in self.get_all_facts()
+                if fact.source_url == source_url]
+
+    def get_facts_by_category(self, category: str) -> List[Fact]:
+        return [fact for fact in self.get_all_facts()
+                if fact.category == category]
+
+    def delete_fact(self, fact_id: str) -> None:
+        self._conn.execute("DELETE FROM facts WHERE fact_id = ?",
+                           (str(fact_id),))
+        self._conn.commit()
+
+    def delete_facts_by_activity(self, activity_id: str) -> int:
+        keys = [self._key(fact) for fact in self.get_all_facts()
+                if fact.activity_id == activity_id]
+        for key in keys:
+            self.delete_fact(key)
+        return len(keys)
+
+    def count_facts(self) -> int:
+        row = self._conn.execute("SELECT COUNT(*) FROM facts").fetchone()
+        return int(row[0]) if row else 0
+
+    def count_by_source(self) -> Dict[str, int]:
+        counts: Dict[str, int] = {}
+        for fact in self.get_all_facts():
+            counts[fact.source_url] = counts.get(fact.source_url, 0) + 1
+        return counts
+
+    def count_by_category(self) -> Dict[str, int]:
+        counts: Dict[str, int] = {}
+        for fact in self.get_all_facts():
+            counts[fact.category] = counts.get(fact.category, 0) + 1
+        return counts
+
+    def close(self) -> None:
+        self._conn.close()
+
+
 # Singleton
 research_storage = ResearchStorage()
