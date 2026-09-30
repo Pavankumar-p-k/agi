@@ -59,21 +59,21 @@ class ChangeSimulation:
         self.impact_analyzer = impact_analyzer
 
     def simulate(self, plan: ChangePlan) -> SimulationResult:
-        touched = [change.file for change in plan.changes]
+        touched = [change.path for change in plan.changes]
         affected = sorted(set(plan.total_affected_files))
         breakages: list[PredictedBreakage] = []
         conflicts: list[ChangeConflict] = []
         by_file: dict[str, set[str]] = {}
         for change in plan.changes:
-            by_file.setdefault(change.file, set()).add(change.change_type.value)
+            by_file.setdefault(change.path, set()).add(change.change_type.value)
             if change.change_type == ChangeType.DELETE:
-                for file in self.dependency_graph.impact_set([change.file]):
-                    breakages.append(PredictedBreakage(file, f"Delete of {change.file} may remove imported code", "high"))
-            elif change.change_type == ChangeType.RENAME:
-                for file in self.dependency_graph.impact_set([change.file]):
-                    breakages.append(PredictedBreakage(file, f"Rename of {change.file} requires import updates", "medium"))
-            elif change.change_type == ChangeType.MODIFY and self.indexer.get_entry(change.file) is None:
-                breakages.append(PredictedBreakage(change.file, "Cannot modify a file that does not exist", "high"))
+                for file in self.dependency_graph.impact_set([change.path]):
+                    breakages.append(PredictedBreakage(file, f"Delete of {change.path} may remove imported code", "high"))
+            elif change.change_type in (ChangeType.RENAME, ChangeType.MOVE):
+                for file in self.dependency_graph.impact_set([change.path]):
+                    breakages.append(PredictedBreakage(file, f"Rename of {change.path} requires import updates", "medium"))
+            elif change.change_type == ChangeType.MODIFY and self.indexer.get_entry(change.path) is None:
+                breakages.append(PredictedBreakage(change.path, "Cannot modify a file that does not exist", "high"))
         for file, actions in by_file.items():
             if len(actions) > 1:
                 conflicts.append(ChangeConflict(file, f"Conflicting actions requested: {', '.join(sorted(actions))}"))

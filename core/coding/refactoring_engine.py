@@ -102,31 +102,47 @@ class RefactoringEngine:
             if recipe_name == "rename_file" or change.change_type == ChangeType.RENAME:
                 patches.extend(self._generate_rename_file_patches(change))
             elif recipe_name == "delete_file_safe" or change.change_type == ChangeType.DELETE:
-                old = self._read(change.file)
+                old = self._read(change.path)
                 if old is not None:
-                    patches.append(CodePatch(change.file, change.description, old, "", "delete"))
+                    patches.append(CodePatch(change.path, change.description, old, "", "delete"))
+            elif recipe_name == "move_exports" or change.change_type == ChangeType.MOVE:
+                patches.extend(self._generate_move_exports_patches(change))
             elif change.change_type == ChangeType.CREATE:
-                patches.append(CodePatch(change.file, change.description, None, "# TODO: implement\n", "create"))
+                patches.append(CodePatch(change.path, change.description, None, "# TODO: implement\n", "create"))
             else:
-                old = self._read(change.file)
+                old = self._read(change.path)
                 if old is not None:
-                    patches.append(CodePatch(change.file, change.description, old, old + "\n# TODO: " + change.description + "\n", "modify"))
+                    patches.append(CodePatch(change.path, change.description, old, old + "\n# TODO: " + change.description + "\n", "modify"))
         return patches
 
     def _generate_rename_file_patches(self, change: FileChange) -> list[CodePatch]:
         if not change.new_file:
             return []
-        old = self._read(change.file)
+        old = self._read(change.path)
         if old is None:
             return []
-        patches = [CodePatch(change.file, change.description, old, None, "rename")]
-        old_module = self._module_name(change.file)
+        patches = [CodePatch(change.path, change.description, old, None, "rename")]
+        old_module = self._module_name(change.path)
         new_module = self._module_name(change.new_file)
-        for dependent in self.dependency_graph.impact_set([change.file]):
+        for dependent in self.dependency_graph.impact_set([change.path]):
             content = self._read(dependent)
             if content and old_module in content:
-                patches.append(CodePatch(dependent, f"Update imports for {change.file}", content, content.replace(old_module, new_module), "rename_imports"))
+                patches.append(CodePatch(dependent, f"Update imports for {change.path}", content, content.replace(old_module, new_module), "rename_imports"))
         return patches
+
+    def _generate_move_exports_patches(self, change: FileChange) -> list[CodePatch]:
+        """Move content from the source file into the destination file."""
+        if not change.new_file:
+            return []
+        source = self._read(change.path)
+        if source is None:
+            return []
+        destination = self._read(change.new_file) or ""
+        return [
+            CodePatch(change.path, change.description, source, "", "delete"),
+            CodePatch(change.new_file, change.description, destination,
+                      (destination + "\n" + source).strip() + "\n", "move_exports"),
+        ]
 
     def validate_patches(self, patches: list[CodePatch]) -> ValidationResult:
         errors: list[ValidationError] = []
