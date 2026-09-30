@@ -43,5 +43,17 @@ class JarvisConfig:
         return self.raw_config.get(key, default)
 
 
+@dataclass
+class AuthProfile:
+    """A provider credential + priority used by the failover router."""
+    name: str
+    provider: str = ""
+    api_key: str = ""
+    priority: int = 0
+    base_url: str = ""
+    model: str = ""
+    enabled: bool = True
+
+
 # Module-level singleton used across the app (jarvis_config).
 jarvis_config = JarvisConfig()
