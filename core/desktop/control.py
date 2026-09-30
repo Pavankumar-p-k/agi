@@ -19,7 +19,17 @@ class SemanticControlService:
 
     def find(self, title: str, name: str,
              control_type: Optional[str] = None) -> list:
-        return self._discovery.find_control(title, name, control_type)
+        """Controls of the window whose name contains *name*."""
+        window = self._discovery.discover_window(title)
+        if window is None:
+            return []
+        wanted = str(name).lower()
+        matches = [c for c in (getattr(window, "controls", ()) or ())
+                   if wanted in str(getattr(c, "name", "")).lower()]
+        if control_type:
+            matches = [c for c in matches
+                       if str(getattr(c, "control_type", "")) == control_type]
+        return matches
 
     def invoke(self, title: str, name: str,
                control_type: Optional[str] = None) -> dict:

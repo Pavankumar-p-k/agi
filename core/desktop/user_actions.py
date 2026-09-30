@@ -688,7 +688,8 @@ class UserActions:
         if not isinstance(result, dict):
             result = {}
         actual = str(result.get("value", ""))
-        verified = bool(result.get("selected")) and actual == str(suggestion)
+        verified = (bool(result.get("selected"))
+                    and actual.strip().lower() == str(suggestion).strip().lower())
         return {
             "success": verified,
             "verified": verified,

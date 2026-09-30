@@ -191,7 +191,9 @@ class DesktopController:
     def open_url(self, url: str) -> ActionResult:
         import webbrowser
         def _open():
-            webbrowser.open(str(url))
+            opened = webbrowser.open(str(url))
+            if not opened:
+                raise RuntimeError(f"url {url} could not be opened")
         return self._primitive(
             DesktopActionType.WINDOW_MANAGE, {"window_title": str(url)}, _open)
 

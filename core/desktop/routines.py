@@ -2,7 +2,8 @@
 
 Observes verified action sequences and proposes reusable routines.
 Nothing executes without an explicit human approval; proposals stay
-pending until `approve()` is called.
+pending until `approve()` is called, and approvals can be revoked at
+any time. Every decision is recorded in an audit log.
 """
 from __future__ import annotations
 
@@ -11,11 +12,11 @@ import time
 import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
-_MIN_CONFIDENCE = 0.6
-_REPEATS_FOR_PROPOSAL = 2
-_MAX_ROUTEINES = 200
+_MIN_CONFIDENCE = 0.5
+_REPEATS_FOR_PROPOSAL = 3
+_MAX_ROUTINES = 200
 
 
 @dataclass
@@ -25,7 +26,7 @@ class RoutineProposal:
     goal: str
     steps: list = field(default_factory=list)
     confidence: float = 0.0
-    status: str = "pending"          # pending | approved | rejected
+    status: str = "pending"          # pending | approved | rejected | revoked
     created_at: float = 0.0
     decided_at: Optional[float] = None
 
@@ -38,6 +39,7 @@ class RoutineProposal:
             "confidence": self.confidence,
             "status": self.status,
             "created_at": self.created_at,
+            "decided_at": self.decided_at,
         }
 
 
@@ -47,7 +49,8 @@ class DesktopRoutineManager:
     def __init__(self, store_path: Optional[str] = None) -> None:
         self._store_path = Path(store_path) if store_path else None
         self._proposals: dict[str, RoutineProposal] = {}
-        self._history: dict[str, list] = {}  # goal-signature -> [step sequences]
+        self._history: dict[str, list] = {}  # goal-signature -> [observations]
+        self.audit_log: list[dict[str, Any]] = []
         self._load()
 
     # ── persistence ──────────────────────────────────────────────────
@@ -67,6 +70,7 @@ class DesktopRoutineManager:
                     created_at=float(item.get("created_at", 0.0)),
                 )
                 self._proposals[proposal.proposal_id] = proposal
+            self.audit_log = list(data.get("audit_log", []))
         except Exception:  # noqa: BLE001 — store is best-effort
             pass
 
@@ -75,18 +79,26 @@ class DesktopRoutineManager:
             return
         try:
             self._store_path.parent.mkdir(parents=True, exist_ok=True)
-            data = {"proposals": [p.to_dict() for p in self._proposals.values()]}
+            data = {
+                "proposals": [p.to_dict() for p in self._proposals.values()],
+                "audit_log": list(self.audit_log[-500:]),
+            }
             self._store_path.write_text(
-                json.dumps(data, indent=1), encoding="utf-8")
+                json.dumps(data, indent=1, default=str), encoding="utf-8")
         except Exception:  # noqa: BLE001
             pass
 
+    def _audit(self, event: str, proposal_id: str) -> None:
+        self.audit_log.append({"event": event, "proposal_id": proposal_id,
+                               "at": time.time()})
+
     # ── observation ──────────────────────────────────────────────────
-    def observe(self, goal: str, actions: list, verified: bool = False) -> Optional[RoutineProposal]:
+    def observe(self, goal: str, actions: list,
+                verified: bool = True) -> Optional[RoutineProposal]:
         """Record a verified action sequence; propose a routine on repetition.
 
         Only verified sequences count toward a proposal. Returns the new
-        proposal when the same sequence has been verified enough times,
+        proposal once the same sequence has been verified enough times,
         else None.
         """
         if not verified or not actions:
@@ -105,7 +117,6 @@ class DesktopRoutineManager:
             if proposal.goal == str(goal) and proposal.steps == list(actions):
                 return proposal
 
-        first = seen[0]
         proposal = RoutineProposal(
             proposal_id=f"rtn_{uuid.uuid4().hex[:10]}",
             label=self._label_for(str(goal), actions),
@@ -116,6 +127,7 @@ class DesktopRoutineManager:
             created_at=time.time(),
         )
         self._proposals[proposal.proposal_id] = proposal
+        self._audit("proposed", proposal.proposal_id)
         self._trim()
         self._save()
         return proposal
@@ -127,12 +139,12 @@ class DesktopRoutineManager:
         return f"{base} ({tools})" if len(actions) > 1 else base
 
     def _trim(self) -> None:
-        if len(self._proposals) <= _MAX_ROUTEINES:
+        if len(self._proposals) <= _MAX_ROUTINES:
             return
         ordered = sorted(self._proposals.values(),
                          key=lambda p: p.created_at, reverse=True)
         self._proposals = {p.proposal_id: p
-                           for p in ordered[:_MAX_ROUTEINES]}
+                           for p in ordered[:_MAX_ROUTINES]}
 
     # ── approval gate ────────────────────────────────────────────────
     def approve(self, proposal_id: str) -> bool:
@@ -141,6 +153,7 @@ class DesktopRoutineManager:
             return False
         proposal.status = "approved"
         proposal.decided_at = time.time()
+        self._audit("approved", proposal_id)
         self._save()
         return True
 
@@ -150,8 +163,36 @@ class DesktopRoutineManager:
             return False
         proposal.status = "rejected"
         proposal.decided_at = time.time()
+        self._audit("rejected", proposal_id)
         self._save()
         return True
+
+    def revoke(self, proposal_id: str) -> bool:
+        """Withdraw a previously approved routine."""
+        proposal = self._proposals.get(proposal_id)
+        if proposal is None or proposal.status == "revoked":
+            return False
+        proposal.status = "revoked"
+        proposal.decided_at = time.time()
+        self._audit("revoked", proposal_id)
+        self._save()
+        return True
+
+    def execute_approved(self, proposal_id: str,
+                         executor: Callable[[dict], Any]) -> list:
+        """Run every step of an approved routine; refuse anything else."""
+        proposal = self._proposals.get(proposal_id)
+        if proposal is None:
+            raise KeyError(f"unknown routine '{proposal_id}'")
+        if proposal.status != "approved":
+            raise PermissionError(
+                f"routine '{proposal_id}' is {proposal.status}, not approved")
+        results: list[Any] = []
+        for step in proposal.steps:
+            results.append(executor(step))
+        self._audit("executed", proposal_id)
+        self._save()
+        return results
 
     def list_proposals(self, status: Optional[str] = None) -> list:
         proposals = list(self._proposals.values())
