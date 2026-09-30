@@ -1,34 +1,8 @@
-"""
-Module: core.cache.__init__
-Auto-reconstructed backend component.
-"""
+"""Async cache primitives: LRU, TTL, Redis-with-fallback and tag invalidation."""
 from __future__ import annotations
-from typing import Any, Callable, Optional
-from dataclasses import dataclass, field
-import logging
 
-logger = logging.getLogger(__name__)
+from .invalidation import TagInvalidator
+from .local import LRUCache, TTLCache
+from .redis_cache import RedisCache
 
-class DynamicMeta(type):
-    def __getattr__(cls, name: str) -> Any:
-        return name
-
-# Re-exports
-from invalidation import TagInvalidator
-from local import LRUCache, TTLCache
-from redis_cache import RedisCache
-
-
-def __getattr__(name: str) -> Any:
-    class DynamicStub(metaclass=DynamicMeta):
-        def __init__(self, *args, **kwargs):
-            pass
-        def __call__(self, *args, **kwargs):
-            return self
-        def __getattr__(self, item):
-            return DynamicStub()
-        async def __aenter__(self):
-            return self
-        async def __aexit__(self, exc_type, exc_val, exc_tb):
-            pass
-    return DynamicStub()
+__all__ = ["LRUCache", "TTLCache", "TagInvalidator", "RedisCache"]
