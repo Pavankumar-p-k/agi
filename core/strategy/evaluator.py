@@ -1,43 +1,49 @@
-"""
-Module: core.strategy.evaluator
-Auto-reconstructed backend component.
-"""
+"""Strategy scoring and ranking (Phase 12)."""
 from __future__ import annotations
-from typing import Any, Callable, Optional
-from dataclasses import dataclass, field
-import logging
 
-logger = logging.getLogger(__name__)
+from typing import List, Optional, Tuple
 
-class DynamicMeta(type):
-    def __getattr__(cls, name: str) -> Any:
-        return name
-
-@dataclass
-class StrategyEvaluator(metaclass=DynamicMeta):
-    def __init__(self, *args, **kwargs):
-        for k, v in kwargs.items():
-            setattr(self, k, v)
-    def __getattr__(self, name: str) -> Any:
-        return lambda *a, **kw: None
-    def __call__(self, *args, **kwargs) -> Any:
-        return self
-    async def __aenter__(self):
-        return self
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        pass
+from core.strategy.models import Prediction, Strategy
 
 
-def __getattr__(name: str) -> Any:
-    class DynamicStub(metaclass=DynamicMeta):
-        def __init__(self, *args, **kwargs):
-            pass
-        def __call__(self, *args, **kwargs):
-            return self
-        def __getattr__(self, item):
-            return DynamicStub()
-        async def __aenter__(self):
-            return self
-        async def __aexit__(self, exc_type, exc_val, exc_tb):
-            pass
-    return DynamicStub()
+class StrategyEvaluator:
+    """Score predictions and order strategies by desirability."""
+
+    _W_SUCCESS = 0.4
+    _W_RISK = 0.3
+    _W_SPEED = 0.2
+    _W_CONF = 0.1
+    _SPEED_REFERENCE_DAYS = 10.0
+
+    def score(self, prediction: Optional[Prediction]) -> float:
+        if prediction is None:
+            return 0.0
+
+        success = max(0.0, min(1.0, prediction.success_probability))
+        risk = max(0.0, min(1.0, prediction.estimated_risk))
+        confidence = max(0.0, min(1.0, prediction.confidence))
+
+        duration = prediction.estimated_duration_days or 0.0
+        if duration <= 0:
+            speed = 1.0
+        else:
+            speed = min(1.0, self._SPEED_REFERENCE_DAYS / duration)
+
+        value = (
+            self._W_SUCCESS * success
+            + self._W_RISK * (1.0 - risk)
+            + self._W_SPEED * speed
+            + self._W_CONF * confidence
+        )
+        return max(0.0, min(1.0, value))
+
+    def ordered(
+        self, strategies: List[Strategy]
+    ) -> List[Tuple[Strategy, float]]:
+        scored = [
+            (strategy, self.score(strategy.prediction))
+            for strategy in strategies or []
+            if strategy.prediction is not None
+        ]
+        scored.sort(key=lambda pair: pair[1], reverse=True)
+        return scored

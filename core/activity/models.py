@@ -14,6 +14,15 @@ class ActivityStatus(str, Enum):
     FAILED = "failed"
     CANCELLED = "cancelled"
 
+    @classmethod
+    def _missing_(cls, value):
+        if isinstance(value, str):
+            lowered = value.lower()
+            for member in cls:
+                if member.value == lowered:
+                    return member
+        return None
+
 
 @dataclass
 class ActivityNode:
@@ -26,6 +35,8 @@ class ActivityNode:
     resource_scope: dict = field(default_factory=dict)
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
     metadata: dict = field(default_factory=dict)
 
     def to_dict(self) -> dict:
