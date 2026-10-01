@@ -1,33 +1,29 @@
-"""
-Module: core.observability.__init__
-Auto-reconstructed backend component.
-"""
+"""Observability — structured logging, metrics and health surfaces."""
 from __future__ import annotations
-from typing import Any, Callable, Optional
-from dataclasses import dataclass, field
-import logging
 
-logger = logging.getLogger(__name__)
+from . import logging as logging_utils  # noqa: F401  (package submodule)
+from .logging import JsonFormatter, LogContext, configure_json_logging
+from .metrics import (
+    MetricsMiddleware,
+    collect_metrics,
+    metrics,
+    record_error,
+    record_request,
+    reset_metrics,
+    set_active_sessions,
+    set_sandbox_containers,
+)
 
-class DynamicMeta(type):
-    def __getattr__(cls, name: str) -> Any:
-        return name
-
-# Re-exports
-from logging import JsonFormatter, LogContext
-from metrics import MetricsMiddleware, metrics
-
-
-def __getattr__(name: str) -> Any:
-    class DynamicStub(metaclass=DynamicMeta):
-        def __init__(self, *args, **kwargs):
-            pass
-        def __call__(self, *args, **kwargs):
-            return self
-        def __getattr__(self, item):
-            return DynamicStub()
-        async def __aenter__(self):
-            return self
-        async def __aexit__(self, exc_type, exc_val, exc_tb):
-            pass
-    return DynamicStub()
+__all__ = [
+    "JsonFormatter",
+    "LogContext",
+    "configure_json_logging",
+    "MetricsMiddleware",
+    "collect_metrics",
+    "metrics",
+    "record_error",
+    "record_request",
+    "reset_metrics",
+    "set_active_sessions",
+    "set_sandbox_containers",
+]

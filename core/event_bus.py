@@ -61,10 +61,55 @@ class Subscription:
         return True
 
 
+# Bounded per-subscriber stream queues (websocket/SSE fan-out).
+STREAM_QUEUE_MAXSIZE = 100
+
+
 class EventBus:
     def __init__(self) -> None:
         self._subscriptions: list[Subscription] = []
         self._failed = 0
+        self._stream_queues: list[asyncio.Queue] = []
+        self._stream_drops = 0
+        self._websocket_connections = 0
+
+    # ── streaming subscribers ────────────────────────────────────────
+    def subscribe_stream(self, maxsize: int | None = None) -> asyncio.Queue:
+        """Register a bounded queue that receives every published event."""
+        queue: asyncio.Queue = asyncio.Queue(
+            maxsize=maxsize if maxsize is not None else STREAM_QUEUE_MAXSIZE)
+        self._stream_queues.append(queue)
+        return queue
+
+    def unsubscribe_stream(self, queue: asyncio.Queue) -> None:
+        try:
+            self._stream_queues.remove(queue)
+        except ValueError:
+            pass
+
+    def add_websocket(self) -> None:
+        self._websocket_connections += 1
+
+    def remove_websocket(self) -> None:
+        self._websocket_connections = max(0, self._websocket_connections - 1)
+
+    def _fanout_stream(self, message: dict) -> None:
+        for queue in list(self._stream_queues):
+            try:
+                queue.put_nowait(message)
+            except asyncio.QueueFull:
+                self._stream_drops += 1
+
+    def health(self) -> dict:
+        """Operational counters for the observability surface."""
+        return {
+            "stream_queues": len(self._stream_queues),
+            "stream_queue_depth": sum(q.qsize() for q in self._stream_queues),
+            "websocket_connections": self._websocket_connections,
+            "queue_drops": self._stream_drops,
+            "failed_deliveries": self._failed,
+            "subscriptions": len(self._subscriptions),
+        }
 
     # ── registration ─────────────────────────────────────────────────
     def subscribe(self, pattern_or_type: str, handler: Callable,
@@ -84,6 +129,7 @@ class EventBus:
     async def publish(self, type_or_event, payload: Any = None) -> None:
         if isinstance(type_or_event, Event):
             event = type_or_event
+            self._fanout_stream(event.to_dict())
             for sub in list(self._subscriptions):
                 if not sub.matches(event):
                     continue
@@ -97,6 +143,7 @@ class EventBus:
 
         # Legacy: (event_type, payload) — handlers receive the payload.
         event_type = str(type_or_event)
+        self._fanout_stream({"event": event_type, "payload": payload})
         for sub in list(self._subscriptions):
             if not fnmatch.fnmatch(event_type, sub.pattern):
                 continue
