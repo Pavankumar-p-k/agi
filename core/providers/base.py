@@ -1,91 +1,113 @@
-"""ExecutionProvider — capability-addressed execution backend contract.
+"""ExecutionProvider base models and abstract class.
 
-These classes are the stable provider contract used by the pipeline
-Execution stage, the capability negotiator, and provider_sdk adapters.
+Completed from the committed contract in tests/unit/test_provider_ecosystem.py:
+
+- ProviderCapabilities: capability_names / languages / frameworks lists
+- ProviderHealthStatus: HEALTHY / DEGRADED / DOWN / UNKNOWN
+- ProviderHealth: status, latency_ms, error
+- ExecutionResult: success, output, error, duration_ms (+ cost, tokens, meta)
+- ExecutionProvider (ABC): identity attrs, enable/disable lifecycle,
+  supports(), available() from health cache, async execute(), and default
+  stream/cancel/estimate_cost/estimate_latency/diagnostics hooks.
 """
 from __future__ import annotations
 
+import logging
+import time
+from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Optional
+from typing import Any, AsyncIterator, Optional
+
+logger = logging.getLogger(__name__)
 
 
 class ProviderHealthStatus(str, Enum):
     HEALTHY = "healthy"
     DEGRADED = "degraded"
-    UNHEALTHY = "unhealthy"
+    DOWN = "down"
     UNKNOWN = "unknown"
-
-
-@dataclass
-class ProviderHealth:
-    status: ProviderHealthStatus = ProviderHealthStatus.UNKNOWN
-    detail: str = ""
-    latency_ms: Optional[float] = None
-    metadata: dict = field(default_factory=dict)
 
 
 @dataclass
 class ProviderCapabilities:
     capability_names: list[str] = field(default_factory=list)
-    version: str = "1.0.0"
-    features: list[str] = field(default_factory=list)
     languages: list[str] = field(default_factory=list)
-    modalities: list[str] = field(default_factory=list)
-    metadata: dict = field(default_factory=dict)
+    frameworks: list[str] = field(default_factory=list)
+    features: list[str] = field(default_factory=list)  # SDK manifest features
 
-    def has(self, capability: str) -> bool:
-        return capability in self.capability_names
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "capability_names": list(self.capability_names),
+            "languages": list(self.languages),
+            "frameworks": list(self.frameworks),
+        }
+
+
+@dataclass
+class ProviderHealth:
+    status: ProviderHealthStatus = ProviderHealthStatus.UNKNOWN
+    latency_ms: float = 0.0
+    error: str = ""
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "status": self.status.value if isinstance(self.status, ProviderHealthStatus) else str(self.status),
+            "latency_ms": self.latency_ms,
+            "error": self.error,
+        }
 
 
 @dataclass
 class ExecutionResult:
     success: bool = False
     output: str = ""
-    error: str = ""
+    error: Optional[str] = None
+    duration_ms: float = 0.0
+    cost: float = 0.0
+    tokens_used: int = 0
     exit_code: Optional[int] = None
-    tokens: int = 0
-    provider_id: str = ""
-    metadata: dict = field(default_factory=dict)
+    artifacts: dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "success": self.success,
             "output": self.output,
             "error": self.error,
+            "duration_ms": self.duration_ms,
+            "cost": self.cost,
+            "tokens_used": self.tokens_used,
             "exit_code": self.exit_code,
-            "tokens": self.tokens,
-            "provider_id": self.provider_id,
+            "artifacts": dict(self.artifacts),
             "metadata": dict(self.metadata),
         }
 
 
-class ExecutionProvider:
-    """Base class for execution providers.
+class ExecutionProvider(ABC):
+    """Abstract base for every JARVIS execution provider (connector adapter).
 
-    Subclasses declare ``provider_id``, ``name``, ``version`` and implement
-    ``capabilities()``, ``health()`` and ``execute()``.
+    A provider is the concrete "how" behind a capability: forge (internal),
+    claude_code / codex (external CLIs), browser/automation/email/github
+    adapters, and so on.  Identity is declarative; execution is async.
     """
 
     provider_id: str = ""
     name: str = ""
-    version: str = "1.0.0"
-    priority: int = 50
-    installed: bool = True
+    version: str = "1.0"
+    priority: int = 100          # lower = more important
+    installed: bool = False
     _enabled: bool = True
 
-    def capabilities(self) -> ProviderCapabilities:
-        return ProviderCapabilities(capability_names=[])
+    def __init__(self) -> None:
+        self._health_cache: ProviderHealth = ProviderHealth()
+        self._health_checked_at: float = 0.0
 
-    async def health(self) -> ProviderHealth:
-        return ProviderHealth(status=ProviderHealthStatus.UNKNOWN)
+    # -- lifecycle -------------------------------------------------------
 
-    async def execute(self, task: dict, context: Any = None) -> ExecutionResult:
-        raise NotImplementedError
-
-    # ── lifecycle helpers ────────────────────────────────────────────
-    def is_enabled(self) -> bool:
-        return bool(self._enabled)
+    @property
+    def enabled(self) -> bool:
+        return self._enabled and self.installed
 
     def enable(self) -> None:
         self._enabled = True
@@ -93,22 +115,63 @@ class ExecutionProvider:
     def disable(self) -> None:
         self._enabled = False
 
-    def to_dict(self) -> dict:
+    # -- capability contract ---------------------------------------------
+
+    @abstractmethod
+    def capabilities(self) -> ProviderCapabilities:
+        """Declare what this provider can do."""
+        ...
+
+    def supports(self, capability: str) -> bool:
+        return capability in self.capabilities().capability_names
+
+    # -- health ------------------------------------------------------------
+
+    @abstractmethod
+    async def health(self) -> ProviderHealth:
+        """Probe live health (implementations should cache via _cache_health)."""
+        ...
+
+    def _cache_health(self, health: ProviderHealth) -> ProviderHealth:
+        self._health_cache = health
+        self._health_checked_at = time.time()
+        return health
+
+    def available(self) -> bool:
+        """Enabled AND last known health not DOWN."""
+        if not self.enabled:
+            return False
+        return self._health_cache.status != ProviderHealthStatus.DOWN
+
+    # -- execution -----------------------------------------------------------
+
+    @abstractmethod
+    async def execute(self, task: dict[str, Any], context: Optional[dict[str, Any]] = None) -> ExecutionResult:
+        """Execute a task dict; returns an honest ExecutionResult."""
+        ...
+
+    async def stream(self, task: dict[str, Any], context: Optional[dict[str, Any]] = None) -> AsyncIterator[str]:
+        """Default streaming: yield empty header then raise (contract)."""
+        yield ""
+        raise NotImplementedError(f"{self.provider_id} does not support streaming")
+
+    async def cancel(self, execution_id: str) -> bool:
+        return False
+
+    async def estimate_cost(self, task: dict[str, Any]) -> float:
+        return 0.0
+
+    async def estimate_latency(self, task: dict[str, Any]) -> float:
+        return 0.0
+
+    async def diagnostics(self) -> dict[str, Any]:
+        health = self._health_cache
         return {
             "provider_id": self.provider_id,
             "name": self.name,
             "version": self.version,
-            "priority": self.priority,
             "installed": self.installed,
-            "enabled": self._enabled,
-            "capabilities": list(self.capabilities().capability_names),
+            "enabled": self.enabled,
+            "health": health.to_dict(),
+            "capabilities": self.capabilities().to_dict(),
         }
-
-
-__all__ = [
-    "ExecutionProvider",
-    "ExecutionResult",
-    "ProviderCapabilities",
-    "ProviderHealth",
-    "ProviderHealthStatus",
-]

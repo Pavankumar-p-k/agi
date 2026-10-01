@@ -47,15 +47,12 @@ class DesktopProvider(ExecutionProvider):
     def capabilities(self) -> ProviderCapabilities:
         return ProviderCapabilities(
             capability_names=["desktop"],
-            version=self.version,
             features=["mouse", "keyboard", "screen", "windows"],
             languages=[],
-            modalities=["desktop"],
         )
 
     async def health(self) -> ProviderHealth:
-        return ProviderHealth(status=ProviderHealthStatus.HEALTHY,
-                              detail="desktop controller ready")
+        return ProviderHealth(status=ProviderHealthStatus.HEALTHY)
 
     async def execute(self, task: dict, context: Any = None) -> ExecutionResult:
         task = dict(task or {})
@@ -64,14 +61,12 @@ class DesktopProvider(ExecutionProvider):
             return ExecutionResult(
                 success=False,
                 error=f"Unknown desktop action: {action!r}",
-                provider_id=self.provider_id,
             )
 
         try:
             result = await self._dispatch(action, task)
         except Exception as exc:  # noqa: BLE001 — backend errors surface honestly
-            return ExecutionResult(success=False, error=str(exc),
-                                   provider_id=self.provider_id)
+            return ExecutionResult(success=False, error=str(exc))
         return result
 
     async def _dispatch(self, action: str, task: dict) -> ExecutionResult:
@@ -93,7 +88,6 @@ class DesktopProvider(ExecutionProvider):
             success=r.success,
             output=str(getattr(r, "output", "") or ""),
             error=str(getattr(r, "reason", "") or getattr(r, "error", "") or ""),
-            provider_id=self.provider_id,
             metadata={"replay": self.controller.replay.to_dict()[-5:]},
         )
 

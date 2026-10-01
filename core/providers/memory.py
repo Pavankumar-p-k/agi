@@ -1,326 +1,486 @@
-"""ProviderMemory — execution evidence per provider (calibration input).
+"""Provider evidence memory: who executed what, how well, and when.
 
-Evidence is keyed by the 5-tuple ``(provider, capability, task_type,
-model, language)``. Lookups walk a fallback chain of field-dropping
-patterns (lookup → stored) so evidence recorded with empty task_type /
-language still matches specific lookups.
+Completed from the committed contracts in tests/unit/test_provider_ecosystem.py
+and tests/unit/test_provider_fallback.py.
+
+Two layers, one file (no parallel stores):
+- Evidence per (provider, capability, task_type, model, language):
+  ``EvidenceRecord`` with a bounded, time-decayed execution log — feeds
+  routing scores, confidence, and distribution lookups.
+- Legacy aggregate per provider: total/success-rate counters, per-capability
+  and per-language usage, retries/repair/tokens/cost totals.
+
+Fallback matching (B1 fix): records stored with empty fields must be found
+by lookups with populated fields.  ``_FALLBACK_CHAIN`` is an ordered list of
+keep/drop patterns (nonzero = keep, 0 = wildcard) applied to the LOOKUP key;
+the first pattern whose match key exists in the evidence store wins.
 """
 from __future__ import annotations
 
+import json
+import logging
 import math
-import os
-import threading
 import time
+from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Optional
 
-# Configured persistence location (see ProviderMemory.persist()).
-_MEMORY_FILE = Path(os.getenv(
-    "JARVIS_PROVIDER_MEMORY",
-    str(Path(__file__).resolve().parents[2] / "data" / "provider_memory.json")))
+from core.providers.feedback.models import ProviderResult
 
-# Field-drop patterns applied to the LOOKUP key: each tuple maps to the
-# (capability, task_type, model, language) slots; 0 drops the field.
-# (3, 0, 2, 0) is the critical B1 pattern: keep capability + model, drop
-# task_type + language.
-_FALLBACK_CHAIN: Tuple[Tuple[int, int, int, int], ...] = (
+logger = logging.getLogger(__name__)
+
+# --------------------------------------------------------------------------- #
+# Storage paths (module-level; tests override instance attributes)            #
+# --------------------------------------------------------------------------- #
+
+_MEMORY_DIR = Path(__file__).resolve().parent.parent.parent / "data"
+_MEMORY_DIR.mkdir(parents=True, exist_ok=True)
+_MEMORY_FILE = _MEMORY_DIR / "provider_memory.json"
+
+# Bounded execution log per evidence record (oldest entries pruned)
+MAX_EXECUTION_LOG = 200
+
+# Minimum samples before a provider score is trusted (below → 0.5 prior)
+MIN_SAMPLES_FOR_SCORE = 3
+
+# Time-decay half-life for evidence entries (seconds) — 30 days
+_DECAY_HALF_LIFE = 30 * 86400.0
+
+# 90% one-sided normal deviate for the conservative score bound
+_Z90 = 1.2816
+
+# Provider-only default score prior
+_PRIOR = 0.5
+
+
+def evidence_key(
+    provider_id: str,
+    capability: str = "",
+    task_type: str = "",
+    model: str = "",
+    language: str = "",
+) -> tuple[str, str, str, str, str]:
+    """5-tuple evidence key: (provider, capability, task_type, model, language)."""
+    return (provider_id, capability, task_type, model, language)
+
+
+# Ordered keep/drop patterns over (capability, task_type, model, language).
+# Nonzero = keep that field, 0 = drop to wildcard.  Provider is never dropped,
+# so matching never crosses providers.  (3,0,2,0) is the critical B1 pattern:
+# record stored with empty task_type/language, lookup with populated fields.
+_FALLBACK_CHAIN: list[tuple[int, int, int, int]] = [
     (1, 1, 1, 1),   # exact
+    (3, 0, 2, 0),   # keep capability+model, wildcard task_type+language (B1)
     (1, 1, 1, 0),   # drop language
     (1, 1, 0, 1),   # drop model
-    (3, 0, 2, 0),   # keep capability + model (B1)
     (1, 0, 1, 1),   # drop task_type
-    (1, 1, 0, 0),   # capability + task_type only
-    (1, 0, 1, 0),   # capability + model only
-    (1, 0, 0, 1),   # capability + language only
+    (0, 1, 1, 1),   # drop capability
+    (1, 0, 1, 0),   # keep capability+model
+    (0, 1, 1, 0),
+    (1, 0, 0, 1),
+    (0, 0, 1, 1),
+    (0, 1, 0, 1),
     (1, 0, 0, 0),   # capability only
-    (0, 0, 0, 0),   # provider only
-)
+    (0, 1, 0, 0),   # task_type only
+    (0, 0, 1, 0),   # model only
+    (0, 0, 0, 1),   # language only
+    (0, 0, 0, 0),   # provider+capability only
+]
 
 
-def evidence_key(provider_id: str, capability: str = "", task_type: str = "",
-                 model: str = "", language: str = "") -> Tuple[str, str, str, str, str]:
-    """Canonical 5-tuple evidence key."""
-    return (str(provider_id or ""), str(capability or ""), str(task_type or ""),
-            str(model or ""), str(language or ""))
+def _match_keys(
+    base: tuple[str, str, str, str, str],
+    pattern: tuple[int, int, int, int],
+) -> tuple[str, str, str, str, str]:
+    """Apply a keep/drop pattern to positions 1..4 of a 5-tuple key.
+
+    Pattern element 0 applies to the capability, 1 → task_type, 2 → model,
+    3 → language.  Zero drops the field to "" (wildcard); nonzero keeps it.
+    The provider (position 0) is never dropped.
+    """
+    return (
+        base[0],
+        base[1] if pattern[0] else "",
+        base[2] if pattern[1] else "",
+        base[3] if pattern[2] else "",
+        base[4] if pattern[3] else "",
+    )
 
 
-def _match_keys(base: Tuple[str, str, str, str, str],
-                pattern: Tuple[int, int, int, int]) -> Tuple[str, str, str, str, str]:
-    """Return *base* with fields dropped where *pattern* is zero."""
-    out = [base[0]]
-    for value, flag in zip(base[1:], pattern):
-        out.append(value if flag else "")
-    return tuple(out)  # type: ignore[return-value]
+def _decay_weight(ts: float, now: float) -> float:
+    age = max(0.0, now - ts)
+    return 0.5 ** (age / _DECAY_HALF_LIFE)
 
 
 @dataclass
 class EvidenceRecord:
-    """Accumulated evidence for one (provider, capability, context) bucket."""
+    """Fine-grained evidence for one evidence key."""
 
     provider_id: str = ""
     capability: str = ""
-    task_type: str = ""
-    model: str = ""
-    language: str = ""
-    executions: int = 0
     successes: int = 0
     failures: int = 0
-    total_duration_ms: float = 0.0
-    last_duration_ms: float = 0.0
-    last_error: str = ""
-    last_execution_ts: float = 0.0
-    history: list = field(default_factory=list)
+    executions: int = 0
+    _execution_log: list[dict[str, Any]] = field(default_factory=list)
 
-    # Historical names kept for backward compatibility.
-    @property
-    def total_executions(self) -> int:
-        return self.executions
+    def record_outcome(self, success: bool, duration_ms: float = 0.0, cost: float = 0.0) -> None:
+        self.executions += 1
+        if success:
+            self.successes += 1
+        else:
+            self.failures += 1
+        self._execution_log.append({
+            "ts": time.time(),
+            "ok": bool(success),
+            "dur": float(duration_ms),
+            "cost": float(cost),
+        })
+        if len(self._execution_log) > MAX_EXECUTION_LOG:
+            del self._execution_log[: len(self._execution_log) - MAX_EXECUTION_LOG]
 
-    @property
-    def successful_executions(self) -> int:
-        return self.successes
+    def _weighted_counts(self) -> tuple[float, float]:
+        """Time-decayed (effective successes, effective failures)."""
+        now = time.time()
+        eff_s = 0.0
+        eff_f = 0.0
+        for entry in self._execution_log:
+            weight = _decay_weight(float(entry.get("ts", 0.0)), now)
+            if entry.get("ok"):
+                eff_s += weight
+            else:
+                eff_f += weight
+        return eff_s, eff_f
 
-    @property
-    def failed_executions(self) -> int:
-        return self.failures
-
-    @property
-    def success_rate(self) -> float:
-        if self.executions == 0:
-            return 0.0
-        return self.successes / self.executions
-
-    @property
-    def key(self) -> Tuple[str, str, str, str, str]:
-        return evidence_key(self.provider_id, self.capability, self.task_type,
-                            self.model, self.language)
-
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "provider_id": self.provider_id,
             "capability": self.capability,
-            "task_type": self.task_type,
-            "model": self.model,
-            "language": self.language,
-            "executions": self.executions,
             "successes": self.successes,
             "failures": self.failures,
+            "executions": self.executions,
+            "log": list(self._execution_log),
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "EvidenceRecord":
+        rec = cls(
+            provider_id=data.get("provider_id", ""),
+            capability=data.get("capability", ""),
+            successes=int(data.get("successes", 0)),
+            failures=int(data.get("failures", 0)),
+            executions=int(data.get("executions", 0)),
+        )
+        rec._execution_log = list(data.get("log", []))
+        return rec
+
+
+@dataclass
+class EvidenceDistribution:
+    """Aggregate view of matching evidence for one lookup."""
+
+    executions: int = 0
+    successes: int = 0
+    failures: int = 0
+    matched_key: tuple[str, str, str, str, str] = ("", "", "", "", "")
+
+
+@dataclass
+class ProviderAggregate:
+    """Legacy per-provider aggregate counters."""
+
+    provider_id: str = ""
+    total_executions: int = 0
+    successful_executions: int = 0
+    consecutive_failures: int = 0
+    total_retries: int = 0
+    total_repair_count: int = 0
+    total_tokens_used: int = 0
+    total_cost: float = 0.0
+    total_duration_ms: float = 0.0
+    capabilities_used: dict[str, int] = field(default_factory=dict)
+    languages: dict[str, int] = field(default_factory=dict)
+
+    @property
+    def success_rate(self) -> float:
+        if self.total_executions == 0:
+            return 0.0
+        return round(self.successful_executions / self.total_executions, 4)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "provider_id": self.provider_id,
+            "total_executions": self.total_executions,
+            "successful_executions": self.successful_executions,
             "success_rate": self.success_rate,
-            "last_error": self.last_error,
-            "last_duration_ms": self.last_duration_ms,
-            "total_duration_ms": self.total_duration_ms,
+            "consecutive_failures": self.consecutive_failures,
+            "total_retries": self.total_retries,
+            "total_repair_count": self.total_repair_count,
+            "total_tokens_used": self.total_tokens_used,
+            "total_cost": self.total_cost,
+            "capabilities_used": dict(self.capabilities_used),
+            "languages": dict(self.languages),
         }
 
 
-# ── Beta helpers (no scipy dependency) ───────────────────────────────────
-def _betacf(a: float, b: float, x: float) -> float:
-    max_iter, eps, fpmin = 200, 3e-12, 1e-300
-    qab, qap, qam = a + b, a + 1.0, a - 1.0
-    c, d = 1.0, 1.0 - qab * x / qap
-    if abs(d) < fpmin:
-        d = fpmin
-    d = 1.0 / d
-    h = d
-    for m in range(1, max_iter + 1):
-        m2 = 2 * m
-        aa = m * (b - m) * x / ((qam + m2) * (a + m2))
-        d = 1.0 + aa * d
-        if abs(d) < fpmin:
-            d = fpmin
-        c = 1.0 + aa / c
-        if abs(c) < fpmin:
-            c = fpmin
-        d = 1.0 / d
-        h *= d * c
-        aa = -(a + m) * (qab + m) * x / ((a + m2) * (qap + m2))
-        d = 1.0 + aa * d
-        if abs(d) < fpmin:
-            d = fpmin
-        c = 1.0 + aa / c
-        if abs(c) < fpmin:
-            c = fpmin
-        d = 1.0 / d
-        delta = d * c
-        h *= delta
-        if abs(delta - 1.0) < eps:
-            break
-    return h
-
-
-def _betainc(a: float, b: float, x: float) -> float:
-    """Regularized incomplete beta function I_x(a, b)."""
-    if x <= 0.0:
-        return 0.0
-    if x >= 1.0:
-        return 1.0
-    front = math.exp(math.lgamma(a + b) - math.lgamma(a) - math.lgamma(b)
-                     + a * math.log(x) + b * math.log1p(-x))
-    if x < (a + 1.0) / (a + b + 2.0):
-        return front * _betacf(a, b, x) / a
-    return 1.0 - front * _betacf(b, a, 1.0 - x) / b
-
-
-def _beta_ppf(p: float, a: float, b: float) -> float:
-    """Beta distribution percentile via bisection on the regularized CDF."""
-    lo, hi = 0.0, 1.0
-    for _ in range(80):
-        mid = (lo + hi) / 2.0
-        if _betainc(a, b, mid) < p:
-            lo = mid
-        else:
-            hi = mid
-    return (lo + hi) / 2.0
-
-
 class ProviderMemory:
-    """Thread-safe store of per-provider execution evidence."""
+    """Evidence + aggregate memory for providers.  Never raises on record."""
 
     def __init__(self) -> None:
-        self._records: Dict[Tuple[str, str, str, str, str], EvidenceRecord] = {}
-        self._lock = threading.Lock()
+        self._MEMORY_DIR = _MEMORY_DIR
+        self._MEMORY_FILE = _MEMORY_FILE
+        self._records: dict[tuple[str, str, str, str, str], EvidenceRecord] = {}
+        self._legacy_records: dict[str, ProviderAggregate] = {}
+        self._load()
 
-    # ── recording ────────────────────────────────────────────────────
-    def _apply(self, key: Tuple[str, str, str, str, str], success: bool,
-               duration_ms: float, error: str = "") -> EvidenceRecord:
-        with self._lock:
-            record = self._records.get(key)
-            if record is None:
-                record = EvidenceRecord(
-                    provider_id=key[0], capability=key[1], task_type=key[2],
-                    model=key[3], language=key[4])
-                self._records[key] = record
-            record.executions += 1
-            if success:
-                record.successes += 1
-            else:
-                record.failures += 1
-                record.last_error = error
-            record.last_duration_ms = float(duration_ms or 0.0)
-            record.total_duration_ms += float(duration_ms or 0.0)
-            record.last_execution_ts = time.time()
-            record.history.append({
-                "ts": record.last_execution_ts,
-                "success": bool(success),
-                "duration_ms": float(duration_ms or 0.0),
-                "error": error,
-            })
-            if len(record.history) > 200:
-                del record.history[:-200]
-            return record
+    # ------------------------------------------------------------------ #
+    # Recording                                                          #
+    # ------------------------------------------------------------------ #
 
-    def record(self, result: Any) -> EvidenceRecord:
-        """Record a ProviderResult (pipeline feedback)."""
-        metrics = dict(getattr(result, "metrics", None) or {})
+    def record_execution(
+        self,
+        provider_id: str,
+        success: bool,
+        duration_ms: float = 0.0,
+        capability: str = "",
+        language: str = "",
+        task_type: str = "",
+        model: str = "",
+        retries: int = 0,
+        repair_count: int = 0,
+        tokens_used: int = 0,
+        cost: float = 0.0,
+        workflow_id: str = "",
+    ) -> None:
+        """Record one execution: evidence log + legacy aggregate."""
+        try:
+            self.record(ProviderResult(
+                provider_id=provider_id,
+                capability=capability,
+                success=success,
+                duration_ms=duration_ms,
+                metrics={
+                    "task_type": task_type,
+                    "model": model,
+                    "language": language,
+                    "retries": retries,
+                    "repair_count": repair_count,
+                    "tokens_used": tokens_used,
+                    "cost": cost,
+                    "workflow_id": workflow_id,
+                },
+            ))
+        except Exception as exc:
+            logger.debug("[provider_memory] record_execution failed: %s", exc)
+
+    def record(self, result: "ProviderResult") -> None:
+        """Record a ProviderResult into evidence + aggregates."""
+        provider_id = result.provider_id
+        capability = result.capability or ""
+        metrics = result.metrics or {}
+
         key = evidence_key(
-            getattr(result, "provider_id", ""),
-            getattr(result, "capability", ""),
-            metrics.get("task_type", ""),
-            metrics.get("model", ""),
-            metrics.get("language", ""),
+            provider_id,
+            capability,
+            str(metrics.get("task_type", "") or ""),
+            str(metrics.get("model", "") or ""),
+            str(metrics.get("language", "") or ""),
         )
-        error = str(getattr(result, "error", "") or "")
-        return self._apply(key, bool(getattr(result, "success", False)),
-                           float(getattr(result, "duration_ms", 0.0) or 0.0), error)
+        rec = self._records.get(key)
+        if rec is None:
+            rec = EvidenceRecord(provider_id=provider_id, capability=capability)
+            self._records[key] = rec
+        rec.record_outcome(
+            result.success,
+            duration_ms=float(result.duration_ms or 0.0),
+            cost=float(metrics.get("cost", 0.0) or 0.0),
+        )
 
-    def record_execution(self, provider_id: str, success: bool,
-                         duration_ms: float = 0.0, capability: str = "",
-                         task_type: str = "", model: str = "",
-                         language: str = "", error: str = "",
-                         retries: int = 0, **kwargs: Any) -> EvidenceRecord:
-        """Legacy/simple recording path used by benchmark + orchestrator."""
-        key = evidence_key(provider_id, capability, task_type, model, language)
-        return self._apply(key, success, duration_ms, error)
+        agg = self._legacy_records.setdefault(provider_id, ProviderAggregate(provider_id=provider_id))
+        agg.total_executions += 1
+        if result.success:
+            agg.successful_executions += 1
+            agg.consecutive_failures = 0
+        else:
+            agg.consecutive_failures += 1
+        agg.total_duration_ms += float(result.duration_ms or 0.0)
+        agg.total_retries += int(metrics.get("retries", 0) or 0)
+        agg.total_repair_count += int(metrics.get("repair_count", 0) or 0)
+        agg.total_tokens_used += int(metrics.get("tokens_used", 0) or 0)
+        agg.total_cost += float(metrics.get("cost", 0.0) or 0.0)
+        if capability:
+            agg.capabilities_used[capability] = agg.capabilities_used.get(capability, 0) + 1
+        language = str(metrics.get("language", "") or "")
+        if language:
+            agg.languages[language] = agg.languages.get(language, 0) + 1
 
-    # ── lookup ───────────────────────────────────────────────────────
-    def _lookup(self, key: Tuple[str, str, str, str, str]) -> Optional[EvidenceRecord]:
-        with self._lock:
-            for pattern in _FALLBACK_CHAIN:
-                candidate = _match_keys(key, pattern)
-                record = self._records.get(candidate)
-                if record is not None:
-                    return record
+    # ------------------------------------------------------------------ #
+    # Legacy aggregate accessors                                         #
+    # ------------------------------------------------------------------ #
+
+    def get_record(self, provider_id: str) -> ProviderAggregate:
+        return self._legacy_records.get(provider_id, ProviderAggregate(provider_id=provider_id))
+
+    def get_score(self, provider_id: str) -> float:
+        """Trusted success score; 0.5 prior below MIN_SAMPLES_FOR_SCORE."""
+        agg = self._legacy_records.get(provider_id)
+        if agg is None or agg.total_executions < MIN_SAMPLES_FOR_SCORE:
+            return _PRIOR
+        return agg.success_rate
+
+    def get_all_scores(self) -> dict[str, float]:
+        return {pid: self.get_score(pid) for pid in self._legacy_records}
+
+    def should_skip(self, provider_id: str) -> bool:
+        agg = self._legacy_records.get(provider_id)
+        if agg is None:
+            return False
+        if agg.consecutive_failures >= 3:
+            return True
+        if agg.total_executions >= 5 and agg.success_rate < 0.2:
+            return True
+        return False
+
+    def get_success_rate(self, provider_id: str) -> float:
+        agg = self._legacy_records.get(provider_id)
+        return agg.success_rate if agg else 0.0
+
+    def get_avg_duration(self, provider_id: str) -> float:
+        agg = self._legacy_records.get(provider_id)
+        if agg is None or agg.total_executions == 0:
+            return 0.0
+        return round(agg.total_duration_ms / agg.total_executions, 3)
+
+    def get_avg_cost(self, provider_id: str) -> float:
+        agg = self._legacy_records.get(provider_id)
+        if agg is None or agg.total_executions == 0:
+            return 0.0
+        return round(agg.total_cost / agg.total_executions, 6)
+
+    def get_confidence(
+        self,
+        provider_id: str,
+        capability: str = "",
+        task_type: str = "",
+        model: str = "",
+    ) -> float:
+        """Evidence-scaled confidence: n/(n+1).
+
+        Without a capability filter: confidence over ALL evidence of the
+        provider.  With a capability (and optional task_type/model): confidence
+        of the fallback-matched evidence record for that context.
+        """
+        if not capability:
+            n = 0
+            for key, rec in self._records.items():
+                if key[0] == provider_id:
+                    n += rec.executions
+        else:
+            dist = self.get_distribution(provider_id, capability, task_type, model)
+            n = dist.executions if dist is not None else 0
+        if n == 0:
+            return 0.0
+        return round(n / (n + 1), 4)
+
+    # ------------------------------------------------------------------ #
+    # Distribution + score lookups (fallback chain)                      #
+    # ------------------------------------------------------------------ #
+
+    def get_distribution(
+        self,
+        provider_id: str,
+        capability: str,
+        task_type: str = "",
+        model: str = "",
+        language: str = "",
+    ) -> Optional[EvidenceDistribution]:
+        """Find matching evidence, walking the fallback chain lookup→stored."""
+        lookup = evidence_key(provider_id, capability, task_type, model, language)
+        for pattern in _FALLBACK_CHAIN:
+            match_key = _match_keys(lookup, pattern)
+            rec = self._records.get(match_key)
+            if rec is not None and rec.executions > 0:
+                return EvidenceDistribution(
+                    executions=rec.executions,
+                    successes=rec.successes,
+                    failures=rec.failures,
+                    matched_key=match_key,
+                )
         return None
 
-    def get_distribution(self, provider_id: str, capability: str = "",
-                         task_type: str = "", model: str = "",
-                         language: str = "") -> Optional[EvidenceRecord]:
-        return self._lookup(evidence_key(provider_id, capability, task_type,
-                                         model, language))
+    def get_performance_score(self, provider_id: str, task: dict[str, Any]) -> float:
+        """Conservative 90% lower-bound success estimate for a prospective task.
 
-    def get_record(self, provider_id: str) -> Optional[EvidenceRecord]:
-        """Aggregate evidence for a provider across all of its buckets."""
-        with self._lock:
-            matches = [r for key, r in self._records.items()
-                       if key[0] == str(provider_id)]
-        if not matches:
-            return None
-        aggregate = EvidenceRecord(provider_id=str(provider_id))
-        for record in matches:
-            aggregate.executions += record.executions
-            aggregate.successes += record.successes
-            aggregate.failures += record.failures
-            aggregate.total_duration_ms += record.total_duration_ms
-            aggregate.last_duration_ms = max(aggregate.last_duration_ms,
-                                             record.last_duration_ms)
-            aggregate.last_execution_ts = max(aggregate.last_execution_ts,
-                                              record.last_execution_ts)
-            if record.last_error:
-                aggregate.last_error = record.last_error
-        return aggregate
-
-    def get_confidence(self, provider_id: str, capability: str = "",
-                       task_type: str = "", model: str = "",
-                       language: str = "") -> float:
-        record = self._lookup(evidence_key(provider_id, capability, task_type,
-                                           model, language))
-        if record is None or record.executions == 0:
-            return 0.0
-        return min(1.0, record.executions / 5.0)
-
-    def get_performance_score(self, provider_id: str,
-                              context: Optional[dict]) -> float:
-        """Conservative 10th-percentile lower bound; 0.5 without evidence."""
-        context = context or {}
-        record = self._lookup(evidence_key(
+        Returns the 0.5 prior when no evidence matches.
+        """
+        lookup = evidence_key(
             provider_id,
-            context.get("capability", ""),
-            context.get("task_type", ""),
-            context.get("model", ""),
-            context.get("language", ""),
-        ))
-        if record is None or record.executions == 0:
-            return 0.5
-        a = record.successes + 1.0
-        b = record.failures + 1.0
-        return float(_beta_ppf(0.10, a, b))
+            str(task.get("capability", "") or ""),
+            str(task.get("task_type", "") or ""),
+            str(task.get("model", "") or ""),
+            str(task.get("language", "") or ""),
+        )
+        for pattern in _FALLBACK_CHAIN:
+            match_key = _match_keys(lookup, pattern)
+            rec = self._records.get(match_key)
+            if rec is None or rec.executions == 0:
+                continue
+            eff_s, eff_f = rec._weighted_counts()
+            n = eff_s + eff_f
+            if n <= 0:
+                continue
+            p_hat = eff_s / n
+            # Wilson lower bound (90%): conservative estimate of true success
+            denom = 1.0 + (_Z90 ** 2) / n
+            centre = p_hat + (_Z90 ** 2) / (2.0 * n)
+            margin = _Z90 * math.sqrt((p_hat * (1.0 - p_hat)) / n + (_Z90 ** 2) / (4.0 * n * n))
+            return round(max(0.0, (centre - margin) / denom), 4)
+        return _PRIOR
 
-    # ── housekeeping ─────────────────────────────────────────────────
-    def all_records(self) -> list:
-        with self._lock:
-            return list(self._records.values())
+    # ------------------------------------------------------------------ #
+    # Persistence                                                        #
+    # ------------------------------------------------------------------ #
 
-    def clear(self) -> None:
-        with self._lock:
-            self._records.clear()
-
-    def persist(self) -> None:
-        """Best-effort snapshot of the evidence store (never raises)."""
+    def _save(self) -> bool:
         try:
-            import json
+            payload = {
+                "records": {json.dumps(k): rec.to_dict() for k, rec in self._records.items()},
+                "legacy": {pid: agg.to_dict() for pid, agg in self._legacy_records.items()},
+                "saved_at": time.time(),
+            }
+            self._MEMORY_FILE.write_text(json.dumps(payload), encoding="utf-8")
+            return True
+        except Exception as exc:
+            logger.debug("[provider_memory] save failed: %s", exc)
+            return False
 
-            _MEMORY_FILE.parent.mkdir(parents=True, exist_ok=True)
-            with self._lock:
-                payload = {",".join(key): record.to_dict()
-                           for key, record in self._records.items()}
-            _MEMORY_FILE.write_text(json.dumps(payload, indent=1),
-                                    encoding="utf-8")
-        except Exception:  # noqa: BLE001 — persistence is best-effort
-            pass
+    def _load(self) -> bool:
+        try:
+            if not self._MEMORY_FILE.exists():
+                return False
+            payload = json.loads(self._MEMORY_FILE.read_text(encoding="utf-8"))
+            for key_json, rec_data in payload.get("records", {}).items():
+                key = tuple(json.loads(key_json))
+                self._records[key] = EvidenceRecord.from_dict(rec_data)
+            for pid, agg_data in payload.get("legacy", {}).items():
+                agg = ProviderAggregate(
+                    provider_id=agg_data.get("provider_id", pid),
+                    total_executions=agg_data.get("total_executions", 0),
+                    successful_executions=agg_data.get("successful_executions", 0),
+                    consecutive_failures=agg_data.get("consecutive_failures", 0),
+                    total_retries=agg_data.get("total_retries", 0),
+                    total_repair_count=agg_data.get("total_repair_count", 0),
+                    total_tokens_used=agg_data.get("total_tokens_used", 0),
+                    total_cost=agg_data.get("total_cost", 0.0),
+                    total_duration_ms=agg_data.get("total_duration_ms", 0.0),
+                    capabilities_used=agg_data.get("capabilities_used", {}),
+                    languages=agg_data.get("languages", {}),
+                )
+                self._legacy_records[pid] = agg
+            return True
+        except Exception as exc:
+            logger.debug("[provider_memory] load failed: %s", exc)
+            return False
 
 
 provider_memory = ProviderMemory()
-
-
-__all__ = ["EvidenceRecord", "ProviderMemory", "provider_memory",
-           "evidence_key", "_FALLBACK_CHAIN", "_match_keys", "_MEMORY_FILE"]
