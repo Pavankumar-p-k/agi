@@ -1,43 +1,59 @@
-"""
-Module: core.generalization.derived
-Auto-reconstructed backend component.
-"""
+"""Derived property extraction (Phase 14.4)."""
 from __future__ import annotations
-from typing import Any, Callable, Optional
-from dataclasses import dataclass, field
-import logging
 
-logger = logging.getLogger(__name__)
+import statistics
+from typing import List, Optional
 
-class DynamicMeta(type):
-    def __getattr__(cls, name: str) -> Any:
-        return name
-
-@dataclass
-class DerivedPropertyExtractor(metaclass=DynamicMeta):
-    def __init__(self, *args, **kwargs):
-        for k, v in kwargs.items():
-            setattr(self, k, v)
-    def __getattr__(self, name: str) -> Any:
-        return lambda *a, **kw: None
-    def __call__(self, *args, **kwargs) -> Any:
-        return self
-    async def __aenter__(self):
-        return self
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        pass
+from core.generalization.models import SystemProfile, SystemType
 
 
-def __getattr__(name: str) -> Any:
-    class DynamicStub(metaclass=DynamicMeta):
-        def __init__(self, *args, **kwargs):
-            pass
-        def __call__(self, *args, **kwargs):
-            return self
-        def __getattr__(self, item):
-            return DynamicStub()
-        async def __aenter__(self):
-            return self
-        async def __aexit__(self, exc_type, exc_val, exc_tb):
-            pass
-    return DynamicStub()
+def _is_numeric(value) -> bool:
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
+class DerivedPropertyExtractor:
+    """Average numeric properties across a system's executions."""
+
+    def __init__(self, registry) -> None:
+        self.registry = registry
+
+    def compute_all(self, points: List) -> List[SystemProfile]:
+        if not points:
+            return []
+        system_ids: List[str] = []
+        for point in points:
+            if point.system_id not in system_ids:
+                system_ids.append(point.system_id)
+        updated: List[SystemProfile] = []
+        for system_id in system_ids:
+            profile = self.compute_for_system(points, system_id)
+            if profile is not None:
+                updated.append(profile)
+        return updated
+
+    def compute_for_system(
+        self, points: List, system_id: str
+    ) -> Optional[SystemProfile]:
+        subset = [p for p in points if p.system_id == system_id]
+        if not subset:
+            return None
+
+        derived_names = self.registry.derived_property_names()
+        values = {}
+        for name in derived_names:
+            numbers = [
+                p.properties[name] for p in subset
+                if _is_numeric(p.properties.get(name))
+            ]
+            if numbers:
+                values[name] = round(statistics.mean(numbers), 3)
+
+        if not values:
+            return None
+
+        profile = self.registry.get_profile(system_id)
+        if profile is None:
+            profile = SystemProfile(system_id, SystemType.TOOL, {})
+        profile.properties.update(values)
+        self.registry.register_profile(profile)
+        return profile

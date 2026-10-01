@@ -1,43 +1,23 @@
-"""
-Module: core.strategy.v2.evaluator
-Auto-reconstructed backend component.
-"""
+"""Strategic evaluation for v2 (Phase 15.1)."""
 from __future__ import annotations
-from typing import Any, Callable, Optional
-from dataclasses import dataclass, field
-import logging
 
-logger = logging.getLogger(__name__)
+from typing import List, Tuple
 
-class DynamicMeta(type):
-    def __getattr__(cls, name: str) -> Any:
-        return name
-
-@dataclass
-class StrategicEvaluator(metaclass=DynamicMeta):
-    def __init__(self, *args, **kwargs):
-        for k, v in kwargs.items():
-            setattr(self, k, v)
-    def __getattr__(self, name: str) -> Any:
-        return lambda *a, **kw: None
-    def __call__(self, *args, **kwargs) -> Any:
-        return self
-    async def __aenter__(self):
-        return self
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        pass
+from core.strategy.v2.models import StrategyCandidate
+from core.strategy.v2.tradeoffs import TradeoffEngine
 
 
-def __getattr__(name: str) -> Any:
-    class DynamicStub(metaclass=DynamicMeta):
-        def __init__(self, *args, **kwargs):
-            pass
-        def __call__(self, *args, **kwargs):
-            return self
-        def __getattr__(self, item):
-            return DynamicStub()
-        async def __aenter__(self):
-            return self
-        async def __aexit__(self, exc_type, exc_val, exc_tb):
-            pass
-    return DynamicStub()
+class StrategicEvaluator:
+    """Score candidates and return (candidate, analysis) sorted by utility."""
+
+    def __init__(self, tradeoff_engine=None) -> None:
+        self.tradeoffs = tradeoff_engine or TradeoffEngine()
+
+    def evaluate(
+        self, candidates: List[StrategyCandidate]
+    ) -> List[Tuple[StrategyCandidate, object]]:
+        candidates = list(candidates or [])
+        analyses = {a.strategy_id: a for a in self.tradeoffs.analyze_all(candidates)}
+        results = [(c, analyses[c.strategy_id]) for c in candidates]
+        results.sort(key=lambda pair: pair[1].net_utility, reverse=True)
+        return results

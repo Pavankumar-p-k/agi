@@ -1,43 +1,34 @@
-"""
-Module: core.strategy.v2.predictor
-Auto-reconstructed backend component.
-"""
+"""Outcome prediction for v2 strategies (Phase 15.1)."""
 from __future__ import annotations
-from typing import Any, Callable, Optional
-from dataclasses import dataclass, field
-import logging
 
-logger = logging.getLogger(__name__)
+from typing import List, Tuple
 
-class DynamicMeta(type):
-    def __getattr__(cls, name: str) -> Any:
-        return name
-
-@dataclass
-class OutcomePredictor(metaclass=DynamicMeta):
-    def __init__(self, *args, **kwargs):
-        for k, v in kwargs.items():
-            setattr(self, k, v)
-    def __getattr__(self, name: str) -> Any:
-        return lambda *a, **kw: None
-    def __call__(self, *args, **kwargs) -> Any:
-        return self
-    async def __aenter__(self):
-        return self
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        pass
+from core.strategy.v2.models import StrategyCandidate, TimeHorizon
 
 
-def __getattr__(name: str) -> Any:
-    class DynamicStub(metaclass=DynamicMeta):
-        def __init__(self, *args, **kwargs):
-            pass
-        def __call__(self, *args, **kwargs):
-            return self
-        def __getattr__(self, item):
-            return DynamicStub()
-        async def __aenter__(self):
-            return self
-        async def __aexit__(self, exc_type, exc_val, exc_tb):
-            pass
-    return DynamicStub()
+class OutcomePredictor:
+    """Assign a time horizon and improvement range to candidates."""
+
+    def predict(self, candidate: StrategyCandidate) -> StrategyCandidate:
+        cost = candidate.implementation_cost
+        risk = candidate.risk
+        if cost >= 0.6 or risk >= 0.6:
+            candidate.time_horizon = TimeHorizon.LONG_TERM
+        elif cost <= 0.25 and risk <= 0.25:
+            candidate.time_horizon = TimeHorizon.SHORT_TERM
+        else:
+            candidate.time_horizon = TimeHorizon.MEDIUM_TERM
+        return candidate
+
+    def predict_all(self, candidates: List[StrategyCandidate]) -> List[StrategyCandidate]:
+        for candidate in candidates or []:
+            self.predict(candidate)
+        return candidates
+
+    def estimate_improvement_range(
+        self, candidate: StrategyCandidate
+    ) -> Tuple[float, float]:
+        spread = (1.0 - candidate.confidence) * candidate.overall_improvement
+        pessimistic = candidate.overall_improvement - spread
+        optimistic = candidate.overall_improvement + spread
+        return pessimistic, optimistic

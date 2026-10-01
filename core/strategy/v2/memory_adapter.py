@@ -1,43 +1,35 @@
-"""
-Module: core.strategy.v2.memory_adapter
-Auto-reconstructed backend component.
-"""
+"""Memory adapter for v2 strategy (Phase 15.1)."""
 from __future__ import annotations
-from typing import Any, Callable, Optional
-from dataclasses import dataclass, field
-import logging
 
-logger = logging.getLogger(__name__)
+from typing import List
 
-class DynamicMeta(type):
-    def __getattr__(cls, name: str) -> Any:
-        return name
-
-@dataclass
-class StrategyMemoryAdapter(metaclass=DynamicMeta):
-    def __init__(self, *args, **kwargs):
-        for k, v in kwargs.items():
-            setattr(self, k, v)
-    def __getattr__(self, name: str) -> Any:
-        return lambda *a, **kw: None
-    def __call__(self, *args, **kwargs) -> Any:
-        return self
-    async def __aenter__(self):
-        return self
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        pass
+_OPEN_STATUSES = {"generated", "approved"}
 
 
-def __getattr__(name: str) -> Any:
-    class DynamicStub(metaclass=DynamicMeta):
-        def __init__(self, *args, **kwargs):
-            pass
-        def __call__(self, *args, **kwargs):
-            return self
-        def __getattr__(self, item):
-            return DynamicStub()
-        async def __aenter__(self):
-            return self
-        async def __aexit__(self, exc_type, exc_val, exc_tb):
-            pass
-    return DynamicStub()
+def _status(proposal) -> str:
+    return getattr(proposal.status, "value", proposal.status)
+
+
+class StrategyMemoryAdapter:
+    """Read proposals from a proposal store."""
+
+    def __init__(self, store) -> None:
+        self.store = store
+
+    def get_open_proposals(self) -> List:
+        return [
+            p for p in self.store.list_proposals()
+            if _status(p) in _OPEN_STATUSES
+        ]
+
+    def get_experimenting_proposals(self) -> List:
+        return [
+            p for p in self.store.list_proposals()
+            if _status(p) == "experimenting"
+        ]
+
+    def count_open_proposals(self) -> int:
+        return len(self.get_open_proposals())
+
+    def get_proposal(self, proposal_id: str):
+        return self.store.get_proposal(proposal_id)

@@ -1,43 +1,41 @@
-"""
-Module: core.generalization.prioritizer
-Auto-reconstructed backend component.
-"""
+"""Proposal prioritization (Phase 14.2)."""
 from __future__ import annotations
-from typing import Any, Callable, Optional
-from dataclasses import dataclass, field
-import logging
 
-logger = logging.getLogger(__name__)
-
-class DynamicMeta(type):
-    def __getattr__(cls, name: str) -> Any:
-        return name
-
-@dataclass
-class ProposalPrioritizer(metaclass=DynamicMeta):
-    def __init__(self, *args, **kwargs):
-        for k, v in kwargs.items():
-            setattr(self, k, v)
-    def __getattr__(self, name: str) -> Any:
-        return lambda *a, **kw: None
-    def __call__(self, *args, **kwargs) -> Any:
-        return self
-    async def __aenter__(self):
-        return self
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        pass
+from typing import Callable, List, Optional, Tuple
 
 
-def __getattr__(name: str) -> Any:
-    class DynamicStub(metaclass=DynamicMeta):
-        def __init__(self, *args, **kwargs):
-            pass
-        def __call__(self, *args, **kwargs):
-            return self
-        def __getattr__(self, item):
-            return DynamicStub()
-        async def __aenter__(self):
-            return self
-        async def __aexit__(self, exc_type, exc_val, exc_tb):
-            pass
-    return DynamicStub()
+class ProposalPrioritizer:
+    """Rank proposals by expected value times applicability."""
+
+    def __init__(
+        self, applicability_fn: Optional[Callable] = None
+    ) -> None:
+        self.applicability_fn = applicability_fn
+
+    def _applicability(self, proposal) -> float:
+        if self.applicability_fn is not None:
+            try:
+                return float(self.applicability_fn(proposal))
+            except Exception:
+                return 1.0
+        return 1.0
+
+    def score(self, proposal) -> float:
+        return (
+            proposal.expected_improvement
+            * proposal.confidence
+            * self._applicability(proposal)
+        )
+
+    def rank(
+        self, proposals: List, max_results: int = 10
+    ) -> List[Tuple[object, float]]:
+        scored = [(p, self.score(p)) for p in (proposals or [])]
+        scored.sort(key=lambda pair: pair[1], reverse=True)
+        if max_results and max_results > 0:
+            return scored[:max_results]
+        return scored
+
+    @staticmethod
+    def domain_count_applicability(proposal, domain_count: int) -> float:
+        return min(1.0, max(0, domain_count) / 3.0)
