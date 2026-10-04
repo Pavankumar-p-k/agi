@@ -86,15 +86,48 @@ async def do_api_call(
         return {"error": f"{type(exc).__name__}: {exc}", "exit_code": 1}
 
 
-async def do_browser_screenshot(**kwargs: Any) -> dict[str, Any]:
-    """Delegate to the real browser backend (core.tools.browser_tools)."""
+def _live_browser_session(session_id: str) -> bool:
+    """True when a browser session for *session_id* is already live."""
+    try:
+        from core.browser_manager import BrowserManager
+
+        session = BrowserManager.instance().get_session(session_id)
+        return session is not None and bool(session.alive)
+    except Exception:  # noqa: BLE001 — no manager means no session
+        return False
+
+
+def _no_session_error(session_id: str) -> dict[str, Any]:
+    return {
+        "status": "error",
+        "error": (
+            f"no live browser session '{session_id}' — establish a browser "
+            "session before capturing"
+        ),
+        "error_type": "BrowserUnavailable",
+    }
+
+
+async def do_browser_screenshot(session_id: str = "default",
+                                **kwargs: Any) -> dict[str, Any]:
+    """Screenshot the live session's page; fail fast without one.
+
+    This dispatch layer never spawns a browser implicitly — callers
+    establish a session first (browser flows), and a request without a
+    live session fails honestly instead of blocking on a cold launch.
+    """
+    if not _live_browser_session(session_id):
+        return _no_session_error(session_id)
     from core.tools.browser_tools import do_browser_screenshot as _impl
 
-    return await _impl(**kwargs)
+    return await _impl(session_id=session_id, **kwargs)
 
 
-async def do_browser_snapshot(**kwargs: Any) -> dict[str, Any]:
-    """Delegate to the real browser backend (core.tools.browser_tools)."""
+async def do_browser_snapshot(session_id: str = "default",
+                              **kwargs: Any) -> dict[str, Any]:
+    """Snapshot the live session's page; fail fast without one."""
+    if not _live_browser_session(session_id):
+        return _no_session_error(session_id)
     from core.tools.browser_tools import do_browser_snapshot as _impl
 
-    return await _impl(**kwargs)
+    return await _impl(session_id=session_id, **kwargs)

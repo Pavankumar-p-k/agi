@@ -10,9 +10,11 @@ Dispatch order for ``execute_tool_block(block, ...)``:
 2. disabled_tools → blocked
 3. RBAC via core.authz (unknown tool → blocked)
 4. plugin handlers (_PLUGIN_TOOL_HANDLERS)
-5. mcp__server__tool → MCP manager (module-level for patchability)
-6. email send tools → artifact registration on success
-7. core.tools.implementations.do_<tool> / async_do_<tool>
+5. mcp__server__tool → MCP manager (module-level for patchability);
+   artifact: attachment refs resolve against the workflow context and
+   sent emails register an ``email_sent`` artifact
+6. core.tools.implementations.do_<tool> / async_do_<tool>; browser
+   screenshots/snapshots register workflow artifacts
 
 Path helpers (_tool_path_roots/_resolve_tool_path/_is_sensitive_path) enforce
 the existing filesystem safety boundary: tool file access stays inside allowed
@@ -160,43 +162,161 @@ def get_mcp_manager() -> Any:
         return None
 
 
-def _register_email_artifact(result: dict[str, Any], args: dict[str, Any]) -> Optional[str]:
-    """Register a sent email as an artifact; artifact id or None on failure."""
+def _context_store(ctx: Any):
+    """WorkflowStore rooted at the context's ``_store_path`` (or None)."""
+    store_path = (getattr(ctx, "metadata", None) or {}).get("_store_path")
+    if not store_path:
+        return None
     try:
-        if not result or result.get("sent") is False or result.get("success") is False:
-            return None
-        from core.workflow.artifacts import register_email_artifact  # existing store
-        return register_email_artifact(result, args)
-    except Exception as exc:
-        logger.debug("[execution] email artifact registration failed: %s", exc)
+        from core.workflow.storage import WorkflowStore
+
+        return WorkflowStore(store_path)
+    except Exception:  # noqa: BLE001
         return None
 
 
-def _resolve_artifact_attachments(args: dict[str, Any]) -> dict[str, Any]:
-    """Replace ``artifact:<id>`` attachment refs with real file paths."""
-    resolved = dict(args or {})
-    attachments = resolved.get("attachments")
-    if not isinstance(attachments, list):
-        return resolved
-    fixed: list[str] = []
-    for item in attachments:
-        if isinstance(item, str) and item.startswith("artifact:"):
-            ref = item.split(":", 1)[1]
-            try:
-                from core.workflow.artifacts import resolve_artifact_path
-                path = resolve_artifact_path(ref)
-            except Exception:
+def _resolve_artifact_attachments(
+    attachments: list[str], ctx: Any = None
+) -> list[str]:
+    """Replace ``artifact:<id>`` attachment refs with real file paths.
+
+    Unresolvable refs and plain paths are returned unchanged; a missing
+    context returns the input list as-is.
+    """
+    if ctx is None or not attachments:
+        return attachments
+    resolved: list[str] = []
+    store = None
+    try:
+        for item in attachments:
+            if isinstance(item, str) and item.startswith("artifact:"):
+                path = None
                 try:
                     from core.workflow.artifact_store import resolve_artifact_path
-                    path = resolve_artifact_path(ref)
-                except Exception:
+
+                    if store is None:
+                        store = _context_store(ctx)
+                    if store is not None:
+                        path = resolve_artifact_path(
+                            item.split(":", 1)[1], store
+                        )
+                except Exception:  # noqa: BLE001 — bad ref stays as-is
                     path = None
-            if path:
-                fixed.append(str(path))
-        else:
-            fixed.append(item)
-    resolved["attachments"] = fixed
+                resolved.append(str(path) if path else item)
+            else:
+                resolved.append(item)
+    finally:
+        if store is not None:
+            try:
+                store.close()
+            except Exception:  # noqa: BLE001
+                pass
     return resolved
+
+
+async def _register_email_artifact(result: dict[str, Any], ctx: Any) -> dict[str, Any]:
+    """Register a successfully sent email as an ``email_sent`` artifact.
+
+    Returns ``{"email_sent": artifact_id}`` on success, ``{}`` when there
+    is no context, no send confirmation, or registration fails.
+    """
+    if ctx is None or not isinstance(result, dict) or result.get("sent") is not True:
+        return {}
+    try:
+        from datetime import datetime, timezone
+
+        from core.workflow.artifact_store import ArtifactStore
+        from core.workflow.context import ContextManager
+
+        store = _context_store(ctx)
+        if store is None:
+            return {}
+        try:
+            ref = ArtifactStore(store).register_artifact(
+                workflow_id=getattr(ctx, "workflow_id", "") or "",
+                name="sent_email",
+                artifact_type="email_sent",
+                path="",
+                metadata={
+                    "to": result.get("to"),
+                    "subject": result.get("subject"),
+                    "message_id": result.get("message_id"),
+                    "sent_at": datetime.now(timezone.utc).isoformat(),
+                },
+            )
+            ctx.artifacts["email_sent"] = ref.artifact_id
+            ContextManager(store).update_context(ctx)
+            return {"email_sent": ref.artifact_id}
+        finally:
+            store.close()
+    except Exception as exc:  # noqa: BLE001 — registration must never break mail
+        logger.debug("[execution] email artifact registration failed: %s", exc)
+        return {}
+
+
+async def _register_browser_artifact(
+    tool_type: str, result: Any, ctx: Any
+) -> None:
+    """Persist a browser screenshot/snapshot and register it as an artifact.
+
+    Saves the payload under ``data/artifacts/<workflow_id>/`` and records
+    it in the context (``screenshot`` / ``snapshot`` key).  Errors results
+    produce no artifacts.
+    """
+    if ctx is None or not isinstance(result, dict) or result.get("error"):
+        return
+    try:
+        import base64
+        import uuid as uuid_mod
+
+        from core.workflow.artifact_store import ArtifactStore
+        from core.workflow.context import ContextManager
+
+        if tool_type == "browser_screenshot":
+            b64 = result.get("screenshot")
+            if not b64:
+                return
+            key, artifact_type, ext = "screenshot", "screenshot", ".png"
+        elif tool_type == "browser_snapshot":
+            key, artifact_type, ext = "snapshot", "html_snapshot", ".json"
+        else:
+            return
+
+        store = _context_store(ctx)
+        if store is None:
+            return
+        try:
+            out_dir = Path(DATA_DIR) / "artifacts" / (
+                getattr(ctx, "workflow_id", None) or "workflow"
+            )
+            out_dir.mkdir(parents=True, exist_ok=True)
+            path = out_dir / f"{key}_{uuid_mod.uuid4().hex[:12]}{ext}"
+            if ext == ".png":
+                path.write_bytes(base64.b64decode(b64))
+            else:
+                path.write_text(
+                    json.dumps(result, indent=2, default=str),
+                    encoding="utf-8",
+                )
+            meta = {
+                "url": result.get("url"),
+                "title": result.get("title"),
+            }
+            if ext == ".png":
+                meta["mime"] = result.get("mime")
+            ref = ArtifactStore(store).register_artifact(
+                workflow_id=getattr(ctx, "workflow_id", "") or "",
+                name=key,
+                artifact_type=artifact_type,
+                path=str(path),
+                metadata=meta,
+            )
+            ctx.artifacts[key] = ref.artifact_id
+            ContextManager(store).update_context(ctx)
+        finally:
+            store.close()
+    except Exception as exc:  # noqa: BLE001 — artifacts must never fail a step
+        logger.debug("[execution] browser artifact registration failed: %s", exc)
 
 
 # ── Plugin tool registration ────────────────────────────────────────────────
@@ -265,18 +385,37 @@ def _looks_like_json(content: str) -> bool:
 
 
 def _rbac_allows(tool_type: str, owner: Optional[str]) -> bool:
-    """Consult the existing authz/policy engines; unknown tools are denied.
+    """Two-gate allow check: explicit authz grant, then the owner blocklist.
 
-    The existing single-user security model (core.tools.security) governs the
-    default: an admin/single-user owner passes the authz gate; a non-admin
-    owner must be explicitly granted the tool scope.  This gate only ever
-    narrows execution — it never widens permissions.
+    Gate 1 — ``authz_engine.evaluate`` is consulted with the owner's scope
+    context (an admin/single-user owner carries the wildcard scope); an
+    explicit grant allows the tool.
+
+    Gate 2 — when the evaluator does not grant, the standing rule from
+    ``core.tools.security`` applies: non-admin owners may not run the
+    critical-tool blocklist; everything else is allowed.
+
+    This gate only ever narrows execution — it never widens permissions.
     """
     try:
-        # Scope evaluation is owned by core.tools.security (architecture
-        # Rule 17) — dispatch code must not touch the policy engine directly.
-        from core.tools.security import authorize_tool_scope
-        return authorize_tool_scope(tool_type, owner)
+        from core.authz.engine import authz_engine
+        from core.authz.schema import AuthContext
+        from core.tools.security import (
+            blocked_tools_for_owner,
+            owner_is_admin_or_single_user,
+        )
+
+        if owner_is_admin_or_single_user(owner):
+            auth_ctx = AuthContext(user_id=str(owner or "single_user"),
+                                   scopes={"tools:execute:*"})
+        else:
+            auth_ctx = AuthContext(user_id=str(owner or "user"), scopes=set())
+        try:
+            if authz_engine.evaluate(auth_ctx, "tools:execute:" + str(tool_type)):
+                return True
+        except Exception:  # noqa: BLE001 — evaluator errors fall to the blocklist
+            pass
+        return str(tool_type) not in blocked_tools_for_owner(owner)
     except Exception as exc:
         logger.debug("[execution] authz unavailable, denying %s: %s", tool_type, exc)
         return False
@@ -287,8 +426,14 @@ async def execute_tool_block(
     owner: Optional[str] = None,
     execution_context: Optional[dict[str, Any]] = None,
     disabled_tools: Optional[set[str]] = None,
+    context: Any = None,
 ) -> tuple[str, dict[str, Any]]:
-    """Execute one tool block, returning (description, result dict)."""
+    """Execute one tool block, returning (description, result dict).
+
+    ``context`` is the optional workflow ExecutionContext; when present,
+    MCP attachments are resolved against its artifact store and successful
+    browser/email results are registered as workflow artifacts.
+    """
     tool_type = str(getattr(block, "tool_type", "") or "")
     content = str(getattr(block, "content", "") or "")
 
@@ -343,13 +488,15 @@ async def execute_tool_block(
 
     # 5. MCP tools: mcp__server__tool.
     if tool_type.startswith("mcp__"):
-        return await _dispatch_mcp(tool_type, content)
+        return await _dispatch_mcp(tool_type, content, context)
 
     # 6. Built-in implementations.
-    return await _dispatch_implementation(tool_type, content, owner)
+    return await _dispatch_implementation(tool_type, content, owner, context)
 
 
-async def _dispatch_mcp(tool_type: str, content: str) -> tuple[str, dict[str, Any]]:
+async def _dispatch_mcp(
+    tool_type: str, content: str, context: Any = None
+) -> tuple[str, dict[str, Any]]:
     parts = tool_type.split("__")
     server = parts[1] if len(parts) > 1 else ""
     tool = parts[2] if len(parts) > 2 else tool_type
@@ -363,13 +510,19 @@ async def _dispatch_mcp(tool_type: str, content: str) -> tuple[str, dict[str, An
         args = json.loads(content) if _looks_like_json(content) else {}
         if not isinstance(args, dict):
             args = {"input": content}
-        args = _resolve_artifact_attachments(args)
-        result = await manager.call_tool(server, tool, args)
+        attachments = args.get("attachments")
+        if context is not None and isinstance(attachments, list):
+            args["attachments"] = _resolve_artifact_attachments(
+                attachments, context
+            )
+        # MCP servers take (name, arguments) with the bare tool name —
+        # matches jarvis_mcp/*Server.call_tool and the documented contract.
+        result = await manager.call_tool(tool, args)
         result = result if isinstance(result, dict) else {"result": result}
         if server == "email" and tool in ("send_email", "email_send"):
-            artifact_id = _register_email_artifact(result, args)
-            if artifact_id:
-                result["artifact_id"] = artifact_id
+            artifacts = await _register_email_artifact(result, context)
+            if artifacts:
+                result["_artifacts"] = artifacts
         return f"mcp tool '{tool_type}' executed", result
     except Exception as exc:
         return (
@@ -392,6 +545,7 @@ async def _dispatch_implementation(
     tool_type: str,
     content: str,
     owner: Optional[str],
+    context: Any = None,
 ) -> tuple[str, dict[str, Any]]:
     try:
         from core.tools import implementations
@@ -427,6 +581,11 @@ async def _dispatch_implementation(
         if hasattr(outcome, "__await__"):
             outcome = await outcome
         outcome = outcome if isinstance(outcome, dict) else {"result": outcome}
+        if context is not None and tool_type in (
+            "browser_screenshot",
+            "browser_snapshot",
+        ):
+            await _register_browser_artifact(tool_type, outcome, context)
         return f"tool '{tool_type}' executed", dict(outcome)
     except Exception as exc:
         return (
@@ -440,6 +599,7 @@ async def async_execute_tool_block(
     owner: Optional[str] = None,
     execution_context: Optional[dict[str, Any]] = None,
     disabled_tools: Optional[set[str]] = None,
+    context: Any = None,
 ) -> tuple[str, dict[str, Any]]:
     """Async alias retained for existing importers."""
     return await execute_tool_block(
@@ -447,4 +607,5 @@ async def async_execute_tool_block(
         owner=owner,
         execution_context=execution_context,
         disabled_tools=disabled_tools,
+        context=context,
     )
