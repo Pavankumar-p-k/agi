@@ -119,9 +119,9 @@ class ExecutionManager:
                      duration_ms: float | None = None,
                      tags: list | None = None) -> None:
         try:
-            from memory.memory_facade import memory
+            from memory import memory_facade
 
-            memory.store_trace(
+            memory_facade.memory.store_trace(
                 action_name=action,
                 action_params=dict(action_params or {}),
                 observation=observation,
@@ -138,9 +138,9 @@ class ExecutionManager:
     def record_decision(self, ctx: ExecutionContext, decision: str,
                         outcome: str, success: bool) -> None:
         try:
-            from memory.memory_facade import memory
+            from memory import memory_facade
 
-            memory.store_decision(
+            memory_facade.memory.store_decision(
                 context=ctx.phase,
                 decision=decision,
                 outcome=outcome,

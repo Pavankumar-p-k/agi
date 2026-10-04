@@ -385,36 +385,28 @@ def _looks_like_json(content: str) -> bool:
 
 
 def _rbac_allows(tool_type: str, owner: Optional[str]) -> bool:
-    """Two-gate allow check: explicit authz grant, then the owner blocklist.
+    """Two-gate allow check: explicit scope grant, then the owner blocklist.
 
-    Gate 1 — ``authz_engine.evaluate`` is consulted with the owner's scope
-    context (an admin/single-user owner carries the wildcard scope); an
-    explicit grant allows the tool.
+    Gate 1 — ``core.tools.security.authorize_tool_scope`` evaluates the
+    owner's ``tools:execute:<tool>`` scope (an admin/single-user owner
+    carries the wildcard scope); an explicit grant allows the tool.
+    Tool-level scope evaluation is owned by ``core.tools.security``
+    (architecture Rule 17), never by the dispatcher.
 
-    Gate 2 — when the evaluator does not grant, the standing rule from
+    Gate 2 — when the scope is not granted, the standing rule from
     ``core.tools.security`` applies: non-admin owners may not run the
     critical-tool blocklist; everything else is allowed.
 
     This gate only ever narrows execution — it never widens permissions.
     """
     try:
-        from core.authz.engine import authz_engine
-        from core.authz.schema import AuthContext
         from core.tools.security import (
+            authorize_tool_scope,
             blocked_tools_for_owner,
-            owner_is_admin_or_single_user,
         )
 
-        if owner_is_admin_or_single_user(owner):
-            auth_ctx = AuthContext(user_id=str(owner or "single_user"),
-                                   scopes={"tools:execute:*"})
-        else:
-            auth_ctx = AuthContext(user_id=str(owner or "user"), scopes=set())
-        try:
-            if authz_engine.evaluate(auth_ctx, "tools:execute:" + str(tool_type)):
-                return True
-        except Exception:  # noqa: BLE001 — evaluator errors fall to the blocklist
-            pass
+        if authorize_tool_scope(tool_type, owner):
+            return True
         return str(tool_type) not in blocked_tools_for_owner(owner)
     except Exception as exc:
         logger.debug("[execution] authz unavailable, denying %s: %s", tool_type, exc)

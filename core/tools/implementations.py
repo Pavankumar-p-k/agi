@@ -22,9 +22,9 @@ async def do_search_chats(
 ) -> dict[str, Any]:
     """Search stored chat/memory history via the shared memory facade."""
     try:
-        from memory.memory_facade import memory
+        from memory import memory_facade
 
-        results = memory.search_all(
+        results = memory_facade.memory.search_all(
             str(query or ""),
             limit=max(int(limit or 10), 1),
             user_id=str(user_id or owner or "default"),
