@@ -3,7 +3,7 @@
 Honest scope: this is a tokenizer-artifact filter. It removes well-known
 control tokens that must never survive into prompts or model output.
 It does NOT detect or stop prompt injection, does NOT isolate untrusted
-content, and is unrelated to the PolicyEngine/AuthContext authorization
+content, and is unrelated to the AuthContext authorization
 work.
 
 API:

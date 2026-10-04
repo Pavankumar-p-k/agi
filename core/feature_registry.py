@@ -150,7 +150,7 @@ FEATURES: Dict[str, Feature] = {
            FeatureStatus.PLANNED, [], enabled_default=False),
         _f("governance", "Governance", "quality",
            "Approval gates, policy audit and consent records.",
-           FeatureStatus.PLANNED, ["core.authz"], enabled_default=False),
+            FeatureStatus.PLANNED, ["core.permission"], enabled_default=False),
         _f("vision", "Screen Vision", "automation",
            "Screen capture + vision model for UI grounding.",
            FeatureStatus.BETA, ["core.vision_agent"], enabled_default=False),
