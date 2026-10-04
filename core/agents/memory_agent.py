@@ -51,16 +51,46 @@ class MemoryAgent(BaseAgent):
             content = goal
             try:
                 from memory import mem0_adapter
-                mem0_adapter.mem0_memory.add([{"role": "user", "content": content}],
-                                            user_id="default")
-                return AgentResult(success=True, output=f"Stored memory: {content}",
+                adapter = mem0_adapter.mem0_memory
+                if not adapter.available:
+                    return AgentResult(
+                        success=False, output="", agent_id=self.agent_id,
+                        error="memory backend unavailable (mem0 not initialized)",
+                    )
+                stored = adapter.add([{"role": "user", "content": content}],
+                                     user_id="default")
+                # Verify the write actually landed rather than trusting the
+                # call: a silent no-op store used to report success while
+                # every later recall returned 0 entries (scorecard finding).
+                verify = adapter.search(content, user_id="default", limit=5)
+                landed = bool(stored) or bool(verify)
+                if not landed:
+                    return AgentResult(
+                        success=False, output="", agent_id=self.agent_id,
+                        error="memory store reported no persisted records",
+                    )
+                return AgentResult(success=True,
+                                   output=f"Stored memory: {content}",
                                    agent_id=self.agent_id)
             except Exception as exc:  # noqa: BLE001
                 return AgentResult(success=False, output="", agent_id=self.agent_id,
                                    error=f"memory store failed: {exc}")
 
         lines = [f"Memory bank: {snapshot.total_memories} entries."]
+        # Targeted recall: search the query instead of only dumping the store,
+        # so "what is my favorite color?" surfaces the matching fact.
+        try:
+            from memory import mem0_adapter
+            adapter = mem0_adapter.mem0_memory
+            if adapter.available and text.strip():
+                hits = adapter.search(goal, user_id="default", limit=5)
+                if hits:
+                    lines.append("Matching memories:")
+                    lines += [f"- {m.get('memory', m.get('text', ''))}" for m in hits
+                              if isinstance(m, dict)]
+        except Exception:  # noqa: BLE001 — fall through to the full listing
+            pass
         lines += [f"- {m}" for m in snapshot.recent]
-        if not snapshot.recent:
+        if not snapshot.recent and len(lines) == 1:
             lines.append("(no memories stored yet)")
         return AgentResult(success=True, output="\n".join(lines), agent_id=self.agent_id)

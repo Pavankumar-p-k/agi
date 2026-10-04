@@ -1,0 +1,2881 @@
+{
+ "count": 281,
+ "STUB": 269,
+ "FAKE-SUCCESS": 12,
+ "files": [
+  {
+   "file": "core/agent_executor.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/agent_executor.py core/agent_executor.py"
+  },
+  {
+   "file": "core/agent_loop.py",
+   "tag": "FAKE-SUCCESS",
+   "loc": 16,
+   "tracked": true,
+   "tests": "pass",
+   "evidence": [
+    "run_agent_loop:@17 return {'status': 'success', 'content': f'Echo: {message}'}",
+    "run_agent_loop -> f-string canned echo",
+    "stream_agent_loop -> yields 'Processing/Done' only"
+   ],
+   "test_files": [
+    "tests/architecture/browser_e2e/runner.py"
+   ],
+   "restore": "cp rebuild_backlog/files/core/agent_loop.py core/agent_loop.py"
+  },
+  {
+   "file": "core/agent_orchestrator.py",
+   "tag": "STUB",
+   "loc": 38,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/agent_orchestrator.py core/agent_orchestrator.py"
+  },
+  {
+   "file": "core/agent_registry.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/agent_registry.py core/agent_registry.py"
+  },
+  {
+   "file": "core/agent_runtime.py",
+   "tag": "STUB",
+   "loc": 29,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/agent_runtime.py core/agent_runtime.py"
+  },
+  {
+   "file": "core/ai_interaction.py",
+   "tag": "STUB",
+   "loc": 27,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/ai_interaction.py core/ai_interaction.py"
+  },
+  {
+   "file": "core/analytics/__init__.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/analytics/__init__.py core/analytics/__init__.py"
+  },
+  {
+   "file": "core/analytics/planner.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/analytics/planner.py core/analytics/planner.py"
+  },
+  {
+   "file": "core/api_key_vault.py",
+   "tag": "STUB",
+   "loc": 29,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/api_key_vault.py core/api_key_vault.py"
+  },
+  {
+   "file": "core/atomic_io.py",
+   "tag": "STUB",
+   "loc": 33,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/atomic_io.py core/atomic_io.py"
+  },
+  {
+   "file": "core/audio_emotion.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/audio_emotion.py core/audio_emotion.py"
+  },
+  {
+   "file": "core/auth.py",
+   "tag": "FAKE-SUCCESS",
+   "loc": 136,
+   "tracked": true,
+   "tests": "fail",
+   "evidence": [
+    "init_firebase:@160 return None"
+   ],
+   "test_files": [
+    "tests/acceptance/test_browser_acceptance.py",
+    "tests/architecture/test_authentication.py",
+    "tests/architecture/test_authorization.py",
+    "tests/architecture/test_resource_grant.py",
+    "tests/integration/test_api_auth.py"
+   ],
+   "restore": "cp rebuild_backlog/files/core/auth.py core/auth.py"
+  },
+  {
+   "file": "core/backup.py",
+   "tag": "STUB",
+   "loc": 38,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/backup.py core/backup.py"
+  },
+  {
+   "file": "core/benchmark/__init__.py",
+   "tag": "STUB",
+   "loc": 32,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/benchmark/__init__.py core/benchmark/__init__.py"
+  },
+  {
+   "file": "core/benchmark/adapters.py",
+   "tag": "STUB",
+   "loc": 64,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/benchmark/adapters.py core/benchmark/adapters.py"
+  },
+  {
+   "file": "core/benchmark/cli.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/benchmark/cli.py core/benchmark/cli.py"
+  },
+  {
+   "file": "core/benchmark/dashboard.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/benchmark/dashboard.py core/benchmark/dashboard.py"
+  },
+  {
+   "file": "core/benchmark/models.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/benchmark/models.py core/benchmark/models.py"
+  },
+  {
+   "file": "core/benchmark/orchestrator.py",
+   "tag": "STUB",
+   "loc": 40,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/benchmark/orchestrator.py core/benchmark/orchestrator.py"
+  },
+  {
+   "file": "core/benchmark/perf_baseline.py",
+   "tag": "STUB",
+   "loc": 29,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/benchmark/perf_baseline.py core/benchmark/perf_baseline.py"
+  },
+  {
+   "file": "core/benchmark/report_generator.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/benchmark/report_generator.py core/benchmark/report_generator.py"
+  },
+  {
+   "file": "core/benchmark/results_store.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/benchmark/results_store.py core/benchmark/results_store.py"
+  },
+  {
+   "file": "core/benchmark/runner.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/benchmark/runner.py core/benchmark/runner.py"
+  },
+  {
+   "file": "core/browser_manager.py",
+   "tag": "FAKE-SUCCESS",
+   "loc": 12,
+   "tracked": true,
+   "tests": "pass",
+   "evidence": [
+    "start:@10 pass",
+    "stop:@13 pass"
+   ],
+   "test_files": [
+    "tests/acceptance/browser_ai_stress.py",
+    "tests/acceptance/test_browser_acceptance.py",
+    "tests/acceptance/test_browser_ai_acceptance.py",
+    "tests/acceptance/test_end_user_workflows.py"
+   ],
+   "restore": "cp rebuild_backlog/files/core/browser_manager.py core/browser_manager.py"
+  },
+  {
+   "file": "core/build/service.py",
+   "tag": "FAKE-SUCCESS",
+   "loc": 11,
+   "tracked": false,
+   "tests": "none",
+   "evidence": [
+    "build:@10 return {'status': 'success'}",
+    "resume_pending:@13 return []",
+    "build -> {'status': 'success'} always",
+    "resume_pending -> [] always"
+   ],
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/build/service.py core/build/service.py"
+  },
+  {
+   "file": "core/build_routes.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/build_routes.py core/build_routes.py"
+  },
+  {
+   "file": "core/chroma_client.py",
+   "tag": "STUB",
+   "loc": 29,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/chroma_client.py core/chroma_client.py"
+  },
+  {
+   "file": "core/cleanup_audit.py",
+   "tag": "STUB",
+   "loc": 29,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/cleanup_audit.py core/cleanup_audit.py"
+  },
+  {
+   "file": "core/cloud/__init__.py",
+   "tag": "STUB",
+   "loc": 30,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/cloud/__init__.py core/cloud/__init__.py"
+  },
+  {
+   "file": "core/cloud/cloud_memory.py",
+   "tag": "STUB",
+   "loc": 38,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/cloud/cloud_memory.py core/cloud/cloud_memory.py"
+  },
+  {
+   "file": "core/cloud/project_manager.py",
+   "tag": "STUB",
+   "loc": 38,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/cloud/project_manager.py core/cloud/project_manager.py"
+  },
+  {
+   "file": "core/cloud/supabase_client.py",
+   "tag": "STUB",
+   "loc": 29,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/cloud/supabase_client.py core/cloud/supabase_client.py"
+  },
+  {
+   "file": "core/codebase_indexer.py",
+   "tag": "STUB",
+   "loc": 29,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/codebase_indexer.py core/codebase_indexer.py"
+  },
+  {
+   "file": "core/collaboration/__init__.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/collaboration/__init__.py core/collaboration/__init__.py"
+  },
+  {
+   "file": "core/collaboration/consensus.py",
+   "tag": "STUB",
+   "loc": 38,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/collaboration/consensus.py core/collaboration/consensus.py"
+  },
+  {
+   "file": "core/collaboration/coordinator.py",
+   "tag": "STUB",
+   "loc": 38,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/collaboration/coordinator.py core/collaboration/coordinator.py"
+  },
+  {
+   "file": "core/collaboration/models.py",
+   "tag": "STUB",
+   "loc": 129,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/collaboration/models.py core/collaboration/models.py"
+  },
+  {
+   "file": "core/collaboration/negotiation.py",
+   "tag": "STUB",
+   "loc": 38,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/collaboration/negotiation.py core/collaboration/negotiation.py"
+  },
+  {
+   "file": "core/collaboration/review.py",
+   "tag": "STUB",
+   "loc": 38,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/collaboration/review.py core/collaboration/review.py"
+  },
+  {
+   "file": "core/commitments.py",
+   "tag": "STUB",
+   "loc": 38,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/commitments.py core/commitments.py"
+  },
+  {
+   "file": "core/config_init.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/config_init.py core/config_init.py"
+  },
+  {
+   "file": "core/configuration/service.py",
+   "tag": "FAKE-SUCCESS",
+   "loc": 16,
+   "tracked": true,
+   "tests": "fail",
+   "evidence": [
+    "load:@17 pass"
+   ],
+   "test_files": [
+    "tests/unit/test_security_hardening.py"
+   ],
+   "restore": "cp rebuild_backlog/files/core/configuration/service.py core/configuration/service.py"
+  },
+  {
+   "file": "core/constants.py",
+   "tag": "STUB",
+   "loc": 27,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/constants.py core/constants.py"
+  },
+  {
+   "file": "core/context_hub.py",
+   "tag": "STUB",
+   "loc": 38,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/context_hub.py core/context_hub.py"
+  },
+  {
+   "file": "core/control_loop.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/control_loop.py core/control_loop.py"
+  },
+  {
+   "file": "core/cron.py",
+   "tag": "STUB",
+   "loc": 38,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/cron.py core/cron.py"
+  },
+  {
+   "file": "core/debugger.py",
+   "tag": "STUB",
+   "loc": 29,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/debugger.py core/debugger.py"
+  },
+  {
+   "file": "core/decision/__init__.py",
+   "tag": "STUB",
+   "loc": 30,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/decision/__init__.py core/decision/__init__.py"
+  },
+  {
+   "file": "core/decision/bridge.py",
+   "tag": "STUB",
+   "loc": 38,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/decision/bridge.py core/decision/bridge.py"
+  },
+  {
+   "file": "core/decision/evidence.py",
+   "tag": "STUB",
+   "loc": 38,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/decision/evidence.py core/decision/evidence.py"
+  },
+  {
+   "file": "core/decision/models.py",
+   "tag": "STUB",
+   "loc": 77,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/decision/models.py core/decision/models.py"
+  },
+  {
+   "file": "core/decision/scoring.py",
+   "tag": "STUB",
+   "loc": 51,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/decision/scoring.py core/decision/scoring.py"
+  },
+  {
+   "file": "core/dev_mode.py",
+   "tag": "FAKE-SUCCESS",
+   "loc": 21,
+   "tracked": true,
+   "tests": "none",
+   "evidence": [
+    "install_deps:@31 pass",
+    "is_enabled -> always True (flag file ~/.jarvis_dev_mode is written by enable()/disable() but never read)"
+   ],
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/dev_mode.py core/dev_mode.py"
+  },
+  {
+   "file": "core/diagnostics/report.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/diagnostics/report.py core/diagnostics/report.py"
+  },
+  {
+   "file": "core/doctor.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/doctor.py core/doctor.py"
+  },
+  {
+   "file": "core/embeddings.py",
+   "tag": "STUB",
+   "loc": 42,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/embeddings.py core/embeddings.py"
+  },
+  {
+   "file": "core/evidence/generator.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/evidence/generator.py core/evidence/generator.py"
+  },
+  {
+   "file": "core/fact_extraction/__init__.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/fact_extraction/__init__.py core/fact_extraction/__init__.py"
+  },
+  {
+   "file": "core/feature_registry.py",
+   "tag": "STUB",
+   "loc": 72,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/feature_registry.py core/feature_registry.py"
+  },
+  {
+   "file": "core/gateway/__init__.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/gateway/__init__.py core/gateway/__init__.py"
+  },
+  {
+   "file": "core/gateway/auth.py",
+   "tag": "STUB",
+   "loc": 38,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/gateway/auth.py core/gateway/auth.py"
+  },
+  {
+   "file": "core/governance/__init__.py",
+   "tag": "STUB",
+   "loc": 29,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/governance/__init__.py core/governance/__init__.py"
+  },
+  {
+   "file": "core/governance/cli_commands.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/governance/cli_commands.py core/governance/cli_commands.py"
+  },
+  {
+   "file": "core/governance/resource_monitor.py",
+   "tag": "STUB",
+   "loc": 51,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/governance/resource_monitor.py core/governance/resource_monitor.py"
+  },
+  {
+   "file": "core/governance/task_router.py",
+   "tag": "STUB",
+   "loc": 55,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/governance/task_router.py core/governance/task_router.py"
+  },
+  {
+   "file": "core/governance/work_queue.py",
+   "tag": "STUB",
+   "loc": 64,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/governance/work_queue.py core/governance/work_queue.py"
+  },
+  {
+   "file": "core/graph/__init__.py",
+   "tag": "STUB",
+   "loc": 32,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/graph/__init__.py core/graph/__init__.py"
+  },
+  {
+   "file": "core/health_monitor.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/health_monitor.py core/health_monitor.py"
+  },
+  {
+   "file": "core/improvement/__init__.py",
+   "tag": "STUB",
+   "loc": 32,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/improvement/__init__.py core/improvement/__init__.py"
+  },
+  {
+   "file": "core/improvement/detector.py",
+   "tag": "STUB",
+   "loc": 38,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/improvement/detector.py core/improvement/detector.py"
+  },
+  {
+   "file": "core/improvement/experiment.py",
+   "tag": "STUB",
+   "loc": 38,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/improvement/experiment.py core/improvement/experiment.py"
+  },
+  {
+   "file": "core/improvement/knob_store.py",
+   "tag": "STUB",
+   "loc": 38,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/improvement/knob_store.py core/improvement/knob_store.py"
+  },
+  {
+   "file": "core/improvement/models.py",
+   "tag": "STUB",
+   "loc": 117,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/improvement/models.py core/improvement/models.py"
+  },
+  {
+   "file": "core/improvement/promoter.py",
+   "tag": "STUB",
+   "loc": 38,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/improvement/promoter.py core/improvement/promoter.py"
+  },
+  {
+   "file": "core/improvement/proposals.py",
+   "tag": "STUB",
+   "loc": 38,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/improvement/proposals.py core/improvement/proposals.py"
+  },
+  {
+   "file": "core/inbox/__init__.py",
+   "tag": "STUB",
+   "loc": 27,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/inbox/__init__.py core/inbox/__init__.py"
+  },
+  {
+   "file": "core/inbox/store.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/inbox/store.py core/inbox/store.py"
+  },
+  {
+   "file": "core/integration_manager.py",
+   "tag": "STUB",
+   "loc": 150,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/integration_manager.py core/integration_manager.py"
+  },
+  {
+   "file": "core/integrations/__init__.py",
+   "tag": "STUB",
+   "loc": 36,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/integrations/__init__.py core/integrations/__init__.py"
+  },
+  {
+   "file": "core/integrations/news.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/integrations/news.py core/integrations/news.py"
+  },
+  {
+   "file": "core/integrations/sports.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/integrations/sports.py core/integrations/sports.py"
+  },
+  {
+   "file": "core/integrations/stocks.py",
+   "tag": "STUB",
+   "loc": 29,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/integrations/stocks.py core/integrations/stocks.py"
+  },
+  {
+   "file": "core/integrations/timezone.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/integrations/timezone.py core/integrations/timezone.py"
+  },
+  {
+   "file": "core/integrations/weather.py",
+   "tag": "STUB",
+   "loc": 29,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/integrations/weather.py core/integrations/weather.py"
+  },
+  {
+   "file": "core/intent_router.py",
+   "tag": "STUB",
+   "loc": 29,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/intent_router.py core/intent_router.py"
+  },
+  {
+   "file": "core/lifespan.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/lifespan.py core/lifespan.py"
+  },
+  {
+   "file": "core/long_term_memory/__init__.py",
+   "tag": "STUB",
+   "loc": 32,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/long_term_memory/__init__.py core/long_term_memory/__init__.py"
+  },
+  {
+   "file": "core/long_term_memory/adapter.py",
+   "tag": "STUB",
+   "loc": 38,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/long_term_memory/adapter.py core/long_term_memory/adapter.py"
+  },
+  {
+   "file": "core/long_term_memory/consolidator.py",
+   "tag": "STUB",
+   "loc": 38,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/long_term_memory/consolidator.py core/long_term_memory/consolidator.py"
+  },
+  {
+   "file": "core/long_term_memory/extractor.py",
+   "tag": "STUB",
+   "loc": 38,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/long_term_memory/extractor.py core/long_term_memory/extractor.py"
+  },
+  {
+   "file": "core/long_term_memory/store.py",
+   "tag": "STUB",
+   "loc": 38,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/long_term_memory/store.py core/long_term_memory/store.py"
+  },
+  {
+   "file": "core/long_term_memory/synthesizer.py",
+   "tag": "STUB",
+   "loc": 38,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/long_term_memory/synthesizer.py core/long_term_memory/synthesizer.py"
+  },
+  {
+   "file": "core/main.py",
+   "tag": "FAKE-SUCCESS",
+   "loc": 111,
+   "tracked": true,
+   "tests": "fail",
+   "evidence": [
+    "metrics:@115 canned endpoint -> {'requests_total': 0, 'tool_calls_total': 0, 'llm_latency_avg_ms': 0.0",
+    "list_sessions:@131 canned endpoint -> {'sessions': []}",
+    "chat_endpoint:@136 canned endpoint -> {'status': 'ok', 'response': 'JARVIS ready.'}",
+    "get_setting:@141 canned endpoint -> {'key': key, 'value': None}",
+    "admin_endpoint:@146 canned endpoint -> {'admin': True}",
+    "os_status:@151 canned endpoint -> {'status': 'running'}",
+    "list_sessions -> {'sessions': []} canned",
+    "get_setting -> {'key': key, 'value': None} canned",
+    "admin_endpoint -> {'admin': True} canned"
+   ],
+   "test_files": [
+    "tests/conftest.py",
+    "tests/contract/test_api_contract.py",
+    "tests/integration/test_get_info_routing.py",
+    "tests/unit/test_auth_middleware.py"
+   ],
+   "restore": "cp rebuild_backlog/files/core/main.py core/main.py"
+  },
+  {
+   "file": "core/mcp_manager.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/mcp_manager.py core/mcp_manager.py"
+  },
+  {
+   "file": "core/memory.py",
+   "tag": "STUB",
+   "loc": 38,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/memory.py core/memory.py"
+  },
+  {
+   "file": "core/memory_driven_decisions.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/memory_driven_decisions.py core/memory_driven_decisions.py"
+  },
+  {
+   "file": "core/memory_vector.py",
+   "tag": "STUB",
+   "loc": 38,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/memory_vector.py core/memory_vector.py"
+  },
+  {
+   "file": "core/middleware.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/middleware.py core/middleware.py"
+  },
+  {
+   "file": "core/model_providers/__init__.py",
+   "tag": "STUB",
+   "loc": 35,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/model_providers/__init__.py core/model_providers/__init__.py"
+  },
+  {
+   "file": "core/model_providers/anthropic.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/model_providers/anthropic.py core/model_providers/anthropic.py"
+  },
+  {
+   "file": "core/model_providers/base.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/model_providers/base.py core/model_providers/base.py"
+  },
+  {
+   "file": "core/model_providers/gemini.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/model_providers/gemini.py core/model_providers/gemini.py"
+  },
+  {
+   "file": "core/model_providers/groq.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/model_providers/groq.py core/model_providers/groq.py"
+  },
+  {
+   "file": "core/model_providers/hybrid.py",
+   "tag": "STUB",
+   "loc": 29,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/model_providers/hybrid.py core/model_providers/hybrid.py"
+  },
+  {
+   "file": "core/model_providers/ollama.py",
+   "tag": "STUB",
+   "loc": 38,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/model_providers/ollama.py core/model_providers/ollama.py"
+  },
+  {
+   "file": "core/model_providers/openai.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/model_providers/openai.py core/model_providers/openai.py"
+  },
+  {
+   "file": "core/model_providers/openrouter.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/model_providers/openrouter.py core/model_providers/openrouter.py"
+  },
+  {
+   "file": "core/model_providers/router.py",
+   "tag": "STUB",
+   "loc": 39,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/model_providers/router.py core/model_providers/router.py"
+  },
+  {
+   "file": "core/negotiation/agents.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/negotiation/agents.py core/negotiation/agents.py"
+  },
+  {
+   "file": "core/negotiation/engine.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/negotiation/engine.py core/negotiation/engine.py"
+  },
+  {
+   "file": "core/negotiation/models.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/negotiation/models.py core/negotiation/models.py"
+  },
+  {
+   "file": "core/oauth.py",
+   "tag": "STUB",
+   "loc": 38,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/oauth.py core/oauth.py"
+  },
+  {
+   "file": "core/opencode_delegate.py",
+   "tag": "STUB",
+   "loc": 33,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/opencode_delegate.py core/opencode_delegate.py"
+  },
+  {
+   "file": "core/opportunity/__init__.py",
+   "tag": "STUB",
+   "loc": 35,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/opportunity/__init__.py core/opportunity/__init__.py"
+  },
+  {
+   "file": "core/opportunity/bottlenecks.py",
+   "tag": "STUB",
+   "loc": 66,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/opportunity/bottlenecks.py core/opportunity/bottlenecks.py"
+  },
+  {
+   "file": "core/opportunity/calibration.py",
+   "tag": "STUB",
+   "loc": 38,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/opportunity/calibration.py core/opportunity/calibration.py"
+  },
+  {
+   "file": "core/opportunity/engine.py",
+   "tag": "STUB",
+   "loc": 39,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/opportunity/engine.py core/opportunity/engine.py"
+  },
+  {
+   "file": "core/opportunity/forecasting.py",
+   "tag": "STUB",
+   "loc": 106,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/opportunity/forecasting.py core/opportunity/forecasting.py"
+  },
+  {
+   "file": "core/opportunity/graph.py",
+   "tag": "STUB",
+   "loc": 98,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/opportunity/graph.py core/opportunity/graph.py"
+  },
+  {
+   "file": "core/opportunity/mining.py",
+   "tag": "STUB",
+   "loc": 82,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/opportunity/mining.py core/opportunity/mining.py"
+  },
+  {
+   "file": "core/opportunity/models.py",
+   "tag": "STUB",
+   "loc": 64,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/opportunity/models.py core/opportunity/models.py"
+  },
+  {
+   "file": "core/opportunity/roadmap.py",
+   "tag": "STUB",
+   "loc": 77,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/opportunity/roadmap.py core/opportunity/roadmap.py"
+  },
+  {
+   "file": "core/opportunity/store.py",
+   "tag": "STUB",
+   "loc": 51,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/opportunity/store.py core/opportunity/store.py"
+  },
+  {
+   "file": "core/personal_docs.py",
+   "tag": "STUB",
+   "loc": 38,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/personal_docs.py core/personal_docs.py"
+  },
+  {
+   "file": "core/pipeline.py",
+   "tag": "STUB",
+   "loc": 137,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/pipeline.py core/pipeline.py"
+  },
+  {
+   "file": "core/pipeline/adapters/__init__.py",
+   "tag": "STUB",
+   "loc": 30,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/pipeline/adapters/__init__.py core/pipeline/adapters/__init__.py"
+  },
+  {
+   "file": "core/pipeline/adapters/channel_adapter.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/pipeline/adapters/channel_adapter.py core/pipeline/adapters/channel_adapter.py"
+  },
+  {
+   "file": "core/pipeline/adapters/rest_adapter.py",
+   "tag": "STUB",
+   "loc": 33,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/pipeline/adapters/rest_adapter.py core/pipeline/adapters/rest_adapter.py"
+  },
+  {
+   "file": "core/pipeline/adapters/voice_adapter.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/pipeline/adapters/voice_adapter.py core/pipeline/adapters/voice_adapter.py"
+  },
+  {
+   "file": "core/pipeline/adapters/websocket_adapter.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/pipeline/adapters/websocket_adapter.py core/pipeline/adapters/websocket_adapter.py"
+  },
+  {
+   "file": "core/pipeline/decision.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/pipeline/decision.py core/pipeline/decision.py"
+  },
+  {
+   "file": "core/pipeline/internal_client.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/pipeline/internal_client.py core/pipeline/internal_client.py"
+  },
+  {
+   "file": "core/pipeline/stages/context_retrieval.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/pipeline/stages/context_retrieval.py core/pipeline/stages/context_retrieval.py"
+  },
+  {
+   "file": "core/pipeline/stages/epistemic.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/pipeline/stages/epistemic.py core/pipeline/stages/epistemic.py"
+  },
+  {
+   "file": "core/pipeline/stages/rate_limit.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/pipeline/stages/rate_limit.py core/pipeline/stages/rate_limit.py"
+  },
+  {
+   "file": "core/pipeline/stages/verification/manifest.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/pipeline/stages/verification/manifest.py core/pipeline/stages/verification/manifest.py"
+  },
+  {
+   "file": "core/planner/classifier.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/planner/classifier.py core/planner/classifier.py"
+  },
+  {
+   "file": "core/planner/store.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/planner/store.py core/planner/store.py"
+  },
+  {
+   "file": "core/planner/templates.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/planner/templates.py core/planner/templates.py"
+  },
+  {
+   "file": "core/plugins/__init__.py",
+   "tag": "STUB",
+   "loc": 47,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/plugins/__init__.py core/plugins/__init__.py"
+  },
+  {
+   "file": "core/plugins/api.py",
+   "tag": "STUB",
+   "loc": 30,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/plugins/api.py core/plugins/api.py"
+  },
+  {
+   "file": "core/plugins/automation.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/plugins/automation.py core/plugins/automation.py"
+  },
+  {
+   "file": "core/plugins/base.py",
+   "tag": "STUB",
+   "loc": 72,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/plugins/base.py core/plugins/base.py"
+  },
+  {
+   "file": "core/plugins/compatibility.py",
+   "tag": "STUB",
+   "loc": 51,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/plugins/compatibility.py core/plugins/compatibility.py"
+  },
+  {
+   "file": "core/plugins/dependencies.py",
+   "tag": "STUB",
+   "loc": 40,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/plugins/dependencies.py core/plugins/dependencies.py"
+  },
+  {
+   "file": "core/plugins/errors.py",
+   "tag": "STUB",
+   "loc": 38,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/plugins/errors.py core/plugins/errors.py"
+  },
+  {
+   "file": "core/plugins/events.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/plugins/events.py core/plugins/events.py"
+  },
+  {
+   "file": "core/plugins/hot_reload.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/plugins/hot_reload.py core/plugins/hot_reload.py"
+  },
+  {
+   "file": "core/plugins/loader.py",
+   "tag": "STUB",
+   "loc": 42,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/plugins/loader.py core/plugins/loader.py"
+  },
+  {
+   "file": "core/plugins/manifest.py",
+   "tag": "STUB",
+   "loc": 38,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/plugins/manifest.py core/plugins/manifest.py"
+  },
+  {
+   "file": "core/plugins/marketplace.py",
+   "tag": "STUB",
+   "loc": 38,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/plugins/marketplace.py core/plugins/marketplace.py"
+  },
+  {
+   "file": "core/plugins/memory.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/plugins/memory.py core/plugins/memory.py"
+  },
+  {
+   "file": "core/plugins/privacy.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/plugins/privacy.py core/plugins/privacy.py"
+  },
+  {
+   "file": "core/plugins/registry.py",
+   "tag": "STUB",
+   "loc": 42,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/plugins/registry.py core/plugins/registry.py"
+  },
+  {
+   "file": "core/plugins/runtime.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/plugins/runtime.py core/plugins/runtime.py"
+  },
+  {
+   "file": "core/plugins/sandbox.py",
+   "tag": "STUB",
+   "loc": 34,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/plugins/sandbox.py core/plugins/sandbox.py"
+  },
+  {
+   "file": "core/plugins/settings_store.py",
+   "tag": "STUB",
+   "loc": 38,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/plugins/settings_store.py core/plugins/settings_store.py"
+  },
+  {
+   "file": "core/plugins/ssrf.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/plugins/ssrf.py core/plugins/ssrf.py"
+  },
+  {
+   "file": "core/plugins/state_store.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/plugins/state_store.py core/plugins/state_store.py"
+  },
+  {
+   "file": "core/plugins/verification.py",
+   "tag": "STUB",
+   "loc": 51,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/plugins/verification.py core/plugins/verification.py"
+  },
+  {
+   "file": "core/plugins/voice.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/plugins/voice.py core/plugins/voice.py"
+  },
+  {
+   "file": "core/project_manager.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/project_manager.py core/project_manager.py"
+  },
+  {
+   "file": "core/prompts.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/prompts.py core/prompts.py"
+  },
+  {
+   "file": "core/providers/__init__.py",
+   "tag": "STUB",
+   "loc": 30,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/providers/__init__.py core/providers/__init__.py"
+  },
+  {
+   "file": "core/providers/adapters/automation_provider.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/providers/adapters/automation_provider.py core/providers/adapters/automation_provider.py"
+  },
+  {
+   "file": "core/providers/adapters/browser_provider.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/providers/adapters/browser_provider.py core/providers/adapters/browser_provider.py"
+  },
+  {
+   "file": "core/providers/adapters/deployment_provider.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/providers/adapters/deployment_provider.py core/providers/adapters/deployment_provider.py"
+  },
+  {
+   "file": "core/providers/adapters/messaging_provider.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/providers/adapters/messaging_provider.py core/providers/adapters/messaging_provider.py"
+  },
+  {
+   "file": "core/providers/adapters/research_provider.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/providers/adapters/research_provider.py core/providers/adapters/research_provider.py"
+  },
+  {
+   "file": "core/rate_limiter.py",
+   "tag": "STUB",
+   "loc": 51,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/rate_limiter.py core/rate_limiter.py"
+  },
+  {
+   "file": "core/real_validator.py",
+   "tag": "STUB",
+   "loc": 51,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/real_validator.py core/real_validator.py"
+  },
+  {
+   "file": "core/request_id.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/request_id.py core/request_id.py"
+  },
+  {
+   "file": "core/routes/__init__.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/routes/__init__.py core/routes/__init__.py"
+  },
+  {
+   "file": "core/routes/activity.py",
+   "tag": "STUB",
+   "loc": 137,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/routes/activity.py core/routes/activity.py"
+  },
+  {
+   "file": "core/routes/admin.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/routes/admin.py core/routes/admin.py"
+  },
+  {
+   "file": "core/routes/analytics.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/routes/analytics.py core/routes/analytics.py"
+  },
+  {
+   "file": "core/routes/artifacts.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/routes/artifacts.py core/routes/artifacts.py"
+  },
+  {
+   "file": "core/routes/auth.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/routes/auth.py core/routes/auth.py"
+  },
+  {
+   "file": "core/routes/autonomous.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/routes/autonomous.py core/routes/autonomous.py"
+  },
+  {
+   "file": "core/routes/chat.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/routes/chat.py core/routes/chat.py"
+  },
+  {
+   "file": "core/routes/control.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/routes/control.py core/routes/control.py"
+  },
+  {
+   "file": "core/routes/diagnostics.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/routes/diagnostics.py core/routes/diagnostics.py"
+  },
+  {
+   "file": "core/routes/evidence.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/routes/evidence.py core/routes/evidence.py"
+  },
+  {
+   "file": "core/routes/features.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/routes/features.py core/routes/features.py"
+  },
+  {
+   "file": "core/routes/improvements.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/routes/improvements.py core/routes/improvements.py"
+  },
+  {
+   "file": "core/routes/inbox.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/routes/inbox.py core/routes/inbox.py"
+  },
+  {
+   "file": "core/routes/infrastructure.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/routes/infrastructure.py core/routes/infrastructure.py"
+  },
+  {
+   "file": "core/routes/integrations.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/routes/integrations.py core/routes/integrations.py"
+  },
+  {
+   "file": "core/routes/intelligence.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/routes/intelligence.py core/routes/intelligence.py"
+  },
+  {
+   "file": "core/routes/knowledge.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/routes/knowledge.py core/routes/knowledge.py"
+  },
+  {
+   "file": "core/routes/mcp.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/routes/mcp.py core/routes/mcp.py"
+  },
+  {
+   "file": "core/routes/negotiations.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/routes/negotiations.py core/routes/negotiations.py"
+  },
+  {
+   "file": "core/routes/observability.py",
+   "tag": "FAKE-SUCCESS",
+   "loc": 33,
+   "tracked": true,
+   "tests": "pass",
+   "evidence": [
+    "health:@16 return {'status': 'ok'}"
+   ],
+   "test_files": [
+    "tests/unit/test_observability.py"
+   ],
+   "restore": "cp rebuild_backlog/files/core/routes/observability.py core/routes/observability.py"
+  },
+  {
+   "file": "core/routes/operations.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/routes/operations.py core/routes/operations.py"
+  },
+  {
+   "file": "core/routes/opportunities.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/routes/opportunities.py core/routes/opportunities.py"
+  },
+  {
+   "file": "core/routes/planner.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/routes/planner.py core/routes/planner.py"
+  },
+  {
+   "file": "core/routes/quality.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/routes/quality.py core/routes/quality.py"
+  },
+  {
+   "file": "core/routes/research.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/routes/research.py core/routes/research.py"
+  },
+  {
+   "file": "core/routes/scheduler.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/routes/scheduler.py core/routes/scheduler.py"
+  },
+  {
+   "file": "core/routes/settings.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/routes/settings.py core/routes/settings.py"
+  },
+  {
+   "file": "core/routes/setup.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/routes/setup.py core/routes/setup.py"
+  },
+  {
+   "file": "core/routes/terminal.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/routes/terminal.py core/routes/terminal.py"
+  },
+  {
+   "file": "core/routes/utility.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/routes/utility.py core/routes/utility.py"
+  },
+  {
+   "file": "core/routes/vision.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/routes/vision.py core/routes/vision.py"
+  },
+  {
+   "file": "core/routes/voice.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/routes/voice.py core/routes/voice.py"
+  },
+  {
+   "file": "core/routes/websocket.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/routes/websocket.py core/routes/websocket.py"
+  },
+  {
+   "file": "core/routes/workflows.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/routes/workflows.py core/routes/workflows.py"
+  },
+  {
+   "file": "core/routing/__init__.py",
+   "tag": "STUB",
+   "loc": 29,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/routing/__init__.py core/routing/__init__.py"
+  },
+  {
+   "file": "core/routing/project_context.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/routing/project_context.py core/routing/project_context.py"
+  },
+  {
+   "file": "core/routing/request_classifier.py",
+   "tag": "STUB",
+   "loc": 42,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/routing/request_classifier.py core/routing/request_classifier.py"
+  },
+  {
+   "file": "core/routing/safety.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/routing/safety.py core/routing/safety.py"
+  },
+  {
+   "file": "core/runtime/registry.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/runtime/registry.py core/runtime/registry.py"
+  },
+  {
+   "file": "core/sandbox/docker_sandbox.py",
+   "tag": "STUB",
+   "loc": 38,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/sandbox/docker_sandbox.py core/sandbox/docker_sandbox.py"
+  },
+  {
+   "file": "core/sandbox/sandbox.py",
+   "tag": "STUB",
+   "loc": 38,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/sandbox/sandbox.py core/sandbox/sandbox.py"
+  },
+  {
+   "file": "core/sandbox/sandbox_manager.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/sandbox/sandbox_manager.py core/sandbox/sandbox_manager.py"
+  },
+  {
+   "file": "core/scheduler/autonomous.py",
+   "tag": "STUB",
+   "loc": 51,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/scheduler/autonomous.py core/scheduler/autonomous.py"
+  },
+  {
+   "file": "core/scheduler/chain.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/scheduler/chain.py core/scheduler/chain.py"
+  },
+  {
+   "file": "core/scheduler/decision.py",
+   "tag": "STUB",
+   "loc": 51,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/scheduler/decision.py core/scheduler/decision.py"
+  },
+  {
+   "file": "core/scheduler/executors.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/scheduler/executors.py core/scheduler/executors.py"
+  },
+  {
+   "file": "core/scheduler/intelligence.py",
+   "tag": "STUB",
+   "loc": 94,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/scheduler/intelligence.py core/scheduler/intelligence.py"
+  },
+  {
+   "file": "core/scheduler/metrics.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/scheduler/metrics.py core/scheduler/metrics.py"
+  },
+  {
+   "file": "core/scheduler/registry.py",
+   "tag": "STUB",
+   "loc": 42,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/scheduler/registry.py core/scheduler/registry.py"
+  },
+  {
+   "file": "core/scheduler/resources.py",
+   "tag": "STUB",
+   "loc": 82,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/scheduler/resources.py core/scheduler/resources.py"
+  },
+  {
+   "file": "core/scheduler/worker.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/scheduler/worker.py core/scheduler/worker.py"
+  },
+  {
+   "file": "core/self_modification/__init__.py",
+   "tag": "STUB",
+   "loc": 32,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/self_modification/__init__.py core/self_modification/__init__.py"
+  },
+  {
+   "file": "core/self_modification/executor.py",
+   "tag": "STUB",
+   "loc": 38,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/self_modification/executor.py core/self_modification/executor.py"
+  },
+  {
+   "file": "core/self_modification/models.py",
+   "tag": "STUB",
+   "loc": 103,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/self_modification/models.py core/self_modification/models.py"
+  },
+  {
+   "file": "core/self_modification/planner.py",
+   "tag": "STUB",
+   "loc": 38,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/self_modification/planner.py core/self_modification/planner.py"
+  },
+  {
+   "file": "core/self_modification/recipes.py",
+   "tag": "STUB",
+   "loc": 37,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/self_modification/recipes.py core/self_modification/recipes.py"
+  },
+  {
+   "file": "core/self_modification/safety.py",
+   "tag": "STUB",
+   "loc": 64,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/self_modification/safety.py core/self_modification/safety.py"
+  },
+  {
+   "file": "core/self_modification/store.py",
+   "tag": "STUB",
+   "loc": 38,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/self_modification/store.py core/self_modification/store.py"
+  },
+  {
+   "file": "core/session_db.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/session_db.py core/session_db.py"
+  },
+  {
+   "file": "core/settings/__init__.py",
+   "tag": "STUB",
+   "loc": 28,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/settings/__init__.py core/settings/__init__.py"
+  },
+  {
+   "file": "core/settings/store.py",
+   "tag": "STUB",
+   "loc": 42,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/settings/store.py core/settings/store.py"
+  },
+  {
+   "file": "core/setup/__init__.py",
+   "tag": "STUB",
+   "loc": 28,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/setup/__init__.py core/setup/__init__.py"
+  },
+  {
+   "file": "core/setup/demo.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/setup/demo.py core/setup/demo.py"
+  },
+  {
+   "file": "core/setup/engine.py",
+   "tag": "FAKE-SUCCESS",
+   "loc": 6,
+   "tracked": true,
+   "tests": "none",
+   "evidence": [
+    "run_full_setup:@6 return True"
+   ],
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/setup/engine.py core/setup/engine.py"
+  },
+  {
+   "file": "core/setup/installer.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/setup/installer.py core/setup/installer.py"
+  },
+  {
+   "file": "core/setup/report.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/setup/report.py core/setup/report.py"
+  },
+  {
+   "file": "core/setup/validator.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/setup/validator.py core/setup/validator.py"
+  },
+  {
+   "file": "core/skill_loader.py",
+   "tag": "STUB",
+   "loc": 32,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/skill_loader.py core/skill_loader.py"
+  },
+  {
+   "file": "core/spawning/__init__.py",
+   "tag": "STUB",
+   "loc": 29,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/spawning/__init__.py core/spawning/__init__.py"
+  },
+  {
+   "file": "core/spawning/manager.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/spawning/manager.py core/spawning/manager.py"
+  },
+  {
+   "file": "core/spawning/orphan.py",
+   "tag": "STUB",
+   "loc": 29,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/spawning/orphan.py core/spawning/orphan.py"
+  },
+  {
+   "file": "core/spawning/store.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/spawning/store.py core/spawning/store.py"
+  },
+  {
+   "file": "core/success_criteria.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/success_criteria.py core/success_criteria.py"
+  },
+  {
+   "file": "core/system_governor.py",
+   "tag": "STUB",
+   "loc": 38,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/system_governor.py core/system_governor.py"
+  },
+  {
+   "file": "core/tools/__init__.py",
+   "tag": "STUB",
+   "loc": 32,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/tools/__init__.py core/tools/__init__.py"
+  },
+  {
+   "file": "core/tools/automated_build.py",
+   "tag": "STUB",
+   "loc": 63,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/tools/automated_build.py core/tools/automated_build.py"
+  },
+  {
+   "file": "core/tools/bg_jobs.py",
+   "tag": "STUB",
+   "loc": 52,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/tools/bg_jobs.py core/tools/bg_jobs.py"
+  },
+  {
+   "file": "core/tools/browser_fsm.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/tools/browser_fsm.py core/tools/browser_fsm.py"
+  },
+  {
+   "file": "core/tools/build_tools.py",
+   "tag": "STUB",
+   "loc": 49,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/tools/build_tools.py core/tools/build_tools.py"
+  },
+  {
+   "file": "core/tools/chat_tools.py",
+   "tag": "STUB",
+   "loc": 37,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/tools/chat_tools.py core/tools/chat_tools.py"
+  },
+  {
+   "file": "core/tools/defaults.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/tools/defaults.py core/tools/defaults.py"
+  },
+  {
+   "file": "core/tools/document_tools.py",
+   "tag": "STUB",
+   "loc": 37,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/tools/document_tools.py core/tools/document_tools.py"
+  },
+  {
+   "file": "core/tools/email_utils.py",
+   "tag": "STUB",
+   "loc": 29,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/tools/email_utils.py core/tools/email_utils.py"
+  },
+  {
+   "file": "core/tools/implementations.py",
+   "tag": "STUB",
+   "loc": 33,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/tools/implementations.py core/tools/implementations.py"
+  },
+  {
+   "file": "core/tools/index.py",
+   "tag": "STUB",
+   "loc": 26,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/tools/index.py core/tools/index.py"
+  },
+  {
+   "file": "core/tools/parsing.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/tools/parsing.py core/tools/parsing.py"
+  },
+  {
+   "file": "core/tools/scheduler_tools.py",
+   "tag": "STUB",
+   "loc": 73,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/tools/scheduler_tools.py core/tools/scheduler_tools.py"
+  },
+  {
+   "file": "core/tools/schemas.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/tools/schemas.py core/tools/schemas.py"
+  },
+  {
+   "file": "core/tools/validation.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/tools/validation.py core/tools/validation.py"
+  },
+  {
+   "file": "core/workflow/__init__.py",
+   "tag": "STUB",
+   "loc": 37,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/workflow/__init__.py core/workflow/__init__.py"
+  },
+  {
+   "file": "core/workflow/artifact_store.py",
+   "tag": "STUB",
+   "loc": 38,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/workflow/artifact_store.py core/workflow/artifact_store.py"
+  },
+  {
+   "file": "core/workflow/calibration.py",
+   "tag": "STUB",
+   "loc": 81,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/workflow/calibration.py core/workflow/calibration.py"
+  },
+  {
+   "file": "core/workflow/context.py",
+   "tag": "STUB",
+   "loc": 38,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/workflow/context.py core/workflow/context.py"
+  },
+  {
+   "file": "core/workflow/engine.py",
+   "tag": "STUB",
+   "loc": 38,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/workflow/engine.py core/workflow/engine.py"
+  },
+  {
+   "file": "core/workflow/events.py",
+   "tag": "STUB",
+   "loc": 26,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/workflow/events.py core/workflow/events.py"
+  },
+  {
+   "file": "core/workflow/graph.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/workflow/graph.py core/workflow/graph.py"
+  },
+  {
+   "file": "core/workflow/heartbeat_monitor.py",
+   "tag": "STUB",
+   "loc": 38,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/workflow/heartbeat_monitor.py core/workflow/heartbeat_monitor.py"
+  },
+  {
+   "file": "core/workflow/learning_models.py",
+   "tag": "STUB",
+   "loc": 109,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/workflow/learning_models.py core/workflow/learning_models.py"
+  },
+  {
+   "file": "core/workflow/learning_store.py",
+   "tag": "STUB",
+   "loc": 51,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/workflow/learning_store.py core/workflow/learning_store.py"
+  },
+  {
+   "file": "core/workflow/long_horizon_fsm.py",
+   "tag": "STUB",
+   "loc": 58,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/workflow/long_horizon_fsm.py core/workflow/long_horizon_fsm.py"
+  },
+  {
+   "file": "core/workflow/models.py",
+   "tag": "STUB",
+   "loc": 90,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/workflow/models.py core/workflow/models.py"
+  },
+  {
+   "file": "core/workflow/recorder.py",
+   "tag": "STUB",
+   "loc": 38,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/workflow/recorder.py core/workflow/recorder.py"
+  },
+  {
+   "file": "core/workflow/recovery.py",
+   "tag": "STUB",
+   "loc": 29,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/workflow/recovery.py core/workflow/recovery.py"
+  },
+  {
+   "file": "core/workflow/storage.py",
+   "tag": "STUB",
+   "loc": 38,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/workflow/storage.py core/workflow/storage.py"
+  },
+  {
+   "file": "core/workflow/tracker.py",
+   "tag": "STUB",
+   "loc": 25,
+   "tracked": true,
+   "tests": null,
+   "evidence": "DynamicStub marker/body",
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/core/workflow/tracker.py core/workflow/tracker.py"
+  },
+  {
+   "file": "desktop_bridge.py",
+   "tag": "FAKE-SUCCESS",
+   "loc": 129,
+   "tracked": true,
+   "tests": "pass",
+   "evidence": [
+    "health:@82 canned endpoint -> {'status': 'ok'}"
+   ],
+   "test_files": [
+    "tests/unit/test_desktop_bridge.py"
+   ],
+   "restore": "cp rebuild_backlog/files/desktop_bridge.py desktop_bridge.py"
+  },
+  {
+   "file": "services/memory/skills.py",
+   "tag": "FAKE-SUCCESS",
+   "loc": 143,
+   "tracked": true,
+   "tests": "none",
+   "evidence": [
+    "read_skill_reference:@68 return ''"
+   ],
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/services/memory/skills.py services/memory/skills.py"
+  },
+  {
+   "file": "utils/telemetry.py",
+   "tag": "FAKE-SUCCESS",
+   "loc": 63,
+   "tracked": true,
+   "tests": "none",
+   "evidence": [
+    "record_intervention:@64 pass",
+    "compute_global_health -> returns MockHealth with mocked values (comment: 'Mocking values that MetaGovernor expects')"
+   ],
+   "test_files": null,
+   "restore": "cp rebuild_backlog/files/utils/telemetry.py utils/telemetry.py"
+  }
+ ]
+}

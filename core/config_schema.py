@@ -10,6 +10,9 @@ class ServerConfig:
     port: int = 8000
     reload: bool = False
     dev_mode: bool = False
+    # Production-shaped: empty list, never a wildcard origin.
+    # (tests/unit/test_security_hardening.py asserts "*" not in here.)
+    allowed_origins: list[str] = field(default_factory=list)
 
 
 @dataclass

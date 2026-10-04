@@ -43,6 +43,12 @@ def record_activity_nodes(nodes: Iterable[ActivityNode],
     return saved
 
 
+def _task_value(task: Any, key: str, default: Any = None) -> Any:
+    if isinstance(task, dict):
+        return task.get(key, default)
+    return getattr(task, key, default)
+
+
 class ActivityRecorder:
     """Records the activity graph for one run.
 
@@ -52,7 +58,7 @@ class ActivityRecorder:
     def __init__(self, manager: Optional[ActivityManager] = None) -> None:
         self.manager = manager or ActivityManager()
         self.activity_id: Optional[str] = None
-        self.nodes: list = []
+        self.nodes: list[ActivityNode] = []
 
     # ── helpers ─────────────────────────────────────────────────────
     def _record(self, node: ActivityNode) -> ActivityNode:
@@ -69,57 +75,127 @@ class ActivityRecorder:
             return None
         return self.manager.get_node(self.activity_id)
 
+    def _find_task_node(self, task: Any) -> Optional[ActivityNode]:
+        if isinstance(task, ActivityNode):
+            return task if task.node_type == "agent_call" else None
+        agent_id = _task_value(task, "agent_id")
+        goal = _task_value(task, "goal")
+        agent_match: Optional[ActivityNode] = None
+        for node in reversed(self.nodes):
+            if node.node_type != "agent_call":
+                continue
+            if agent_id is not None and node.agent_id != agent_id:
+                continue
+            if goal is not None and node.label == goal:
+                return node
+            if agent_match is None:
+                agent_match = node
+        return agent_match
+
     # ── recording ───────────────────────────────────────────────────
     def record_goal(self, goal: str, template_id: str = "", *,
                     tenant_id: str = "default", **metadata: Any) -> ActivityNode:
         extra = dict(metadata)
         if template_id:
             extra["template_id"] = template_id
-        node = make_node("goal", label=str(goal or ""), tenant_id=tenant_id,
-                         **extra)
+        node = self.manager.create_activity(str(goal or ""),
+                                            tenant_id=tenant_id, **extra)
         self.activity_id = node.node_id
         return self._record(node)
 
-    def record_completion(self, output: Any = None, **metadata: Any) -> Optional[ActivityNode]:
-        node = self.activity
+    def record_subgoals(self, plan: Any) -> None:
+        root = self.activity
+        if root is None or plan is None:
+            return
+
+        def walk(parent_plan: Any, parent_node: ActivityNode) -> None:
+            for child in (getattr(parent_plan, "children", None) or []):
+                node = self.manager.create_subgoal(
+                    parent_node, str(getattr(child, "description", "") or ""),
+                    step_name=getattr(child, "step_name", None))
+                self._record(node)
+                walk(child, node)
+
+        walk(plan, root)
+
+    def record_agent_tasks(self, tasks: Iterable[Any]) -> None:
+        if self.activity is None:
+            return
+        for task in tasks or ():
+            node = self.manager.create_agent_task(
+                self.activity,
+                str(_task_value(task, "agent_id", "") or ""),
+                str(_task_value(task, "goal", "") or ""),
+                step_name=_task_value(task, "step"),
+                parameters=_task_value(task, "parameters"),
+            )
+            self._record(node)
+
+    def record_task_result(self, task: Any, success: bool,
+                           output: Any = None,
+                           error: Any = None) -> Optional[ActivityNode]:
+        node = self._find_task_node(task)
         if node is None:
             return None
-        from core.activity.models import ActivityStatus
-
-        node.status = ActivityStatus.COMPLETED
-        if output is not None:
-            node.metadata["output"] = output
-        node.metadata.update(metadata)
+        if success:
+            artifacts = output.get("artifacts") if isinstance(output, dict) else None
+            self.manager.mark_completed(node.node_id, output=output,
+                                        artifacts=artifacts)
+        else:
+            self.manager.mark_failed(node.node_id,
+                                     error if error is not None else "task failed")
         return node
 
-    def record_failure(self, error: str, **metadata: Any) -> Optional[ActivityNode]:
-        node = self.activity
+    def record_task_artifacts(self, task: Any,
+                              artifacts: dict) -> Optional[ActivityNode]:
+        node = self._find_task_node(task)
         if node is None:
             return None
-        from core.activity.models import ActivityStatus
-
-        node.status = ActivityStatus.FAILED
-        node.metadata["error"] = str(error)
-        node.metadata.update(metadata)
+        self.manager.mark_completed(node.node_id, artifacts=artifacts)
         return node
 
-    def record_artifact(self, name: str, artifact_id: Any, **metadata: Any) -> Optional[ActivityNode]:
+    def record_completion(self, output: Any = None,
+                          **metadata: Any) -> Optional[ActivityNode]:
+        if self.activity_id is None:
+            return None
+        node = self.manager.complete_activity(self.activity_id, output=output)
+        if node is not None and metadata:
+            node.metadata.update(metadata)
+        return node
+
+    def record_failure(self, error: Any, **metadata: Any) -> Optional[ActivityNode]:
+        if self.activity_id is None:
+            return None
+        node = self.manager.fail_activity(self.activity_id, error)
+        if node is not None and metadata:
+            node.metadata.update(metadata)
+        return node
+
+    def record_artifact(self, task: Any, name: str, artifact_id: Any,
+                        **metadata: Any) -> Optional[ActivityNode]:
         if self.activity is None:
             return None
-        node = make_node("artifact", label=str(name), output=artifact_id,
-                         activity_id=self.activity_id or "",
-                         parent_id=self.activity_id)
+        parent = self._find_task_node(task) or self.activity
+        node = self.manager.create_artifact_node(parent, str(name), artifact_id)
+        if metadata:
+            node.metadata.update(metadata)
         return self._record(node)
 
+    def link_workflow(self, workflow_id: str) -> None:
+        for node in self.get_activity_tree():
+            self.manager.link_workflow(node.node_id, workflow_id)
+
     # ── queries ─────────────────────────────────────────────────────
-    def get_activity_tree(self) -> list:
+    def get_activity_tree(self) -> list[ActivityNode]:
         if self.activity_id is None:
             return []
         return [n for n in self.nodes if n.activity_id == self.activity_id
                 or n.node_id == self.activity_id]
 
-    def get_activity_timeline(self) -> list:
-        return list(self.get_activity_tree())
+    def get_activity_timeline(self) -> list[ActivityNode]:
+        return sorted(self.get_activity_tree(),
+                      key=lambda n: n.created_at.isoformat() if n.created_at
+                      else n.node_id)
 
 
 __all__ = ["ActivityRecorder", "make_activity_node", "record_activity_nodes"]

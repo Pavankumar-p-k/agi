@@ -15,11 +15,15 @@ from collections import defaultdict
 # Split so this script does not match its own marker literal.
 MARKER = "Auto-reconstructed" + " backend component"
 
+# Backup copies must not inflate/deflate the metric: only live source counts.
+SKIP_DIRS = {".git", "rebuild_backlog"}
+
 
 def count(base: str) -> tuple[int, int]:
     total = stubs = 0
     for dirpath, _dirnames, filenames in os.walk(base):
-        if ".git" in dirpath.replace("\\", "/").split("/"):
+        parts = dirpath.replace("\\", "/").split("/")
+        if ".git" in parts or any(d in SKIP_DIRS for d in parts):
             continue
         for name in filenames:
             if not name.endswith(".py"):

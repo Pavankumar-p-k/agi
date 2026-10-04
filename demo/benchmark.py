@@ -45,7 +45,7 @@ def main() -> int:
         "core.diagnostics",
         "core.ssrf",
         "core.api_key_vault",
-        "core.prompt_security",
+        "core.special_token_filter",
         "core.tools.execution",
         "core.tools.persistent_shell",
         "core.skill_loader",

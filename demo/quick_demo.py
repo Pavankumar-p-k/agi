@@ -60,7 +60,7 @@ def main() -> int:
     # 2. Core imports
     _header("2. Core Modules")
     for mod in ["core.agent_loop", "core.tools.execution", "core.diagnostics",
-                "core.ssrf", "core.api_key_vault", "core.prompt_security",
+                "core.ssrf", "core.api_key_vault", "core.special_token_filter",
                 "core.skill_loader", "core.tools.persistent_shell"]:
         try:
             __import__(mod)

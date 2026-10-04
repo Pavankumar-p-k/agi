@@ -34,6 +34,21 @@ if os.getenv("MEM0_DISABLED", "0").lower() in {"1", "true", "yes"}:
     logger.info("MEM0_DISABLED set — skipping mem0 initialization")
 
 
+def _bare_ollama_model(ref: Any) -> str:
+    """Strip a provider prefix so Ollama gets the model it actually has.
+
+    ``ollama/qwen2.5-coder:3b`` -> ``qwen2.5-coder:3b``. Without this the
+    Ollama HTTP API answers ``404 model not found`` and mem0 silently stores
+    nothing (observed live during the STEP 4 scorecard rerun).
+    """
+    name = str(ref or "").strip()
+    if "/" in name:
+        head, _, tail = name.partition("/")
+        if head == "ollama":
+            return tail
+    return name
+
+
 def _get_mem0_config() -> dict:
     """Build mem0 config using existing Ollama LLM router."""
     from core.configuration import configuration as _c
@@ -42,7 +57,7 @@ def _get_mem0_config() -> dict:
         "llm": {
             "provider": "ollama",
             "config": {
-                "model": _c.get("llm.chat_model"),
+                "model": _bare_ollama_model(_c.get("llm.chat_model")),
                 "ollama_base_url": _ollama,
                 "temperature": 0.1,
                 "max_tokens": 2000,
@@ -51,7 +66,7 @@ def _get_mem0_config() -> dict:
         "embedder": {
             "provider": "ollama",
             "config": {
-                "model": _c.get("llm.embedding_model"),
+                "model": _bare_ollama_model(_c.get("llm.embedding_model")),
                 "ollama_base_url": _ollama,
             }
         },
@@ -107,12 +122,27 @@ class Mem0Adapter:
             logger.error(f"mem0.search failed: {e}")
             return []
 
+    @staticmethod
+    def _entity_filters(user_id: str) -> Dict[str, Any]:
+        """mem0 >= 1.x takes entity selectors under ``filters=``.
+
+        Passing ``user_id=`` directly raises
+        ``Top-level entity parameters ... are not supported`` (seen live in
+        the STEP 4 rerun), which the old code swallowed as ``[]`` — making
+        every recall report "0 entries" while claiming success.
+        """
+        return {"user_id": user_id}
+
     def get_all(self, user_id: str) -> List[Dict]:
         """Get all memories for a user."""
         if not self._memory:
             return []
         try:
-            results = self._memory.get_all(user_id=user_id)
+            try:
+                results = self._memory.get_all(filters=self._entity_filters(user_id))
+            except TypeError:
+                # mem0 < 1.x signature
+                results = self._memory.get_all(user_id=user_id)
             return results.get("results", []) if isinstance(results, dict) else results or []
         except Exception as e:
             logger.error(f"mem0.get_all failed: {e}")
@@ -123,7 +153,10 @@ class Mem0Adapter:
         if not self._memory:
             return False
         try:
-            self._memory.delete_all(user_id=user_id)
+            try:
+                self._memory.delete_all(filters=self._entity_filters(user_id))
+            except TypeError:
+                self._memory.delete_all(user_id=user_id)
             return True
         except Exception as e:
             logger.error(f"mem0.delete_all failed: {e}")

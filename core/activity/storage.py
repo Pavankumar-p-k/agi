@@ -1,11 +1,25 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from datetime import datetime, timezone
 from typing import Any
 from core.activity.models import ActivityEdge, ActivityNode, ActivityStatus
 
 
 _DATABASES: dict[str, dict[str, Any]] = {}
+
+
+def _now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def _sort_ts(dt: datetime | None) -> float:
+    if dt is None:
+        return 0.0
+    try:
+        return dt.timestamp()
+    except (OSError, OverflowError, ValueError):
+        return 0.0
 
 
 class ActivityStore:
@@ -16,6 +30,8 @@ class ActivityStore:
     def create_node(self, node: ActivityNode) -> ActivityNode:
         if node.node_id in self._data["nodes"]:
             raise ValueError(f"duplicate node id: {node.node_id}")
+        if node.created_at is None:
+            node.created_at = _now()
         self._data["nodes"][node.node_id] = node
         return node
 
@@ -33,6 +49,8 @@ class ActivityStore:
                 del self._data["edges"][edge_id]
 
     def create_edge(self, edge: ActivityEdge) -> ActivityEdge:
+        if edge.created_at is None:
+            edge.created_at = _now()
         self._data["edges"][edge.edge_id] = edge
         return edge
 
@@ -51,9 +69,15 @@ class ActivityStore:
     def _activity_nodes(self, activity_id: str) -> list[ActivityNode]:
         return [n for n in self._data["nodes"].values() if n.activity_id == activity_id]
 
+    def get_children(self, parent_id: str) -> list[ActivityNode]:
+        return [n for n in self._data["nodes"].values() if n.parent_id == parent_id]
+
+    def get_all_nodes(self) -> list[ActivityNode]:
+        return list(self._data["nodes"].values())
+
     def get_activity_tree(self, activity_id: str) -> list[ActivityNode]:
         nodes = self._activity_nodes(activity_id)
-        return sorted(nodes, key=lambda n: (n.depth, n.created_at))
+        return sorted(nodes, key=lambda n: (n.depth, _sort_ts(n.created_at)))
 
     def get_activity_timeline(self, activity_id: str) -> list[ActivityNode]:
         return sorted(self._activity_nodes(activity_id), key=lambda n: n.depth, reverse=True)
@@ -80,7 +104,8 @@ class ActivityStore:
     def count_by_status(self, activity_id: str) -> dict[str, int]:
         counts: dict[str, int] = defaultdict(int)
         for node in self._activity_nodes(activity_id):
-            counts[node.status.value] += 1
+            status = node.status
+            counts[getattr(status, "name", str(status)).upper()] += 1
         return dict(counts)
 
     def search_nodes(self, query: str) -> list[ActivityNode]:
