@@ -1,0 +1,3419 @@
+........................................................................ [  0%]
+........................................................................ [  1%]
+...............................................ss....................... [  1%]
+.........................s.............................................. [  2%]
+........................................................................ [  2%]
+..................................s..................................... [  3%]
+........................................................................ [  3%]
+........................................................................ [  4%]
+........................................................................ [  4%]
+..........................s............................................. [  5%]
+.............s.......................................................... [  5%]
+........................................................................ [  6%]
+........................................................................ [  6%]
+........................................................................ [  7%]
+........................................................................ [  8%]
+.................s...................................................... [  8%]
+....s................................................................... [  9%]
+........................................................................ [  9%]
+........................................................................ [ 10%]
+........................................................................ [ 10%]
+......................................................................s. [ 11%]
+........................................................................ [ 11%]
+........................................................................ [ 12%]
+.......s..............................ssss.s............................ [ 12%]
+........................................................................ [ 13%]
+........................................................................ [ 13%]
+.............................................................s.......... [ 14%]
+........................................................................ [ 14%]
+...............................ss.....................................s. [ 15%]
+........................................................................ [ 16%]
+........................................................................ [ 16%]
+........................................................................ [ 17%]
+........................................................................ [ 17%]
+........................................................................ [ 18%]
+........................................................................ [ 18%]
+........................................................................ [ 19%]
+........................................................................ [ 19%]
+........................................................................ [ 20%]
+........................................................................ [ 20%]
+........................................................................ [ 21%]
+........................................................................ [ 21%]
+...........s............................................................ [ 22%]
+........................................................................ [ 22%]
+........................................................................ [ 23%]
+............................s.............s............................. [ 24%]
+........................................................................ [ 24%]
+...................................................s.................... [ 25%]
+........s.s........ss..........s..........................s...s........s [ 25%]
+.......ss...s...........s.................s.....s...................s... [ 26%]
+s.s.......s..........s........s..............s......s......s..s..s..s... [ 26%]
+...s...s..........s.........s....ss...s.s.....s..s..s...s...s......s.... [ 27%]
+...........s.............s......s........s......................s.s....s [ 27%]
+.................s........s...............s.......s..............s...... [ 28%]
+........................................................................ [ 28%]
+........................................................................ [ 29%]
+....................................ssssss.............................. [ 29%]
+.....................s.................................................. [ 30%]
+........................................................................ [ 31%]
+........................................................................ [ 31%]
+........................................................................ [ 32%]
+........................................................................ [ 32%]
+...............................................................s........ [ 33%]
+............s........................................................... [ 33%]
+........................................................................ [ 34%]
+........................................................................ [ 34%]
+........................................................................ [ 35%]
+........................................................................ [ 35%]
+.................ssssss................................................. [ 36%]
+..s..........................s.......................................... [ 36%]
+........................................................................ [ 37%]
+........................................................................ [ 37%]
+...................s.ss................................................. [ 38%]
+........................................................................ [ 39%]
+...........s....................................................s....... [ 39%]
+........................................................................ [ 40%]
+........................................................................ [ 40%]
+....s...s............................................................... [ 41%]
+........................................................................ [ 41%]
+........................................................................ [ 42%]
+........................................................................ [ 42%]
+........................................................................ [ 43%]
+........................................................................ [ 43%]
+........................................................................ [ 44%]
+........................................................................ [ 44%]
+......................................................s................. [ 45%]
+...............s....................s................................... [ 45%]
+........................................................................ [ 46%]
+........................................................................ [ 47%]
+.....................................................s.ss............... [ 47%]
+........................................................................ [ 48%]
+.............................................s..................s.s..s.. [ 48%]
+...........................s............................................ [ 49%]
+........................................................................ [ 49%]
+.........................................ss............................. [ 50%]
+............................................s.sss....................... [ 50%]
+........................................................................ [ 51%]
+.................................s..s....................s..s........... [ 51%]
+..................s..................................................... [ 52%]
+........................................................................ [ 52%]
+.............................s...s...................................... [ 53%]
+........................................................................ [ 54%]
+........................................................................ [ 54%]
+.........................s..........................................sss. [ 55%]
+....................................s................................... [ 55%]
+........................................................................ [ 56%]
+........................................................................ [ 56%]
+........................................................................ [ 57%]
+........................................................................ [ 57%]
+..................................................................s..... [ 58%]
+...........................s............................................ [ 58%]
+........................................................................ [ 59%]
+........................................................................ [ 59%]
+........................................................................ [ 60%]
+........................................................................ [ 60%]
+.......s..........................................ss.....s.............. [ 61%]
+..................s..................................................... [ 62%]
+........................................................................ [ 62%]
+........................................................................ [ 63%]
+........................................................................ [ 63%]
+......................................................................s. [ 64%]
+...........................................s....s....s.................. [ 64%]
+.........s.............................................................. [ 65%]
+........................................................................ [ 65%]
+........................................................................ [ 66%]
+........................................................................ [ 66%]
+...............................................................ss....... [ 67%]
+........................................................................ [ 67%]
+.s...................................................................... [ 68%]
+........................................................................ [ 68%]
+........................................................................ [ 69%]
+........................................................................ [ 70%]
+.......................................................................s [ 70%]
+.......................s.s.............................................. [ 71%]
+........................................................................ [ 71%]
+........................................................................ [ 72%]
+.......sss..s........................................................... [ 72%]
+........................................................................ [ 73%]
+........................................................................ [ 73%]
+........................................................................ [ 74%]
+........................................................................ [ 74%]
+........................................................................ [ 75%]
+........................................................................ [ 75%]
+........................................................................ [ 76%]
+........................................................................ [ 76%]
+........................................................................ [ 77%]
+...........................................................ss.s.s....... [ 78%]
+........................................................................ [ 78%]
+........................................................................ [ 79%]
+........................................................................ [ 79%]
+..........................................................s............. [ 80%]
+........................................................................ [ 80%]
+................................................s....................... [ 81%]
+........................................................................ [ 81%]
+........................................................................ [ 82%]
+....................................................................s... [ 82%]
+...................................s.............s.........sss.......... [ 83%]
+............s........................................................... [ 83%]
+.........................................ss.s.s......................... [ 84%]
+.......ss............................................................... [ 85%]
+........................................................................ [ 85%]
+........................................................................ [ 86%]
+........s..s.........................................s.................. [ 86%]
+...................ss................................................... [ 87%]
+........................................................................ [ 87%]
+........................................................................ [ 88%]
+........................................................................ [ 88%]
+........................................................................ [ 89%]
+........................................................................ [ 89%]
+........................................................................ [ 90%]
+....................ss.................................................. [ 90%]
+.......................s.............s.s...s.ss.s..ss.s......ssssss.sss. [ 91%]
+s........s.s....s.s......s.ss.s...s..................sssssssssssssssssss [ 91%]
+sssssssssssssssssssssssss.ssssssssssssssssssssssssssssssssssssssss.sssss [ 92%]
+sssssssssssss.sssssssssssssssssssssssssssssssssssssssssss.ssssssssssssss [ 93%]
+s.sssssssss.sssssssssssssssssssssssssssssssssss.ssssssssssssssssssssssss [ 93%]
+ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss [ 94%]
+sssssssssss.ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss [ 94%]
+ssssssssssssssssssssssssssssssssssssssssssss.s.......s.................. [ 95%]
+........................................................................ [ 95%]
+.......................................................................s [ 96%]
+........................................................................ [ 96%]
+........................................................................ [ 97%]
+........................................................................ [ 97%]
+........................................................................ [ 98%]
+........................................................................ [ 98%]
+........................................................................ [ 99%]
+............s........................................................... [ 99%]
+.                                                                        [100%]Running teardown with pytest sessionfinish...
+
+Test 
+tests/architecture/test_architecture_audit.py::test_no_llm_outside_execution 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 91, 'Skipped: core/llm_failover.py is exempt from LLM import 
+restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_no_llm_outside_execution 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 91, 'Skipped: core/llm_router.py is exempt from LLM import 
+restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_no_llm_outside_execution 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 87, 'Skipped: Execution stage is the owner')
+Test 
+tests/architecture/test_architecture_audit.py::test_no_llm_outside_execution 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 87, 'Skipped: Execution stage is the owner')
+Test 
+tests/architecture/test_architecture_audit.py::test_no_memory_writes_outside_me
+mory was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 111, 'Skipped: Memory stage is the owner')
+Test 
+tests/architecture/test_architecture_audit.py::test_no_memory_writes_outside_me
+mory was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 111, 'Skipped: Memory stage is the owner')
+Test 
+tests/architecture/test_architecture_audit.py::test_no_fact_store_writes_outsid
+e_memory was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 131, 'Skipped: Memory stage is the owner')
+Test 
+tests/architecture/test_architecture_audit.py::test_no_fact_store_writes_outsid
+e_memory was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 131, 'Skipped: Memory stage is the owner')
+Test 
+tests/architecture/test_architecture_audit.py::test_no_provider_manager_outside
+_execution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 151, 'Skipped: Execution stage is the owner')
+Test 
+tests/architecture/test_architecture_audit.py::test_no_provider_manager_outside
+_execution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 151, 'Skipped: Execution stage is the owner')
+Test 
+tests/architecture/test_architecture_audit.py::test_no_direct_activity_mutation
+s was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 184, 'Skipped: core/activity/__init__.py is exempt from activity 
+mutation restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_no_direct_activity_mutation
+s was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 184, 'Skipped: core/activity/manager.py is exempt from activity 
+mutation restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_no_direct_activity_mutation
+s was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 184, 'Skipped: core/activity/models.py is exempt from activity mutation
+restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_no_direct_activity_mutation
+s was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 184, 'Skipped: core/activity/recorder.py is exempt from activity 
+mutation restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_no_direct_activity_mutation
+s was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 184, 'Skipped: core/activity/resume.py is exempt from activity mutation
+restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_no_direct_activity_mutation
+s was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 180, 'Skipped: Execution stage is the owner')
+Test 
+tests/architecture/test_architecture_audit.py::test_no_direct_activity_mutation
+s was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 184, 'Skipped: core/scheduler/queue.py is exempt from activity mutation
+restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_no_direct_activity_mutation
+s was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 184, 'Skipped: core/scheduler/scheduler.py is exempt from activity 
+mutation restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_no_direct_activity_mutation
+s was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 180, 'Skipped: Execution stage is the owner')
+Test 
+tests/architecture/test_architecture_audit.py::test_scheduler_imports_pipeline_
+only_via_pipeline_executor was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 270, 'Skipped: Pipeline executor is the intentional bridge')
+Test 
+tests/architecture/test_architecture_audit.py::test_outcome_only_created_in_exe
+cution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 292, 'Skipped: Outcome definition lives here')
+Test 
+tests/architecture/test_architecture_audit.py::test_outcome_only_created_in_exe
+cution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 290, 'Skipped: Execution stage is the owner of Outcome')
+Test 
+tests/architecture/test_architecture_audit.py::test_outcome_only_created_in_exe
+cution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 290, 'Skipped: Execution stage is the owner of Outcome')
+Test 
+tests/architecture/test_architecture_audit.py::test_observation_only_created_in
+_execution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 320, 'Skipped: Observation definition lives here')
+Test 
+tests/architecture/test_architecture_audit.py::test_observation_only_created_in
+_execution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 320, 'Skipped: Observation definition lives here')
+Test 
+tests/architecture/test_architecture_audit.py::test_observation_only_created_in
+_execution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 320, 'Skipped: Observation definition lives here')
+Test 
+tests/architecture/test_architecture_audit.py::test_observation_only_created_in
+_execution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 320, 'Skipped: Observation definition lives here')
+Test 
+tests/architecture/test_architecture_audit.py::test_observation_only_created_in
+_execution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 320, 'Skipped: Observation definition lives here')
+Test 
+tests/architecture/test_architecture_audit.py::test_observation_only_created_in
+_execution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 320, 'Skipped: Observation definition lives here')
+Test 
+tests/architecture/test_architecture_audit.py::test_observation_only_created_in
+_execution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 320, 'Skipped: Observation definition lives here')
+Test 
+tests/architecture/test_architecture_audit.py::test_observation_only_created_in
+_execution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 320, 'Skipped: Observation definition lives here')
+Test 
+tests/architecture/test_architecture_audit.py::test_observation_only_created_in
+_execution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 320, 'Skipped: Observation definition lives here')
+Test 
+tests/architecture/test_architecture_audit.py::test_observation_only_created_in
+_execution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 320, 'Skipped: Observation definition lives here')
+Test 
+tests/architecture/test_architecture_audit.py::test_observation_only_created_in
+_execution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 320, 'Skipped: Observation definition lives here')
+Test 
+tests/architecture/test_architecture_audit.py::test_observation_only_created_in
+_execution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 320, 'Skipped: Observation definition lives here')
+Test 
+tests/architecture/test_architecture_audit.py::test_observation_only_created_in
+_execution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 320, 'Skipped: Observation definition lives here')
+Test 
+tests/architecture/test_architecture_audit.py::test_observation_only_created_in
+_execution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 320, 'Skipped: Observation definition lives here')
+Test 
+tests/architecture/test_architecture_audit.py::test_observation_only_created_in
+_execution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 320, 'Skipped: Observation definition lives here')
+Test 
+tests/architecture/test_architecture_audit.py::test_observation_only_created_in
+_execution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 320, 'Skipped: Observation definition lives here')
+Test 
+tests/architecture/test_architecture_audit.py::test_observation_only_created_in
+_execution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 320, 'Skipped: Observation definition lives here')
+Test 
+tests/architecture/test_architecture_audit.py::test_observation_only_created_in
+_execution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 320, 'Skipped: Observation definition lives here')
+Test 
+tests/architecture/test_architecture_audit.py::test_observation_only_created_in
+_execution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 320, 'Skipped: Observation definition lives here')
+Test 
+tests/architecture/test_architecture_audit.py::test_observation_only_created_in
+_execution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 320, 'Skipped: Observation definition lives here')
+Test 
+tests/architecture/test_architecture_audit.py::test_observation_only_created_in
+_execution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 320, 'Skipped: Observation definition lives here')
+Test 
+tests/architecture/test_architecture_audit.py::test_observation_only_created_in
+_execution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 320, 'Skipped: Observation definition lives here')
+Test 
+tests/architecture/test_architecture_audit.py::test_observation_only_created_in
+_execution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 320, 'Skipped: Observation definition lives here')
+Test 
+tests/architecture/test_architecture_audit.py::test_observation_only_created_in
+_execution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 320, 'Skipped: Observation definition lives here')
+Test 
+tests/architecture/test_architecture_audit.py::test_observation_only_created_in
+_execution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 320, 'Skipped: Observation definition lives here')
+Test 
+tests/architecture/test_architecture_audit.py::test_observation_only_created_in
+_execution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 320, 'Skipped: Observation definition lives here')
+Test 
+tests/architecture/test_architecture_audit.py::test_observation_only_created_in
+_execution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 320, 'Skipped: Observation definition lives here')
+Test 
+tests/architecture/test_architecture_audit.py::test_observation_only_created_in
+_execution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 320, 'Skipped: Observation definition lives here')
+Test 
+tests/architecture/test_architecture_audit.py::test_observation_only_created_in
+_execution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 320, 'Skipped: Observation definition lives here')
+Test 
+tests/architecture/test_architecture_audit.py::test_observation_only_created_in
+_execution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 320, 'Skipped: Observation definition lives here')
+Test 
+tests/architecture/test_architecture_audit.py::test_observation_only_created_in
+_execution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 318, 'Skipped: Execution stage creates observations')
+Test 
+tests/architecture/test_architecture_audit.py::test_observation_only_created_in
+_execution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 320, 'Skipped: Observation definition lives here')
+Test 
+tests/architecture/test_architecture_audit.py::test_observation_only_created_in
+_execution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 320, 'Skipped: Observation definition lives here')
+Test 
+tests/architecture/test_architecture_audit.py::test_observation_only_created_in
+_execution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 320, 'Skipped: Observation definition lives here')
+Test 
+tests/architecture/test_architecture_audit.py::test_observation_only_created_in
+_execution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 320, 'Skipped: Observation definition lives here')
+Test 
+tests/architecture/test_architecture_audit.py::test_observation_only_created_in
+_execution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 320, 'Skipped: Observation definition lives here')
+Test 
+tests/architecture/test_architecture_audit.py::test_observation_only_created_in
+_execution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 320, 'Skipped: Observation definition lives here')
+Test 
+tests/architecture/test_architecture_audit.py::test_observation_only_created_in
+_execution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 320, 'Skipped: Observation definition lives here')
+Test 
+tests/architecture/test_architecture_audit.py::test_observation_only_created_in
+_execution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 320, 'Skipped: Observation definition lives here')
+Test 
+tests/architecture/test_architecture_audit.py::test_observation_only_created_in
+_execution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 320, 'Skipped: Observation definition lives here')
+Test 
+tests/architecture/test_architecture_audit.py::test_observation_only_created_in
+_execution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 320, 'Skipped: Observation definition lives here')
+Test 
+tests/architecture/test_architecture_audit.py::test_observation_only_created_in
+_execution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 320, 'Skipped: Observation definition lives here')
+Test 
+tests/architecture/test_architecture_audit.py::test_observation_only_created_in
+_execution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 320, 'Skipped: Observation definition lives here')
+Test 
+tests/architecture/test_architecture_audit.py::test_observation_only_created_in
+_execution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 320, 'Skipped: Observation definition lives here')
+Test 
+tests/architecture/test_architecture_audit.py::test_observation_only_created_in
+_execution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 320, 'Skipped: Observation definition lives here')
+Test 
+tests/architecture/test_architecture_audit.py::test_observation_only_created_in
+_execution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 320, 'Skipped: Observation definition lives here')
+Test 
+tests/architecture/test_architecture_audit.py::test_observation_only_created_in
+_execution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 320, 'Skipped: Observation definition lives here')
+Test 
+tests/architecture/test_architecture_audit.py::test_observation_only_created_in
+_execution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 320, 'Skipped: Observation definition lives here')
+Test 
+tests/architecture/test_architecture_audit.py::test_observation_only_created_in
+_execution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 320, 'Skipped: Observation definition lives here')
+Test 
+tests/architecture/test_architecture_audit.py::test_observation_only_created_in
+_execution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 318, 'Skipped: Execution stage creates observations')
+Test 
+tests/architecture/test_architecture_audit.py::test_observation_only_created_in
+_execution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 320, 'Skipped: Observation definition lives here')
+Test 
+tests/architecture/test_architecture_audit.py::test_observation_only_created_in
+_execution was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 320, 'Skipped: Observation definition lives here')
+Test 
+tests/architecture/test_architecture_audit.py::test_identity_context_only_creat
+ed_by_service was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 359, 'Skipped: Identity model files are exempt')
+Test 
+tests/architecture/test_architecture_audit.py::test_identity_context_only_creat
+ed_by_service was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 359, 'Skipped: Identity model files are exempt')
+Test 
+tests/architecture/test_architecture_audit.py::test_identity_context_only_creat
+ed_by_service was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 359, 'Skipped: Identity model files are exempt')
+Test 
+tests/architecture/test_architecture_audit.py::test_identity_context_only_creat
+ed_by_service was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 359, 'Skipped: Identity model files are exempt')
+Test 
+tests/architecture/test_architecture_audit.py::test_identity_context_only_creat
+ed_by_service was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 355, 'Skipped: IdentityService is the canonical creator')
+Test 
+tests/architecture/test_architecture_audit.py::test_identity_context_only_creat
+ed_by_service was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 359, 'Skipped: Identity model files are exempt')
+Test 
+tests/architecture/test_architecture_audit.py::test_identity_context_only_creat
+ed_by_service was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 357, 'Skipped: AuthenticationStage may replace IdentityContext during 
+state transition')
+Test 
+tests/architecture/test_architecture_audit.py::test_authentication_result_only_
+created_by_auth_stage was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 390, 'Skipped: AuthenticationResult definition is exempt')
+Test 
+tests/architecture/test_architecture_audit.py::test_authentication_result_only_
+created_by_auth_stage was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 388, 'Skipped: AuthenticationStage is the canonical creator')
+Test 
+tests/architecture/test_architecture_audit.py::test_only_auth_stage_transitions
+_authentication_state was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 421, 'Skipped: Identity model files are exempt')
+Test 
+tests/architecture/test_architecture_audit.py::test_only_auth_stage_transitions
+_authentication_state was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 421, 'Skipped: Identity model files are exempt')
+Test 
+tests/architecture/test_architecture_audit.py::test_only_auth_stage_transitions
+_authentication_state was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 421, 'Skipped: Identity model files are exempt')
+Test 
+tests/architecture/test_architecture_audit.py::test_only_auth_stage_transitions
+_authentication_state was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 421, 'Skipped: Identity model files are exempt')
+Test 
+tests/architecture/test_architecture_audit.py::test_only_auth_stage_transitions
+_authentication_state was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 424, 'Skipped: IdentityService creates IdentityContext with 
+AuthenticationState')
+Test 
+tests/architecture/test_architecture_audit.py::test_only_auth_stage_transitions
+_authentication_state was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 421, 'Skipped: Identity model files are exempt')
+Test 
+tests/architecture/test_architecture_audit.py::test_only_auth_stage_transitions
+_authentication_state was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 426, 'Skipped: AuthorizationStage reads AuthenticationState (does not 
+write it)')
+Test 
+tests/architecture/test_architecture_audit.py::test_only_auth_stage_transitions
+_authentication_state was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 428, 'Skipped: ResourceAccessStage reads AuthenticationState (does not 
+write it)')
+Test 
+tests/architecture/test_architecture_audit.py::test_auth_manager_only_accessed_
+by_identity_service_and_auth_stage was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 466, 'Skipped: core/auth.py is exempt from AuthManager import 
+restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_auth_manager_only_accessed_
+by_identity_service_and_auth_stage was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 466, 'Skipped: core/authz/engine.py is exempt from AuthManager import 
+restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_auth_manager_only_accessed_
+by_identity_service_and_auth_stage was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 466, 'Skipped: core/authz/loader.py is exempt from AuthManager import 
+restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_auth_manager_only_accessed_
+by_identity_service_and_auth_stage was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 466, 'Skipped: core/identity/service.py is exempt from AuthManager 
+import restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_auth_manager_only_accessed_
+by_identity_service_and_auth_stage was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 466, 'Skipped: core/pipeline/stages/auth.py is exempt from AuthManager 
+import restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_auth_manager_only_accessed_
+by_identity_service_and_auth_stage was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 466, 'Skipped: core/tools/execution.py is exempt from AuthManager 
+import restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_auth_manager_only_accessed_
+by_identity_service_and_auth_stage was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 466, 'Skipped: core/tools/security.py is exempt from AuthManager import
+restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_only_auth_stage_constructs_
+authorization_result was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 539, 'Skipped: IdentityService.authorize() constructs 
+AuthorizationResult')
+Test 
+tests/architecture/test_architecture_audit.py::test_only_auth_stage_constructs_
+authorization_result was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 537, 'Skipped: AuthorizationResult definition is exempt')
+Test 
+tests/architecture/test_architecture_audit.py::test_only_auth_stage_constructs_
+authorization_result was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 535, 'Skipped: AuthorizationStage is the canonical creator')
+Test 
+tests/architecture/test_architecture_audit.py::test_only_identity_service_and_a
+uth_stage_access_policy_engine was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 581, 'Skipped: core/auth.py is exempt from PolicyEngine access 
+restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_only_identity_service_and_a
+uth_stage_access_policy_engine was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 581, 'Skipped: core/authz/engine.py is exempt from PolicyEngine access 
+restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_only_identity_service_and_a
+uth_stage_access_policy_engine was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 581, 'Skipped: core/authz/loader.py is exempt from PolicyEngine access 
+restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_only_identity_service_and_a
+uth_stage_access_policy_engine was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 581, 'Skipped: core/identity/service.py is exempt from PolicyEngine 
+access restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_only_identity_service_and_a
+uth_stage_access_policy_engine was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 581, 'Skipped: core/permission/__init__.py is exempt from PolicyEngine 
+access restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_only_identity_service_and_a
+uth_stage_access_policy_engine was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 581, 'Skipped: core/permission/manager.py is exempt from PolicyEngine 
+access restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_only_identity_service_and_a
+uth_stage_access_policy_engine was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 581, 'Skipped: core/permission/policy.py is exempt from PolicyEngine 
+access restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_only_identity_service_and_a
+uth_stage_access_policy_engine was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 581, 'Skipped: core/pipeline/stages/authorization.py is exempt from 
+PolicyEngine access restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_only_identity_service_and_a
+uth_stage_access_policy_engine was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 581, 'Skipped: core/tools/policy.py is exempt from PolicyEngine access 
+restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_only_identity_service_and_a
+uth_stage_access_policy_engine was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 581, 'Skipped: core/tools/security.py is exempt from PolicyEngine 
+access restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_no_permission_checks_outsid
+e_auth_stage was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 628, 'Skipped: core/auth.py is exempt from permission check 
+restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_no_permission_checks_outsid
+e_auth_stage was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 628, 'Skipped: core/authz/engine.py is exempt from permission check 
+restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_no_permission_checks_outsid
+e_auth_stage was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 628, 'Skipped: core/authz/loader.py is exempt from permission check 
+restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_no_permission_checks_outsid
+e_auth_stage was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 628, 'Skipped: core/authz/schema.py is exempt from permission check 
+restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_no_permission_checks_outsid
+e_auth_stage was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 628, 'Skipped: core/identity/models.py is exempt from permission check 
+restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_no_permission_checks_outsid
+e_auth_stage was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 628, 'Skipped: core/identity/service.py is exempt from permission check
+restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_no_permission_checks_outsid
+e_auth_stage was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 628, 'Skipped: core/permission/manager.py is exempt from permission 
+check restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_no_permission_checks_outsid
+e_auth_stage was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 628, 'Skipped: core/permission/policy.py is exempt from permission 
+check restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_no_permission_checks_outsid
+e_auth_stage was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 628, 'Skipped: core/pipeline/stages/authorization.py is exempt from 
+permission check restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_no_permission_checks_outsid
+e_auth_stage was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 628, 'Skipped: core/tools/execution.py is exempt from permission check 
+restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_no_permission_checks_outsid
+e_auth_stage was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 628, 'Skipped: core/tools/security.py is exempt from permission check 
+restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_only_pipeline_populates_res
+ource_scope was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 658, 'Skipped: core/identity/resource_scope.py is exempt from 
+resource_scope construction restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_only_pipeline_populates_res
+ource_scope was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 658, 'Skipped: core/pipeline/observation.py is exempt from 
+resource_scope construction restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_only_pipeline_populates_res
+ource_scope was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 658, 'Skipped: core/pipeline/outcome.py is exempt from resource_scope 
+construction restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_only_pipeline_populates_res
+ource_scope was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 658, 'Skipped: core/pipeline/pipeline.py is exempt from resource_scope 
+construction restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_only_pipeline_populates_res
+ource_scope was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 658, 'Skipped: core/pipeline/stages/resource_access.py is exempt from 
+resource_scope construction restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_only_resource_access_stage_
+constructs_result was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 681, 'Skipped: ResourceAccessResult definition is exempt')
+Test 
+tests/architecture/test_architecture_audit.py::test_only_resource_access_stage_
+constructs_result was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 679, 'Skipped: ResourceAccessStage is the canonical creator')
+Test 
+tests/architecture/test_architecture_audit.py::test_no_execution_ownership_chec
+ks was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 710, 'Skipped: core/identity/resource_scope.py is exempt from ownership
+check restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_no_execution_ownership_chec
+ks was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 710, 'Skipped: core/pipeline/observation.py is exempt from ownership 
+check restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_no_execution_ownership_chec
+ks was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 710, 'Skipped: core/pipeline/outcome.py is exempt from ownership check 
+restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_no_execution_ownership_chec
+ks was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 710, 'Skipped: core/pipeline/resource_access_result.py is exempt from 
+ownership check restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_no_execution_ownership_chec
+ks was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 710, 'Skipped: core/pipeline/stages/resource_access.py is exempt from 
+ownership check restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_no_direct_visibility_compar
+isons was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 741, 'Skipped: core/identity/resource_scope.py is exempt from 
+visibility comparison restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_no_direct_visibility_compar
+isons was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 741, 'Skipped: core/pipeline/pipeline.py is exempt from visibility 
+comparison restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_no_direct_visibility_compar
+isons was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 741, 'Skipped: core/pipeline/resource_access_result.py is exempt from 
+visibility comparison restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_no_direct_visibility_compar
+isons was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 741, 'Skipped: core/pipeline/stages/auth.py is exempt from visibility 
+comparison restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_no_direct_visibility_compar
+isons was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 741, 'Skipped: core/pipeline/stages/resource_access.py is exempt from 
+visibility comparison restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_only_tenant_resolution_stag
+e_constructs_result was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 768, 'Skipped: IdentityService.resolve_tenant delegates to resolver')
+Test 
+tests/architecture/test_architecture_audit.py::test_only_tenant_resolution_stag
+e_constructs_result was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 766, 'Skipped: TenantResolutionResult definition is exempt')
+Test 
+tests/architecture/test_architecture_audit.py::test_only_tenant_resolution_stag
+e_constructs_result was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 764, 'Skipped: TenantResolutionStage is the canonical creator')
+Test 
+tests/architecture/test_architecture_audit.py::test_observation_publish_has_res
+ource_scope was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 795, 'Skipped: core/observation/hub.py is exempt')
+Test 
+tests/architecture/test_architecture_audit.py::test_observation_publish_has_res
+ource_scope was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 795, 'Skipped: core/pipeline/observation.py is exempt')
+Test 
+tests/architecture/test_architecture_audit.py::test_observation_publish_has_res
+ource_scope was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 795, 'Skipped: core/pipeline/pipeline.py is exempt')
+Test 
+tests/architecture/test_architecture_audit.py::test_activity_node_creation_has_
+resource_scope was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 822, 'Skipped: core/activity/manager.py is exempt')
+Test 
+tests/architecture/test_architecture_audit.py::test_activity_node_creation_has_
+resource_scope was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 822, 'Skipped: core/activity/models.py is exempt')
+Test 
+tests/architecture/test_architecture_audit.py::test_activity_node_creation_has_
+resource_scope was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 822, 'Skipped: core/activity/recorder.py is exempt')
+Test 
+tests/architecture/test_architecture_audit.py::test_activity_node_creation_has_
+resource_scope was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 822, 'Skipped: core/activity/storage.py is exempt')
+Test 
+tests/architecture/test_architecture_audit.py::test_scheduled_activity_has_tena
+nt was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 851, 'Skipped: core/scheduler/models.py is exempt')
+Test 
+tests/architecture/test_architecture_audit.py::test_scheduled_activity_has_tena
+nt was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 851, 'Skipped: core/scheduler/pipeline_executor.py is exempt')
+Test 
+tests/architecture/test_architecture_audit.py::test_scheduled_activity_has_tena
+nt was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 851, 'Skipped: core/scheduler/queue.py is exempt')
+Test 
+tests/architecture/test_architecture_audit.py::test_scheduled_activity_has_tena
+nt was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 851, 'Skipped: core/scheduler/store.py is exempt')
+Test 
+tests/architecture/test_architecture_audit.py::test_snapshot_has_tenant_metadat
+a was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 876, 'Skipped: core/pipeline/architecture_metrics.py is exempt')
+Test 
+tests/architecture/test_architecture_audit.py::test_snapshot_has_tenant_metadat
+a was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 876, 'Skipped: core/runtime_version.py is exempt')
+Test 
+tests/architecture/test_architecture_audit.py::test_persistence_has_tenant_scop
+e was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 923, 'Skipped: core/fact_extraction/store.py is exempt from tenant 
+persistence check')
+Test 
+tests/architecture/test_architecture_audit.py::test_persistence_has_tenant_scop
+e was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 923, 'Skipped: core/observation/hub.py is exempt from tenant 
+persistence check')
+Test 
+tests/architecture/test_architecture_audit.py::test_persistence_has_tenant_scop
+e was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 923, 'Skipped: core/pipeline/architecture_metrics.py is exempt from 
+tenant persistence check')
+Test 
+tests/architecture/test_architecture_audit.py::test_persistence_has_tenant_scop
+e was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 923, 'Skipped: core/pipeline/observation.py is exempt from tenant 
+persistence check')
+Test 
+tests/architecture/test_architecture_audit.py::test_persistence_has_tenant_scop
+e was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 923, 'Skipped: core/pipeline/outcome.py is exempt from tenant 
+persistence check')
+Test 
+tests/architecture/test_architecture_audit.py::test_persistence_has_tenant_scop
+e was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 923, 'Skipped: core/pipeline/pipeline.py is exempt from tenant 
+persistence check')
+Test 
+tests/architecture/test_architecture_audit.py::test_persistence_has_tenant_scop
+e was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 923, 'Skipped: core/pipeline/stages/memory.py is exempt from tenant 
+persistence check')
+Test 
+tests/architecture/test_architecture_audit.py::test_persistence_has_tenant_scop
+e was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 923, 'Skipped: core/scheduler/models.py is exempt from tenant 
+persistence check')
+Test 
+tests/architecture/test_architecture_audit.py::test_persistence_has_tenant_scop
+e was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 923, 'Skipped: core/scheduler/pipeline_executor.py is exempt from 
+tenant persistence check')
+Test 
+tests/architecture/test_architecture_audit.py::test_persistence_has_tenant_scop
+e was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 923, 'Skipped: core/scheduler/queue.py is exempt from tenant 
+persistence check')
+Test 
+tests/architecture/test_architecture_audit.py::test_persistence_has_tenant_scop
+e was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 923, 'Skipped: core/scheduler/store.py is exempt from tenant 
+persistence check')
+Test 
+tests/architecture/test_architecture_audit.py::test_persistence_has_tenant_scop
+e was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 923, 'Skipped: core/tools/browser_planner.py is exempt from tenant 
+persistence check')
+Test 
+tests/architecture/test_architecture_audit.py::test_persistence_has_tenant_scop
+e was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 923, 'Skipped: core/tools/browser_research.py is exempt from tenant 
+persistence check')
+Test 
+tests/architecture/test_architecture_audit.py::test_only_pipeline_assigns_defau
+lt_tenant was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 998, 'Skipped: core/identity/resource_scope.py is exempt from default 
+tenant restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_only_pipeline_assigns_defau
+lt_tenant was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 998, 'Skipped: core/identity/tenant_resolver.py is exempt from default 
+tenant restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_only_pipeline_assigns_defau
+lt_tenant was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 998, 'Skipped: core/pipeline/pipeline.py is exempt from default tenant 
+restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_only_pipeline_assigns_defau
+lt_tenant was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 998, 'Skipped: core/pipeline/stages/resource_access.py is exempt from 
+default tenant restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_only_pipeline_assigns_defau
+lt_tenant was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 998, 'Skipped: core/pipeline/stages/tenant_resolution.py is exempt from
+default tenant restriction')
+Test 
+tests/architecture/test_architecture_audit.py::test_only_registry_constructs_ru
+ntime_services was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1030, 'Skipped: core/runtime/protocols.py is exempt from registry 
+construction rule')
+Test 
+tests/architecture/test_architecture_audit.py::test_only_registry_constructs_ru
+ntime_services was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1030, 'Skipped: core/runtime/providers.py is exempt from registry 
+construction rule')
+Test 
+tests/architecture/test_architecture_audit.py::test_execution_only_imports_prot
+ocols was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1047, 'Skipped: Rule 33 — pending ActivityService protocol coverage')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_uses_process_message
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1168, 'Skipped: core/distribution/contracts.py is exempt — not a worker
+execution file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_uses_process_message
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1168, 'Skipped: core/distribution/graph/executor.py is exempt — not a 
+worker execution file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_uses_process_message
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1168, 'Skipped: core/distribution/health.py is exempt — not a worker 
+execution file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_uses_process_message
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1168, 'Skipped: core/distribution/observation.py is exempt — not a 
+worker execution file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_uses_process_message
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1168, 'Skipped: core/distribution/pool.py is exempt — not a worker 
+execution file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_uses_process_message
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1168, 'Skipped: core/distribution/retry.py is exempt — not a worker 
+execution file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_uses_process_message
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1168, 'Skipped: core/distribution/transport.py is exempt — not a worker
+execution file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_uses_process_message
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1168, 'Skipped: core/distribution/worker.py is exempt — not a worker 
+execution file')
+Test 
+tests/architecture/test_architecture_audit.py::test_remote_dispatch_uses_transp
+ort was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1205, 'Skipped: core/distribution/contracts.py is exempt from 
+transport-only dispatch rule')
+Test 
+tests/architecture/test_architecture_audit.py::test_remote_dispatch_uses_transp
+ort was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1205, 'Skipped: core/distribution/health.py is exempt from 
+transport-only dispatch rule')
+Test 
+tests/architecture/test_architecture_audit.py::test_remote_dispatch_uses_transp
+ort was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1205, 'Skipped: core/distribution/local_worker.py is exempt from 
+transport-only dispatch rule')
+Test 
+tests/architecture/test_architecture_audit.py::test_remote_dispatch_uses_transp
+ort was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1205, 'Skipped: core/distribution/observation.py is exempt from 
+transport-only dispatch rule')
+Test 
+tests/architecture/test_architecture_audit.py::test_remote_dispatch_uses_transp
+ort was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1205, 'Skipped: core/distribution/pool.py is exempt from transport-only
+dispatch rule')
+Test 
+tests/architecture/test_architecture_audit.py::test_remote_dispatch_uses_transp
+ort was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1205, 'Skipped: core/distribution/registry.py is exempt from 
+transport-only dispatch rule')
+Test 
+tests/architecture/test_architecture_audit.py::test_remote_dispatch_uses_transp
+ort was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1205, 'Skipped: core/distribution/retry.py is exempt from 
+transport-only dispatch rule')
+Test 
+tests/architecture/test_architecture_audit.py::test_remote_dispatch_uses_transp
+ort was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1205, 'Skipped: core/distribution/scheduler.py is exempt from 
+transport-only dispatch rule')
+Test 
+tests/architecture/test_architecture_audit.py::test_remote_dispatch_uses_transp
+ort was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1205, 'Skipped: core/distribution/transport.py is exempt from 
+transport-only dispatch rule')
+Test 
+tests/architecture/test_architecture_audit.py::test_remote_dispatch_uses_transp
+ort was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1205, 'Skipped: core/distribution/worker.py is exempt from 
+transport-only dispatch rule')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_discovery_only_via_r
+egistry was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1234, 'Skipped: core/distribution/contracts.py is exempt from 
+registry-only discovery')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_discovery_only_via_r
+egistry was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1234, 'Skipped: core/distribution/observation.py is exempt from 
+registry-only discovery')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_discovery_only_via_r
+egistry was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1234, 'Skipped: core/distribution/registry.py is exempt from 
+registry-only discovery')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_discovery_only_via_r
+egistry was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1234, 'Skipped: core/distribution/worker.py is exempt from 
+registry-only discovery')
+Test 
+tests/architecture/test_architecture_audit.py::test_cross_boundary_only_via_wor
+ker_contracts was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1264, 'Skipped: core/distribution/contracts.py is exempt — no 
+cross-boundary traffic')
+Test 
+tests/architecture/test_architecture_audit.py::test_cross_boundary_only_via_wor
+ker_contracts was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1264, 'Skipped: core/distribution/health.py is exempt — no 
+cross-boundary traffic')
+Test 
+tests/architecture/test_architecture_audit.py::test_cross_boundary_only_via_wor
+ker_contracts was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1264, 'Skipped: core/distribution/observation.py is exempt — no 
+cross-boundary traffic')
+Test 
+tests/architecture/test_architecture_audit.py::test_cross_boundary_only_via_wor
+ker_contracts was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1264, 'Skipped: core/distribution/pool.py is exempt — no cross-boundary
+traffic')
+Test 
+tests/architecture/test_architecture_audit.py::test_cross_boundary_only_via_wor
+ker_contracts was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1264, 'Skipped: core/distribution/retry.py is exempt — no 
+cross-boundary traffic')
+Test 
+tests/architecture/test_architecture_audit.py::test_cross_boundary_only_via_wor
+ker_contracts was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1264, 'Skipped: core/distribution/worker.py is exempt — no 
+cross-boundary traffic')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_worker_version_advertised 
+was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1304, 'Skipped: not a registry file')
+Test 
+tests/architecture/test_architecture_audit.py::test_workers_must_not_construct_
+runtime_context was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1333, 'Skipped: core/distribution/contracts.py is exempt from context 
+construction rule')
+Test 
+tests/architecture/test_architecture_audit.py::test_workers_must_not_construct_
+runtime_context was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_architecture_aud
+it.py', 1333, 'Skipped: core/distribution/local_worker.py is exempt from 
+context construction rule')
+Test 
+tests/architecture/test_enforce_canonical.py::test_no_direct_getenv_for_registe
+red_keys was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_enforce_canonica
+l.py', 186, 'Skipped: Cannot resolve ConfigEntry registry')
+Test 
+tests/architecture/test_tenant_isolation.py::TestActivityGraphTenantIsolation::
+test_cross_tenant_parent_rejected was skipped. Reason: 
+('C:\\Users\\peter\\desktop\\jarvis\\tests\\architecture\\test_tenant_isolation
+.py', 310, 'Skipped: Cross-tenant parent/child detected — will be rejected by 
+manager')
+12841 passed, 624 skipped in 109.24s (0:01:49)
+EXIT: 0

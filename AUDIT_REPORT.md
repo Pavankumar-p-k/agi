@@ -259,7 +259,7 @@ Restore one file: `cp rebuild_backlog/files/core/workflow/engine.py core/workflo
 |---|---|---|---|
 | `tests/unit` | 1,574 F / 2,353 P / 213 E | **306 F / 2,690 P / 6 xpassed / 210 E** | failures **−80%** |
 | unit collection errors | 50 files | **0** | clean collection |
-| `tests/architecture` | 12,044 P / 10 F / 8 E | **12,804 P / 4 F / 8 E** | +760 passed; determinism red + 5 browser-gate reds fixed 2026-10-07 (§8.3; log `audit_pytest_arch_browserfix.txt`) |
+| `tests/architecture` | 12,044 P / 10 F / 8 E | **12,841 P / 0 F / 0 E — fully green (exit 0)** | +797 passed; determinism red + 5 browser-gate reds + 12 core/auth reds fixed 2026-10-07 (§8.3; logs `audit_pytest_arch_browserfix.txt`, `audit_pytest_arch_authfix.txt`) |
 | Marker stubs in live code (`count_stubs.py`) | 4 | **0** (4 remaining hits are the audit scripts' own marker literals) | done |
 | `python jarvis.py --help` | ModuleNotFoundError | **works (exit 0)** | fixed |
 | Inventory `MISSING` | 87 | 78 truly absent, **9 rebuilt** (browser_manager, configuration.service, constants, dev_mode, feature_registry, model_router, setup.engine, tools.email_utils, workflow.artifact_store) | inventory.json is stale |
@@ -278,8 +278,7 @@ The 274 "stub" hits in `audit_stub_list.txt` = 269 archived copies in
 
 | Cause | Count | Nature |
 |---|---|---|
-| `ImportError: cannot import name 'auth' from 'core'` | 8 | deleted `core/auth.py`; tests encode its contract (test_authentication ×4, test_authorization ×4) |
-| deleted `core/auth` via test_resource_grant setup import | 2 | same root cause, surfaced inside the integration tests |
+| ~~`ImportError: cannot import name 'auth' from 'core'`~~ **FIXED 2026-10-07** | 12 | `core/auth.py` rebuilt as a real, stdlib-only file-backed AuthManager (PBKDF2-HMAC-SHA256 accounts, persistent session tokens with expiry, admin roles, `get_auth_manager` singleton) — the last reds; **architecture suite fully green: 12,841 passed / 0 failed / 0 errors** |
 | ~~browser_provider absent~~ **FIXED 2026-10-07** | 5 | rebuilt as a real adapter (Playwright-backed, honest failures); desktop gates now 36/36 |
 | ~~Replay determinism~~ **FIXED 2026-10-07** | 1 | test stamped `ResourceGrant.issued_at` from wall clock instead of `DeterministicServices.now()` (frozen). 16/16 `test_replay_validation` pass |
 
@@ -313,7 +312,8 @@ Deleting did not remove the demand — it made the demand loud.
 ### 8.6 Verdict
 
 The Oct-4 rebuild clusters (workflow engine, execution, tools) plus the stub deletion
-moved the suite from ~43% red to ~10% red and left `core/` marker-free — real,
+moved the suite from ~43% red to **fully green on `tests/architecture`
+(12,841 passed / 0 failed / 0 errors)** and left `core/` marker-free — real,
 verifiable progress, not theater. The remaining work is concentrated, known, and
 listed above: the absent voice package (112 test failures), the deleted modules with
 the heaviest live-import debt (assistant.wake_word ×66, core.plugins ×45,
