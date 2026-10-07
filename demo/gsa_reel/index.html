@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>KICKS × GEMINI — GSA Reel (code-rendered)</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 14px;
+    background: #05070d; color: #cfe8ff; font-family: "Segoe UI", Arial, sans-serif;
+  }
+  h1 { font-size: 14px; font-weight: 600; letter-spacing: 2px; color: #6f93a8; margin: 0; text-transform: uppercase; }
+  #stage { position: relative; }
+  canvas {
+    display: block; max-width: 96vw; max-height: 74vh;
+    border-radius: 12px;
+    box-shadow: 0 20px 80px rgba(66,133,244,0.18), 0 0 0 1px rgba(66,133,244,0.2);
+  }
+  #ui {
+    display: flex; align-items: center; gap: 10px; width: min(560px, 96vw);
+    background: rgba(12,20,36,0.85); border: 1px solid rgba(66,133,244,0.25);
+    border-radius: 10px; padding: 10px 14px;
+  }
+  button {
+    background: rgba(66,133,244,0.15); color: #9fc3ff; cursor: pointer;
+    border: 1px solid rgba(66,133,244,0.4); border-radius: 8px;
+    padding: 8px 12px; font: 600 13px "Segoe UI", Arial, sans-serif; white-space: nowrap;
+  }
+  button:hover { background: rgba(66,133,244,0.28); }
+  button:disabled { opacity: 0.4; cursor: default; }
+  #seek { flex: 1; accent-color: #4285F4; }
+  #clock { font: 600 12px Consolas, monospace; color: #8fb8cc; min-width: 92px; text-align: right; }
+  #status { font: 12px Consolas, monospace; color: #6f93a8; min-height: 15px; }
+  body.export { display: block; }
+  body.export h1, body.export #ui, body.export #status, body.export #stage { display: contents; }
+  body.export canvas { max-width: none; max-height: none; border-radius: 0; box-shadow: none; }
+</style>
+</head>
+<body>
+  <h1>KICKS × GEMINI · GSA reel · rendered by code · 1080×1920 · 30s</h1>
+  <div id="stage"><canvas id="screen" width="1080" height="1920"></canvas></div>
+  <div id="ui">
+    <button id="play">⏸</button>
+    <button id="mute">🔊</button>
+    <input id="seek" type="range" min="0" max="30" step="0.033333" value="0">
+    <span id="clock">0.00s / 30s</span>
+    <button id="webm">⬇ .webm</button>
+  </div>
+  <div id="status">click play to start audio · every frame is a function call</div>
+
+  <script src="renderer.js"></script>
+  <script>
+  (function () {
+    'use strict';
+    var CV = window.CodeReel;
+    var canvas = document.getElementById('screen');
+    var ctx = canvas.getContext('2d');
+    var params = new URLSearchParams(location.search);
+
+    // ---------- ?still mode: one exact deterministic frame ----------
+    if (params.has('still')) {
+      document.body.className = 'export';
+      var ts = parseFloat(params.get('still')) || 0;
+      CV.renderFrame(ctx, ts);
+      document.title = 'still@' + ts.toFixed(3);
+      return;
+    }
+
+    // ---------- ?strip mode: grid of frames for offline export ----------
+    if (params.has('strip')) {
+      document.body.className = 'export';
+      var parts = params.get('strip').split(',');
+      var start = parseInt(parts[0], 10) || 0;
+      var count = parseInt(parts[1], 10) || 1;
+      var COLS = 2, ROWS = 3, per = COLS * ROWS;
+      var tiles = Math.min(count, per);
+      var cols = Math.ceil(tiles / ROWS);
+      canvas.width = cols * CV.W;
+      canvas.height = ROWS * CV.H;
+      var tile = document.createElement('canvas');
+      tile.width = CV.W; tile.height = CV.H;
+      var tctx = tile.getContext('2d');
+      for (var i = 0; i < tiles; i++) {
+        var frame = start + i;
+        if (frame >= CV.TOTAL_FRAMES) break;
+        CV.renderFrame(tctx, frame / CV.FPS);
+        ctx.drawImage(tile, (i % cols) * CV.W, Math.floor(i / cols) * CV.H);
+      }
+      document.title = 'strip:' + start + '+' + tiles;
+      return;
+    }
+
+    // ---------- live player with WebAudio soundtrack ----------
+    var playing = false, tCur = 0, last = 0, muted = false;
+    var playBtn = document.getElementById('play');
+    var muteBtn = document.getElementById('mute');
+    var seek = document.getElementById('seek');
+    var clock = document.getElementById('clock');
+    var webmBtn = document.getElementById('webm');
+    var status = document.getElementById('status');
+
+    // --- soundtrack (same recipe as soundtrack.py, live-synthesized) ---
+    var audioCtx = null, gainNode = null;
+    var BPM = 96, BEAT = 60 / BPM;
+
+    function beep(freq, start, dur, type, vol, dest) {
+      var o = audioCtx.createOscillator();
+      var g = audioCtx.createGain();
+      o.type = type || 'sine';
+      o.frequency.value = freq;
+      g.gain.setValueAtTime(0.0001, start);
+      g.gain.linearRampToValueAtTime(vol, start + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+      o.connect(g); g.connect(dest || gainNode);
+      o.start(start); o.stop(start + dur + 0.05);
+    }
+
+    function scheduleFrom(t0) {
+      // schedule ~2s of audio from t0 (seconds); re-invoked by the render loop
+      var startT = audioCtx.currentTime + 0.05;
+      var end = t0 + 2.2;
+      // drums
+      for (var b = Math.floor(t0 / BEAT); b * BEAT < end; b++) {
+        var bt = startT + (b * BEAT - t0);
+        if (b % 2 === 0) beep(55, bt, 0.18, 'sine', 0.5);        // kick
+        if (b % 2 === 1) beep(3000 + (b % 4) * 400, bt, 0.04, 'square', 0.05); // hat
+        if (b % 4 === 2) beep(220, bt, 0.12, 'triangle', 0.18);  // snare-ish
+        // bassline (Am progression every 4 beats)
+        var notes = [110, 110, 164.81, 146.83];
+        beep(notes[Math.floor(b / 2) % 4], bt, BEAT * 0.9, 'sawtooth', 0.10);
+      }
+      // lead pluck melody on eighths
+      var SCALE = [220, 261.63, 293.66, 329.63, 392, 440, 523.25];
+      var MELODY = [0, 2, 4, 2, 5, 4, 2, 0, 1, 3, 5, 3, 6, 5, 3, 1];
+      for (var e = Math.floor(t0 * 2 / BEAT); e * BEAT / 2 < end; e++) {
+        var et = startT + (e * BEAT / 2 - t0);
+        var n = MELODY[e % MELODY.length];
+        beep(SCALE[n] * (e % 16 < 8 ? 1 : 1.335), et, 0.16, 'triangle', 0.09);
+      }
+    }
+
+    function ensureAudio() {
+      if (audioCtx) return;
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      gainNode = audioCtx.createGain();
+      gainNode.gain.value = muted ? 0 : 0.8;
+      gainNode.connect(audioCtx.destination);
+    }
+
+    var schedAhead = 0;
+    function loop(now) {
+      var dt = last ? (now - last) / 1000 : 0;
+      last = now;
+      if (playing) {
+        tCur = (tCur + dt) % CV.DURATION;
+        seek.value = tCur;
+        if (audioCtx && audioCtx.state === 'running' && tCur >= schedAhead) {
+          scheduleFrom(Math.max(tCur, schedAhead));
+          schedAhead = tCur + 1.8;
+        }
+      }
+      CV.renderFrame(ctx, tCur);
+      clock.textContent = tCur.toFixed(2) + 's / ' + CV.DURATION + 's';
+      requestAnimationFrame(loop);
+    }
+    requestAnimationFrame(loop);
+
+    playBtn.addEventListener('click', function () {
+      playing = !playing;
+      if (playing) {
+        ensureAudio();
+        audioCtx.resume();
+        schedAhead = 0;
+        last = performance.now();
+      }
+      playBtn.textContent = playing ? '⏸' : '▶';
+    });
+    muteBtn.addEventListener('click', function () {
+      muted = !muted;
+      muteBtn.textContent = muted ? '🔇' : '🔊';
+      if (gainNode) gainNode.gain.value = muted ? 0 : 0.8;
+    });
+    seek.addEventListener('input', function () {
+      playing = false;
+      playBtn.textContent = '▶';
+      tCur = parseFloat(seek.value);
+      schedAhead = 0;
+    });
+
+    // ---------- .webm export including audio ----------
+    webmBtn.addEventListener('click', function () {
+      if (!('MediaRecorder' in window)) { status.textContent = 'MediaRecorder unsupported.'; return; }
+      ensureAudio();
+      audioCtx.resume();
+      var stream = canvas.captureStream(CV.FPS);
+      // route the soundtrack into the recording too
+      var dest = audioCtx.createMediaStreamDestination();
+      gainNode.connect(dest);
+      var audioTracks = dest.stream.getAudioTracks();
+      for (var i = 0; i < audioTracks.length; i++) stream.addTrack(audioTracks[i]);
+
+      var mime = MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')
+        ? 'video/webm;codecs=vp9,opus' : 'video/webm';
+      var rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 12000000 });
+      var chunks = [];
+      rec.ondataavailable = function (e) { if (e.data.size) chunks.push(e.data); };
+      rec.onstop = function () {
+        var blob = new Blob(chunks, { type: 'video/webm' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'gsa_reel.webm';
+        a.click();
+        URL.revokeObjectURL(url);
+        status.textContent = 'exported gsa_reel.webm (30s, with audio)';
+        webmBtn.disabled = false;
+      };
+      webmBtn.disabled = true;
+      status.textContent = 'recording 30s with audio…';
+      tCur = 0; schedAhead = 0;
+      playing = true;
+      playBtn.textContent = '⏸';
+      rec.start();
+      setTimeout(function () { playing = false; rec.stop(); }, CV.DURATION * 1000 + 200);
+    });
+  })();
+  </script>
+</body>
+</html>

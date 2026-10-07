@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>JARVIS — a video rendered entirely by code</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 14px;
+    background: #02040a; color: #cfe8ff;
+    font-family: "Segoe UI", Arial, sans-serif;
+  }
+  h1 { font-size: 15px; font-weight: 600; letter-spacing: 2px; color: #6f93a8; margin: 0; text-transform: uppercase; }
+  #stage { position: relative; }
+  canvas {
+    display: block; max-width: 96vw; max-height: 72vh;
+    width: auto; height: auto; border-radius: 10px;
+    box-shadow: 0 20px 80px rgba(56,225,255,0.12), 0 0 0 1px rgba(56,225,255,0.15);
+  }
+  #ui {
+    display: flex; align-items: center; gap: 12px; width: min(920px, 96vw);
+    background: rgba(10,18,34,0.8); border: 1px solid rgba(56,225,255,0.18);
+    border-radius: 10px; padding: 10px 14px;
+  }
+  button {
+    background: rgba(56,225,255,0.12); color: #9fe8ff; cursor: pointer;
+    border: 1px solid rgba(56,225,255,0.35); border-radius: 8px;
+    padding: 8px 14px; font: 600 13px "Segoe UI", Arial, sans-serif; white-space: nowrap;
+  }
+  button:hover { background: rgba(56,225,255,0.22); }
+  button:disabled { opacity: 0.4; cursor: default; }
+  #seek { flex: 1; accent-color: #38e1ff; }
+  #clock { font: 600 13px Consolas, monospace; color: #8fb8cc; min-width: 96px; text-align: right; }
+  #status { font: 12px Consolas, monospace; color: #6f93a8; min-height: 15px; }
+  /* export mode (headless screenshots): canvas pinned to the exact top-left,
+     nothing else on the page — so strip tiles can be cropped deterministically */
+  body.export { display: block; }
+  body.export h1, body.export #ui, body.export #status, body.export #stage { display: contents; }
+  body.export canvas { max-width: none; max-height: none; border-radius: 0; box-shadow: none; }
+</style>
+</head>
+<body>
+  <h1>JARVIS · a video rendered entirely by code · renderFrame(ctx, t)</h1>
+
+  <div id="stage">
+    <canvas id="screen" width="1280" height="720"></canvas>
+  </div>
+
+  <div id="ui">
+    <button id="play">⏸ Pause</button>
+    <input id="seek" type="range" min="0" max="16" step="0.033333" value="0">
+    <span id="clock">0.00s / 16s</span>
+    <button id="webm">⬇ Export .webm</button>
+  </div>
+  <div id="status">same t ⇒ same pixels, always. Export renders deterministically — not “generated”.</div>
+
+  <script src="renderer.js"></script>
+  <script>
+  (function () {
+    'use strict';
+    var CV = window.CodeVideo;
+    var canvas = document.getElementById('screen');
+    var ctx = canvas.getContext('2d');
+    var params = new URLSearchParams(location.search);
+
+    // ------------------------------------------------------------------
+    // Mode 1: ?still=<seconds> — draw exactly one deterministic frame.
+    // Used by headless Chrome for verification screenshots and the mp4 pipeline.
+    // ------------------------------------------------------------------
+    if (params.has('still')) {
+      document.body.className = 'export';
+      var t = parseFloat(params.get('still')) || 0;
+      canvas.width = CV.W; canvas.height = CV.H;
+      CV.renderFrame(ctx, t);
+      document.title = 'still@' + t.toFixed(3);
+      return;
+    }
+
+    // ------------------------------------------------------------------
+    // Mode 2: ?strip=<startFrame>,<count> — render a grid of consecutive
+    // frames as tiles in ONE page, so a single headless screenshot captures
+    // many frames at once (fast offline mp4 export via export_mp4.sh).
+    // ------------------------------------------------------------------
+    if (params.has('strip')) {
+      document.body.className = 'export';
+      var parts = params.get('strip').split(',');
+      var start = parseInt(parts[0], 10) || 0;
+      var count = parseInt(parts[1], 10) || 1;
+      var COLS = 4, ROWS = 3;
+      var per = COLS * ROWS;
+      var tiles = Math.min(count, per);
+      var cols = Math.ceil(tiles / ROWS);
+      canvas.width = cols * CV.W;
+      canvas.height = ROWS * CV.H;
+      var tile = document.createElement('canvas');
+      tile.width = CV.W; tile.height = CV.H;
+      var tctx = tile.getContext('2d');
+      for (var i = 0; i < tiles; i++) {
+        var frame = start + i;
+        var tF = frame / CV.FPS;
+        if (frame >= CV.TOTAL_FRAMES) break;
+        CV.renderFrame(tctx, tF);
+        var col = i % cols, row = Math.floor(i / cols);
+        ctx.drawImage(tile, col * CV.W, row * CV.H);
+      }
+      document.title = 'strip:' + start + '+' + tiles;
+      return;
+    }
+
+    // ------------------------------------------------------------------
+    // Mode 3 (default): live player with scrubbing + .webm export
+    // ------------------------------------------------------------------
+    var playing = true;
+    var tCur = 0;
+    var last = performance.now();
+    var playBtn = document.getElementById('play');
+    var seek = document.getElementById('seek');
+    var clock = document.getElementById('clock');
+    var webmBtn = document.getElementById('webm');
+    var status = document.getElementById('status');
+
+    function loop(now) {
+      var dt = (now - last) / 1000;
+      last = now;
+      if (playing) {
+        tCur = (tCur + dt) % CV.DURATION;
+        seek.value = tCur;
+      }
+      CV.renderFrame(ctx, tCur);
+      clock.textContent = tCur.toFixed(2) + 's / ' + CV.DURATION + 's';
+      requestAnimationFrame(loop);
+    }
+    requestAnimationFrame(loop);
+
+    playBtn.addEventListener('click', function () {
+      playing = !playing;
+      playBtn.textContent = playing ? '⏸ Pause' : '▶ Play';
+    });
+    seek.addEventListener('input', function () {
+      playing = false;
+      playBtn.textContent = '▶ Play';
+      tCur = parseFloat(seek.value);
+    });
+
+    // In-browser export: captureStream + MediaRecorder → real .webm file.
+    // Because every frame is a pure function of t, the file is reproducible.
+    webmBtn.addEventListener('click', function () {
+      if (!('MediaRecorder' in window)) { status.textContent = 'MediaRecorder not supported in this browser.'; return; }
+      var stream = canvas.captureStream(CV.FPS);
+      var mime = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
+        ? 'video/webm;codecs=vp9' : 'video/webm';
+      var rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 8_000_000 });
+      var chunks = [];
+      rec.ondataavailable = function (e) { if (e.data.size) chunks.push(e.data); };
+      rec.onstop = function () {
+        var blob = new Blob(chunks, { type: 'video/webm' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'jarvis_code_video.webm';
+        a.click();
+        URL.revokeObjectURL(url);
+        status.textContent = 'exported jarvis_code_video.webm (' + CV.DURATION + 's, deterministic)';
+        webmBtn.disabled = false;
+      };
+      webmBtn.disabled = true;
+      status.textContent = 'recording ' + CV.DURATION + 's in real time…';
+      tCur = 0;
+      playing = true;
+      playBtn.textContent = '⏸ Pause';
+      rec.start();
+      setTimeout(function () { rec.stop(); }, CV.DURATION * 1000 + 150);
+    });
+  })();
+  </script>
+</body>
+</html>
