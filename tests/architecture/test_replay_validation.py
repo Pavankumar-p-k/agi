@@ -362,8 +362,6 @@ class TestRuntimeContextReplay:
 
     async def test_runtime_context_replay_identity(self):
         """Fresh deterministic services → identical RuntimeContext on replay."""
-        from datetime import datetime, timezone
-
         from core.identity.models import IdentityContext, AuthenticationState
         from core.identity.resource_scope import ResourceScope
         from core.identity.tenant_resolver import TenantResolutionResult
@@ -384,7 +382,7 @@ class TestRuntimeContextReplay:
                 resource_scope=ResourceScope(tenant_id="replay"),
                 resource_grant=ResourceGrant(
                     subject_id="u1", scope=ResourceScope(tenant_id="replay"),
-                    issued_at=datetime.now(timezone.utc),
+                    issued_at=svc.now(),  # frozen clock: replay must be byte-identical
                 ),
                 activity_id=aid,
                 request_id=rid,

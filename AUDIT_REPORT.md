@@ -259,7 +259,7 @@ Restore one file: `cp rebuild_backlog/files/core/workflow/engine.py core/workflo
 |---|---|---|---|
 | `tests/unit` | 1,574 F / 2,353 P / 213 E | **306 F / 2,690 P / 6 xpassed / 210 E** | failures **−80%** |
 | unit collection errors | 50 files | **0** | clean collection |
-| `tests/architecture` | 12,044 P / 10 F / 8 E | **12,769 P / 10 F / 8 E** | +725 passed, same 18 red |
+| `tests/architecture` | 12,044 P / 10 F / 8 E | **12,770 P / 9 F / 8 E** | +726 passed; determinism red fixed same day (§8.3) |
 | Marker stubs in live code (`count_stubs.py`) | 4 | **0** (4 remaining hits are the audit scripts' own marker literals) | done |
 | `python jarvis.py --help` | ModuleNotFoundError | **works (exit 0)** | fixed |
 | Inventory `MISSING` | 87 | 78 truly absent, **9 rebuilt** (browser_manager, configuration.service, constants, dev_mode, feature_registry, model_router, setup.engine, tools.email_utils, workflow.artifact_store) | inventory.json is stale |
@@ -278,9 +278,9 @@ The 274 "stub" hits in `audit_stub_list.txt` = 269 archived copies in
 
 | Cause | Count | Nature |
 |---|---|---|
-| `ImportError: cannot import name 'auth' from 'core'` | 12 | deleted `core/auth.py`; tests encode its contract (test_authentication ×6, test_authorization ×6) |
+| `ImportError: cannot import name 'auth' from 'core'` | 12 | deleted `core/auth.py`; tests encode its contract (test_authentication ×6, test_authorization ×4, test_resource_grant ×2) |
 | `ModuleNotFoundError: core.providers.adapters.browser_provider` | 5 | deleted adapter; desktop gates (TestGate8/TestGate10) |
-| **Replay determinism bug** | 1 | **genuine code bug found by re-audit:** `ResourceGrant.issued_at` is stamped from wall clock, so two replays of the same trace differ by ~1 ms and `RuntimeContext` equality fails (`test_replay_validation`) |
+| ~~Replay determinism~~ **FIXED 2026-10-07** | 1 | test stamped `ResourceGrant.issued_at` from wall clock instead of the injected `DeterministicServices.now()` (frozen); production `AuthorizationStage._now()` already prefers the injected clock. Fix: `issued_at=svc.now()` — 16/16 `test_replay_validation` pass; **arch suite now 12,770 P / 9 F / 8 E** |
 
 ### 8.4 Remaining unit failures — top causes (306 F + 210 E)
 
@@ -318,5 +318,6 @@ listed above: the absent voice package (112 test failures), the deleted modules 
 the heaviest live-import debt (assistant.wake_word ×66, core.plugins ×45,
 core.integration_manager ×35, core.tools.automated_build ×33, assistant.voice_pipeline
 ×29 — 70 of 78 absent modules are live-imported in total), API drift on
-scheduler/session/unified_store (~90 failures), the SSRF suite (16), the replay
-determinism bug, and doctor's exit code.
+scheduler/session/unified_store (~90 failures), the SSRF suite (16), and doctor's
+exit code. The replay determinism issue found during this re-audit was fixed
+in-place (test now honors the injected frozen clock; see §8.3).
