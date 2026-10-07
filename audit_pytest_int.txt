@@ -1,0 +1,2347 @@
+.........F..FFFFFF.FFFF...............FF..F..F..........FFFFFFF.....F... [ 19%]
+F.FFFFFFFFF............F.FFFFFEEEEEEEEEEEEEEEEEEEEFFFFF......FF......... [ 39%]
+........F..FFFFFFF.......F.............................................. [ 59%]
+..........F...................................F.........F.......F....... [ 79%]
+FFFFF.....FFFFF...FFFFFFF............................................... [ 99%]
+..                                                                       [100%]Running teardown with pytest sessionfinish...
+
+=================================== ERRORS ====================================
+_____________ ERROR collecting tests/integration/test_spawning.py _____________
+ImportError while importing test module 'C:\Users\peter\desktop\jarvis\tests\integration\test_spawning.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\integration\test_spawning.py:18: in <module>
+    from core.spawning import subagent_manager, SubagentStore, SpawnResult
+core\spawning\__init__.py:17: in <module>
+    from manager import SpawnResult, SubagentManager, subagent_manager
+E   ModuleNotFoundError: No module named 'manager'
+_________ ERROR at setup of TestEpistemicTagger.test_strip_tags_empty _________
+
+self = <test_memory_privacy.TestEpistemicTagger object at 0x000001ADE2CD6A50>
+
+    @pytest.fixture
+    def tagger(self):
+>       from brain.epistemic_tagger import EpistemicTagger
+E       ModuleNotFoundError: No module named 'brain.epistemic_tagger'
+
+tests\integration\test_memory_privacy.py:147: ModuleNotFoundError
+________ ERROR at setup of TestEpistemicTagger.test_strip_tags_no_tags ________
+
+self = <test_memory_privacy.TestEpistemicTagger object at 0x000001ADE2CD6E50>
+
+    @pytest.fixture
+    def tagger(self):
+>       from brain.epistemic_tagger import EpistemicTagger
+E       ModuleNotFoundError: No module named 'brain.epistemic_tagger'
+
+tests\integration\test_memory_privacy.py:147: ModuleNotFoundError
+___ ERROR at setup of TestEpistemicTagger.test_strip_tags_removes_verified ____
+
+self = <test_memory_privacy.TestEpistemicTagger object at 0x000001ADE2CD7250>
+
+    @pytest.fixture
+    def tagger(self):
+>       from brain.epistemic_tagger import EpistemicTagger
+E       ModuleNotFoundError: No module named 'brain.epistemic_tagger'
+
+tests\integration\test_memory_privacy.py:147: ModuleNotFoundError
+___ ERROR at setup of TestEpistemicTagger.test_strip_tags_removes_uncertain ___
+
+self = <test_memory_privacy.TestEpistemicTagger object at 0x000001ADE2CD7690>
+
+    @pytest.fixture
+    def tagger(self):
+>       from brain.epistemic_tagger import EpistemicTagger
+E       ModuleNotFoundError: No module named 'brain.epistemic_tagger'
+
+tests\integration\test_memory_privacy.py:147: ModuleNotFoundError
+___ ERROR at setup of TestEpistemicTagger.test_strip_tags_removes_retrieved ___
+
+self = <test_memory_privacy.TestEpistemicTagger object at 0x000001ADE2CD7B90>
+
+    @pytest.fixture
+    def tagger(self):
+>       from brain.epistemic_tagger import EpistemicTagger
+E       ModuleNotFoundError: No module named 'brain.epistemic_tagger'
+
+tests\integration\test_memory_privacy.py:147: ModuleNotFoundError
+____ ERROR at setup of TestEpistemicTagger.test_tag_response_no_provenance ____
+
+self = <test_memory_privacy.TestEpistemicTagger object at 0x000001ADE2CE02D0>
+
+    @pytest.fixture
+    def tagger(self):
+>       from brain.epistemic_tagger import EpistemicTagger
+E       ModuleNotFoundError: No module named 'brain.epistemic_tagger'
+
+tests\integration\test_memory_privacy.py:147: ModuleNotFoundError
+__ ERROR at setup of TestEpistemicTagger.test_tag_response_empty_provenance ___
+
+self = <test_memory_privacy.TestEpistemicTagger object at 0x000001ADE2CE09D0>
+
+    @pytest.fixture
+    def tagger(self):
+>       from brain.epistemic_tagger import EpistemicTagger
+E       ModuleNotFoundError: No module named 'brain.epistemic_tagger'
+
+tests\integration\test_memory_privacy.py:147: ModuleNotFoundError
+_____ ERROR at setup of TestEpistemicTagger.test_tag_response_web_search ______
+
+self = <test_memory_privacy.TestEpistemicTagger object at 0x000001ADE2CE10D0>
+
+    @pytest.fixture
+    def tagger(self):
+>       from brain.epistemic_tagger import EpistemicTagger
+E       ModuleNotFoundError: No module named 'brain.epistemic_tagger'
+
+tests\integration\test_memory_privacy.py:147: ModuleNotFoundError
+______ ERROR at setup of TestEpistemicTagger.test_tag_response_inference ______
+
+self = <test_memory_privacy.TestEpistemicTagger object at 0x000001ADE2CE17D0>
+
+    @pytest.fixture
+    def tagger(self):
+>       from brain.epistemic_tagger import EpistemicTagger
+E       ModuleNotFoundError: No module named 'brain.epistemic_tagger'
+
+tests\integration\test_memory_privacy.py:147: ModuleNotFoundError
+_______ ERROR at setup of TestEpistemicTagger.test_tag_response_unknown _______
+
+self = <test_memory_privacy.TestEpistemicTagger object at 0x000001ADE2CE1E90>
+
+    @pytest.fixture
+    def tagger(self):
+>       from brain.epistemic_tagger import EpistemicTagger
+E       ModuleNotFoundError: No module named 'brain.epistemic_tagger'
+
+tests\integration\test_memory_privacy.py:147: ModuleNotFoundError
+______ ERROR at setup of TestEpistemicTagger.test_tag_response_claim_map ______
+
+self = <test_memory_privacy.TestEpistemicTagger object at 0x000001ADE2CE2590>
+
+    @pytest.fixture
+    def tagger(self):
+>       from brain.epistemic_tagger import EpistemicTagger
+E       ModuleNotFoundError: No module named 'brain.epistemic_tagger'
+
+tests\integration\test_memory_privacy.py:147: ModuleNotFoundError
+_____ ERROR at setup of TestEpistemicTagger.test_strip_then_tag_roundtrip _____
+
+self = <test_memory_privacy.TestEpistemicTagger object at 0x000001ADE2CE2C90>
+
+    @pytest.fixture
+    def tagger(self):
+>       from brain.epistemic_tagger import EpistemicTagger
+E       ModuleNotFoundError: No module named 'brain.epistemic_tagger'
+
+tests\integration\test_memory_privacy.py:147: ModuleNotFoundError
+_ ERROR at setup of TestEpistemicTagger.test_tag_sources[web_search-VERIFIED] _
+
+self = <test_memory_privacy.TestEpistemicTagger object at 0x000001ADE2CE0B50>
+
+    @pytest.fixture
+    def tagger(self):
+>       from brain.epistemic_tagger import EpistemicTagger
+E       ModuleNotFoundError: No module named 'brain.epistemic_tagger'
+
+tests\integration\test_memory_privacy.py:147: ModuleNotFoundError
+___ ERROR at setup of TestEpistemicTagger.test_tag_sources[search-VERIFIED] ___
+
+self = <test_memory_privacy.TestEpistemicTagger object at 0x000001ADE2CE3A90>
+
+    @pytest.fixture
+    def tagger(self):
+>       from brain.epistemic_tagger import EpistemicTagger
+E       ModuleNotFoundError: No module named 'brain.epistemic_tagger'
+
+tests\integration\test_memory_privacy.py:147: ModuleNotFoundError
+___ ERROR at setup of TestEpistemicTagger.test_tag_sources[memory-VERIFIED] ___
+
+self = <test_memory_privacy.TestEpistemicTagger object at 0x000001ADE2CE3BD0>
+
+    @pytest.fixture
+    def tagger(self):
+>       from brain.epistemic_tagger import EpistemicTagger
+E       ModuleNotFoundError: No module named 'brain.epistemic_tagger'
+
+tests\integration\test_memory_privacy.py:147: ModuleNotFoundError
+_ ERROR at setup of TestEpistemicTagger.test_tag_sources[tool_result-VERIFIED] _
+
+self = <test_memory_privacy.TestEpistemicTagger object at 0x000001ADE2CE3D10>
+
+    @pytest.fixture
+    def tagger(self):
+>       from brain.epistemic_tagger import EpistemicTagger
+E       ModuleNotFoundError: No module named 'brain.epistemic_tagger'
+
+tests\integration\test_memory_privacy.py:147: ModuleNotFoundError
+____ ERROR at setup of TestEpistemicTagger.test_tag_sources[tool-VERIFIED] ____
+
+self = <test_memory_privacy.TestEpistemicTagger object at 0x000001ADE2CE3E50>
+
+    @pytest.fixture
+    def tagger(self):
+>       from brain.epistemic_tagger import EpistemicTagger
+E       ModuleNotFoundError: No module named 'brain.epistemic_tagger'
+
+tests\integration\test_memory_privacy.py:147: ModuleNotFoundError
+__ ERROR at setup of TestEpistemicTagger.test_tag_sources[inference-ASSUMED] __
+
+self = <test_memory_privacy.TestEpistemicTagger object at 0x000001ADE2CE3F90>
+
+    @pytest.fixture
+    def tagger(self):
+>       from brain.epistemic_tagger import EpistemicTagger
+E       ModuleNotFoundError: No module named 'brain.epistemic_tagger'
+
+tests\integration\test_memory_privacy.py:147: ModuleNotFoundError
+_ ERROR at setup of TestEpistemicTagger.test_tag_sources[low_conf_memory-ASSUMED] _
+
+self = <test_memory_privacy.TestEpistemicTagger object at 0x000001ADE2CE4110>
+
+    @pytest.fixture
+    def tagger(self):
+>       from brain.epistemic_tagger import EpistemicTagger
+E       ModuleNotFoundError: No module named 'brain.epistemic_tagger'
+
+tests\integration\test_memory_privacy.py:147: ModuleNotFoundError
+__ ERROR at setup of TestEpistemicTagger.test_tag_sources[unknown-UNCERTAIN] __
+
+self = <test_memory_privacy.TestEpistemicTagger object at 0x000001ADE2CE4250>
+
+    @pytest.fixture
+    def tagger(self):
+>       from brain.epistemic_tagger import EpistemicTagger
+E       ModuleNotFoundError: No module named 'brain.epistemic_tagger'
+
+tests\integration\test_memory_privacy.py:147: ModuleNotFoundError
+================================== FAILURES ===================================
+__________________ TestRateLimiter.test_rate_limit_exceeded ___________________
+
+args = (<test_api_auth.TestRateLimiter object at 0x000001ADE2C4E350>,)
+keywargs = {'api_client': <starlette.testclient.TestClient object at 0x000001ADE4CE3910>}
+
+    @wraps(func)
+    def patched(*args, **keywargs):
+>       with self.decoration_helper(patched,
+                                    args,
+                                    keywargs) as (newargs, newkeywargs):
+
+..\..\AppData\Local\Programs\Python\Python311\Lib\unittest\mock.py:1375: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\..\AppData\Local\Programs\Python\Python311\Lib\contextlib.py:137: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+..\..\AppData\Local\Programs\Python\Python311\Lib\unittest\mock.py:1357: in decoration_helper
+    arg = exit_stack.enter_context(patching)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Local\Programs\Python\Python311\Lib\contextlib.py:517: in enter_context
+    result = _enter(cm)
+             ^^^^^^^^^^
+..\..\AppData\Local\Programs\Python\Python311\Lib\unittest\mock.py:1430: in __enter__
+    self.target = self.getter()
+                  ^^^^^^^^^^^^^
+..\..\AppData\Local\Programs\Python\Python311\Lib\pkgutil.py:705: in resolve_name
+    mod = importlib.import_module(s)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+name = 'core.rate_limiter.api_rate_limiter', package = None
+
+    def import_module(name, package=None):
+        """Import a module.
+    
+        The 'package' argument is required when performing a relative import. It
+        specifies the package to use as the anchor point from which to resolve the
+        relative import to an absolute import.
+    
+        """
+        level = 0
+        if name.startswith('.'):
+            if not package:
+                msg = ("the 'package' argument is required to perform a relative "
+                       "import for {!r}")
+                raise TypeError(msg.format(name))
+            for character in name:
+                if character != '.':
+                    break
+                level += 1
+>       return _bootstrap._gcd_import(name[level:], package, level)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: 'DynamicStub' object is not iterable
+
+..\..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: TypeError
+____________________ TestModelEndpoints.test_models_groups ____________________
+
+self = <test_api_meta.TestModelEndpoints object at 0x000001ADE2C58890>
+api_client = <starlette.testclient.TestClient object at 0x000001ADE4C77E50>
+
+    def test_models_groups(self, api_client):
+        resp = api_client.get("/api/models/groups")
+>       assert resp.status_code == 200
+E       assert 401 == 200
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests\integration\test_api_meta.py:30: AssertionError
+_____________________ TestModelEndpoints.test_models_list _____________________
+
+self = <test_api_meta.TestModelEndpoints object at 0x000001ADE2C58F90>
+api_client = <starlette.testclient.TestClient object at 0x000001ADE4C8FC50>
+
+    def test_models_list(self, api_client):
+        resp = api_client.get("/api/models")
+>       assert resp.status_code == 200
+E       assert 401 == 200
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests\integration\test_api_meta.py:36: AssertionError
+_________________ TestSettingsEndpoints.test_get_all_settings _________________
+
+self = <test_api_settings.TestSettingsEndpoints object at 0x000001ADE2C5A5D0>
+api_client = <starlette.testclient.TestClient object at 0x000001ADE4C87150>
+
+    def test_get_all_settings(self, api_client):
+        resp = api_client.get("/api/settings")
+>       assert resp.status_code == 200
+E       assert 401 == 200
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests\integration\test_api_settings.py:20: AssertionError
+________________ TestSettingsEndpoints.test_get_single_setting ________________
+
+self = <test_api_settings.TestSettingsEndpoints object at 0x000001ADE2C5ACD0>
+api_client = <starlette.testclient.TestClient object at 0x000001ADE4CCE7D0>
+
+    def test_get_single_setting(self, api_client):
+        resp = api_client.get("/api/settings/llm.chat_model")
+>       assert resp.status_code == 200
+E       assert 401 == 200
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests\integration\test_api_settings.py:26: AssertionError
+_____________ TestSettingsEndpoints.test_get_nonexistent_setting ______________
+
+self = <test_api_settings.TestSettingsEndpoints object at 0x000001ADE2C5B3D0>
+api_client = <starlette.testclient.TestClient object at 0x000001ADE4C8FD50>
+
+    def test_get_nonexistent_setting(self, api_client):
+        resp = api_client.get("/api/settings/does.not.exist")
+>       assert resp.status_code == 404
+E       assert 401 == 404
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests\integration\test_api_settings.py:33: AssertionError
+_____________ TestSettingsEndpoints.test_get_settings_categories ______________
+
+self = <test_api_settings.TestSettingsEndpoints object at 0x000001ADE2C5BBD0>
+api_client = <starlette.testclient.TestClient object at 0x000001ADE4CBB710>
+
+    def test_get_settings_categories(self, api_client):
+        resp = api_client.get("/api/settings/meta/categories")
+>       assert resp.status_code == 200
+E       assert 401 == 200
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests\integration\test_api_settings.py:37: AssertionError
+____________ TestSettingsEndpoints.test_update_nonexistent_setting ____________
+
+self = <test_api_settings.TestSettingsEndpoints object at 0x000001ADE2C64050>
+api_client = <starlette.testclient.TestClient object at 0x000001ADE5100F90>
+
+    def test_update_nonexistent_setting(self, api_client):
+        resp = api_client.put(
+            "/api/settings/does.not.exist",
+            json={"value": "test"},
+        )
+>       assert resp.status_code == 404
+E       assert 401 == 404
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests\integration\test_api_settings.py:57: AssertionError
+_______________ TestSettingsEndpoints.test_bulk_update_settings _______________
+
+self = <test_api_settings.TestSettingsEndpoints object at 0x000001ADE2C64450>
+api_client = <starlette.testclient.TestClient object at 0x000001ADE50B2750>
+
+    def test_bulk_update_settings(self, api_client):
+        resp = api_client.post(
+            "/api/settings/bulk",
+            json={"llm.chat_model": "bulk-test-model"},
+        )
+>       assert resp.status_code == 200
+E       assert 401 == 200
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests\integration\test_api_settings.py:64: AssertionError
+__________________ TestSettingsEndpoints.test_reset_setting ___________________
+
+self = <test_api_settings.TestSettingsEndpoints object at 0x000001ADE2C64850>
+api_client = <starlette.testclient.TestClient object at 0x000001ADE51DDCD0>
+
+    def test_reset_setting(self, api_client):
+        resp = api_client.post("/api/settings/reset/llm.chat_model")
+>       assert resp.status_code == 200
+E       assert 401 == 200
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests\integration\test_api_settings.py:70: AssertionError
+________________ TestSettingsEndpoints.test_reset_all_settings ________________
+
+self = <test_api_settings.TestSettingsEndpoints object at 0x000001ADE2C64C50>
+api_client = <starlette.testclient.TestClient object at 0x000001ADE47C6FD0>
+
+    def test_reset_all_settings(self, api_client):
+        resp = api_client.post("/api/settings/reset")
+>       assert resp.status_code == 200
+E       assert 401 == 200
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests\integration\test_api_settings.py:76: AssertionError
+________ TestChannelProcessor.test_process_message_with_mocked_routes _________
+
+self = <test_channels_e2e.TestChannelProcessor object at 0x000001ADE2C88410>
+
+    async def test_process_message_with_mocked_routes(self):
+>       from channels.processor import process_message
+E       ModuleNotFoundError: No module named 'channels.processor'
+
+tests\integration\test_channels_e2e.py:29: ModuleNotFoundError
+______ TestChannelProcessor.test_process_message_fallback_on_llm_failure ______
+
+self = <test_channels_e2e.TestChannelProcessor object at 0x000001ADE2C7A450>
+
+    async def test_process_message_fallback_on_llm_failure(self):
+>       from channels.processor import process_message
+E       ModuleNotFoundError: No module named 'channels.processor'
+
+tests\integration\test_channels_e2e.py:51: ModuleNotFoundError
+_______________ TestWhatsappWebhook.test_whatsapp_router_prefix _______________
+
+self = <test_channels_e2e.TestWhatsappWebhook object at 0x000001ADE2C88710>
+
+    async def test_whatsapp_router_prefix(self):
+        with patch.dict("os.environ", {"META_VERIFY_TOKEN": "test-token"}, clear=True):
+>           from routers.whatsapp import router
+E           ModuleNotFoundError: No module named 'routers'
+
+tests\integration\test_channels_e2e.py:122: ModuleNotFoundError
+________________ TestWhatsappWebhook.test_whatsapp_sender_send ________________
+
+self = <test_channels_e2e.TestWhatsappWebhook object at 0x000001ADE2C8A050>
+
+    async def test_whatsapp_sender_send(self):
+        with patch.dict("os.environ", {"META_WHATSAPP_TOKEN": "tok", "META_WHATSAPP_PHONE_ID": "123"}):
+            from tools.whatsapp_sender import WhatsAppSender
+            sender = WhatsAppSender()
+            with patch("httpx.AsyncClient") as mock_client:
+                mock_client.return_value.__aenter__.return_value.post = AsyncMock()
+                mock_client.return_value.__aenter__.return_value.post.return_value.status_code = 200
+                result = await sender.send("+1234567890", "test message")
+>               assert result is True
+E               assert False is True
+
+tests\integration\test_channels_e2e.py:145: AssertionError
+------------------------------ Captured log call ------------------------------
+WARNING  integrations.whatsapp.cloud_api:cloud_api.py:48 [WhatsApp Cloud API] Health check failed after connect
+WARNING  tools.whatsapp_sender:whatsapp_sender.py:23 [WHATSAPP] Cloud API provider failed to connect
+WARNING  tools.whatsapp_sender:whatsapp_sender.py:59 [WHATSAPP] Send failed: object MagicMock can't be used in 'await' expression
+____________________________ test_get_info_weather ____________________________
+
+    @pytest.mark.asyncio
+    async def test_get_info_weather():
+>       from core.integrations import get_info
+
+tests\integration\test_get_info_routing.py:22: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    """
+    Module: core.integrations.__init__
+    Auto-reconstructed backend component.
+    """
+    from __future__ import annotations
+    from typing import Any, Callable, Optional
+    from dataclasses import dataclass, field
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    
+    class DynamicMeta(type):
+        def __getattr__(cls, name: str) -> Any:
+            return name
+    
+    # Re-exports
+>   from news import get_news
+E   ModuleNotFoundError: No module named 'news'
+
+core\integrations\__init__.py:17: ModuleNotFoundError
+_____________________________ test_get_info_news ______________________________
+
+    @pytest.mark.asyncio
+    async def test_get_info_news():
+>       from core.integrations import get_info
+
+tests\integration\test_get_info_routing.py:32: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    """
+    Module: core.integrations.__init__
+    Auto-reconstructed backend component.
+    """
+    from __future__ import annotations
+    from typing import Any, Callable, Optional
+    from dataclasses import dataclass, field
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    
+    class DynamicMeta(type):
+        def __getattr__(cls, name: str) -> Any:
+            return name
+    
+    # Re-exports
+>   from news import get_news
+E   ModuleNotFoundError: No module named 'news'
+
+core\integrations\__init__.py:17: ModuleNotFoundError
+____________________________ test_get_info_stocks _____________________________
+
+    @pytest.mark.asyncio
+    async def test_get_info_stocks():
+>       from core.integrations import get_info
+
+tests\integration\test_get_info_routing.py:42: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    """
+    Module: core.integrations.__init__
+    Auto-reconstructed backend component.
+    """
+    from __future__ import annotations
+    from typing import Any, Callable, Optional
+    from dataclasses import dataclass, field
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    
+    class DynamicMeta(type):
+        def __getattr__(cls, name: str) -> Any:
+            return name
+    
+    # Re-exports
+>   from news import get_news
+E   ModuleNotFoundError: No module named 'news'
+
+core\integrations\__init__.py:17: ModuleNotFoundError
+____________________________ test_get_info_sports _____________________________
+
+    @pytest.mark.asyncio
+    async def test_get_info_sports():
+>       from core.integrations import get_info
+
+tests\integration\test_get_info_routing.py:52: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    """
+    Module: core.integrations.__init__
+    Auto-reconstructed backend component.
+    """
+    from __future__ import annotations
+    from typing import Any, Callable, Optional
+    from dataclasses import dataclass, field
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    
+    class DynamicMeta(type):
+        def __getattr__(cls, name: str) -> Any:
+            return name
+    
+    # Re-exports
+>   from news import get_news
+E   ModuleNotFoundError: No module named 'news'
+
+core\integrations\__init__.py:17: ModuleNotFoundError
+_____________________________ test_get_info_time ______________________________
+
+    @pytest.mark.asyncio
+    async def test_get_info_time():
+>       from core.integrations import get_info
+
+tests\integration\test_get_info_routing.py:62: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    """
+    Module: core.integrations.__init__
+    Auto-reconstructed backend component.
+    """
+    from __future__ import annotations
+    from typing import Any, Callable, Optional
+    from dataclasses import dataclass, field
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    
+    class DynamicMeta(type):
+        def __getattr__(cls, name: str) -> Any:
+            return name
+    
+    # Re-exports
+>   from news import get_news
+E   ModuleNotFoundError: No module named 'news'
+
+core\integrations\__init__.py:17: ModuleNotFoundError
+________________________ test_get_info_unknown_intent _________________________
+
+    @pytest.mark.asyncio
+    async def test_get_info_unknown_intent():
+>       from core.integrations import get_info
+
+tests\integration\test_get_info_routing.py:72: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    """
+    Module: core.integrations.__init__
+    Auto-reconstructed backend component.
+    """
+    from __future__ import annotations
+    from typing import Any, Callable, Optional
+    from dataclasses import dataclass, field
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    
+    class DynamicMeta(type):
+        def __getattr__(cls, name: str) -> Any:
+            return name
+    
+    # Re-exports
+>   from news import get_news
+E   ModuleNotFoundError: No module named 'news'
+
+core\integrations\__init__.py:17: ModuleNotFoundError
+___________________ test_execute_action_routes_info_intents ___________________
+
+    @pytest.mark.asyncio
+    async def test_execute_action_routes_info_intents():
+        """Verify core/main.py execute_action dispatches to get_info for info intents."""
+>       from core.main import execute_action
+E       ImportError: cannot import name 'execute_action' from 'core.main' (C:\Users\peter\desktop\jarvis\core\main.py)
+
+tests\integration\test_get_info_routing.py:80: ImportError
+________________________ TestMCPServer.test_call_tool _________________________
+
+self = <test_mcp_docker.TestMCPServer object at 0x000001ADE2CB0BD0>
+server = <jarvis_mcp.server.MCPServer object at 0x000001ADEB70B950>
+
+    @pytest.mark.asyncio
+    async def test_call_tool(self, server):
+        handler = AsyncMock(return_value="result")
+        server.register_tool("t1", "desc", {"type": "object"}, handler)
+        result = await server.call_tool("t1", {"arg": "val"})
+>       assert result == "result"
+E       assert {'content': [{'text': "Tool 't1' blocked by governance: [CRITICAL] input.semantic: Semantic safety check classified request as unsafe", 'type': 'text'}], 'isError': True} == 'result'
+
+tests\integration\test_mcp_docker.py:59: AssertionError
+------------------------------ Captured log call ------------------------------
+WARNING  core.llm_router:llm_router.py:126 llm_router.complete failed: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/generate (Caused by NewConnectionError("HTTPConnection(host='localhost', port=11434): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it"))
+WARNING  jarvis.governance:GovernanceValidator.py:182 [GovernanceValidator] semantic check failed, failing closed: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/generate (Caused by NewConnectionError("HTTPConnection(host='localhost', port=11434): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it"))
+WARNING  jarvis.mcp.server:server.py:116 [MCP] Governance blocked tool t1: [CRITICAL] input.semantic: Semantic safety check classified request as unsafe
+________________________ TestMCPServer.test_start_stop ________________________
+
+self = <test_mcp_docker.TestMCPServer object at 0x000001ADE2CB2E90>
+server = <jarvis_mcp.server.MCPServer object at 0x000001ADE51346D0>
+
+    @pytest.mark.asyncio
+    async def test_start_stop(self, server):
+        await server.start()
+        assert server.is_running is True
+>       assert len(server._tools) == 6
+E       AssertionError: assert 9 == 6
+E        +  where 9 = len({'browser_navigate': {'description': 'Navigate a browser to a URL', 'handler': <bound method MCPServer._handle_browser...': 0, 'type': 'integer'}, 'limit': {'default': 20, 'type': 'integer'}}, 'type': 'object'}, 'name': 'events_poll'}, ...})
+E        +    where {'browser_navigate': {'description': 'Navigate a browser to a URL', 'handler': <bound method MCPServer._handle_browser...': 0, 'type': 'integer'}, 'limit': {'default': 20, 'type': 'integer'}}, 'type': 'object'}, 'name': 'events_poll'}, ...} = <jarvis_mcp.server.MCPServer object at 0x000001ADE51346D0>._tools
+
+tests\integration\test_mcp_docker.py:83: AssertionError
+____________________ TestDockerSandbox.test_init_available ____________________
+
+self = <test_mcp_docker.TestDockerSandbox object at 0x000001ADE2C8B190>
+sandbox = DockerSandbox()
+
+    def test_init_available(self, sandbox):
+>       assert sandbox.available is True
+E       assert <function DockerSandbox.__getattr__.<locals>.<lambda> at 0x000001ADEB7A4180> is True
+E        +  where <function DockerSandbox.__getattr__.<locals>.<lambda> at 0x000001ADEB7A4180> = DockerSandbox().available
+
+tests\integration\test_mcp_docker.py:103: AssertionError
+__________________ TestDockerSandbox.test_init_not_available __________________
+
+self = <test_mcp_docker.TestDockerSandbox object at 0x000001ADE2CB3550>
+
+    def test_init_not_available(self):
+        with patch("docker.from_env", side_effect=Exception("No docker")):
+            from core.sandbox.docker_sandbox import DockerSandbox
+            s = DockerSandbox()
+>           assert s.available is False
+E           assert <function DockerSandbox.__getattr__.<locals>.<lambda> at 0x000001ADEB7EACA0> is False
+E            +  where <function DockerSandbox.__getattr__.<locals>.<lambda> at 0x000001ADEB7EACA0> = DockerSandbox().available
+
+tests\integration\test_mcp_docker.py:109: AssertionError
+______________ TestDockerSandbox.test_exec_python_not_available _______________
+
+self = <test_mcp_docker.TestDockerSandbox object at 0x000001ADE2CB2CD0>
+
+    @pytest.mark.asyncio
+    async def test_exec_python_not_available(self):
+        from core.sandbox.docker_sandbox import DockerSandbox
+        s = DockerSandbox()
+        s._available = False
+>       result = await s.exec_python("print('hello')")
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: object NoneType can't be used in 'await' expression
+
+tests\integration\test_mcp_docker.py:116: TypeError
+_________________ TestDockerSandbox.test_exec_python_success __________________
+
+self = <test_mcp_docker.TestDockerSandbox object at 0x000001ADE2CB2110>
+sandbox = DockerSandbox()
+
+    @pytest.mark.asyncio
+    async def test_exec_python_success(self, sandbox):
+        mock_container = MagicMock()
+>       sandbox._client.containers.create.return_value = mock_container
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'function' object has no attribute 'containers'
+
+tests\integration\test_mcp_docker.py:123: AttributeError
+_______________ TestDockerSandbox.test_exec_command_with_files ________________
+
+self = <test_mcp_docker.TestDockerSandbox object at 0x000001ADE2CB0B10>
+sandbox = DockerSandbox()
+
+    @pytest.mark.asyncio
+    async def test_exec_command_with_files(self, sandbox):
+        mock_container = MagicMock()
+>       sandbox._client.containers.create.return_value = mock_container
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'function' object has no attribute 'containers'
+
+tests\integration\test_mcp_docker.py:133: AttributeError
+_______________________ test_memory_001_same_connection _______________________
+
+server_running = None
+
+    def test_memory_001_same_connection(server_running):
+        """TEST_MEMORY_001: Same-connection memory.
+    
+        "My name is Pavan"
+        "What is my name?"
+        Expected: Pavan
+        """
+        session_id = f"memtest_001_{uuid.uuid4().hex[:8]}"
+>       ws = _connect_ws(session_id)
+             ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\integration\test_memory_conversation.py:152: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\integration\test_memory_conversation.py:49: in _connect_ws
+    return asyncio.run(_connect())
+           ^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Local\Programs\Python\Python311\Lib\asyncio\runners.py:190: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+..\..\AppData\Local\Programs\Python\Python311\Lib\asyncio\runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Local\Programs\Python\Python311\Lib\asyncio\base_events.py:654: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+tests\integration\test_memory_conversation.py:37: in _connect
+    async with websockets.connect(
+..\..\AppData\Local\Programs\Python\Python311\Lib\site-packages\websockets\asyncio\client.py:587: in __aenter__
+    return await self
+           ^^^^^^^^^^
+..\..\AppData\Local\Programs\Python\Python311\Lib\site-packages\websockets\asyncio\client.py:543: in __await_impl__
+    await self.connection.handshake(
+..\..\AppData\Local\Programs\Python\Python311\Lib\site-packages\websockets\asyncio\client.py:114: in handshake
+    raise self.protocol.handshake_exc
+..\..\AppData\Local\Programs\Python\Python311\Lib\site-packages\websockets\client.py:325: in parse
+    self.process_response(response)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <websockets.client.ClientProtocol object at 0x000001ADEB85DC50>
+response = Response(status_code=403, reason_phrase='Forbidden', headers=Headers([('Date', 'Fri, 02 Oct 2026 17:11:53 GMT'), ('Con...', '0'), ('Content-Type', 'text/plain'), ('Connection', 'close')]), body=bytearray(b''), _exception=InvalidStatus(...))
+
+    def process_response(self, response: Response) -> None:
+        """
+        Check a handshake response.
+    
+        Args:
+            request: WebSocket handshake response received from the server.
+    
+        Raises:
+            InvalidHandshake: If the handshake response is invalid.
+    
+        """
+    
+        if response.status_code != 101:
+>           raise InvalidStatus(response)
+E           websockets.exceptions.InvalidStatus: server rejected WebSocket connection: HTTP 403
+
+..\..\AppData\Local\Programs\Python\Python311\Lib\site-packages\websockets\client.py:142: InvalidStatus
+_________________________ test_memory_002_multi_fact __________________________
+
+server_running = None
+
+    def test_memory_002_multi_fact(server_running):
+        """TEST_MEMORY_002: Multi-fact memory.
+    
+        "I live in Hyderabad"
+        "Where do I live?"
+        Expected: Hyderabad
+        """
+        session_id = f"memtest_002_{uuid.uuid4().hex[:8]}"
+>       ws = _connect_ws(session_id)
+             ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\integration\test_memory_conversation.py:177: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\integration\test_memory_conversation.py:49: in _connect_ws
+    return asyncio.run(_connect())
+           ^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Local\Programs\Python\Python311\Lib\asyncio\runners.py:190: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+..\..\AppData\Local\Programs\Python\Python311\Lib\asyncio\runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Local\Programs\Python\Python311\Lib\asyncio\base_events.py:654: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+tests\integration\test_memory_conversation.py:37: in _connect
+    async with websockets.connect(
+..\..\AppData\Local\Programs\Python\Python311\Lib\site-packages\websockets\asyncio\client.py:587: in __aenter__
+    return await self
+           ^^^^^^^^^^
+..\..\AppData\Local\Programs\Python\Python311\Lib\site-packages\websockets\asyncio\client.py:543: in __await_impl__
+    await self.connection.handshake(
+..\..\AppData\Local\Programs\Python\Python311\Lib\site-packages\websockets\asyncio\client.py:114: in handshake
+    raise self.protocol.handshake_exc
+..\..\AppData\Local\Programs\Python\Python311\Lib\site-packages\websockets\client.py:325: in parse
+    self.process_response(response)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <websockets.client.ClientProtocol object at 0x000001ADEB827A50>
+response = Response(status_code=403, reason_phrase='Forbidden', headers=Headers([('Date', 'Fri, 02 Oct 2026 17:11:53 GMT'), ('Con...', '0'), ('Content-Type', 'text/plain'), ('Connection', 'close')]), body=bytearray(b''), _exception=InvalidStatus(...))
+
+    def process_response(self, response: Response) -> None:
+        """
+        Check a handshake response.
+    
+        Args:
+            request: WebSocket handshake response received from the server.
+    
+        Raises:
+            InvalidHandshake: If the handshake response is invalid.
+    
+        """
+    
+        if response.status_code != 101:
+>           raise InvalidStatus(response)
+E           websockets.exceptions.InvalidStatus: server rejected WebSocket connection: HTTP 403
+
+..\..\AppData\Local\Programs\Python\Python311\Lib\site-packages\websockets\client.py:142: InvalidStatus
+__________________________ test_memory_003_reconnect __________________________
+
+server_running = None
+
+    def test_memory_003_reconnect(server_running):
+        """TEST_MEMORY_003: Reconnect memory.
+    
+        (new WS connection)
+        "What is my name?"
+        Expected: Pavan  (from prior session)
+        """
+        # First, tell our name on one connection
+        session_id = f"memtest_003_{uuid.uuid4().hex[:8]}"
+>       ws1 = _connect_ws(session_id)
+              ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\integration\test_memory_conversation.py:203: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\integration\test_memory_conversation.py:49: in _connect_ws
+    return asyncio.run(_connect())
+           ^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Local\Programs\Python\Python311\Lib\asyncio\runners.py:190: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+..\..\AppData\Local\Programs\Python\Python311\Lib\asyncio\runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Local\Programs\Python\Python311\Lib\asyncio\base_events.py:654: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+tests\integration\test_memory_conversation.py:37: in _connect
+    async with websockets.connect(
+..\..\AppData\Local\Programs\Python\Python311\Lib\site-packages\websockets\asyncio\client.py:587: in __aenter__
+    return await self
+           ^^^^^^^^^^
+..\..\AppData\Local\Programs\Python\Python311\Lib\site-packages\websockets\asyncio\client.py:543: in __await_impl__
+    await self.connection.handshake(
+..\..\AppData\Local\Programs\Python\Python311\Lib\site-packages\websockets\asyncio\client.py:114: in handshake
+    raise self.protocol.handshake_exc
+..\..\AppData\Local\Programs\Python\Python311\Lib\site-packages\websockets\client.py:325: in parse
+    self.process_response(response)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <websockets.client.ClientProtocol object at 0x000001ADEB834610>
+response = Response(status_code=403, reason_phrase='Forbidden', headers=Headers([('Date', 'Fri, 02 Oct 2026 17:11:53 GMT'), ('Con...', '0'), ('Content-Type', 'text/plain'), ('Connection', 'close')]), body=bytearray(b''), _exception=InvalidStatus(...))
+
+    def process_response(self, response: Response) -> None:
+        """
+        Check a handshake response.
+    
+        Args:
+            request: WebSocket handshake response received from the server.
+    
+        Raises:
+            InvalidHandshake: If the handshake response is invalid.
+    
+        """
+    
+        if response.status_code != 101:
+>           raise InvalidStatus(response)
+E           websockets.exceptions.InvalidStatus: server rejected WebSocket connection: HTTP 403
+
+..\..\AppData\Local\Programs\Python\Python311\Lib\site-packages\websockets\client.py:142: InvalidStatus
+______________________ test_conversation_file_persisted _______________________
+
+    def test_conversation_file_persisted():
+        """Verify that conversation files are actually written to disk."""
+        found = False
+        for fpath in SESSION_DIR.glob("memtest_*.json"):
+            with open(fpath) as f:
+                data = json.load(f)
+            msgs = data.get("messages", [])
+            if len(msgs) >= 2:
+                found = True
+                break
+>       assert found, (
+            f"RELEASE_BLOCKER: No conversation file found with >=2 messages in {SESSION_DIR}.\n"
+            f"  conv.add_message() or conv.save() is NOT being called."
+        )
+E       AssertionError: RELEASE_BLOCKER: No conversation file found with >=2 messages in C:\Users\peter\.jarvis\sessions.
+E           conv.add_message() or conv.save() is NOT being called.
+E       assert False
+
+tests\integration\test_memory_conversation.py:229: AssertionError
+______________ TestPrivacyClassifier.test_classify_default_local ______________
+
+self = <test_memory_privacy.TestPrivacyClassifier object at 0x000001ADE2CD4B10>
+classifier = <core.privacy_classifier.PrivacyClassifier object at 0x000001ADF8A01610>
+
+    def test_classify_default_local(self, classifier):
+        from core.privacy_classifier import PrivacyTier
+>       assert classifier.classify("hello how are you") == PrivacyTier.LOCAL
+E       AssertionError: assert <PrivacyTier.HYBRID: 'HYBRID'> == <PrivacyTier.LOCAL: 'LOCAL'>
+E        +  where <PrivacyTier.HYBRID: 'HYBRID'> = classify('hello how are you')
+E        +    where classify = <core.privacy_classifier.PrivacyClassifier object at 0x000001ADF8A01610>.classify
+E        +  and   <PrivacyTier.LOCAL: 'LOCAL'> = <enum 'PrivacyTier'>.LOCAL
+
+tests\integration\test_memory_privacy.py:111: AssertionError
+---------------------------- Captured stdout setup ----------------------------
+[Privacy] spacy model not found. NER disabled.
+_____________ TestPrivacyClassifier.test_sanitize_cloud_no_change _____________
+
+self = <test_memory_privacy.TestPrivacyClassifier object at 0x000001ADE2CD5910>
+classifier = <core.privacy_classifier.PrivacyClassifier object at 0x000001ADF6CA19D0>
+
+    def test_sanitize_cloud_no_change(self, classifier):
+        from core.privacy_classifier import PrivacyTier
+>       result = classifier.sanitize("my email is me@test.com", tier=PrivacyTier.CLOUD)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: PrivacyClassifier.sanitize() got an unexpected keyword argument 'tier'
+
+tests\integration\test_memory_privacy.py:119: TypeError
+---------------------------- Captured stdout setup ----------------------------
+[Privacy] spacy model not found. NER disabled.
+___________ TestPrivacyClassifier.test_sanitize_hybrid_strips_email ___________
+
+self = <test_memory_privacy.TestPrivacyClassifier object at 0x000001ADE2CD5FD0>
+classifier = <core.privacy_classifier.PrivacyClassifier object at 0x000001ADF8A65A10>
+
+    def test_sanitize_hybrid_strips_email(self, classifier):
+        from core.privacy_classifier import PrivacyTier
+>       result = classifier.sanitize("email me@test.com", tier=PrivacyTier.HYBRID)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: PrivacyClassifier.sanitize() got an unexpected keyword argument 'tier'
+
+tests\integration\test_memory_privacy.py:124: TypeError
+---------------------------- Captured stdout setup ----------------------------
+[Privacy] spacy model not found. NER disabled.
+___________ TestPrivacyClassifier.test_sanitize_hybrid_strips_phone ___________
+
+self = <test_memory_privacy.TestPrivacyClassifier object at 0x000001ADE2CD66D0>
+classifier = <core.privacy_classifier.PrivacyClassifier object at 0x000001ADF8A06FD0>
+
+    def test_sanitize_hybrid_strips_phone(self, classifier):
+        from core.privacy_classifier import PrivacyTier
+>       result = classifier.sanitize("call 555-123-4567", tier=PrivacyTier.HYBRID)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: PrivacyClassifier.sanitize() got an unexpected keyword argument 'tier'
+
+tests\integration\test_memory_privacy.py:130: TypeError
+---------------------------- Captured stdout setup ----------------------------
+[Privacy] spacy model not found. NER disabled.
+____________ TestPrivacyClassifier.test_sanitize_hybrid_strips_cc _____________
+
+self = <test_memory_privacy.TestPrivacyClassifier object at 0x000001ADE2CC98D0>
+classifier = <core.privacy_classifier.PrivacyClassifier object at 0x000001ADF6D7BF90>
+
+    def test_sanitize_hybrid_strips_cc(self, classifier):
+        from core.privacy_classifier import PrivacyTier
+>       result = classifier.sanitize("card 4111111111111111", tier=PrivacyTier.HYBRID)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: PrivacyClassifier.sanitize() got an unexpected keyword argument 'tier'
+
+tests\integration\test_memory_privacy.py:135: TypeError
+---------------------------- Captured stdout setup ----------------------------
+[Privacy] spacy model not found. NER disabled.
+______________ TestPrivacyClassifier.test_sanitize_local_no_nlp _______________
+
+self = <test_memory_privacy.TestPrivacyClassifier object at 0x000001ADE2CD6250>
+classifier = <core.privacy_classifier.PrivacyClassifier object at 0x000001ADF8A67910>
+
+    def test_sanitize_local_no_nlp(self, classifier):
+        from core.privacy_classifier import PrivacyTier
+>       result = classifier.sanitize("John Smith lives in New York", tier=PrivacyTier.LOCAL)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: PrivacyClassifier.sanitize() got an unexpected keyword argument 'tier'
+
+tests\integration\test_memory_privacy.py:140: TypeError
+---------------------------- Captured stdout setup ----------------------------
+[Privacy] spacy model not found. NER disabled.
+______________________ test_channel_adapter_consistency _______________________
+
+mock_pipeline = <test_pipeline_transport_consistency._CaptureStage object at 0x000001ADF8AE1E10>
+
+    @pytest.mark.asyncio
+    async def test_channel_adapter_consistency(mock_pipeline):
+        """Channel adapter produces correct pipeline context."""
+        from core.pipeline.adapters import channel_adapter
+    
+>       result = await channel_adapter(
+            text="what is the weather",
+            source="telegram",
+            channel_id="ch1",
+            user_id="u1",
+            user_name="TestUser",
+        )
+E       TypeError: object DynamicStub can't be used in 'await' expression
+
+tests\integration\test_pipeline_transport_consistency.py:68: TypeError
+________________________ test_rest_adapter_consistency ________________________
+
+mock_pipeline = <test_pipeline_transport_consistency._CaptureStage object at 0x000001ADF8AA3AD0>
+
+    @pytest.mark.asyncio
+    async def test_rest_adapter_consistency(mock_pipeline):
+        """REST adapter produces correct pipeline context."""
+        from core.pipeline.adapters import rest_adapter
+    
+>       result = await rest_adapter(
+            message="what is the weather",
+            user_id="u1",
+            session_id="s1",
+        )
+E       TypeError: object DynamicStub can't be used in 'await' expression
+
+tests\integration\test_pipeline_transport_consistency.py:90: TypeError
+_________________________ test_ws_adapter_consistency _________________________
+
+mock_pipeline = <test_pipeline_transport_consistency._CaptureStage object at 0x000001ADF8AC1ED0>
+
+    @pytest.mark.asyncio
+    async def test_ws_adapter_consistency(mock_pipeline):
+        """WebSocket adapter produces correct pipeline context."""
+        from core.pipeline.adapters import ws_adapter
+    
+>       result = await ws_adapter(
+            text="what is the weather",
+            user_id="u1",
+            session_id="s1",
+        )
+E       TypeError: object DynamicStub can't be used in 'await' expression
+
+tests\integration\test_pipeline_transport_consistency.py:111: TypeError
+_______________________ test_voice_adapter_consistency ________________________
+
+mock_pipeline = <test_pipeline_transport_consistency._CaptureStage object at 0x000001ADF8AAC210>
+
+    @pytest.mark.asyncio
+    async def test_voice_adapter_consistency(mock_pipeline):
+        """Voice adapter produces correct pipeline context."""
+        from core.pipeline.adapters import voice_adapter
+    
+>       result = await voice_adapter(
+            text="what is the weather",
+            user_id="u1",
+            session_id="s1",
+        )
+E       TypeError: object DynamicStub can't be used in 'await' expression
+
+tests\integration\test_pipeline_transport_consistency.py:132: TypeError
+___________________ test_all_adapters_consistent_transport ____________________
+
+mock_pipeline = <test_pipeline_transport_consistency._CaptureStage object at 0x000001ADF8B036D0>
+
+    @pytest.mark.asyncio
+    async def test_all_adapters_consistent_transport(mock_pipeline):
+        """All adapters set the correct transport value."""
+        from core.pipeline.adapters import channel_adapter, rest_adapter, voice_adapter, ws_adapter
+    
+        test_cases = [
+            (channel_adapter, {"text": "hello", "source": "discord", "channel_id": "c1", "user_id": "u1", "user_name": "u"}, "discord"),
+            (rest_adapter, {"message": "hello", "user_id": "u1", "session_id": "s1"}, "rest"),
+            (ws_adapter, {"text": "hello", "user_id": "u1", "session_id": "s1"}, "websocket"),
+            (voice_adapter, {"text": "hello", "user_id": "u1", "session_id": "s1"}, "voice"),
+        ]
+    
+        for adapter_fn, kwargs, expected_transport in test_cases:
+            if adapter_fn in (channel_adapter,):
+>               result = await adapter_fn(**kwargs)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E               TypeError: object DynamicStub can't be used in 'await' expression
+
+tests\integration\test_pipeline_transport_consistency.py:161: TypeError
+____________ TestSearXNGResult.test_search_returns_err_on_failure _____________
+
+self = <test_result_functions.TestSearXNGResult object at 0x000001ADE3FCBC10>
+
+    def test_search_returns_err_on_failure(self):
+        from tools.search_tool import SearXNGSearch
+        engine = SearXNGSearch(base_url="http://localhost:8888")
+        with patch("tools.search_tool.requests.get", side_effect=ConnectionError("network down")):
+            result = engine.search_sync("test")
+>           assert result.is_err()
+E           assert False
+E            +  where False = is_err()
+E            +    where is_err = Ok([<tools.search_tool.SearchResult object at 0x000001ADF9051A50>, <tools.search_tool.SearchResult object at 0x000001A...search_tool.SearchResult object at 0x000001ADFA5E8450>, <tools.search_tool.SearchResult object at 0x000001ADFA58CD50>]).is_err
+
+tests\integration\test_result_functions.py:118: AssertionError
+------------------------------ Captured log call ------------------------------
+WARNING  tools.search_tool:search_tool.py:115 [Search] SearXNG search error: network down
+_________________ TestSearXNGResult.test_search_on_http_error _________________
+
+self = <test_result_functions.TestSearXNGResult object at 0x000001ADE3FD4350>
+
+    def test_search_on_http_error(self):
+        from tools.search_tool import SearXNGSearch
+        engine = SearXNGSearch(base_url="http://localhost:8888")
+        mock_resp = MagicMock()
+        mock_resp.status_code = 503
+        mock_resp.raise_for_status.side_effect = Exception("HTTP 503")
+        with patch("tools.search_tool.requests.get", return_value=mock_resp):
+            result = engine.search_sync("test")
+>           assert result.is_err()
+E           assert False
+E            +  where False = is_err()
+E            +    where is_err = Ok([<tools.search_tool.SearchResult object at 0x000001ADFA5DB810>, <tools.search_tool.SearchResult object at 0x000001A...search_tool.SearchResult object at 0x000001ADFA663A50>, <tools.search_tool.SearchResult object at 0x000001ADFA663350>]).is_err
+
+tests\integration\test_result_functions.py:131: AssertionError
+------------------------------ Captured log call ------------------------------
+WARNING  tools.search_tool:search_tool.py:115 [Search] SearXNG search error: HTTP 503
+_____________________ test_legacy_forge_hop_returns_real ______________________
+
+    def test_legacy_forge_hop_returns_real():
+        """ForgeSubAgent now delegates to real ForgeAgent backend and returns a dict."""
+        from core.providers.adapters.forge import ForgeSubAgent
+    
+        result = asyncio.run(ForgeSubAgent().run({"task": "write hello world"}))
+>       assert isinstance(result, dict), (
+            f"ForgeSubAgent should return a dict, got {type(result)}"
+        )
+E       AssertionError: ForgeSubAgent should return a dict, got <class 'core.agents._sub_agent_base.AgentResult'>
+E       assert False
+E        +  where False = isinstance(AgentResult(success=False, output='', agent_name='FORGE', mode='generate', duration_s=4.062999999965541, error='Result...rror 10061] No connection could be made because the target machine actively refused it"))', tokens_used=0, metadata={}), dict)
+
+tests\integration\test_spcl9_stub_hops.py:127: AssertionError
+------------------------------ Captured log call ------------------------------
+WARNING  core.llm_router:llm_router.py:126 llm_router.complete failed: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/generate (Caused by NewConnectionError("HTTPConnection(host='localhost', port=11434): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it"))
+________________________ test_process_audio_full_flow _________________________
+
+    @pytest.mark.asyncio
+    async def test_process_audio_full_flow():
+        """Full pipeline: audio -> transcribe -> think -> speak -> audio out."""
+>       from assistant.voice_pipeline import VoicePipeline
+E       ModuleNotFoundError: No module named 'assistant'
+
+tests\integration\test_voice_pipeline_integration.py:24: ModuleNotFoundError
+__________ test_process_audio_empty_transcription_triggers_fallback ___________
+
+    @pytest.mark.asyncio
+    async def test_process_audio_empty_transcription_triggers_fallback():
+        """Empty STT result triggers fallback speak."""
+>       from assistant.voice_pipeline import VoicePipeline
+E       ModuleNotFoundError: No module named 'assistant'
+
+tests\integration\test_voice_pipeline_integration.py:53: ModuleNotFoundError
+___________ test_process_audio_empty_llm_response_triggers_fallback ___________
+
+    @pytest.mark.asyncio
+    async def test_process_audio_empty_llm_response_triggers_fallback():
+        """Empty LLM response triggers fallback speak."""
+>       from assistant.voice_pipeline import VoicePipeline
+E       ModuleNotFoundError: No module named 'assistant'
+
+tests\integration\test_voice_pipeline_integration.py:81: ModuleNotFoundError
+_______________________ test_think_falls_back_to_local ________________________
+
+    @pytest.mark.asyncio
+    async def test_think_falls_back_to_local():
+        """When cloud LLM fails, think falls back to local model."""
+>       from assistant.voice_pipeline import VoicePipeline
+E       ModuleNotFoundError: No module named 'assistant'
+
+tests\integration\test_voice_pipeline_integration.py:108: ModuleNotFoundError
+______________________ test_both_llms_fail_returns_empty ______________________
+
+    @pytest.mark.asyncio
+    async def test_both_llms_fail_returns_empty():
+        """When both cloud and local LLMs fail, think returns empty string."""
+>       from assistant.voice_pipeline import VoicePipeline
+E       ModuleNotFoundError: No module named 'assistant'
+
+tests\integration\test_voice_pipeline_integration.py:126: ModuleNotFoundError
+__________________________ test_stt_async_compatible __________________________
+
+    @pytest.mark.asyncio
+    async def test_stt_async_compatible():
+        """STT transcribe may return coroutine; pipeline handles both sync and async."""
+>       from assistant.voice_pipeline import VoicePipeline
+E       ModuleNotFoundError: No module named 'assistant'
+
+tests\integration\test_voice_pipeline_integration.py:138: ModuleNotFoundError
+__________________ test_process_audio_passes_emotion_context __________________
+
+    @pytest.mark.asyncio
+    async def test_process_audio_passes_emotion_context():
+        """Emotion context is extracted and passed to think."""
+>       from assistant.voice_pipeline import VoicePipeline
+E       ModuleNotFoundError: No module named 'assistant'
+
+tests\integration\test_voice_pipeline_integration.py:155: ModuleNotFoundError
+_______________________ test_unknown_route_returns_404 ________________________
+
+    def test_unknown_route_returns_404():
+        """Undefined routes return 404."""
+        response = client.get("/nonexistent/route/12345")
+>       assert response.status_code == 404
+E       assert 401 == 404
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests\contract\test_api_contract.py:126: AssertionError
+___________________________ TestOkFuzz.test_ok_hash ___________________________
+
+self = <test_result_fuzz.TestOkFuzz object at 0x000001ADE492A4D0>
+
+    @given(hashable_value)
+>   def test_ok_hash(self, v):
+               ^^^^^^^
+
+tests\contract\test_result_fuzz.py:90: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <test_result_fuzz.TestOkFuzz object at 0x000001ADE492A4D0>, v = None
+
+    @given(hashable_value)
+    def test_ok_hash(self, v):
+>       assert hash(Ok(v)) == hash(("Ok", v))
+E       AssertionError: assert -2538204371843405172 == -895885224888820313
+E        +  where -2538204371843405172 = hash(Ok(None))
+E        +    where Ok(None) = Ok(None)
+E        +  and   -895885224888820313 = hash(('Ok', None))
+E       Falsifying example: test_ok_hash(
+E           self=<test_result_fuzz.TestOkFuzz object at 0x000001ADE492A4D0>,
+E           v=None,
+E       )
+
+tests\contract\test_result_fuzz.py:91: AssertionError
+______________ TestToolPathRootsFuzz.test_contains_data_and_temp ______________
+
+self = <test_tool_dispatch_fuzz.TestToolPathRootsFuzz object at 0x000001ADE4995010>
+
+    def test_contains_data_and_temp(self):
+        roots = _tool_path_roots()
+>       assert any("data" in r for r in roots)
+E       assert False
+E        +  where False = any(<generator object TestToolPathRootsFuzz.test_contains_data_and_temp.<locals>.<genexpr> at 0x000001ADF8A28040>)
+
+tests\contract\test_tool_dispatch_fuzz.py:297: AssertionError
+_________ TestSchemeInjectionFuzz.test_public_domain_with_credentials _________
+
+self = <test_url_injection_fuzz.TestSchemeInjectionFuzz object at 0x000001ADE49AB510>
+
+    @given(scheme=st.sampled_from(["http", "https"]))
+>   @settings(deadline=None)
+               ^^^^^^^
+
+tests\contract\test_url_injection_fuzz.py:142: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <test_url_injection_fuzz.TestSchemeInjectionFuzz object at 0x000001ADE49AB510>
+scheme = 'http'
+
+    @given(scheme=st.sampled_from(["http", "https"]))
+    @settings(deadline=None)
+    def test_public_domain_with_credentials(self, scheme):
+        url = f"{scheme}://user:pass@example.com/api"
+>       assert resolve_and_check(url) is True
+E       AssertionError: assert False is True
+E        +  where False = resolve_and_check('http://user:pass@example.com/api')
+E       Falsifying example: test_public_domain_with_credentials(
+E           self=<test_url_injection_fuzz.TestSchemeInjectionFuzz object at 0x000001ADE49AB510>,
+E           scheme='http',
+E       )
+
+tests\contract\test_url_injection_fuzz.py:145: AssertionError
+__________________ TestURLPathFuzz.test_double_slash_bypass ___________________
+
+self = <test_url_injection_fuzz.TestURLPathFuzz object at 0x000001ADE49AE9D0>
+
+    def test_double_slash_bypass(self):
+        url = "http://example.com//evil.com@127.0.0.1:8000"
+        result = resolve_and_check(url)
+        # The hostname in URL is still example.com
+>       assert result is True
+E       assert False is True
+
+tests\contract\test_url_injection_fuzz.py:203: AssertionError
+______________________ TestActivityList.test_list_empty _______________________
+
+self = <jarvis.tests.cli.test_activity.TestActivityList object at 0x000001ADE4A3F350>
+capsys = <_pytest.capture.CaptureFixture object at 0x000001ADFB9B7650>
+isolated_fs = 'C:\\Users\\peter\\AppData\\Local\\Temp\\tmpn86x6g11'
+
+    def test_list_empty(self, capsys, isolated_fs):
+        ns = types.SimpleNamespace(action="list", args=[])
+>       rc = _cmd_activity(ns)
+             ^^^^^^^^^^^^^^^^^
+
+C:\Users\peter\desktop\jarvis\tests\cli\test_activity.py:25: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+args = namespace(action='list', args=[]), _store = None
+
+    def _cmd_activity(args, _store=None):
+        """Handle activity sub-commands from the CLI."""
+        import asyncio
+        from core.activity.manager import ActivityManager
+        from core.activity.storage import ActivityStore
+    
+        rest = getattr(args, 'args', [])
+        cmd_name = getattr(args, 'action', 'list')
+    
+        if cmd_name in ("-h", "--help", "help"):
+            print("Usage: jarvis activity <subcommand> [args]")
+            print()
+            print("Subcommands:")
+            print("  list                   List active activities")
+            print("  tree <id>              Show activity tree")
+            print("  get <id>               Show activity details")
+            print("  summary [id]           Show activity summary")
+            print("  watch                  Live activity feed (Ctrl+C to stop)")
+            print("  cleanup [hours]        Mark stale RUNNING activities as FAILED (default: 24h)")
+            return 0
+    
+        store = _store or ActivityStore()
+>       mgr = ActivityManager(store=store)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: ActivityManager.__init__() got an unexpected keyword argument 'store'
+
+C:\Users\peter\desktop\jarvis\jarvis-export\cli\cli_commands.py:2803: TypeError
+__________________ TestActivityCleanup.test_cleanup_no_args ___________________
+
+self = <jarvis.tests.cli.test_activity.TestActivityCleanup object at 0x000001ADE4A3FB90>
+capsys = <_pytest.capture.CaptureFixture object at 0x000001ADFB793C90>
+isolated_fs = 'C:\\Users\\peter\\AppData\\Local\\Temp\\tmpw3i_f9dy'
+
+    def test_cleanup_no_args(self, capsys, isolated_fs):
+        ns = types.SimpleNamespace(action="cleanup", args=[])
+>       rc = _cmd_activity(ns)
+             ^^^^^^^^^^^^^^^^^
+
+C:\Users\peter\desktop\jarvis\tests\cli\test_activity.py:34: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+args = namespace(action='cleanup', args=[]), _store = None
+
+    def _cmd_activity(args, _store=None):
+        """Handle activity sub-commands from the CLI."""
+        import asyncio
+        from core.activity.manager import ActivityManager
+        from core.activity.storage import ActivityStore
+    
+        rest = getattr(args, 'args', [])
+        cmd_name = getattr(args, 'action', 'list')
+    
+        if cmd_name in ("-h", "--help", "help"):
+            print("Usage: jarvis activity <subcommand> [args]")
+            print()
+            print("Subcommands:")
+            print("  list                   List active activities")
+            print("  tree <id>              Show activity tree")
+            print("  get <id>               Show activity details")
+            print("  summary [id]           Show activity summary")
+            print("  watch                  Live activity feed (Ctrl+C to stop)")
+            print("  cleanup [hours]        Mark stale RUNNING activities as FAILED (default: 24h)")
+            return 0
+    
+        store = _store or ActivityStore()
+>       mgr = ActivityManager(store=store)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: ActivityManager.__init__() got an unexpected keyword argument 'store'
+
+C:\Users\peter\desktop\jarvis\jarvis-export\cli\cli_commands.py:2803: TypeError
+_________________ TestActivityUnknown.test_unknown_subcommand _________________
+
+self = <jarvis.tests.cli.test_activity.TestActivityUnknown object at 0x000001ADE4A4C150>
+capsys = <_pytest.capture.CaptureFixture object at 0x000001ADFB9CA510>
+isolated_fs = 'C:\\Users\\peter\\AppData\\Local\\Temp\\tmppwwme30z'
+
+    def test_unknown_subcommand(self, capsys, isolated_fs):
+        ns = types.SimpleNamespace(action="nonexistent", args=[])
+>       rc = _cmd_activity(ns)
+             ^^^^^^^^^^^^^^^^^
+
+C:\Users\peter\desktop\jarvis\tests\cli\test_activity.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+args = namespace(action='nonexistent', args=[]), _store = None
+
+    def _cmd_activity(args, _store=None):
+        """Handle activity sub-commands from the CLI."""
+        import asyncio
+        from core.activity.manager import ActivityManager
+        from core.activity.storage import ActivityStore
+    
+        rest = getattr(args, 'args', [])
+        cmd_name = getattr(args, 'action', 'list')
+    
+        if cmd_name in ("-h", "--help", "help"):
+            print("Usage: jarvis activity <subcommand> [args]")
+            print()
+            print("Subcommands:")
+            print("  list                   List active activities")
+            print("  tree <id>              Show activity tree")
+            print("  get <id>               Show activity details")
+            print("  summary [id]           Show activity summary")
+            print("  watch                  Live activity feed (Ctrl+C to stop)")
+            print("  cleanup [hours]        Mark stale RUNNING activities as FAILED (default: 24h)")
+            return 0
+    
+        store = _store or ActivityStore()
+>       mgr = ActivityManager(store=store)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: ActivityManager.__init__() got an unexpected keyword argument 'store'
+
+C:\Users\peter\desktop\jarvis\jarvis-export\cli\cli_commands.py:2803: TypeError
+______________________ TestActivityTree.test_tree_no_id _______________________
+
+self = <jarvis.tests.cli.test_activity.TestActivityTree object at 0x000001ADE4A4C610>
+capsys = <_pytest.capture.CaptureFixture object at 0x000001ADFB92C350>
+isolated_fs = 'C:\\Users\\peter\\AppData\\Local\\Temp\\tmpsfslzhax'
+
+    def test_tree_no_id(self, capsys, isolated_fs):
+        ns = types.SimpleNamespace(action="tree", args=[])
+>       rc = _cmd_activity(ns)
+             ^^^^^^^^^^^^^^^^^
+
+C:\Users\peter\desktop\jarvis\tests\cli\test_activity.py:52: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+args = namespace(action='tree', args=[]), _store = None
+
+    def _cmd_activity(args, _store=None):
+        """Handle activity sub-commands from the CLI."""
+        import asyncio
+        from core.activity.manager import ActivityManager
+        from core.activity.storage import ActivityStore
+    
+        rest = getattr(args, 'args', [])
+        cmd_name = getattr(args, 'action', 'list')
+    
+        if cmd_name in ("-h", "--help", "help"):
+            print("Usage: jarvis activity <subcommand> [args]")
+            print()
+            print("Subcommands:")
+            print("  list                   List active activities")
+            print("  tree <id>              Show activity tree")
+            print("  get <id>               Show activity details")
+            print("  summary [id]           Show activity summary")
+            print("  watch                  Live activity feed (Ctrl+C to stop)")
+            print("  cleanup [hours]        Mark stale RUNNING activities as FAILED (default: 24h)")
+            return 0
+    
+        store = _store or ActivityStore()
+>       mgr = ActivityManager(store=store)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: ActivityManager.__init__() got an unexpected keyword argument 'store'
+
+C:\Users\peter\desktop\jarvis\jarvis-export\cli\cli_commands.py:2803: TypeError
+_______________________ TestActivityGet.test_get_no_id ________________________
+
+self = <jarvis.tests.cli.test_activity.TestActivityGet object at 0x000001ADE4A4CC10>
+capsys = <_pytest.capture.CaptureFixture object at 0x000001ADFB95D8D0>
+isolated_fs = 'C:\\Users\\peter\\AppData\\Local\\Temp\\tmpd9cnecl1'
+
+    def test_get_no_id(self, capsys, isolated_fs):
+        ns = types.SimpleNamespace(action="get", args=[])
+>       rc = _cmd_activity(ns)
+             ^^^^^^^^^^^^^^^^^
+
+C:\Users\peter\desktop\jarvis\tests\cli\test_activity.py:61: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+args = namespace(action='get', args=[]), _store = None
+
+    def _cmd_activity(args, _store=None):
+        """Handle activity sub-commands from the CLI."""
+        import asyncio
+        from core.activity.manager import ActivityManager
+        from core.activity.storage import ActivityStore
+    
+        rest = getattr(args, 'args', [])
+        cmd_name = getattr(args, 'action', 'list')
+    
+        if cmd_name in ("-h", "--help", "help"):
+            print("Usage: jarvis activity <subcommand> [args]")
+            print()
+            print("Subcommands:")
+            print("  list                   List active activities")
+            print("  tree <id>              Show activity tree")
+            print("  get <id>               Show activity details")
+            print("  summary [id]           Show activity summary")
+            print("  watch                  Live activity feed (Ctrl+C to stop)")
+            print("  cleanup [hours]        Mark stale RUNNING activities as FAILED (default: 24h)")
+            return 0
+    
+        store = _store or ActivityStore()
+>       mgr = ActivityManager(store=store)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: ActivityManager.__init__() got an unexpected keyword argument 'store'
+
+C:\Users\peter\desktop\jarvis\jarvis-export\cli\cli_commands.py:2803: TypeError
+__________________________ TestModelsList.test_list ___________________________
+
+self = <jarvis.tests.cli.test_models.TestModelsList object at 0x000001ADE4A5D910>
+capsys = <_pytest.capture.CaptureFixture object at 0x000001ADFB619050>
+
+    def test_list(self, capsys):
+        ns = types.SimpleNamespace(action="list", args=[])
+>       rc = cmd_models(ns)
+             ^^^^^^^^^^^^^^
+
+tests\cli\test_models.py:15: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+args = namespace(action='list', args=[])
+
+    def cmd_models(args: argparse.Namespace) -> int:
+        import asyncio
+    
+        models_cmd = getattr(args, "action", "list")
+        if models_cmd == "list":
+            from core.model_providers.hybrid import get_platform
+            from rich.console import Console
+            from rich.table import Table
+            console = Console()
+            platform = get_platform()
+>           models = asyncio.run(platform.list_models())
+                                 ^^^^^^^^^^^^^^^^^^^^
+E           AttributeError: 'NoneType' object has no attribute 'list_models'
+
+jarvis-export\cli\cli_commands.py:349: AttributeError
+______________________ TestModelsTest.test_test_no_model ______________________
+
+self = <jarvis.tests.cli.test_models.TestModelsTest object at 0x000001ADE4A4DF90>
+capsys = <_pytest.capture.CaptureFixture object at 0x000001ADFB5E0050>
+
+    def test_test_no_model(self, capsys):
+        ns = self._make_ns()
+>       rc = cmd_models(ns)
+             ^^^^^^^^^^^^^^
+
+tests\cli\test_models.py:30: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+args = namespace(action='test', args=[], debug=False)
+
+    def cmd_models(args: argparse.Namespace) -> int:
+        import asyncio
+    
+        models_cmd = getattr(args, "action", "list")
+        if models_cmd == "list":
+            from core.model_providers.hybrid import get_platform
+            from rich.console import Console
+            from rich.table import Table
+            console = Console()
+            platform = get_platform()
+            models = asyncio.run(platform.list_models())
+            mode = platform.mode.value.upper()
+            table = Table(title=f"Model Providers [{mode} MODE]", border_style="cyan")
+            table.add_column("Provider", style="bold")
+            table.add_column("Model")
+            table.add_column("Status")
+            table.add_column("Latency")
+            table.add_column("Cost")
+            for m in models:
+                status_style = {"healthy": "green", "down": "red", "error": "red", "unknown": "yellow"}
+                s = status_style.get(m.status, "white")
+                table.add_row(m.provider, m.model, f"[{s}]{m.status}[/]",
+                              f"{m.latency_ms:.0f}ms" if m.latency_ms else "—", m.cost_estimate)
+            console.print(table)
+            return 0
+    
+        if models_cmd == "test":
+            from core.model_providers.hybrid import get_platform
+            from cli_visuals_new import print_system_msg
+            platform = get_platform()
+            rest = getattr(args, "args", [])
+            provider_str = rest[0] if rest else None
+            provider = None
+            model = None
+            if provider_str and "/" in provider_str:
+                parts = provider_str.split("/", 1)
+                provider = parts[0]
+                model = parts[1] if len(parts) > 1 else None
+            else:
+                provider = provider_str
+            print_system_msg(f"Testing provider: {provider_str or 'all'}...", "info")
+>           result = asyncio.run(platform.test_model(provider, model))
+                                 ^^^^^^^^^^^^^^^^^^^
+E           AttributeError: 'NoneType' object has no attribute 'test_model'
+
+jarvis-export\cli\cli_commands.py:380: AttributeError
+---------------------------- Captured stdout call -----------------------------
+\u2139 Testing provider: all...
+________________________ TestModelsTest.test_test_help ________________________
+
+self = <jarvis.tests.cli.test_models.TestModelsTest object at 0x000001ADE4A5E050>
+capsys = <_pytest.capture.CaptureFixture object at 0x000001ADFB423350>
+
+    def test_test_help(self, capsys):
+        ns = self._make_ns(args=["--help"])
+>       rc = cmd_models(ns)
+             ^^^^^^^^^^^^^^
+
+tests\cli\test_models.py:35: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+args = namespace(action='test', args=['--help'], debug=False)
+
+    def cmd_models(args: argparse.Namespace) -> int:
+        import asyncio
+    
+        models_cmd = getattr(args, "action", "list")
+        if models_cmd == "list":
+            from core.model_providers.hybrid import get_platform
+            from rich.console import Console
+            from rich.table import Table
+            console = Console()
+            platform = get_platform()
+            models = asyncio.run(platform.list_models())
+            mode = platform.mode.value.upper()
+            table = Table(title=f"Model Providers [{mode} MODE]", border_style="cyan")
+            table.add_column("Provider", style="bold")
+            table.add_column("Model")
+            table.add_column("Status")
+            table.add_column("Latency")
+            table.add_column("Cost")
+            for m in models:
+                status_style = {"healthy": "green", "down": "red", "error": "red", "unknown": "yellow"}
+                s = status_style.get(m.status, "white")
+                table.add_row(m.provider, m.model, f"[{s}]{m.status}[/]",
+                              f"{m.latency_ms:.0f}ms" if m.latency_ms else "—", m.cost_estimate)
+            console.print(table)
+            return 0
+    
+        if models_cmd == "test":
+            from core.model_providers.hybrid import get_platform
+            from cli_visuals_new import print_system_msg
+            platform = get_platform()
+            rest = getattr(args, "args", [])
+            provider_str = rest[0] if rest else None
+            provider = None
+            model = None
+            if provider_str and "/" in provider_str:
+                parts = provider_str.split("/", 1)
+                provider = parts[0]
+                model = parts[1] if len(parts) > 1 else None
+            else:
+                provider = provider_str
+            print_system_msg(f"Testing provider: {provider_str or 'all'}...", "info")
+>           result = asyncio.run(platform.test_model(provider, model))
+                                 ^^^^^^^^^^^^^^^^^^^
+E           AttributeError: 'NoneType' object has no attribute 'test_model'
+
+jarvis-export\cli\cli_commands.py:380: AttributeError
+---------------------------- Captured stdout call -----------------------------
+\u2139 Testing provider: --help...
+_____________________ TestModelsSwitch.test_switch_no_arg _____________________
+
+self = <jarvis.tests.cli.test_models.TestModelsSwitch object at 0x000001ADE4A5E510>
+capsys = <_pytest.capture.CaptureFixture object at 0x000001ADFB51DBD0>
+
+    def test_switch_no_arg(self, capsys):
+        ns = types.SimpleNamespace(action="switch", args=[])
+>       rc = cmd_models(ns)
+             ^^^^^^^^^^^^^^
+
+tests\cli\test_models.py:42: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+args = namespace(action='switch', args=[])
+
+    def cmd_models(args: argparse.Namespace) -> int:
+        import asyncio
+    
+        models_cmd = getattr(args, "action", "list")
+        if models_cmd == "list":
+            from core.model_providers.hybrid import get_platform
+            from rich.console import Console
+            from rich.table import Table
+            console = Console()
+            platform = get_platform()
+            models = asyncio.run(platform.list_models())
+            mode = platform.mode.value.upper()
+            table = Table(title=f"Model Providers [{mode} MODE]", border_style="cyan")
+            table.add_column("Provider", style="bold")
+            table.add_column("Model")
+            table.add_column("Status")
+            table.add_column("Latency")
+            table.add_column("Cost")
+            for m in models:
+                status_style = {"healthy": "green", "down": "red", "error": "red", "unknown": "yellow"}
+                s = status_style.get(m.status, "white")
+                table.add_row(m.provider, m.model, f"[{s}]{m.status}[/]",
+                              f"{m.latency_ms:.0f}ms" if m.latency_ms else "—", m.cost_estimate)
+            console.print(table)
+            return 0
+    
+        if models_cmd == "test":
+            from core.model_providers.hybrid import get_platform
+            from cli_visuals_new import print_system_msg
+            platform = get_platform()
+            rest = getattr(args, "args", [])
+            provider_str = rest[0] if rest else None
+            provider = None
+            model = None
+            if provider_str and "/" in provider_str:
+                parts = provider_str.split("/", 1)
+                provider = parts[0]
+                model = parts[1] if len(parts) > 1 else None
+            else:
+                provider = provider_str
+            print_system_msg(f"Testing provider: {provider_str or 'all'}...", "info")
+            result = asyncio.run(platform.test_model(provider, model))
+            from rich.console import Console
+            console = Console()
+            if result.status == "healthy":
+                console.print(f"[green]\u2705 {result.provider}/{result.model}[/] \u2014 {result.latency_ms:.0f}ms \u2014 {result.cost_estimate}")
+            else:
+                console.print(f"[red]\u274c {result.provider}/{result.model}[/] \u2014 {result.error}")
+            return 0
+    
+        if models_cmd == "benchmark":
+            from core.model_providers.hybrid import get_platform
+            from cli_visuals_new import print_system_msg
+            from rich.table import Table
+            from rich.console import Console
+            console = Console()
+            rest = getattr(args, "args", [])
+            provider = rest[0] if rest else None
+            print_system_msg(f"Benchmarking provider: {provider or 'all'}...", "info")
+            results = asyncio.run(get_platform().benchmark(provider))
+            table = Table(title="Benchmark Results", border_style="blue")
+            table.add_column("Provider")
+            table.add_column("Model")
+            table.add_column("Test")
+            table.add_column("Latency")
+            table.add_column("Tokens")
+            for r in results:
+                for t in r.get("tests", []):
+                    status_icon = "\u2705" if t.get("latency_ms") else "\u274c"
+                    table.add_row(
+                        r["provider"], r["model"],
+                        t.get("type", "?"),
+                        f"{t.get('latency_ms', 0):.0f}ms" if t.get("latency_ms") else t.get("error", "?"),
+                        str(t.get("tokens", "?")),
+                    )
+            console.print(table)
+            return 0
+    
+        if models_cmd == "switch":
+            from core.model_providers.hybrid import get_platform
+            platform = get_platform()
+            rest = getattr(args, "args", [])
+            mode = rest[0] if rest else "local"
+>           msg = platform.set_mode_from_string(mode)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AttributeError: 'NoneType' object has no attribute 'set_mode_from_string'
+
+jarvis-export\cli\cli_commands.py:422: AttributeError
+_____________________ TestModelsApikeys.test_apikeys_list _____________________
+
+self = <jarvis.tests.cli.test_models.TestModelsApikeys object at 0x000001ADE4A5EA90>
+capsys = <_pytest.capture.CaptureFixture object at 0x000001ADFB8709D0>
+
+    def test_apikeys_list(self, capsys):
+        ns = types.SimpleNamespace(action="apikeys", args=[])
+>       rc = cmd_models(ns)
+             ^^^^^^^^^^^^^^
+
+tests\cli\test_models.py:49: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+jarvis-export\cli\cli_commands.py:445: in cmd_models
+    return cmd_models_extended(ext_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+args = Namespace(models_command='apikeys', key_action='list', provider_name=None, key_value=None)
+
+    def cmd_models_extended(args):
+        """Extended model management — includes API key management, per-task assignment, provider priority."""
+        sub = getattr(args, 'models_command', None)
+    
+        if sub == "list":
+            return cmd_models(args)
+        if sub == "test":
+            return cmd_models(args)
+        if sub == "benchmark":
+            return cmd_models(args)
+        if sub == "switch":
+            return cmd_models(args)
+        if sub == "start":
+            return cmd_models(args)
+    
+        from cli_visuals_new import print_system_msg
+        from rich.console import Console
+        from rich.table import Table
+        from rich.panel import Panel
+        import asyncio
+        console = Console()
+    
+        if sub == "priority":
+            try:
+                from core.model_providers.hybrid import get_platform
+                platform = get_platform()
+                console.print(Panel(
+                    f"Current mode: [bold]{platform.mode.value.upper()}[/]\n"
+                    "Priority order: local providers first (ollama), then cloud providers by latency\n"
+                    "Use [bold]jarvis models switch local|cloud|hybrid[/] to change",
+                    title="Provider Priority", border_style="blue"))
+            except Exception as e:
+                console.print(f"[red]Error: {e}[/]")
+    
+        elif sub == "assign":
+            try:
+                from core.model_providers.router import TaskType
+                from core.config_registry import config
+                task = getattr(args, 'task_type', None)
+                model = getattr(args, 'model_name', None)
+                if task and model:
+                    config.set(f"role_models.{task}", model)
+                    console.print(f"[green]Assigned {model} to {task} tasks[/]")
+                else:
+                    table = Table(title="Per-Task Model Assignment", border_style="cyan")
+                    table.add_column("Task Type", style="bold")
+                    table.add_column("Assigned Model")
+                    table.add_column("Default")
+                    from core.model_providers.router import DEFAULT_ROLE_MODELS
+                    for t in TaskType:
+                        key = t.value
+                        assigned = config.get(f"role_models.{key}", None)
+                        default = DEFAULT_ROLE_MODELS.get(key, "auto")
+                        table.add_row(key, assigned or "(auto)", default)
+                    console.print(table)
+            except Exception as e:
+                console.print(f"[red]Error: {e}[/]")
+    
+        elif sub == "apikeys":
+            action = getattr(args, 'key_action', 'list')
+            provider = getattr(args, 'provider_name', None)
+            key_value = getattr(args, 'key_value', None)
+    
+            if action == "set" and provider and key_value:
+                from core.api_key_vault import vault
+                vault.set(f"{provider.upper()}_API_KEY", key_value)
+                console.print(f"[green]API key set for {provider}[/]")
+            elif action == "delete" and provider:
+                from core.api_key_vault import vault
+                vault.delete(f"{provider.upper()}_API_KEY")
+                console.print(f"[green]API key deleted for {provider}[/]")
+            else:
+                table = Table(title="API Keys", border_style="yellow")
+                table.add_column("Provider", style="bold")
+                table.add_column("Status")
+                providers_list = ["OPENAI", "ANTHROPIC", "GEMINI", "GROQ", "OPENROUTER"]
+                import os
+                for p in providers_list:
+                    env_val = os.getenv(f"{p}_API_KEY", "")
+                    from core.api_key_vault import vault
+>                   vault_val = vault.get(f"{p}_API_KEY")
+                                ^^^^^^^^^
+E                   AttributeError: 'function' object has no attribute 'get'
+
+jarvis-export\cli\cli_commands.py:2402: AttributeError
+________________________ TestServerDryRun.test_dry_run ________________________
+
+self = <jarvis.tests.cli.test_server.TestServerDryRun object at 0x000001ADE4A61AD0>
+capsys = <_pytest.capture.CaptureFixture object at 0x000001ADFB3558D0>
+
+    def test_dry_run(self, capsys):
+        ns = types.SimpleNamespace(
+            host="127.0.0.1", port=8000,
+            no_reload=False, multi_model=False, dry_run=True,
+        )
+        rc = cmd_server(ns)
+        assert rc == 0
+        out = capsys.readouterr().out
+>       assert "[DRY RUN]" in out
+E       AssertionError: assert '[DRY RUN]' in 'JARVIS backend already running at http://127.0.0.1:8000\n'
+
+tests\cli\test_server.py:19: AssertionError
+___________________ TestServerDefault.test_server_dry_only ____________________
+
+self = <jarvis.tests.cli.test_server.TestServerDefault object at 0x000001ADE4A62410>
+capsys = <_pytest.capture.CaptureFixture object at 0x000001ADFB9ADE10>
+
+    def test_server_dry_only(self, capsys):
+        """In test env, only dry-run is safe; real start would hang."""
+        ns = types.SimpleNamespace(
+            host="127.0.0.1", port=8000,
+            no_reload=False, multi_model=False, dry_run=True,
+        )
+        rc = cmd_server(ns)
+        assert rc == 0
+>       assert "[DRY RUN]" in capsys.readouterr().out
+E       AssertionError: assert '[DRY RUN]' in 'JARVIS backend already running at http://127.0.0.1:8000\n'
+E        +  where 'JARVIS backend already running at http://127.0.0.1:8000\n' = CaptureResult(out='JARVIS backend already running at http://127.0.0.1:8000\n', err='').out
+E        +    where CaptureResult(out='JARVIS backend already running at http://127.0.0.1:8000\n', err='') = readouterr()
+E        +      where readouterr = <_pytest.capture.CaptureFixture object at 0x000001ADFB9ADE10>.readouterr
+
+tests\cli\test_server.py:31: AssertionError
+____________________ TestSettingsGet.test_get_unknown_key _____________________
+
+self = <jarvis.tests.cli.test_settings.TestSettingsGet object at 0x000001ADE4A63B90>
+capsys = <_pytest.capture.CaptureFixture object at 0x000001ADFB9D9B90>
+
+    def test_get_unknown_key(self, capsys):
+        ns = types.SimpleNamespace(action="get", key="nonexistent_key_xyz", value="", args=[])
+>       rc = cmd_settings(ns)
+             ^^^^^^^^^^^^^^^^
+
+tests\cli\test_settings.py:13: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+args = namespace(action='get', key='nonexistent_key_xyz', value='', args=[])
+
+    def cmd_settings(args: argparse.Namespace) -> int:
+        from core.settings.store import get_settings_store
+        store = get_settings_store()
+    
+        def _try_config_registry(key: str):
+            try:
+                from core.config_registry import config as _cfg
+                return _cfg.get(key, None)
+            except KeyError:
+                return None
+    
+        def _set_config_registry(key: str, val):
+            try:
+                from core.config_registry import config as _cfg
+                _cfg.set(key, val)
+                return True
+            except Exception as e:
+                logger.warning("Failed to set config registry key '%s': %s", key, e)
+                return False
+    
+        settings_cmd = getattr(args, "action", "")
+    
+        if settings_cmd == "get":
+            try:
+>               val = store.get(args.key)
+                      ^^^^^^^^^
+E               AttributeError: 'NoneType' object has no attribute 'get'
+
+jarvis-export\cli\cli_commands.py:629: AttributeError
+_______________________ TestSettingsSet.test_set_no_key _______________________
+
+self = <jarvis.tests.cli.test_settings.TestSettingsSet object at 0x000001ADE4A61ED0>
+capsys = <_pytest.capture.CaptureFixture object at 0x000001ADFB9208D0>
+
+    def test_set_no_key(self, capsys):
+        ns = types.SimpleNamespace(action="set", key="", value="", args=[])
+        rc = cmd_settings(ns)
+>       assert rc == 0
+E       assert 1 == 0
+
+tests\cli\test_settings.py:21: AssertionError
+---------------------------- Captured stdout call -----------------------------
+Failed to set 
+------------------------------ Captured log call ------------------------------
+WARNING  _jarvis_cli_commands:cli_commands.py:650 Settings store failed for '': 'NoneType' object has no attribute 'set'
+WARNING  _jarvis_cli_commands:cli_commands.py:622 Failed to set config registry key '': cannot import name 'config' from 'core.config_registry' (C:\Users\peter\desktop\jarvis\core\config_registry.py)
+________________________ TestSettingsReset.test_reset _________________________
+
+self = <jarvis.tests.cli.test_settings.TestSettingsReset object at 0x000001ADE4A63F50>
+capsys = <_pytest.capture.CaptureFixture object at 0x000001ADFB7DAD10>
+
+    def test_reset(self, capsys):
+        ns = types.SimpleNamespace(action="reset", key="", value="", args=[])
+>       rc = cmd_settings(ns)
+             ^^^^^^^^^^^^^^^^
+
+tests\cli\test_settings.py:27: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+args = namespace(action='reset', key='', value='', args=[])
+
+    def cmd_settings(args: argparse.Namespace) -> int:
+        from core.settings.store import get_settings_store
+        store = get_settings_store()
+    
+        def _try_config_registry(key: str):
+            try:
+                from core.config_registry import config as _cfg
+                return _cfg.get(key, None)
+            except KeyError:
+                return None
+    
+        def _set_config_registry(key: str, val):
+            try:
+                from core.config_registry import config as _cfg
+                _cfg.set(key, val)
+                return True
+            except Exception as e:
+                logger.warning("Failed to set config registry key '%s': %s", key, e)
+                return False
+    
+        settings_cmd = getattr(args, "action", "")
+    
+        if settings_cmd == "get":
+            try:
+                val = store.get(args.key)
+                print(val)
+            except KeyError:
+                val = _try_config_registry(args.key)
+                if val is not None:
+                    print(val)
+                else:
+                    print(f"Error: Setting '{args.key}' not found.")
+                    return 1
+        elif settings_cmd == "set":
+            parsed_val = _parse_setting_value(args.value)
+            try:
+                if store.set(args.key, parsed_val):
+                    print(f"Successfully set {args.key} = {parsed_val}")
+                else:
+                    if _set_config_registry(args.key, parsed_val):
+                        print(f"Successfully set {args.key} = {parsed_val}")
+                    else:
+                        print(f"Failed to set {args.key}")
+                        return 1
+            except Exception as e:
+                logger.warning("Settings store failed for '%s': %s", args.key, e)
+                if _set_config_registry(args.key, parsed_val):
+                    print(f"Successfully set {args.key} = {parsed_val}")
+                else:
+                    print(f"Failed to set {args.key}")
+                    return 1
+        elif settings_cmd == "reset":
+>           store.reset(args.key)
+            ^^^^^^^^^^^
+E           AttributeError: 'NoneType' object has no attribute 'reset'
+
+jarvis-export\cli\cli_commands.py:657: AttributeError
+_______________________ TestSettingsExport.test_export ________________________
+
+self = <jarvis.tests.cli.test_settings.TestSettingsExport object at 0x000001ADE4A70410>
+capsys = <_pytest.capture.CaptureFixture object at 0x000001ADFB2CBE10>
+
+    def test_export(self, capsys):
+        ns = types.SimpleNamespace(action="export", key="", value="", args=[])
+>       rc = cmd_settings(ns)
+             ^^^^^^^^^^^^^^^^
+
+tests\cli\test_settings.py:34: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+args = namespace(action='export', key='', value='', args=[])
+
+    def cmd_settings(args: argparse.Namespace) -> int:
+        from core.settings.store import get_settings_store
+        store = get_settings_store()
+    
+        def _try_config_registry(key: str):
+            try:
+                from core.config_registry import config as _cfg
+                return _cfg.get(key, None)
+            except KeyError:
+                return None
+    
+        def _set_config_registry(key: str, val):
+            try:
+                from core.config_registry import config as _cfg
+                _cfg.set(key, val)
+                return True
+            except Exception as e:
+                logger.warning("Failed to set config registry key '%s': %s", key, e)
+                return False
+    
+        settings_cmd = getattr(args, "action", "")
+    
+        if settings_cmd == "get":
+            try:
+                val = store.get(args.key)
+                print(val)
+            except KeyError:
+                val = _try_config_registry(args.key)
+                if val is not None:
+                    print(val)
+                else:
+                    print(f"Error: Setting '{args.key}' not found.")
+                    return 1
+        elif settings_cmd == "set":
+            parsed_val = _parse_setting_value(args.value)
+            try:
+                if store.set(args.key, parsed_val):
+                    print(f"Successfully set {args.key} = {parsed_val}")
+                else:
+                    if _set_config_registry(args.key, parsed_val):
+                        print(f"Successfully set {args.key} = {parsed_val}")
+                    else:
+                        print(f"Failed to set {args.key}")
+                        return 1
+            except Exception as e:
+                logger.warning("Settings store failed for '%s': %s", args.key, e)
+                if _set_config_registry(args.key, parsed_val):
+                    print(f"Successfully set {args.key} = {parsed_val}")
+                else:
+                    print(f"Failed to set {args.key}")
+                    return 1
+        elif settings_cmd == "reset":
+            store.reset(args.key)
+            if args.key:
+                print(f"Reset {args.key} to default.")
+            else:
+                print("Reset all settings to defaults.")
+        elif settings_cmd == "export":
+>           data = store.export()
+                   ^^^^^^^^^^^^
+E           AttributeError: 'NoneType' object has no attribute 'export'
+
+jarvis-export\cli\cli_commands.py:663: AttributeError
+___________________ TestSettingsUnknown.test_unknown_action ___________________
+
+self = <jarvis.tests.cli.test_settings.TestSettingsUnknown object at 0x000001ADE4A70AD0>
+capsys = <_pytest.capture.CaptureFixture object at 0x000001ADFB6AB4D0>
+
+    def test_unknown_action(self, capsys):
+        ns = types.SimpleNamespace(action="bogus", key="", value="", args=[])
+>       rc = cmd_settings(ns)
+             ^^^^^^^^^^^^^^^^
+
+tests\cli\test_settings.py:41: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+args = namespace(action='bogus', key='', value='', args=[])
+
+    def cmd_settings(args: argparse.Namespace) -> int:
+        from core.settings.store import get_settings_store
+        store = get_settings_store()
+    
+        def _try_config_registry(key: str):
+            try:
+                from core.config_registry import config as _cfg
+                return _cfg.get(key, None)
+            except KeyError:
+                return None
+    
+        def _set_config_registry(key: str, val):
+            try:
+                from core.config_registry import config as _cfg
+                _cfg.set(key, val)
+                return True
+            except Exception as e:
+                logger.warning("Failed to set config registry key '%s': %s", key, e)
+                return False
+    
+        settings_cmd = getattr(args, "action", "")
+    
+        if settings_cmd == "get":
+            try:
+                val = store.get(args.key)
+                print(val)
+            except KeyError:
+                val = _try_config_registry(args.key)
+                if val is not None:
+                    print(val)
+                else:
+                    print(f"Error: Setting '{args.key}' not found.")
+                    return 1
+        elif settings_cmd == "set":
+            parsed_val = _parse_setting_value(args.value)
+            try:
+                if store.set(args.key, parsed_val):
+                    print(f"Successfully set {args.key} = {parsed_val}")
+                else:
+                    if _set_config_registry(args.key, parsed_val):
+                        print(f"Successfully set {args.key} = {parsed_val}")
+                    else:
+                        print(f"Failed to set {args.key}")
+                        return 1
+            except Exception as e:
+                logger.warning("Settings store failed for '%s': %s", args.key, e)
+                if _set_config_registry(args.key, parsed_val):
+                    print(f"Successfully set {args.key} = {parsed_val}")
+                else:
+                    print(f"Failed to set {args.key}")
+                    return 1
+        elif settings_cmd == "reset":
+            store.reset(args.key)
+            if args.key:
+                print(f"Reset {args.key} to default.")
+            else:
+                print("Reset all settings to defaults.")
+        elif settings_cmd == "export":
+            data = store.export()
+            import json as _json2
+            print(_json2.dumps(data, indent=2))
+        elif settings_cmd == "import":
+            if store.import_from_json(args.file):
+                print(f"Successfully imported settings from {args.file}")
+            else:
+                print(f"Failed to import settings from {args.file}")
+                return 1
+        else:
+>           data = store.export()
+                   ^^^^^^^^^^^^
+E           AttributeError: 'NoneType' object has no attribute 'export'
+
+jarvis-export\cli\cli_commands.py:673: AttributeError
+============================== warnings summary ===============================
+..\..\AppData\Local\Programs\Python\Python311\Lib\site-packages\fastapi\testclient.py:1
+  C:\Users\peter\AppData\Local\Programs\Python\Python311\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+tests/integration/test_computer_agent.py::TestComputerAgent::test_get_interpreter_lazy
+  C:\Users\peter\AppData\Local\Programs\Python\Python311\Lib\site-packages\interpreter\core\utils\system_debug_info.py:4: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+    import pkg_resources
+
+tests/integration/test_memory_privacy.py::TestPrivacyClassifier::test_classify_api_key
+  C:\Users\peter\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\cuda\__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+    import pynvml  # type: ignore[import]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+ERROR tests/integration/test_spawning.py
+ERROR tests/integration/test_memory_privacy.py::TestEpistemicTagger::test_strip_tags_empty
+ERROR tests/integration/test_memory_privacy.py::TestEpistemicTagger::test_strip_tags_no_tags
+ERROR tests/integration/test_memory_privacy.py::TestEpistemicTagger::test_strip_tags_removes_verified
+ERROR tests/integration/test_memory_privacy.py::TestEpistemicTagger::test_strip_tags_removes_uncertain
+ERROR tests/integration/test_memory_privacy.py::TestEpistemicTagger::test_strip_tags_removes_retrieved
+ERROR tests/integration/test_memory_privacy.py::TestEpistemicTagger::test_tag_response_no_provenance
+ERROR tests/integration/test_memory_privacy.py::TestEpistemicTagger::test_tag_response_empty_provenance
+ERROR tests/integration/test_memory_privacy.py::TestEpistemicTagger::test_tag_response_web_search
+ERROR tests/integration/test_memory_privacy.py::TestEpistemicTagger::test_tag_response_inference
+ERROR tests/integration/test_memory_privacy.py::TestEpistemicTagger::test_tag_response_unknown
+ERROR tests/integration/test_memory_privacy.py::TestEpistemicTagger::test_tag_response_claim_map
+ERROR tests/integration/test_memory_privacy.py::TestEpistemicTagger::test_strip_then_tag_roundtrip
+ERROR tests/integration/test_memory_privacy.py::TestEpistemicTagger::test_tag_sources[web_search-VERIFIED]
+ERROR tests/integration/test_memory_privacy.py::TestEpistemicTagger::test_tag_sources[search-VERIFIED]
+ERROR tests/integration/test_memory_privacy.py::TestEpistemicTagger::test_tag_sources[memory-VERIFIED]
+ERROR tests/integration/test_memory_privacy.py::TestEpistemicTagger::test_tag_sources[tool_result-VERIFIED]
+ERROR tests/integration/test_memory_privacy.py::TestEpistemicTagger::test_tag_sources[tool-VERIFIED]
+ERROR tests/integration/test_memory_privacy.py::TestEpistemicTagger::test_tag_sources[inference-ASSUMED]
+ERROR tests/integration/test_memory_privacy.py::TestEpistemicTagger::test_tag_sources[low_conf_memory-ASSUMED]
+ERROR tests/integration/test_memory_privacy.py::TestEpistemicTagger::test_tag_sources[unknown-UNCERTAIN]
+FAILED tests/integration/test_api_auth.py::TestRateLimiter::test_rate_limit_exceeded
+FAILED tests/integration/test_api_meta.py::TestModelEndpoints::test_models_groups
+FAILED tests/integration/test_api_meta.py::TestModelEndpoints::test_models_list
+FAILED tests/integration/test_api_settings.py::TestSettingsEndpoints::test_get_all_settings
+FAILED tests/integration/test_api_settings.py::TestSettingsEndpoints::test_get_single_setting
+FAILED tests/integration/test_api_settings.py::TestSettingsEndpoints::test_get_nonexistent_setting
+FAILED tests/integration/test_api_settings.py::TestSettingsEndpoints::test_get_settings_categories
+FAILED tests/integration/test_api_settings.py::TestSettingsEndpoints::test_update_nonexistent_setting
+FAILED tests/integration/test_api_settings.py::TestSettingsEndpoints::test_bulk_update_settings
+FAILED tests/integration/test_api_settings.py::TestSettingsEndpoints::test_reset_setting
+FAILED tests/integration/test_api_settings.py::TestSettingsEndpoints::test_reset_all_settings
+FAILED tests/integration/test_channels_e2e.py::TestChannelProcessor::test_process_message_with_mocked_routes
+FAILED tests/integration/test_channels_e2e.py::TestChannelProcessor::test_process_message_fallback_on_llm_failure
+FAILED tests/integration/test_channels_e2e.py::TestWhatsappWebhook::test_whatsapp_router_prefix
+FAILED tests/integration/test_channels_e2e.py::TestWhatsappWebhook::test_whatsapp_sender_send
+FAILED tests/integration/test_get_info_routing.py::test_get_info_weather - Mo...
+FAILED tests/integration/test_get_info_routing.py::test_get_info_news - Modul...
+FAILED tests/integration/test_get_info_routing.py::test_get_info_stocks - Mod...
+FAILED tests/integration/test_get_info_routing.py::test_get_info_sports - Mod...
+FAILED tests/integration/test_get_info_routing.py::test_get_info_time - Modul...
+FAILED tests/integration/test_get_info_routing.py::test_get_info_unknown_intent
+FAILED tests/integration/test_get_info_routing.py::test_execute_action_routes_info_intents
+FAILED tests/integration/test_mcp_docker.py::TestMCPServer::test_call_tool - ...
+FAILED tests/integration/test_mcp_docker.py::TestMCPServer::test_start_stop
+FAILED tests/integration/test_mcp_docker.py::TestDockerSandbox::test_init_available
+FAILED tests/integration/test_mcp_docker.py::TestDockerSandbox::test_init_not_available
+FAILED tests/integration/test_mcp_docker.py::TestDockerSandbox::test_exec_python_not_available
+FAILED tests/integration/test_mcp_docker.py::TestDockerSandbox::test_exec_python_success
+FAILED tests/integration/test_mcp_docker.py::TestDockerSandbox::test_exec_command_with_files
+FAILED tests/integration/test_memory_conversation.py::test_memory_001_same_connection
+FAILED tests/integration/test_memory_conversation.py::test_memory_002_multi_fact
+FAILED tests/integration/test_memory_conversation.py::test_memory_003_reconnect
+FAILED tests/integration/test_memory_conversation.py::test_conversation_file_persisted
+FAILED tests/integration/test_memory_privacy.py::TestPrivacyClassifier::test_classify_default_local
+FAILED tests/integration/test_memory_privacy.py::TestPrivacyClassifier::test_sanitize_cloud_no_change
+FAILED tests/integration/test_memory_privacy.py::TestPrivacyClassifier::test_sanitize_hybrid_strips_email
+FAILED tests/integration/test_memory_privacy.py::TestPrivacyClassifier::test_sanitize_hybrid_strips_phone
+FAILED tests/integration/test_memory_privacy.py::TestPrivacyClassifier::test_sanitize_hybrid_strips_cc
+FAILED tests/integration/test_memory_privacy.py::TestPrivacyClassifier::test_sanitize_local_no_nlp
+FAILED tests/integration/test_pipeline_transport_consistency.py::test_channel_adapter_consistency
+FAILED tests/integration/test_pipeline_transport_consistency.py::test_rest_adapter_consistency
+FAILED tests/integration/test_pipeline_transport_consistency.py::test_ws_adapter_consistency
+FAILED tests/integration/test_pipeline_transport_consistency.py::test_voice_adapter_consistency
+FAILED tests/integration/test_pipeline_transport_consistency.py::test_all_adapters_consistent_transport
+FAILED tests/integration/test_result_functions.py::TestSearXNGResult::test_search_returns_err_on_failure
+FAILED tests/integration/test_result_functions.py::TestSearXNGResult::test_search_on_http_error
+FAILED tests/integration/test_spcl9_stub_hops.py::test_legacy_forge_hop_returns_real
+FAILED tests/integration/test_voice_pipeline_integration.py::test_process_audio_full_flow
+FAILED tests/integration/test_voice_pipeline_integration.py::test_process_audio_empty_transcription_triggers_fallback
+FAILED tests/integration/test_voice_pipeline_integration.py::test_process_audio_empty_llm_response_triggers_fallback
+FAILED tests/integration/test_voice_pipeline_integration.py::test_think_falls_back_to_local
+FAILED tests/integration/test_voice_pipeline_integration.py::test_both_llms_fail_returns_empty
+FAILED tests/integration/test_voice_pipeline_integration.py::test_stt_async_compatible
+FAILED tests/integration/test_voice_pipeline_integration.py::test_process_audio_passes_emotion_context
+FAILED tests/contract/test_api_contract.py::test_unknown_route_returns_404 - ...
+FAILED tests/contract/test_result_fuzz.py::TestOkFuzz::test_ok_hash - Asserti...
+FAILED tests/contract/test_tool_dispatch_fuzz.py::TestToolPathRootsFuzz::test_contains_data_and_temp
+FAILED tests/contract/test_url_injection_fuzz.py::TestSchemeInjectionFuzz::test_public_domain_with_credentials
+FAILED tests/contract/test_url_injection_fuzz.py::TestURLPathFuzz::test_double_slash_bypass
+FAILED tests/cli/test_activity.py::TestActivityList::test_list_empty - TypeEr...
+FAILED tests/cli/test_activity.py::TestActivityCleanup::test_cleanup_no_args
+FAILED tests/cli/test_activity.py::TestActivityUnknown::test_unknown_subcommand
+FAILED tests/cli/test_activity.py::TestActivityTree::test_tree_no_id - TypeEr...
+FAILED tests/cli/test_activity.py::TestActivityGet::test_get_no_id - TypeErro...
+FAILED tests/cli/test_models.py::TestModelsList::test_list - AttributeError: ...
+FAILED tests/cli/test_models.py::TestModelsTest::test_test_no_model - Attribu...
+FAILED tests/cli/test_models.py::TestModelsTest::test_test_help - AttributeEr...
+FAILED tests/cli/test_models.py::TestModelsSwitch::test_switch_no_arg - Attri...
+FAILED tests/cli/test_models.py::TestModelsApikeys::test_apikeys_list - Attri...
+FAILED tests/cli/test_server.py::TestServerDryRun::test_dry_run - AssertionEr...
+FAILED tests/cli/test_server.py::TestServerDefault::test_server_dry_only - As...
+FAILED tests/cli/test_settings.py::TestSettingsGet::test_get_unknown_key - At...
+FAILED tests/cli/test_settings.py::TestSettingsSet::test_set_no_key - assert ...
+FAILED tests/cli/test_settings.py::TestSettingsReset::test_reset - AttributeE...
+FAILED tests/cli/test_settings.py::TestSettingsExport::test_export - Attribut...
+FAILED tests/cli/test_settings.py::TestSettingsUnknown::test_unknown_action
+76 failed, 266 passed, 3 warnings, 21 errors in 79.97s (0:01:19)

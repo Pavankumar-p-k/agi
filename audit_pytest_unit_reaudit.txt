@@ -1,0 +1,370 @@
+Running teardown with pytest sessionfinish...
+
+=================================== ERRORS ====================================
+________________ ERROR collecting tests/unit/test_atomic_io.py ________________
+ImportError while importing test module 'C:\Users\peter\desktop\jarvis\tests\unit\test_atomic_io.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\unit\test_atomic_io.py:20: in <module>
+    from core.atomic_io import atomic_write_json, atomic_write_text
+E   ModuleNotFoundError: No module named 'core.atomic_io'
+________________ ERROR collecting tests/unit/test_benchmark.py ________________
+ImportError while importing test module 'C:\Users\peter\desktop\jarvis\tests\unit\test_benchmark.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\unit\test_benchmark.py:19: in <module>
+    from core.benchmark import (
+E   ModuleNotFoundError: No module named 'core.benchmark'
+_________________ ERROR collecting tests/unit/test_bg_jobs.py _________________
+ImportError while importing test module 'C:\Users\peter\desktop\jarvis\tests\unit\test_bg_jobs.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\unit\test_bg_jobs.py:16: in <module>
+    from core.tools.bg_jobs import launch, get_result, cleanup_old_jobs, _jobs, BackgroundJob
+E   ModuleNotFoundError: No module named 'core.tools.bg_jobs'
+______________ ERROR collecting tests/unit/test_build_adapter.py ______________
+ImportError while importing test module 'C:\Users\peter\desktop\jarvis\tests\unit\test_build_adapter.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\unit\test_build_adapter.py:16: in <module>
+    from core.tools.build_tools import (
+E   ModuleNotFoundError: No module named 'core.tools.build_tools'
+______________ ERROR collecting tests/unit/test_chroma_client.py ______________
+ImportError while importing test module 'C:\Users\peter\desktop\jarvis\tests\unit\test_chroma_client.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\unit\test_chroma_client.py:23: in <module>
+    import core.chroma_client as cc
+E   ModuleNotFoundError: No module named 'core.chroma_client'
+______________ ERROR collecting tests/unit/test_cleanup_audit.py ______________
+ImportError while importing test module 'C:\Users\peter\desktop\jarvis\tests\unit\test_cleanup_audit.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\unit\test_cleanup_audit.py:14: in <module>
+    from core.cleanup_audit import build_cleanup_audit
+E   ModuleNotFoundError: No module named 'core.cleanup_audit'
+______________ ERROR collecting tests/unit/test_collaboration.py ______________
+ImportError while importing test module 'C:\Users\peter\desktop\jarvis\tests\unit\test_collaboration.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\unit\test_collaboration.py:10: in <module>
+    from core.collaboration.models import (
+E   ModuleNotFoundError: No module named 'core.collaboration'
+________________ ERROR collecting tests/unit/test_decision.py _________________
+ImportError while importing test module 'C:\Users\peter\desktop\jarvis\tests\unit\test_decision.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\unit\test_decision.py:9: in <module>
+    from core.decision.evidence import DecisionEvidence
+E   ModuleNotFoundError: No module named 'core.decision'
+_____________ ERROR collecting tests/unit/test_desktop_bridge.py ______________
+ImportError while importing test module 'C:\Users\peter\desktop\jarvis\tests\unit\test_desktop_bridge.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\unit\test_desktop_bridge.py:3: in <module>
+    import desktop_bridge
+E   ModuleNotFoundError: No module named 'desktop_bridge'
+_______________ ERROR collecting tests/unit/test_edit_tools.py ________________
+ImportError while importing test module 'C:\Users\peter\desktop\jarvis\tests\unit\test_edit_tools.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\unit\test_edit_tools.py:20: in <module>
+    from core.tools.document_tools import (
+E   ModuleNotFoundError: No module named 'core.tools.document_tools'
+_______________ ERROR collecting tests/unit/test_improvement.py _______________
+ImportError while importing test module 'C:\Users\peter\desktop\jarvis\tests\unit\test_improvement.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\unit\test_improvement.py:12: in <module>
+    from core.improvement.detector import ImprovementDetector
+E   ModuleNotFoundError: No module named 'core.improvement'
+___________ ERROR collecting tests/unit/test_integration_manager.py ___________
+ImportError while importing test module 'C:\Users\peter\desktop\jarvis\tests\unit\test_integration_manager.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\unit\test_integration_manager.py:4: in <module>
+    from core.integration_manager import (
+E   ModuleNotFoundError: No module named 'core.integration_manager'
+____________ ERROR collecting tests/unit/test_long_term_memory.py _____________
+ImportError while importing test module 'C:\Users\peter\desktop\jarvis\tests\unit\test_long_term_memory.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\unit\test_long_term_memory.py:18: in <module>
+    from core.long_term_memory.adapter import BehaviorAdapter
+E   ModuleNotFoundError: No module named 'core.long_term_memory.adapter'
+_______________ ERROR collecting tests/unit/test_nlp_intent.py ________________
+ImportError while importing test module 'C:\Users\peter\desktop\jarvis\tests\unit\test_nlp_intent.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\unit\test_nlp_intent.py:1: in <module>
+    from core.routing.request_classifier import RequestMode, classify_request
+E   ModuleNotFoundError: No module named 'core.routing'
+______________ ERROR collecting tests/unit/test_observability.py ______________
+ImportError while importing test module 'C:\Users\peter\desktop\jarvis\tests\unit\test_observability.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\unit\test_observability.py:11: in <module>
+    from core.routes.observability import health, metrics
+E   ModuleNotFoundError: No module named 'core.routes.observability'
+_______________ ERROR collecting tests/unit/test_opportunity.py _______________
+ImportError while importing test module 'C:\Users\peter\desktop\jarvis\tests\unit\test_opportunity.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\unit\test_opportunity.py:24: in <module>
+    from core.opportunity.calibration import OpportunityCalibrator
+E   ModuleNotFoundError: No module named 'core.opportunity'
+_________ ERROR collecting tests/unit/test_opportunity_bottlenecks.py _________
+ImportError while importing test module 'C:\Users\peter\desktop\jarvis\tests\unit\test_opportunity_bottlenecks.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\unit\test_opportunity_bottlenecks.py:17: in <module>
+    from core.opportunity.bottlenecks import (
+E   ModuleNotFoundError: No module named 'core.opportunity'
+_________ ERROR collecting tests/unit/test_opportunity_forecasting.py _________
+ImportError while importing test module 'C:\Users\peter\desktop\jarvis\tests\unit\test_opportunity_forecasting.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\unit\test_opportunity_forecasting.py:23: in <module>
+    from core.opportunity.bottlenecks import Bottleneck
+E   ModuleNotFoundError: No module named 'core.opportunity'
+____________ ERROR collecting tests/unit/test_opportunity_graph.py ____________
+ImportError while importing test module 'C:\Users\peter\desktop\jarvis\tests\unit\test_opportunity_graph.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\unit\test_opportunity_graph.py:13: in <module>
+    from core.opportunity.graph import (
+E   ModuleNotFoundError: No module named 'core.opportunity'
+___________ ERROR collecting tests/unit/test_opportunity_mining.py ____________
+ImportError while importing test module 'C:\Users\peter\desktop\jarvis\tests\unit\test_opportunity_mining.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\unit\test_opportunity_mining.py:19: in <module>
+    from core.opportunity.mining import (
+E   ModuleNotFoundError: No module named 'core.opportunity'
+___________ ERROR collecting tests/unit/test_opportunity_roadmap.py ___________
+ImportError while importing test module 'C:\Users\peter\desktop\jarvis\tests\unit\test_opportunity_roadmap.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\unit\test_opportunity_roadmap.py:15: in <module>
+    from core.opportunity.bottlenecks import Bottleneck
+E   ModuleNotFoundError: No module named 'core.opportunity'
+_________________ ERROR collecting tests/unit/test_plugins.py _________________
+ImportError while importing test module 'C:\Users\peter\desktop\jarvis\tests\unit\test_plugins.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\unit\test_plugins.py:20: in <module>
+    from core.plugins.base import Plugin, PluginManifest, PluginRegistry, plugin_registry
+E   ModuleNotFoundError: No module named 'core.plugins'
+______________ ERROR collecting tests/unit/test_plugins_fixes.py ______________
+ImportError while importing test module 'C:\Users\peter\desktop\jarvis\tests\unit\test_plugins_fixes.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\unit\test_plugins_fixes.py:17: in <module>
+    from core.plugins.base import Plugin, PluginManifest, PluginRegistry, _HookFailed, _VALID_HTTP_METHODS
+E   ModuleNotFoundError: No module named 'core.plugins'
+_____________ ERROR collecting tests/unit/test_plugins_track3.py ______________
+ImportError while importing test module 'C:\Users\peter\desktop\jarvis\tests\unit\test_plugins_track3.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\unit\test_plugins_track3.py:24: in <module>
+    from core.plugins.dependencies import DependencyResolver, _parse_package_name
+E   ModuleNotFoundError: No module named 'core.plugins'
+______________ ERROR collecting tests/unit/test_rate_limiter.py _______________
+ImportError while importing test module 'C:\Users\peter\desktop\jarvis\tests\unit\test_rate_limiter.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\unit\test_rate_limiter.py:16: in <module>
+    from core.rate_limiter import SlidingWindowRateLimiter, AuthRateLimiter
+E   ModuleNotFoundError: No module named 'core.rate_limiter'
+_________________ ERROR collecting tests/unit/test_sandbox.py _________________
+ImportError while importing test module 'C:\Users\peter\desktop\jarvis\tests\unit\test_sandbox.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\unit\test_sandbox.py:18: in <module>
+    from core.plugins.sandbox import validate_manifest_imports, check_plugin_imports, STDLIB_ALLOWED
+E   ModuleNotFoundError: No module named 'core.plugins'
+__________ ERROR collecting tests/unit/test_scheduler_autonomous.py ___________
+ImportError while importing test module 'C:\Users\peter\desktop\jarvis\tests\unit\test_scheduler_autonomous.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\unit\test_scheduler_autonomous.py:9: in <module>
+    from core.scheduler.autonomous import AutonomousScheduler, OpportunityActivity
+E   ModuleNotFoundError: No module named 'core.scheduler.autonomous'
+___________ ERROR collecting tests/unit/test_scheduler_decision.py ____________
+ImportError while importing test module 'C:\Users\peter\desktop\jarvis\tests\unit\test_scheduler_decision.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\unit\test_scheduler_decision.py:8: in <module>
+    from core.scheduler.decision import DecisionEngine, DecisionEstimate
+E   ModuleNotFoundError: No module named 'core.scheduler.decision'
+_________ ERROR collecting tests/unit/test_scheduler_intelligence.py __________
+ImportError while importing test module 'C:\Users\peter\desktop\jarvis\tests\unit\test_scheduler_intelligence.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\unit\test_scheduler_intelligence.py:8: in <module>
+    from core.scheduler.intelligence import (
+E   ModuleNotFoundError: No module named 'core.scheduler.intelligence'
+___________ ERROR collecting tests/unit/test_scheduler_resources.py ___________
+ImportError while importing test module 'C:\Users\peter\desktop\jarvis\tests\unit\test_scheduler_resources.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\unit\test_scheduler_resources.py:8: in <module>
+    from core.scheduler.intelligence import (
+E   ModuleNotFoundError: No module named 'core.scheduler.intelligence'
+_____________ ERROR collecting tests/unit/test_scheduler_store.py _____________
+ImportError while importing test module 'C:\Users\peter\desktop\jarvis\tests\unit\test_scheduler_store.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\unit\test_scheduler_store.py:13: in <module>
+    from core.scheduler.registry import SchedulerRegistry, get_registry
+E   ModuleNotFoundError: No module named 'core.scheduler.registry'
+____________ ERROR collecting tests/unit/test_self_modification.py ____________
+ImportError while importing test module 'C:\Users\peter\desktop\jarvis\tests\unit\test_self_modification.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\unit\test_self_modification.py:19: in <module>
+    from core.self_modification.executor import SelfModificationExecutor
+E   ModuleNotFoundError: No module named 'core.self_modification'
+________________ ERROR collecting tests/unit/test_settings.py _________________
+ImportError while importing test module 'C:\Users\peter\desktop\jarvis\tests\unit\test_settings.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\unit\test_settings.py:18: in <module>
+    from core.settings.store import SettingsStore
+E   ModuleNotFoundError: No module named 'core.settings.store'
+=========================== short test summary info ===========================
+ERROR tests/unit/test_atomic_io.py
+ERROR tests/unit/test_benchmark.py
+ERROR tests/unit/test_bg_jobs.py
+ERROR tests/unit/test_build_adapter.py
+ERROR tests/unit/test_chroma_client.py
+ERROR tests/unit/test_cleanup_audit.py
+ERROR tests/unit/test_collaboration.py
+ERROR tests/unit/test_decision.py
+ERROR tests/unit/test_desktop_bridge.py
+ERROR tests/unit/test_edit_tools.py
+ERROR tests/unit/test_improvement.py
+ERROR tests/unit/test_integration_manager.py
+ERROR tests/unit/test_long_term_memory.py
+ERROR tests/unit/test_nlp_intent.py
+ERROR tests/unit/test_observability.py
+ERROR tests/unit/test_opportunity.py
+ERROR tests/unit/test_opportunity_bottlenecks.py
+ERROR tests/unit/test_opportunity_forecasting.py
+ERROR tests/unit/test_opportunity_graph.py
+ERROR tests/unit/test_opportunity_mining.py
+ERROR tests/unit/test_opportunity_roadmap.py
+ERROR tests/unit/test_plugins.py
+ERROR tests/unit/test_plugins_fixes.py
+ERROR tests/unit/test_plugins_track3.py
+ERROR tests/unit/test_rate_limiter.py
+ERROR tests/unit/test_sandbox.py
+ERROR tests/unit/test_scheduler_autonomous.py
+ERROR tests/unit/test_scheduler_decision.py
+ERROR tests/unit/test_scheduler_intelligence.py
+ERROR tests/unit/test_scheduler_resources.py
+ERROR tests/unit/test_scheduler_store.py
+ERROR tests/unit/test_self_modification.py
+ERROR tests/unit/test_settings.py
+!!!!!!!!!!!!!!!!!! Interrupted: 33 errors during collection !!!!!!!!!!!!!!!!!!!
+33 errors in 30.28s
+UNIT EXIT: 2

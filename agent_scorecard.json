@@ -1,0 +1,357 @@
+[
+ {
+  "agent": "build",
+  "task": "build this project",
+  "tag": "WORKING",
+  "status": "success",
+  "duration_s": 0.9,
+  "evidence": "running build\n",
+  "error": ""
+ },
+ {
+  "agent": "email",
+  "task": "check my inbox",
+  "tag": "WORKING",
+  "status": "success",
+  "duration_s": 0.0,
+  "evidence": "Inbox: 0 unread, 0 drafts.\n(no recent messages \u2014 email not configured)",
+  "error": "",
+  "review_note": "honestly reports 'email not configured'; core.tools.email_utils was deleted and the exception is swallowed \u2014 read-only path only, send path untestable",
+  "caveat": "honestly reports 'email not configured'; core.tools.email_utils was deleted and the exception is swallowed \u2014 read-only path only, send path untestable"
+ },
+ {
+  "agent": "memory",
+  "task": "remember my favorite color is blue, then recall it",
+  "tag": "FAKE-SUCCESS",
+  "status": "success",
+  "duration_s": 2.7,
+  "evidence": "STORE: Stored memory: remember that my favorite color is blue\nRECALL: Memory bank: 0 entries.\n(no memories stored yet)\n[FLAG] recalled output does not contain the stored fact",
+  "error": "",
+  "review_note": "store reported 'Stored memory' but recall shows 0 entries; stderr: 'mem0 init failed: No module named core.configuration.service. Using no-op memory' \u2014 swallowed"
+ },
+ {
+  "agent": "research",
+  "task": "research: are LLM agent frameworks converging on tool-calling standards?",
+  "tag": "WORKING",
+  "status": "success",
+  "duration_s": 21.5,
+  "evidence": "- **LLM Agent Frameworks Are Converging on Tool-Calling Standards**: Several research papers and articles have highlighted the trend of LLM agent frameworks adopting similar tool-calling standards. This convergence is driven by the need for interoperability and consistency across different systems and applications.\n- **Three Arxiv Papers That Drifted Through the Chat \u2014 Multiagent Debate**: This ar",
+  "error": ""
+ },
+ {
+  "agent": "browser",
+  "task": "open https://example.com in the browser and screenshot it",
+  "tag": "FAKE-SUCCESS",
+  "status": "success",
+  "duration_s": 0.0,
+  "evidence": "Browser: 0 open tab(s).",
+  "error": "",
+  "review_note": "returned success in 0.0s with 'Browser: 0 open tab(s)' \u2014 no URL opened, no screenshot taken"
+ },
+ {
+  "agent": "adapter:forge",
+  "task": "write a python function called `median` that returns the median of a list",
+  "tag": "BROKEN",
+  "status": "TimeoutError",
+  "duration_s": 48.0,
+  "evidence": "",
+  "error": "",
+  "review_note": "smolagents CodeAgent DID generate correct median() code (verified in log) but looped to 'Reached max steps' re-executing identical code 21x and never returned an answer -> harness timeout. Termination bug, not a model failure."
+ },
+ {
+  "agent": "adapter:oracle",
+  "task": "plan how to add a dark mode to a flask app",
+  "tag": "WORKING",
+  "status": "success",
+  "duration_s": 10.1,
+  "evidence": "1. **Define the Requirements:**\n   - Determine the design and functionality of the dark mode.\n   - Decide on the user interface elements that will be affected by the dark mode.\n   - Set the color scheme and contrast levels for the dark mode.\n\n2. **Create a CSS File for Dark Mode:**\n   - Create a new CSS file named `dark-mode.css`.\n   - Define the styles for the dark mode, including colors, fonts, ",
+  "error": ""
+ },
+ {
+  "agent": "adapter:herald",
+  "task": "draft a short announcement email for a new CLI release",
+  "tag": "WORKING",
+  "status": "success",
+  "duration_s": 13.8,
+  "evidence": "Subject: Introducing HERALD CLI v1.0 - Your Ultimate Command-Line Interface for Seamless Communication\n\nDear HERALD Community,\n\nWe are thrilled to announce the release of HERALD CLI v1.0, the latest version of our powerful command-line interface designed to streamline your communication needs. This release is a significant milestone in our journey to empower users with more efficient and effective",
+  "error": ""
+ },
+ {
+  "agent": "adapter:atlas",
+  "task": "write a SQL query to get the top 10 customers by total revenue",
+  "tag": "WORKING",
+  "status": "success",
+  "duration_s": 4.0,
+  "evidence": "```sql\nSELECT customer_id, SUM(revenue) AS total_revenue\nFROM sales\nGROUP BY customer_id\nORDER BY total_revenue DESC\nLIMIT 10;\n```\n\nThis query calculates the total revenue for each customer by summing up the `revenue` column from the `sales` table, groups the results by `customer_id`, orders them in descending order based on the total revenue, and limits the output to the top 10 customers.",
+  "error": ""
+ },
+ {
+  "agent": "adapter:scribe",
+  "task": "document what this function does: def chunk(s,n): return [s[i:i+n] for i in range(0,len(s),n)]",
+  "tag": "WORKING",
+  "status": "success",
+  "duration_s": 9.7,
+  "evidence": "# Function Documentation: `chunk`\n\n## Overview\n\nThe `chunk` function is designed to divide a given string `s` into smaller substrings of a specified length `n`. This function is particularly useful for processing large strings or breaking them down into manageable parts for further analysis or manipulation.\n\n## Parameters\n\n- **`s`**: The input string to be chunked.\n- **`n`**: The length of each ch",
+  "error": ""
+ },
+ {
+  "agent": "adapter:phantom",
+  "task": "extract the main heading text from https://example.com",
+  "tag": "BROKEN",
+  "status": "ValueError",
+  "duration_s": 0.1,
+  "evidence": "",
+  "error": "Private IP disallowed: example.com",
+  "review_note": "SSRF guard rejected example.com as 'Private IP disallowed' (NAT64/DNS64 env resolves to 64:ff9b::/96 reserved prefix) \u2014 guard works, environment resolution breaks it; same root cause as read_url failures earlier in this audit"
+ },
+ {
+  "agent": "adapter:sentinel",
+  "task": "my python script uses 100%% CPU, list likely causes and fixes",
+  "tag": "WORKING",
+  "status": "success",
+  "duration_s": 9.8,
+  "evidence": "Certainly! Here are some common causes and fixes for a Python script using 100% CPU:\n\n### Likely Causes\n\n1. **Infinite Loop**: The script might be stuck in an infinite loop, causing it to use 100% CPU.\n2. **Resource Leak**: The script might be leaking resources, such as file handles or network connections.\n3. **Heavy I/O Operations**: The script might be performing heavy I/O operations, such as re",
+  "error": ""
+ },
+ {
+  "agent": "adapter:nexus",
+  "task": "compare kafka vs rabbitmq",
+  "tag": "WORKING",
+  "status": "success",
+  "duration_s": 5.2,
+  "evidence": "| Feature | Kafka | RabbitMQ |\n| --- | --- | --- |\n| Message Format | Avro, JSON, Protobuf, etc. | JSON, XML, Text, etc. |\n| Scalability | Highly scalable, can handle large volumes of data | Can handle large volumes of data, but not as scalable as Kafka |\n| Fault Tolerance | High, with replication and partitioning | High, with replication and durability |\n| Performance | High, with low latency | M",
+  "error": "",
+  "review_note": "retry after forge smolagents loop saturated Ollama"
+ },
+ {
+  "agent": "adapter:cipher",
+  "task": "what are the risks of hardcoding API keys?",
+  "tag": "WORKING",
+  "status": "success",
+  "duration_s": 9.9,
+  "evidence": "Hardcoding API keys in your codebase poses several significant risks, which can be categorized into critical, high, medium, and low severity. Here are the risks and their corresponding fixes:\n\n### Critical Risks\n\n1. **Data Exposure**\n   - **Risk:** If your API keys are exposed, unauthorized users can access your services, leading to data breaches and loss of sensitive information.\n   - **Fix:** Us",
+  "error": "",
+  "review_note": "retry after forge smolagents loop saturated Ollama"
+ },
+ {
+  "agent": "_legacy/oracle",
+  "task": "plan a migration from REST to GraphQL",
+  "tag": "WORKING",
+  "status": "success",
+  "duration_s": 11.6,
+  "evidence": "Migrating from REST to GraphQL is a significant step towards building a more efficient and scalable API. Here's a step-by-step plan to help you with the migration:\n\n### 1. Understand the Current REST API\n- **Identify Endpoints**: List all the endpoints in your REST API, including their HTTP methods (GET, POST, PUT, DELETE).\n- **Understand Data Structures**: Analyze the data structures returned by ",
+  "error": ""
+ },
+ {
+  "agent": "_legacy/nexus",
+  "task": "compare kafka vs rabbitmq",
+  "tag": "WORKING",
+  "status": "success",
+  "duration_s": 5.3,
+  "evidence": "Kafka and RabbitMQ are both popular message brokers used for building distributed systems, but they have some key differences in their architecture, features, and use cases.\n\nKafka is a distributed event streaming platform that is designed for high-throughput, low-latency data streaming. It is built on top of Apache ZooKeeper and is designed to handle large volumes of data and high throughput. Kaf",
+  "error": ""
+ },
+ {
+  "agent": "_legacy/atlas",
+  "task": "write a SQL query for distinct active users per day",
+  "tag": "WORKING",
+  "status": "success",
+  "duration_s": 5.8,
+  "evidence": "To write a SQL query that retrieves distinct active users per day, you need to have a table that records user activity, typically with columns such as `user_id`, `activity_date`, and possibly other relevant information. Let's assume you have a table named `user_activity` with the following structure:\n\n- `user_id`: The unique identifier for each user.\n- `activity_date`: The date when the user perfo",
+  "error": ""
+ },
+ {
+  "agent": "_legacy/cipher",
+  "task": "what are the risks of hardcoding API keys?",
+  "tag": "WORKING",
+  "status": "success",
+  "duration_s": 5.6,
+  "evidence": "Hardcoding API keys in your code can pose several risks, including:\n\n1. **Security Breach**: If your code is exposed or accessed by unauthorized individuals, they can easily obtain your API key and use it to access your services or data. This can lead to unauthorized access, data breaches, and financial losses.\n\n2. **Data Exposure**: Hardcoded API keys can be exposed in logs, version control syste",
+  "error": ""
+ },
+ {
+  "agent": "_legacy/herald",
+  "task": "write a one-paragraph standup update",
+  "tag": "WORKING",
+  "status": "success",
+  "duration_s": 2.9,
+  "evidence": "As an AI language model, I don't have a physical presence or a team to update. However, I can provide a standup update for you based on the information you provide. Please let me know what you would like me to include in the update.",
+  "error": ""
+ },
+ {
+  "agent": "_legacy/scribe",
+  "task": "write a docstring for a function that pings a host",
+  "tag": "WORKING",
+  "status": "success",
+  "duration_s": 7.8,
+  "evidence": "Certainly! Below is a docstring for a function that pings a host using Python's `subprocess` module. This function will attempt to send an ICMP echo request to the specified host and return a boolean indicating whether the host is reachable.\n\n```python\nimport subprocess\n\ndef ping_host(host, timeout=1):\n    \"\"\"\n    Pings a host and returns True if the host is reachable, False otherwise.\n\n    Parame",
+  "error": ""
+ },
+ {
+  "agent": "_legacy/sentinel",
+  "task": "diagnose: OSError too many open files",
+  "tag": "WORKING",
+  "status": "success",
+  "duration_s": 8.6,
+  "evidence": " The error \"OSError: too many open files\" typically occurs when a program tries to open more files than the system allows. This can happen for several reasons, such as:\n\n1. **Excessive File Handling**: The program might be opening and closing files frequently without properly managing them.\n2. **Resource Limitations**: The system might have a limit on the number of open files that can be opened si",
+  "error": ""
+ },
+ {
+  "agent": "core/file_agent:JarvisFileAgent",
+  "task": "list dir and read notes.txt",
+  "tag": "WORKING",
+  "status": "success",
+  "duration_s": 0.0,
+  "evidence": "[{'name': 'notes.txt', 'path': 'C:\\\\Users\\\\peter\\\\AppData\\\\Local\\\\Temp\\\\jarvis_file_cdoexi0w\\\\notes.txt', 'size': 13}] | alpha\nbeta\n",
+  "error": ""
+ },
+ {
+  "agent": "core/vision_agent:VisionAgent",
+  "task": "describe current screen",
+  "tag": "UNTESTABLE",
+  "status": "ModuleNotFoundError",
+  "duration_s": 1.9,
+  "evidence": "",
+  "error": "No module named 'core.model_router'"
+ },
+ {
+  "agent": "core/agents/registry",
+  "task": "contract check",
+  "tag": "WORKING",
+  "status": "success",
+  "duration_s": 0.0,
+  "evidence": "15 agents registered: ['ATLAS', 'CIPHER', 'FORGE', 'HERALD', 'NEXUS', 'ORACLE', 'PHANTOM', 'SCRIBE', 'SENTINEL', 'browser', 'build', 'email', 'memory', 'research', 'test']",
+  "error": ""
+ },
+ {
+  "agent": "core/agents/registry:unknown-id",
+  "task": "contract check",
+  "tag": "WORKING",
+  "status": "success",
+  "duration_s": 0.0,
+  "evidence": "unknown id rejected loudly",
+  "error": "Unknown agent: does_not_exist"
+ },
+ {
+  "agent": "core/agents/executor",
+  "task": "contract check",
+  "tag": "UNTESTABLE",
+  "status": "failed",
+  "duration_s": 0.0,
+  "evidence": "",
+  "error": "No module named 'core.constants'",
+  "review_note": "blocked by core.constants \u2014 a DynamicStub deleted in STEP 2; executor itself never executed"
+ },
+ {
+  "agent": "core/llm_router (ollama round-trip)",
+  "task": "contract check",
+  "tag": "WORKING",
+  "status": "success",
+  "duration_s": 0.0,
+  "evidence": "PONG",
+  "error": ""
+ },
+ {
+  "agent": "core/agents/graph",
+  "task": "contract check",
+  "tag": "WORKING",
+  "status": "success",
+  "duration_s": 0.0,
+  "evidence": "imports cleanly",
+  "error": ""
+ },
+ {
+  "agent": "core/agents/parallel_executor",
+  "task": "contract check",
+  "tag": "WORKING",
+  "status": "success",
+  "duration_s": 0.0,
+  "evidence": "imports cleanly",
+  "error": ""
+ },
+ {
+  "agent": "core/agents/events",
+  "task": "contract check",
+  "tag": "WORKING",
+  "status": "success",
+  "duration_s": 0.0,
+  "evidence": "imports cleanly",
+  "error": ""
+ },
+ {
+  "agent": "core/agents/base",
+  "task": "contract check",
+  "tag": "WORKING",
+  "status": "success",
+  "duration_s": 0.0,
+  "evidence": "imports cleanly",
+  "error": ""
+ },
+ {
+  "agent": "core/agents/_sub_agent_base",
+  "task": "contract check",
+  "tag": "WORKING",
+  "status": "success",
+  "duration_s": 0.0,
+  "evidence": "imports cleanly",
+  "error": ""
+ },
+ {
+  "agent": "core/agents/capabilities",
+  "task": "contract check",
+  "tag": "WORKING",
+  "status": "success",
+  "duration_s": 0.0,
+  "evidence": "imports cleanly",
+  "error": ""
+ },
+ {
+  "agent": "core/agents/router",
+  "task": "route 10 natural-language user goals (hit rate 4/10)",
+  "tag": "BROKEN",
+  "status": "hit rate 4/10",
+  "duration_s": 0.0,
+  "evidence": "misses: write a function to parse dates; help me code a sorting script; what did I tell you about my dog; look up info on quantum dots; which is better, mongo or mysql; design an authentication flow",
+  "error": "",
+  "caveat": "keyword/word-boundary router: contiguous keyword phrases like 'write function' miss natural phrasings like 'write a function'; tool agents also don't inherit adapter keywords via can_handle on adapter instances?"
+ },
+ {
+  "agent": "core/agents/registry:run_parallel",
+  "task": "run 2 tasks in parallel (1 valid, 1 unknown id)",
+  "tag": "WORKING",
+  "status": "success",
+  "duration_s": 0.0,
+  "evidence": "[('ORACLE', True), ('UNKNOWN', False)]",
+  "error": ""
+ },
+ {
+  "agent": "test",
+  "task": "run 3 real unit suites (activity_store, authz, cache) \u2014 63 tests",
+  "tag": "WORKING",
+  "status": "success",
+  "duration_s": 14.6,
+  "evidence": "...............................................................          [100%]Running teardown with pytest sessionfinish...\n\n",
+  "error": "",
+  "review_note": "attempt 1 (test_atomic_io) hit a STUB deleted in STEP 2; attempt 2 (test_belief) failed on missing core.long_term_memory.synthesizer; attempt 3 on real suites passed"
+ },
+ {
+  "agent": "adapter:forge (llm_router fallback path)",
+  "task": "write a python function called median of a list (smolagents disabled)",
+  "tag": "WORKING",
+  "status": "success",
+  "duration_s": 6.0,
+  "evidence": "Certainly! Below is a Python function that calculates the median of a list of numbers. The function handles both even and odd-length lists:\n\n```python\ndef median_of_list(numbers):\n    # Sort the list of numbers\n    sorted_numbers = sorted(numbers)\n    \n    n = len(sorted_numbers)\n    \n    # Check if the number of elements is odd\n    if n % 2 == 1:\n        # If odd, return the middle element\n      ",
+  "error": "",
+  "review_note": "isolates the smolagents termination bug from the model path \u2014 model path itself is fine"
+ },
+ {
+  "agent": "core/tools/browser_tools (direct)",
+  "task": "import + open https://example.com via browser_tools API",
+  "tag": "UNTESTABLE",
+  "status": "blocked",
+  "duration_s": 0.0,
+  "evidence": "",
+  "error": "import blocked: ModuleNotFoundError: No module named 'core.browser_manager'",
+  "review_note": "browser_tools (627 LOC, rated REAL in inventory) hard-imports core.browser_manager \u2014 deleted in STEP 2 as FAKE-SUCCESS. Browser stack is therefore loud-broken end-to-end: correct per STEP 2 policy, rebuild backlog priority."
+ }
+]

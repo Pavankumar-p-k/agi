@@ -1,0 +1,854 @@
+...F.................................................................... [ 49%]
+.........................FFFF.FFFFFFFFFFFEEEEEEEEEEEEEEEEEFFFFFFFFFFF [ 96%]
+FFFFF                                                                    [100%]Running teardown with pytest sessionfinish...
+
+=================================== ERRORS ====================================
+______________ ERROR collecting tests/e2e/test_hybrid_system.py _______________
+ImportError while importing test module 'C:\Users\peter\desktop\jarvis\tests\e2e\test_hybrid_system.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\e2e\test_hybrid_system.py:26: in <module>
+    from orchestrator.hybrid_orchestrator import HybridOrchestrator, hybrid_orchestrator
+E   ModuleNotFoundError: No module named 'orchestrator.hybrid_orchestrator'
+__________ ERROR at setup of TestBuildVisual.test_build_output_loads __________
+name 'pytestconfig' is not defined
+
+During handling of the above exception, another exception occurred:
+Error evaluating 'skipif' condition
+    not pytestconfig.getoption('--run-e2e', default=False)
+NameError: name 'pytestconfig' is not defined
+
+_________ ERROR at setup of TestBuildVisual.test_build_visual_quality _________
+name 'pytestconfig' is not defined
+
+During handling of the above exception, another exception occurred:
+Error evaluating 'skipif' condition
+    not pytestconfig.getoption('--run-e2e', default=False)
+NameError: name 'pytestconfig' is not defined
+
+_________ ERROR at setup of TestIntentClassification.test_intent_chat _________
+file C:\Users\peter\desktop\jarvis\tests\e2e\test_e2e_intents.py, line 24
+      @pytest.mark.intent
+      @pytest.mark.asyncio
+      async def test_intent_chat(self, client):
+          """'what is python' should be classified as chat."""
+          payload = {"message": "what is python", "user_id": "test"}
+          resp = await client.post("/api/chat", json=payload)
+          assert resp.status_code in (200, 201)
+E       fixture 'client' not found
+>       available fixtures: __pytest_repeat_step_number, _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_faker, _session_scoped_runner, activity_manager, anyio_backend, anyio_backend_name, anyio_backend_options, api_client, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, db_init, doctest_namespace, event_loop_policy, faker, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, isolated_fs, mock_channel, mock_config, mock_db, mock_external_calls, mock_llm, monkeypatch, no_cover, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, sample_user_context, subtests, testrun_uid, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory, worker_id
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+C:\Users\peter\desktop\jarvis\tests\e2e\test_e2e_intents.py:24
+______ ERROR at setup of TestIntentClassification.test_intent_play_media ______
+file C:\Users\peter\desktop\jarvis\tests\e2e\test_e2e_intents.py, line 32
+      @pytest.mark.intent
+      @pytest.mark.asyncio
+      async def test_intent_play_media(self, client):
+          """'play cry for me on youtube' should be play_media."""
+          payload = {"message": "play cry for me on youtube", "user_id": "test"}
+          resp = await client.post("/api/chat", json=payload)
+          assert resp.status_code in (200, 201)
+E       fixture 'client' not found
+>       available fixtures: __pytest_repeat_step_number, _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_faker, _session_scoped_runner, activity_manager, anyio_backend, anyio_backend_name, anyio_backend_options, api_client, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, db_init, doctest_namespace, event_loop_policy, faker, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, isolated_fs, mock_channel, mock_config, mock_db, mock_external_calls, mock_llm, monkeypatch, no_cover, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, sample_user_context, subtests, testrun_uid, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory, worker_id
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+C:\Users\peter\desktop\jarvis\tests\e2e\test_e2e_intents.py:32
+_______ ERROR at setup of TestIntentClassification.test_intent_open_url _______
+file C:\Users\peter\desktop\jarvis\tests\e2e\test_e2e_intents.py, line 40
+      @pytest.mark.intent
+      @pytest.mark.asyncio
+      async def test_intent_open_url(self, client):
+          """'open youtube' should be open_url."""
+          payload = {"message": "open youtube", "user_id": "test"}
+          resp = await client.post("/api/chat", json=payload)
+          assert resp.status_code in (200, 201)
+E       fixture 'client' not found
+>       available fixtures: __pytest_repeat_step_number, _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_faker, _session_scoped_runner, activity_manager, anyio_backend, anyio_backend_name, anyio_backend_options, api_client, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, db_init, doctest_namespace, event_loop_policy, faker, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, isolated_fs, mock_channel, mock_config, mock_db, mock_external_calls, mock_llm, monkeypatch, no_cover, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, sample_user_context, subtests, testrun_uid, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory, worker_id
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+C:\Users\peter\desktop\jarvis\tests\e2e\test_e2e_intents.py:40
+______ ERROR at setup of TestIntentClassification.test_intent_web_search ______
+file C:\Users\peter\desktop\jarvis\tests\e2e\test_e2e_intents.py, line 48
+      @pytest.mark.intent
+      @pytest.mark.asyncio
+      async def test_intent_web_search(self, client):
+          """'search latest AI news' should be web_search."""
+          payload = {"message": "search latest AI news", "user_id": "test"}
+          resp = await client.post("/api/chat", json=payload)
+          assert resp.status_code in (200, 201)
+E       fixture 'client' not found
+>       available fixtures: __pytest_repeat_step_number, _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_faker, _session_scoped_runner, activity_manager, anyio_backend, anyio_backend_name, anyio_backend_options, api_client, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, db_init, doctest_namespace, event_loop_policy, faker, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, isolated_fs, mock_channel, mock_config, mock_db, mock_external_calls, mock_llm, monkeypatch, no_cover, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, sample_user_context, subtests, testrun_uid, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory, worker_id
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+C:\Users\peter\desktop\jarvis\tests\e2e\test_e2e_intents.py:48
+______ ERROR at setup of TestIntentClassification.test_intent_pc_control ______
+file C:\Users\peter\desktop\jarvis\tests\e2e\test_e2e_intents.py, line 56
+      @pytest.mark.intent
+      @pytest.mark.asyncio
+      async def test_intent_pc_control(self, client):
+          """'open notepad' should be pc_control."""
+          payload = {"message": "open notepad", "user_id": "test"}
+          resp = await client.post("/api/chat", json=payload)
+          assert resp.status_code in (200, 201)
+E       fixture 'client' not found
+>       available fixtures: __pytest_repeat_step_number, _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_faker, _session_scoped_runner, activity_manager, anyio_backend, anyio_backend_name, anyio_backend_options, api_client, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, db_init, doctest_namespace, event_loop_policy, faker, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, isolated_fs, mock_channel, mock_config, mock_db, mock_external_calls, mock_llm, monkeypatch, no_cover, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, sample_user_context, subtests, testrun_uid, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory, worker_id
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+C:\Users\peter\desktop\jarvis\tests\e2e\test_e2e_intents.py:56
+_______ ERROR at setup of TestIntentClassification.test_intent_reminder _______
+file C:\Users\peter\desktop\jarvis\tests\e2e\test_e2e_intents.py, line 64
+      @pytest.mark.intent
+      @pytest.mark.asyncio
+      async def test_intent_reminder(self, client):
+          """'remind me to drink water in 1 minute' should be reminder."""
+          payload = {"message": "remind me to drink water in 1 minute", "user_id": "test"}
+          resp = await client.post("/api/chat", json=payload)
+          assert resp.status_code in (200, 201)
+E       fixture 'client' not found
+>       available fixtures: __pytest_repeat_step_number, _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_faker, _session_scoped_runner, activity_manager, anyio_backend, anyio_backend_name, anyio_backend_options, api_client, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, db_init, doctest_namespace, event_loop_policy, faker, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, isolated_fs, mock_channel, mock_config, mock_db, mock_external_calls, mock_llm, monkeypatch, no_cover, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, sample_user_context, subtests, testrun_uid, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory, worker_id
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+C:\Users\peter\desktop\jarvis\tests\e2e\test_e2e_intents.py:64
+_____ ERROR at setup of TestIntentClassification.test_intent_browser_task _____
+file C:\Users\peter\desktop\jarvis\tests\e2e\test_e2e_intents.py, line 72
+      @pytest.mark.intent
+      @pytest.mark.asyncio
+      async def test_intent_browser_task(self, client):
+          """'sign up for a new account on github' should be browser_task."""
+          payload = {"message": "sign up for a new account on github", "user_id": "test"}
+          resp = await client.post("/api/chat", json=payload)
+          assert resp.status_code in (200, 201)
+E       fixture 'client' not found
+>       available fixtures: __pytest_repeat_step_number, _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_faker, _session_scoped_runner, activity_manager, anyio_backend, anyio_backend_name, anyio_backend_options, api_client, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, db_init, doctest_namespace, event_loop_policy, faker, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, isolated_fs, mock_channel, mock_config, mock_db, mock_external_calls, mock_llm, monkeypatch, no_cover, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, sample_user_context, subtests, testrun_uid, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory, worker_id
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+C:\Users\peter\desktop\jarvis\tests\e2e\test_e2e_intents.py:72
+_______ ERROR at setup of TestIntentClassification.test_intent_message ________
+file C:\Users\peter\desktop\jarvis\tests\e2e\test_e2e_intents.py, line 80
+      @pytest.mark.intent
+      @pytest.mark.asyncio
+      async def test_intent_message(self, client):
+          """'send an email to john@example.com' should be message."""
+          payload = {"message": "send an email to john@example.com with subject hello saying hi", "user_id": "test"}
+          resp = await client.post("/api/chat", json=payload)
+          assert resp.status_code in (200, 201)
+E       fixture 'client' not found
+>       available fixtures: __pytest_repeat_step_number, _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_faker, _session_scoped_runner, activity_manager, anyio_backend, anyio_backend_name, anyio_backend_options, api_client, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, db_init, doctest_namespace, event_loop_policy, faker, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, isolated_fs, mock_channel, mock_config, mock_db, mock_external_calls, mock_llm, monkeypatch, no_cover, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, sample_user_context, subtests, testrun_uid, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory, worker_id
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+C:\Users\peter\desktop\jarvis\tests\e2e\test_e2e_intents.py:80
+_______ ERROR at setup of TestIntentClassification.test_intent_weather ________
+file C:\Users\peter\desktop\jarvis\tests\e2e\test_e2e_intents.py, line 88
+      @pytest.mark.intent
+      @pytest.mark.asyncio
+      async def test_intent_weather(self, client):
+          """'what's the weather in London' should be weather."""
+          payload = {"message": "what's the weather in London", "user_id": "test"}
+          resp = await client.post("/api/chat", json=payload)
+          assert resp.status_code in (200, 201)
+E       fixture 'client' not found
+>       available fixtures: __pytest_repeat_step_number, _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_faker, _session_scoped_runner, activity_manager, anyio_backend, anyio_backend_name, anyio_backend_options, api_client, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, db_init, doctest_namespace, event_loop_policy, faker, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, isolated_fs, mock_channel, mock_config, mock_db, mock_external_calls, mock_llm, monkeypatch, no_cover, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, sample_user_context, subtests, testrun_uid, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory, worker_id
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+C:\Users\peter\desktop\jarvis\tests\e2e\test_e2e_intents.py:88
+_________ ERROR at setup of TestIntentClassification.test_intent_news _________
+file C:\Users\peter\desktop\jarvis\tests\e2e\test_e2e_intents.py, line 96
+      @pytest.mark.intent
+      @pytest.mark.asyncio
+      async def test_intent_news(self, client):
+          """'latest technology news' should be news."""
+          payload = {"message": "latest technology news", "user_id": "test"}
+          resp = await client.post("/api/chat", json=payload)
+          assert resp.status_code in (200, 201)
+E       fixture 'client' not found
+>       available fixtures: __pytest_repeat_step_number, _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_faker, _session_scoped_runner, activity_manager, anyio_backend, anyio_backend_name, anyio_backend_options, api_client, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, db_init, doctest_namespace, event_loop_policy, faker, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, isolated_fs, mock_channel, mock_config, mock_db, mock_external_calls, mock_llm, monkeypatch, no_cover, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, sample_user_context, subtests, testrun_uid, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory, worker_id
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+C:\Users\peter\desktop\jarvis\tests\e2e\test_e2e_intents.py:96
+________ ERROR at setup of TestIntentClassification.test_intent_stocks ________
+file C:\Users\peter\desktop\jarvis\tests\e2e\test_e2e_intents.py, line 104
+      @pytest.mark.intent
+      @pytest.mark.asyncio
+      async def test_intent_stocks(self, client):
+          """'AAPL stock price' should be stocks."""
+          payload = {"message": "AAPL stock price", "user_id": "test"}
+          resp = await client.post("/api/chat", json=payload)
+          assert resp.status_code in (200, 201)
+E       fixture 'client' not found
+>       available fixtures: __pytest_repeat_step_number, _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_faker, _session_scoped_runner, activity_manager, anyio_backend, anyio_backend_name, anyio_backend_options, api_client, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, db_init, doctest_namespace, event_loop_policy, faker, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, isolated_fs, mock_channel, mock_config, mock_db, mock_external_calls, mock_llm, monkeypatch, no_cover, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, sample_user_context, subtests, testrun_uid, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory, worker_id
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+C:\Users\peter\desktop\jarvis\tests\e2e\test_e2e_intents.py:104
+________ ERROR at setup of TestIntentClassification.test_intent_sports ________
+file C:\Users\peter\desktop\jarvis\tests\e2e\test_e2e_intents.py, line 112
+      @pytest.mark.intent
+      @pytest.mark.asyncio
+      async def test_intent_sports(self, client):
+          """'NBA scores' should be sports."""
+          payload = {"message": "NBA scores", "user_id": "test"}
+          resp = await client.post("/api/chat", json=payload)
+          assert resp.status_code in (200, 201)
+E       fixture 'client' not found
+>       available fixtures: __pytest_repeat_step_number, _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_faker, _session_scoped_runner, activity_manager, anyio_backend, anyio_backend_name, anyio_backend_options, api_client, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, db_init, doctest_namespace, event_loop_policy, faker, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, isolated_fs, mock_channel, mock_config, mock_db, mock_external_calls, mock_llm, monkeypatch, no_cover, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, sample_user_context, subtests, testrun_uid, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory, worker_id
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+C:\Users\peter\desktop\jarvis\tests\e2e\test_e2e_intents.py:112
+_________ ERROR at setup of TestIntentClassification.test_intent_time _________
+file C:\Users\peter\desktop\jarvis\tests\e2e\test_e2e_intents.py, line 120
+      @pytest.mark.intent
+      @pytest.mark.asyncio
+      async def test_intent_time(self, client):
+          """'what time is it in Tokyo' should be time."""
+          payload = {"message": "what time is it in Tokyo", "user_id": "test"}
+          resp = await client.post("/api/chat", json=payload)
+          assert resp.status_code in (200, 201)
+E       fixture 'client' not found
+>       available fixtures: __pytest_repeat_step_number, _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_faker, _session_scoped_runner, activity_manager, anyio_backend, anyio_backend_name, anyio_backend_options, api_client, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, db_init, doctest_namespace, event_loop_policy, faker, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, isolated_fs, mock_channel, mock_config, mock_db, mock_external_calls, mock_llm, monkeypatch, no_cover, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, sample_user_context, subtests, testrun_uid, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory, worker_id
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+C:\Users\peter\desktop\jarvis\tests\e2e\test_e2e_intents.py:120
+________ ERROR at setup of TestIntentClassification.test_intent_build _________
+file C:\Users\peter\desktop\jarvis\tests\e2e\test_e2e_intents.py, line 128
+      @pytest.mark.intent
+      @pytest.mark.asyncio
+      async def test_intent_build(self, client):
+          """'build a portfolio page' should be build."""
+          payload = {"message": "build a portfolio page with animations", "user_id": "test"}
+          resp = await client.post("/api/chat", json=payload)
+          assert resp.status_code in (200, 201)
+E       fixture 'client' not found
+>       available fixtures: __pytest_repeat_step_number, _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_faker, _session_scoped_runner, activity_manager, anyio_backend, anyio_backend_name, anyio_backend_options, api_client, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, db_init, doctest_namespace, event_loop_policy, faker, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, isolated_fs, mock_channel, mock_config, mock_db, mock_external_calls, mock_llm, monkeypatch, no_cover, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, sample_user_context, subtests, testrun_uid, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory, worker_id
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+C:\Users\peter\desktop\jarvis\tests\e2e\test_e2e_intents.py:128
+______ ERROR at setup of TestIntentClassification.test_intent_code_task _______
+file C:\Users\peter\desktop\jarvis\tests\e2e\test_e2e_intents.py, line 136
+      @pytest.mark.intent
+      @pytest.mark.asyncio
+      async def test_intent_code_task(self, client):
+          """'refactor this python code' should be code_task."""
+          payload = {"message": "refactor this python function to be more efficient", "user_id": "test"}
+          resp = await client.post("/api/chat", json=payload)
+          assert resp.status_code in (200, 201)
+E       fixture 'client' not found
+>       available fixtures: __pytest_repeat_step_number, _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_faker, _session_scoped_runner, activity_manager, anyio_backend, anyio_backend_name, anyio_backend_options, api_client, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, db_init, doctest_namespace, event_loop_policy, faker, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, isolated_fs, mock_channel, mock_config, mock_db, mock_external_calls, mock_llm, monkeypatch, no_cover, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, sample_user_context, subtests, testrun_uid, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory, worker_id
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+C:\Users\peter\desktop\jarvis\tests\e2e\test_e2e_intents.py:136
+================================== FAILURES ===================================
+_ TestCodingAIRealRepoHarness.test_success_path_uses_real_repo_git_diff_tests_and_evidence _
+
+self = <test_coding_ai_real_repo.TestCodingAIRealRepoHarness testMethod=test_success_path_uses_real_repo_git_diff_tests_and_evidence>
+
+    def test_success_path_uses_real_repo_git_diff_tests_and_evidence(self):
+        self.assertNotEqual(self._run_check().returncode, 0)
+        ai = CodingAI(self._tmp)
+    
+        def implementer(plan):
+            self.assertTrue(plan.steps)
+            self.assertEqual(plan.steps[0].id, "understand_repository")
+            path = self._tmp / "src/calculator.py"
+            original = path.read_text(encoding="utf-8")
+            path.write_text(original.replace("return a - b", "return a + b"), encoding="utf-8")
+            return [{"file": "src/calculator.py", "change": "replace subtraction with addition"}]
+    
+        result = ai.execute(
+            "Fix addition bug",
+            constraints=CodingConstraints(commands=[self._test_command()]),
+            changes=[FileChange(ChangeType.MODIFY, "src/calculator.py", "Correct add implementation")],
+            implementer=implementer,
+        )
+        data = result.to_dict()
+    
+>       self.assertEqual(result.status, CodingStatus.SUCCESS)
+E       AssertionError: <CodingStatus.FAILED: 'failed'> != <CodingStatus.SUCCESS: 'success'>
+
+tests\acceptance\test_coding_ai_real_repo.py:67: AssertionError
+_________________________ TestCronScheduler.test_init _________________________
+
+self = <test_cron_backup.TestCronScheduler object at 0x000001BBA474A6D0>
+cron = CronScheduler()
+
+    def test_init(self, cron):
+>       assert cron._jobs == {}
+E       assert <function CronScheduler.__getattr__.<locals>.<lambda> at 0x000001BBA49DFBA0> == {}
+E        +  where <function CronScheduler.__getattr__.<locals>.<lambda> at 0x000001BBA49DFBA0> = CronScheduler()._jobs
+
+tests\e2e\test_cron_backup.py:30: AssertionError
+_______________________ TestCronScheduler.test_add_job ________________________
+
+self = <test_cron_backup.TestCronScheduler object at 0x000001BBA474B490>
+cron = CronScheduler()
+
+    def test_add_job(self, cron):
+        job = cron.add_job("test1", "30m", "health_check", {"enabled": True})
+>       assert job["id"] == "test1"
+               ^^^^^^^^^
+E       TypeError: 'NoneType' object is not subscriptable
+
+tests\e2e\test_cron_backup.py:34: TypeError
+______________________ TestCronScheduler.test_remove_job ______________________
+
+self = <test_cron_backup.TestCronScheduler object at 0x000001BBA474BD10>
+cron = CronScheduler()
+
+    def test_remove_job(self, cron):
+        cron.add_job("test1", "10m", "health_check")
+>       assert cron.remove_job("test1") is True
+E       AssertionError: assert None is True
+E        +  where None = <function CronScheduler.__getattr__.<locals>.<lambda> at 0x000001BBA5A97D80>('test1')
+E        +    where <function CronScheduler.__getattr__.<locals>.<lambda> at 0x000001BBA5A97D80> = CronScheduler().remove_job
+
+tests\e2e\test_cron_backup.py:41: AssertionError
+______________________ TestCronScheduler.test_list_jobs _______________________
+
+self = <test_cron_backup.TestCronScheduler object at 0x000001BBA4754510>
+cron = CronScheduler()
+
+    def test_list_jobs(self, cron):
+        cron.add_job("a", "10m", "health_check")
+        cron.add_job("b", "20m", "backup")
+>       assert len(cron.list_jobs()) == 2
+               ^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: object of type 'NoneType' has no len()
+
+tests\e2e\test_cron_backup.py:47: TypeError
+____________________ TestCronScheduler.test_parse_interval ____________________
+
+self = <test_cron_backup.TestCronScheduler object at 0x000001BBA4755410>
+cron = CronScheduler()
+
+    def test_parse_interval(self, cron):
+>       assert cron._parse_interval("30s") == 30
+E       AssertionError: assert None == 30
+E        +  where None = <function CronScheduler.__getattr__.<locals>.<lambda> at 0x000001BBA49DDEE0>('30s')
+E        +    where <function CronScheduler.__getattr__.<locals>.<lambda> at 0x000001BBA49DDEE0> = CronScheduler()._parse_interval
+
+tests\e2e\test_cron_backup.py:53: AssertionError
+_______________ TestCronScheduler.test_execute_job_health_check _______________
+
+self = <test_cron_backup.TestCronScheduler object at 0x000001BBA47555D0>
+cron = CronScheduler()
+
+    @pytest.mark.asyncio
+    async def test_execute_job_health_check(self, cron):
+        cron.add_job("hc", "1m", "health_check")
+        job = cron.get_job("hc")
+        with patch("core.health_monitor.HealthMonitor") as mock_hm:
+            mock_hm_instance = MagicMock()
+            mock_hm_instance.check_all = AsyncMock()
+            mock_hm.return_value = mock_hm_instance
+>           await cron._execute_job(job)
+E           TypeError: object NoneType can't be used in 'await' expression
+
+tests\e2e\test_cron_backup.py:67: TypeError
+__________________ TestCronScheduler.test_execute_job_custom __________________
+
+self = <test_cron_backup.TestCronScheduler object at 0x000001BBA4755A50>
+cron = CronScheduler()
+
+    @pytest.mark.asyncio
+    async def test_execute_job_custom(self, cron):
+        cron.add_job("cust", "1m", "custom", {"msg": "hello"})
+        job = cron.get_job("cust")
+>       await cron._execute_job(job)
+E       TypeError: object NoneType can't be used in 'await' expression
+
+tests\e2e\test_cron_backup.py:74: TypeError
+______________________ TestCronScheduler.test_start_stop ______________________
+
+self = <test_cron_backup.TestCronScheduler object at 0x000001BBA47560D0>
+cron = CronScheduler()
+
+    @pytest.mark.asyncio
+    async def test_start_stop(self, cron):
+        import asyncio
+        task = asyncio.get_running_loop().create_future()
+        task.cancel()
+        with patch("asyncio.create_task", return_value=task):
+>           await cron.start()
+E           TypeError: object NoneType can't be used in 'await' expression
+
+tests\e2e\test_cron_backup.py:83: TypeError
+________________ TestBackupManager.test_create_backup_success _________________
+
+self = <test_cron_backup.TestBackupManager object at 0x000001BBA4756BD0>
+backup = BackupManager()
+
+    @pytest.mark.asyncio
+    async def test_create_backup_success(self, backup):
+>       with patch("core.backup.tarfile.open") as mock_tar:
+
+tests\e2e\test_cron_backup.py:98: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\..\AppData\Local\Programs\Python\Python311\Lib\unittest\mock.py:1430: in __enter__
+    self.target = self.getter()
+                  ^^^^^^^^^^^^^
+..\..\AppData\Local\Programs\Python\Python311\Lib\pkgutil.py:705: in resolve_name
+    mod = importlib.import_module(s)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1204: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1176: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1138: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:1078: in _find_spec
+    ???
+<frozen importlib._bootstrap_external>:1507: in find_spec
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+cls = <class '_frozen_importlib_external.PathFinder'>
+fullname = 'core.backup.tarfile'
+path = <core.backup.__getattr__.<locals>.DynamicStub object at 0x000001BBA5A70E90>
+target = None
+
+>   ???
+E   TypeError: 'DynamicStub' object is not iterable
+
+<frozen importlib._bootstrap_external>:1473: TypeError
+________________ TestBackupManager.test_create_backup_failure _________________
+
+self = <test_cron_backup.TestBackupManager object at 0x000001BBA47574D0>
+backup = BackupManager()
+
+    @pytest.mark.asyncio
+    async def test_create_backup_failure(self, backup):
+>       with patch("core.backup.tarfile.open", side_effect=Exception("Disk full")):
+
+tests\e2e\test_cron_backup.py:107: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\..\AppData\Local\Programs\Python\Python311\Lib\unittest\mock.py:1430: in __enter__
+    self.target = self.getter()
+                  ^^^^^^^^^^^^^
+..\..\AppData\Local\Programs\Python\Python311\Lib\pkgutil.py:705: in resolve_name
+    mod = importlib.import_module(s)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1204: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1176: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1138: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:1078: in _find_spec
+    ???
+<frozen importlib._bootstrap_external>:1507: in find_spec
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+cls = <class '_frozen_importlib_external.PathFinder'>
+fullname = 'core.backup.tarfile'
+path = <core.backup.__getattr__.<locals>.DynamicStub object at 0x000001BBA49F9A90>
+target = None
+
+>   ???
+E   TypeError: 'DynamicStub' object is not iterable
+
+<frozen importlib._bootstrap_external>:1473: TypeError
+_______________ TestBackupManager.test_restore_backup_not_found _______________
+
+self = <test_cron_backup.TestBackupManager object at 0x000001BBA4757E50>
+backup = BackupManager()
+
+    @pytest.mark.asyncio
+    async def test_restore_backup_not_found(self, backup):
+        with patch("pathlib.Path.exists", return_value=False):
+>           result = await backup.restore_backup("/nonexistent.tar.gz")
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: object NoneType can't be used in 'await' expression
+
+tests\e2e\test_cron_backup.py:114: TypeError
+________________ TestBackupManager.test_restore_backup_success ________________
+
+self = <test_cron_backup.TestBackupManager object at 0x000001BBA4768850>
+backup = BackupManager()
+
+    @pytest.mark.asyncio
+    async def test_restore_backup_success(self, backup):
+        import tempfile as tf
+        restore_dir = tf.mkdtemp()
+        os.makedirs(os.path.join(restore_dir, "sessions"), exist_ok=True)
+        try:
+            with patch("pathlib.Path.exists", return_value=True):
+                with patch("tempfile.TemporaryDirectory") as mock_tmp:
+                    mock_tmp.return_value.__enter__.return_value = restore_dir
+                    with patch("tarfile.open") as mock_tar:
+                        mock_tar.return_value.__enter__.return_value = MagicMock()
+                        with patch("pathlib.Path.iterdir", return_value=[]):
+>                           result = await backup.restore_backup("/tmp/test.tar.gz")
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E                           TypeError: object NoneType can't be used in 'await' expression
+
+tests\e2e\test_cron_backup.py:130: TypeError
+__________________ TestBackupManager.test_list_backups_empty __________________
+
+self = <test_cron_backup.TestBackupManager object at 0x000001BBA4769210>
+backup = BackupManager()
+
+    def test_list_backups_empty(self, backup):
+        backup.BACKUP_DIR = MagicMock()
+        backup.BACKUP_DIR.glob.return_value = []
+>       assert backup.list_backups() == []
+E       assert None == []
+E        +  where None = <function BackupManager.__getattr__.<locals>.<lambda> at 0x000001BBA5A96340>()
+E        +    where <function BackupManager.__getattr__.<locals>.<lambda> at 0x000001BBA5A96340> = BackupManager().list_backups
+
+tests\e2e\test_cron_backup.py:139: AssertionError
+_______________ TestBackupManager.test_verify_backup_not_found ________________
+
+self = <test_cron_backup.TestBackupManager object at 0x000001BBA4769950>
+backup = BackupManager()
+
+    @pytest.mark.asyncio
+    async def test_verify_backup_not_found(self, backup):
+        with patch("pathlib.Path.exists", return_value=False):
+>           result = await backup.verify_backup("/nonexistent.tar.gz")
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: object NoneType can't be used in 'await' expression
+
+tests\e2e\test_cron_backup.py:144: TypeError
+_________________ TestBackupManager.test_verify_backup_valid __________________
+
+self = <test_cron_backup.TestBackupManager object at 0x000001BBA476A2D0>
+backup = BackupManager()
+
+    @pytest.mark.asyncio
+    async def test_verify_backup_valid(self, backup):
+        import tempfile as tf
+        tf_path = tf.mktemp(suffix=".tar.gz")
+        try:
+            open(tf_path, "w").close()
+            with patch("pathlib.Path.exists", return_value=True):
+                with patch("tarfile.open") as mock_tar:
+                    mock_tar.return_value.__enter__.return_value.getmembers.return_value = ["f1", "f2"]
+>                   result = await backup.verify_backup(tf_path)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E                   TypeError: object NoneType can't be used in 'await' expression
+
+tests\e2e\test_cron_backup.py:156: TypeError
+________________ TestIntentRouterUnit.test_extract_intent_chat ________________
+
+self = <test_e2e_intents.TestIntentRouterUnit object at 0x000001BBA477DB50>
+
+    @pytest.mark.asyncio
+    async def test_extract_intent_chat(self):
+        from core.intent_router import extract_intent
+>       result = await extract_intent("what is python")
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: object NoneType can't be used in 'await' expression
+
+tests\e2e\test_e2e_intents.py:151: TypeError
+_______________ TestIntentRouterUnit.test_extract_intent_build ________________
+
+self = <test_e2e_intents.TestIntentRouterUnit object at 0x000001BBA477E3D0>
+
+    @pytest.mark.asyncio
+    async def test_extract_intent_build(self):
+        from core.intent_router import extract_intent
+>       result = await extract_intent("build a coffee shop website")
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: object NoneType can't be used in 'await' expression
+
+tests\e2e\test_e2e_intents.py:157: TypeError
+_____________ TestIntentRouterUnit.test_extract_intent_play_media _____________
+
+self = <test_e2e_intents.TestIntentRouterUnit object at 0x000001BBA477EC50>
+
+    @pytest.mark.asyncio
+    async def test_extract_intent_play_media(self):
+        from core.intent_router import extract_intent
+>       result = await extract_intent("play despacito")
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: object NoneType can't be used in 'await' expression
+
+tests\e2e\test_e2e_intents.py:163: TypeError
+_____________ TestIntentRouterUnit.test_extract_intent_pc_control _____________
+
+self = <test_e2e_intents.TestIntentRouterUnit object at 0x000001BBA477F510>
+
+    @pytest.mark.asyncio
+    async def test_extract_intent_pc_control(self):
+        from core.intent_router import extract_intent
+>       result = await extract_intent("open notepad")
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: object NoneType can't be used in 'await' expression
+
+tests\e2e\test_e2e_intents.py:169: TypeError
+______________ TestIntentRouterUnit.test_extract_intent_weather _______________
+
+self = <test_e2e_intents.TestIntentRouterUnit object at 0x000001BBA4777D50>
+
+    @pytest.mark.asyncio
+    async def test_extract_intent_weather(self):
+        from core.intent_router import extract_intent
+>       result = await extract_intent("what's the weather in London")
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: object NoneType can't be used in 'await' expression
+
+tests\e2e\test_e2e_intents.py:175: TypeError
+________________ TestIntentRouterUnit.test_extract_intent_news ________________
+
+self = <test_e2e_intents.TestIntentRouterUnit object at 0x000001BBA4776850>
+
+    @pytest.mark.asyncio
+    async def test_extract_intent_news(self):
+        from core.intent_router import extract_intent
+>       result = await extract_intent("latest technology news")
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: object NoneType can't be used in 'await' expression
+
+tests\e2e\test_e2e_intents.py:181: TypeError
+_______________ TestIntentRouterUnit.test_extract_intent_stocks _______________
+
+self = <test_e2e_intents.TestIntentRouterUnit object at 0x000001BBA47571D0>
+
+    @pytest.mark.asyncio
+    async def test_extract_intent_stocks(self):
+        from core.intent_router import extract_intent
+>       result = await extract_intent("AAPL stock price")
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: object NoneType can't be used in 'await' expression
+
+tests\e2e\test_e2e_intents.py:187: TypeError
+______________ TestIntentRouterUnit.test_extract_intent_message _______________
+
+self = <test_e2e_intents.TestIntentRouterUnit object at 0x000001BBA477CED0>
+
+    @pytest.mark.asyncio
+    async def test_extract_intent_message(self):
+        from core.intent_router import extract_intent
+>       result = await extract_intent("send an email to john@example.com with subject hello saying hi")
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: object NoneType can't be used in 'await' expression
+
+tests\e2e\test_e2e_intents.py:193: TypeError
+____________ TestIntentRouterUnit.test_extract_intent_browser_task ____________
+
+self = <test_e2e_intents.TestIntentRouterUnit object at 0x000001BBA477EB90>
+
+    @pytest.mark.asyncio
+    async def test_extract_intent_browser_task(self):
+        from core.intent_router import extract_intent
+>       result = await extract_intent("sign up for a new account on github")
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: object NoneType can't be used in 'await' expression
+
+tests\e2e\test_e2e_intents.py:199: TypeError
+______________ TestIntentRouterUnit.test_extract_intent_reminder ______________
+
+self = <test_e2e_intents.TestIntentRouterUnit object at 0x000001BBA477C950>
+
+    @pytest.mark.asyncio
+    async def test_extract_intent_reminder(self):
+        from core.intent_router import extract_intent
+>       result = await extract_intent("remind me to drink water in 1 minute")
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: object NoneType can't be used in 'await' expression
+
+tests\e2e\test_e2e_intents.py:205: TypeError
+______________ TestIntentRouterUnit.test_extract_intent_open_url ______________
+
+self = <test_e2e_intents.TestIntentRouterUnit object at 0x000001BBA477C5D0>
+
+    @pytest.mark.asyncio
+    async def test_extract_intent_open_url(self):
+        from core.intent_router import extract_intent
+>       result = await extract_intent("open youtube")
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: object NoneType can't be used in 'await' expression
+
+tests\e2e\test_e2e_intents.py:211: TypeError
+_______________ TestIntentRouterUnit.test_extract_intent_sports _______________
+
+self = <test_e2e_intents.TestIntentRouterUnit object at 0x000001BBA477FE50>
+
+    @pytest.mark.asyncio
+    async def test_extract_intent_sports(self):
+        from core.intent_router import extract_intent
+>       result = await extract_intent("NBA scores")
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: object NoneType can't be used in 'await' expression
+
+tests\e2e\test_e2e_intents.py:217: TypeError
+________________ TestIntentRouterUnit.test_extract_intent_time ________________
+
+self = <test_e2e_intents.TestIntentRouterUnit object at 0x000001BBA4794710>
+
+    @pytest.mark.asyncio
+    async def test_extract_intent_time(self):
+        from core.intent_router import extract_intent
+>       result = await extract_intent("what time is it in Tokyo")
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: object NoneType can't be used in 'await' expression
+
+tests\e2e\test_e2e_intents.py:223: TypeError
+_____________ TestIntentRouterUnit.test_extract_intent_code_task ______________
+
+self = <test_e2e_intents.TestIntentRouterUnit object at 0x000001BBA4794F90>
+
+    @pytest.mark.asyncio
+    async def test_extract_intent_code_task(self):
+        from core.intent_router import extract_intent
+>       result = await extract_intent("refactor this python function to be more efficient")
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: object NoneType can't be used in 'await' expression
+
+tests\e2e\test_e2e_intents.py:229: TypeError
+_____________ TestIntentRouterUnit.test_extract_intent_web_search _____________
+
+self = <test_e2e_intents.TestIntentRouterUnit object at 0x000001BBA4795810>
+
+    @pytest.mark.asyncio
+    async def test_extract_intent_web_search(self):
+        from core.intent_router import extract_intent
+>       result = await extract_intent("search latest AI news")
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: object NoneType can't be used in 'await' expression
+
+tests\e2e\test_e2e_intents.py:235: TypeError
+______________ TestIntentRouterUnit.test_intent_router_fallback _______________
+
+self = <test_e2e_intents.TestIntentRouterUnit object at 0x000001BBA4796090>
+
+    @pytest.mark.asyncio
+    async def test_intent_router_fallback(self):
+        """When instructor is unavailable, should fallback to chat."""
+        from core.intent_router import extract_intent
+>       result = await extract_intent("any message here")
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: object NoneType can't be used in 'await' expression
+
+tests\e2e\test_e2e_intents.py:242: TypeError
+============================== warnings summary ===============================
+tests\e2e\test_e2e_build_visual.py:28
+  C:\Users\peter\desktop\jarvis\tests\e2e\test_e2e_build_visual.py:28: PytestUnknownMarkWarning: Unknown pytest.mark.e2e - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.e2e
+
+tests\e2e\test_e2e_build_visual.py:58
+  C:\Users\peter\desktop\jarvis\tests\e2e\test_e2e_build_visual.py:58: PytestUnknownMarkWarning: Unknown pytest.mark.e2e - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.e2e
+
+tests\e2e\test_e2e_intents.py:24
+  C:\Users\peter\desktop\jarvis\tests\e2e\test_e2e_intents.py:24: PytestUnknownMarkWarning: Unknown pytest.mark.intent - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.intent
+
+tests\e2e\test_e2e_intents.py:32
+  C:\Users\peter\desktop\jarvis\tests\e2e\test_e2e_intents.py:32: PytestUnknownMarkWarning: Unknown pytest.mark.intent - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.intent
+
+tests\e2e\test_e2e_intents.py:40
+  C:\Users\peter\desktop\jarvis\tests\e2e\test_e2e_intents.py:40: PytestUnknownMarkWarning: Unknown pytest.mark.intent - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.intent
+
+tests\e2e\test_e2e_intents.py:48
+  C:\Users\peter\desktop\jarvis\tests\e2e\test_e2e_intents.py:48: PytestUnknownMarkWarning: Unknown pytest.mark.intent - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.intent
+
+tests\e2e\test_e2e_intents.py:56
+  C:\Users\peter\desktop\jarvis\tests\e2e\test_e2e_intents.py:56: PytestUnknownMarkWarning: Unknown pytest.mark.intent - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.intent
+
+tests\e2e\test_e2e_intents.py:64
+  C:\Users\peter\desktop\jarvis\tests\e2e\test_e2e_intents.py:64: PytestUnknownMarkWarning: Unknown pytest.mark.intent - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.intent
+
+tests\e2e\test_e2e_intents.py:72
+  C:\Users\peter\desktop\jarvis\tests\e2e\test_e2e_intents.py:72: PytestUnknownMarkWarning: Unknown pytest.mark.intent - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.intent
+
+tests\e2e\test_e2e_intents.py:80
+  C:\Users\peter\desktop\jarvis\tests\e2e\test_e2e_intents.py:80: PytestUnknownMarkWarning: Unknown pytest.mark.intent - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.intent
+
+tests\e2e\test_e2e_intents.py:88
+  C:\Users\peter\desktop\jarvis\tests\e2e\test_e2e_intents.py:88: PytestUnknownMarkWarning: Unknown pytest.mark.intent - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.intent
+
+tests\e2e\test_e2e_intents.py:96
+  C:\Users\peter\desktop\jarvis\tests\e2e\test_e2e_intents.py:96: PytestUnknownMarkWarning: Unknown pytest.mark.intent - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.intent
+
+tests\e2e\test_e2e_intents.py:104
+  C:\Users\peter\desktop\jarvis\tests\e2e\test_e2e_intents.py:104: PytestUnknownMarkWarning: Unknown pytest.mark.intent - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.intent
+
+tests\e2e\test_e2e_intents.py:112
+  C:\Users\peter\desktop\jarvis\tests\e2e\test_e2e_intents.py:112: PytestUnknownMarkWarning: Unknown pytest.mark.intent - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.intent
+
+tests\e2e\test_e2e_intents.py:120
+  C:\Users\peter\desktop\jarvis\tests\e2e\test_e2e_intents.py:120: PytestUnknownMarkWarning: Unknown pytest.mark.intent - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.intent
+
+tests\e2e\test_e2e_intents.py:128
+  C:\Users\peter\desktop\jarvis\tests\e2e\test_e2e_intents.py:128: PytestUnknownMarkWarning: Unknown pytest.mark.intent - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.intent
+
+tests\e2e\test_e2e_intents.py:136
+  C:\Users\peter\desktop\jarvis\tests\e2e\test_e2e_intents.py:136: PytestUnknownMarkWarning: Unknown pytest.mark.intent - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.intent
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+ERROR tests/e2e/test_hybrid_system.py
+ERROR tests/e2e/test_e2e_build_visual.py::TestBuildVisual::test_build_output_loads
+ERROR tests/e2e/test_e2e_build_visual.py::TestBuildVisual::test_build_visual_quality
+ERROR tests/e2e/test_e2e_intents.py::TestIntentClassification::test_intent_chat
+ERROR tests/e2e/test_e2e_intents.py::TestIntentClassification::test_intent_play_media
+ERROR tests/e2e/test_e2e_intents.py::TestIntentClassification::test_intent_open_url
+ERROR tests/e2e/test_e2e_intents.py::TestIntentClassification::test_intent_web_search
+ERROR tests/e2e/test_e2e_intents.py::TestIntentClassification::test_intent_pc_control
+ERROR tests/e2e/test_e2e_intents.py::TestIntentClassification::test_intent_reminder
+ERROR tests/e2e/test_e2e_intents.py::TestIntentClassification::test_intent_browser_task
+ERROR tests/e2e/test_e2e_intents.py::TestIntentClassification::test_intent_message
+ERROR tests/e2e/test_e2e_intents.py::TestIntentClassification::test_intent_weather
+ERROR tests/e2e/test_e2e_intents.py::TestIntentClassification::test_intent_news
+ERROR tests/e2e/test_e2e_intents.py::TestIntentClassification::test_intent_stocks
+ERROR tests/e2e/test_e2e_intents.py::TestIntentClassification::test_intent_sports
+ERROR tests/e2e/test_e2e_intents.py::TestIntentClassification::test_intent_time
+ERROR tests/e2e/test_e2e_intents.py::TestIntentClassification::test_intent_build
+ERROR tests/e2e/test_e2e_intents.py::TestIntentClassification::test_intent_code_task
+FAILED tests/acceptance/test_coding_ai_real_repo.py::TestCodingAIRealRepoHarness::test_success_path_uses_real_repo_git_diff_tests_and_evidence
+FAILED tests/e2e/test_cron_backup.py::TestCronScheduler::test_init - assert <...
+FAILED tests/e2e/test_cron_backup.py::TestCronScheduler::test_add_job - TypeE...
+FAILED tests/e2e/test_cron_backup.py::TestCronScheduler::test_remove_job - As...
+FAILED tests/e2e/test_cron_backup.py::TestCronScheduler::test_list_jobs - Typ...
+FAILED tests/e2e/test_cron_backup.py::TestCronScheduler::test_parse_interval
+FAILED tests/e2e/test_cron_backup.py::TestCronScheduler::test_execute_job_health_check
+FAILED tests/e2e/test_cron_backup.py::TestCronScheduler::test_execute_job_custom
+FAILED tests/e2e/test_cron_backup.py::TestCronScheduler::test_start_stop - Ty...
+FAILED tests/e2e/test_cron_backup.py::TestBackupManager::test_create_backup_success
+FAILED tests/e2e/test_cron_backup.py::TestBackupManager::test_create_backup_failure
+FAILED tests/e2e/test_cron_backup.py::TestBackupManager::test_restore_backup_not_found
+FAILED tests/e2e/test_cron_backup.py::TestBackupManager::test_restore_backup_success
+FAILED tests/e2e/test_cron_backup.py::TestBackupManager::test_list_backups_empty
+FAILED tests/e2e/test_cron_backup.py::TestBackupManager::test_verify_backup_not_found
+FAILED tests/e2e/test_cron_backup.py::TestBackupManager::test_verify_backup_valid
+FAILED tests/e2e/test_e2e_intents.py::TestIntentRouterUnit::test_extract_intent_chat
+FAILED tests/e2e/test_e2e_intents.py::TestIntentRouterUnit::test_extract_intent_build
+FAILED tests/e2e/test_e2e_intents.py::TestIntentRouterUnit::test_extract_intent_play_media
+FAILED tests/e2e/test_e2e_intents.py::TestIntentRouterUnit::test_extract_intent_pc_control
+FAILED tests/e2e/test_e2e_intents.py::TestIntentRouterUnit::test_extract_intent_weather
+FAILED tests/e2e/test_e2e_intents.py::TestIntentRouterUnit::test_extract_intent_news
+FAILED tests/e2e/test_e2e_intents.py::TestIntentRouterUnit::test_extract_intent_stocks
+FAILED tests/e2e/test_e2e_intents.py::TestIntentRouterUnit::test_extract_intent_message
+FAILED tests/e2e/test_e2e_intents.py::TestIntentRouterUnit::test_extract_intent_browser_task
+FAILED tests/e2e/test_e2e_intents.py::TestIntentRouterUnit::test_extract_intent_reminder
+FAILED tests/e2e/test_e2e_intents.py::TestIntentRouterUnit::test_extract_intent_open_url
+FAILED tests/e2e/test_e2e_intents.py::TestIntentRouterUnit::test_extract_intent_sports
+FAILED tests/e2e/test_e2e_intents.py::TestIntentRouterUnit::test_extract_intent_time
+FAILED tests/e2e/test_e2e_intents.py::TestIntentRouterUnit::test_extract_intent_code_task
+FAILED tests/e2e/test_e2e_intents.py::TestIntentRouterUnit::test_extract_intent_web_search
+FAILED tests/e2e/test_e2e_intents.py::TestIntentRouterUnit::test_intent_router_fallback
+32 failed, 97 passed, 17 warnings, 18 errors, 3 subtests passed in 38.57s
