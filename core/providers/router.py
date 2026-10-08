@@ -192,6 +192,24 @@ class ProviderRouter:
         memory = self._get_memory()
         budget = self._get_budget()
 
+        # Explicit model refs (e.g. {"model": "ollama/custom:latest"}) pin the
+        # provider whose id is the ref prefix — the caller named the backend,
+        # so generic enable/installed scoring must not silently reroute it.
+        # A DOWN (cached) provider is still never selected.
+        model_ref = str((task or {}).get("model", "") or "")
+        if "/" in model_ref and ":" in model_ref:
+            required_pid = model_ref.split("/", 1)[0].strip().lower()
+            try:
+                named = list(self._get_registry().get_providers_for_capability(capability))
+            except Exception:
+                named = []
+            for provider in named:
+                if str(provider.provider_id).lower() != required_pid:
+                    continue
+                if provider._health_cache.status == ProviderHealthStatus.DOWN:
+                    break
+                return provider
+
         ranked: list[tuple[float, ExecutionProvider]] = []
         for provider in self._candidates(capability):
             pid = provider.provider_id

@@ -49,6 +49,7 @@ class ProviderHealth:
     status: ProviderHealthStatus = ProviderHealthStatus.UNKNOWN
     latency_ms: float = 0.0
     error: str = ""
+    models_available: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return {
