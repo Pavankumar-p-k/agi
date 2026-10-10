@@ -166,7 +166,24 @@ class UserActions:
             return {"success": False, "error": f"No window matches '{title}'"}
         try:
             user32.ShowWindow(hwnd, 9)  # SW_RESTORE
-            user32.SetForegroundWindow(hwnd)
+            # Windows denies SetForegroundWindow from background processes —
+            # the Alt-key trick (toggling MENU) grants foreground rights.
+            user32.keybd_event(0x12, 0, 0, 0)           # Alt down
+            ok = user32.SetForegroundWindow(hwnd)
+            user32.keybd_event(0x12, 0, 0x0002, 0)      # Alt up
+            user32.BringWindowToTop(hwnd)
+            if not ok and user32.GetForegroundWindow() != hwnd:
+                # Last resort: AttachThreadInput to the current foreground
+                # thread, which unlocks SetForegroundWindow.
+                try:
+                    fg_thread = user32.GetWindowThreadProcessId(
+                        user32.GetForegroundWindow(), None)
+                    cur_thread = user32.GetCurrentThreadId()
+                    user32.AttachThreadInput(cur_thread, fg_thread, True)
+                    user32.SetForegroundWindow(hwnd)
+                    user32.AttachThreadInput(cur_thread, fg_thread, False)
+                except Exception:  # noqa: BLE001
+                    pass
             return {"success": True, "window": title}
         except Exception as exc:  # noqa: BLE001
             return {"success": False, "error": str(exc)}
@@ -243,6 +260,44 @@ class UserActions:
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text(content, encoding="utf-8")
             return {"success": True, "path": str(target)}
+        except Exception as exc:  # noqa: BLE001
+            return {"success": False, "error": str(exc)}
+
+    @staticmethod
+    def open_with(path: str, app: str = "explorer") -> dict:
+        """Open *path* in the given application ('explorer', 'notepad', an exe path...).
+
+        Uses os.startfile for default-app opens and `start` for a named app so
+         this works without any UIA helper scripts.
+        """
+        import os as _os
+        import subprocess as _sp
+        try:
+            target = Path(path)
+            if not target.exists():
+                return {"success": False, "path": path, "error": f"path not found: {path}"}
+            app_key = str(app or "explorer").strip().strip('"')
+            if app_key.lower() in ("", "explorer", "file explorer"):
+                _os.startfile(str(target))
+                return {"success": True, "path": str(target), "app": "explorer"}
+            if target.suffix.lower() == ".exe":  # the path itself is the program
+                proc = _sp.Popen([str(target)])
+                return {"success": True, "path": str(target), "pid": proc.pid}
+            _sp.Popen(["cmd", "/c", "start", "", app_key, str(target)],
+                      shell=False)
+            return {"success": True, "path": str(target), "app": app_key}
+        except Exception as exc:  # noqa: BLE001
+            return {"success": False, "path": path, "error": str(exc)}
+
+    @staticmethod
+    def reveal_in_explorer(path: str) -> dict:
+        import subprocess as _sp
+        try:
+            target = Path(path)
+            if target.exists():
+                _sp.Popen(["explorer", "/select,", str(target)])
+                return {"success": True, "path": str(target)}
+            return {"success": False, "error": f"path not found: {path}"}
         except Exception as exc:  # noqa: BLE001
             return {"success": False, "error": str(exc)}
 
@@ -735,13 +790,79 @@ class UserActions:
 
     # ── tabs & app use ───────────────────────────────────────────────
     @staticmethod
+    def _tab_windows(app_name: str) -> list[dict]:
+        """Enumerate top-level windows of *app_name* via win32 (no UIA needed)."""
+        try:
+            import ctypes
+
+            user32 = ctypes.windll.user32
+            matches: list[dict] = []
+            pids = UserActions._app_pids(app_name)
+            pid_set = set(pids)
+
+            @ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_void_p, ctypes.c_void_p)
+            def _cb(hwnd, _lp):
+                pid = ctypes.c_ulong()
+                user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+                if pid.value in pid_set and user32.IsWindowVisible(hwnd):
+                    length = user32.GetWindowTextLengthW(hwnd)
+                    buf = ctypes.create_unicode_buffer(length + 1)
+                    user32.GetWindowTextW(hwnd, buf, length + 1)
+                    if buf.value:
+                        matches.append({"title": buf.value, "hwnd": int(hwnd)})
+                return True
+
+            user32.EnumWindows(_cb, 0)
+            return matches
+        except Exception:  # noqa: BLE001
+            return []
+
+    @staticmethod
     def list_tabs(app_name: str) -> dict:
-        return _run_uia_script("list_tabs", AppName=app_name)
+        result = _run_uia_script("list_tabs", AppName=app_name)
+        if result.get("success"):
+            return result
+        # UIA helper unavailable — fall back to win32 window titles.
+        windows = UserActions._tab_windows(app_name)
+        if windows:
+            return {"success": True, "app": app_name,
+                    "tabs": [w["title"] for w in windows],
+                    "windows": windows, "source": "win32_fallback"}
+        return result
 
     @staticmethod
     def focus_tab(app_name: str, tab_title: str) -> dict:
-        return _run_uia_script("focus_tab", AppName=app_name,
-                               TabTitle=tab_title)
+        result = _run_uia_script("focus_tab", AppName=app_name,
+                                 TabTitle=tab_title)
+        if result.get("success"):
+            return result
+        # UIA helper unavailable — match by (partial, case-insensitive) title.
+        import re as _re
+        needle = str(tab_title or "").lower().strip()
+        windows = UserActions._tab_windows(app_name)
+        # Browser titles never contain the URL host — accept the host's main
+        # label too ("wikipedia.org" -> "wikipedia") and match ignoring all
+        # punctuation/spaces ("theverge.com" -> "theverge" vs title "The Verge").
+        needles = [needle]
+        if "." in needle:
+            base_label = needle.split(".", 1)[0]
+            if base_label and base_label not in ("www", "http", "https"):
+                needles.append(base_label)
+        needles_alnum = [_re.sub(r"[^a-z0-9]", "", n) for n in needles if n]
+        for window in windows:
+            title_l = window["title"].lower()
+            title_alnum = _re.sub(r"[^a-z0-9]", "", title_l)
+            matched = any(n in title_l for n in needles) or any(
+                n and n in title_alnum for n in needles_alnum)
+            if matched:
+                focused = UserActions.focus_window_win32(window["title"])
+                if focused.get("success"):
+                    return {"success": True, "app": app_name,
+                            "tab_title": window["title"],
+                            "window": focused.get("window"),
+                            "source": "win32_fallback"}
+                return {"success": False, "error": focused.get("error", "focus failed")}
+        return result
 
     @staticmethod
     def use_app_ui(action: str, app: str = "", **kwargs: Any) -> dict:

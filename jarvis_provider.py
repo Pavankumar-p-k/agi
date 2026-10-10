@@ -108,11 +108,37 @@ class OllamaLLM(LLMProvider):
         return self._generate(self.model, prompt, temperature)
 
     def vision(self, image_path, prompt="Describe what you see in detail."):
-        """Ollama /api/generate expects images as base64 strings."""
+        """Ollama /api/generate expects images as base64 strings.
+
+        Falls back to a known vision-capable model (e.g. llava) when the
+        configured vision model rejects images (HTTP 400 — a text-only model).
+        """
         import base64
         with open(image_path, "rb") as f:
             b64 = base64.b64encode(f.read()).decode()
-        return self._generate(self._vision_model, prompt, 0.1, images=[b64])
+        try:
+            return self._generate(self._vision_model, prompt, 0.1, images=[b64])
+        except requests.HTTPError as exc:
+            status = getattr(getattr(exc, "response", None), "status_code", 0)
+            if status != 400:
+                raise
+            # Configured model likely can't take images — find a real vision model.
+            fallback = getattr(self, "_vision_fallback_cache", "unset")
+            if fallback == "unset":
+                fallback = None
+                try:
+                    tags = requests.get(f"{self.url}/api/tags", timeout=10).json()
+                    for entry in tags.get("models", []):
+                        name = str(entry.get("name", ""))
+                        if any(tag in name.lower() for tag in ("llava", "vision", "bakllava", "moondream")):
+                            fallback = name.split(":")[0]
+                            break
+                except Exception:
+                    fallback = None
+                self._vision_fallback_cache = fallback
+            if fallback and fallback != self._vision_model:
+                return self._generate(fallback, prompt, 0.1, images=[b64])
+            raise
 
 
 # ---------- OPENAI-COMPATIBLE ----------

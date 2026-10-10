@@ -294,7 +294,7 @@ TOOL_DOCS = {
     "paint_canvas_region": 'Detect the visible Paint canvas. Args: none.',
     "paint_select_color": 'Select a named Paint palette color. Args: {"color":"blue|green|red|yellow|brown|white|..."}.',
     "click": 'Clicks at coordinate. Args: {"x":int,"y":int}.',
-    "type_text": 'Types text. Args: {"text":"str"}.',
+    "type_text": 'Types text. Args: {"text":"str", "target_window":"optional window title to focus first (recommended, e.g. after launch_app/focus_window use its returned window title)"}.',
     "press_key": 'Presses key. Args: {"key":"enter|tab|escape|ctrl|..."}.',
     "hotkey": 'Presses combo. Args: {"key1":"ctrl","key2":"c"}.',
     "open_url": 'Opens URL in browser. Args: {"url":"str"}.',
@@ -384,7 +384,23 @@ TOOL_DOCS = {
     "focus_tab": 'Switch to a specific tab in a tabbed app by title. Args: {"app_name":"chrome|msedge|Code|...","tab_title":"partial tab name or URL"}.' ,
     "reveal_in_explorer": 'Reveal/focus a file or folder in Windows Explorer (selects it). Args: {"path":"C:\\...\\file"}.',
     "open_file": 'Open a file in its DEFAULT app, or a specific app. Args: {"path":"C:\\...\\file.txt","app":"optional, e.g. notepad|code|chrome"}.',
-    "browse_to": 'Open a URL in Chrome and FOCUS that tab so keyboard/vision input lands in the page. Args: {"url":"https://...","new_tab":bool(default true)}. Use this for web pages you will interact with.',
+    "browse_to": 'Open a URL in the USER\'s real desktop Chrome and FOCUS that tab. Args: {"url":"https://...","new_tab":bool}. Use ONLY when the user wants their own Chrome used; for web workflows prefer browser_* tools (separate automated browser).',
+    # Playwright-backed browser automation (PRECISE page-level control — prefer for web pages)
+    "browser_health": 'Check the automated-browser backend is alive. Args: none.',
+    "browser_navigate": 'Navigate the automated browser to a URL. Args: {"url":"https://..."}.',
+    "browser_search": 'Search the web inside the automated browser and return real result links. Args: {"query":"weeknd songs", "engine":"optional youtube|duckduckgo|bing"}.',
+    "browser_list_tabs": 'List tabs in the AUTOMATED browser. Args: none. Returns index/url/title per tab.',
+    "browser_new_tab": 'Open a new tab in the AUTOMATED browser. Args: {"url":"optional https://..."}. Build your tab set with this.',
+    "browser_switch_tab": 'Switch the AUTOMATED browser to a tab by index (then snapshot to summarize it). Args: {"index":int}.',
+    "browser_snapshot": 'Read the AUTOMATED browser current page: url, title, body text, headings, input selectors, buttons. Use BEFORE clicking/filling and for per-tab summaries (switch_tab then snapshot).',
+    "browser_extract": 'Extract raw text of an element. Args: {"selector":"css (default body)"}.',
+    "browser_find": 'Find visible text on the AUTOMATED browser page and get a selector. Args: {"text":"what to find"}. Returns selector "text=..." for browser_click.',
+    "browser_click": 'Click a page element in the AUTOMATED browser. Args: {"selector":"css like #id or text=Some Words"}. NEVER guess selectors — browser_find or browser_snapshot first. If a consent wall appears, click text=Accept all.',
+    "browser_fill": 'Fill a form field in the AUTOMATED browser with verification. Args: {"selector":"#name or [name=email]","value":"text"}. Get selectors from browser_snapshot; if inputs are missing the page has no such form.',
+    "browser_press": 'Press a key on a page element. Args: {"selector":"#id","key":"Enter"}.',
+    "browser_screenshot": 'Screenshot the AUTOMATED browser viewport to a file. Args: none. Returns saved path (proof).',
+    "browser_get_url": 'Current page URL of the automated browser. Args: none.',
+    "browser_get_title": 'Current page title of the automated browser. Args: none.',
 }
 
 
@@ -588,7 +604,15 @@ def paint_select_color(color):
 
 
 def click(x, y): return dc.click(int(x), int(y)).success
-def type_text(text): return dc.type_text(str(text)).success
+def type_text(text, target_window=None):
+    # Focus guard: if a target window is known, make sure it is focused before
+    # typing, otherwise keys go into whatever app happens to hold focus.
+    if target_window:
+        focused = U.focus_window_win32(str(target_window))
+        if not focused.get("success"):
+            return {"success": False,
+                    "error": f"could not focus target window '{target_window}' — not typing"}
+    return dc.type_text(str(text)).success
 def press_key(key): return dc.press_key(str(key)).success
 def hotkey(key1, key2=None):
     if key2: return dc.hotkey(str(key1), str(key2)).success
@@ -866,10 +890,85 @@ def power_state(action): return U.power_state(action)
 def cpu_ram_usage(): return U.cpu_ram_usage()
 
 # Tabs & focus enhancement (works for ALL tabbed apps, not just browsers)
-def list_tabs(app_name): return U.list_tabs(app_name)
+def list_tabs(app_name="chrome"): return U.list_tabs(app_name)
 def focus_tab(app_name, tab_title): return U.focus_tab(app_name, tab_title)
 def reveal_in_explorer(path): return FILE_EXPLORER.reveal(path, U)
-def open_file(path, app=None): return FILE_EXPLORER.open(path, U, app)
+def open_file(path, app=None):
+    # exe paths are programs — launch them directly instead of handing to
+    # the file explorer adapter (which would try opening them as documents).
+    import os as _os
+    if app is None and str(path).lower().endswith(".exe") and _os.path.exists(str(path)):
+        return U.open_with(str(path), "")
+    if not _os.path.exists(str(path)):
+        # The model often guesses an exe path — fall back to launching the
+        # app by name (explicit app arg, or the path's own basename).
+        app_guess = app or Path(str(path)).stem
+        if app_guess:
+            try:
+                launched = launch_app(str(app_guess))
+                if isinstance(launched, dict) and launched.get("success", not launched.get("error")):
+                    return {**launched, "app": str(app_guess), "path": str(path),
+                            "fell_back_to": "launch_app"}
+            except Exception:
+                pass
+    return FILE_EXPLORER.open(path, U, app)
+
+def browse_to(url, new_tab=True):
+    """Reuse a matching tab or navigate an existing Chrome window before launching."""
+    global TASK_BROWSER_TABS_OPENED
+    import re as _re, subprocess as _sp
+    import shutil as _shutil
+
+# ---------- Playwright-backed browser tools (real page automation) ----------
+_BROWSER_LOOP = None
+_BROWSER_THREAD = None
+
+def _browser_loop():
+    """One persistent background event loop — the Playwright connection inside
+    BrowserManager is loop-bound, so a fresh asyncio.run() per call would
+    leave it attached to a closed loop."""
+    global _BROWSER_LOOP, _BROWSER_THREAD
+    import asyncio as _aio
+    if _BROWSER_LOOP is None:
+        import threading as _th
+        _BROWSER_LOOP = _aio.new_event_loop()
+        def _loop_runner():
+            _aio.set_event_loop(_BROWSER_LOOP)
+            _BROWSER_LOOP.run_forever()
+        _BROWSER_THREAD = _th.Thread(target=_loop_runner, daemon=True,
+                                     name="jarvis-browser-loop")
+        _BROWSER_THREAD.start()
+    return _BROWSER_LOOP
+
+def _browser_tool(fn, **kwargs):
+    """Run an async browser tool on the persistent browser loop."""
+    import asyncio as _aio
+    try:
+        future = _aio.run_coroutine_threadsafe(fn(**kwargs), _browser_loop())
+        return future.result(timeout=120)
+    except Exception as exc:  # noqa: BLE001
+        return {"status": "error", "error": str(exc), "error_type": type(exc).__name__}
+
+def _b_call(name, **kwargs):
+    from core.tools import browser_tools as _bt
+    fn = getattr(_bt, f"do_browser_{name}")
+    return _browser_tool(fn, **kwargs)
+
+def browser_health(): return _b_call("health")
+def browser_navigate(url): return _b_call("navigate", url=url)
+def browser_list_tabs(): return _b_call("list_tabs")
+def browser_new_tab(url=None): return _b_call("new_tab", url=url)
+def browser_switch_tab(index=0): return _b_call("switch_tab", index=index)
+def browser_snapshot(): return _b_call("snapshot")
+def browser_extract(selector="body"): return _b_call("extract", selector=selector)
+def browser_find(text): return _b_call("find", text=text)
+def browser_click(selector): return _b_call("click", selector=selector)
+def browser_fill(selector, value): return _b_call("fill", selector=selector, value=value)
+def browser_press(selector, key="Enter"): return _b_call("press", selector=selector, key=key)
+def browser_screenshot(): return _b_call("screenshot")
+def browser_get_url(): return _b_call("get_url")
+def browser_get_title(): return _b_call("get_title")
+def browser_search(query, engine=None): return _b_call("search", query=query, engine=engine)
 
 def browse_to(url, new_tab=True):
     """Reuse a matching tab or navigate an existing Chrome window before launching."""
@@ -881,6 +980,13 @@ def browse_to(url, new_tab=True):
     if existing.get("success"):
         return {"success": True, "url": url, "focused_tab": host, "reused": True,
                 "window": existing.get("window")}
+    # The site may already be open in a tab even when focusing it failed
+    # (Windows can deny foreground changes to background processes).
+    if not existing.get("success") and any(
+            host.split(".")[0] in w.get("title", "").lower()
+            for w in U._tab_windows("chrome")):
+        return {"success": True, "url": url, "focused_tab": host, "reused": True,
+                "warning": "tab already open; focus denied by OS — use focus_tab to retry"}
 
     chrome_running = bool(U._app_pids("chrome"))
     if chrome_running and new_tab:
@@ -899,8 +1005,14 @@ def browse_to(url, new_tab=True):
             dc.type_text(str(url), interval=0.01)
             dc.press_key("enter")
             TASK_BROWSER_TABS_OPENED += 1
-            time.sleep(3)
-            focused_tab = U.focus_tab("chrome", host)
+            # Pages take varying time to load and set their real title — poll
+            # up to ~8s before declaring verification failure.
+            focused_tab = {}
+            for _poll in range(8):
+                time.sleep(1)
+                focused_tab = U.focus_tab("chrome", host)
+                if focused_tab.get("success"):
+                    break
             return {
                 "success": bool(focused_tab.get("success")),
                 "url": url,
@@ -1209,6 +1321,21 @@ TOOLS = {
     "reveal_in_explorer": reveal_in_explorer,
     "open_file": open_file,
     "browse_to": browse_to,
+    "browser_health": browser_health,
+    "browser_navigate": browser_navigate,
+    "browser_list_tabs": browser_list_tabs,
+    "browser_new_tab": browser_new_tab,
+    "browser_switch_tab": browser_switch_tab,
+    "browser_snapshot": browser_snapshot,
+    "browser_extract": browser_extract,
+    "browser_find": browser_find,
+    "browser_click": browser_click,
+    "browser_fill": browser_fill,
+    "browser_press": browser_press,
+    "browser_screenshot": browser_screenshot,
+    "browser_get_url": browser_get_url,
+    "browser_get_title": browser_get_title,
+    "browser_search": browser_search,
     "crop_image": crop_image,
     "list_form_fields": list_form_fields,
     "list_ui_controls": list_ui_controls,
@@ -1262,6 +1389,13 @@ RISK_LEVELS = {
     "focus_or_launch": "write-safe", "new_window": "write-safe", "use_app": "write-safe",
     "create_file": "write-safe", "create_folder": "write-safe", "open_file": "write-safe",
     "browse_to": "write-safe", "focus_tab": "write-safe", "reveal_in_explorer": "write-safe",
+    "browser_health": "read", "browser_list_tabs": "read", "browser_snapshot": "read",
+    "browser_extract": "read", "browser_find": "read", "browser_get_url": "read",
+    "browser_get_title": "read", "browser_screenshot": "read",
+    "browser_search": "write-safe",
+    "browser_navigate": "write-safe", "browser_new_tab": "write-safe",
+    "browser_switch_tab": "write-safe", "browser_click": "write-safe",
+    "browser_fill": "write-safe", "browser_press": "write-safe",
     "copy_file": "write-safe", "click_image": "write-safe", "click_form_field": "write-safe",
     "set_form_field_value": "write-safe",
     "set_brightness": "write-safe", "set_volume": "write-safe", "mute": "write-safe",
@@ -1470,7 +1604,16 @@ SYSTEM_PROMPT = (
     "You are JARVIS, a desktop automation agent that does what a real user does on Windows.\n"
             f"Active model provider: {PROVIDER.provider_id}/{PROVIDER.model}\n\n"
     + _self_knowledge()
-    + "Given a task, choose tools to complete it. Respond ONLY valid JSON, no markdown.\n"
+    +    "Given a task, choose tools to complete it. Respond ONLY valid JSON, no markdown.\n"
+    "BROWSER TOOL ROUTING (critical): browse_to/focus_tab/list_tabs(desktop) control the USER'S real Chrome.\n"
+    "browser_* tools control a SEPARATE automated Chromium browser. Never mix the two in one flow.\n"
+    "For any multi-step WEB workflow (open several sites, read/summarize pages, search, fill forms), use ONLY the browser_* family:\n"
+    "  browser_new_tab/browser_navigate to open sites, browser_list_tabs + browser_switch_tab(i) + browser_snapshot to read each page,\n"
+    "  browser_search to search a site (works with engine=youtube), browser_find then browser_click('text=...') to press buttons,\n"
+    "  browser_snapshot to copy real input selectors, then browser_fill(selector, value) to fill forms.\n"
+    "NEVER guess CSS classes — always snapshot/find first and use the selector you got.\n"
+    "If a cookie/consent wall blocks clicks, browser_click('text=Accept all') first.\n"
+    "Use browse_to only when the user explicitly wants THEIR OWN visible Chrome used.\n"
     "You may call these tools:\n"
     + json.dumps(TOOL_DOCS, indent=2)
     + "\n\nRules:\n"
@@ -1716,6 +1859,10 @@ _OBSERVATION_TOOLS = {
     "discover_window", "desktop_capabilities", "find_desktop_control",
     "invoke_desktop_control",
     "describe_screen", "take_screenshot", "focus_tab", "run_graph",
+    "cpu_ram_usage", "network_speed", "ping", "get_mouse_position",
+    "get_screen_size", "installed_app_registry", "desktop_adapter_status",
+    "desktop_capability_profiles", "bluetooth_radio_state", "radio_state",
+    "power_state", "list_tabs", "get_brightness", "get_volume",
 }
 
 
@@ -1771,8 +1918,8 @@ def main():
         + f"\n\n{capability_hint}\n\nUSER TASK: {goal}\n"
     )
 
-    max_steps = 20
-    max_runtime_seconds = 600
+    max_steps = 40
+    max_runtime_seconds = 1200
     started_at = time.monotonic()
     recent_actions: list[str] = []
     invalid_tries = 0

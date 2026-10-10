@@ -20,6 +20,29 @@ import sqlite3
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 from typing import AsyncGenerator, Generator
 
+_original_new_event_loop = asyncio.new_event_loop
+
+@pytest.fixture(autouse=True)
+def _restore_event_loop():
+    """Ensure a usable event loop exists for sync tests that call asyncio.get_event_loop().
+
+    pytest-asyncio closes the loop it creates for async tests; on Python 3.10+
+    a subsequent `asyncio.get_event_loop()` in a sync test then raises
+    RuntimeError. This fixture re-installs a fresh loop after each test so
+    mixed sync/async suites are stable.
+    """
+    try:
+        asyncio.get_event_loop_policy().get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+    yield
+    try:
+        if asyncio.get_event_loop_policy().get_event_loop().is_closed():
+            asyncio.set_event_loop(asyncio.new_event_loop())
+    except RuntimeError:
+        asyncio.set_event_loop(asyncio.new_event_loop())
+
 
 @pytest.fixture(autouse=True)
 def mock_external_calls(monkeypatch):

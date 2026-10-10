@@ -461,6 +461,7 @@ _SEARCH_ENGINES: dict[str, str] = {
     "duckduckgo": "https://html.duckduckgo.com/html/?q={query}",
     "bing": "https://www.bing.com/search?q={query}",
     "google": "https://www.google.com/search?q={query}",
+    "youtube": "https://www.youtube.com/results?search_query={query}",
 }
 
 
@@ -550,6 +551,11 @@ async def do_browser_search(query: str, engine: str | None = None, session_id: s
                 errors.append(f"{engine_name}: snapshot failed: {snapshot.get('error')}")
                 continue
             results = _harvest(snapshot)
+            if engine_name == "youtube" and results:
+                # Prefer actual videos over site chrome (premium/about/...).
+                videos = [r for r in results if "/watch?v=" in r.get("href", "")]
+                if videos:
+                    results = videos
             if results:
                 return _ok({"engine": engine_name, "query": query, "results": results, "url": page.url})
             errors.append(f"{engine_name}: no result links extracted")
@@ -633,7 +639,13 @@ async def do_browser_screenshot(session_id: str = "default", **_kwargs: Any) -> 
         return error
     try:
         data = await page.screenshot()
-        return _ok({"screenshot": base64.b64encode(data).decode("ascii")})
+        # Save to a temp file — returning raw base64 floods the LLM context.
+        import os as _os
+        import tempfile as _tempfile
+        fd, path = _tempfile.mkstemp(prefix="jarvis_browser_", suffix=".png")
+        with _os.fdopen(fd, "wb") as handle:
+            handle.write(data)
+        return _ok({"path": path, "size_bytes": len(data)})
     except Exception as exc:
         return _fail(f"{type(exc).__name__}: {exc}")
 
