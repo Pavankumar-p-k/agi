@@ -1,0 +1,2 @@
+FAILED tests/architecture/test_architecture_audit.py::test_auth_manager_only_accessed_by_identity_service_and_auth_stage[path198]
+1 failed, 13303 passed, 641 skipped in 140.79s (0:02:20)

@@ -1,0 +1,2142 @@
+src	dst	reason
+brain/__init__.py	brain.execution_context	runtime dependency
+brain/compiler_repair_engine.py	brain.structural_transformer	runtime dependency
+channels/__init__.py	channels.base	runtime dependency
+channels/__init__.py	channels.controller	runtime dependency
+channels/controller.py	channels.base	runtime dependency
+channels/discord_channel.py	channels.base	runtime dependency
+channels/irc_channel.py	channels.base	runtime dependency
+channels/matrix_channel.py	channels.base	runtime dependency
+channels/slack_channel.py	channels.base	runtime dependency
+channels/telegram_channel.py	channels.base	runtime dependency
+cli_commands.py	cli_visuals_new	runtime dependency
+cli_commands.py	core.diagnostics	runtime dependency
+core/action_engine.py	core.desktop.controller	OS/desktop control capability
+core/activity/__init__.py	core.activity.manager	runtime dependency
+core/activity/__init__.py	core.activity.models	data contract: shared types
+core/activity/manager.py	core.activity.models	data contract: shared types
+core/activity/recorder.py	core.activity.manager	runtime dependency
+core/activity/recorder.py	core.activity.models	data contract: shared types
+core/activity/recorder.py	core.activity.storage	runtime dependency
+core/activity/resume.py	core.activity.models	data contract: shared types
+core/activity/storage.py	core.activity.models	data contract: shared types
+core/agents/__init__.py	core.agents.base	runtime dependency
+core/agents/__init__.py	core.agents.capabilities	runtime dependency
+core/agents/__init__.py	core.agents.registry	runtime dependency
+core/agents/__init__.py	core.agents.router	runtime dependency
+core/agents/_legacy/__init__.py	core.agents._legacy.atlas	runtime dependency
+core/agents/_legacy/__init__.py	core.agents._legacy.cipher	runtime dependency
+core/agents/_legacy/__init__.py	core.agents._legacy.forge	runtime dependency
+core/agents/_legacy/__init__.py	core.agents._legacy.herald	runtime dependency
+core/agents/_legacy/__init__.py	core.agents._legacy.nexus	runtime dependency
+core/agents/_legacy/__init__.py	core.agents._legacy.oracle	runtime dependency
+core/agents/_legacy/__init__.py	core.agents._legacy.phantom	runtime dependency
+core/agents/_legacy/__init__.py	core.agents._legacy.scribe	runtime dependency
+core/agents/_legacy/__init__.py	core.agents._legacy.sentinel	runtime dependency
+core/agents/_legacy/atlas.py	core.agents._sub_agent_base	runtime dependency
+core/agents/_legacy/cipher.py	core.agents._sub_agent_base	runtime dependency
+core/agents/_legacy/forge.py	core.agents.adapters.forge_adapter	runtime dependency
+core/agents/_legacy/herald.py	core.agents._sub_agent_base	runtime dependency
+core/agents/_legacy/nexus.py	core.agents._sub_agent_base	runtime dependency
+core/agents/_legacy/oracle.py	core.agents._sub_agent_base	runtime dependency
+core/agents/_legacy/phantom.py	core.agents.adapters.phantom_adapter	runtime dependency
+core/agents/_legacy/scribe.py	core.agents._sub_agent_base	runtime dependency
+core/agents/_legacy/sentinel.py	core.agents._sub_agent_base	runtime dependency
+core/agents/_sub_agent_base.py	core.pipeline.stages.execution	canonical request pipeline
+core/agents/adapters/__init__.py	core.agents.adapters.atlas_adapter	runtime dependency
+core/agents/adapters/__init__.py	core.agents.adapters.base_adapter	runtime dependency
+core/agents/adapters/__init__.py	core.agents.adapters.cipher_adapter	runtime dependency
+core/agents/adapters/__init__.py	core.agents.adapters.forge_adapter	runtime dependency
+core/agents/adapters/__init__.py	core.agents.adapters.herald_adapter	runtime dependency
+core/agents/adapters/__init__.py	core.agents.adapters.nexus_adapter	runtime dependency
+core/agents/adapters/__init__.py	core.agents.adapters.oracle_adapter	runtime dependency
+core/agents/adapters/__init__.py	core.agents.adapters.phantom_adapter	runtime dependency
+core/agents/adapters/__init__.py	core.agents.adapters.scribe_adapter	runtime dependency
+core/agents/adapters/__init__.py	core.agents.adapters.sentinel_adapter	runtime dependency
+core/agents/adapters/atlas_adapter.py	core.agents._sub_agent_base	runtime dependency
+core/agents/adapters/atlas_adapter.py	core.agents.base	runtime dependency
+core/agents/adapters/base_adapter.py	core.agents.base	runtime dependency
+core/agents/adapters/cipher_adapter.py	core.agents._sub_agent_base	runtime dependency
+core/agents/adapters/cipher_adapter.py	core.agents.base	runtime dependency
+core/agents/adapters/forge_adapter.py	core.agents._sub_agent_base	runtime dependency
+core/agents/adapters/forge_adapter.py	core.agents.base	runtime dependency
+core/agents/adapters/herald_adapter.py	core.agents._sub_agent_base	runtime dependency
+core/agents/adapters/herald_adapter.py	core.agents.base	runtime dependency
+core/agents/adapters/nexus_adapter.py	core.agents._sub_agent_base	runtime dependency
+core/agents/adapters/nexus_adapter.py	core.agents.base	runtime dependency
+core/agents/adapters/oracle_adapter.py	core.agents._sub_agent_base	runtime dependency
+core/agents/adapters/oracle_adapter.py	core.agents.base	runtime dependency
+core/agents/adapters/phantom_adapter.py	core.agents._sub_agent_base	runtime dependency
+core/agents/adapters/phantom_adapter.py	core.agents.base	runtime dependency
+core/agents/adapters/phantom_adapter.py	core.ssrf	runtime dependency
+core/agents/adapters/phantom_adapter.py	tools.search_fallback	tool invocation layer
+core/agents/adapters/scribe_adapter.py	core.agents._sub_agent_base	runtime dependency
+core/agents/adapters/scribe_adapter.py	core.agents.base	runtime dependency
+core/agents/adapters/sentinel_adapter.py	core.agents._sub_agent_base	runtime dependency
+core/agents/adapters/sentinel_adapter.py	core.agents.base	runtime dependency
+core/agents/browser_agent.py	core.agents.base	runtime dependency
+core/agents/browser_agent.py	core.tools	tool invocation layer
+core/agents/browser_agent.py	core.tools.browser_tools	browser automation capability
+core/agents/build_agent.py	core.agents.base	runtime dependency
+core/agents/email_agent.py	core.agents.base	runtime dependency
+core/agents/email_agent.py	core.tools	tool invocation layer
+core/agents/email_agent.py	core.tools.email_utils	runtime dependency
+core/agents/executor.py	core.agents.router	runtime dependency
+core/agents/executor.py	core.planner.decomposer	runtime dependency
+core/agents/executor.py	core.planner.models	data contract: shared types
+core/agents/executor.py	core.tools.execution	runtime dependency
+core/agents/executor.py	core.types	data contract: shared types
+core/agents/memory_agent.py	core.agents.base	runtime dependency
+core/agents/memory_agent.py	memory	memory / knowledge recall
+core/agents/memory_agent.py	memory.mem0_adapter	memory / knowledge recall
+core/agents/parallel_executor.py	core.agents.events	runtime dependency
+core/agents/parallel_executor.py	core.agents.graph	runtime dependency
+core/agents/parallel_executor.py	core.agents.router	runtime dependency
+core/agents/registry.py	core.agents._sub_agent_base	runtime dependency
+core/agents/registry.py	core.agents.adapters.atlas_adapter	runtime dependency
+core/agents/registry.py	core.agents.adapters.cipher_adapter	runtime dependency
+core/agents/registry.py	core.agents.adapters.forge_adapter	runtime dependency
+core/agents/registry.py	core.agents.adapters.herald_adapter	runtime dependency
+core/agents/registry.py	core.agents.adapters.nexus_adapter	runtime dependency
+core/agents/registry.py	core.agents.adapters.oracle_adapter	runtime dependency
+core/agents/registry.py	core.agents.adapters.phantom_adapter	runtime dependency
+core/agents/registry.py	core.agents.adapters.scribe_adapter	runtime dependency
+core/agents/registry.py	core.agents.adapters.sentinel_adapter	runtime dependency
+core/agents/registry.py	core.agents.browser_agent	browser automation capability
+core/agents/registry.py	core.agents.build_agent	runtime dependency
+core/agents/registry.py	core.agents.email_agent	runtime dependency
+core/agents/registry.py	core.agents.memory_agent	runtime dependency
+core/agents/registry.py	core.agents.research_agent	runtime dependency
+core/agents/registry.py	core.agents.test_agent	verification
+core/agents/research_agent.py	core.agents.base	runtime dependency
+core/agents/research_agent.py	core.pipeline.stages.execution	canonical request pipeline
+core/agents/research_agent.py	tools.search_fallback	tool invocation layer
+core/agents/router.py	core.agents.base	runtime dependency
+core/agents/router.py	core.agents.capabilities	runtime dependency
+core/agents/router.py	core.agents.registry	runtime dependency
+core/agents/test_agent.py	core.agents.base	runtime dependency
+core/audit_log.py	core.audit_log	runtime dependency
+core/authz/__init__.py	core.authz.schema	safety / permissions / audit
+core/authz/engine.py	core.authz.schema	safety / permissions / audit
+core/authz/loader.py	core.authz.engine	safety / permissions / audit
+core/authz/loader.py	core.authz.schema	safety / permissions / audit
+core/belief/__init__.py	core.belief.accuracy	runtime dependency
+core/belief/__init__.py	core.belief.consensus	runtime dependency
+core/belief/__init__.py	core.belief.freshness	runtime dependency
+core/belief/__init__.py	core.belief.integration	runtime dependency
+core/belief/__init__.py	core.belief.models	data contract: shared types
+core/belief/__init__.py	core.belief.quality	runtime dependency
+core/belief/__init__.py	core.belief.source_tracker	runtime dependency
+core/belief/__init__.py	core.belief.store	runtime dependency
+core/belief/accuracy.py	core.belief.models	data contract: shared types
+core/belief/integration.py	core.belief.accuracy	runtime dependency
+core/belief/integration.py	core.belief.models	data contract: shared types
+core/belief/integration.py	core.belief.quality	runtime dependency
+core/belief/integration.py	core.belief.source_tracker	runtime dependency
+core/belief/integration.py	core.belief.store	runtime dependency
+core/belief/quality.py	core.belief.accuracy	runtime dependency
+core/belief/quality.py	core.belief.consensus	runtime dependency
+core/belief/quality.py	core.belief.freshness	runtime dependency
+core/belief/quality.py	core.belief.models	data contract: shared types
+core/belief/quality.py	core.belief.source_tracker	runtime dependency
+core/belief/source_tracker.py	core.belief.models	data contract: shared types
+core/belief/store.py	core.belief.models	data contract: shared types
+core/benchmark/__init__.py	core.benchmark.adapters	runtime dependency
+core/benchmark/__init__.py	core.benchmark.models	data contract: shared types
+core/benchmark/__init__.py	core.benchmark.orchestrator	runtime dependency
+core/benchmark/__init__.py	core.benchmark.report_generator	runtime dependency
+core/benchmark/__init__.py	core.benchmark.results_store	runtime dependency
+core/benchmark/__init__.py	core.benchmark.runner	runtime dependency
+core/browser/__init__.py	core.browser.browser_ai	browser automation capability
+core/browser/browser_ai.py	core.specialist	runtime dependency
+core/browser/browser_ai.py	core.tools.browser_tools	browser automation capability
+core/browser/browser_ai.py	tools.base_tool	tool invocation layer
+core/browser/procedural_memory.py	core.pipeline.stages.memory	canonical request pipeline
+core/browser/registration.py	core.browser.browser_ai	browser automation capability
+core/browser/registration.py	tools.registry	tool invocation layer
+core/cache/__init__.py	core.cache.invalidation	runtime dependency
+core/cache/__init__.py	core.cache.local	runtime dependency
+core/cache/__init__.py	core.cache.redis_cache	runtime dependency
+core/cache/redis_cache.py	core.cache.local	runtime dependency
+core/capability/__init__.py	core.capability.composition	runtime dependency
+core/capability/__init__.py	core.capability.graph	runtime dependency
+core/capability/__init__.py	core.capability.models	data contract: shared types
+core/capability/__init__.py	core.capability.negotiation	runtime dependency
+core/capability/__init__.py	core.capability.registry	runtime dependency
+core/capability/acquisition.py	tools.base_tool	tool invocation layer
+core/capability/acquisition.py	tools.registry	tool invocation layer
+core/capability/capability_ai.py	core.specialist	runtime dependency
+core/capability/capability_ai.py	tools.base_tool	tool invocation layer
+core/capability/capability_ai.py	tools.registry	tool invocation layer
+core/capability/composition.py	core.capability.graph	runtime dependency
+core/capability/composition.py	core.capability.models	data contract: shared types
+core/capability/composition.py	core.capability.negotiation	runtime dependency
+core/capability/composition.py	core.permission.manager	safety / permissions / audit
+core/capability/composition.py	core.permission.models	data contract: shared types
+core/capability/discovery.py	core.specialist	runtime dependency
+core/capability/discovery.py	tools.base_tool	tool invocation layer
+core/capability/discovery.py	tools.registry	tool invocation layer
+core/capability/graph.py	core.capability.models	data contract: shared types
+core/capability/models.py	core.permission.models	data contract: shared types
+core/capability/negotiation.py	core.providers.router	LLM provider access (routing/models/keys)
+core/capability/registry.py	tools.base_tool	tool invocation layer
+core/capability/registry.py	tools.registry	tool invocation layer
+core/capability/selection.py	tools.base_tool	tool invocation layer
+core/capability/selection.py	tools.registry	tool invocation layer
+core/coding/__init__.py	core.coding.architecture_map	runtime dependency
+core/coding/__init__.py	core.coding.change_planner	runtime dependency
+core/coding/__init__.py	core.coding.change_simulation	runtime dependency
+core/coding/__init__.py	core.coding.coding_agent	runtime dependency
+core/coding/__init__.py	core.coding.coding_state	runtime dependency
+core/coding/__init__.py	core.coding.dependency_graph	runtime dependency
+core/coding/__init__.py	core.coding.impact_analyzer	runtime dependency
+core/coding/__init__.py	core.coding.refactor_safety	runtime dependency
+core/coding/__init__.py	core.coding.refactoring_engine	runtime dependency
+core/coding/__init__.py	core.coding.repository_indexer	runtime dependency
+core/coding/__init__.py	core.coding.tool_broker	tool invocation layer
+core/coding/__init__.py	core.coding.verification	runtime dependency
+core/coding/architecture_map.py	core.coding.dependency_graph	runtime dependency
+core/coding/architecture_map.py	core.coding.repository_indexer	runtime dependency
+core/coding/architecture_reasoning.py	core.coding.change_planner	runtime dependency
+core/coding/build_benchmark.py	core.activity.recorder	runtime dependency
+core/coding/build_benchmark.py	core.activity.storage	runtime dependency
+core/coding/build_benchmark.py	core.strategy.calibration	runtime dependency
+core/coding/build_benchmark.py	core.strategy.generator	runtime dependency
+core/coding/build_benchmark.py	core.strategy.predictor	runtime dependency
+core/coding/build_benchmark.py	core.strategy.selector	runtime dependency
+core/coding/build_benchmark.py	core.tools.automated_build	runtime dependency
+core/coding/build_benchmark.py	core.tools.build_tools	tool invocation layer
+core/coding/build_benchmark.py	memory.task_store	memory / knowledge recall
+core/coding/change_simulation.py	core.coding.change_planner	runtime dependency
+core/coding/coding_agent.py	core.coding.architecture_map	runtime dependency
+core/coding/coding_agent.py	core.coding.change_planner	runtime dependency
+core/coding/coding_agent.py	core.coding.change_simulation	runtime dependency
+core/coding/coding_agent.py	core.coding.coding_state	runtime dependency
+core/coding/coding_agent.py	core.coding.dependency_graph	runtime dependency
+core/coding/coding_agent.py	core.coding.impact_analyzer	runtime dependency
+core/coding/coding_agent.py	core.coding.refactor_safety	runtime dependency
+core/coding/coding_agent.py	core.coding.refactoring_engine	runtime dependency
+core/coding/coding_agent.py	core.coding.repository_indexer	runtime dependency
+core/coding/coding_agent.py	core.coding.tool_broker	tool invocation layer
+core/coding/coding_agent.py	core.coding.verification	runtime dependency
+core/coding/coding_agent.py	core.specialist	runtime dependency
+core/coding/coding_agent.py	tools.base_tool	tool invocation layer
+core/coding/dependency_graph.py	core.coding.repository_indexer	runtime dependency
+core/coding/impact_analyzer.py	core.coding.architecture_map	runtime dependency
+core/coding/impact_analyzer.py	core.coding.dependency_graph	runtime dependency
+core/coding/impact_analyzer.py	core.coding.repository_indexer	runtime dependency
+core/coding/refactor_safety.py	core.coding.architecture_map	runtime dependency
+core/coding/refactor_safety.py	core.coding.dependency_graph	runtime dependency
+core/coding/refactor_safety.py	core.coding.impact_analyzer	runtime dependency
+core/coding/refactor_safety.py	core.coding.repository_indexer	runtime dependency
+core/coding/refactoring_engine.py	core.coding.change_planner	runtime dependency
+core/coding/tool_broker.py	core.coding.change_planner	runtime dependency
+core/coding/tool_broker.py	core.coding.coding_agent	runtime dependency
+core/configuration/__init__.py	core.configuration.service	reads configuration/constants
+core/database_models.py	core.database	runtime dependency
+core/decision/__init__.py	core.decision.bridge	runtime dependency
+core/decision/__init__.py	core.decision.evidence	runtime dependency
+core/decision/__init__.py	core.decision.models	data contract: shared types
+core/decision/__init__.py	core.decision.scoring	runtime dependency
+core/desktop/__init__.py	core.desktop.controller	OS/desktop control capability
+core/desktop/__init__.py	core.desktop.desktop_ai	OS/desktop control capability
+core/desktop/__init__.py	core.desktop.replay	OS/desktop control capability
+core/desktop/__init__.py	core.desktop.safety	OS/desktop control capability
+core/desktop/__init__.py	core.desktop.screen	OS/desktop control capability
+core/desktop/__init__.py	core.desktop.window	OS/desktop control capability
+core/desktop/controller.py	core.desktop.replay	OS/desktop control capability
+core/desktop/controller.py	core.desktop.safety	OS/desktop control capability
+core/desktop/desktop_ai.py	core.desktop.controller	OS/desktop control capability
+core/desktop/desktop_ai.py	core.desktop.safety	OS/desktop control capability
+core/desktop/desktop_ai.py	core.desktop.window	OS/desktop control capability
+core/desktop/desktop_ai.py	core.specialist	runtime dependency
+core/desktop/desktop_ai.py	tools.base_tool	tool invocation layer
+core/desktop/discovery.py	core.desktop.user_actions	OS/desktop control capability
+core/desktop/tool_bridge.py	tools.base_tool	tool invocation layer
+core/desktop/tool_bridge.py	tools.registry	tool invocation layer
+core/distribution/__init__.py	core.distribution.contracts	runtime dependency
+core/distribution/__init__.py	core.distribution.graph	runtime dependency
+core/distribution/__init__.py	core.distribution.health	runtime dependency
+core/distribution/__init__.py	core.distribution.local_worker	runtime dependency
+core/distribution/__init__.py	core.distribution.pool	runtime dependency
+core/distribution/__init__.py	core.distribution.registry	runtime dependency
+core/distribution/__init__.py	core.distribution.retry	runtime dependency
+core/distribution/__init__.py	core.distribution.runtime	runtime dependency
+core/distribution/__init__.py	core.distribution.scheduler	runtime dependency
+core/distribution/__init__.py	core.distribution.transport	runtime dependency
+core/distribution/__init__.py	core.distribution.worker	runtime dependency
+core/distribution/contracts.py	core.runtime.context	runtime dependency
+core/distribution/graph/__init__.py	core.distribution.graph.checkpoint	runtime dependency
+core/distribution/graph/__init__.py	core.distribution.graph.executor	runtime dependency
+core/distribution/graph/__init__.py	core.distribution.graph.models	data contract: shared types
+core/distribution/graph/__init__.py	core.distribution.graph.recovery	runtime dependency
+core/distribution/graph/__init__.py	core.distribution.graph.scheduler	runtime dependency
+core/distribution/graph/executor.py	core.distribution.contracts	runtime dependency
+core/distribution/graph/executor.py	core.distribution.graph.models	data contract: shared types
+core/distribution/graph/executor.py	core.distribution.graph.scheduler	runtime dependency
+core/distribution/graph/executor.py	core.distribution.registry	runtime dependency
+core/distribution/graph/executor.py	core.distribution.transport	runtime dependency
+core/distribution/graph/recovery.py	core.distribution.graph.checkpoint	runtime dependency
+core/distribution/graph/recovery.py	core.distribution.graph.models	data contract: shared types
+core/distribution/graph/scheduler.py	core.distribution.graph.models	data contract: shared types
+core/distribution/graph/scheduler.py	core.distribution.registry	runtime dependency
+core/distribution/health.py	core.distribution.contracts	runtime dependency
+core/distribution/health.py	core.distribution.registry	runtime dependency
+core/distribution/local_worker.py	core.distribution.contracts	runtime dependency
+core/distribution/local_worker.py	core.pipeline.messages	data contract: shared types
+core/distribution/local_worker.py	core.pipeline.pipeline	canonical request pipeline
+core/distribution/observation.py	core.observation.hub	runtime dependency
+core/distribution/pool.py	core.distribution.contracts	runtime dependency
+core/distribution/pool.py	core.distribution.registry	runtime dependency
+core/distribution/registry.py	core.distribution.contracts	runtime dependency
+core/distribution/runtime.py	core.distribution.contracts	runtime dependency
+core/distribution/runtime.py	core.distribution.registry	runtime dependency
+core/distribution/runtime.py	core.distribution.transport	runtime dependency
+core/distribution/runtime.py	core.pipeline.messages	data contract: shared types
+core/distribution/runtime.py	core.pipeline.pipeline	canonical request pipeline
+core/distribution/scheduler.py	core.distribution.contracts	runtime dependency
+core/distribution/scheduler.py	core.distribution.pool	runtime dependency
+core/distribution/scheduler.py	core.distribution.registry	runtime dependency
+core/distribution/scheduler.py	core.distribution.runtime	runtime dependency
+core/distribution/transport.py	core.distribution.contracts	runtime dependency
+core/distribution/worker.py	core.distribution.contracts	runtime dependency
+core/execution/__init__.py	core.execution.context	runtime dependency
+core/execution/__init__.py	core.execution.manager	runtime dependency
+core/execution/manager.py	core.execution.context	runtime dependency
+core/fact_extraction/bridge.py	core.fact_extraction.models	data contract: shared types
+core/fact_extraction/extractor.py	core.fact_extraction.models	data contract: shared types
+core/fact_extraction/store.py	core.fact_extraction.models	data contract: shared types
+core/file_agent.py	core.pipeline.stages.execution	canonical request pipeline
+core/file_agent.py	core.result	runtime dependency
+core/generalization/__init__.py	core.generalization.causal	runtime dependency
+core/generalization/__init__.py	core.generalization.derived	runtime dependency
+core/generalization/__init__.py	core.generalization.executor	runtime dependency
+core/generalization/__init__.py	core.generalization.extractor	runtime dependency
+core/generalization/__init__.py	core.generalization.models	data contract: shared types
+core/generalization/__init__.py	core.generalization.prioritizer	runtime dependency
+core/generalization/__init__.py	core.generalization.proposals	runtime dependency
+core/generalization/__init__.py	core.generalization.registry	runtime dependency
+core/generalization/__init__.py	core.generalization.store	runtime dependency
+core/generalization/__init__.py	core.generalization.validator	runtime dependency
+core/generalization/causal.py	core.generalization.models	data contract: shared types
+core/generalization/derived.py	core.generalization.models	data contract: shared types
+core/generalization/executor.py	core.generalization.models	data contract: shared types
+core/generalization/extractor.py	core.generalization.models	data contract: shared types
+core/generalization/proposals.py	core.generalization.models	data contract: shared types
+core/generalization/registry.py	core.generalization.models	data contract: shared types
+core/generalization/store.py	core.generalization.models	data contract: shared types
+core/generalization/validator.py	core.generalization.models	data contract: shared types
+core/graph/__init__.py	core.graph.edges	runtime dependency
+core/graph/__init__.py	core.graph.graph	runtime dependency
+core/graph/__init__.py	core.graph.nodes	runtime dependency
+core/graph/__init__.py	core.graph.state	runtime dependency
+core/graph/edges.py	core.graph.state	runtime dependency
+core/graph/graph.py	core.graph.state	runtime dependency
+core/graph/nodes.py	core.graph.state	runtime dependency
+core/graph/nodes.py	core.persistence.store	runtime dependency
+core/identity/__init__.py	core.identity.models	data contract: shared types
+core/identity/__init__.py	core.identity.resource_scope	runtime dependency
+core/identity/__init__.py	core.identity.service	runtime dependency
+core/identity/__init__.py	core.identity.tenant_resolver	runtime dependency
+core/identity/scope.py	core.identity.resource_scope	runtime dependency
+core/identity/service.py	core.auth	runtime dependency
+core/identity/service.py	core.identity.models	data contract: shared types
+core/identity/service.py	core.identity.tenant_resolver	runtime dependency
+core/identity/service.py	core.pipeline.authorization_result	canonical request pipeline
+core/identity/tenant_resolver.py	core.identity.resource_scope	runtime dependency
+core/improvement/__init__.py	core.improvement.detector	runtime dependency
+core/improvement/__init__.py	core.improvement.experiment	runtime dependency
+core/improvement/__init__.py	core.improvement.knob_store	runtime dependency
+core/improvement/__init__.py	core.improvement.models	data contract: shared types
+core/improvement/__init__.py	core.improvement.promoter	runtime dependency
+core/improvement/__init__.py	core.improvement.proposals	runtime dependency
+core/inbox/__init__.py	core.inbox.store	runtime dependency
+core/integrations/__init__.py	core.integrations	runtime dependency
+core/legacy/control_loop.py	core.project_state	runtime dependency
+core/llm_failover.py	core.config_schema	runtime dependency
+core/llm_failover.py	core.configuration	runtime dependency
+core/llm_failover.py	core.errors	runtime dependency
+core/llm_failover.py	core.llm_router	runtime dependency
+core/llm_failover.py	core.result	runtime dependency
+core/llm_router.py	core.result	runtime dependency
+core/llm_router.py	jarvis_provider	LLM provider access (routing/models/keys)
+core/long_term_memory/__init__.py	core.long_term_memory.adapter	runtime dependency
+core/long_term_memory/__init__.py	core.long_term_memory.consolidator	runtime dependency
+core/long_term_memory/__init__.py	core.long_term_memory.extractor	runtime dependency
+core/long_term_memory/__init__.py	core.long_term_memory.models	data contract: shared types
+core/long_term_memory/__init__.py	core.long_term_memory.store	runtime dependency
+core/long_term_memory/__init__.py	core.long_term_memory.synthesizer	runtime dependency
+core/main.py	core.configuration.service	reads configuration/constants
+core/main.py	core.version	runtime dependency
+core/model_providers/__init__.py	core.model_providers.anthropic	LLM provider access (routing/models/keys)
+core/model_providers/__init__.py	core.model_providers.base	LLM provider access (routing/models/keys)
+core/model_providers/__init__.py	core.model_providers.gemini	LLM provider access (routing/models/keys)
+core/model_providers/__init__.py	core.model_providers.groq	LLM provider access (routing/models/keys)
+core/model_providers/__init__.py	core.model_providers.hybrid	LLM provider access (routing/models/keys)
+core/model_providers/__init__.py	core.model_providers.ollama	LLM provider access (routing/models/keys)
+core/model_providers/__init__.py	core.model_providers.openai	LLM provider access (routing/models/keys)
+core/model_providers/__init__.py	core.model_providers.openrouter	LLM provider access (routing/models/keys)
+core/model_providers/__init__.py	core.model_providers.router	LLM provider access (routing/models/keys)
+core/multimodal/__init__.py	core.multimodal.pipeline	runtime dependency
+core/multimodal/__init__.py	core.multimodal.schema	runtime dependency
+core/multimodal/pipeline.py	core	runtime dependency
+core/multimodal/pipeline.py	core.llm_router	runtime dependency
+core/multimodal/pipeline.py	core.multimodal.schema	runtime dependency
+core/observability/__init__.py	core.observability	runtime dependency
+core/observability/__init__.py	core.observability.logging	runtime dependency
+core/observability/__init__.py	core.observability.metrics	runtime dependency
+core/observation/__init__.py	core.observation.hub	runtime dependency
+core/observation/hub.py	core.event_bus	runtime dependency
+core/opportunity/__init__.py	core.opportunity.bottlenecks	runtime dependency
+core/opportunity/__init__.py	core.opportunity.calibration	runtime dependency
+core/opportunity/__init__.py	core.opportunity.engine	runtime dependency
+core/opportunity/__init__.py	core.opportunity.forecasting	runtime dependency
+core/opportunity/__init__.py	core.opportunity.graph	runtime dependency
+core/opportunity/__init__.py	core.opportunity.mining	runtime dependency
+core/opportunity/__init__.py	core.opportunity.models	data contract: shared types
+core/opportunity/__init__.py	core.opportunity.roadmap	runtime dependency
+core/opportunity/__init__.py	core.opportunity.store	runtime dependency
+core/permission/__init__.py	core.permission.audit	safety / permissions / audit
+core/permission/__init__.py	core.permission.manager	safety / permissions / audit
+core/permission/__init__.py	core.permission.models	data contract: shared types
+core/permission/__init__.py	core.permission.observer	safety / permissions / audit
+core/permission/__init__.py	core.permission.policy	safety / permissions / audit
+core/permission/__init__.py	core.permission.registry	safety / permissions / audit
+core/permission/audit.py	core.permission.models	data contract: shared types
+core/permission/manager.py	core.permission.audit	safety / permissions / audit
+core/permission/manager.py	core.permission.models	data contract: shared types
+core/permission/manager.py	core.permission.policy	safety / permissions / audit
+core/permission/manager.py	core.permission.registry	safety / permissions / audit
+core/permission/observer.py	core.permission.models	data contract: shared types
+core/permission/policy.py	core.permission.models	data contract: shared types
+core/persistence/__init__.py	core.persistence.graph	runtime dependency
+core/persistence/__init__.py	core.persistence.schema	runtime dependency
+core/persistence/__init__.py	core.persistence.store	runtime dependency
+core/persistence/store.py	core.persistence.graph	runtime dependency
+core/persistence/store.py	core.persistence.schema	runtime dependency
+core/pipeline/__init__.py	core.pipeline	canonical request pipeline
+core/pipeline/__init__.py	core.pipeline.base	canonical request pipeline
+core/pipeline/__init__.py	core.pipeline.context	canonical request pipeline
+core/pipeline/__init__.py	core.pipeline.decision	canonical request pipeline
+core/pipeline/__init__.py	core.pipeline.observation	canonical request pipeline
+core/pipeline/__init__.py	core.pipeline.outcome	canonical request pipeline
+core/pipeline/__init__.py	core.pipeline.pipeline	canonical request pipeline
+core/pipeline/__init__.py	core.pipeline.stages	canonical request pipeline
+core/pipeline/__init__.py	core.pipeline.store_decision	canonical request pipeline
+core/pipeline/__init__.py	core.pipeline.stream	canonical request pipeline
+core/pipeline/adapters/__init__.py	core.pipeline.adapters.channel_adapter	canonical request pipeline
+core/pipeline/adapters/__init__.py	core.pipeline.adapters.rest_adapter	canonical request pipeline
+core/pipeline/adapters/__init__.py	core.pipeline.adapters.voice_adapter	canonical request pipeline
+core/pipeline/adapters/__init__.py	core.pipeline.adapters.websocket_adapter	canonical request pipeline
+core/pipeline/architecture_metrics.py	core.pipeline.deterministic	canonical request pipeline
+core/pipeline/architecture_metrics.py	core.runtime_version	runtime dependency
+core/pipeline/authentication_result.py	core.identity.models	data contract: shared types
+core/pipeline/base.py	core.pipeline.pipeline	canonical request pipeline
+core/pipeline/context.py	core.pipeline.base	canonical request pipeline
+core/pipeline/context.py	core.pipeline.security_context	canonical request pipeline
+core/pipeline/outcome.py	core.pipeline.observation	canonical request pipeline
+core/pipeline/pipeline.py	core.identity.resource_scope	runtime dependency
+core/pipeline/pipeline.py	core.identity.service	runtime dependency
+core/pipeline/pipeline.py	core.pipeline.architecture_metrics	canonical request pipeline
+core/pipeline/pipeline.py	core.pipeline.base	canonical request pipeline
+core/pipeline/pipeline.py	core.pipeline.context	canonical request pipeline
+core/pipeline/pipeline.py	core.pipeline.messages	data contract: shared types
+core/pipeline/pipeline.py	core.pipeline.outcome	canonical request pipeline
+core/pipeline/pipeline.py	core.pipeline.stages	canonical request pipeline
+core/pipeline/pipeline.py	core.pipeline.stages.execution	canonical request pipeline
+core/pipeline/pipeline.py	core.pipeline.stream	canonical request pipeline
+core/pipeline/stages/__init__.py	core.pipeline.stages._canonical	canonical request pipeline
+core/pipeline/stages/_canonical.py	core.identity.resource_scope	runtime dependency
+core/pipeline/stages/_canonical.py	core.identity.tenant_resolver	runtime dependency
+core/pipeline/stages/_canonical.py	core.pipeline.base	canonical request pipeline
+core/pipeline/stages/_canonical.py	core.pipeline.pipeline	canonical request pipeline
+core/pipeline/stages/_canonical.py	core.pipeline.stages.auth	canonical request pipeline
+core/pipeline/stages/_canonical.py	core.pipeline.stages.authorization	canonical request pipeline
+core/pipeline/stages/_canonical.py	core.pipeline.stages.capability_selection	canonical request pipeline
+core/pipeline/stages/_canonical.py	core.pipeline.stages.execution	canonical request pipeline
+core/pipeline/stages/_canonical.py	core.pipeline.stages.explainability	canonical request pipeline
+core/pipeline/stages/_canonical.py	core.pipeline.stages.knowledge	canonical request pipeline
+core/pipeline/stages/_canonical.py	core.pipeline.stages.learning	canonical request pipeline
+core/pipeline/stages/_canonical.py	core.pipeline.stages.memory	canonical request pipeline
+core/pipeline/stages/_canonical.py	core.pipeline.stages.metrics	canonical request pipeline
+core/pipeline/stages/_canonical.py	core.pipeline.stages.plan_validator	canonical request pipeline
+core/pipeline/stages/_canonical.py	core.pipeline.stages.planner	canonical request pipeline
+core/pipeline/stages/_canonical.py	core.pipeline.stages.policy_optimization	canonical request pipeline
+core/pipeline/stages/_canonical.py	core.pipeline.stages.reasoner	canonical request pipeline
+core/pipeline/stages/_canonical.py	core.pipeline.stages.reflection	canonical request pipeline
+core/pipeline/stages/_canonical.py	core.pipeline.stages.resource_access	canonical request pipeline
+core/pipeline/stages/_canonical.py	core.pipeline.stages.verification	canonical request pipeline
+core/pipeline/stages/auth.py	core.auth	runtime dependency
+core/pipeline/stages/auth.py	core.identity.models	data contract: shared types
+core/pipeline/stages/auth.py	core.pipeline.authentication_result	canonical request pipeline
+core/pipeline/stages/auth.py	core.pipeline.base	canonical request pipeline
+core/pipeline/stages/auth.py	core.pipeline.pipeline	canonical request pipeline
+core/pipeline/stages/authorization.py	core.identity.models	data contract: shared types
+core/pipeline/stages/authorization.py	core.identity.service	runtime dependency
+core/pipeline/stages/authorization.py	core.pipeline.authorization_result	canonical request pipeline
+core/pipeline/stages/authorization.py	core.pipeline.base	canonical request pipeline
+core/pipeline/stages/authorization.py	core.pipeline.pipeline	canonical request pipeline
+core/pipeline/stages/authorization.py	core.pipeline.resource_grant	canonical request pipeline
+core/pipeline/stages/capability_selection.py	core.pipeline.base	canonical request pipeline
+core/pipeline/stages/capability_selection.py	core.pipeline.pipeline	canonical request pipeline
+core/pipeline/stages/execution.py	core.llm_router	runtime dependency
+core/pipeline/stages/execution.py	core.pipeline.base	canonical request pipeline
+core/pipeline/stages/execution.py	core.pipeline.observation	canonical request pipeline
+core/pipeline/stages/execution.py	core.pipeline.pipeline	canonical request pipeline
+core/pipeline/stages/explainability/__init__.py	core.pipeline.stages.explainability.stage	canonical request pipeline
+core/pipeline/stages/explainability/stage.py	core.pipeline.base	canonical request pipeline
+core/pipeline/stages/explainability/stage.py	core.pipeline.explanation_result	canonical request pipeline
+core/pipeline/stages/explainability/stage.py	core.pipeline.pipeline	canonical request pipeline
+core/pipeline/stages/formatter.py	core.pipeline.base	canonical request pipeline
+core/pipeline/stages/formatter.py	core.pipeline.context	canonical request pipeline
+core/pipeline/stages/intent.py	core.pipeline.base	canonical request pipeline
+core/pipeline/stages/intent.py	core.pipeline.context	canonical request pipeline
+core/pipeline/stages/intent.py	core.planner.executor	runtime dependency
+core/pipeline/stages/intent.py	core.planner.outcomes	runtime dependency
+core/pipeline/stages/knowledge/__init__.py	core.pipeline.stages.knowledge.stage	canonical request pipeline
+core/pipeline/stages/knowledge/stage.py	core.pipeline.base	canonical request pipeline
+core/pipeline/stages/knowledge/stage.py	core.pipeline.knowledge_result	canonical request pipeline
+core/pipeline/stages/knowledge/stage.py	core.pipeline.pipeline	canonical request pipeline
+core/pipeline/stages/learning/__init__.py	core.pipeline.stages.learning.stage	canonical request pipeline
+core/pipeline/stages/learning/stage.py	core.pipeline.base	canonical request pipeline
+core/pipeline/stages/learning/stage.py	core.pipeline.learning_result	canonical request pipeline
+core/pipeline/stages/learning/stage.py	core.pipeline.pipeline	canonical request pipeline
+core/pipeline/stages/load_context.py	core.pipeline.base	canonical request pipeline
+core/pipeline/stages/load_context.py	core.pipeline.context	canonical request pipeline
+core/pipeline/stages/memory.py	core.pipeline.base	canonical request pipeline
+core/pipeline/stages/memory.py	core.pipeline.pipeline	canonical request pipeline
+core/pipeline/stages/memory.py	core.pipeline.store_decision	canonical request pipeline
+core/pipeline/stages/memory.py	memory.fact_store	memory / knowledge recall
+core/pipeline/stages/memory.py	memory.memory_facade	memory / knowledge recall
+core/pipeline/stages/metrics.py	core.pipeline.base	canonical request pipeline
+core/pipeline/stages/metrics.py	core.pipeline.pipeline	canonical request pipeline
+core/pipeline/stages/plan_validator.py	core.pipeline.base	canonical request pipeline
+core/pipeline/stages/plan_validator.py	core.pipeline.pipeline	canonical request pipeline
+core/pipeline/stages/planner/__init__.py	core.pipeline.stages.planner.stage	canonical request pipeline
+core/pipeline/stages/planner/stage.py	core.pipeline.base	canonical request pipeline
+core/pipeline/stages/planner/stage.py	core.pipeline.pipeline	canonical request pipeline
+core/pipeline/stages/planner/stage.py	core.pipeline.planner_result	canonical request pipeline
+core/pipeline/stages/policy_optimization/__init__.py	core.pipeline.stages.policy_optimization.stage	canonical request pipeline
+core/pipeline/stages/policy_optimization/stage.py	core.pipeline.base	canonical request pipeline
+core/pipeline/stages/policy_optimization/stage.py	core.pipeline.pipeline	canonical request pipeline
+core/pipeline/stages/policy_optimization/stage.py	core.pipeline.policy_optimization_result	canonical request pipeline
+core/pipeline/stages/reasoner.py	core.pipeline.stages.reasoning.stage	canonical request pipeline
+core/pipeline/stages/reasoning/__init__.py	core.pipeline.stages.reasoning.stage	canonical request pipeline
+core/pipeline/stages/reasoning/stage.py	core.pipeline.base	canonical request pipeline
+core/pipeline/stages/reasoning/stage.py	core.pipeline.pipeline	canonical request pipeline
+core/pipeline/stages/reasoning/stage.py	core.pipeline.reasoning_result	canonical request pipeline
+core/pipeline/stages/receive.py	core.pipeline.base	canonical request pipeline
+core/pipeline/stages/receive.py	core.pipeline.context	canonical request pipeline
+core/pipeline/stages/reflection/__init__.py	core.pipeline.stages.reflection.stage	canonical request pipeline
+core/pipeline/stages/reflection/stage.py	core.pipeline.base	canonical request pipeline
+core/pipeline/stages/reflection/stage.py	core.pipeline.pipeline	canonical request pipeline
+core/pipeline/stages/reflection/stage.py	core.pipeline.reflection_result	canonical request pipeline
+core/pipeline/stages/resource_access.py	core.identity.models	data contract: shared types
+core/pipeline/stages/resource_access.py	core.identity.resource_scope	runtime dependency
+core/pipeline/stages/resource_access.py	core.pipeline.base	canonical request pipeline
+core/pipeline/stages/resource_access.py	core.pipeline.pipeline	canonical request pipeline
+core/pipeline/stages/resource_access.py	core.pipeline.resource_access_result	canonical request pipeline
+core/pipeline/stages/tenant_resolution.py	core.identity.resource_scope	runtime dependency
+core/pipeline/stages/tenant_resolution.py	core.identity.tenant_resolver	runtime dependency
+core/pipeline/stages/tenant_resolution.py	core.pipeline.base	canonical request pipeline
+core/pipeline/stages/tenant_resolution.py	core.pipeline.pipeline	canonical request pipeline
+core/pipeline/stages/verification/__init__.py	core.pipeline.stages.verification.base	canonical request pipeline
+core/pipeline/stages/verification/__init__.py	core.pipeline.stages.verification.stage	canonical request pipeline
+core/pipeline/stages/verification/__init__.py	core.pipeline.stages.verification.verifiers	canonical request pipeline
+core/pipeline/stages/verification/stage.py	core.pipeline.base	canonical request pipeline
+core/pipeline/stages/verification/stage.py	core.pipeline.pipeline	canonical request pipeline
+core/pipeline/stages/verification/stage.py	core.pipeline.stages.verification.base	canonical request pipeline
+core/pipeline/stages/verification/stage.py	core.pipeline.stages.verification.verifiers	canonical request pipeline
+core/pipeline/stages/verification/verifiers.py	core.pipeline.stages.verification.base	canonical request pipeline
+core/pipeline/stream.py	core.pipeline.messages	data contract: shared types
+core/pipeline/stream.py	core.pipeline.pipeline	canonical request pipeline
+core/planner/__init__.py	core.planner	runtime dependency
+core/planner/__init__.py	core.planner.classifier	runtime dependency
+core/planner/__init__.py	core.planner.decomposer	runtime dependency
+core/planner/__init__.py	core.planner.executor	runtime dependency
+core/planner/__init__.py	core.planner.models	data contract: shared types
+core/planner/__init__.py	core.planner.state_machine	runtime dependency
+core/planner/__init__.py	core.planner.templates	runtime dependency
+core/planner/decomposer.py	core.planner.models	data contract: shared types
+core/planner/executor.py	core.agents.executor	runtime dependency
+core/planner/replan.py	core.planner.comparison	runtime dependency
+core/planner/replan.py	core.planner.evidence	runtime dependency
+core/planner/replan.py	core.planner.outcomes	runtime dependency
+core/planner/replan.py	core.planner.state_machine	runtime dependency
+core/planner/replan.py	core.planner.strategies	runtime dependency
+core/plugins/__init__.py	brain.events	runtime dependency
+core/plugins/__init__.py	core.pipeline.stages.verification.manifest	canonical request pipeline
+core/plugins/__init__.py	core.plugins.api	runtime dependency
+core/plugins/__init__.py	core.plugins.automation	runtime dependency
+core/plugins/__init__.py	core.plugins.base	runtime dependency
+core/plugins/__init__.py	core.plugins.compatibility	runtime dependency
+core/plugins/__init__.py	core.plugins.dependencies	runtime dependency
+core/plugins/__init__.py	core.plugins.errors	runtime dependency
+core/plugins/__init__.py	core.plugins.hot_reload	runtime dependency
+core/plugins/__init__.py	core.plugins.loader	runtime dependency
+core/plugins/__init__.py	core.plugins.manifest	runtime dependency
+core/plugins/__init__.py	core.plugins.marketplace	runtime dependency
+core/plugins/__init__.py	core.plugins.memory	runtime dependency
+core/plugins/__init__.py	core.plugins.privacy	runtime dependency
+core/plugins/__init__.py	core.plugins.registry	runtime dependency
+core/plugins/__init__.py	core.plugins.runtime	runtime dependency
+core/plugins/__init__.py	core.plugins.sandbox	runtime dependency
+core/plugins/__init__.py	core.plugins.settings_store	runtime dependency
+core/plugins/__init__.py	core.plugins.ssrf	runtime dependency
+core/plugins/__init__.py	core.plugins.state_store	runtime dependency
+core/plugins/__init__.py	core.plugins.voice	runtime dependency
+core/providers/__init__.py	core.providers.base	LLM provider access (routing/models/keys)
+core/providers/__init__.py	core.providers.budget	LLM provider access (routing/models/keys)
+core/providers/__init__.py	core.providers.memory	LLM provider access (routing/models/keys)
+core/providers/__init__.py	core.providers.registry	LLM provider access (routing/models/keys)
+core/providers/adapters/__init__.py	core.providers.adapters.automation_provider	LLM provider access (routing/models/keys)
+core/providers/adapters/__init__.py	core.providers.adapters.browser_provider	LLM provider access (routing/models/keys)
+core/providers/adapters/__init__.py	core.providers.adapters.claude_code	LLM provider access (routing/models/keys)
+core/providers/adapters/__init__.py	core.providers.adapters.codex	LLM provider access (routing/models/keys)
+core/providers/adapters/__init__.py	core.providers.adapters.deployment_provider	LLM provider access (routing/models/keys)
+core/providers/adapters/__init__.py	core.providers.adapters.forge	LLM provider access (routing/models/keys)
+core/providers/adapters/__init__.py	core.providers.adapters.messaging_provider	LLM provider access (routing/models/keys)
+core/providers/adapters/__init__.py	core.providers.adapters.research_provider	LLM provider access (routing/models/keys)
+core/providers/adapters/claude_code.py	core.providers.base	LLM provider access (routing/models/keys)
+core/providers/adapters/codex.py	core.providers.base	LLM provider access (routing/models/keys)
+core/providers/adapters/desktop_provider.py	core.desktop.controller	OS/desktop control capability
+core/providers/adapters/desktop_provider.py	core.desktop.replay	OS/desktop control capability
+core/providers/adapters/desktop_provider.py	core.desktop.safety	OS/desktop control capability
+core/providers/adapters/desktop_provider.py	core.providers.base	LLM provider access (routing/models/keys)
+core/providers/adapters/email_provider.py	core.providers.base	LLM provider access (routing/models/keys)
+core/providers/adapters/email_provider.py	notifications.notifier	runtime dependency
+core/providers/adapters/forge.py	core.agents._legacy.forge	runtime dependency
+core/providers/adapters/forge.py	core.providers.base	LLM provider access (routing/models/keys)
+core/providers/adapters/github_provider.py	core.providers.base	LLM provider access (routing/models/keys)
+core/providers/adapters/workspace_provider.py	core.providers.base	LLM provider access (routing/models/keys)
+core/providers/adapters/workspace_provider.py	core.workspace.clipboard_manager	runtime dependency
+core/providers/adapters/workspace_provider.py	core.workspace.desktop_state	OS/desktop control capability
+core/providers/benchmark.py	core.providers.memory	LLM provider access (routing/models/keys)
+core/providers/bootstrap.py	core.capability.registry	runtime dependency
+core/providers/bootstrap.py	core.providers.adapters.claude_code	LLM provider access (routing/models/keys)
+core/providers/bootstrap.py	core.providers.adapters.codex	LLM provider access (routing/models/keys)
+core/providers/bootstrap.py	core.providers.adapters.forge	LLM provider access (routing/models/keys)
+core/providers/bootstrap.py	core.providers.registry	LLM provider access (routing/models/keys)
+core/providers/feedback/__init__.py	core.providers.feedback.calibrator	LLM provider access (routing/models/keys)
+core/providers/feedback/__init__.py	core.providers.feedback.models	data contract: shared types
+core/providers/feedback/__init__.py	core.providers.feedback.recorder	LLM provider access (routing/models/keys)
+core/providers/feedback/__init__.py	core.providers.feedback.store	LLM provider access (routing/models/keys)
+core/providers/feedback/calibrator.py	core.providers.feedback.models	data contract: shared types
+core/providers/feedback/recorder.py	core.providers.feedback.models	data contract: shared types
+core/providers/feedback/store.py	core.providers.feedback.models	data contract: shared types
+core/providers/memory.py	core.providers.feedback.models	data contract: shared types
+core/providers/models.py	core.providers.base	LLM provider access (routing/models/keys)
+core/providers/orchestration/__init__.py	core.providers.orchestration.adapt	LLM provider access (routing/models/keys)
+core/providers/orchestration/__init__.py	core.providers.orchestration.models	data contract: shared types
+core/providers/orchestration/__init__.py	core.providers.orchestration.orchestrator	LLM provider access (routing/models/keys)
+core/providers/orchestration/__init__.py	core.providers.orchestration.planner	LLM provider access (routing/models/keys)
+core/providers/orchestration/__init__.py	core.providers.orchestration.store	LLM provider access (routing/models/keys)
+core/providers/orchestration/adapt.py	core.providers.orchestration.models	data contract: shared types
+core/providers/orchestration/adapt.py	core.providers.registry	LLM provider access (routing/models/keys)
+core/providers/orchestration/orchestrator.py	core.constants	reads configuration/constants
+core/providers/orchestration/orchestrator.py	core.providers.bootstrap	LLM provider access (routing/models/keys)
+core/providers/orchestration/orchestrator.py	core.providers.feedback.calibrator	LLM provider access (routing/models/keys)
+core/providers/orchestration/orchestrator.py	core.providers.feedback.recorder	LLM provider access (routing/models/keys)
+core/providers/orchestration/orchestrator.py	core.providers.feedback.store	LLM provider access (routing/models/keys)
+core/providers/orchestration/orchestrator.py	core.providers.memory	LLM provider access (routing/models/keys)
+core/providers/orchestration/orchestrator.py	core.providers.orchestration.adapt	LLM provider access (routing/models/keys)
+core/providers/orchestration/orchestrator.py	core.providers.orchestration.models	data contract: shared types
+core/providers/orchestration/orchestrator.py	core.providers.registry	LLM provider access (routing/models/keys)
+core/providers/orchestration/planner.py	core.providers.orchestration.models	data contract: shared types
+core/providers/orchestration/planner.py	core.providers.registry	LLM provider access (routing/models/keys)
+core/providers/orchestration/planner.py	core.providers.router	LLM provider access (routing/models/keys)
+core/providers/orchestration/store.py	core.constants	reads configuration/constants
+core/providers/orchestration/store.py	core.providers.orchestration.models	data contract: shared types
+core/providers/registry.py	core.providers.base	LLM provider access (routing/models/keys)
+core/providers/router.py	core.providers.base	LLM provider access (routing/models/keys)
+core/providers/router.py	core.providers.benchmark	LLM provider access (routing/models/keys)
+core/providers/router.py	core.providers.budget	LLM provider access (routing/models/keys)
+core/providers/router.py	core.providers.feedback.models	data contract: shared types
+core/providers/router.py	core.providers.feedback.recorder	LLM provider access (routing/models/keys)
+core/providers/router.py	core.providers.feedback.store	LLM provider access (routing/models/keys)
+core/providers/router.py	core.providers.memory	LLM provider access (routing/models/keys)
+core/providers/router.py	core.providers.registry	LLM provider access (routing/models/keys)
+core/providers/store.py	core.providers.registry	LLM provider access (routing/models/keys)
+core/research/__init__.py	core.research._research_ai	runtime dependency
+core/research/__init__.py	core.research.benchmark	runtime dependency
+core/research/__init__.py	core.research.evidence_tracker	runtime dependency
+core/research/__init__.py	core.research.extractor	runtime dependency
+core/research/__init__.py	core.research.graph_models	data contract: shared types
+core/research/__init__.py	core.research.graph_store	runtime dependency
+core/research/__init__.py	core.research.hypothesis	runtime dependency
+core/research/__init__.py	core.research.knowledge_graph	runtime dependency
+core/research/__init__.py	core.research.linker	runtime dependency
+core/research/__init__.py	core.research.models	data contract: shared types
+core/research/__init__.py	core.research.planner	runtime dependency
+core/research/__init__.py	core.research.reasoner	runtime dependency
+core/research/__init__.py	core.research.reasoning	runtime dependency
+core/research/__init__.py	core.research.reflection	runtime dependency
+core/research/__init__.py	core.research.research_benchmark	runtime dependency
+core/research/__init__.py	core.research.retriever	runtime dependency
+core/research/__init__.py	core.research.storage	runtime dependency
+core/research/__init__.py	core.research.synthesizer	runtime dependency
+core/research/_research_ai.py	core.llm_core	runtime dependency
+core/research/_research_ai.py	core.research.benchmark	runtime dependency
+core/research/_research_ai.py	core.research.evidence_tracker	runtime dependency
+core/research/_research_ai.py	core.research.extractor	runtime dependency
+core/research/_research_ai.py	core.research.graph_models	data contract: shared types
+core/research/_research_ai.py	core.research.graph_store	runtime dependency
+core/research/_research_ai.py	core.research.hypothesis	runtime dependency
+core/research/_research_ai.py	core.research.knowledge_graph	runtime dependency
+core/research/_research_ai.py	core.research.linker	runtime dependency
+core/research/_research_ai.py	core.research.models	data contract: shared types
+core/research/_research_ai.py	core.research.planner	runtime dependency
+core/research/_research_ai.py	core.research.reasoner	runtime dependency
+core/research/_research_ai.py	core.research.reasoning	runtime dependency
+core/research/_research_ai.py	core.research.reflection	runtime dependency
+core/research/_research_ai.py	core.research.research_benchmark	runtime dependency
+core/research/_research_ai.py	core.research.retriever	runtime dependency
+core/research/_research_ai.py	core.research.storage	runtime dependency
+core/research/_research_ai.py	core.research.synthesizer	runtime dependency
+core/research/benchmark.py	core.research.models	data contract: shared types
+core/research/evidence_tracker.py	core.research.models	data contract: shared types
+core/research/extractor.py	core.research.models	data contract: shared types
+core/research/graph_store.py	core.research.knowledge_graph	runtime dependency
+core/research/hypothesis.py	core.research.evidence_tracker	runtime dependency
+core/research/hypothesis.py	core.research.models	data contract: shared types
+core/research/hypothesis.py	core.research.reasoner	runtime dependency
+core/research/knowledge_graph.py	core.research.graph_models	data contract: shared types
+core/research/linker.py	core.research.evidence_tracker	runtime dependency
+core/research/linker.py	core.research.graph_models	data contract: shared types
+core/research/linker.py	core.research.models	data contract: shared types
+core/research/planner.py	core.research.evidence_tracker	runtime dependency
+core/research/planner.py	core.research.models	data contract: shared types
+core/research/reasoner.py	core.research.evidence_tracker	runtime dependency
+core/research/reasoner.py	core.research.models	data contract: shared types
+core/research/reasoning.py	core.research.models	data contract: shared types
+core/research/reasoning.py	core.research.reasoner	runtime dependency
+core/research/reflection.py	core.research.evidence_tracker	runtime dependency
+core/research/reflection.py	core.research.graph_store	runtime dependency
+core/research/reflection.py	core.research.models	data contract: shared types
+core/research/research_benchmark.py	core.research.models	data contract: shared types
+core/research/retriever.py	core.errors	runtime dependency
+core/research/retriever.py	core.llm_core	runtime dependency
+core/research/retriever.py	core.result	runtime dependency
+core/research/retriever.py	tools.crawl4ai_tool	tool invocation layer
+core/research/retriever.py	tools.ragflow_tool	tool invocation layer
+core/research/retriever.py	tools.search_fallback	tool invocation layer
+core/research/retriever.py	tools.search_tool	tool invocation layer
+core/research/storage.py	core.pipeline.stages.memory	canonical request pipeline
+core/research/storage.py	core.research.models	data contract: shared types
+core/research/storage.py	memory.decision_store	memory / knowledge recall
+core/research/synthesizer.py	core.research.models	data contract: shared types
+core/routes/observability.py	core.audit_log	runtime dependency
+core/routes/observability.py	core.event_bus	runtime dependency
+core/routes/observability.py	core.observability.metrics	runtime dependency
+core/routes/system/tools_api.py	core.observability.metrics	runtime dependency
+core/routes/system/tools_api.py	core.providers.store	LLM provider access (routing/models/keys)
+core/routes/system/tools_api.py	core.workspace.process_monitor	runtime dependency
+core/routes/system/tools_api.py	jarvis_provider	LLM provider access (routing/models/keys)
+core/routes/system/tools_api.py	monitors.resource	runtime dependency
+core/routing/__init__.py	core.routing.project_context	runtime dependency
+core/routing/__init__.py	core.routing.request_classifier	runtime dependency
+core/routing/__init__.py	core.routing.safety	runtime dependency
+core/runtime/__init__.py	core.runtime.context	runtime dependency
+core/runtime/__init__.py	core.runtime.protocols	runtime dependency
+core/runtime/__init__.py	core.runtime.providers	LLM provider access (routing/models/keys)
+core/scheduler/__init__.py	core.scheduler.models	data contract: shared types
+core/scheduler/__init__.py	core.scheduler.queue	runtime dependency
+core/scheduler/pipeline_executor.py	core.pipeline.messages	data contract: shared types
+core/scheduler/pipeline_executor.py	core.pipeline.pipeline	canonical request pipeline
+core/scheduler/queue.py	core.activity.manager	runtime dependency
+core/scheduler/queue.py	core.scheduler.models	data contract: shared types
+core/scheduler/scheduler.py	core.scheduler.queue	runtime dependency
+core/scheduler/store.py	core.scheduler.models	data contract: shared types
+core/scheduler/windows_scheduler.py	core.database	runtime dependency
+core/security_audit.py	core.configuration	runtime dependency
+core/self_modification/__init__.py	core.self_modification.executor	runtime dependency
+core/self_modification/__init__.py	core.self_modification.models	data contract: shared types
+core/self_modification/__init__.py	core.self_modification.planner	runtime dependency
+core/self_modification/__init__.py	core.self_modification.recipes	runtime dependency
+core/self_modification/__init__.py	core.self_modification.safety	runtime dependency
+core/self_modification/__init__.py	core.self_modification.store	runtime dependency
+core/settings/__init__.py	core.settings.schema	runtime dependency
+core/settings/__init__.py	core.settings.store	runtime dependency
+core/setup/__init__.py	core.setup.engine	runtime dependency
+core/setup/__init__.py	core.setup.report	runtime dependency
+core/specialist.py	core.event_bus	runtime dependency
+core/specialist.py	tools.base_tool	tool invocation layer
+core/strategy/__init__.py	core.strategy.calibration	runtime dependency
+core/strategy/__init__.py	core.strategy.evaluator	runtime dependency
+core/strategy/__init__.py	core.strategy.generator	runtime dependency
+core/strategy/__init__.py	core.strategy.memory_adapter	runtime dependency
+core/strategy/__init__.py	core.strategy.models	data contract: shared types
+core/strategy/__init__.py	core.strategy.predictor	runtime dependency
+core/strategy/__init__.py	core.strategy.selector	runtime dependency
+core/strategy/__init__.py	core.strategy.similarity	runtime dependency
+core/strategy/calibration.py	core.strategy.models	data contract: shared types
+core/strategy/evaluator.py	core.strategy.models	data contract: shared types
+core/strategy/generator.py	core.strategy.models	data contract: shared types
+core/strategy/memory_adapter.py	core.strategy.models	data contract: shared types
+core/strategy/memory_adapter.py	core.strategy.similarity	runtime dependency
+core/strategy/predictor.py	core.strategy.models	data contract: shared types
+core/strategy/selector.py	core.strategy.evaluator	runtime dependency
+core/strategy/selector.py	core.strategy.models	data contract: shared types
+core/strategy/similarity.py	core.strategy.generator	runtime dependency
+core/strategy/v2/__init__.py	core.strategy.v2.evaluator	runtime dependency
+core/strategy/v2/__init__.py	core.strategy.v2.executor	runtime dependency
+core/strategy/v2/__init__.py	core.strategy.v2.memory_adapter	runtime dependency
+core/strategy/v2/__init__.py	core.strategy.v2.models	data contract: shared types
+core/strategy/v2/__init__.py	core.strategy.v2.planner	runtime dependency
+core/strategy/v2/__init__.py	core.strategy.v2.portfolio	runtime dependency
+core/strategy/v2/__init__.py	core.strategy.v2.predictor	runtime dependency
+core/strategy/v2/__init__.py	core.strategy.v2.selector	runtime dependency
+core/strategy/v2/__init__.py	core.strategy.v2.tradeoffs	runtime dependency
+core/strategy/v2/evaluator.py	core.strategy.v2.models	data contract: shared types
+core/strategy/v2/evaluator.py	core.strategy.v2.tradeoffs	runtime dependency
+core/strategy/v2/executor.py	core.generalization.executor	runtime dependency
+core/strategy/v2/executor.py	core.strategy.v2.models	data contract: shared types
+core/strategy/v2/planner.py	core.strategy.v2.models	data contract: shared types
+core/strategy/v2/portfolio.py	core.strategy.v2.models	data contract: shared types
+core/strategy/v2/predictor.py	core.strategy.v2.models	data contract: shared types
+core/strategy/v2/selector.py	core.strategy.v2.models	data contract: shared types
+core/strategy/v2/tradeoffs.py	core.strategy.v2.models	data contract: shared types
+core/tools/__init__.py	core.tools.execution	runtime dependency
+core/tools/__init__.py	core.tools.implementations	runtime dependency
+core/tools/__init__.py	core.tools.index	runtime dependency
+core/tools/__init__.py	core.tools.parsing	runtime dependency
+core/tools/__init__.py	core.tools.schemas	data contract: shared types
+core/tools/__init__.py	core.tools.security	safety / permissions / audit
+core/tools/browser_research.py	core.browser.page_security	browser automation capability
+core/tools/browser_research.py	core.browser_manager	browser automation capability
+core/tools/browser_research.py	core.tools.browser_tools	browser automation capability
+core/tools/browser_tools.py	core.browser_manager	browser automation capability
+core/tools/execution.py	core.constants	reads configuration/constants
+core/tools/execution.py	core.mcp_manager	runtime dependency
+core/tools/execution.py	core.tools	tool invocation layer
+core/tools/execution.py	core.tools.implementations	runtime dependency
+core/tools/execution.py	core.tools.security	safety / permissions / audit
+core/tools/execution.py	core.workflow.artifact_store	runtime dependency
+core/tools/security.py	core.authz.engine	safety / permissions / audit
+core/tools/security.py	core.authz.schema	safety / permissions / audit
+core/tools/security.py	core.tools.policy	runtime dependency
+core/workflow/__init__.py	core.workflow.artifact_store	runtime dependency
+core/workflow/__init__.py	core.workflow.context	runtime dependency
+core/workflow/__init__.py	core.workflow.engine	runtime dependency
+core/workflow/__init__.py	core.workflow.events	runtime dependency
+core/workflow/__init__.py	core.workflow.graph	runtime dependency
+core/workflow/__init__.py	core.workflow.heartbeat_monitor	runtime dependency
+core/workflow/__init__.py	core.workflow.models	data contract: shared types
+core/workflow/__init__.py	core.workflow.recorder	runtime dependency
+core/workflow/__init__.py	core.workflow.recovery	runtime dependency
+core/workflow/__init__.py	core.workflow.storage	runtime dependency
+core/workflow/__init__.py	core.workflow.tracker	runtime dependency
+core/workspace/__init__.py	core.workspace.browser_context	browser automation capability
+core/workspace/__init__.py	core.workspace.clipboard_manager	runtime dependency
+core/workspace/__init__.py	core.workspace.desktop_state	OS/desktop control capability
+core/workspace/__init__.py	core.workspace.process_monitor	runtime dependency
+core/workspace/__init__.py	core.workspace.window_detector	runtime dependency
+core/workspace/browser_context.py	core.workspace.process_monitor	runtime dependency
+core/workspace/desktop_state.py	core.workspace.browser_context	browser automation capability
+core/workspace/desktop_state.py	core.workspace.clipboard_manager	runtime dependency
+core/workspace/desktop_state.py	core.workspace.process_monitor	runtime dependency
+core/workspace/desktop_state.py	core.workspace.window_detector	runtime dependency
+daemon/jarvis_service.py	core.legacy.control_loop	runtime dependency
+demo/quick_demo.py	core.config_schema	runtime dependency
+demo/quick_demo.py	core.diagnostics	runtime dependency
+demo/quick_demo.py	core.tools.index	runtime dependency
+demo/voice_demo.py	tests.integration.test_voice_pipeline_integration	verification
+desktop_bridge.py	core.desktop.controller	OS/desktop control capability
+desktop_bridge.py	core.workspace.desktop_state	OS/desktop control capability
+governance/GovernanceValidator.py	brain.execution_context	runtime dependency
+governance/GovernanceValidator.py	core.llm_router	runtime dependency
+governance/GovernanceValidator.py	governance.exceptions	runtime dependency
+governance/MetaGovernor.py	governance.exceptions	runtime dependency
+governance/MetaGovernor.py	utils.logger	runtime dependency
+governance/MetaGovernor.py	utils.telemetry	runtime dependency
+governance/__init__.py	governance.GovernanceValidator	runtime dependency
+governance/__init__.py	governance.MetaGovernor	runtime dependency
+governance/__init__.py	governance.RuntimeGovernanceLayer	runtime dependency
+governance/__init__.py	governance.exceptions	runtime dependency
+integrations/gmail/__init__.py	integrations.gmail.auth	runtime dependency
+integrations/gmail/__init__.py	integrations.gmail.client	runtime dependency
+integrations/gmail/client.py	integrations.gmail.auth	runtime dependency
+integrations/gmail/client.py	integrations.gmail.types	data contract: shared types
+integrations/google_calendar/__init__.py	integrations.google_calendar.auth	runtime dependency
+integrations/google_calendar/__init__.py	integrations.google_calendar.client	runtime dependency
+integrations/google_calendar/client.py	integrations.google_calendar.auth	runtime dependency
+integrations/google_calendar/client.py	integrations.google_calendar.types	data contract: shared types
+integrations/whatsapp/__init__.py	integrations.whatsapp.base	runtime dependency
+integrations/whatsapp/__init__.py	integrations.whatsapp.cloud_api	runtime dependency
+integrations/whatsapp/__init__.py	integrations.whatsapp.history	runtime dependency
+integrations/whatsapp/__init__.py	integrations.whatsapp.models	data contract: shared types
+integrations/whatsapp/__init__.py	integrations.whatsapp.phone_manager	runtime dependency
+integrations/whatsapp/__init__.py	integrations.whatsapp.retry	runtime dependency
+integrations/whatsapp/__init__.py	integrations.whatsapp.twilio_provider	LLM provider access (routing/models/keys)
+integrations/whatsapp/__init__.py	integrations.whatsapp.webhook	runtime dependency
+integrations/whatsapp/base.py	integrations.whatsapp.models	data contract: shared types
+integrations/whatsapp/cloud_api.py	integrations.whatsapp.base	runtime dependency
+integrations/whatsapp/cloud_api.py	integrations.whatsapp.models	data contract: shared types
+integrations/whatsapp/cloud_api.py	integrations.whatsapp.retry	runtime dependency
+integrations/whatsapp/history.py	integrations.whatsapp.models	data contract: shared types
+integrations/whatsapp/media.py	integrations.whatsapp.models	data contract: shared types
+integrations/whatsapp/phone_manager.py	integrations.whatsapp.base	runtime dependency
+integrations/whatsapp/phone_manager.py	integrations.whatsapp.models	data contract: shared types
+integrations/whatsapp/twilio_provider.py	integrations.whatsapp.base	runtime dependency
+integrations/whatsapp/twilio_provider.py	integrations.whatsapp.models	data contract: shared types
+integrations/whatsapp/twilio_provider.py	integrations.whatsapp.retry	runtime dependency
+integrations/whatsapp/webhook.py	integrations.whatsapp.models	data contract: shared types
+jarvis.py	cli_commands	runtime dependency
+jarvis.py	core.dev_mode	runtime dependency
+jarvis.py	core.setup.detector	runtime dependency
+jarvis.py	core.setup.engine	runtime dependency
+jarvis.py	core.version	runtime dependency
+jarvis_cli.py	core.agent_loop	runtime dependency
+jarvis_cli.py	core.configuration	runtime dependency
+jarvis_cli.py	core.event_bus	runtime dependency
+jarvis_cli.py	core.pipeline	canonical request pipeline
+jarvis_cli.py	core.pipeline.messages	data contract: shared types
+jarvis_desktop_agent.py	core.database	runtime dependency
+jarvis_desktop_agent.py	core.desktop.adapters	OS/desktop control capability
+jarvis_desktop_agent.py	core.desktop.applications	OS/desktop control capability
+jarvis_desktop_agent.py	core.desktop.capabilities	OS/desktop control capability
+jarvis_desktop_agent.py	core.desktop.control	OS/desktop control capability
+jarvis_desktop_agent.py	core.desktop.controller	OS/desktop control capability
+jarvis_desktop_agent.py	core.desktop.discovery	OS/desktop control capability
+jarvis_desktop_agent.py	core.desktop.routines	OS/desktop control capability
+jarvis_desktop_agent.py	core.desktop.safety	OS/desktop control capability
+jarvis_desktop_agent.py	core.desktop.task_graph	OS/desktop control capability
+jarvis_desktop_agent.py	core.desktop.user_actions	OS/desktop control capability
+jarvis_desktop_agent.py	core.desktop.window	OS/desktop control capability
+jarvis_desktop_agent.py	core.routes.progress	HTTP API wiring (FastAPI router)
+jarvis_desktop_agent.py	core.workspace.clipboard_manager	runtime dependency
+jarvis_desktop_agent.py	core.workspace.process_monitor	runtime dependency
+jarvis_desktop_agent.py	jarvis_provider	LLM provider access (routing/models/keys)
+jarvis_mcp/__init__.py	jarvis_mcp.server	runtime dependency
+jarvis_mcp/email_server.py	core.secret_storage	runtime dependency
+jarvis_mcp/email_server.py	core.tools.email_utils	runtime dependency
+jarvis_mcp/image_gen_server.py	core.ai_interaction	runtime dependency
+jarvis_mcp/image_gen_server.py	core.configuration	runtime dependency
+jarvis_mcp/memory_server.py	core.constants	reads configuration/constants
+jarvis_mcp/memory_server.py	memory.crud_store	memory / knowledge recall
+jarvis_mcp/rag_server.py	core.constants	reads configuration/constants
+jarvis_mcp/rag_server.py	core.personal_docs	runtime dependency
+jarvis_mcp/server.py	channels	runtime dependency
+jarvis_mcp/server.py	core.browser_manager	browser automation capability
+jarvis_mcp/server.py	core.desktop.controller	OS/desktop control capability
+jarvis_mcp/server.py	core.gateway.auth	runtime dependency
+jarvis_mcp/server.py	core.llm_router	runtime dependency
+jarvis_mcp/server.py	core.session	runtime dependency
+jarvis_mcp/server.py	core.tools.policy	runtime dependency
+jarvis_mcp/server.py	governance.GovernanceValidator	runtime dependency
+jarvis_mcp/server.py	memory.memory_facade	memory / knowledge recall
+jarvis_mcp/server.py	provider_sdk.permissions	LLM provider access (routing/models/keys)
+jarvis_mcp/server.py	tools.search_fallback	tool invocation layer
+jarvis_mcp/server.py	tools.search_tool	tool invocation layer
+jarvis_plugin_sdk/__init__.py	brain.events	runtime dependency
+jarvis_plugin_sdk/__init__.py	core.plugins.base	runtime dependency
+jarvis_tui/app/screens/activity_dashboard_screen.py	jarvis_tui.app.screens.base_screen	runtime dependency
+jarvis_tui/app/screens/agent_dashboard_screen.py	jarvis_tui.app.screens.base_screen	runtime dependency
+jarvis_tui/app/screens/automation_dashboard_screen.py	jarvis_tui.app.screens.base_screen	runtime dependency
+jarvis_tui/app/screens/base_screen.py	jarvis_tui.app.widgets.navigation	runtime dependency
+jarvis_tui/app/screens/base_screen.py	jarvis_tui.app.widgets.sidebar	runtime dependency
+jarvis_tui/app/screens/base_screen.py	jarvis_tui.app.widgets.status_bar	runtime dependency
+jarvis_tui/app/screens/base_screen.py	jarvis_tui.app.widgets.toast	runtime dependency
+jarvis_tui/app/screens/diagnostics_dashboard_screen.py	jarvis_tui.app.screens.base_screen	runtime dependency
+jarvis_tui/app/screens/feature_registry_screen.py	jarvis_tui.app.screens.base_screen	runtime dependency
+jarvis_tui/app/screens/home_screen.py	jarvis_tui.app.screens.base_screen	runtime dependency
+jarvis_tui/app/screens/home_screen.py	jarvis_tui.app.widgets.hero_banner	runtime dependency
+jarvis_tui/app/screens/integration_management_screen.py	jarvis_tui.app.screens.base_screen	runtime dependency
+jarvis_tui/app/screens/main_screen.py	jarvis_tui.app.widgets.chat_stream	runtime dependency
+jarvis_tui/app/screens/main_screen.py	jarvis_tui.app.widgets.cmd_palette	runtime dependency
+jarvis_tui/app/screens/main_screen.py	jarvis_tui.app.widgets.confirm_gate	runtime dependency
+jarvis_tui/app/screens/main_screen.py	jarvis_tui.app.widgets.diff_pane	runtime dependency
+jarvis_tui/app/screens/main_screen.py	jarvis_tui.app.widgets.hero_banner	runtime dependency
+jarvis_tui/app/screens/main_screen.py	jarvis_tui.app.widgets.input_bar	runtime dependency
+jarvis_tui/app/screens/main_screen.py	jarvis_tui.app.widgets.navigation	runtime dependency
+jarvis_tui/app/screens/main_screen.py	jarvis_tui.app.widgets.sidebar	runtime dependency
+jarvis_tui/app/screens/main_screen.py	jarvis_tui.app.widgets.status_bar	runtime dependency
+jarvis_tui/app/screens/main_screen.py	jarvis_tui.app.widgets.toast	runtime dependency
+jarvis_tui/app/screens/main_screen.py	jarvis_tui.app.widgets.whisper_channel	runtime dependency
+jarvis_tui/app/screens/memory_dashboard_screen.py	jarvis_tui.app.screens.base_screen	runtime dependency
+jarvis_tui/app/screens/model_management_screen.py	jarvis_tui.app.screens.base_screen	runtime dependency
+jarvis_tui/app/screens/placeholder_screen.py	jarvis_tui.app.screens.base_screen	runtime dependency
+jarvis_tui/app/screens/replay_screen.py	jarvis_tui.app.screens.base_screen	runtime dependency
+jarvis_tui/app/screens/settings_screen.py	jarvis_tui.app.screens.base_screen	runtime dependency
+jarvis_tui/app/screens/voice_dashboard_screen.py	jarvis_tui.app.screens.base_screen	runtime dependency
+jarvis_tui/app/widgets/cmd_palette.py	jarvis_tui.app.screens.replay_screen	runtime dependency
+jarvis_tui/app/widgets/sidebar.py	jarvis_tui.app.widgets.navigation	runtime dependency
+jarvis_tui/app/widgets/sidebar.py	jarvis_tui.app.widgets.todo_queue	runtime dependency
+jarvis_tui/main.py	jarvis_tui.app.screens.activity_dashboard_screen	runtime dependency
+jarvis_tui/main.py	jarvis_tui.app.screens.agent_dashboard_screen	runtime dependency
+jarvis_tui/main.py	jarvis_tui.app.screens.automation_dashboard_screen	runtime dependency
+jarvis_tui/main.py	jarvis_tui.app.screens.diagnostics_dashboard_screen	runtime dependency
+jarvis_tui/main.py	jarvis_tui.app.screens.home_screen	runtime dependency
+jarvis_tui/main.py	jarvis_tui.app.screens.integration_management_screen	runtime dependency
+jarvis_tui/main.py	jarvis_tui.app.screens.main_screen	runtime dependency
+jarvis_tui/main.py	jarvis_tui.app.screens.memory_dashboard_screen	runtime dependency
+jarvis_tui/main.py	jarvis_tui.app.screens.model_management_screen	runtime dependency
+jarvis_tui/main.py	jarvis_tui.app.screens.placeholder_screen	runtime dependency
+jarvis_tui/main.py	jarvis_tui.app.screens.settings_screen	runtime dependency
+jarvis_tui/main.py	jarvis_tui.app.screens.voice_dashboard_screen	runtime dependency
+jarvis_tui/main.py	jarvis_tui.app.services.activity_updates	runtime dependency
+jarvis_tui/main.py	jarvis_tui.app.services.jarvis_client	runtime dependency
+jarvis_tui/main.py	jarvis_tui.app.services.theme_manager	runtime dependency
+learning/__init__.py	learning	runtime dependency
+learning/listeners.py	core.event_bus	runtime dependency
+learning/listeners.py	learning.habit_tracker	runtime dependency
+learning/listeners.py	learning.pattern_engine	runtime dependency
+learning/listeners.py	memory.memory_facade	memory / knowledge recall
+learning/training_collector.py	core.storage	runtime dependency
+memory/__init__.py	memory.decision_store	memory / knowledge recall
+memory/__init__.py	memory.episodic_store	memory / knowledge recall
+memory/__init__.py	memory.experience	memory / knowledge recall
+memory/__init__.py	memory.extraction	memory / knowledge recall
+memory/__init__.py	memory.fact_store	memory / knowledge recall
+memory/__init__.py	memory.semantic_store	memory / knowledge recall
+memory/__init__.py	memory.task_store	memory / knowledge recall
+memory/core/storage.py	memory.decision_store	memory / knowledge recall
+memory/core/storage.py	memory.episodic_store	memory / knowledge recall
+memory/core/storage.py	memory.fact_store	memory / knowledge recall
+memory/core/storage.py	memory.semantic_store	memory / knowledge recall
+memory/core/storage.py	memory.task_store	memory / knowledge recall
+memory/crud_store.py	memory.similarity	memory / knowledge recall
+memory/crud_store.py	memory.vector_store	memory / knowledge recall
+memory/decision_store.py	memory.similarity	memory / knowledge recall
+memory/embedding_memory.py	core.errors	runtime dependency
+memory/embedding_memory.py	core.result	runtime dependency
+memory/embedding_memory.py	core.storage	runtime dependency
+memory/embedding_memory.py	memory.embedding_utils	memory / knowledge recall
+memory/episodic_store.py	memory.similarity	memory / knowledge recall
+memory/experience.py	memory.episodic_store	memory / knowledge recall
+memory/fact_store.py	core.storage	runtime dependency
+memory/fact_store.py	memory.embedding_memory	memory / knowledge recall
+memory/fact_store.py	memory.embedding_utils	memory / knowledge recall
+memory/fact_store.py	memory.extraction	memory / knowledge recall
+memory/mem0_adapter.py	core.configuration	runtime dependency
+memory/memory_facade.py	memory.decision_store	memory / knowledge recall
+memory/memory_facade.py	memory.episodic_store	memory / knowledge recall
+memory/memory_facade.py	memory.experience	memory / knowledge recall
+memory/memory_facade.py	memory.mem0_adapter	memory / knowledge recall
+memory/memory_facade.py	memory.semantic_store	memory / knowledge recall
+memory/memory_facade.py	memory.task_store	memory / knowledge recall
+memory/memory_facade.py	memory.tiered_memory	memory / knowledge recall
+memory/memory_facade.py	memory.vector_store	memory / knowledge recall
+memory/preference_profile.py	memory.fact_store	memory / knowledge recall
+memory/semantic_store.py	memory.similarity	memory / knowledge recall
+memory/similarity.py	core.embeddings	runtime dependency
+memory/tiered_memory.py	brain.events	runtime dependency
+memory/tiered_memory.py	memory.embedding_memory	memory / knowledge recall
+memory/vector_store.py	core.chroma_client	runtime dependency
+memory/vector_store.py	core.embeddings	runtime dependency
+models/hybrid_models.py	core.configuration	runtime dependency
+models/hybrid_models.py	core.llm_router	runtime dependency
+models/hybrid_models.py	core.types	data contract: shared types
+monitors/__init__.py	monitors.alerts	runtime dependency
+monitors/__init__.py	monitors.resource	runtime dependency
+monitors/__init__.py	monitors.services	runtime dependency
+monitors/resource.py	core.observability.metrics	runtime dependency
+monitors/services.py	core.configuration	runtime dependency
+network/websocket_server.py	core.intent_router	runtime dependency
+network/websocket_server.py	core.llm_router	runtime dependency
+network/websocket_server.py	core.main	runtime dependency
+notes/activity_tracker.py	core.database	runtime dependency
+pc_agent/computer_agent.py	core.llm_router	runtime dependency
+pc_agent/computer_agent.py	core.sandbox.sandbox	runtime dependency
+pc_agent/computer_agent.py	governance.GovernanceValidator	runtime dependency
+pc_agent/computer_agent.py	governance.exceptions	runtime dependency
+pc_agent/computer_agent.py	pc_agent.snapshot	runtime dependency
+plugins/file_tools_plugin.py	core.plugins	runtime dependency
+plugins/file_tools_plugin.py	core.tools.execution	runtime dependency
+plugins/pc_automation_plugin.py	core.desktop.controller	OS/desktop control capability
+plugins/pc_automation_plugin.py	core.plugins	runtime dependency
+plugins/pc_automation_plugin.py	governance.GovernanceValidator	runtime dependency
+plugins/pii_routing_plugin.py	core.plugins	runtime dependency
+plugins/pii_routing_plugin.py	core.privacy_classifier	runtime dependency
+plugins/wake_word_plugin.py	core.plugins	runtime dependency
+provider_sdk/__init__.py	provider_sdk.discovery	LLM provider access (routing/models/keys)
+provider_sdk/__init__.py	provider_sdk.loader	LLM provider access (routing/models/keys)
+provider_sdk/__init__.py	provider_sdk.manifest	LLM provider access (routing/models/keys)
+provider_sdk/__init__.py	provider_sdk.permissions	LLM provider access (routing/models/keys)
+provider_sdk/__init__.py	provider_sdk.registration	LLM provider access (routing/models/keys)
+provider_sdk/adapters/cli_adapter.py	core.providers.base	LLM provider access (routing/models/keys)
+provider_sdk/adapters/cli_adapter.py	provider_sdk.manifest	LLM provider access (routing/models/keys)
+provider_sdk/adapters/grpc_adapter.py	core.providers.base	LLM provider access (routing/models/keys)
+provider_sdk/adapters/grpc_adapter.py	provider_sdk.manifest	LLM provider access (routing/models/keys)
+provider_sdk/adapters/http_adapter.py	core.providers.base	LLM provider access (routing/models/keys)
+provider_sdk/adapters/http_adapter.py	provider_sdk.manifest	LLM provider access (routing/models/keys)
+provider_sdk/adapters/mcp_adapter.py	core.providers.base	LLM provider access (routing/models/keys)
+provider_sdk/adapters/mcp_adapter.py	provider_sdk.manifest	LLM provider access (routing/models/keys)
+provider_sdk/discovery.py	provider_sdk.manifest	LLM provider access (routing/models/keys)
+provider_sdk/lifecycle.py	provider_sdk.manifest_v2	LLM provider access (routing/models/keys)
+provider_sdk/lifecycle.py	provider_sdk.quarantine	LLM provider access (routing/models/keys)
+provider_sdk/lifecycle.py	provider_sdk.registration	LLM provider access (routing/models/keys)
+provider_sdk/lifecycle.py	provider_sdk.stages	LLM provider access (routing/models/keys)
+provider_sdk/loader.py	provider_sdk.adapters.cli_adapter	LLM provider access (routing/models/keys)
+provider_sdk/loader.py	provider_sdk.adapters.http_adapter	LLM provider access (routing/models/keys)
+provider_sdk/loader.py	provider_sdk.adapters.mcp_adapter	LLM provider access (routing/models/keys)
+provider_sdk/loader.py	provider_sdk.manifest	LLM provider access (routing/models/keys)
+provider_sdk/manifest_v2.py	provider_sdk.manifest	LLM provider access (routing/models/keys)
+provider_sdk/manifest_v2.py	provider_sdk.permissions	LLM provider access (routing/models/keys)
+provider_sdk/registration.py	core.capability.registry	runtime dependency
+provider_sdk/registration.py	core.providers.registry	LLM provider access (routing/models/keys)
+provider_sdk/registration.py	provider_sdk.discovery	LLM provider access (routing/models/keys)
+provider_sdk/registration.py	provider_sdk.loader	LLM provider access (routing/models/keys)
+provider_sdk/registration.py	provider_sdk.manifest	LLM provider access (routing/models/keys)
+provider_sdk/registration.py	provider_sdk.manifest_v2	LLM provider access (routing/models/keys)
+provider_sdk/stages.py	provider_sdk.manifest_v2	LLM provider access (routing/models/keys)
+provider_sdk/stages.py	provider_sdk.permissions	LLM provider access (routing/models/keys)
+provider_sdk/stages.py	provider_sdk.registration	LLM provider access (routing/models/keys)
+providers/example_provider.py	core.providers.base	LLM provider access (routing/models/keys)
+reminders/manager.py	core.database	runtime dependency
+scripts/migrate_secrets.py	core.secret_storage	runtime dependency
+scripts/verify.py	core.agent_loop	runtime dependency
+scripts/verify.py	core.configuration.service	reads configuration/constants
+scripts/verify2.py	core.configuration.service	reads configuration/constants
+services/memory/skills.py	services.memory.skill_format	runtime dependency
+skills/__init__.py	skills.manager	runtime dependency
+skills/library/entertainment/games/main.py	skills.utils	runtime dependency
+skills/library/entertainment/joke/main.py	skills.utils	runtime dependency
+skills/library/entertainment/movie_rec/main.py	skills.utils	runtime dependency
+skills/library/entertainment/news/main.py	skills.utils	runtime dependency
+skills/library/entertainment/news/main.py	tools.search_tool	tool invocation layer
+skills/library/entertainment/quiz/main.py	skills.utils	runtime dependency
+skills/library/entertainment/quote/main.py	skills.utils	runtime dependency
+skills/library/entertainment/recipe/main.py	skills.utils	runtime dependency
+skills/library/entertainment/sports/main.py	skills.utils	runtime dependency
+skills/library/entertainment/spotify/main.py	skills.utils	runtime dependency
+skills/library/entertainment/weather/main.py	core.integrations.weather	runtime dependency
+skills/library/entertainment/weather/main.py	skills.utils	runtime dependency
+skills/library/finance/bill_reminder/main.py	skills.utils	runtime dependency
+skills/library/finance/budget/main.py	skills.utils	runtime dependency
+skills/library/finance/crypto/main.py	skills.utils	runtime dependency
+skills/library/finance/expenses/main.py	skills.utils	runtime dependency
+skills/library/finance/gold_price/main.py	skills.utils	runtime dependency
+skills/library/finance/inflation/main.py	skills.utils	runtime dependency
+skills/library/finance/loan_emi/main.py	skills.utils	runtime dependency
+skills/library/finance/stocks/main.py	core.integrations.stocks	runtime dependency
+skills/library/finance/stocks/main.py	skills.utils	runtime dependency
+skills/library/finance/tax_calc/main.py	skills.utils	runtime dependency
+skills/library/finance/upi_gen/main.py	skills.utils	runtime dependency
+skills/library/knowledge/code_snippet/main.py	skills.utils	runtime dependency
+skills/library/knowledge/dictionary/main.py	skills.utils	runtime dependency
+skills/library/knowledge/fact_check/main.py	skills.utils	runtime dependency
+skills/library/knowledge/latex_math/main.py	skills.utils	runtime dependency
+skills/library/knowledge/paper_summarizer/main.py	skills.utils	runtime dependency
+skills/library/knowledge/regex_helper/main.py	skills.utils	runtime dependency
+skills/library/knowledge/sql_assistant/main.py	skills.utils	runtime dependency
+skills/library/knowledge/thesaurus/main.py	skills.utils	runtime dependency
+skills/library/knowledge/translator/main.py	skills.utils	runtime dependency
+skills/library/knowledge/wikipedia/main.py	skills.utils	runtime dependency
+skills/library/productivity/calendar/main.py	skills.utils	runtime dependency
+skills/library/productivity/email_summarizer/main.py	skills.utils	runtime dependency
+skills/library/productivity/github_issues/main.py	skills.utils	runtime dependency
+skills/library/productivity/habit_tracker/main.py	skills.utils	runtime dependency
+skills/library/productivity/linkedin_drafter/main.py	skills.utils	runtime dependency
+skills/library/productivity/meeting_minutes/main.py	skills.utils	runtime dependency
+skills/library/productivity/pdf_extractor/main.py	skills.utils	runtime dependency
+skills/library/productivity/pomodoro/main.py	skills.utils	runtime dependency
+skills/library/productivity/todoist/main.py	skills.utils	runtime dependency
+skills/library/productivity/url_shortener/main.py	skills.utils	runtime dependency
+skills/library/system/clipboard/main.py	skills.utils	runtime dependency
+skills/library/system/file_organizer/main.py	skills.utils	runtime dependency
+skills/library/system/ip_lookup/main.py	skills.utils	runtime dependency
+skills/library/system/password_gen/main.py	skills.utils	runtime dependency
+skills/library/system/qr_gen/main.py	skills.utils	runtime dependency
+skills/library/system/screenshot/main.py	skills.utils	runtime dependency
+skills/library/system/speedtest/main.py	skills.utils	runtime dependency
+skills/library/system/system_monitor/main.py	skills.utils	runtime dependency
+skills/library/system/timer/main.py	skills.utils	runtime dependency
+skills/library/system/unit_converter/main.py	skills.utils	runtime dependency
+spcl9_remediation_test.py	core.pipeline	canonical request pipeline
+spcl9_remediation_test.py	core.pipeline.base	canonical request pipeline
+spcl9_remediation_test.py	core.pipeline.stages.execution	canonical request pipeline
+spcl9_remediation_test.py	core.pipeline.stages.formatter	canonical request pipeline
+spcl9_remediation_test.py	core.pipeline.stages.intent	canonical request pipeline
+spcl9_remediation_test.py	core.pipeline.stages.load_context	canonical request pipeline
+spcl9_remediation_test.py	core.pipeline.stages.plan_validator	canonical request pipeline
+spcl9_remediation_test.py	core.pipeline.stages.planner	canonical request pipeline
+spcl9_remediation_test.py	core.pipeline.stages.reasoner	canonical request pipeline
+spcl9_remediation_test.py	core.pipeline.stages.receive	canonical request pipeline
+spcl9_remediation_test.py	core.pipeline.stages.verification	canonical request pipeline
+spcl9_remediation_test.py	core.planner.outcomes	runtime dependency
+spcl9_step3_test.py	core.identity.models	data contract: shared types
+spcl9_step3_test.py	core.pipeline	canonical request pipeline
+spcl9_step3_test.py	core.pipeline.base	canonical request pipeline
+spcl9_step3_test.py	core.pipeline.stages.execution	canonical request pipeline
+spcl9_step3_test.py	core.pipeline.stages.formatter	canonical request pipeline
+spcl9_step3_test.py	core.pipeline.stages.intent	canonical request pipeline
+spcl9_step3_test.py	core.pipeline.stages.load_context	canonical request pipeline
+spcl9_step3_test.py	core.pipeline.stages.plan_validator	canonical request pipeline
+spcl9_step3_test.py	core.pipeline.stages.planner	canonical request pipeline
+spcl9_step3_test.py	core.pipeline.stages.reasoner	canonical request pipeline
+spcl9_step3_test.py	core.pipeline.stages.receive	canonical request pipeline
+spcl9_step3_test.py	core.pipeline.stages.verification	canonical request pipeline
+spcl9_step3_test.py	core.planner.outcomes	runtime dependency
+spcl9_step4_test.py	core.pipeline	canonical request pipeline
+spcl9_step4_test.py	core.pipeline.base	canonical request pipeline
+spcl9_step4_test.py	core.pipeline.stages.execution	canonical request pipeline
+spcl9_step4_test.py	core.pipeline.stages.formatter	canonical request pipeline
+spcl9_step4_test.py	core.pipeline.stages.intent	canonical request pipeline
+spcl9_step4_test.py	core.pipeline.stages.load_context	canonical request pipeline
+spcl9_step4_test.py	core.pipeline.stages.plan_validator	canonical request pipeline
+spcl9_step4_test.py	core.pipeline.stages.planner	canonical request pipeline
+spcl9_step4_test.py	core.pipeline.stages.reasoner	canonical request pipeline
+spcl9_step4_test.py	core.pipeline.stages.receive	canonical request pipeline
+spcl9_step4_test.py	core.pipeline.stages.verification	canonical request pipeline
+spcl9_step4_test.py	core.planner.outcomes	runtime dependency
+spcl9_step5_test.py	core.planner.outcomes	runtime dependency
+test_integration_pipeline.py	core.pipeline.base	canonical request pipeline
+test_integration_pipeline.py	core.pipeline.context	canonical request pipeline
+test_integration_pipeline.py	core.pipeline.pipeline	canonical request pipeline
+test_integration_pipeline.py	core.pipeline.stages.execution	canonical request pipeline
+test_integration_pipeline.py	core.pipeline.stages.formatter	canonical request pipeline
+test_integration_pipeline.py	core.pipeline.stages.intent	canonical request pipeline
+test_integration_pipeline.py	core.pipeline.stages.load_context	canonical request pipeline
+test_integration_pipeline.py	core.pipeline.stages.plan_validator	canonical request pipeline
+test_integration_pipeline.py	core.pipeline.stages.planner	canonical request pipeline
+test_integration_pipeline.py	core.pipeline.stages.reasoner	canonical request pipeline
+test_integration_pipeline.py	core.pipeline.stages.receive	canonical request pipeline
+test_integration_pipeline.py	core.pipeline.stages.verification	canonical request pipeline
+test_live_desktop.py	core.desktop.controller	OS/desktop control capability
+test_live_desktop.py	core.desktop.window	OS/desktop control capability
+test_task_demo.py	core.desktop.controller	OS/desktop control capability
+test_task_demo.py	core.desktop.window	OS/desktop control capability
+test_task_demo.py	core.workspace.process_monitor	runtime dependency
+tests/acceptance/_probe_import.py	core.tools.browser_tools	verification: test exercises the target
+tests/acceptance/browser_ai_stress.py	core.browser.browser_ai	verification: test exercises the target
+tests/acceptance/browser_ai_stress.py	core.browser.procedural_memory	verification: test exercises the target
+tests/acceptance/browser_ai_stress.py	core.browser_manager	verification: test exercises the target
+tests/acceptance/test_browser_acceptance.py	core.auth	verification: test exercises the target
+tests/acceptance/test_browser_acceptance.py	core.browser_manager	verification: test exercises the target
+tests/acceptance/test_browser_acceptance.py	core.configuration	verification: test exercises the target
+tests/acceptance/test_browser_acceptance.py	core.tools.browser_tools	verification: test exercises the target
+tests/acceptance/test_browser_acceptance.py	core.tools.security	verification: test exercises the target
+tests/acceptance/test_browser_ai_acceptance.py	core.browser.browser_ai	verification: test exercises the target
+tests/acceptance/test_browser_ai_acceptance.py	core.browser.page_security	verification: test exercises the target
+tests/acceptance/test_browser_ai_acceptance.py	core.browser.procedural_memory	verification: test exercises the target
+tests/acceptance/test_browser_ai_acceptance.py	core.browser.registration	verification: test exercises the target
+tests/acceptance/test_browser_ai_acceptance.py	core.browser_manager	verification: test exercises the target
+tests/acceptance/test_browser_ai_acceptance.py	core.configuration	verification: test exercises the target
+tests/acceptance/test_browser_ai_acceptance.py	core.tools.browser_tools	verification: test exercises the target
+tests/acceptance/test_coding_ai_real_repo.py	core.coding	verification: test exercises the target
+tests/acceptance/test_coding_tool_broker_acceptance.py	core.coding	verification: test exercises the target
+tests/acceptance/test_coding_tool_broker_acceptance.py	core.coding.change_planner	verification: test exercises the target
+tests/acceptance/test_end_user_workflows.py	core.browser_manager	verification: test exercises the target
+tests/acceptance/test_end_user_workflows.py	core.tools.browser_tools	verification: test exercises the target
+tests/acceptance/test_messy_repo_hardening.py	core.coding	verification: test exercises the target
+tests/acceptance/test_messy_repo_hardening.py	core.coding.architecture_map	verification: test exercises the target
+tests/acceptance/test_messy_repo_hardening.py	core.coding.change_planner	verification: test exercises the target
+tests/acceptance/test_messy_repo_hardening.py	core.coding.coding_agent	verification: test exercises the target
+tests/acceptance/test_messy_repo_hardening.py	core.coding.dependency_graph	verification: test exercises the target
+tests/acceptance/test_messy_repo_hardening.py	core.coding.impact_analyzer	verification: test exercises the target
+tests/acceptance/test_messy_repo_hardening.py	core.coding.refactoring_engine	verification: test exercises the target
+tests/acceptance/test_messy_repo_hardening.py	core.coding.repository_indexer	verification: test exercises the target
+tests/acceptance/test_real_repo_harness.py	core.coding	verification: test exercises the target
+tests/acceptance/test_real_repo_harness.py	core.coding.coding_agent	verification: test exercises the target
+tests/architecture/browser_e2e/runner.py	core.agent_loop	verification: test exercises the target
+tests/architecture/browser_e2e/runner.py	core.authz.engine	verification: test exercises the target
+tests/architecture/browser_e2e/runner.py	core.authz.schema	verification: test exercises the target
+tests/architecture/conftest.py	core.providers.registry	verification: test exercises the target
+tests/architecture/test_architecture_audit.py	core.distribution.graph.models	verification: test exercises the target
+tests/architecture/test_architecture_audit.py	core.distribution.graph.recovery	verification: test exercises the target
+tests/architecture/test_architecture_audit.py	core.distribution.graph.scheduler	verification: test exercises the target
+tests/architecture/test_architecture_audit.py	core.pipeline.messages	verification: test exercises the target
+tests/architecture/test_architecture_metrics.py	core.pipeline.architecture_metrics	verification: test exercises the target
+tests/architecture/test_architecture_metrics.py	core.pipeline.context	verification: test exercises the target
+tests/architecture/test_architecture_metrics.py	core.pipeline.deterministic	verification: test exercises the target
+tests/architecture/test_architecture_metrics.py	core.pipeline.pipeline	verification: test exercises the target
+tests/architecture/test_architecture_metrics.py	core.pipeline.stages.execution	verification: test exercises the target
+tests/architecture/test_architecture_metrics.py	core.pipeline.stages.memory	verification: test exercises the target
+tests/architecture/test_architecture_metrics.py	core.pipeline.stages.verification	verification: test exercises the target
+tests/architecture/test_architecture_metrics.py	core.providers.base	verification: test exercises the target
+tests/architecture/test_architecture_metrics.py	core.providers.router	verification: test exercises the target
+tests/architecture/test_architecture_metrics.py	core.runtime_version	verification: test exercises the target
+tests/architecture/test_authentication.py	core	verification: test exercises the target
+tests/architecture/test_authentication.py	core.auth	verification: test exercises the target
+tests/architecture/test_authentication.py	core.identity	verification: test exercises the target
+tests/architecture/test_authentication.py	core.identity.models	verification: test exercises the target
+tests/architecture/test_authentication.py	core.pipeline.authentication_result	verification: test exercises the target
+tests/architecture/test_authentication.py	core.pipeline.base	verification: test exercises the target
+tests/architecture/test_authentication.py	core.pipeline.context	verification: test exercises the target
+tests/architecture/test_authentication.py	core.pipeline.deterministic	verification: test exercises the target
+tests/architecture/test_authentication.py	core.pipeline.messages	verification: test exercises the target
+tests/architecture/test_authentication.py	core.pipeline.pipeline	verification: test exercises the target
+tests/architecture/test_authentication.py	core.pipeline.stages.auth	verification: test exercises the target
+tests/architecture/test_authorization.py	core	verification: test exercises the target
+tests/architecture/test_authorization.py	core.auth	verification: test exercises the target
+tests/architecture/test_authorization.py	core.identity	verification: test exercises the target
+tests/architecture/test_authorization.py	core.identity.models	verification: test exercises the target
+tests/architecture/test_authorization.py	core.pipeline.authorization_result	verification: test exercises the target
+tests/architecture/test_authorization.py	core.pipeline.base	verification: test exercises the target
+tests/architecture/test_authorization.py	core.pipeline.context	verification: test exercises the target
+tests/architecture/test_authorization.py	core.pipeline.deterministic	verification: test exercises the target
+tests/architecture/test_authorization.py	core.pipeline.messages	verification: test exercises the target
+tests/architecture/test_authorization.py	core.pipeline.pipeline	verification: test exercises the target
+tests/architecture/test_authorization.py	core.pipeline.stages.auth	verification: test exercises the target
+tests/architecture/test_authorization.py	core.pipeline.stages.authorization	verification: test exercises the target
+tests/architecture/test_backward_compat.py	provider_sdk.lifecycle	verification: test exercises the target
+tests/architecture/test_backward_compat.py	provider_sdk.manifest	verification: test exercises the target
+tests/architecture/test_backward_compat.py	provider_sdk.manifest_v2	verification: test exercises the target
+tests/architecture/test_backward_compat.py	provider_sdk.registration	verification: test exercises the target
+tests/architecture/test_boot_resilience.py	provider_sdk.lifecycle	verification: test exercises the target
+tests/architecture/test_boot_resilience.py	provider_sdk.quarantine	verification: test exercises the target
+tests/architecture/test_boot_resilience.py	provider_sdk.registration	verification: test exercises the target
+tests/architecture/test_capability_gates.py	core.capability.composition	verification: test exercises the target
+tests/architecture/test_capability_gates.py	core.capability.graph	verification: test exercises the target
+tests/architecture/test_capability_gates.py	core.capability.models	verification: test exercises the target
+tests/architecture/test_capability_gates.py	core.capability.negotiation	verification: test exercises the target
+tests/architecture/test_capability_gates.py	core.capability.registry	verification: test exercises the target
+tests/architecture/test_capability_gates.py	core.planner	verification: test exercises the target
+tests/architecture/test_capability_gates.py	core.providers.base	verification: test exercises the target
+tests/architecture/test_capability_gates.py	core.providers.router	verification: test exercises the target
+tests/architecture/test_desktop_gates.py	core.capability	verification: test exercises the target
+tests/architecture/test_desktop_gates.py	core.capability.composition	verification: test exercises the target
+tests/architecture/test_desktop_gates.py	core.capability.graph	verification: test exercises the target
+tests/architecture/test_desktop_gates.py	core.capability.models	verification: test exercises the target
+tests/architecture/test_desktop_gates.py	core.desktop.controller	verification: test exercises the target
+tests/architecture/test_desktop_gates.py	core.desktop.replay	verification: test exercises the target
+tests/architecture/test_desktop_gates.py	core.desktop.safety	verification: test exercises the target
+tests/architecture/test_desktop_gates.py	core.desktop.screen	verification: test exercises the target
+tests/architecture/test_desktop_gates.py	core.desktop.window	verification: test exercises the target
+tests/architecture/test_desktop_gates.py	core.permission.registry	verification: test exercises the target
+tests/architecture/test_desktop_gates.py	core.planner	verification: test exercises the target
+tests/architecture/test_desktop_gates.py	core.providers.adapters	verification: test exercises the target
+tests/architecture/test_desktop_gates.py	core.providers.adapters.desktop_provider	verification: test exercises the target
+tests/architecture/test_desktop_gates.py	core.providers.adapters.workspace_provider	verification: test exercises the target
+tests/architecture/test_deterministic.py	core.pipeline.context	verification: test exercises the target
+tests/architecture/test_deterministic.py	core.pipeline.deterministic	verification: test exercises the target
+tests/architecture/test_deterministic.py	core.pipeline.observation	verification: test exercises the target
+tests/architecture/test_deterministic_registration.py	provider_sdk.lifecycle	verification: test exercises the target
+tests/architecture/test_deterministic_registration.py	provider_sdk.manifest_v2	verification: test exercises the target
+tests/architecture/test_deterministic_registration.py	provider_sdk.quarantine	verification: test exercises the target
+tests/architecture/test_deterministic_registration.py	provider_sdk.registration	verification: test exercises the target
+tests/architecture/test_enforce_canonical.py	core.config_registry	verification: test exercises the target
+tests/architecture/test_identity_models.py	core.identity.models	verification: test exercises the target
+tests/architecture/test_identity_propagation.py	core.identity	verification: test exercises the target
+tests/architecture/test_identity_propagation.py	core.identity.models	verification: test exercises the target
+tests/architecture/test_identity_propagation.py	core.pipeline.base	verification: test exercises the target
+tests/architecture/test_identity_propagation.py	core.pipeline.context	verification: test exercises the target
+tests/architecture/test_identity_propagation.py	core.pipeline.messages	verification: test exercises the target
+tests/architecture/test_identity_propagation.py	core.pipeline.pipeline	verification: test exercises the target
+tests/architecture/test_identity_service.py	core.identity	verification: test exercises the target
+tests/architecture/test_identity_service.py	core.identity.models	verification: test exercises the target
+tests/architecture/test_intelligence_replay.py	core.pipeline.context	verification: test exercises the target
+tests/architecture/test_intelligence_replay.py	core.pipeline.deterministic	verification: test exercises the target
+tests/architecture/test_intelligence_replay.py	core.pipeline.explanation_result	verification: test exercises the target
+tests/architecture/test_intelligence_replay.py	core.pipeline.knowledge_result	verification: test exercises the target
+tests/architecture/test_intelligence_replay.py	core.pipeline.learning_result	verification: test exercises the target
+tests/architecture/test_intelligence_replay.py	core.pipeline.planner_result	verification: test exercises the target
+tests/architecture/test_intelligence_replay.py	core.pipeline.policy_optimization_result	verification: test exercises the target
+tests/architecture/test_intelligence_replay.py	core.pipeline.reasoning_result	verification: test exercises the target
+tests/architecture/test_intelligence_replay.py	core.pipeline.reflection_result	verification: test exercises the target
+tests/architecture/test_intelligence_replay.py	core.pipeline.stages.explainability	verification: test exercises the target
+tests/architecture/test_intelligence_replay.py	core.pipeline.stages.knowledge	verification: test exercises the target
+tests/architecture/test_intelligence_replay.py	core.pipeline.stages.learning	verification: test exercises the target
+tests/architecture/test_intelligence_replay.py	core.pipeline.stages.planner	verification: test exercises the target
+tests/architecture/test_intelligence_replay.py	core.pipeline.stages.policy_optimization	verification: test exercises the target
+tests/architecture/test_intelligence_replay.py	core.pipeline.stages.reasoning	verification: test exercises the target
+tests/architecture/test_intelligence_replay.py	core.pipeline.stages.reflection	verification: test exercises the target
+tests/architecture/test_manifest_v2.py	provider_sdk.manifest_v2	verification: test exercises the target
+tests/architecture/test_memory_contradiction.py	memory.extraction	verification: test exercises the target
+tests/architecture/test_memory_contradiction.py	memory.fact_store	verification: test exercises the target
+tests/architecture/test_memory_extraction.py	memory.extraction	verification: test exercises the target
+tests/architecture/test_memory_extraction.py	memory.fact_store	verification: test exercises the target
+tests/architecture/test_observation_hub.py	core.event_bus	verification: test exercises the target
+tests/architecture/test_observation_hub.py	core.observation	verification: test exercises the target
+tests/architecture/test_observation_hub.py	core.observation.hub	verification: test exercises the target
+tests/architecture/test_observation_hub.py	core.pipeline.observation	verification: test exercises the target
+tests/architecture/test_permission_gates.py	core.capability.composition	verification: test exercises the target
+tests/architecture/test_permission_gates.py	core.capability.graph	verification: test exercises the target
+tests/architecture/test_permission_gates.py	core.capability.models	verification: test exercises the target
+tests/architecture/test_permission_gates.py	core.capability.negotiation	verification: test exercises the target
+tests/architecture/test_permission_gates.py	core.permission.audit	verification: test exercises the target
+tests/architecture/test_permission_gates.py	core.permission.manager	verification: test exercises the target
+tests/architecture/test_permission_gates.py	core.permission.models	verification: test exercises the target
+tests/architecture/test_permission_gates.py	core.permission.observer	verification: test exercises the target
+tests/architecture/test_permission_gates.py	core.permission.policy	verification: test exercises the target
+tests/architecture/test_permission_gates.py	core.permission.registry	verification: test exercises the target
+tests/architecture/test_permission_gates.py	core.planner	verification: test exercises the target
+tests/architecture/test_permission_gates.py	provider_sdk.manifest_v2	verification: test exercises the target
+tests/architecture/test_permission_gates.py	provider_sdk.permissions	verification: test exercises the target
+tests/architecture/test_permissions.py	provider_sdk.permissions	verification: test exercises the target
+tests/architecture/test_pipeline.py	provider_sdk.lifecycle	verification: test exercises the target
+tests/architecture/test_pipeline.py	provider_sdk.manifest_v2	verification: test exercises the target
+tests/architecture/test_pipeline.py	provider_sdk.registration	verification: test exercises the target
+tests/architecture/test_pipeline.py	provider_sdk.stages	verification: test exercises the target
+tests/architecture/test_pipeline_contract.py	core.identity.models	verification: test exercises the target
+tests/architecture/test_pipeline_contract.py	core.pipeline	verification: test exercises the target
+tests/architecture/test_pipeline_contract.py	core.pipeline.base	verification: test exercises the target
+tests/architecture/test_pipeline_contract.py	core.pipeline.deterministic	verification: test exercises the target
+tests/architecture/test_pipeline_contract.py	core.pipeline.knowledge_result	verification: test exercises the target
+tests/architecture/test_pipeline_contract.py	core.pipeline.reasoning_result	verification: test exercises the target
+tests/architecture/test_pipeline_contract.py	core.pipeline.reflection_result	verification: test exercises the target
+tests/architecture/test_pipeline_contract.py	core.pipeline.stages	verification: test exercises the target
+tests/architecture/test_pipeline_executor.py	core.pipeline.messages	verification: test exercises the target
+tests/architecture/test_pipeline_executor.py	core.scheduler.pipeline_executor	verification: test exercises the target
+tests/architecture/test_pipeline_reasoning.py	core.pipeline.base	verification: test exercises the target
+tests/architecture/test_pipeline_reasoning.py	core.pipeline.context	verification: test exercises the target
+tests/architecture/test_pipeline_reasoning.py	core.pipeline.stages.execution	verification: test exercises the target
+tests/architecture/test_pipeline_reasoning.py	core.pipeline.stages.memory	verification: test exercises the target
+tests/architecture/test_pipeline_reasoning.py	core.pipeline.stages.verification	verification: test exercises the target
+tests/architecture/test_pipeline_reasoning.py	core.pipeline.store_decision	verification: test exercises the target
+tests/architecture/test_pipeline_stream.py	core.pipeline	verification: test exercises the target
+tests/architecture/test_pipeline_stream.py	core.pipeline.base	verification: test exercises the target
+tests/architecture/test_preference_profile.py	memory.extraction	verification: test exercises the target
+tests/architecture/test_preference_profile.py	memory.fact_store	verification: test exercises the target
+tests/architecture/test_preference_profile.py	memory.preference_profile	verification: test exercises the target
+tests/architecture/test_quarantine.py	provider_sdk.lifecycle	verification: test exercises the target
+tests/architecture/test_quarantine.py	provider_sdk.quarantine	verification: test exercises the target
+tests/architecture/test_registration_atomicity.py	provider_sdk.lifecycle	verification: test exercises the target
+tests/architecture/test_registration_atomicity.py	provider_sdk.manifest_v2	verification: test exercises the target
+tests/architecture/test_registration_atomicity.py	provider_sdk.registration	verification: test exercises the target
+tests/architecture/test_rejection_reports.py	provider_sdk.lifecycle	verification: test exercises the target
+tests/architecture/test_rejection_reports.py	provider_sdk.manifest_v2	verification: test exercises the target
+tests/architecture/test_rejection_reports.py	provider_sdk.quarantine	verification: test exercises the target
+tests/architecture/test_replay_validation.py	core.identity	verification: test exercises the target
+tests/architecture/test_replay_validation.py	core.identity.models	verification: test exercises the target
+tests/architecture/test_replay_validation.py	core.identity.resource_scope	verification: test exercises the target
+tests/architecture/test_replay_validation.py	core.identity.tenant_resolver	verification: test exercises the target
+tests/architecture/test_replay_validation.py	core.pipeline.authentication_result	verification: test exercises the target
+tests/architecture/test_replay_validation.py	core.pipeline.authorization_result	verification: test exercises the target
+tests/architecture/test_replay_validation.py	core.pipeline.context	verification: test exercises the target
+tests/architecture/test_replay_validation.py	core.pipeline.deterministic	verification: test exercises the target
+tests/architecture/test_replay_validation.py	core.pipeline.observation	verification: test exercises the target
+tests/architecture/test_replay_validation.py	core.pipeline.outcome	verification: test exercises the target
+tests/architecture/test_replay_validation.py	core.pipeline.pipeline	verification: test exercises the target
+tests/architecture/test_replay_validation.py	core.pipeline.resource_grant	verification: test exercises the target
+tests/architecture/test_replay_validation.py	core.pipeline.stages.execution	verification: test exercises the target
+tests/architecture/test_replay_validation.py	core.pipeline.stages.verification	verification: test exercises the target
+tests/architecture/test_replay_validation.py	core.pipeline.store_decision	verification: test exercises the target
+tests/architecture/test_replay_validation.py	core.providers.base	verification: test exercises the target
+tests/architecture/test_replay_validation.py	core.providers.router	verification: test exercises the target
+tests/architecture/test_replay_validation.py	core.runtime	verification: test exercises the target
+tests/architecture/test_replay_validation.py	core.runtime.protocols	verification: test exercises the target
+tests/architecture/test_replay_validation.py	core.runtime.providers	verification: test exercises the target
+tests/architecture/test_reranker.py	memory.reranker	verification: test exercises the target
+tests/architecture/test_resource_access.py	core.identity.models	verification: test exercises the target
+tests/architecture/test_resource_access.py	core.identity.resource_scope	verification: test exercises the target
+tests/architecture/test_resource_access.py	core.pipeline.base	verification: test exercises the target
+tests/architecture/test_resource_access.py	core.pipeline.context	verification: test exercises the target
+tests/architecture/test_resource_access.py	core.pipeline.messages	verification: test exercises the target
+tests/architecture/test_resource_access.py	core.pipeline.pipeline	verification: test exercises the target
+tests/architecture/test_resource_access.py	core.pipeline.resource_access_result	verification: test exercises the target
+tests/architecture/test_resource_access.py	core.pipeline.resource_grant	verification: test exercises the target
+tests/architecture/test_resource_access.py	core.pipeline.stages.auth	verification: test exercises the target
+tests/architecture/test_resource_access.py	core.pipeline.stages.authorization	verification: test exercises the target
+tests/architecture/test_resource_access.py	core.pipeline.stages.resource_access	verification: test exercises the target
+tests/architecture/test_resource_grant.py	core	verification: test exercises the target
+tests/architecture/test_resource_grant.py	core.auth	verification: test exercises the target
+tests/architecture/test_resource_grant.py	core.identity	verification: test exercises the target
+tests/architecture/test_resource_grant.py	core.pipeline.base	verification: test exercises the target
+tests/architecture/test_resource_grant.py	core.pipeline.context	verification: test exercises the target
+tests/architecture/test_resource_grant.py	core.pipeline.messages	verification: test exercises the target
+tests/architecture/test_resource_grant.py	core.pipeline.pipeline	verification: test exercises the target
+tests/architecture/test_resource_grant.py	core.pipeline.resource_grant	verification: test exercises the target
+tests/architecture/test_resource_grant.py	core.pipeline.stages.auth	verification: test exercises the target
+tests/architecture/test_resource_grant.py	core.pipeline.stages.authorization	verification: test exercises the target
+tests/architecture/test_resource_scope.py	core.identity	verification: test exercises the target
+tests/architecture/test_resource_scope.py	core.identity.resource_scope	verification: test exercises the target
+tests/architecture/test_resource_scope.py	core.pipeline.base	verification: test exercises the target
+tests/architecture/test_resource_scope.py	core.pipeline.context	verification: test exercises the target
+tests/architecture/test_resource_scope.py	core.pipeline.messages	verification: test exercises the target
+tests/architecture/test_resource_scope.py	core.pipeline.observation	verification: test exercises the target
+tests/architecture/test_resource_scope.py	core.pipeline.outcome	verification: test exercises the target
+tests/architecture/test_resource_scope.py	core.pipeline.pipeline	verification: test exercises the target
+tests/architecture/test_resource_scope.py	core.pipeline.stages.auth	verification: test exercises the target
+tests/architecture/test_resource_scope.py	core.pipeline.stages.authorization	verification: test exercises the target
+tests/architecture/test_security_context.py	core.identity.models	verification: test exercises the target
+tests/architecture/test_security_context.py	core.identity.resource_scope	verification: test exercises the target
+tests/architecture/test_security_context.py	core.pipeline.authentication_result	verification: test exercises the target
+tests/architecture/test_security_context.py	core.pipeline.authorization_result	verification: test exercises the target
+tests/architecture/test_security_context.py	core.pipeline.context	verification: test exercises the target
+tests/architecture/test_security_context.py	core.pipeline.resource_access_result	verification: test exercises the target
+tests/architecture/test_security_context.py	core.pipeline.security_context	verification: test exercises the target
+tests/architecture/test_tenant_isolation.py	core.activity.manager	verification: test exercises the target
+tests/architecture/test_tenant_isolation.py	core.activity.models	verification: test exercises the target
+tests/architecture/test_tenant_isolation.py	core.event_bus	verification: test exercises the target
+tests/architecture/test_tenant_isolation.py	core.identity.resource_scope	verification: test exercises the target
+tests/architecture/test_tenant_isolation.py	core.identity.tenant_resolver	verification: test exercises the target
+tests/architecture/test_tenant_isolation.py	core.observation.hub	verification: test exercises the target
+tests/architecture/test_tenant_isolation.py	core.pipeline.architecture_metrics	verification: test exercises the target
+tests/architecture/test_tenant_isolation.py	core.pipeline.base	verification: test exercises the target
+tests/architecture/test_tenant_isolation.py	core.pipeline.context	verification: test exercises the target
+tests/architecture/test_tenant_isolation.py	core.pipeline.observation	verification: test exercises the target
+tests/architecture/test_tenant_isolation.py	core.pipeline.security_context	verification: test exercises the target
+tests/architecture/test_tenant_isolation.py	core.pipeline.stages	verification: test exercises the target
+tests/architecture/test_tenant_isolation.py	core.scheduler.models	verification: test exercises the target
+tests/architecture/test_tenant_isolation.py	core.scheduler.queue	verification: test exercises the target
+tests/architecture/test_tenant_isolation.py	memory.extraction	verification: test exercises the target
+tests/architecture/test_tenant_isolation.py	memory.fact_store	verification: test exercises the target
+tests/architecture/test_tenant_isolation.py	memory.preference_profile	verification: test exercises the target
+tests/architecture/test_tenant_resolution.py	core.identity	verification: test exercises the target
+tests/architecture/test_tenant_resolution.py	core.identity.models	verification: test exercises the target
+tests/architecture/test_tenant_resolution.py	core.identity.resource_scope	verification: test exercises the target
+tests/architecture/test_tenant_resolution.py	core.identity.service	verification: test exercises the target
+tests/architecture/test_tenant_resolution.py	core.identity.tenant_resolver	verification: test exercises the target
+tests/architecture/test_tenant_resolution.py	core.pipeline	verification: test exercises the target
+tests/architecture/test_tenant_resolution.py	core.pipeline.base	verification: test exercises the target
+tests/architecture/test_tenant_resolution.py	core.pipeline.context	verification: test exercises the target
+tests/architecture/test_tenant_resolution.py	core.pipeline.deterministic	verification: test exercises the target
+tests/architecture/test_tenant_resolution.py	core.pipeline.messages	verification: test exercises the target
+tests/architecture/test_tenant_resolution.py	core.pipeline.pipeline	verification: test exercises the target
+tests/architecture/test_tenant_resolution.py	core.pipeline.stages	verification: test exercises the target
+tests/architecture/test_tenant_resolution.py	core.pipeline.stages.tenant_resolution	verification: test exercises the target
+tests/architecture/test_trace_validation.py	core.pipeline.context	verification: test exercises the target
+tests/architecture/test_trace_validation.py	core.pipeline.deterministic	verification: test exercises the target
+tests/architecture/test_trace_validation.py	core.pipeline.observation	verification: test exercises the target
+tests/architecture/test_trace_validation.py	core.pipeline.outcome	verification: test exercises the target
+tests/architecture/test_trace_validation.py	core.pipeline.pipeline	verification: test exercises the target
+tests/architecture/test_trace_validation.py	core.pipeline.stages.execution	verification: test exercises the target
+tests/architecture/test_trace_validation.py	core.pipeline.stages.memory	verification: test exercises the target
+tests/architecture/test_trace_validation.py	core.pipeline.stages.verification	verification: test exercises the target
+tests/architecture/test_trace_validation.py	core.pipeline.store_decision	verification: test exercises the target
+tests/architecture/test_trace_validation.py	core.providers.base	verification: test exercises the target
+tests/architecture/test_trace_validation.py	core.providers.router	verification: test exercises the target
+tests/cli/test_activity.py	cli_commands	verification: test exercises the target
+tests/cli/test_commands.py	cli_commands	verification: test exercises the target
+tests/cli/test_models.py	cli_commands	verification: test exercises the target
+tests/cli/test_provider.py	cli_commands	verification: test exercises the target
+tests/cli/test_server.py	cli_commands	verification: test exercises the target
+tests/cli/test_settings.py	cli_commands	verification: test exercises the target
+tests/conftest.py	core.activity.manager	verification: test exercises the target
+tests/conftest.py	core.activity.storage	verification: test exercises the target
+tests/conftest.py	core.config_schema	verification: test exercises the target
+tests/conftest.py	core.database	verification: test exercises the target
+tests/conftest.py	core.main	verification: test exercises the target
+tests/conftest.py	core.result	verification: test exercises the target
+tests/contract/test_api_contract.py	core.main	verification: test exercises the target
+tests/contract/test_config_fuzz.py	core.result	verification: test exercises the target
+tests/contract/test_result_contract.py	core.errors	verification: test exercises the target
+tests/contract/test_result_contract.py	core.result	verification: test exercises the target
+tests/contract/test_result_fuzz.py	core.result	verification: test exercises the target
+tests/contract/test_tool_dispatch_fuzz.py	core.tools.execution	verification: test exercises the target
+tests/contract/test_url_injection_fuzz.py	core.ssrf	verification: test exercises the target
+tests/distribution/test_distributed_graph.py	core.distribution.contracts	verification: test exercises the target
+tests/distribution/test_distributed_graph.py	core.distribution.graph	verification: test exercises the target
+tests/distribution/test_distributed_graph.py	core.distribution.registry	verification: test exercises the target
+tests/distribution/test_distributed_graph.py	core.pipeline.messages	verification: test exercises the target
+tests/distribution/test_distribution.py	core.distribution	verification: test exercises the target
+tests/distribution/test_distribution.py	core.distribution.contracts	verification: test exercises the target
+tests/distribution/test_distribution.py	core.distribution.health	verification: test exercises the target
+tests/distribution/test_distribution.py	core.distribution.pool	verification: test exercises the target
+tests/distribution/test_distribution.py	core.distribution.retry	verification: test exercises the target
+tests/distribution/test_distribution.py	core.distribution.runtime	verification: test exercises the target
+tests/distribution/test_distribution.py	core.distribution.transport	verification: test exercises the target
+tests/e2e/test_cron_backup.py	core.backup	verification: test exercises the target
+tests/e2e/test_cron_backup.py	core.cron	verification: test exercises the target
+tests/e2e/test_e2e_build_visual.py	core.project_state	verification: test exercises the target
+tests/e2e/test_e2e_build_visual.py	core.real_validator	verification: test exercises the target
+tests/e2e/test_e2e_intents.py	core.intent_router	verification: test exercises the target
+tests/e2e/test_hybrid_system.py	core.types	verification: test exercises the target
+tests/e2e/test_hybrid_system.py	models.hybrid_models	verification: test exercises the target
+tests/integration/test_api_auth.py	core	verification: test exercises the target
+tests/integration/test_api_auth.py	core.auth	verification: test exercises the target
+tests/integration/test_auto_resume.py	core.legacy.control_loop	verification: test exercises the target
+tests/integration/test_auto_resume.py	core.project_state	verification: test exercises the target
+tests/integration/test_auto_resume.py	daemon.jarvis_service	verification: test exercises the target
+tests/integration/test_auto_resume_deep.py	core.checkpoint_manager	verification: test exercises the target
+tests/integration/test_auto_resume_deep.py	core.environment_monitor	verification: test exercises the target
+tests/integration/test_auto_resume_deep.py	core.interrupt_override	verification: test exercises the target
+tests/integration/test_auto_resume_deep.py	core.legacy.control_loop	verification: test exercises the target
+tests/integration/test_auto_resume_deep.py	core.proactive_adaptation	verification: test exercises the target
+tests/integration/test_auto_resume_deep.py	core.project_state	verification: test exercises the target
+tests/integration/test_auto_resume_deep.py	core.system_identity	verification: test exercises the target
+tests/integration/test_auto_resume_deep.py	daemon.jarvis_service	verification: test exercises the target
+tests/integration/test_channels_e2e.py	channels.base	verification: test exercises the target
+tests/integration/test_channels_e2e.py	channels.controller	verification: test exercises the target
+tests/integration/test_channels_e2e.py	tools.whatsapp_sender	verification: test exercises the target
+tests/integration/test_computer_agent.py	governance.exceptions	verification: test exercises the target
+tests/integration/test_computer_agent.py	pc_agent.computer_agent	verification: test exercises the target
+tests/integration/test_get_info_routing.py	core.integrations	verification: test exercises the target
+tests/integration/test_get_info_routing.py	core.main	verification: test exercises the target
+tests/integration/test_get_info_routing.py	core.result	verification: test exercises the target
+tests/integration/test_mcp_docker.py	core.sandbox.docker_sandbox	verification: test exercises the target
+tests/integration/test_mcp_docker.py	jarvis_mcp.server	verification: test exercises the target
+tests/integration/test_memory_privacy.py	core.privacy_classifier	verification: test exercises the target
+tests/integration/test_memory_privacy.py	core.result	verification: test exercises the target
+tests/integration/test_memory_privacy.py	memory.embedding_memory	verification: test exercises the target
+tests/integration/test_pipeline_transport_consistency.py	core.pipeline	verification: test exercises the target
+tests/integration/test_pipeline_transport_consistency.py	core.pipeline.adapters	verification: test exercises the target
+tests/integration/test_pipeline_transport_consistency.py	core.pipeline.adapters.channel_adapter	verification: test exercises the target
+tests/integration/test_pipeline_transport_consistency.py	core.pipeline.adapters.rest_adapter	verification: test exercises the target
+tests/integration/test_pipeline_transport_consistency.py	core.pipeline.adapters.voice_adapter	verification: test exercises the target
+tests/integration/test_pipeline_transport_consistency.py	core.pipeline.base	verification: test exercises the target
+tests/integration/test_pipeline_transport_consistency.py	core.pipeline.messages	verification: test exercises the target
+tests/integration/test_pipeline_transport_consistency.py	core.pipeline.pipeline	verification: test exercises the target
+tests/integration/test_result_functions.py	core.errors	verification: test exercises the target
+tests/integration/test_result_functions.py	core.result	verification: test exercises the target
+tests/integration/test_result_functions.py	memory.embedding_memory	verification: test exercises the target
+tests/integration/test_result_functions.py	tools.search_tool	verification: test exercises the target
+tests/integration/test_spawning.py	core.result	verification: test exercises the target
+tests/integration/test_spawning.py	core.session	verification: test exercises the target
+tests/integration/test_spawning.py	core.spawning	verification: test exercises the target
+tests/integration/test_spawning.py	core.spawning.orphan	verification: test exercises the target
+tests/integration/test_spcl9_stub_hops.py	core.agents.browser_agent	verification: test exercises the target
+tests/integration/test_spcl9_stub_hops.py	core.agents.capabilities	verification: test exercises the target
+tests/integration/test_spcl9_stub_hops.py	core.agents.router	verification: test exercises the target
+tests/integration/test_spcl9_stub_hops.py	core.capability.capability_ai	verification: test exercises the target
+tests/integration/test_spcl9_stub_hops.py	core.providers.adapters.forge	verification: test exercises the target
+tests/integration/test_voice_pipeline_integration.py	core.result	verification: test exercises the target
+tests/test_core.py	core.errors	verification: test exercises the target
+tests/test_core.py	core.result	verification: test exercises the target
+tests/unit/test_activity_manager.py	core.activity.manager	verification: test exercises the target
+tests/unit/test_activity_manager.py	core.activity.models	verification: test exercises the target
+tests/unit/test_activity_manager.py	core.activity.storage	verification: test exercises the target
+tests/unit/test_activity_recorder.py	core.activity.manager	verification: test exercises the target
+tests/unit/test_activity_recorder.py	core.activity.models	verification: test exercises the target
+tests/unit/test_activity_recorder.py	core.activity.recorder	verification: test exercises the target
+tests/unit/test_activity_recorder.py	core.activity.storage	verification: test exercises the target
+tests/unit/test_activity_recorder.py	core.planner.models	verification: test exercises the target
+tests/unit/test_activity_replay.py	core.activity.replay	verification: test exercises the target
+tests/unit/test_activity_replay_routes.py	core.activity.replay	verification: test exercises the target
+tests/unit/test_activity_replay_routes.py	core.routes.activity	verification: test exercises the target
+tests/unit/test_activity_replay_routes.py	jarvis_tui.app.screens.replay_screen	verification: test exercises the target
+tests/unit/test_activity_store.py	core.activity.models	verification: test exercises the target
+tests/unit/test_activity_store.py	core.activity.storage	verification: test exercises the target
+tests/unit/test_activity_updates.py	jarvis_tui.app.services.activity_updates	verification: test exercises the target
+tests/unit/test_agent_adapters.py	core.agents.adapters.base_adapter	verification: test exercises the target
+tests/unit/test_agent_adapters.py	core.agents.adapters.forge_adapter	verification: test exercises the target
+tests/unit/test_agent_adapters.py	core.agents.base	verification: test exercises the target
+tests/unit/test_agent_adapters.py	core.agents.capabilities	verification: test exercises the target
+tests/unit/test_agent_adapters.py	core.agents.router	verification: test exercises the target
+tests/unit/test_agent_adapters.py	core.planner.models	verification: test exercises the target
+tests/unit/test_agent_executor.py	core.agents.executor	verification: test exercises the target
+tests/unit/test_agent_executor.py	core.planner.executor	verification: test exercises the target
+tests/unit/test_agent_graph.py	core.agents.events	verification: test exercises the target
+tests/unit/test_agent_graph.py	core.agents.graph	verification: test exercises the target
+tests/unit/test_agent_graph.py	core.agents.parallel_executor	verification: test exercises the target
+tests/unit/test_agent_loop.py	core.agent_helpers	verification: test exercises the target
+tests/unit/test_agent_loop.py	core.agent_metrics	verification: test exercises the target
+tests/unit/test_architecture.py	core.agent_runtime	verification: test exercises the target
+tests/unit/test_architecture.py	core.agents._sub_agent_base	verification: test exercises the target
+tests/unit/test_architecture.py	core.agents.adapters.forge_adapter	verification: test exercises the target
+tests/unit/test_architecture.py	core.agents.adapters.nexus_adapter	verification: test exercises the target
+tests/unit/test_architecture.py	core.config_schema	verification: test exercises the target
+tests/unit/test_architecture.py	core.llm_router	verification: test exercises the target
+tests/unit/test_atomic_io.py	core.atomic_io	verification: test exercises the target
+tests/unit/test_audit_log.py	core.audit_log	verification: test exercises the target
+tests/unit/test_auth_middleware.py	core.configuration	verification: test exercises the target
+tests/unit/test_auth_middleware.py	core.main	verification: test exercises the target
+tests/unit/test_authz.py	core.authz	verification: test exercises the target
+tests/unit/test_authz.py	core.authz.engine	verification: test exercises the target
+tests/unit/test_authz.py	core.authz.loader	verification: test exercises the target
+tests/unit/test_authz.py	core.tools.policy	verification: test exercises the target
+tests/unit/test_authz.py	core.tools.security	verification: test exercises the target
+tests/unit/test_automated_build.py	core.planner.protocol	verification: test exercises the target
+tests/unit/test_automated_build.py	core.tools.automated_build	verification: test exercises the target
+tests/unit/test_belief.py	core.belief.accuracy	verification: test exercises the target
+tests/unit/test_belief.py	core.belief.consensus	verification: test exercises the target
+tests/unit/test_belief.py	core.belief.freshness	verification: test exercises the target
+tests/unit/test_belief.py	core.belief.integration	verification: test exercises the target
+tests/unit/test_belief.py	core.belief.models	verification: test exercises the target
+tests/unit/test_belief.py	core.belief.quality	verification: test exercises the target
+tests/unit/test_belief.py	core.belief.source_tracker	verification: test exercises the target
+tests/unit/test_belief.py	core.belief.store	verification: test exercises the target
+tests/unit/test_belief.py	core.generalization.models	verification: test exercises the target
+tests/unit/test_belief.py	core.generalization.validator	verification: test exercises the target
+tests/unit/test_belief.py	core.long_term_memory.models	verification: test exercises the target
+tests/unit/test_belief.py	core.long_term_memory.store	verification: test exercises the target
+tests/unit/test_belief.py	core.long_term_memory.synthesizer	verification: test exercises the target
+tests/unit/test_belief.py	core.strategy.calibration	verification: test exercises the target
+tests/unit/test_belief.py	core.strategy.memory_adapter	verification: test exercises the target
+tests/unit/test_belief.py	core.strategy.models	verification: test exercises the target
+tests/unit/test_belief.py	core.strategy.predictor	verification: test exercises the target
+tests/unit/test_benchmark.py	core.benchmark	verification: test exercises the target
+tests/unit/test_benchmark.py	core.benchmark.adapters	verification: test exercises the target
+tests/unit/test_benchmark.py	core.benchmark.orchestrator	verification: test exercises the target
+tests/unit/test_bg_jobs.py	core.tools.bg_jobs	verification: test exercises the target
+tests/unit/test_bridge.py	core.fact_extraction.bridge	verification: test exercises the target
+tests/unit/test_bridge.py	core.fact_extraction.models	verification: test exercises the target
+tests/unit/test_browser_ai_specialist.py	core.browser.browser_ai	verification: test exercises the target
+tests/unit/test_browser_ai_specialist.py	core.browser.registration	verification: test exercises the target
+tests/unit/test_browser_ai_specialist.py	core.specialist	verification: test exercises the target
+tests/unit/test_browser_page_security.py	core.browser.page_security	verification: test exercises the target
+tests/unit/test_browser_planner.py	core.tools._constants	verification: test exercises the target
+tests/unit/test_browser_planner.py	core.tools.browser_planner	verification: test exercises the target
+tests/unit/test_browser_procedural_memory.py	core.browser.procedural_memory	verification: test exercises the target
+tests/unit/test_browser_research.py	core.tools.browser_research	verification: test exercises the target
+tests/unit/test_browser_verification_recovery.py	core.browser.recovery	verification: test exercises the target
+tests/unit/test_browser_verification_recovery.py	core.browser.verification	verification: test exercises the target
+tests/unit/test_build_adapter.py	core.tools._constants	verification: test exercises the target
+tests/unit/test_build_adapter.py	core.tools.build_tools	verification: test exercises the target
+tests/unit/test_build_adapter.py	core.tools.chat_tools	verification: test exercises the target
+tests/unit/test_build_adapter.py	core.tools.execution	verification: test exercises the target
+tests/unit/test_build_benchmark.py	core.coding.build_benchmark	verification: test exercises the target
+tests/unit/test_build_benchmark.py	core.strategy.models	verification: test exercises the target
+tests/unit/test_build_benchmark.py	core.tools.automated_build	verification: test exercises the target
+tests/unit/test_cache.py	core.cache	verification: test exercises the target
+tests/unit/test_cache.py	core.cache.redis_cache	verification: test exercises the target
+tests/unit/test_cache.py	core.llm_core	verification: test exercises the target
+tests/unit/test_capability_ai_full.py	core.capability	verification: test exercises the target
+tests/unit/test_capability_ai_full.py	core.coding	verification: test exercises the target
+tests/unit/test_capability_ai_full.py	core.desktop	verification: test exercises the target
+tests/unit/test_capability_ai_full.py	tools.base_tool	verification: test exercises the target
+tests/unit/test_capability_registry.py	tools.base_tool	verification: test exercises the target
+tests/unit/test_capability_registry.py	tools.registry	verification: test exercises the target
+tests/unit/test_channels.py	channels.base	verification: test exercises the target
+tests/unit/test_channels.py	channels.controller	verification: test exercises the target
+tests/unit/test_channels.py	channels.discord_channel	verification: test exercises the target
+tests/unit/test_channels.py	channels.irc_channel	verification: test exercises the target
+tests/unit/test_channels.py	channels.matrix_channel	verification: test exercises the target
+tests/unit/test_channels.py	channels.slack_channel	verification: test exercises the target
+tests/unit/test_channels.py	channels.telegram_channel	verification: test exercises the target
+tests/unit/test_chroma_client.py	core.chroma_client	verification: test exercises the target
+tests/unit/test_cleanup_audit.py	core.cleanup_audit	verification: test exercises the target
+tests/unit/test_cli.py	core.debugger	verification: test exercises the target
+tests/unit/test_cli.py	core.plugins.api	verification: test exercises the target
+tests/unit/test_cli_activity.py	cli_commands	verification: test exercises the target
+tests/unit/test_coding.py	core.coding.architecture_map	verification: test exercises the target
+tests/unit/test_coding.py	core.coding.dependency_graph	verification: test exercises the target
+tests/unit/test_coding.py	core.coding.impact_analyzer	verification: test exercises the target
+tests/unit/test_coding.py	core.coding.repository_indexer	verification: test exercises the target
+tests/unit/test_coding_agent.py	core.coding	verification: test exercises the target
+tests/unit/test_coding_architecture.py	core.coding.architecture_map	verification: test exercises the target
+tests/unit/test_coding_architecture.py	core.coding.architecture_reasoning	verification: test exercises the target
+tests/unit/test_coding_architecture.py	core.coding.change_planner	verification: test exercises the target
+tests/unit/test_coding_architecture.py	core.coding.dependency_graph	verification: test exercises the target
+tests/unit/test_coding_architecture.py	core.coding.impact_analyzer	verification: test exercises the target
+tests/unit/test_coding_architecture.py	core.coding.repository_indexer	verification: test exercises the target
+tests/unit/test_coding_planning.py	core.coding.architecture_map	verification: test exercises the target
+tests/unit/test_coding_planning.py	core.coding.change_planner	verification: test exercises the target
+tests/unit/test_coding_planning.py	core.coding.change_simulation	verification: test exercises the target
+tests/unit/test_coding_planning.py	core.coding.dependency_graph	verification: test exercises the target
+tests/unit/test_coding_planning.py	core.coding.impact_analyzer	verification: test exercises the target
+tests/unit/test_coding_planning.py	core.coding.refactor_safety	verification: test exercises the target
+tests/unit/test_coding_planning.py	core.coding.repository_indexer	verification: test exercises the target
+tests/unit/test_coding_refactoring.py	core.coding.architecture_map	verification: test exercises the target
+tests/unit/test_coding_refactoring.py	core.coding.change_planner	verification: test exercises the target
+tests/unit/test_coding_refactoring.py	core.coding.dependency_graph	verification: test exercises the target
+tests/unit/test_coding_refactoring.py	core.coding.impact_analyzer	verification: test exercises the target
+tests/unit/test_coding_refactoring.py	core.coding.refactoring_engine	verification: test exercises the target
+tests/unit/test_coding_refactoring.py	core.coding.repository_indexer	verification: test exercises the target
+tests/unit/test_coding_tool_broker.py	core.coding	verification: test exercises the target
+tests/unit/test_coding_tool_broker.py	core.coding.change_planner	verification: test exercises the target
+tests/unit/test_coding_tool_broker.py	core.coding.refactoring_engine	verification: test exercises the target
+tests/unit/test_coding_tool_broker.py	core.coding.tool_broker	verification: test exercises the target
+tests/unit/test_collaboration.py	core.collaboration.consensus	verification: test exercises the target
+tests/unit/test_collaboration.py	core.collaboration.coordinator	verification: test exercises the target
+tests/unit/test_collaboration.py	core.collaboration.models	verification: test exercises the target
+tests/unit/test_collaboration.py	core.collaboration.negotiation	verification: test exercises the target
+tests/unit/test_collaboration.py	core.collaboration.review	verification: test exercises the target
+tests/unit/test_commitments.py	core.commitments	verification: test exercises the target
+tests/unit/test_database_wal.py	core.database_models	verification: test exercises the target
+tests/unit/test_decision.py	core.decision.bridge	verification: test exercises the target
+tests/unit/test_decision.py	core.decision.evidence	verification: test exercises the target
+tests/unit/test_decision.py	core.decision.models	verification: test exercises the target
+tests/unit/test_decision.py	core.decision.scoring	verification: test exercises the target
+tests/unit/test_decision.py	core.strategy.v2.models	verification: test exercises the target
+tests/unit/test_decision.py	core.strategy.v2.tradeoffs	verification: test exercises the target
+tests/unit/test_decision.py	core.workflow.calibration	verification: test exercises the target
+tests/unit/test_desktop_adapter_taskpack.py	core.desktop.adapters	verification: test exercises the target
+tests/unit/test_desktop_adapter_taskpack.py	core.desktop.task_packs	verification: test exercises the target
+tests/unit/test_desktop_adapters.py	core.desktop.adapters	verification: test exercises the target
+tests/unit/test_desktop_agent_reuse.py	jarvis_desktop_agent	verification: test exercises the target
+tests/unit/test_desktop_applications.py	core.desktop.applications	verification: test exercises the target
+tests/unit/test_desktop_bridge.py	core.action_engine	verification: test exercises the target
+tests/unit/test_desktop_bridge.py	core.desktop.controller	verification: test exercises the target
+tests/unit/test_desktop_bridge.py	desktop_bridge	verification: test exercises the target
+tests/unit/test_desktop_capabilities.py	core.desktop.adapters	verification: test exercises the target
+tests/unit/test_desktop_capabilities.py	core.desktop.applications	verification: test exercises the target
+tests/unit/test_desktop_capabilities.py	core.desktop.capabilities	verification: test exercises the target
+tests/unit/test_desktop_capabilities.py	core.desktop.task_packs	verification: test exercises the target
+tests/unit/test_desktop_capability_adapter_boundary.py	core.desktop.adapters	verification: test exercises the target
+tests/unit/test_desktop_capability_adapter_boundary.py	core.desktop.applications	verification: test exercises the target
+tests/unit/test_desktop_capability_adapter_boundary.py	core.desktop.capabilities	verification: test exercises the target
+tests/unit/test_desktop_clipboard_taskpack.py	core.desktop.adapters	verification: test exercises the target
+tests/unit/test_desktop_clipboard_taskpack.py	core.desktop.task_packs	verification: test exercises the target
+tests/unit/test_desktop_control.py	core.desktop.control	verification: test exercises the target
+tests/unit/test_desktop_control.py	core.desktop.discovery	verification: test exercises the target
+tests/unit/test_desktop_discovery.py	core.desktop.discovery	verification: test exercises the target
+tests/unit/test_desktop_foundation.py	core.desktop.task_graph	verification: test exercises the target
+tests/unit/test_desktop_foundation.py	core.desktop.user_actions	verification: test exercises the target
+tests/unit/test_desktop_foundation.py	jarvis_desktop_agent	verification: test exercises the target
+tests/unit/test_desktop_planner_capabilities.py	jarvis_desktop_agent	verification: test exercises the target
+tests/unit/test_desktop_process_taskpack.py	core.desktop.adapters	verification: test exercises the target
+tests/unit/test_desktop_process_taskpack.py	core.desktop.task_packs	verification: test exercises the target
+tests/unit/test_desktop_progress.py	core.routes.progress	verification: test exercises the target
+tests/unit/test_desktop_routines.py	core.desktop.routines	verification: test exercises the target
+tests/unit/test_desktop_specialist.py	core.desktop.specialist	verification: test exercises the target
+tests/unit/test_desktop_specialist.py	core.desktop.specialist_state	verification: test exercises the target
+tests/unit/test_desktop_task_packs.py	core.desktop.task_packs	verification: test exercises the target
+tests/unit/test_desktop_text_editor_taskpack.py	core.desktop.adapters	verification: test exercises the target
+tests/unit/test_desktop_text_editor_taskpack.py	core.desktop.task_packs	verification: test exercises the target
+tests/unit/test_desktop_tool_bridge.py	core.desktop.tool_bridge	verification: test exercises the target
+tests/unit/test_desktop_tool_bridge.py	tools.registry	verification: test exercises the target
+tests/unit/test_desktop_window_taskpack.py	core.desktop.adapters	verification: test exercises the target
+tests/unit/test_desktop_window_taskpack.py	core.desktop.task_packs	verification: test exercises the target
+tests/unit/test_diagnostics.py	core.diagnostics	verification: test exercises the target
+tests/unit/test_docker_readiness.py	core.embeddings	verification: test exercises the target
+tests/unit/test_docker_readiness.py	core.model_providers.ollama	verification: test exercises the target
+tests/unit/test_docker_readiness.py	core.scheduler.executors	verification: test exercises the target
+tests/unit/test_docker_readiness.py	core.workflow.recovery	verification: test exercises the target
+tests/unit/test_edit_tools.py	core.tools.document_tools	verification: test exercises the target
+tests/unit/test_email_provider.py	core.providers.adapters.email_provider	verification: test exercises the target
+tests/unit/test_embedding_utils.py	memory.embedding_utils	verification: test exercises the target
+tests/unit/test_errors.py	core.errors	verification: test exercises the target
+tests/unit/test_execution_dispatch.py	core.authz	verification: test exercises the target
+tests/unit/test_execution_dispatch.py	core.constants	verification: test exercises the target
+tests/unit/test_execution_dispatch.py	core.tools.execution	verification: test exercises the target
+tests/unit/test_execution_dispatch.py	core.tools.implementations	verification: test exercises the target
+tests/unit/test_execution_integration.py	core.execution	verification: test exercises the target
+tests/unit/test_execution_integration.py	core.legacy.control_loop	verification: test exercises the target
+tests/unit/test_execution_integration.py	core.pipeline.messages	verification: test exercises the target
+tests/unit/test_execution_integration.py	core.runtime	verification: test exercises the target
+tests/unit/test_execution_manager.py	core.execution.context	verification: test exercises the target
+tests/unit/test_execution_manager.py	core.execution.manager	verification: test exercises the target
+tests/unit/test_execution_manager.py	core.workflow.engine	verification: test exercises the target
+tests/unit/test_execution_manager.py	core.workflow.models	verification: test exercises the target
+tests/unit/test_execution_tools.py	core.constants	verification: test exercises the target
+tests/unit/test_execution_tools.py	core.tools.execution	verification: test exercises the target
+tests/unit/test_executor_stress.py	core.types	verification: test exercises the target
+tests/unit/test_extraction_fsm.py	core.research.extraction_fsm	verification: test exercises the target
+tests/unit/test_face_recognition_cache.py	vision.face_recognition	verification: test exercises the target
+tests/unit/test_fact_extraction.py	core.fact_extraction.extractor	verification: test exercises the target
+tests/unit/test_fact_extraction.py	core.fact_extraction.models	verification: test exercises the target
+tests/unit/test_fact_extraction.py	core.fact_extraction.store	verification: test exercises the target
+tests/unit/test_failover.py	core.config_schema	verification: test exercises the target
+tests/unit/test_failover.py	core.configuration	verification: test exercises the target
+tests/unit/test_failover.py	core.errors	verification: test exercises the target
+tests/unit/test_failover.py	core.llm_failover	verification: test exercises the target
+tests/unit/test_failover.py	core.result	verification: test exercises the target
+tests/unit/test_file_agent.py	core.file_agent	verification: test exercises the target
+tests/unit/test_file_agent.py	core.result	verification: test exercises the target
+tests/unit/test_generalization.py	core.generalization.causal	verification: test exercises the target
+tests/unit/test_generalization.py	core.generalization.derived	verification: test exercises the target
+tests/unit/test_generalization.py	core.generalization.executor	verification: test exercises the target
+tests/unit/test_generalization.py	core.generalization.extractor	verification: test exercises the target
+tests/unit/test_generalization.py	core.generalization.models	verification: test exercises the target
+tests/unit/test_generalization.py	core.generalization.prioritizer	verification: test exercises the target
+tests/unit/test_generalization.py	core.generalization.proposals	verification: test exercises the target
+tests/unit/test_generalization.py	core.generalization.registry	verification: test exercises the target
+tests/unit/test_generalization.py	core.generalization.store	verification: test exercises the target
+tests/unit/test_generalization.py	core.generalization.validator	verification: test exercises the target
+tests/unit/test_github_provider.py	core.providers.adapters.github_provider	verification: test exercises the target
+tests/unit/test_gmail.py	core.integration_manager	verification: test exercises the target
+tests/unit/test_gmail.py	integrations.gmail	verification: test exercises the target
+tests/unit/test_gmail.py	integrations.gmail.auth	verification: test exercises the target
+tests/unit/test_gmail.py	integrations.gmail.client	verification: test exercises the target
+tests/unit/test_gmail.py	integrations.gmail.types	verification: test exercises the target
+tests/unit/test_goal_decomposer.py	core.planner.decomposer	verification: test exercises the target
+tests/unit/test_governance.py	core.governance.resource_monitor	verification: test exercises the target
+tests/unit/test_governance.py	core.governance.task_router	verification: test exercises the target
+tests/unit/test_governance.py	core.governance.work_queue	verification: test exercises the target
+tests/unit/test_governance.py	core.system_governor	verification: test exercises the target
+tests/unit/test_graph_nodes.py	core.graph.edges	verification: test exercises the target
+tests/unit/test_graph_nodes.py	core.graph.nodes	verification: test exercises the target
+tests/unit/test_graph_nodes.py	core.graph.state	verification: test exercises the target
+tests/unit/test_graph_nodes.py	core.persistence.store	verification: test exercises the target
+tests/unit/test_graph_nodes.py	core.tools._constants	verification: test exercises the target
+tests/unit/test_headless_tools_api.py	core.routes.system.tools_api	verification: test exercises the target
+tests/unit/test_image_gen.py	tools.image_gen	verification: test exercises the target
+tests/unit/test_improvement.py	core.improvement.detector	verification: test exercises the target
+tests/unit/test_improvement.py	core.improvement.experiment	verification: test exercises the target
+tests/unit/test_improvement.py	core.improvement.knob_store	verification: test exercises the target
+tests/unit/test_improvement.py	core.improvement.models	verification: test exercises the target
+tests/unit/test_improvement.py	core.improvement.promoter	verification: test exercises the target
+tests/unit/test_improvement.py	core.improvement.proposals	verification: test exercises the target
+tests/unit/test_improvement.py	core.long_term_memory.models	verification: test exercises the target
+tests/unit/test_improvement.py	core.long_term_memory.store	verification: test exercises the target
+tests/unit/test_integration_manager.py	core.integration_manager	verification: test exercises the target
+tests/unit/test_integration_manager.py	integrations.whatsapp.models	verification: test exercises the target
+tests/unit/test_jarvis_provider_cloud.py	jarvis_provider	verification: test exercises the target
+tests/unit/test_litellm.py	core.llm_router	verification: test exercises the target
+tests/unit/test_long_horizon_fsm.py	core.workflow.long_horizon_fsm	verification: test exercises the target
+tests/unit/test_long_term_memory.py	core.activity.manager	verification: test exercises the target
+tests/unit/test_long_term_memory.py	core.activity.models	verification: test exercises the target
+tests/unit/test_long_term_memory.py	core.activity.storage	verification: test exercises the target
+tests/unit/test_long_term_memory.py	core.long_term_memory.adapter	verification: test exercises the target
+tests/unit/test_long_term_memory.py	core.long_term_memory.consolidator	verification: test exercises the target
+tests/unit/test_long_term_memory.py	core.long_term_memory.extractor	verification: test exercises the target
+tests/unit/test_long_term_memory.py	core.long_term_memory.models	verification: test exercises the target
+tests/unit/test_long_term_memory.py	core.long_term_memory.store	verification: test exercises the target
+tests/unit/test_long_term_memory.py	core.long_term_memory.synthesizer	verification: test exercises the target
+tests/unit/test_memory_learning_integration.py	core.browser.browser_ai	verification: test exercises the target
+tests/unit/test_memory_learning_integration.py	core.event_bus	verification: test exercises the target
+tests/unit/test_memory_learning_integration.py	core.specialist	verification: test exercises the target
+tests/unit/test_memory_learning_integration.py	learning.habit_tracker	verification: test exercises the target
+tests/unit/test_memory_learning_integration.py	learning.listeners	verification: test exercises the target
+tests/unit/test_memory_learning_integration.py	learning.pattern_engine	verification: test exercises the target
+tests/unit/test_memory_learning_integration.py	memory.episodic_store	verification: test exercises the target
+tests/unit/test_memory_learning_integration.py	memory.experience	verification: test exercises the target
+tests/unit/test_memory_learning_integration.py	memory.memory_facade	verification: test exercises the target
+tests/unit/test_memory_similarity.py	memory.similarity	verification: test exercises the target
+tests/unit/test_model_selection.py	core.providers.base	verification: test exercises the target
+tests/unit/test_model_selection.py	core.providers.registry	verification: test exercises the target
+tests/unit/test_model_selection.py	core.providers.router	verification: test exercises the target
+tests/unit/test_monitors.py	monitors.alerts	verification: test exercises the target
+tests/unit/test_monitors.py	monitors.resource	verification: test exercises the target
+tests/unit/test_monitors.py	monitors.services	verification: test exercises the target
+tests/unit/test_multimodal.py	core.multimodal	verification: test exercises the target
+tests/unit/test_nlp_intent.py	core.pipeline.adapters.rest_adapter	verification: test exercises the target
+tests/unit/test_nlp_intent.py	core.routing.request_classifier	verification: test exercises the target
+tests/unit/test_oauth.py	core.oauth	verification: test exercises the target
+tests/unit/test_observability.py	core.audit_log	verification: test exercises the target
+tests/unit/test_observability.py	core.event_bus	verification: test exercises the target
+tests/unit/test_observability.py	core.observability.metrics	verification: test exercises the target
+tests/unit/test_observability.py	core.routes.observability	verification: test exercises the target
+tests/unit/test_opportunity.py	core.opportunity.calibration	verification: test exercises the target
+tests/unit/test_opportunity.py	core.opportunity.engine	verification: test exercises the target
+tests/unit/test_opportunity.py	core.opportunity.models	verification: test exercises the target
+tests/unit/test_opportunity.py	core.opportunity.store	verification: test exercises the target
+tests/unit/test_opportunity_bottlenecks.py	core.opportunity	verification: test exercises the target
+tests/unit/test_opportunity_bottlenecks.py	core.opportunity.bottlenecks	verification: test exercises the target
+tests/unit/test_opportunity_bottlenecks.py	core.opportunity.graph	verification: test exercises the target
+tests/unit/test_opportunity_bottlenecks.py	core.opportunity.models	verification: test exercises the target
+tests/unit/test_opportunity_forecasting.py	core.opportunity.bottlenecks	verification: test exercises the target
+tests/unit/test_opportunity_forecasting.py	core.opportunity.forecasting	verification: test exercises the target
+tests/unit/test_opportunity_forecasting.py	core.opportunity.graph	verification: test exercises the target
+tests/unit/test_opportunity_forecasting.py	core.opportunity.models	verification: test exercises the target
+tests/unit/test_opportunity_graph.py	core.opportunity.graph	verification: test exercises the target
+tests/unit/test_opportunity_graph.py	core.opportunity.mining	verification: test exercises the target
+tests/unit/test_opportunity_graph.py	core.opportunity.models	verification: test exercises the target
+tests/unit/test_opportunity_mining.py	core.opportunity.graph	verification: test exercises the target
+tests/unit/test_opportunity_mining.py	core.opportunity.mining	verification: test exercises the target
+tests/unit/test_opportunity_roadmap.py	core.opportunity	verification: test exercises the target
+tests/unit/test_opportunity_roadmap.py	core.opportunity.bottlenecks	verification: test exercises the target
+tests/unit/test_opportunity_roadmap.py	core.opportunity.graph	verification: test exercises the target
+tests/unit/test_opportunity_roadmap.py	core.opportunity.models	verification: test exercises the target
+tests/unit/test_opportunity_roadmap.py	core.opportunity.roadmap	verification: test exercises the target
+tests/unit/test_orchestration.py	core.providers.base	verification: test exercises the target
+tests/unit/test_orchestration.py	core.providers.memory	verification: test exercises the target
+tests/unit/test_orchestration.py	core.providers.orchestration.adapt	verification: test exercises the target
+tests/unit/test_orchestration.py	core.providers.orchestration.models	verification: test exercises the target
+tests/unit/test_orchestration.py	core.providers.orchestration.orchestrator	verification: test exercises the target
+tests/unit/test_orchestration.py	core.providers.orchestration.planner	verification: test exercises the target
+tests/unit/test_orchestration.py	core.providers.orchestration.store	verification: test exercises the target
+tests/unit/test_orchestration.py	core.providers.registry	verification: test exercises the target
+tests/unit/test_pattern_memory.py	core.pattern_failure_memory	verification: test exercises the target
+tests/unit/test_persistence.py	core.persistence	verification: test exercises the target
+tests/unit/test_persistence.py	core.persistence.graph	verification: test exercises the target
+tests/unit/test_phase5_reliability.py	core.model_providers.ollama	verification: test exercises the target
+tests/unit/test_phase5_reliability.py	monitors.services	verification: test exercises the target
+tests/unit/test_planner_protocol.py	core.planner.protocol	verification: test exercises the target
+tests/unit/test_plugin_system.py	core.cloud.cloud_memory	verification: test exercises the target
+tests/unit/test_plugin_system.py	core.cloud.supabase_client	verification: test exercises the target
+tests/unit/test_plugin_system.py	core.plugins.loader	verification: test exercises the target
+tests/unit/test_plugin_system.py	core.plugins.manifest	verification: test exercises the target
+tests/unit/test_plugin_system.py	core.plugins.registry	verification: test exercises the target
+tests/unit/test_plugin_system.py	core.plugins.settings_store	verification: test exercises the target
+tests/unit/test_plugins.py	core.plugins.base	verification: test exercises the target
+tests/unit/test_plugins_fixes.py	core.plugins.base	verification: test exercises the target
+tests/unit/test_plugins_fixes.py	core.plugins.sandbox	verification: test exercises the target
+tests/unit/test_plugins_fixes.py	plugins.wake_word_plugin	verification: test exercises the target
+tests/unit/test_plugins_track3.py	core.plugins.compatibility	verification: test exercises the target
+tests/unit/test_plugins_track3.py	core.plugins.dependencies	verification: test exercises the target
+tests/unit/test_plugins_track3.py	core.plugins.errors	verification: test exercises the target
+tests/unit/test_plugins_track3.py	core.plugins.marketplace	verification: test exercises the target
+tests/unit/test_plugins_track3.py	core.plugins.verification	verification: test exercises the target
+tests/unit/test_production_delivery.py	scripts.smoke_test	verification: test exercises the target
+tests/unit/test_production_delivery.py	scripts.validate_production	verification: test exercises the target
+tests/unit/test_provider_benchmark.py	core.providers.base	verification: test exercises the target
+tests/unit/test_provider_benchmark.py	core.providers.benchmark	verification: test exercises the target
+tests/unit/test_provider_benchmark.py	core.providers.benchmark_store	verification: test exercises the target
+tests/unit/test_provider_benchmark.py	core.providers.memory	verification: test exercises the target
+tests/unit/test_provider_ecosystem.py	core.capability.registry	verification: test exercises the target
+tests/unit/test_provider_ecosystem.py	core.plugins.base	verification: test exercises the target
+tests/unit/test_provider_ecosystem.py	core.providers.adapters.claude_code	verification: test exercises the target
+tests/unit/test_provider_ecosystem.py	core.providers.adapters.codex	verification: test exercises the target
+tests/unit/test_provider_ecosystem.py	core.providers.adapters.forge	verification: test exercises the target
+tests/unit/test_provider_ecosystem.py	core.providers.base	verification: test exercises the target
+tests/unit/test_provider_ecosystem.py	core.providers.bootstrap	verification: test exercises the target
+tests/unit/test_provider_ecosystem.py	core.providers.budget	verification: test exercises the target
+tests/unit/test_provider_ecosystem.py	core.providers.memory	verification: test exercises the target
+tests/unit/test_provider_ecosystem.py	core.providers.registry	verification: test exercises the target
+tests/unit/test_provider_ecosystem.py	core.providers.router	verification: test exercises the target
+tests/unit/test_provider_ecosystem.py	core.providers.store	verification: test exercises the target
+tests/unit/test_provider_ecosystem.py	core.tools.execution	verification: test exercises the target
+tests/unit/test_provider_fallback.py	core.providers.feedback.models	verification: test exercises the target
+tests/unit/test_provider_fallback.py	core.providers.memory	verification: test exercises the target
+tests/unit/test_provider_feedback.py	core.providers.bootstrap	verification: test exercises the target
+tests/unit/test_provider_feedback.py	core.providers.feedback.calibrator	verification: test exercises the target
+tests/unit/test_provider_feedback.py	core.providers.feedback.models	verification: test exercises the target
+tests/unit/test_provider_feedback.py	core.providers.feedback.recorder	verification: test exercises the target
+tests/unit/test_provider_feedback.py	core.providers.feedback.store	verification: test exercises the target
+tests/unit/test_provider_feedback.py	core.providers.memory	verification: test exercises the target
+tests/unit/test_provider_feedback.py	core.providers.orchestration.orchestrator	verification: test exercises the target
+tests/unit/test_provider_feedback.py	core.providers.orchestration.planner	verification: test exercises the target
+tests/unit/test_provider_feedback.py	core.providers.registry	verification: test exercises the target
+tests/unit/test_provider_feedback.py	core.providers.router	verification: test exercises the target
+tests/unit/test_provider_sdk.py	provider_sdk.discovery	verification: test exercises the target
+tests/unit/test_provider_sdk.py	provider_sdk.loader	verification: test exercises the target
+tests/unit/test_provider_sdk.py	provider_sdk.manifest	verification: test exercises the target
+tests/unit/test_provider_sdk.py	provider_sdk.registration	verification: test exercises the target
+tests/unit/test_rate_limiter.py	core.rate_limiter	verification: test exercises the target
+tests/unit/test_rbac_tools.py	core.tools.security	verification: test exercises the target
+tests/unit/test_research.py	core.research.extractor	verification: test exercises the target
+tests/unit/test_research.py	core.research.models	verification: test exercises the target
+tests/unit/test_research.py	core.research.storage	verification: test exercises the target
+tests/unit/test_resume_engine.py	core.activity.manager	verification: test exercises the target
+tests/unit/test_resume_engine.py	core.activity.models	verification: test exercises the target
+tests/unit/test_resume_engine.py	core.activity.resume	verification: test exercises the target
+tests/unit/test_resume_engine.py	core.activity.storage	verification: test exercises the target
+tests/unit/test_sandbox.py	core.plugins.base	verification: test exercises the target
+tests/unit/test_sandbox.py	core.plugins.sandbox	verification: test exercises the target
+tests/unit/test_scheduler.py	core.activity.manager	verification: test exercises the target
+tests/unit/test_scheduler.py	core.activity.models	verification: test exercises the target
+tests/unit/test_scheduler.py	core.activity.resume	verification: test exercises the target
+tests/unit/test_scheduler.py	core.activity.storage	verification: test exercises the target
+tests/unit/test_scheduler.py	core.scheduler.models	verification: test exercises the target
+tests/unit/test_scheduler.py	core.scheduler.policies	verification: test exercises the target
+tests/unit/test_scheduler.py	core.scheduler.queue	verification: test exercises the target
+tests/unit/test_scheduler.py	core.scheduler.scheduler	verification: test exercises the target
+tests/unit/test_scheduler.py	core.scheduler.store	verification: test exercises the target
+tests/unit/test_scheduler_autonomous.py	core.scheduler.autonomous	verification: test exercises the target
+tests/unit/test_scheduler_autonomous.py	core.scheduler.decision	verification: test exercises the target
+tests/unit/test_scheduler_autonomous.py	core.scheduler.intelligence	verification: test exercises the target
+tests/unit/test_scheduler_autonomous.py	core.scheduler.models	verification: test exercises the target
+tests/unit/test_scheduler_autonomous.py	core.scheduler.policies	verification: test exercises the target
+tests/unit/test_scheduler_decision.py	core.scheduler.decision	verification: test exercises the target
+tests/unit/test_scheduler_decision.py	core.scheduler.intelligence	verification: test exercises the target
+tests/unit/test_scheduler_decision.py	core.scheduler.models	verification: test exercises the target
+tests/unit/test_scheduler_decision.py	core.scheduler.policies	verification: test exercises the target
+tests/unit/test_scheduler_intelligence.py	core.scheduler.intelligence	verification: test exercises the target
+tests/unit/test_scheduler_intelligence.py	core.scheduler.models	verification: test exercises the target
+tests/unit/test_scheduler_intelligence.py	core.scheduler.policies	verification: test exercises the target
+tests/unit/test_scheduler_intelligence.py	core.scheduler.scheduler	verification: test exercises the target
+tests/unit/test_scheduler_resources.py	core.scheduler.intelligence	verification: test exercises the target
+tests/unit/test_scheduler_resources.py	core.scheduler.resources	verification: test exercises the target
+tests/unit/test_scheduler_store.py	core.scheduler.models	verification: test exercises the target
+tests/unit/test_scheduler_store.py	core.scheduler.registry	verification: test exercises the target
+tests/unit/test_scheduler_store.py	core.scheduler.store	verification: test exercises the target
+tests/unit/test_scheduler_tools.py	core.activity.manager	verification: test exercises the target
+tests/unit/test_scheduler_tools.py	core.activity.resume	verification: test exercises the target
+tests/unit/test_scheduler_tools.py	core.activity.storage	verification: test exercises the target
+tests/unit/test_scheduler_tools.py	core.scheduler.queue	verification: test exercises the target
+tests/unit/test_scheduler_tools.py	core.scheduler.scheduler	verification: test exercises the target
+tests/unit/test_scheduler_tools.py	core.scheduler.store	verification: test exercises the target
+tests/unit/test_search_fallback.py	tools.search_fallback	verification: test exercises the target
+tests/unit/test_search_tool.py	core.errors	verification: test exercises the target
+tests/unit/test_search_tool.py	core.result	verification: test exercises the target
+tests/unit/test_search_tool.py	tools.search_tool	verification: test exercises the target
+tests/unit/test_security_audit.py	core.configuration	verification: test exercises the target
+tests/unit/test_security_audit.py	core.security_audit	verification: test exercises the target
+tests/unit/test_security_hardening.py	core.config_schema	verification: test exercises the target
+tests/unit/test_security_hardening.py	core.configuration.service	verification: test exercises the target
+tests/unit/test_security_hardening.py	core.settings.schema	verification: test exercises the target
+tests/unit/test_self_modification.py	core.self_modification.executor	verification: test exercises the target
+tests/unit/test_self_modification.py	core.self_modification.models	verification: test exercises the target
+tests/unit/test_self_modification.py	core.self_modification.planner	verification: test exercises the target
+tests/unit/test_self_modification.py	core.self_modification.recipes	verification: test exercises the target
+tests/unit/test_self_modification.py	core.self_modification.safety	verification: test exercises the target
+tests/unit/test_self_modification.py	core.self_modification.store	verification: test exercises the target
+tests/unit/test_session.py	core.session	verification: test exercises the target
+tests/unit/test_settings.py	core.settings.schema	verification: test exercises the target
+tests/unit/test_settings.py	core.settings.store	verification: test exercises the target
+tests/unit/test_snapshot.py	pc_agent.snapshot	verification: test exercises the target
+tests/unit/test_spcl9_bugfix_regressions.py	core.coding	verification: test exercises the target
+tests/unit/test_spcl9_bugfix_regressions.py	core.research.extractor	verification: test exercises the target
+tests/unit/test_ssrf.py	core.ssrf	verification: test exercises the target
+tests/unit/test_ssrf_fuzz.py	core.ssrf	verification: test exercises the target
+tests/unit/test_strategy.py	core.activity.models	verification: test exercises the target
+tests/unit/test_strategy.py	core.long_term_memory.models	verification: test exercises the target
+tests/unit/test_strategy.py	core.research.models	verification: test exercises the target
+tests/unit/test_strategy.py	core.strategy.calibration	verification: test exercises the target
+tests/unit/test_strategy.py	core.strategy.evaluator	verification: test exercises the target
+tests/unit/test_strategy.py	core.strategy.generator	verification: test exercises the target
+tests/unit/test_strategy.py	core.strategy.memory_adapter	verification: test exercises the target
+tests/unit/test_strategy.py	core.strategy.models	verification: test exercises the target
+tests/unit/test_strategy.py	core.strategy.predictor	verification: test exercises the target
+tests/unit/test_strategy.py	core.strategy.selector	verification: test exercises the target
+tests/unit/test_strategy.py	core.strategy.similarity	verification: test exercises the target
+tests/unit/test_strategy_v2.py	core.generalization.executor	verification: test exercises the target
+tests/unit/test_strategy_v2.py	core.generalization.models	verification: test exercises the target
+tests/unit/test_strategy_v2.py	core.generalization.store	verification: test exercises the target
+tests/unit/test_strategy_v2.py	core.strategy.v2.evaluator	verification: test exercises the target
+tests/unit/test_strategy_v2.py	core.strategy.v2.executor	verification: test exercises the target
+tests/unit/test_strategy_v2.py	core.strategy.v2.memory_adapter	verification: test exercises the target
+tests/unit/test_strategy_v2.py	core.strategy.v2.models	verification: test exercises the target
+tests/unit/test_strategy_v2.py	core.strategy.v2.planner	verification: test exercises the target
+tests/unit/test_strategy_v2.py	core.strategy.v2.portfolio	verification: test exercises the target
+tests/unit/test_strategy_v2.py	core.strategy.v2.predictor	verification: test exercises the target
+tests/unit/test_strategy_v2.py	core.strategy.v2.selector	verification: test exercises the target
+tests/unit/test_strategy_v2.py	core.strategy.v2.tradeoffs	verification: test exercises the target
+tests/unit/test_structural_transformer.py	brain.compiler_repair_engine	verification: test exercises the target
+tests/unit/test_structural_transformer.py	brain.structural_transformer	verification: test exercises the target
+tests/unit/test_sub_agents.py	core.agents.adapters.forge_adapter	verification: test exercises the target
+tests/unit/test_sub_agents.py	core.agents.adapters.herald_adapter	verification: test exercises the target
+tests/unit/test_sub_agents.py	core.agents.adapters.nexus_adapter	verification: test exercises the target
+tests/unit/test_sub_agents.py	core.agents.registry	verification: test exercises the target
+tests/unit/test_sub_agents.py	core.result	verification: test exercises the target
+tests/unit/test_tui_activity.py	jarvis_tui.app.screens.activity_dashboard_screen	verification: test exercises the target
+tests/unit/test_tui_production_scenarios.py	jarvis_tui.app.services.activity_updates	verification: test exercises the target
+tests/unit/test_tui_screens.py	jarvis_tui.app.screens.agent_dashboard_screen	verification: test exercises the target
+tests/unit/test_tui_screens.py	jarvis_tui.app.screens.automation_dashboard_screen	verification: test exercises the target
+tests/unit/test_tui_screens.py	jarvis_tui.app.screens.diagnostics_dashboard_screen	verification: test exercises the target
+tests/unit/test_tui_screens.py	jarvis_tui.app.screens.home_screen	verification: test exercises the target
+tests/unit/test_tui_screens.py	jarvis_tui.app.screens.main_screen	verification: test exercises the target
+tests/unit/test_tui_screens.py	jarvis_tui.app.screens.memory_dashboard_screen	verification: test exercises the target
+tests/unit/test_tui_screens.py	jarvis_tui.app.screens.replay_screen	verification: test exercises the target
+tests/unit/test_tui_screens.py	jarvis_tui.app.screens.settings_screen	verification: test exercises the target
+tests/unit/test_tui_screens.py	jarvis_tui.app.screens.voice_dashboard_screen	verification: test exercises the target
+tests/unit/test_type_mismatch_real.py	brain.compiler_repair_engine	verification: test exercises the target
+tests/unit/test_unified_store.py	core.planner.protocol	verification: test exercises the target
+tests/unit/test_unified_store.py	core.planner.unified_store	verification: test exercises the target
+tests/unit/test_voice_engine.py	core.configuration	verification: test exercises the target
+tests/unit/test_voice_engine.py	core.result	verification: test exercises the target
+tests/unit/test_voice_pipeline.py	core.result	verification: test exercises the target
+tests/unit/test_whatsapp.py	core.integration_manager	verification: test exercises the target
+tests/unit/test_whatsapp.py	integrations.whatsapp.base	verification: test exercises the target
+tests/unit/test_whatsapp.py	integrations.whatsapp.cloud_api	verification: test exercises the target
+tests/unit/test_whatsapp.py	integrations.whatsapp.history	verification: test exercises the target
+tests/unit/test_whatsapp.py	integrations.whatsapp.media	verification: test exercises the target
+tests/unit/test_whatsapp.py	integrations.whatsapp.models	verification: test exercises the target
+tests/unit/test_whatsapp.py	integrations.whatsapp.phone_manager	verification: test exercises the target
+tests/unit/test_whatsapp.py	integrations.whatsapp.retry	verification: test exercises the target
+tests/unit/test_whatsapp.py	integrations.whatsapp.twilio_provider	verification: test exercises the target
+tests/unit/test_whatsapp.py	integrations.whatsapp.webhook	verification: test exercises the target
+tests/unit/test_workflow_artifacts.py	core.workflow	verification: test exercises the target
+tests/unit/test_workflow_artifacts.py	core.workflow.models	verification: test exercises the target
+tests/unit/test_workflow_browser_artifacts.py	core.workflow	verification: test exercises the target
+tests/unit/test_workflow_browser_artifacts.py	core.workflow.models	verification: test exercises the target
+tests/unit/test_workflow_build_artifacts.py	core.workflow	verification: test exercises the target
+tests/unit/test_workflow_build_artifacts.py	core.workflow.artifact_store	verification: test exercises the target
+tests/unit/test_workflow_build_artifacts.py	core.workflow.context	verification: test exercises the target
+tests/unit/test_workflow_build_artifacts.py	core.workflow.models	verification: test exercises the target
+tests/unit/test_workflow_calibration.py	core.providers.feedback.models	verification: test exercises the target
+tests/unit/test_workflow_calibration.py	core.workflow.calibration	verification: test exercises the target
+tests/unit/test_workflow_calibration.py	core.workflow.learning_models	verification: test exercises the target
+tests/unit/test_workflow_calibration.py	core.workflow.learning_store	verification: test exercises the target
+tests/unit/test_workflow_context.py	core.workflow	verification: test exercises the target
+tests/unit/test_workflow_context.py	core.workflow.models	verification: test exercises the target
+tests/unit/test_workflow_email_artifacts.py	core.tools.email_utils	verification: test exercises the target
+tests/unit/test_workflow_email_artifacts.py	core.tools.execution	verification: test exercises the target
+tests/unit/test_workflow_email_artifacts.py	core.workflow	verification: test exercises the target
+tests/unit/test_workflow_email_artifacts.py	core.workflow.models	verification: test exercises the target
+tests/unit/test_workflow_failures.py	core.workflow	verification: test exercises the target
+tests/unit/test_workflow_failures.py	core.workflow.heartbeat_monitor	verification: test exercises the target
+tests/unit/test_workflow_failures.py	core.workflow.models	verification: test exercises the target
+tests/unit/test_workflow_learning_models.py	core.workflow.learning_models	verification: test exercises the target
+tests/unit/test_workflow_learning_store.py	core.workflow.learning_models	verification: test exercises the target
+tests/unit/test_workflow_learning_store.py	core.workflow.learning_store	verification: test exercises the target
+tests/unit/test_workflow_recorder.py	core.providers.feedback.models	verification: test exercises the target
+tests/unit/test_workflow_recorder.py	core.workflow.calibration	verification: test exercises the target
+tests/unit/test_workflow_recorder.py	core.workflow.learning_models	verification: test exercises the target
+tests/unit/test_workflow_recorder.py	core.workflow.learning_store	verification: test exercises the target
+tests/unit/test_workflow_recorder.py	core.workflow.models	verification: test exercises the target
+tests/unit/test_workflow_recorder.py	core.workflow.recorder	verification: test exercises the target
+tests/unit/test_workflow_recorder.py	core.workflow.storage	verification: test exercises the target
+tests/unit/test_workflow_wp008.py	core.workflow	verification: test exercises the target
+tests/unit/test_workflow_wp008.py	core.workflow.events	verification: test exercises the target
+tests/unit/test_workflow_wp008.py	core.workflow.models	verification: test exercises the target
+tests/unit/test_workspace.py	core.workspace.browser_context	verification: test exercises the target
+tests/unit/test_workspace.py	core.workspace.clipboard_manager	verification: test exercises the target
+tests/unit/test_workspace.py	core.workspace.desktop_state	verification: test exercises the target
+tests/unit/test_workspace.py	core.workspace.process_monitor	verification: test exercises the target
+tests/unit/test_workspace.py	core.workspace.window_detector	verification: test exercises the target
+tests/unit/test_workspace_provider.py	core.providers.adapters.workspace_provider	verification: test exercises the target
+tools/deep_research.py	core.llm_router	runtime dependency
+tools/deep_research.py	core.research.models	data contract: shared types
+tools/deep_research.py	core.research.reasoner	runtime dependency
+tools/deep_research.py	core.research.synthesizer	runtime dependency
+tools/deep_research.py	tools.search_tool	tool invocation layer
+tools/jarvis_website_cli.py	tools.website_generator	tool invocation layer
+tools/plugin_base.py	tools.base_tool	tool invocation layer
+tools/plugin_base.py	tools.registry	tool invocation layer
+tools/provider_diagnostic.py	jarvis_provider	LLM provider access (routing/models/keys)
+tools/registry.py	tools.base_tool	tool invocation layer
+tools/search_tool.py	core.errors	runtime dependency
+tools/search_tool.py	core.result	runtime dependency
+tools/search_tool.py	tools.crawl4ai_tool	tool invocation layer
+tools/template_library.py	core.llm_router	runtime dependency
+tools/website_generator.py	brain.events	runtime dependency
+tools/website_generator.py	core.llm_router	runtime dependency
+tools/website_generator.py	tools.search_tool	tool invocation layer
+tools/whatsapp_sender.py	integrations.whatsapp.cloud_api	runtime dependency
+vision/face_recognition.py	core.configuration	runtime dependency
+vision/face_recognition.py	core.database	runtime dependency

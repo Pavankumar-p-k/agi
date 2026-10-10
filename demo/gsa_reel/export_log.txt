@@ -1,0 +1,36 @@
+== 1/4 rendering 150 strips (900 frames) ==
+   strip 000  (frames 0-5)
+   strip 010  (frames 60-65)
+   strip 020  (frames 120-125)
+   strip 030  (frames 180-185)
+   strip 040  (frames 240-245)
+   strip 050  (frames 300-305)
+   strip 060  (frames 360-365)
+   strip 070  (frames 420-425)
+   strip 080  (frames 480-485)
+   strip 090  (frames 540-545)
+   strip 100  (frames 600-605)
+   strip 110  (frames 660-665)
+   strip 120  (frames 720-725)
+   strip 130  (frames 780-785)
+   strip 140  (frames 840-845)
+== 2/4 slicing strips into 1080x1920 frames (PIL) ==
+   frames written: 900
+== 3/4 sanity check: sampled frames must not be blank ==
+   frame   0  mean=  7.10 std=  3.22 bright=  1778  OK
+   frame 150  mean=237.35 std= 31.13 bright=2038492  OK
+   frame 300  mean=237.38 std= 41.76 bright=2011648  OK
+   frame 450  mean=135.91 std=106.76 bright=1179941  OK
+   frame 600  mean=145.60 std= 45.75 bright=2044321  OK
+   frame 750  mean=172.71 std= 64.48 bright=2041728  OK
+   frame 899  mean= 32.61 std= 46.10 bright=118668  OK
+== 4/4 assembling mp4 + muxing soundtrack ==
+== previews ==
+== done ==
+-rw-r--r-- 1 peter 197609 3057573 Oct  4 12:21 /c/Users/peter/desktop/jarvis/demo/gsa_reel/gsa_reel.mp4
+-rw-r--r-- 1 peter 197609  464737 Oct  4 12:21 /c/Users/peter/desktop/jarvis/demo/gsa_reel/out/preview_t1.5.png
+-rw-r--r-- 1 peter 197609  351653 Oct  4 12:21 /c/Users/peter/desktop/jarvis/demo/gsa_reel/out/preview_t13.0.png
+-rw-r--r-- 1 peter 197609   92171 Oct  4 12:21 /c/Users/peter/desktop/jarvis/demo/gsa_reel/out/preview_t21.0.png
+-rw-r--r-- 1 peter 197609   91953 Oct  4 12:21 /c/Users/peter/desktop/jarvis/demo/gsa_reel/out/preview_t27.5.png
+-rw-r--r-- 1 peter 197609   54769 Oct  4 12:21 /c/Users/peter/desktop/jarvis/demo/gsa_reel/out/preview_t6.5.png
+EXPORT EXIT: 0
