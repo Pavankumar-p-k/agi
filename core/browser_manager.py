@@ -50,7 +50,12 @@ logger = logging.getLogger(__name__)
 __all__ = ["BrowserManager", "BrowserSession"]
 
 _DEFAULT_TIMEOUT_MS = 45000
-_STORAGE_DIR = os.path.join("data", "browser_state")
+# Anchor to the repo root so the working directory never relocates state.
+_STORAGE_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "data",
+    "browser_state",
+)
 
 
 @dataclass
@@ -168,7 +173,15 @@ class BrowserManager:
                 logger.warning("browser lost connection; relaunching")
                 self._started = False
         browser = await self.start(headed=headed)
-        # A relaunch invalidates every existing context/page.
+        # A relaunch invalidates every existing context/page — close them
+        # best-effort first so no orphaned contexts survive on the old browser.
+        for session in list(self._sessions.values()):
+            context = getattr(session, "context", None)
+            if context is not None:
+                try:
+                    await context.close()
+                except Exception:  # noqa: BLE001 — already dead is fine
+                    logger.debug("context close failed during relaunch", exc_info=True)
         self._sessions.clear()
         return browser
 

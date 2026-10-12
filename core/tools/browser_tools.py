@@ -12,6 +12,7 @@ from __future__ import annotations
 import asyncio
 import base64
 import os
+import time
 from typing import Any
 from urllib.parse import urlparse, quote_plus
 
@@ -36,13 +37,50 @@ def _host_matches(requested: str, observed: str) -> bool:
     return observed_host == requested_host or observed_host.endswith("." + requested_host) or requested_host.endswith("." + observed_host)
 
 
-async def _page(session_id: str = "default") -> tuple[Any | None, dict[str, Any] | None]:
+async def _page(
+    session_id: str = "default", tab_index: int | None = None
+) -> tuple[Any | None, dict[str, Any] | None]:
+    """Resolve the page to act on.
+
+    ``tab_index`` addresses a specific tab (bounds-checked, does NOT mutate
+    the session's current tab); ``None`` keeps current-tab semantics.
+    """
     try:
         manager = BrowserManager.instance()
         session = await manager.get_or_create_session(session_id)
-        return session.current_page, None
+        if tab_index is None:
+            return session.current_page, None
+        pages = list(session.context.pages)
+        index = int(tab_index)
+        if index < 0 or index >= len(pages):
+            return None, {
+                "status": "error",
+                "error": f"tab index {index} out of range (0..{len(pages) - 1})",
+                "error_type": "NotFound",
+            }
+        return pages[index], None
     except Exception as exc:
         return None, {"status": "error", "error": f"{type(exc).__name__}: {exc}", "error_type": "Unavailable"}
+
+
+async def _page_title(page: Any) -> str:
+    """Best-effort page title (never raises — closed/crashed pages return "")."""
+    try:
+        return str(await page.title())
+    except Exception:
+        return ""
+
+
+# ---- navigation history ----------------------------------------------------
+# Session-scoped log of real navigations observed by the tools (bounded).
+_NAV_HISTORY: dict[str, list[dict[str, Any]]] = {}
+_NAV_HISTORY_LIMIT = 100
+
+
+def _record_nav(session_id: str, url: str, title: str, how: str) -> None:
+    log = _NAV_HISTORY.setdefault(session_id, [])
+    log.append({"url": str(url), "title": str(title), "ts": time.time(), "how": str(how)})
+    del log[:-_NAV_HISTORY_LIMIT]
 
 
 def _ok(result: Any = None, **extra: Any) -> dict[str, Any]:
@@ -75,28 +113,30 @@ async def do_browser_navigate(url: str, session_id: str = "default", **_kwargs: 
         actual = page.url
         if not _same_destination(url, actual):
             return _fail(f"navigation verification failed: requested {url}, observed {actual}")
-        return _ok({"url": actual, "title": await page.title()})
+        title = await _page_title(page)
+        _record_nav(session_id, actual, title, str(_kwargs.get("via", "navigate")))
+        return _ok({"url": actual, "title": title})
     except Exception as exc:
         return _fail(f"{type(exc).__name__}: {exc}")
 
 
-async def do_browser_get_url(session_id: str = "default", **_kwargs: Any) -> dict[str, Any]:
-    page, error = await _page(session_id)
+async def do_browser_get_url(session_id: str = "default", tab_index: int | None = None, **_kwargs: Any) -> dict[str, Any]:
+    page, error = await _page(session_id, tab_index)
     return error or {"status": "ok", "url": page.url, "result": {"url": page.url}}
 
 
-async def do_browser_get_title(session_id: str = "default", **_kwargs: Any) -> dict[str, Any]:
-    page, error = await _page(session_id)
+async def do_browser_get_title(session_id: str = "default", tab_index: int | None = None, **_kwargs: Any) -> dict[str, Any]:
+    page, error = await _page(session_id, tab_index)
     if error:
         return error
     try:
-        return _ok({"title": await page.title()})
+        return _ok({"title": await _page_title(page)})
     except Exception as exc:
         return _fail(f"{type(exc).__name__}: {exc}")
 
 
-async def do_browser_snapshot(session_id: str = "default", **_kwargs: Any) -> dict[str, Any]:
-    page, error = await _page(session_id)
+async def do_browser_snapshot(session_id: str = "default", tab_index: int | None = None, **_kwargs: Any) -> dict[str, Any]:
+    page, error = await _page(session_id, tab_index)
     if error:
         return error
     try:
@@ -127,9 +167,9 @@ async def do_browser_snapshot(session_id: str = "default", **_kwargs: Any) -> di
         return _fail(f"{type(exc).__name__}: {exc}")
 
 
-async def do_browser_a11y_tree(session_id: str = "default", max_nodes: int = 150, **_kwargs: Any) -> dict[str, Any]:
+async def do_browser_a11y_tree(session_id: str = "default", max_nodes: int = 150, tab_index: int | None = None, **_kwargs: Any) -> dict[str, Any]:
     """Accessibility-tree-first perception.  Bounded; falls back to ARIA snapshot."""
-    page, error = await _page(session_id)
+    page, error = await _page(session_id, tab_index)
     if error:
         return error
 
@@ -182,8 +222,8 @@ async def do_browser_a11y_tree(session_id: str = "default", max_nodes: int = 150
         return _fail(f"{type(exc).__name__}: {exc}")
 
 
-async def do_browser_find(text: str, session_id: str = "default", **_kwargs: Any) -> dict[str, Any]:
-    page, error = await _page(session_id)
+async def do_browser_find(text: str, session_id: str = "default", tab_index: int | None = None, **_kwargs: Any) -> dict[str, Any]:
+    page, error = await _page(session_id, tab_index)
     if error:
         return error
     try:
@@ -209,8 +249,8 @@ async def do_browser_find(text: str, session_id: str = "default", **_kwargs: Any
         return _fail(f"{type(exc).__name__}: {exc}")
 
 
-async def do_browser_find_interactive(text: str, session_id: str = "default", **kwargs: Any) -> dict[str, Any]:
-    return await do_browser_find(text, session_id=session_id, **kwargs)
+async def do_browser_find_interactive(text: str, session_id: str = "default", tab_index: int | None = None, **kwargs: Any) -> dict[str, Any]:
+    return await do_browser_find(text, session_id=session_id, tab_index=tab_index, **kwargs)
 
 
 def _locator(page: Any, selector: str) -> Any:
@@ -219,20 +259,34 @@ def _locator(page: Any, selector: str) -> Any:
     return page.locator(selector).first
 
 
-async def do_browser_click(selector: str, session_id: str = "default", **kwargs: Any) -> dict[str, Any]:
-    page, error = await _page(session_id)
+async def do_browser_click(selector: str, session_id: str = "default", tab_index: int | None = None, **kwargs: Any) -> dict[str, Any]:
+    """Click with read-back verification: captures url/title before and after
+    and reports whether the click navigated the page."""
+    page, error = await _page(session_id, tab_index)
     if error:
         return error
     try:
+        before = {"url": page.url, "title": await _page_title(page)}
         locator = _locator(page, selector)
         await locator.click(force=bool(kwargs.get("force", False)), timeout=15000)
-        return _ok({"clicked": selector})
+        try:
+            # Bounded wait: in-page actions may or may not navigate.
+            await page.wait_for_load_state(state="domcontentloaded", timeout=3000)
+        except Exception:
+            pass
+        after = {"url": page.url, "title": await _page_title(page)}
+        return _ok({
+            "clicked": selector,
+            "verified": True,
+            "navigated": after["url"] != before["url"],
+            "evidence": {"before": before, "after": after},
+        })
     except Exception as exc:
         return _fail(f"{type(exc).__name__}: {exc}")
 
 
-async def do_browser_fill(selector: str, value: str, session_id: str = "default", **_kwargs: Any) -> dict[str, Any]:
-    page, error = await _page(session_id)
+async def do_browser_fill(selector: str, value: str, session_id: str = "default", tab_index: int | None = None, **_kwargs: Any) -> dict[str, Any]:
+    page, error = await _page(session_id, tab_index)
     if error:
         return error
     try:
@@ -246,8 +300,8 @@ async def do_browser_fill(selector: str, value: str, session_id: str = "default"
         return _fail(f"{type(exc).__name__}: {exc}")
 
 
-async def do_browser_press(selector: str, key: str, session_id: str = "default", **_kwargs: Any) -> dict[str, Any]:
-    page, error = await _page(session_id)
+async def do_browser_press(selector: str, key: str, session_id: str = "default", tab_index: int | None = None, **_kwargs: Any) -> dict[str, Any]:
+    page, error = await _page(session_id, tab_index)
     if error:
         return error
     try:
@@ -257,9 +311,9 @@ async def do_browser_press(selector: str, key: str, session_id: str = "default",
         return _fail(f"{type(exc).__name__}: {exc}")
 
 
-async def do_browser_select(selector: str, value: str, match_by: str = "value", session_id: str = "default", **_kwargs: Any) -> dict[str, Any]:
+async def do_browser_select(selector: str, value: str, match_by: str = "value", session_id: str = "default", tab_index: int | None = None, **_kwargs: Any) -> dict[str, Any]:
     """Select an <option> and read back the observed selection (verified)."""
-    page, error = await _page(session_id)
+    page, error = await _page(session_id, tab_index)
     if error:
         return error
     try:
@@ -289,9 +343,9 @@ async def do_browser_select(selector: str, value: str, match_by: str = "value", 
         return _fail(f"{type(exc).__name__}: {exc}")
 
 
-async def do_browser_scroll(direction: str = "down", amount: int = 600, selector: str | None = None, session_id: str = "default", **_kwargs: Any) -> dict[str, Any]:
+async def do_browser_scroll(direction: str = "down", amount: int = 600, selector: str | None = None, session_id: str = "default", tab_index: int | None = None, **_kwargs: Any) -> dict[str, Any]:
     """Scroll by mouse wheel (no JS injection) or scroll an element into view; verified by scrollY delta."""
-    page, error = await _page(session_id)
+    page, error = await _page(session_id, tab_index)
     if error:
         return error
     try:
@@ -316,9 +370,9 @@ async def do_browser_scroll(direction: str = "down", amount: int = 600, selector
         return _fail(f"{type(exc).__name__}: {exc}")
 
 
-async def do_browser_upload(selector: str, files: list[str], session_id: str = "default", **_kwargs: Any) -> dict[str, Any]:
+async def do_browser_upload(selector: str, files: list[str], session_id: str = "default", tab_index: int | None = None, **_kwargs: Any) -> dict[str, Any]:
     """Upload file(s) through a file input; verified by reading back the file list length."""
-    page, error = await _page(session_id)
+    page, error = await _page(session_id, tab_index)
     if error:
         return error
     paths = [str(p) for p in (files or [])]
@@ -414,9 +468,9 @@ async def do_browser_download(selector: str | None = None, url: str | None = Non
         return _fail(f"{type(exc).__name__}: {exc}")
 
 
-async def do_browser_extract(selector: str = "body", max_chars: int = 20000, session_id: str = "default", **_kwargs: Any) -> dict[str, Any]:
+async def do_browser_extract(selector: str = "body", max_chars: int = 20000, session_id: str = "default", tab_index: int | None = None, **_kwargs: Any) -> dict[str, Any]:
     """Bounded text extraction from a page region (read-only)."""
-    page, error = await _page(session_id)
+    page, error = await _page(session_id, tab_index)
     if error:
         return error
     try:
@@ -429,7 +483,7 @@ async def do_browser_extract(selector: str = "body", max_chars: int = 20000, ses
         return _fail(f"{type(exc).__name__}: {exc}")
 
 
-async def do_browser_form_fill(fields: Any, session_id: str = "default", **_kwargs: Any) -> dict[str, Any]:
+async def do_browser_form_fill(fields: Any, session_id: str = "default", tab_index: int | None = None, **_kwargs: Any) -> dict[str, Any]:
     """Fill and verify multiple fields in one action.
 
     Accepts either a mapping {"#id": "value", ...} or a list of
@@ -448,7 +502,7 @@ async def do_browser_form_fill(fields: Any, session_id: str = "default", **_kwar
     results: list[dict[str, Any]] = []
     all_ok = True
     for selector, value in entries:
-        outcome = await do_browser_fill(selector, value, session_id=session_id)
+        outcome = await do_browser_fill(selector, value, session_id=session_id, tab_index=tab_index)
         results.append({"selector": selector, "status": outcome.get("status"), "error": outcome.get("error")})
         if outcome.get("status") != "ok":
             all_ok = False
@@ -557,6 +611,7 @@ async def do_browser_search(query: str, engine: str | None = None, session_id: s
                 if videos:
                     results = videos
             if results:
+                _record_nav(session_id, page.url, await _page_title(page), f"search:{engine_name}")
                 return _ok({"engine": engine_name, "query": query, "results": results, "url": page.url})
             errors.append(f"{engine_name}: no result links extracted")
         except Exception as exc:
@@ -576,6 +631,7 @@ async def do_browser_search(query: str, engine: str | None = None, session_id: s
             if snapshot.get("status") == "ok":
                 results = _harvest(snapshot)
                 if results:
+                    _record_nav(session_id, page.url, await _page_title(page), "search:duckduckgo_ui")
                     return _ok({"engine": "duckduckgo_ui", "query": query,
                                 "results": results, "url": page.url})
                 errors.append("duckduckgo_ui: no result links extracted")
@@ -585,8 +641,8 @@ async def do_browser_search(query: str, engine: str | None = None, session_id: s
     return _fail("search failed on all engines: " + " | ".join(errors))
 
 
-async def do_browser_wait_visible(selector: str, session_id: str = "default", **_kwargs: Any) -> dict[str, Any]:
-    page, error = await _page(session_id)
+async def do_browser_wait_visible(selector: str, session_id: str = "default", tab_index: int | None = None, **_kwargs: Any) -> dict[str, Any]:
+    page, error = await _page(session_id, tab_index)
     if error:
         return error
     try:
@@ -596,8 +652,8 @@ async def do_browser_wait_visible(selector: str, session_id: str = "default", **
         return _fail(f"{type(exc).__name__}: {exc}")
 
 
-async def do_browser_wait_text(text: str, session_id: str = "default", **_kwargs: Any) -> dict[str, Any]:
-    page, error = await _page(session_id)
+async def do_browser_wait_text(text: str, session_id: str = "default", tab_index: int | None = None, **_kwargs: Any) -> dict[str, Any]:
+    page, error = await _page(session_id, tab_index)
     if error:
         return error
     try:
@@ -607,11 +663,11 @@ async def do_browser_wait_text(text: str, session_id: str = "default", **_kwargs
         return _fail(f"{type(exc).__name__}: {exc}")
 
 
-async def do_browser_wait_state(state: str = "load", timeout: int = 30000, session_id: str = "default", **_kwargs: Any) -> dict[str, Any]:
+async def do_browser_wait_state(state: str = "load", timeout: int = 30000, session_id: str = "default", tab_index: int | None = None, **_kwargs: Any) -> dict[str, Any]:
     """Wait for a page load state: 'load' | 'domcontentloaded' | 'networkidle'."""
     if state not in {"load", "domcontentloaded", "networkidle"}:
         return _fail(f"invalid load state: {state!r}")
-    page, error = await _page(session_id)
+    page, error = await _page(session_id, tab_index)
     if error:
         return error
     try:
@@ -621,9 +677,9 @@ async def do_browser_wait_state(state: str = "load", timeout: int = 30000, sessi
         return _fail(f"{type(exc).__name__}: {exc}")
 
 
-async def do_browser_is_visible(selector: str, session_id: str = "default", **_kwargs: Any) -> dict[str, Any]:
+async def do_browser_is_visible(selector: str, session_id: str = "default", tab_index: int | None = None, **_kwargs: Any) -> dict[str, Any]:
     """Read-only visibility probe for verification checks (never fails on 'not visible')."""
-    page, error = await _page(session_id)
+    page, error = await _page(session_id, tab_index)
     if error:
         return error
     try:
@@ -633,8 +689,8 @@ async def do_browser_is_visible(selector: str, session_id: str = "default", **_k
         return _fail(f"{type(exc).__name__}: {exc}")
 
 
-async def do_browser_screenshot(session_id: str = "default", **_kwargs: Any) -> dict[str, Any]:
-    page, error = await _page(session_id)
+async def do_browser_screenshot(session_id: str = "default", tab_index: int | None = None, **_kwargs: Any) -> dict[str, Any]:
+    page, error = await _page(session_id, tab_index)
     if error:
         return error
     try:
@@ -659,6 +715,7 @@ async def do_browser_refresh(session_id: str = "default", **_kwargs: Any) -> dic
         await page.reload(wait_until="domcontentloaded", timeout=30000)
         if not _host_matches(before, page.url):
             return _fail(f"refresh verification failed: {before} -> {page.url}")
+        _record_nav(session_id, page.url, await _page_title(page), "refresh")
         return _ok({"url": page.url, "title": await page.title()})
     except Exception as exc:
         return _fail(f"{type(exc).__name__}: {exc}")
@@ -672,6 +729,7 @@ async def do_browser_go_back(session_id: str = "default", **_kwargs: Any) -> dic
         await page.go_back(wait_until="domcontentloaded", timeout=30000)
         if not page.url:
             return _fail("go_back produced no URL")
+        _record_nav(session_id, page.url, await _page_title(page), "go_back")
         return _ok({"url": page.url})
     except Exception as exc:
         return _fail(f"{type(exc).__name__}: {exc}")
@@ -686,7 +744,19 @@ async def do_browser_list_tabs(session_id: str = "default", **_kwargs: Any) -> d
     session = manager.get_session(session_id)
     if session is None:
         return _fail("session unavailable", "Unavailable")
-    return _ok({"tabs": [{"index": i, "url": page.url} for i, page in enumerate(session.context.pages)]})
+    tabs: list[dict[str, Any]] = []
+    for i, page in enumerate(session.context.pages):
+        try:
+            url = page.url
+        except Exception:
+            url = ""
+        tabs.append({
+            "index": i,
+            "url": url,
+            "title": await _page_title(page),
+            "active": page is session.current_page,
+        })
+    return _ok({"tabs": tabs})
 
 
 async def do_browser_new_tab(url: str | None = None, session_id: str = "default", **_kwargs: Any) -> dict[str, Any]:
@@ -695,9 +765,11 @@ async def do_browser_new_tab(url: str | None = None, session_id: str = "default"
     page = await session.context.new_page()
     session.current_page = page
     if url:
-        result = await do_browser_navigate(url, session_id=session_id)
+        result = await do_browser_navigate(url, session_id=session_id, via="new_tab")
         if result.get("status") != "ok":
             return result
+    else:
+        _record_nav(session_id, page.url, await _page_title(page), "new_tab")
     return _ok({"url": page.url})
 
 
@@ -722,12 +794,13 @@ async def do_browser_close_tab(index: int, session_id: str = "default", **_kwarg
     return _ok({"closed": index})
 
 
-async def do_browser_get_history(**_kwargs: Any) -> dict[str, Any]:
-    return _ok({"history": []})
+async def do_browser_get_history(session_id: str = "default", **_kwargs: Any) -> dict[str, Any]:
+    """Session-scoped navigation log recorded by navigate/new_tab/go_back/refresh/search."""
+    return _ok({"history": list(_NAV_HISTORY.get(session_id, [])), "session_id": session_id})
 
 
-async def do_browser_evaluate(expression: str, session_id: str = "default", **_kwargs: Any) -> dict[str, Any]:
-    page, error = await _page(session_id)
+async def do_browser_evaluate(expression: str, session_id: str = "default", tab_index: int | None = None, **_kwargs: Any) -> dict[str, Any]:
+    page, error = await _page(session_id, tab_index)
     if error:
         return error
     try:
@@ -736,9 +809,28 @@ async def do_browser_evaluate(expression: str, session_id: str = "default", **_k
         return _fail(f"{type(exc).__name__}: {exc}")
 
 
-async def do_browser_shadow_query(selector: str, session_id: str = "default", **_kwargs: Any) -> dict[str, Any]:
-    return await do_browser_find(selector, session_id=session_id)
+async def do_browser_shadow_query(selector: str, session_id: str = "default", tab_index: int | None = None, **_kwargs: Any) -> dict[str, Any]:
+    return await do_browser_find(selector, session_id=session_id, tab_index=tab_index)
 
 
-async def do_browser_wait_interactive(*args: Any, **kwargs: Any) -> dict[str, Any]:
-    return _ok({"ready": True})
+async def do_browser_wait_interactive(
+    session_id: str = "default", timeout: int = 10000, tab_index: int | None = None, *args: Any, **_kwargs: Any
+) -> dict[str, Any]:
+    """Wait until the page is actually interactive: DOMContentLoaded is required,
+    networkidle is a bounded best-effort probe.  Never reports ready without
+    evidence."""
+    del args  # legacy positional tolerance
+    page, error = await _page(session_id, tab_index)
+    if error:
+        return error
+    try:
+        await page.wait_for_load_state(state="domcontentloaded", timeout=max(1000, int(timeout)))
+    except Exception as exc:
+        return _fail(f"page did not reach domcontentloaded: {type(exc).__name__}: {exc}")
+    network_idle = False
+    try:
+        await page.wait_for_load_state(state="networkidle", timeout=min(10000, int(timeout)))
+        network_idle = True
+    except Exception:
+        network_idle = False  # best-effort probe only
+    return _ok({"ready": True, "network_idle": network_idle, "url": page.url, "title": await _page_title(page)})

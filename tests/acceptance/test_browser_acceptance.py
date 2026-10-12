@@ -25,7 +25,7 @@ from core.tools.browser_tools import (
     do_browser_wait_visible, do_browser_wait_text, do_browser_wait_interactive,
     do_browser_shadow_query,
 )
-from core.auth import get_auth_manager
+from core.authz.schema import AuthContext
 from core.tools.security import is_authorized_to_execute
 
 SESSION_ID = "acceptance-test-session"
@@ -697,7 +697,9 @@ async def main():
     ]
 
     async def _check_evaluate_blocked():
-        ctx = get_auth_manager().resolve_context("guest")
+        # AuthContext replaced AuthManager.resolve_context in 027bd96;
+        # an unprivileged guest context must still be denied.
+        ctx = AuthContext(user_id="guest", roles={"guest"})
         allowed = is_authorized_to_execute("browser_evaluate", ctx)
         if allowed:
             return {"status": "error", "error": "browser_evaluate should be blocked for guest"}
