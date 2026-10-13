@@ -108,14 +108,33 @@ async def do_browser_navigate(url: str, session_id: str = "default", **_kwargs: 
     page, error = await _page(session_id)
     if error:
         return error
+    fallback = False
     try:
-        await page.goto(url, wait_until="domcontentloaded", timeout=45000)
+        try:
+            await page.goto(url, wait_until="domcontentloaded", timeout=45000)
+        except Exception as nav_exc:
+            # Apex domains sometimes fail purely at the network level (dead/
+            # filtered apex DNS).  Retry the canonical www host like a human
+            # would before giving up.
+            parsed = urlparse(str(url))
+            if parsed.scheme == "https" and not parsed.netloc.lower().startswith("www."):
+                alt_url = parsed._replace(netloc="www." + parsed.netloc).geturl()
+                try:
+                    await page.goto(alt_url, wait_until="domcontentloaded", timeout=45000)
+                except Exception:
+                    # The dying apex attempt can interrupt the first retry —
+                    # give the page a moment and try the www host once more.
+                    await asyncio.sleep(1.0)
+                    await page.goto(alt_url, wait_until="domcontentloaded", timeout=45000)
+                fallback = True
+            else:
+                raise nav_exc
         actual = page.url
         if not _same_destination(url, actual):
             return _fail(f"navigation verification failed: requested {url}, observed {actual}")
         title = await _page_title(page)
         _record_nav(session_id, actual, title, str(_kwargs.get("via", "navigate")))
-        return _ok({"url": actual, "title": title})
+        return _ok({"url": actual, "title": title, "www_fallback": fallback})
     except Exception as exc:
         return _fail(f"{type(exc).__name__}: {exc}")
 
@@ -153,10 +172,19 @@ async def do_browser_snapshot(session_id: str = "default", tab_index: int | None
             "(els) => els.slice(0, 100).map(e => ({text: (e.innerText || e.value || '').trim()}))"
         )
         forms = await page.locator("form").count()
+        body_text = (await page.locator("body").inner_text())[:20000]
+        if not links and not inputs and not buttons and len(body_text.strip()) > 200:
+            # Structure-empty but substantial text = the snapshot raced a
+            # client-side hydration (e.g. SPA shells).  Retry once.
+            if not _kwargs.get("_snap_retry"):
+                await asyncio.sleep(1.5)
+                return await do_browser_snapshot(
+                    session_id=session_id, tab_index=tab_index, _snap_retry=True
+                )
         return _ok({
             "url": page.url,
             "title": await page.title(),
-            "text": (await page.locator("body").inner_text())[:20000],
+            "text": body_text,
             "links": links,
             "headings": headings,
             "inputs": inputs,
@@ -164,6 +192,13 @@ async def do_browser_snapshot(session_id: str = "default", tab_index: int | None
             "forms": [{} for _ in range(forms)],
         })
     except Exception as exc:
+        # One retry: a client-side navigation can destroy the JS execution
+        # context mid-read ("Execution context was destroyed").
+        if not _kwargs.get("_snap_retry"):
+            await asyncio.sleep(0.5)
+            return await do_browser_snapshot(
+                session_id=session_id, tab_index=tab_index, _snap_retry=True
+            )
         return _fail(f"{type(exc).__name__}: {exc}")
 
 
@@ -227,13 +262,31 @@ async def do_browser_find(text: str, session_id: str = "default", tab_index: int
     if error:
         return error
     try:
-        locator = page.get_by_text(text, exact=False).first
-        visible = await locator.is_visible()
-        if not visible:
+        locator = page.get_by_text(text, exact=False)
+        target = None
+        # Bounded ~6s scan: covers client-rendered chrome that appears after
+        # domcontentloaded AND hidden first matches (responsive/aria copies
+        # that never become visible, e.g. GitHub's mobile drawer "Sign in").
+        for _ in range(24):
+            try:
+                matches = (await locator.all())[:20]
+            except Exception:
+                matches = []
+            for candidate in matches:
+                try:
+                    if await candidate.is_visible():
+                        target = candidate
+                        break
+                except Exception:
+                    continue
+            if target is not None:
+                break
+            await page.wait_for_timeout(250)
+        if target is None:
             return _fail(f"text not found: {text}")
         tag = ""
         try:
-            handle = await locator.element_handle()
+            handle = await target.element_handle()
             if handle is not None:
                 tag = str(await handle.evaluate("el => el.tagName.toLowerCase()"))
         except Exception:
@@ -291,7 +344,13 @@ async def do_browser_fill(selector: str, value: str, session_id: str = "default"
         return error
     try:
         locator = _locator(page, selector)
-        await locator.fill(value, timeout=15000)
+        try:
+            await locator.fill(value, timeout=15000)
+        except Exception:
+            # Consent banners/overlays block actionability.  Force dispatch
+            # still writes the value; the read-back below stays the source
+            # of truth for success.
+            await locator.fill(value, timeout=15000, force=True)
         observed = await locator.input_value()
         if observed != value:
             return _fail(f"fill verification failed: observed {observed!r}")

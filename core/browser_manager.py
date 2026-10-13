@@ -50,6 +50,21 @@ logger = logging.getLogger(__name__)
 __all__ = ["BrowserManager", "BrowserSession"]
 
 _DEFAULT_TIMEOUT_MS = 45000
+
+# A real Chrome identity: the stock Playwright UA advertises "HeadlessChrome"
+# which makes major sites (GitHub, Reddit, shopping) serve bot-wall pages.
+_REALISTIC_UA = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36"
+)
+# Fingerprint hygiene only (webdriver flag, languages, plugins): parity with
+# a regular Chrome. No challenge-solving or CAPTCHA bypass.
+_STEALTH_INIT = """
+Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
+Object.defineProperty(navigator, 'languages', {get: () => ['en-US', 'en']});
+Object.defineProperty(navigator, 'plugins', {get: () => [1, 2, 3, 4, 5]});
+"""
+
 # Anchor to the repo root so the working directory never relocates state.
 _STORAGE_DIR = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
@@ -127,8 +142,7 @@ class BrowserManager:
                     self._playwright = await async_playwright().start()
                 self._browser = await self._playwright.chromium.launch(
                     headless=not self._headed,
-                    args=["--disable-blink-features=AutomationControlled"]
-                    if self._headed else [],
+                    args=["--disable-blink-features=AutomationControlled"],
                 )
             except Exception as exc:  # noqa: BLE001 — surface the real cause
                 self._browser = None
@@ -185,6 +199,21 @@ class BrowserManager:
         self._sessions.clear()
         return browser
 
+    async def _new_context(self, browser: Any) -> Any:
+        """Create a context with a realistic Chrome fingerprint."""
+        context = await browser.new_context(
+            viewport={"width": 1440, "height": 900},
+            ignore_https_errors=True,
+            user_agent=_REALISTIC_UA,
+            locale="en-US",
+            extra_http_headers={"Accept-Language": "en-US,en;q=0.9"},
+        )
+        try:
+            await context.add_init_script(_STEALTH_INIT)
+        except Exception:  # noqa: BLE001 — hygiene is best-effort
+            logger.debug("stealth init script not applied", exc_info=True)
+        return context
+
     async def ensure_context_alive(self, context: Any) -> Any:
         """Return a usable context, creating a fresh one if *context* died."""
         if context is not None:
@@ -194,10 +223,7 @@ class BrowserManager:
             except Exception:  # noqa: BLE001 — dead object falls through
                 pass
         browser = await self.ensure_browser_alive()
-        return await browser.new_context(
-            viewport={"width": 1440, "height": 900},
-            ignore_https_errors=True,
-        )
+        return await self._new_context(browser)
 
     async def ensure_page_alive(self, page: Any) -> Any:
         """Return a usable page, opening a new tab if *page* is gone."""
@@ -234,16 +260,10 @@ class BrowserManager:
             try:
                 context = await self.ensure_context_alive(existing.context)
             except Exception:  # noqa: BLE001
-                context = await self._browser.new_context(
-                    viewport={"width": 1440, "height": 900},
-                    ignore_https_errors=True,
-                )
+                context = await self._new_context(self._browser)
         else:
             try:
-                context = await self._browser.new_context(
-                    viewport={"width": 1440, "height": 900},
-                    ignore_https_errors=True,
-                )
+                context = await self._new_context(self._browser)
             except Exception as exc:  # noqa: BLE001
                 raise RuntimeError(
                     f"could not create browser context: {type(exc).__name__}: {exc}"
