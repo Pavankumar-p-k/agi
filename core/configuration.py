@@ -17,8 +17,9 @@ class Configuration:
     def get(self, key: str, default: Any = None) -> Any:
         return self._values.get(key, default)
 
-    def set(self, key: str, value: Any) -> None:
+    def set(self, key: str, value: Any) -> Configuration:
         self._values[key] = value
+        return self
 
     def delete(self, key: str) -> None:
         self._values.pop(key, None)

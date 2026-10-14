@@ -33,7 +33,7 @@ class AppError(HTTPException):
             detail = {"code": code_or_detail,
                       "message": message or "",
                       "data": data}
-        super().__init__(status_code=status_code, detail=detail)
+        super().__init__(status_code=status_code, detail=dict(detail))
         self.status_code = status_code
         self.detail = detail
 
