@@ -1,1 +1,0 @@
-"""Local desktop continuity services."""
