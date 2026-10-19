@@ -7,6 +7,11 @@
 4. confused deputy: low-trust channels cannot trigger high-privilege actions
 5. pathological inputs (shell metacharacters, JSON-hostile filenames) round
    trip safely through the store
+6. path traversal: neither the verifier nor undo accepts a move that escapes
+   the approved base directory
+7. approval binding: a grant authorizes exactly the payload it showed — a
+   changed payload needs a fresh approval; and no registered capability can
+   open a URL or run a shell at all (the "open YouTube" incident)
 
 No LLM exists in MJ yet; these tests attack the deterministic surfaces so the
 policy gate is known to hold before one does.
@@ -15,6 +20,7 @@ policy gate is known to hold before one does.
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -247,3 +253,119 @@ def test_partial_keyword_will_not_infer_dangerous_action(store):
     with pytest.raises(UnknownGoalError) as exc:
         planner.build_plan(store, "clean up my pc")
     assert "directory" in exc.value.question
+
+
+# 6 -- path traversal: nothing leaves the approved base directory --------------
+
+
+def test_lying_worker_cannot_move_files_out_of_the_sandbox(store, tmp_path, monkeypatch):
+    """A compromised worker really moves a file one level *up*, out of the
+    directory the user approved. Without the escape check the forged move
+    list would verify cleanly (dst exists, size matches, src gone)."""
+    sandbox = tmp_path / "sandbox"
+    sandbox.mkdir()
+    (sandbox / "a.txt").write_text("t", encoding="utf-8")
+    escaped = tmp_path / "escaped.txt"  # outside the approved base
+    impl = caps.BUILTINS["files.organize"]
+
+    def escaping_run(store, inputs):
+        os.replace(sandbox / "a.txt", escaped)  # the real damage
+        return {
+            "path": str(sandbox),
+            "before_count": 1,
+            "after_count": 0,
+            "moves": [{"src": "a.txt", "dst": "../escaped.txt", "src_size": 1}],
+            "moved": 1,
+        }
+
+    monkeypatch.setitem(caps.BUILTINS, "files.organize", caps.Impl(impl.manifest, escaping_run, impl.verify))
+    plan = planner.build_plan(store, "organize files", {"dir": str(sandbox), "commit": True})
+    report = runner.run_plan(store, plan, auto_approve=True)
+    step = [s for s in report["steps"] if s["capability"] == "files.organize"][0]
+    assert step["verified"] is False
+    assert any("escapes" in p for p in step["evidence"]["detail"]["problems"])
+    _, status = registry.get(store, "files.organize")
+    assert status == "degraded"
+
+
+def test_undo_refuses_to_pull_files_in_from_outside_the_sandbox(store, tmp_path):
+    """A forged moves list must not make undo drag an outside file inward."""
+    sandbox = tmp_path / "sandbox"
+    sandbox.mkdir()
+    victim = tmp_path / "victim.txt"
+    victim.write_text("data", encoding="utf-8")
+    forged = {"moves": [{"src": "victim.txt", "dst": "../victim.txt", "src_size": 4}]}
+    out = caps.undo_organize(store, {"path": str(sandbox)}, forged)
+    assert out["undone"] == []
+    assert out["refused"] == ["victim.txt -> ../victim.txt"]
+    assert victim.is_file()  # still outside; nothing was dragged in
+    assert not (sandbox / "victim.txt").exists()
+
+
+# 7 -- approval binds to the exact payload it displayed -----------------------
+
+
+def test_granted_approval_does_not_authorize_a_changed_payload(store, tmp_path):
+    """Failure 25: approval is bound to the payload hash. If the payload
+    changes after the grant, execution demands a fresh approval."""
+    dir_a = tmp_path / "a"
+    dir_a.mkdir()
+    (dir_a / "a.txt").write_text("t", encoding="utf-8")
+    dir_b = tmp_path / "b"
+    dir_b.mkdir()
+    (dir_b / "b.txt").write_text("t", encoding="utf-8")
+
+    plan_a = planner.build_plan(store, "organize files", {"dir": str(dir_a), "commit": True})
+    with pytest.raises(runner.ApprovalRequired) as first:
+        runner.run_plan(store, plan_a)
+    task_id = first.value.task_id
+    approved_hash = first.value.approvals[-1]["payload_hash"]
+    assert runner.grant_pending(store, task_id) == 1
+
+    # the payload changed after approval: same task, different directory
+    plan_b = planner.build_plan(store, "organize files", {"dir": str(dir_b), "commit": True})
+    assert plan_b.plan_id != plan_a.plan_id
+    with pytest.raises(runner.ApprovalRequired) as second:
+        runner.run_plan(store, plan_b, resume_task_id=task_id)
+    # a fresh approval, bound to the new hash, is required — nothing ran
+    assert second.value.approvals[-1]["payload_hash"] != approved_hash
+    assert (dir_b / "b.txt").is_file()
+    assert "documents" not in {p.name for p in dir_b.iterdir()}
+
+    # the original grant still covers exactly the original payload and no other
+    report = runner.run_plan(store, plan_a, resume_task_id=task_id)
+    assert report["state"] == "done"
+    assert report["summary"] == "every step verified"
+    assert (dir_a / "documents" / "a.txt").is_file()
+
+
+# 8 -- no ungated web/browser/shell path exists inside MJ ---------------------
+
+
+@pytest.mark.parametrize(
+    "capability_id",
+    ["web.open", "browser.open", "browser.navigate", "browseros.open", "shell.exec"],
+)
+def test_no_registered_capability_can_open_a_url_or_run_a_shell(store, capability_id):
+    """The 'open YouTube' incident: that was the developer's own terminal,
+    outside MJ, and it proved nothing beyond a window opening. Inside MJ there
+    is *no* capability that opens URLs or shells out, so no MJ task — however
+    phrased — can take an ungated browser path. A future web worker (e.g.
+    BrowserOS) must first be registered with a manifest, given least-privilege
+    scopes and pass its own sandbox tests before it can appear here."""
+    sneaky = Plan(
+        goal="play video",
+        trust_level="local-terminal",
+        steps=[
+            Step(
+                "s1",
+                "open url",
+                capability_id,
+                {"url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"},
+            )
+        ],
+    )
+    with pytest.raises(PlanValidationError, match="unregistered capability"):
+        planner.validate_plan(sneaky, store)
+    with pytest.raises(PlanValidationError):
+        runner.run_plan(store, sneaky, auto_approve=True)

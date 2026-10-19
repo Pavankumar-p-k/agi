@@ -158,6 +158,21 @@ def verify_organize_plan(store: Store, inputs: dict[str, Any], output: dict[str,
     }
 
 
+def _escapes_base(base: Path, relative: str) -> bool:
+    """True if a worker-reported relative path resolves outside the base dir.
+
+    Defense against a compromised worker reporting (or performing) a move to a
+    path outside the directory the user approved: path traversal / confused
+    deputy on the filesystem (adversarial suite class 6).
+    """
+    resolved = (base / relative).resolve()
+    try:
+        resolved.relative_to(base.resolve())
+    except ValueError:
+        return True
+    return False
+
+
 def _unique_dst(dst: Path, base: Path) -> Path:
     """Collisions get `name (2).ext`, never a silent overwrite."""
     candidate = dst
@@ -198,6 +213,9 @@ def verify_organize(store: Store, inputs: dict[str, Any], output: dict[str, Any]
     path = Path(inputs["path"])
     problems: list[str] = []
     for mv in output["moves"]:
+        if _escapes_base(path, mv["dst"]) or _escapes_base(path, mv["src"]):
+            problems.append(f"move escapes the base directory: {mv['src']} -> {mv['dst']}")
+            continue
         dst = path / mv["dst"]
         if not dst.is_file():
             problems.append(f"missing destination {mv['dst']}")
@@ -217,8 +235,13 @@ def undo_organize(store: Store, inputs: dict[str, Any], output: dict[str, Any]) 
     and remove category folders the organize step created."""
     path = Path(inputs["path"])
     undone = []
+    refused: list[str] = []
     touched_dirs: set[str] = set()
     for mv in output["moves"]:
+        if _escapes_base(path, mv["dst"]) or _escapes_base(path, mv["src"]):
+            # never pull a file in from (or push one out to) beyond the base
+            refused.append(f"{mv['src']} -> {mv['dst']}")
+            continue
         dst = path / mv["dst"]
         src = path / mv["src"]
         touched_dirs.add(dst.parent.name)
@@ -232,7 +255,7 @@ def undo_organize(store: Store, inputs: dict[str, Any], output: dict[str, Any]) 
             d.rmdir()  # only succeeds if empty (rollback left nothing behind)
         except OSError:
             pass
-    return {"undone": undone}
+    return {"undone": undone, "refused": refused}
 
 
 @dataclass
