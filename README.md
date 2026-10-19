@@ -1,31 +1,42 @@
-# Fresh Start
+# MJ Core
 
-This project was rebuilt from scratch on 2026-10-16.
+A headless, software-only assistant kernel. No UI: you talk to it through the
+`mj` CLI and the plan/execute/verify loop. Built to the technical plan in
+`docs/` (one update page per build phase).
 
-The previous implementation is preserved in two places:
+**Build rules for this repo (unchanged from the fresh start):** every module is
+real, working code; every claim of "working" is demonstrated by a test or a
+live command run; tests never assert less to pass.
 
-- **Git branch:** `snapshot/pre-rebuild-2026-10-16`
-- **Tarball:** `../rebuild-backup-20261016.tar.gz` (one level above this directory)
+## Status (see docs/ for the update log)
 
-## What this is
+- **Update 1 — Kernel:** SQLite state store (WAL), append-only event log and
+  task state machine, hash-chained audit log, capability registry with
+  manifest validation, policy gate (allow/ask/deny outside the model).
+  15 unit tests. Capability awareness (probes, facts, TTL labels) and the
+  executor slice are next.
 
-A minimal, honest Python skeleton — no stubs, no fake modules, no "auto-reconstructed"
-placeholders. It does exactly what it claims and nothing more:
-
-- `src/app/` — a small package with a CLI entry point (`python -m app`)
-- `tests/` — pytest smoke tests that verify the CLI works
-- `pyproject.toml` / `requirements.txt` — dependency and tooling config
+Nothing beyond what is listed is claimed. No daemon, gateway, reasoner or
+expansion engine exists yet.
 
 ## Usage
 
 ```bash
-pip install -r requirements.txt   # dev tooling only; no runtime deps
-python -m app hello               # prints "hello"
-python -m pytest tests/           # runs the test suite
+pip install -r requirements.txt   # pytest + pinned runtime deps
+python -m pytest tests/           # full test suite
 ```
 
-## Rebuild rules
+## Structure
 
-1. Every module added must be real, working code — if it can't run, it doesn't ship.
-2. Every claim of "working" is demonstrated with a test or a live command run.
-3. Tests never assert less to pass; missing behavior is implemented, not skipped.
+```
+src/mj/core/       kernel: store, events, audit, registry, policy, tasks (no LLM calls)
+src/mj/policies/   policy rules — read-only to the agent; changed only by human review
+tests/unit/        one test file per layer
+docs/              one page per build update
+```
+
+The dependency arrow points one way: later packages (brain, executor, gateway)
+may import `mj.core`; `core` never imports from them.
+
+Previous skeleton (`src/app`) was replaced by this package on 2026-10-19.
+History is preserved in git (`snapshot/pre-rebuild-2026-10-16` and earlier).

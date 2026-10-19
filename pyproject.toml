@@ -3,13 +3,20 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "app"
+name = "mjcore"
 version = "0.1.0"
-description = "Fresh-start minimal project skeleton"
+description = "MJ Core — headless assistant kernel (store, registry, policy gate, audit)"
 requires-python = ">=3.10"
+
+[project.scripts]
+mj = "mj.gateway.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+"*" = ["*.json"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["src"]

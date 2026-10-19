@@ -1,0 +1,11 @@
+{
+  "default_action": "deny",
+  "notes": "First matching rule wins. Unknown trust levels only match rules that explicitly allow them. R4 is denied everywhere by default; standing rules can only be added by editing this file (which is read-only to the agent).",
+  "rules": [
+    {"comment": "Read-only actions are safe from any channel.", "risk_class": "R0", "trust_types": ["any"], "action": "allow"},
+    {"comment": "Local reversible actions only from the local terminal.", "risk_class": "R1", "trust_types": ["local-terminal"], "action": "allow"},
+    {"comment": "Local hard-to-reverse actions require an explicit approval from the local terminal.", "risk_class": "R2", "trust_types": ["local-terminal"], "action": "ask"},
+    {"comment": "Anything externally visible is never silent; it asks from a confirmed channel.", "risk_class": "R3", "trust_types": ["local-terminal"], "action": "ask"},
+    {"comment": "Destructive or financial actions are denied by default. A standing rule must be added here by hand.", "risk_class": "R4", "trust_types": ["any"], "action": "deny"}
+  ]
+}
