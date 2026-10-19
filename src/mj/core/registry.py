@@ -18,6 +18,15 @@ from .store import Store, canonical_json
 
 RISK_CLASSES = ("R0", "R1", "R2", "R3", "R4")
 CAPABILITY_TYPES = ("mcp", "cli", "http", "os", "agent", "browser", "skill")
+
+# Powers that may never be silently granted (docs/07 §2, review follow-up):
+# opening URLs, controlling a browser, or running shell commands. Any manifest
+# that declares one of these — by id segment, capability type, or required
+# scope — must be at least R2 (so the policy gate asks before it runs) and
+# must ship an independent verifier. This holds for every registration path:
+# builtins, vetted adapters, BrowserOS, the expansion engine, generated code.
+SENSITIVE_POWERS = ("web", "browser", "shell")
+MIN_RISK_FOR_SENSITIVE_POWERS = ("R2", "R3", "R4")
 STATUSES = ("candidate", "quarantined", "testing", "healthy", "degraded", "retired")
 
 # Legal status changes; anything else must go through promotion/rollback flows.
@@ -78,6 +87,20 @@ class Manifest:
         )
 
 
+def declared_powers(m: Manifest) -> set[str]:
+    """Which sensitive powers a manifest declares, from id/type/scopes.
+
+    Word-level tokens only (split on '.' and '-'), so `files.shellpaper`
+    does not count as shell, while `agent.web-worker` does.
+    """
+    tokens: set[str] = set(m.id.lower().replace("-", ".").split("."))
+    if m.type in SENSITIVE_POWERS:
+        tokens.add(m.type)
+    for scope in m.requires_scopes:
+        tokens.update(scope.lower().replace("-", ".").split("."))
+    return {p for p in SENSITIVE_POWERS if p in tokens}
+
+
 def validate_manifest(m: Manifest) -> None:
     if not m.id or not m.id.replace("-", "").replace(".", "").isalnum():
         raise RegistryError(f"manifest id {m.id!r} is malformed")
@@ -87,6 +110,19 @@ def validate_manifest(m: Manifest) -> None:
         raise RegistryError(f"manifest {m.id}: risk class {m.risk_class!r} is not one of {RISK_CLASSES}")
     if not m.version:
         raise RegistryError(f"manifest {m.id}: version is required")
+    powers = declared_powers(m)
+    if powers:
+        if m.risk_class not in MIN_RISK_FOR_SENSITIVE_POWERS:
+            raise RegistryError(
+                f"manifest {m.id}: declares sensitive power(s) {sorted(powers)} but risk "
+                f"class {m.risk_class} could run without approval; web/browser/shell "
+                f"powers require one of {MIN_RISK_FOR_SENSITIVE_POWERS}"
+            )
+        if not m.has_verifier:
+            raise RegistryError(
+                f"manifest {m.id}: declares sensitive power(s) {sorted(powers)} without "
+                "an independent verifier (has_verifier=True required)"
+            )
 
 
 def register(store: Store, manifest: Manifest, status: str = "candidate", actor: str = "kernel") -> None:

@@ -133,6 +133,49 @@ def test_invalid_manifests_rejected(store):
         registry.register(store, manifest(version=""))
 
 
+def test_sensitive_powers_require_risk_class_and_verifier(store):
+    """Registration rule (docs/07 §2): any manifest declaring web/browser/
+    shell powers must be R2+ and carry an independent verifier — enforced for
+    every registration path, not just today's builtins."""
+    # R0 web capability: rejected (would run without approval)
+    with pytest.raises(RegistryError, match="sensitive power"):
+        registry.validate_manifest(manifest(id="web.open", risk_class="R0"))
+    # R2 shell capability without a verifier: rejected
+    with pytest.raises(RegistryError, match="verifier"):
+        registry.validate_manifest(
+            manifest(id="shell.exec", risk_class="R2", has_verifier=False)
+        )
+    # browser-typed capability below R2: rejected even with a clean id
+    with pytest.raises(RegistryError, match="sensitive power"):
+        registry.validate_manifest(
+            manifest(id="nav.tab", type="browser", risk_class="R1", has_verifier=True)
+        )
+    # scope-declared web power: rejected at R0
+    with pytest.raises(RegistryError, match="sensitive power"):
+        registry.validate_manifest(
+            manifest(id="agent.fetch", risk_class="R0", requires_scopes=["web.fetch"])
+        )
+    # word-level matching: 'shellpaper' is not shell, 'web-worker' is web
+    registry.validate_manifest(manifest(id="files.shellpaper", risk_class="R0"))
+    with pytest.raises(RegistryError, match="sensitive power"):
+        registry.validate_manifest(
+            manifest(id="agent.web-worker", risk_class="R0", source="generated")
+        )
+    # a conforming browser capability (as BrowserOS would be) registers fine
+    registry.register(
+        store,
+        manifest(
+            id="browser.open",
+            type="browser",
+            risk_class="R2",
+            has_verifier=True,
+            description="open a URL in the registered browser worker",
+        ),
+        status="healthy",
+    )
+    assert registry.get(store, "browser.open") is not None
+
+
 def test_status_transitions_guarded(store):
     registry.register(store, manifest(), status="candidate")
     registry.set_status(store, "os.facts", "testing")

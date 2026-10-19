@@ -19,7 +19,7 @@ import time
 from dataclasses import dataclass, field
 from typing import Any, Callable
 
-from mj.core import registry
+from mj.core import registry, settings
 from mj.core.store import Store, canonical_json
 
 
@@ -129,6 +129,12 @@ def validate_plan(plan: Plan, store: Store) -> list[Step]:
             raise PlanValidationError(
                 f"capability {s.capability_id!r} is {status!r}, not healthy; planner refuses it"
             )
+    cap = settings.max_steps()
+    if cap > 0 and len(plan.steps) > cap:
+        raise PlanValidationError(
+            f"plan has {len(plan.steps)} steps, over the cap of {cap} (MJ_MAX_STEPS); "
+            "split the goal or raise the cap deliberately"
+        )
     return order
 
 

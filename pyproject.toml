@@ -7,6 +7,9 @@ name = "mjcore"
 version = "0.1.0"
 description = "MJ Core — headless assistant kernel (store, registry, policy gate, audit)"
 requires-python = ">=3.10"
+dependencies = [
+  "psutil>=6.1,<7",  # running-process awareness; stdlib cannot enumerate processes on Windows
+]
 
 [project.scripts]
 mj = "mj.gateway.cli:main"

@@ -369,3 +369,45 @@ def test_no_registered_capability_can_open_a_url_or_run_a_shell(store, capabilit
         planner.validate_plan(sneaky, store)
     with pytest.raises(PlanValidationError):
         runner.run_plan(store, sneaky, auto_approve=True)
+
+
+def test_registered_web_capability_still_hits_the_gate(store, tmp_path, monkeypatch):
+    """When a web worker (e.g. BrowserOS) does get registered, the gate still
+    stands: registration requires R2+verifier (registry rule), and R2 from the
+    terminal asks, from a low-trust channel it is denied — auto-approve
+    included."""
+    opened: list[str] = []
+    m = Manifest(
+        id="browser.open",
+        type="browser",
+        version="1.0.0",
+        source="vetted-repo",
+        risk_class="R2",
+        description="open a URL in the registered browser worker",
+        has_verifier=True,
+        provenance={"scopes": ["browser.tabs"]},
+    )
+    registry.register(store, m, status="healthy")
+
+    def fake_open(store, inputs):
+        opened.append(inputs["url"])
+        return {"url": inputs["url"], "tab": 1}
+
+    def fake_verify(store, inputs, output):
+        return {"verified": output["url"] == inputs["url"], "detail": {}}
+
+    monkeypatch.setitem(caps.BUILTINS, "browser.open", caps.Impl(m, fake_open, fake_verify))
+    url_plan = Plan(
+        goal="play video",
+        trust_level="local-terminal",
+        steps=[Step("s1", "open url", "browser.open", {"url": "https://example.com/watch"})],
+    )
+    # from the local terminal: asks, showing the exact payload
+    with pytest.raises(runner.ApprovalRequired) as exc:
+        runner.run_plan(store, url_plan)
+    assert exc.value.approvals[0]["payload"]["inputs"]["url"] == "https://example.com/watch"
+    assert opened == []  # nothing opened before approval
+    # from a low-trust channel: denied outright, even with auto-approve
+    report = runner.run_plan(store, url_plan, trust_level="external", auto_approve=True)
+    assert report["state"] == "blocked"
+    assert opened == []  # still nothing opened

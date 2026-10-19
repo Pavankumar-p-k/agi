@@ -16,7 +16,7 @@ from typing import Any
 
 from mj import AUTONOMY_LEVEL, __version__
 from mj.brain import planner
-from mj.core import audit, events, registry, tasks
+from mj.core import audit, events, registry, settings, tasks
 from mj.core.store import Store
 from mj.executor import capabilities as caps
 from mj.executor import runner
@@ -49,6 +49,7 @@ def cmd_status(store: Store, args: argparse.Namespace) -> int:
         "store": str(store.path),
         "capabilities": registry.list_all(store),
         "audit_chain": {"ok": ok, "entries": count, "problem": problem or None},
+        "limits": settings.snapshot(),
         "note": "L0: observe only. No autonomy above L0 until awareness acceptance tests pass.",
     }
     _print(status)

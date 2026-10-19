@@ -19,12 +19,13 @@ from __future__ import annotations
 
 import hashlib
 import json
+import threading
 import time
 import uuid
-from typing import Any
+from typing import Any, Callable
 
 from mj.brain import planner
-from mj.core import audit, events, registry, tasks
+from mj.core import audit, events, registry, settings, tasks
 from mj.core.policy import ASK, DENY, PolicyGate
 from mj.core.store import Store, canonical_json
 from mj.executor.capabilities import BUILTINS, Impl
@@ -43,6 +44,51 @@ class ApprovalRequired(Exception):
 
 def _payload_hash(step: planner.Step) -> str:
     return hashlib.sha256(canonical_json(step.to_dict()).encode("utf-8")).hexdigest()
+
+
+def _run_with_timeout(
+    store: Store,
+    run_fn: Callable[[Store, dict[str, Any]], dict[str, Any]],
+    inputs: dict[str, Any],
+    timeout_s: float,
+) -> dict[str, Any]:
+    """Run a worker under a wall-clock deadline (docs/08).
+
+    The worker gets its *own* store connection (WAL allows concurrent
+    connections; sqlite connections are not thread-safe), so an abandoned
+    worker can never race the kernel's connection. On expiry we stop waiting:
+    the step fails as timed out and the daemon thread is abandoned. Side
+    effects it performs afterwards are invisible to the report — a timeout is
+    an unknown outcome, never a success, and re-running the step requires a
+    fresh approval if it was gated.
+    """
+    if timeout_s <= 0:
+        return run_fn(store, dict(inputs))
+    box: dict[str, Any] = {}
+
+    def target() -> None:
+        worker_store = Store(store.path)
+        try:
+            box["output"] = run_fn(worker_store, dict(inputs))
+        except BaseException as exc:  # re-raised on the main thread below
+            box["error"] = exc
+        finally:
+            worker_store.close()
+
+    worker = threading.Thread(target=target, name="mj-step-worker", daemon=True)
+    worker.start()
+    worker.join(timeout_s)
+    if worker.is_alive():
+        raise TimeoutError(
+            f"step timed out after {timeout_s:g}s (MJ_STEP_TIMEOUT_S); worker "
+            "abandoned — side effects before expiry are unrecorded and must be "
+            "re-observed"
+        )
+    if "error" in box:
+        raise box["error"]
+    if "output" in box:
+        return box["output"]
+    raise RuntimeError("step worker produced no result")
 
 
 def _existing_approval(
@@ -111,6 +157,8 @@ def run_plan(
     identical idempotency keys; recorded step results are reused verbatim.
     """
     gate = PolicyGate.load()
+    timeout_s = settings.step_timeout_s()
+    budget_s = settings.task_budget_s()
     resuming = resume_task_id is not None
     if resuming:
         task = tasks.get(store, resume_task_id or "")
@@ -216,6 +264,7 @@ def run_plan(
         tasks.transition(store, task_id, "executing", {"plan_id": plan.plan_id})
 
     # -- execute the DAG in topological order ---------------------------------
+    exec_started = time.time()
     failed: dict[str, Any] | None = None
     results: list[dict[str, Any]] = []
     for step in steps_order:
@@ -258,6 +307,25 @@ def run_plan(
             )
             continue
 
+        # -- per-task budget: refuse to start work this run cannot afford ---
+        if (time.time() - exec_started) >= budget_s:
+            store.conn.execute(
+                "UPDATE plan_steps SET status = 'skipped' WHERE task_id = ? AND step_id = ?",
+                (task_id, step.step_id),
+            )
+            events.append(
+                store,
+                "step.skipped",
+                {"step_id": step.step_id, "reason": "task budget exhausted"},
+                task_id=task_id,
+            )
+            failed = {
+                "step_id": step.step_id,
+                "error": f"task budget exhausted: {time.time() - exec_started:.1f}s used "
+                f"of {budget_s:g}s (MJ_TASK_BUDGET_S); step not started",
+            }
+            break
+
         impl: Impl = BUILTINS[step.capability_id]
         store.conn.execute(
             "UPDATE plan_steps SET status = 'executing' WHERE task_id = ? AND step_id = ?",
@@ -266,7 +334,7 @@ def run_plan(
         events.append(store, "step.start", {"step_id": step.step_id}, task_id=task_id)
         started = time.time()
         try:
-            output = impl.run(store, dict(step.inputs))
+            output = _run_with_timeout(store, impl.run, step.inputs, timeout_s)
             evidence = impl.verify(store, dict(step.inputs), output)
             verified = bool(evidence.get("verified"))
         except Exception as exc:  # record the failure honestly, halt the DAG
