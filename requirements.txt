@@ -1,2 +1,5 @@
-# Dev tooling only — the package has no runtime dependencies.
+# Runtime dependencies (pinned by version; keep the list short and justified)
+psutil>=6.1,<7          # running-process awareness; stdlib cannot enumerate processes on Windows
+
+# Dev tooling
 pytest>=8.0
