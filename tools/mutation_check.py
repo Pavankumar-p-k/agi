@@ -49,7 +49,7 @@ MUTATIONS: list[Mutation] = [
     Mutation(
         name="verifier independence (trust worker output)",
         file="src/mj/executor/runner.py",
-        old='            output = _run_with_timeout(store, impl.run, step.inputs, timeout_s)\n'
+        old='            output = _run_step(store, step.capability_id, step.inputs, timeout_s)\n'
             '            evidence = impl.verify(store, dict(step.inputs), output)\n'
             '            verified = bool(evidence.get("verified"))',
         new='            output = _run_with_timeout(store, impl.run, step.inputs, timeout_s)\n'
@@ -75,6 +75,30 @@ MUTATIONS: list[Mutation] = [
             "test_lying_worker_cannot_move_files_out_of_the_sandbox",
             "tests/adversarial/test_adversarial.py::"
             "test_undo_refuses_to_pull_files_in_from_outside_the_sandbox",
+        ],
+    ),
+    Mutation(
+        name="step-result write-once (late write loses)",
+        file="src/mj/executor/runner.py",
+        old='        "VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(idempotency_key) DO NOTHING",',
+        new='        "VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(idempotency_key) DO UPDATE SET "'
+            '        "output_json=excluded.output_json, verified=excluded.verified, "'
+            '        "evidence_json=excluded.evidence_json /* MUTATION-CHECK-DISABLED */",',
+        tests=[
+            "tests/unit/test_limits.py::test_late_or_duplicate_result_write_is_discarded_not_overwritten"
+        ],
+    ),
+    Mutation(
+        name="power -> effect cross-check",
+        file="src/mj/core/registry.py",
+        old='        for power in sorted(powers):\n'
+            '            needed = POWER_EFFECTS.get(power)\n'
+            '            if needed and needed not in m.effects:',
+        new='        for power in sorted(powers):\n'
+            f'            needed = POWER_EFFECTS.get(power) if not "{MUTATION_MARKER}" else None\n'
+            '            if needed and needed not in m.effects:',
+        tests=[
+            "tests/unit/test_kernel.py::test_powers_and_effects_must_agree"
         ],
     ),
     Mutation(

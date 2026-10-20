@@ -170,10 +170,46 @@ def test_sensitive_powers_require_risk_class_and_verifier(store):
             risk_class="R2",
             has_verifier=True,
             description="open a URL in the registered browser worker",
+            effects=["network"],
         ),
         status="healthy",
     )
     assert registry.get(store, "browser.open") is not None
+
+
+def test_powers_and_effects_must_agree(store):
+    """Effects rule (docs/09 §3): declaring a sensitive power requires the
+    matching effect, the vocabulary is closed, and a sensitive effect can
+    never sit below its risk floor — so a capability named 'helper' that
+    shells out cannot register as a silent R0."""
+    # shell power at R2 with a verifier, but no declared process effect
+    with pytest.raises(RegistryError, match="required effect"):
+        registry.validate_manifest(
+            manifest(id="tool.shell", type="cli", risk_class="R2", has_verifier=True)
+        )
+    # the same capability, honestly declared: fine
+    registry.validate_manifest(
+        manifest(
+            id="tool.shell",
+            type="cli",
+            risk_class="R2",
+            has_verifier=True,
+            effects=["process"],
+        )
+    )
+    # closed vocabulary: invented effects are rejected
+    with pytest.raises(RegistryError, match="unknown effect"):
+        registry.validate_manifest(manifest(id="files.stats", effects=["mind.reading"]))
+    # sensitive effect below its floor: network at R0 is impossible to register
+    with pytest.raises(RegistryError, match="floor"):
+        registry.validate_manifest(manifest(id="fetch.light", effects=["network"]))
+    # secrets demand R3+; R2 secrets reader rejected, R3 accepted
+    with pytest.raises(RegistryError, match="floor"):
+        registry.validate_manifest(manifest(id="vault.read", risk_class="R2", effects=["secrets"]))
+    registry.validate_manifest(manifest(id="vault.read", risk_class="R3", effects=["secrets"]))
+    # non-sensitive effects have no floor: a plain R0 reader declaring
+    # filesystem.read is exactly as before
+    registry.validate_manifest(manifest(id="files.stats", effects=["filesystem.read"]))
 
 
 def test_status_transitions_guarded(store):

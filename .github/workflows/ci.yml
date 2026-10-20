@@ -1,0 +1,58 @@
+# Independent verification on machines the agent does not control.
+#
+# Every run: fresh venv, dependencies installed from the hash-locked
+# requirements.lock (--require-hashes), full suite, mutation harness.
+# Windows + Linux matrix because path, process and shell behavior differ.
+#
+# To make these checks *block* merges: on GitHub, enable branch protection
+# for main with "Require status checks to pass" and select both jobs.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Fresh venv + hash-locked dependency install
+        shell: bash
+        run: |
+          python -m venv .venv-ci
+          PY=".venv-ci/bin/python"; [ -x "$PY" ] || PY=".venv-ci/Scripts/python.exe"
+          echo "PY=$PY" >> "$GITHUB_ENV"
+          "$PY" -m pip install --quiet --require-hashes -r requirements.lock
+          "$PY" -m pip install --quiet --no-deps .
+          "$PY" -m mj.gateway.cli status
+
+      - name: Full test suite
+        shell: bash
+        run: |
+          "$PY" -m pytest -q
+
+      - name: Mutation harness (every defense must kill its mutation)
+        shell: bash
+        run: |
+          "$PY" tools/mutation_check.py

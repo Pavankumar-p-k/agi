@@ -19,14 +19,18 @@ from __future__ import annotations
 
 import hashlib
 import json
-import threading
+import os
+import subprocess
+import sys
 import time
 import uuid
-from typing import Any, Callable
+from pathlib import Path
+from typing import Any
 
 from mj.brain import planner
 from mj.core import audit, events, registry, settings, tasks
-from mj.core.policy import ASK, DENY, PolicyGate
+from mj.core.effects import SENSITIVE_EFFECTS
+from mj.core.policy import ASK, DENY, Decision, PolicyGate
 from mj.core.store import Store, canonical_json
 from mj.executor.capabilities import BUILTINS, Impl
 
@@ -46,49 +50,138 @@ def _payload_hash(step: planner.Step) -> str:
     return hashlib.sha256(canonical_json(step.to_dict()).encode("utf-8")).hexdigest()
 
 
-def _run_with_timeout(
+def _dev_override(capability_id: str) -> str | None:
+    """Test/dev-only worker code override (MJ_WORKER_OVERRIDE_DEV).
+
+    The env var names a JSON file ``{"capability": ..., "code": ...}`` where
+    ``code`` defines ``run(store, inputs)``. Like MJ_POLICY, it is
+    operator-controlled input to a local tool, not an attack surface: it can
+    only affect the step it names, in the worker subprocess where that step
+    would run anyway.
+    """
+    path = os.environ.get("MJ_WORKER_OVERRIDE_DEV")
+    if not path:
+        return None
+    data = json.loads(Path(path).read_text(encoding="utf-8"))
+    if data.get("capability") != capability_id:
+        return None
+    return data["code"]
+
+
+def _run_step(
     store: Store,
-    run_fn: Callable[[Store, dict[str, Any]], dict[str, Any]],
+    capability_id: str,
     inputs: dict[str, Any],
     timeout_s: float,
 ) -> dict[str, Any]:
-    """Run a worker under a wall-clock deadline (docs/08).
+    """Execute one step in its own subprocess — a process MJ can kill.
 
-    The worker gets its *own* store connection (WAL allows concurrent
-    connections; sqlite connections are not thread-safe), so an abandoned
-    worker can never race the kernel's connection. On expiry we stop waiting:
-    the step fails as timed out and the daemon thread is abandoned. Side
-    effects it performs afterwards are invisible to the report — a timeout is
-    an unknown outcome, never a success, and re-running the step requires a
-    fresh approval if it was gated.
+    Python threads cannot be killed; an "abandoned" thread keeps running and
+    can cause side effects after the step is marked failed. One subprocess
+    per step makes the deadline real (docs/09 §2): on expiry ``subprocess.run``
+    terminates the worker before raising, and the result file it may have
+    written is discarded — a late result is never written back. The worker
+    opens its own store connection (WAL), so it can never race the kernel's.
     """
-    if timeout_s <= 0:
+    code = _dev_override(capability_id)
+    if os.environ.get("MJ_WORKER_MODE") == "inline" or timeout_s <= 0:
+        # inline mode (debugging) or no deadline: run in this process
+        if code:
+            namespace: dict[str, Any] = {}
+            exec(code, namespace)  # dev/test only — see _dev_override
+            run_fn = namespace["run"]
+        else:
+            run_fn = BUILTINS[capability_id].run
         return run_fn(store, dict(inputs))
-    box: dict[str, Any] = {}
 
-    def target() -> None:
-        worker_store = Store(store.path)
-        try:
-            box["output"] = run_fn(worker_store, dict(inputs))
-        except BaseException as exc:  # re-raised on the main thread below
-            box["error"] = exc
-        finally:
-            worker_store.close()
-
-    worker = threading.Thread(target=target, name="mj-step-worker", daemon=True)
-    worker.start()
-    worker.join(timeout_s)
-    if worker.is_alive():
+    token = uuid.uuid4().hex
+    out_path = store.path.parent / f"worker-{token}.json"
+    pid_path = store.path.parent / f"worker-{token}.pid"
+    payload = canonical_json(
+        {
+            "store_path": str(store.path),
+            "capability_id": capability_id,
+            "inputs": dict(inputs),
+            "code": code,
+            "out_path": str(out_path),
+            "pid_path": str(pid_path),
+        }
+    )
+    env = dict(os.environ)
+    src_root = str(Path(__file__).resolve().parents[2])  # .../src
+    env["PYTHONPATH"] = src_root + os.pathsep + env.get("PYTHONPATH", "")
+    try:
+        proc = subprocess.run(
+            [sys.executable, "-m", "mj.executor.worker"],
+            input=payload,
+            capture_output=True,
+            text=True,
+            timeout=timeout_s,
+            env=env,
+        )
+    except subprocess.TimeoutExpired:
+        # run() terminated the worker process before re-raising; whatever it
+        # was still doing is over. Its half-written result (if any) is
+        # discarded below — a timeout is an unknown outcome, never a success.
         raise TimeoutError(
             f"step timed out after {timeout_s:g}s (MJ_STEP_TIMEOUT_S); worker "
-            "abandoned — side effects before expiry are unrecorded and must be "
-            "re-observed"
+            "process killed — side effects before expiry are unrecorded and "
+            "must be re-observed; a late result is discarded, never written back"
+        ) from None
+    try:
+        if not out_path.is_file():
+            tail = (proc.stderr or "").strip()[-500:]
+            raise RuntimeError(
+                f"worker produced no result (exit {proc.returncode}): {tail}"
+            )
+        result = json.loads(out_path.read_text(encoding="utf-8"))
+    finally:
+        out_path.unlink(missing_ok=True)
+        pid_path.unlink(missing_ok=True)
+    if not result.get("ok"):
+        raise RuntimeError(result.get("error", "worker failed"))
+    return result["output"]
+
+
+def _record_step_result(
+    store: Store,
+    idempotency_key: str,
+    task_id: str,
+    step_id: str,
+    output_json: str,
+    verified: int,
+    evidence_json: str | None,
+    started_at: float,
+    finished_at: float,
+) -> bool:
+    """Persist a step result — write-once (docs/09 §2).
+
+    step_results keyed by idempotency_key is the record of *the* result of an
+    exact step execution. ON CONFLICT DO NOTHING makes a late or duplicate
+    write (e.g. a worker that finished after its deadline was declared) lose
+    against the recorded truth, and the discard is audited so nothing vanishes
+    without a trace. The final state, once recorded, is final.
+    """
+    cur = store.conn.execute(
+        "INSERT INTO step_results "
+        "(idempotency_key, task_id, step_id, output_json, verified, evidence_json, started_at, finished_at) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(idempotency_key) DO NOTHING",
+        (idempotency_key, task_id, step_id, output_json, verified, evidence_json, started_at, finished_at),
+    )
+    if cur.rowcount == 0:
+        audit.append(
+            store,
+            "executor",
+            "step.result.discarded",
+            {
+                "task_id": task_id,
+                "step_id": step_id,
+                "idempotency_key": idempotency_key,
+                "reason": "a result is already recorded for this key; late/duplicate write discarded",
+            },
         )
-    if "error" in box:
-        raise box["error"]
-    if "output" in box:
-        return box["output"]
-    raise RuntimeError("step worker produced no result")
+        return False
+    return True
 
 
 def _existing_approval(
@@ -187,6 +280,18 @@ def run_plan(
     for step in steps_order:
         manifest, _ = registry.get(store, step.capability_id)
         d = gate.decide(store, "user", manifest.risk_class, trust_level)
+        # Effects floor (docs/09 §3): sensitive effects (network, process,
+        # secrets) run on the local terminal only. Registration enforces the
+        # declaration; this enforces it at runtime too, so a legacy or
+        # compromised row that skipped validation still cannot act.
+        sensitive = SENSITIVE_EFFECTS & set(manifest.effects)
+        if sensitive and trust_level != "local-terminal":
+            d = Decision(
+                DENY,
+                d.rule,
+                f"effect(s) {', '.join(sorted(sensitive))} are local-terminal only; "
+                f"trust {trust_level!r} cannot run them",
+            )
         decisions[step.step_id] = d.to_dict()
         p_hash = _payload_hash(step)
         if d.action == DENY:
@@ -334,24 +439,21 @@ def run_plan(
         events.append(store, "step.start", {"step_id": step.step_id}, task_id=task_id)
         started = time.time()
         try:
-            output = _run_with_timeout(store, impl.run, step.inputs, timeout_s)
+            output = _run_step(store, step.capability_id, step.inputs, timeout_s)
             evidence = impl.verify(store, dict(step.inputs), output)
             verified = bool(evidence.get("verified"))
         except Exception as exc:  # record the failure honestly, halt the DAG
             finished = time.time()
-            store.conn.execute(
-                "INSERT OR REPLACE INTO step_results "
-                "(idempotency_key, task_id, step_id, output_json, verified, evidence_json, started_at, finished_at) "
-                "VALUES (?, ?, ?, ?, 0, ?, ?, ?)",
-                (
-                    key,
-                    task_id,
-                    step.step_id,
-                    canonical_json({"error": str(exc)}),
-                    canonical_json({"exception": str(exc)}),
-                    started,
-                    finished,
-                ),
+            _record_step_result(
+                store,
+                key,
+                task_id,
+                step.step_id,
+                canonical_json({"error": str(exc)}),
+                0,
+                canonical_json({"exception": str(exc)}),
+                started,
+                finished,
             )
             store.conn.execute(
                 "UPDATE plan_steps SET status = 'failed' WHERE task_id = ? AND step_id = ?",
@@ -363,20 +465,16 @@ def run_plan(
             failed = {"step_id": step.step_id, "error": str(exc)}
             break
         finished = time.time()
-        store.conn.execute(
-            "INSERT OR REPLACE INTO step_results "
-            "(idempotency_key, task_id, step_id, output_json, verified, evidence_json, started_at, finished_at) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            (
-                key,
-                task_id,
-                step.step_id,
-                canonical_json(output),
-                1 if verified else 0,
-                canonical_json(evidence),
-                started,
-                finished,
-            ),
+        _record_step_result(
+            store,
+            key,
+            task_id,
+            step.step_id,
+            canonical_json(output),
+            1 if verified else 0,
+            canonical_json(evidence),
+            started,
+            finished,
         )
         store.conn.execute(
             "UPDATE plan_steps SET status = 'done' WHERE task_id = ? AND step_id = ?",

@@ -21,6 +21,11 @@ live command run; tests never assert less to pass.
    payload-hash-bound approvals; idempotent, resumable runs; independent
    verifiers; a real undo for file organization.
 4. **Gateway** — the `mj` CLI, proven live end to end.
+5. **Hardening** (docs/06–09) — adversarial suite; sensitive-power +
+   declared-effects registration rules with runtime enforcement and an import
+   lint; per-step/per-task timeouts and plan caps; killable subprocess
+   workers with write-once step results; hashed dependency lockfile and a
+   Windows+Linux CI workflow that runs the suite and the mutation harness.
 
 Nothing beyond what is listed is claimed. No daemon, gRPC server, LLM
 reasoner or expansion engine exists yet.
@@ -28,8 +33,8 @@ reasoner or expansion engine exists yet.
 ## Usage
 
 ```bash
-pip install -r requirements.txt        # psutil (runtime) + pytest (dev)
-python -m pytest tests/                # 58 tests
+pip install --require-hashes -r requirements.lock   # hashed lockfile (psutil + pytest)
+python -m pytest tests/                # 98 tests
 
 export MJ_HOME=~/.mj                   # where the one state store lives (optional)
 PYTHONPATH=src python -m mj status     # also installed as `mj` console script
@@ -45,13 +50,14 @@ Exit codes: 0 ok · 2 usage · 3 unknown goal (prints one targeted question) ·
 ## Structure
 
 ```
-src/mj/core/       kernel: store, events, audit, registry, policy, tasks (no LLM, ever)
+src/mj/core/       kernel: store, events, audit, registry, policy, tasks, effects (no LLM, ever)
 src/mj/policies/   the rules file — read-only to the agent; changed only by human review
 src/mj/world/      probes + fact store (provenance, TTL, labels)
 src/mj/brain/      typed planner (deterministic; registry-bound; refuses to guess)
-src/mj/executor/   the runner: policy gate, approvals, idempotency, verifiers, undo
+src/mj/executor/   the runner: policy gate, approvals, idempotency, verifiers, undo, killable workers
 src/mj/gateway/    the mj CLI (all side effects flow through the executor)
-tests/unit/        58 tests across kernel, world, brain/executor, CLI
+tests/             98 tests: unit + adversarial + integration (mutation harness: tools/mutation_check.py)
+.github/workflows/ CI: fresh venv, hash-locked install, full suite, mutation harness (Windows + Linux)
 docs/              one page per build update
 ```
 

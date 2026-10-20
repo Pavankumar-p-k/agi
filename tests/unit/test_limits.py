@@ -41,14 +41,14 @@ def _sandbox(tmp_path, name="box"):
 # -- per-step deadline -------------------------------------------------------
 
 
-def test_step_timeout_fails_fast_instead_of_hanging(store, monkeypatch):
-    impl = caps.BUILTINS["os.facts"]
-
-    def sleepy_run(store, inputs):
-        time.sleep(1.5)
-        return {"facts": []}
-
-    monkeypatch.setitem(caps.BUILTINS, "os.facts", caps.Impl(impl.manifest, sleepy_run, impl.verify))
+def test_step_timeout_fails_fast_instead_of_hanging(store, override_run, monkeypatch):
+    override_run(
+        "os.facts",
+        "import time\n"
+        "def run(store, inputs):\n"
+        "    time.sleep(1.5)\n"
+        "    return {'facts': []}\n",
+    )
     monkeypatch.setenv("MJ_STEP_TIMEOUT_S", "0.2")
     plan = planner.build_plan(store, "disk")
     started = time.time()
@@ -65,15 +65,15 @@ def test_step_timeout_fails_fast_instead_of_hanging(store, monkeypatch):
     assert tasks.get(store, report["task_id"])["state"] == "failed"
 
 
-def test_timeout_record_is_a_failure_not_a_success(store, monkeypatch):
+def test_timeout_record_is_a_failure_not_a_success(store, override_run, monkeypatch):
     """A timed-out step must never be recorded as verified or reused as one."""
-    impl = caps.BUILTINS["os.facts"]
-
-    def sleepy_run(store, inputs):
-        time.sleep(1.2)
-        return {"facts": [{"label": "verified"}]}
-
-    monkeypatch.setitem(caps.BUILTINS, "os.facts", caps.Impl(impl.manifest, sleepy_run, impl.verify))
+    override_run(
+        "os.facts",
+        "import time\n"
+        "def run(store, inputs):\n"
+        "    time.sleep(1.2)\n"
+        "    return {'facts': [{'label': 'verified'}]}\n",
+    )
     monkeypatch.setenv("MJ_STEP_TIMEOUT_S", "0.1")
     report = runner.run_plan(store, planner.build_plan(store, "disk"), auto_approve=True)
     assert report["state"] == "failed"
@@ -103,15 +103,17 @@ def test_zero_task_budget_never_starts_a_step(store, tmp_path, monkeypatch):
     assert (sandbox / "a.txt").is_file()  # the world was never touched
 
 
-def test_budget_exhausted_mid_plan_keeps_completed_results(store, tmp_path, monkeypatch):
+def test_budget_exhausted_mid_plan_keeps_completed_results(store, tmp_path, override_run, monkeypatch):
     monkeypatch.setenv("MJ_TASK_BUDGET_S", "0.6")
-    impl = caps.BUILTINS["files.list"]
-
-    def slow_list(store, inputs):
-        time.sleep(1.0)  # consumes the whole budget on step 1
-        return impl.run(store, inputs)
-
-    monkeypatch.setitem(caps.BUILTINS, "files.list", caps.Impl(impl.manifest, slow_list, impl.verify))
+    # step 1 consumes the whole budget before it produces anything
+    override_run(
+        "files.list",
+        "import time\n"
+        "from mj.executor.capabilities import BUILTINS\n"
+        "def run(store, inputs):\n"
+        "    time.sleep(1.0)\n"
+        "    return BUILTINS['files.list'].run(store, inputs)\n",
+    )
     sandbox = _sandbox(tmp_path, "midbudget")
     plan = planner.build_plan(store, "organize files", {"dir": str(sandbox), "commit": True})
     report = runner.run_plan(store, plan, auto_approve=True)
@@ -140,7 +142,7 @@ def test_plan_over_step_cap_is_refused(store, monkeypatch):
 # -- interaction with undo ---------------------------------------------------
 
 
-def test_timeouts_do_not_poison_undo_of_completed_tasks(store, tmp_path, monkeypatch):
+def test_timeouts_do_not_poison_undo_of_completed_tasks(store, tmp_path, override_run, monkeypatch):
     """Expiry semantics: limits bound *execution*, never recorded history.
     A later task dying to a timeout leaves a completed task's undo record
     fully usable — undo reads step_results, which expiry never mutates."""
@@ -151,13 +153,13 @@ def test_timeouts_do_not_poison_undo_of_completed_tasks(store, tmp_path, monkeyp
 
     # a separate task dies to the step deadline
     monkeypatch.setenv("MJ_STEP_TIMEOUT_S", "0.2")
-    facts_impl = caps.BUILTINS["os.facts"]
-
-    def sleepy_run(store, inputs):
-        time.sleep(1.0)
-        return {"facts": []}
-
-    monkeypatch.setitem(caps.BUILTINS, "os.facts", caps.Impl(facts_impl.manifest, sleepy_run, facts_impl.verify))
+    override_run(
+        "os.facts",
+        "import time\n"
+        "def run(store, inputs):\n"
+        "    time.sleep(1.0)\n"
+        "    return {'facts': []}\n",
+    )
     dead = runner.run_plan(store, planner.build_plan(store, "disk"), auto_approve=True)
     assert dead["state"] == "failed"
     assert "timed out" in dead["failed_step"]["error"]
@@ -172,6 +174,71 @@ def test_timeouts_do_not_poison_undo_of_completed_tasks(store, tmp_path, monkeyp
     assert sorted(out["undone"]) == ["a.txt"]
     assert (sandbox / "a.txt").is_file()
     assert "documents" not in {p.name for p in sandbox.iterdir()}
+
+
+# -- zombie workers: the deadline kills a process, not a thread ---------------
+
+
+def _pid_alive(pid: int) -> bool:
+    try:
+        import psutil
+
+        p = psutil.Process(pid)
+        return p.status() != psutil.STATUS_ZOMBIE
+    except psutil.Error:
+        return False
+
+
+def test_timed_out_worker_process_is_killed_not_merely_abandoned(
+    store, override_run, monkeypatch, tmp_path
+):
+    """Python threads cannot be killed, so each step runs in its own
+    subprocess. The injected worker records its own pid, sleeps past the
+    deadline, and the test asserts that exact process is *dead* afterwards —
+    it cannot keep causing side effects after MJ recorded the step failed.
+    psutil gives the same answer on Windows (gone) and Linux (gone/reaped)."""
+    pid_file = tmp_path / "worker.pid"
+    override_run(
+        "os.facts",
+        "import os, time\n"
+        "def run(store, inputs):\n"
+        f"    open({str(pid_file)!r}, 'w').write(str(os.getpid()))\n"
+        "    time.sleep(30)\n"
+        "    return {'facts': []}\n",
+    )
+    monkeypatch.setenv("MJ_STEP_TIMEOUT_S", "3")
+    report = runner.run_plan(store, planner.build_plan(store, "disk"), auto_approve=True)
+    assert report["state"] == "failed"
+    assert "timed out" in report["failed_step"]["error"]
+    pid = int(pid_file.read_text())
+    assert not _pid_alive(pid)
+
+
+# -- final state: a recorded result is write-once ------------------------------
+
+
+def test_late_or_duplicate_result_write_is_discarded_not_overwritten(store):
+    """A result row is the record of *the* execution of an exact step. A late
+    or duplicate write loses against the recorded truth, and the discard is
+    audited — the final state is final."""
+    key = "k-idem-1"
+    first = runner._record_step_result(
+        store, key, "t1", "s1", json.dumps({"v": 1}), 1, None, 0.0, 1.0
+    )
+    second = runner._record_step_result(
+        store, key, "t1", "s1", json.dumps({"v": 2}), 0, None, 0.0, 2.0
+    )
+    assert first is True
+    assert second is False
+    row = store.one(
+        "SELECT output_json, verified FROM step_results WHERE idempotency_key = ?", (key,)
+    )
+    assert json.loads(row["output_json"]) == {"v": 1}
+    assert row["verified"] == 1  # the first write stands, un-overwritten
+    discarded = store.query(
+        "SELECT payload_json FROM audit_entries WHERE payload_json LIKE '%discarded%'"
+    )
+    assert discarded and key in discarded[0]["payload_json"]
 
 
 def test_settings_snapshot_reflects_environment(monkeypatch):

@@ -257,12 +257,12 @@ def test_denying_pending_approval_blocks_task(store, tmp_path):
     assert report["state"] in ("done", "awaiting_approval")
 
 
-def test_failed_step_marks_task_failed_and_honest(store, monkeypatch):
-    def broken_run(store, inputs):
-        raise RuntimeError("worker exploded")
-
-    impl = caps.BUILTINS["os.facts"]
-    monkeypatch.setitem(caps.BUILTINS, "os.facts", caps.Impl(impl.manifest, broken_run, impl.verify))
+def test_failed_step_marks_task_failed_and_honest(store, override_run):
+    override_run(
+        "os.facts",
+        "def run(store, inputs):\n"
+        "    raise RuntimeError('worker exploded')\n",
+    )
     plan = planner.build_plan(store, "disk")
     report = runner.run_plan(store, plan, auto_approve=True)
     assert report["state"] == "failed"

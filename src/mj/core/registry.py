@@ -14,9 +14,11 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from .audit import append as audit_append
+from .effects import EFFECTS, MIN_RISK_FOR_EFFECT, POWER_EFFECTS, SENSITIVE_EFFECTS
 from .store import Store, canonical_json
 
 RISK_CLASSES = ("R0", "R1", "R2", "R3", "R4")
+RISK_ORDER = {r: i for i, r in enumerate(RISK_CLASSES)}
 CAPABILITY_TYPES = ("mcp", "cli", "http", "os", "agent", "browser", "skill")
 
 # Powers that may never be silently granted (docs/07 §2, review follow-up):
@@ -56,6 +58,10 @@ class Manifest:
     has_verifier: bool = False
     has_undo: bool = False
     provenance: dict[str, Any] = field(default_factory=dict)
+    # What the code touches — declared by the manifest, cross-checked against
+    # powers at registration, enforced at runtime, linted against the actual
+    # imports (mj.core.effects, docs/09 §3).
+    effects: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -69,6 +75,7 @@ class Manifest:
             "has_verifier": self.has_verifier,
             "has_undo": self.has_undo,
             "provenance": self.provenance,
+            "effects": self.effects,
         }
 
     @classmethod
@@ -84,6 +91,7 @@ class Manifest:
             has_verifier=bool(data.get("has_verifier", False)),
             has_undo=bool(data.get("has_undo", False)),
             provenance=dict(data.get("provenance", {})),
+            effects=list(data.get("effects", [])),
         )
 
 
@@ -110,6 +118,12 @@ def validate_manifest(m: Manifest) -> None:
         raise RegistryError(f"manifest {m.id}: risk class {m.risk_class!r} is not one of {RISK_CLASSES}")
     if not m.version:
         raise RegistryError(f"manifest {m.id}: version is required")
+    unknown_effects = [e for e in m.effects if e not in EFFECTS]
+    if unknown_effects:
+        raise RegistryError(
+            f"manifest {m.id}: unknown effect(s) {unknown_effects}; "
+            f"the vocabulary is {EFFECTS}"
+        )
     powers = declared_powers(m)
     if powers:
         if m.risk_class not in MIN_RISK_FOR_SENSITIVE_POWERS:
@@ -122,6 +136,21 @@ def validate_manifest(m: Manifest) -> None:
             raise RegistryError(
                 f"manifest {m.id}: declares sensitive power(s) {sorted(powers)} without "
                 "an independent verifier (has_verifier=True required)"
+            )
+        for power in sorted(powers):
+            needed = POWER_EFFECTS.get(power)
+            if needed and needed not in m.effects:
+                raise RegistryError(
+                    f"manifest {m.id}: declares power {power!r} but not its required "
+                    f"effect {needed!r} — powers and effects must agree"
+                )
+    for effect in sorted(set(m.effects) & SENSITIVE_EFFECTS):
+        floor = MIN_RISK_FOR_EFFECT[effect]
+        if RISK_ORDER[m.risk_class] < RISK_ORDER[floor]:
+            raise RegistryError(
+                f"manifest {m.id}: sensitive effect {effect!r} at risk class "
+                f"{m.risk_class} is below the {floor} floor — sensitive effects "
+                "can never be a silent read"
             )
 
 

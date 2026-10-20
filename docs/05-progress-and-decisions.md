@@ -27,6 +27,8 @@ expansion engine; **5.** daemon/API (explicitly deferred).
 ## Draft recommended answers to the five open decisions
 
 These are **drafts for you to edit** — nothing here is a commitment.
+(Refined, argued answers for #3 model provider and #4 risk stance landed in
+`docs/09` §5 on 2026-10-20; both remain open for your edit.)
 
 1. **Operating system(s) first.** Windows (win32) — it is the machine we run
    on; every OS-specific probe already records its source so per-OS adapters
