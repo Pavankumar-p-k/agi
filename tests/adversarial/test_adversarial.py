@@ -80,9 +80,11 @@ def test_shell_metacharacters_are_literal_paths_not_commands(store, tmp_path):
     # the run fails honestly at the list step because the dir does not exist
     assert report["state"] == "failed"
     assert "no such directory" in report["failed_step"]["error"]
-    # nothing was executed anywhere else: no stray dirs got created by ";", "&", "del"
+    # nothing was executed anywhere else: no stray entry got created by ";",
+    # "&", "del" being interpreted (the `or True` form that used to be here
+    # could never fail; the lint in tests/lint/test_dead_asserts.py bans it)
     for created in tmp_path.iterdir():
-        assert "benign parent" not in created.name or created.is_dir() is False or True
+        assert "benign parent" not in created.name, created
     assert not evil_dir.exists()
 
 

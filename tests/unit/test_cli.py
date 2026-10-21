@@ -93,8 +93,10 @@ def test_organize_commit_requires_approval_then_executes_interactively(mj_home, 
     env_setup = dict(os.environ or {})
     env_setup["MJ_HOME"] = str(mj_home)
     env_setup["PYTHONPATH"] = SRC + os.pathsep + env_setup.get("PYTHONPATH", "")
-    import msvcrt  # noqa: F401  # interactive input via stdin redirection below
 
+    # interactive approval arrives via stdin (input="y\n" below) — no
+    # platform-specific input module is involved (the msvcrt import that used
+    # to sit here is Windows-only and was never used; it broke Linux CI).
     proc = subprocess.run(
         [sys.executable, "-m", "mj", "run", "organize files", "--dir", str(sandbox), "--commit"],
         capture_output=True,

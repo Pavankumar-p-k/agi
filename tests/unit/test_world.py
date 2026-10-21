@@ -84,7 +84,9 @@ def test_probe_processes_count_in_range(store):
     assert fs and fs[0].key == "summary"
     summary = fs[0].value
     assert summary["count"] > 0  # something is running; this test is a process
-    assert summary["count"] >= summary["distinct_names"] or summary["distinct_names"] >= 1
+    # a real invariant of the aggregation: distinct names never exceed the
+    # number of processes counted, and at least one name was seen
+    assert summary["count"] >= summary["distinct_names"] >= 1
 
 
 def test_process_awareness_answers_is_python_running(store):
@@ -96,17 +98,23 @@ def test_process_awareness_answers_is_python_running(store):
 
     fact = get(store, "processes", "summary")
     assert fact is not None and fact.label == "verified"
-    names = [n for n, _ in fact.value["top"]]
-    # the probe must at least see some recognizable process; on every platform
-    # the python interpreter running this test is a real, independent check
+    sample = dict(fact.value["top"])
     import sys as _sys
 
-    indicator = _sys.executable.lower()
-    base = os.path.basename(indicator)
-    assert any(base in n for n in names) or True  # top-100 sample; full check below
-    # independent verification: the pid of this test process exists
-    assert os.getpid() > 0
-    assert fact.value["count"] >= 1
+    # Real invariants of the recorded fact — every line below can fail.
+    # (`assert ... or True` is forbidden outright by the lint in
+    # tests/lint/test_dead_asserts.py; this test used to contain one.)
+    assert fact.value["count"] >= 1  # this test itself is a running process
+    assert fact.value["count"] >= fact.value["distinct_names"] >= 1
+    assert sample and all(name and hits > 0 for name, hits in sample.items())
+    assert sum(sample.values()) <= fact.value["count"]
+    if len(sample) < probes.MAX_SAMPLE_NAMES:
+        # the sample was not truncated, so it holds every distinct name the
+        # probe saw — the interpreter running this test must appear in it.
+        # (If the machine has more than MAX_SAMPLE_NAMES distinct names the
+        # sample may omit it, so the presence check runs only when complete.)
+        base = os.path.basename(_sys.executable).lower()
+        assert any(base in n for n in sample), f"{base!r} not in {sorted(sample)}"
 
 
 def test_probe_installed_apps_finds_something(store):
