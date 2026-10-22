@@ -27,6 +27,11 @@ expansion engine; **5.** daemon/API (explicitly deferred).
 ## Draft recommended answers to the five open decisions
 
 These are **drafts for you to edit** — nothing here is a commitment.
+
+> **Status 2026-10-22:** decision 3 (model provider) and decision 4 (risk
+> stance) are now **decided** — see the DECIDED block at the top of
+> docs/09 §5: local-first provider accepted; risk stance **held** (no
+> loosening, L1 withdrawn). Decisions 1, 2, 5 remain open.
 (Refined, argued answers for #3 model provider and #4 risk stance landed in
 `docs/09` §5 on 2026-10-20; both remain open for your edit.)
 

@@ -6,6 +6,12 @@
 #
 # To make these checks *block* merges: on GitHub, enable branch protection
 # for main with "Require status checks to pass" and select both jobs.
+#
+# ENABLED 2026-10-22: branch protection is on for this repo — both jobs
+# (windows-latest, ubuntu-latest) are required status checks with
+# "strict" (up-to-date branch) and enforce_admins, no force-push, no delete.
+# Direct pushes to main are rejected; changes land via pull request, and a
+# red run blocks the merge.
 
 name: CI
 
