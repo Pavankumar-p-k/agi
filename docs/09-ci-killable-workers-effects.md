@@ -129,6 +129,25 @@ find — including in its own table.
 
 ## 5. Draft answers to the two open decisions (for you to edit)
 
+> **DECIDED 2026-10-22 by the operator** (this section's two drafts are now
+> accepted, with one amendment):
+>
+> 1. **Model provider — accepted as local-first.** Local default behind an
+>    OpenAI-compatible adapter (Ollama + JSON-schema `Plan` outputs), hosted
+>    providers pluggable for when plan quality demands it. Env contract as
+>    drafted: `MJ_MODEL_PROVIDER`, `MJ_MODEL_BASE_URL`, `MJ_MODEL_NAME`,
+>    `MJ_MODEL_API_KEY` — read by the model adapter only; the executor never
+>    sees a key.
+> 2. **Risk stance — HOLD, do not loosen.** The operator declined the L1
+>    step. The current stance (R0 any channel, R1 local-terminal, R2 asks
+>    payload-hash-bound, R3 never silent, R4 human-edited standing rule,
+>    plus the effects floor from §3) stands **unchanged**. The three triggers
+>    below and the proposed L1 standing grants are **withdrawn** — not
+>    deferred, not conditional; revisit only by a fresh, explicit decision.
+>
+> Both decisions unblock the reasoner (item next after the credential broker).
+The text below is retained as the historical draft that was accepted/amended.
+
 Both are **drafts**. Nothing here is a commitment.
 
 **Model provider — recommendation: local-first behind an
