@@ -1,11 +1,11 @@
-"""Subprocess entry point for capability execution — one step, one process.
-
-Why a process and not a thread: Python threads cannot be killed. A worker
+"""Subprocess entry point for capability execution — one step, one process.Why a process and not a thread: Python threads cannot be killed. A worker
 that overruns its deadline and is merely "abandoned" keeps running and can
 still cause side effects after MJ has marked the step failed (docs/09 §2).
-A subprocess is something MJ owns: on expiry ``subprocess.run`` terminates it,
-and anything it produced afterwards — including the result file — is
-discarded by the parent, never written back.
+A subprocess is something MJ owns: it starts inside a killable group
+(process group on POSIX, Job Object on Windows — mj.executor.killtree), so
+on expiry the runner kills the worker *and anything the worker spawned*.
+Anything produced afterwards — including the result file — is discarded by
+the parent, never written back.
 
 Protocol: a single JSON document on stdin:
 

@@ -32,6 +32,7 @@ from mj.core import audit, events, registry, settings, tasks
 from mj.core.effects import SENSITIVE_EFFECTS
 from mj.core.policy import ASK, DENY, Decision, PolicyGate
 from mj.core.store import Store, canonical_json
+from mj.executor import killtree
 from mj.executor.capabilities import BUILTINS, Impl
 
 
@@ -68,6 +69,32 @@ def _dev_override(capability_id: str) -> str | None:
     return data["code"]
 
 
+# A just-terminated worker can keep its inherited stdout/stderr handles for
+# a short window on Windows (handle teardown lags the process object being
+# signaled), so removing scratch files right after a kill can hit
+# ERROR_SHARING_VIOLATION. Retry briefly instead of failing the step.
+_UNLINK_ATTEMPTS = 20
+_UNLINK_RETRY_S = 0.05
+
+
+def _cleanup_files(*paths: Path) -> None:
+    """Remove a step's scratch files — best effort, never raises.
+
+    Cleanup must never shadow the step's real outcome: an unlink OSError in
+    a `finally` used to *replace* the TimeoutError this function's callers
+    raise. A file that stays locked past the retries is left behind (scratch,
+    not state) rather than turned into a fake step failure.
+    """
+    for path in paths:
+        for _ in range(_UNLINK_ATTEMPTS):
+            try:
+                path.unlink(missing_ok=True)
+            except OSError:
+                time.sleep(_UNLINK_RETRY_S)
+            else:
+                break
+
+
 def _run_step(
     store: Store,
     capability_id: str,
@@ -78,8 +105,9 @@ def _run_step(
 
     Python threads cannot be killed; an "abandoned" thread keeps running and
     can cause side effects after the step is marked failed. One subprocess
-    per step makes the deadline real (docs/09 §2): on expiry ``subprocess.run``
-    terminates the worker before raising, and the result file it may have
+    per step makes the deadline real (docs/09 §2, docs/10 §1): on expiry the
+    worker's whole process group/job is killed — including processes the
+    worker itself spawned — before raising, and the result file it may have
     written is discarded — a late result is never written back. The worker
     opens its own store connection (WAL), so it can never race the kernel's.
     """
@@ -110,34 +138,56 @@ def _run_step(
     env = dict(os.environ)
     src_root = str(Path(__file__).resolve().parents[2])  # .../src
     env["PYTHONPATH"] = src_root + os.pathsep + env.get("PYTHONPATH", "")
+    stdout_path = store.path.parent / f"worker-{token}.stdout"
+    stderr_path = store.path.parent / f"worker-{token}.stderr"
     try:
-        proc = subprocess.run(
-            [sys.executable, "-m", "mj.executor.worker"],
-            input=payload,
-            capture_output=True,
-            text=True,
-            timeout=timeout_s,
-            env=env,
-        )
-    except subprocess.TimeoutExpired:
-        # run() terminated the worker process before re-raising; whatever it
-        # was still doing is over. Its half-written result (if any) is
-        # discarded below — a timeout is an unknown outcome, never a success.
-        raise TimeoutError(
-            f"step timed out after {timeout_s:g}s (MJ_STEP_TIMEOUT_S); worker "
-            "process killed — side effects before expiry are unrecorded and "
-            "must be re-observed; a late result is discarded, never written back"
-        ) from None
-    try:
-        if not out_path.is_file():
-            tail = (proc.stderr or "").strip()[-500:]
-            raise RuntimeError(
-                f"worker produced no result (exit {proc.returncode}): {tail}"
-            )
-        result = json.loads(out_path.read_text(encoding="utf-8"))
+        timed_out = False
+        try:
+            # stdout/stderr go to files, not pipes: a stray grandchild
+            # inheriting the handles can never wedge a pipe read below.
+            with open(stdout_path, "w", encoding="utf-8", errors="replace") as out_log, open(
+                stderr_path, "w", encoding="utf-8", errors="replace"
+            ) as err_log:
+                proc = killtree.spawn(
+                    [sys.executable, "-m", "mj.executor.worker"],
+                    env=env,
+                    stdout=out_log,
+                    stderr=err_log,
+                )
+                try:
+                    proc.communicate(input=payload, timeout=timeout_s)
+                except subprocess.TimeoutExpired:
+                    timed_out = True
+                    # The deadline kills the worker *and its whole process
+                    # group/job* (docs/10 §1): a process the worker spawned
+                    # must not outlive the step and keep acting after MJ
+                    # marked it failed.
+                    killtree.kill_tree(proc)
+                finally:
+                    killtree.reap(proc)
+        except OSError as exc:
+            raise RuntimeError(f"could not start worker: {exc}") from exc
+        if timed_out:
+            # Whatever the worker was still doing — alone or in its
+            # children — is over. Its half-written result (if any) is
+            # discarded below: a timeout is an unknown outcome, never a
+            # success.
+            raise TimeoutError(
+                f"step timed out after {timeout_s:g}s (MJ_STEP_TIMEOUT_S); worker "
+                "process tree killed — side effects before expiry are unrecorded and "
+                "must be re-observed; a late result is discarded, never written back"
+            ) from None
+        try:
+            if not out_path.is_file():
+                tail = stderr_path.read_text(encoding="utf-8", errors="replace").strip()[-500:]
+                raise RuntimeError(
+                    f"worker produced no result (exit {proc.returncode}): {tail}"
+                )
+            result = json.loads(out_path.read_text(encoding="utf-8"))
+        finally:
+            killtree.release(proc)
     finally:
-        out_path.unlink(missing_ok=True)
-        pid_path.unlink(missing_ok=True)
+        _cleanup_files(out_path, pid_path, stdout_path, stderr_path)
     if not result.get("ok"):
         raise RuntimeError(result.get("error", "worker failed"))
     return result["output"]

@@ -214,6 +214,54 @@ def test_timed_out_worker_process_is_killed_not_merely_abandoned(
     assert not _pid_alive(pid)
 
 
+def test_killed_worker_kills_its_grandchildren_too(store, override_run, monkeypatch, tmp_path):
+    """Killing the worker alone is not enough: a worker may spawn processes
+    (the `process` effect os.facts declares). The injected worker starts a
+    child, the child starts a grandchild; both record their pid and sleep.
+    The step times out and the test asserts worker, child *and* grandchild
+    are all dead — every level below the process the runner killed, on the
+    real execution path (process group on POSIX, Job Object on Windows)."""
+    worker_pid_file = tmp_path / "worker.pid"
+    child_pid_file = tmp_path / "child.pid"
+    grand_pid_file = tmp_path / "grand.pid"
+    sleeper = tmp_path / "sleeper.py"
+    sleeper.write_text(
+        "import subprocess, sys, os, time\n"
+        "pidfile, mode = sys.argv[1], sys.argv[2]\n"
+        "open(pidfile, 'w').write(str(os.getpid()))\n"
+        "if mode == 'child':\n"
+        # the child spawns one more level — the grandchild of the worker
+        f"    subprocess.Popen([sys.executable, {str(sleeper)!r}, {str(grand_pid_file)!r}, 'grand'])\n"
+        "time.sleep(300)\n",
+        encoding="utf-8",
+    )
+    override_run(
+        "os.facts",
+        "import subprocess, sys, os, time\n"
+        "def run(store, inputs):\n"
+        f"    open({str(worker_pid_file)!r}, 'w').write(str(os.getpid()))\n"
+        f"    subprocess.Popen([sys.executable, {str(sleeper)!r}, {str(child_pid_file)!r}, 'child'])\n"
+        "    time.sleep(300)\n"
+        "    return {'facts': []}\n",
+    )
+    monkeypatch.setenv("MJ_STEP_TIMEOUT_S", "3")
+    report = runner.run_plan(store, planner.build_plan(store, "disk"), auto_approve=True)
+    assert report["state"] == "failed"
+    assert "timed out" in report["failed_step"]["error"]
+    # every level of the tree recorded its pid before the deadline hit
+    pids = {
+        "worker": int(worker_pid_file.read_text()),
+        "child": int(child_pid_file.read_text()),
+        "grandchild": int(grand_pid_file.read_text()),
+    }
+    # and every level is dead afterwards, not just the worker we spawned
+    for level, pid in pids.items():
+        deadline = time.time() + 10
+        while _pid_alive(pid) and time.time() < deadline:
+            time.sleep(0.1)
+        assert not _pid_alive(pid), f"{level} process {pid} survived the step timeout"
+
+
 # -- final state: a recorded result is write-once ------------------------------
 
 

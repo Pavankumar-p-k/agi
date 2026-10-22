@@ -34,7 +34,7 @@ reasoner or expansion engine exists yet.
 
 ```bash
 pip install --require-hashes -r requirements.lock   # hashed lockfile (psutil + pytest)
-python -m pytest tests/                # 98 tests
+python -m pytest tests/                # 101 tests
 
 export MJ_HOME=~/.mj                   # where the one state store lives (optional)
 PYTHONPATH=src python -m mj status     # also installed as `mj` console script
@@ -54,9 +54,10 @@ src/mj/core/       kernel: store, events, audit, registry, policy, tasks, effect
 src/mj/policies/   the rules file — read-only to the agent; changed only by human review
 src/mj/world/      probes + fact store (provenance, TTL, labels)
 src/mj/brain/      typed planner (deterministic; registry-bound; refuses to guess)
-src/mj/executor/   the runner: policy gate, approvals, idempotency, verifiers, undo, killable workers
+src/mj/executor/   the runner: policy gate, approvals, idempotency, verifiers, undo, killable
+                   subprocess workers — killed with their whole process tree (killtree.py)
 src/mj/gateway/    the mj CLI (all side effects flow through the executor)
-tests/             98 tests: unit + adversarial + integration (mutation harness: tools/mutation_check.py)
+tests/             101 tests: unit + adversarial + integration + lint (mutation harness: tools/mutation_check.py)
 .github/workflows/ CI: fresh venv, hash-locked install, full suite, mutation harness (Windows + Linux)
 docs/              one page per build update
 ```
