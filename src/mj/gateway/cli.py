@@ -18,6 +18,7 @@ from mj import AUTONOMY_LEVEL, __version__
 from mj.brain import planner
 from mj.core import audit, events, registry, settings, tasks
 from mj.core.store import Store
+from mj.executor import broker
 from mj.executor import capabilities as caps
 from mj.executor import runner
 from mj.world import model
@@ -227,6 +228,85 @@ def cmd_audit(store: Store, args: argparse.Namespace) -> int:
     return 0 if ok else 6
 
 
+def _local_terminal() -> bool:
+    """True only for an interactive terminal the user is sitting at.
+
+    A redirect, a pipe, or an agent capturing output is not a local terminal,
+    so nothing that runs through them can ever trigger a secret reveal — the
+    model must never see a value.
+    """
+    try:
+        return sys.stdin.isatty() and sys.stdout.isatty()
+    except (AttributeError, ValueError):
+        return False
+
+
+def cmd_secrets(store: Store, args: argparse.Namespace) -> int:
+    """Manage encrypted secrets in the broker.
+
+    ``get`` shows metadata only (name, created, last used). Printing the
+    value itself takes an explicit ``--reveal`` *and* a local terminal, so a
+    piped or agent-driven CLI can never read one back out.
+    """
+    try:
+        if args.secret_action == "set":
+            if not args.key:
+                _print({"error": "usage: mj secrets set KEY"})
+                return 2
+            # A terminal gets the no-echo prompt. Anything else (a pipe, an
+            # operator script feeding stdin) reads one line: getpass would
+            # hang on a non-tty Windows stdin. Setting is not revealing — the
+            # value goes in, and nothing prints it back out.
+            if _local_terminal():
+                import getpass
+
+                value = getpass.getpass("Secret value: ")
+            else:
+                value = sys.stdin.readline().strip() if sys.stdin else ""
+            broker.set_secret(store, args.key, value)
+            _print({"action": "set", "key": args.key})
+            return 0
+        if args.secret_action == "list":
+            _print({"secrets": broker.list_secrets(store)})
+            return 0
+        if args.secret_action == "get":
+            if not args.key:
+                _print({"error": "usage: mj secrets get KEY [--reveal]"})
+                return 2
+            meta = broker.secret_meta(store, args.key)
+            if meta is None:
+                _print({"error": f"secret {args.key} not found"})
+                return 2
+            meta["created"] = _utc(meta["created"]) if meta["created"] else None
+            meta["last_used"] = _utc(meta["last_used"]) if meta["last_used"] else None
+            if not args.reveal:
+                meta["value"] = "<hidden: metadata only; --reveal needs the local terminal>"
+                _print(meta)
+                return 0
+            if not _local_terminal():
+                _print(
+                    {
+                        "error": "refused: revealing a secret needs the local terminal "
+                        "(stdin and stdout must be a TTY)",
+                        "key": args.key,
+                    }
+                )
+                return 4
+            print(broker.get_secret(store, args.key))
+            return 0
+        if args.secret_action == "delete":
+            if not args.key:
+                _print({"error": "usage: mj secrets delete KEY"})
+                return 2
+            broker.delete_secret(store, args.key)
+            _print({"action": "deleted", "key": args.key})
+            return 0
+        return 1
+    except broker.BrokerError as exc:
+        _print({"error": str(exc)})
+        return 2
+
+
 # -- wiring -------------------------------------------------------------------
 
 
@@ -279,6 +359,16 @@ def build_parser() -> argparse.ArgumentParser:
 
     sp = sub.add_parser("audit", help="verify the hash-chained audit log")
     sp.set_defaults(func=cmd_audit)
+
+    sp = sub.add_parser("secrets", help="manage encrypted secrets (set/list/get/delete)")
+    sp.add_argument("secret_action", choices=["set", "list", "get", "delete"])
+    sp.add_argument("key", nargs="?", default=None)
+    sp.add_argument(
+        "--reveal",
+        action="store_true",
+        help="print a secret value — refused unless stdin and stdout are the local terminal",
+    )
+    sp.set_defaults(func=cmd_secrets)
     return parser
 
 

@@ -32,7 +32,7 @@ from mj.core import audit, events, registry, settings, tasks
 from mj.core.effects import SENSITIVE_EFFECTS
 from mj.core.policy import ASK, DENY, Decision, PolicyGate
 from mj.core.store import Store, canonical_json
-from mj.executor import killtree
+from mj.executor import broker, killtree
 from mj.executor.capabilities import BUILTINS, Impl
 
 
@@ -136,6 +136,9 @@ def _run_step(
         }
     )
     env = dict(os.environ)
+    # The master key unlocks every stored credential; a worker never needs it
+    # (values arrive in its stdin payload), so it must not be inherited.
+    env.pop("MJ_BROKER_KEY", None)
     src_root = str(Path(__file__).resolve().parents[2])  # .../src
     env["PYTHONPATH"] = src_root + os.pathsep + env.get("PYTHONPATH", "")
     stdout_path = store.path.parent / f"worker-{token}.stdout"
@@ -489,19 +492,38 @@ def run_plan(
         events.append(store, "step.start", {"step_id": step.step_id}, task_id=task_id)
         started = time.time()
         try:
-            output = _run_step(store, step.capability_id, step.inputs, timeout_s)
+            # Credential broker: resolve secret *names* to values here, at
+            # execution time only, right before the worker subprocess spawns.
+            # The manifest declares its allowed names in requires_scopes; the
+            # broker refuses anything outside it. The resolved copy is handed
+            # to the worker and dropped afterwards — the plan payload, audit
+            # trail, and reports keep names only.
+            exec_inputs = step.inputs
+            exec_manifest, _ = registry.get(store, step.capability_id)
+            if "secrets" in (exec_manifest.effects or []):
+                exec_inputs = broker.inject_secrets(
+                    store, dict(step.inputs), exec_manifest.requires_scopes
+                )
+            # Everything a worker hands back is scrubbed of every stored
+            # secret before it can be verified, recorded, reported or
+            # printed: output, raised error text, and the stderr tail of a
+            # worker that died without a result all pass through here.
+            known = broker.known_secrets(store)
+            output = _run_step(store, step.capability_id, exec_inputs, timeout_s)
+            output = broker.redact(output, known)
             evidence = impl.verify(store, dict(step.inputs), output)
             verified = bool(evidence.get("verified"))
         except Exception as exc:  # record the failure honestly, halt the DAG
             finished = time.time()
+            error = broker.redact(str(exc), broker.known_secrets(store))
             _record_step_result(
                 store,
                 key,
                 task_id,
                 step.step_id,
-                canonical_json({"error": str(exc)}),
+                canonical_json({"error": error}),
                 0,
-                canonical_json({"exception": str(exc)}),
+                canonical_json({"exception": error}),
                 started,
                 finished,
             )
@@ -510,9 +532,9 @@ def run_plan(
                 (task_id, step.step_id),
             )
             events.append(
-                store, "step.failed", {"step_id": step.step_id, "error": str(exc)}, task_id=task_id
+                store, "step.failed", {"step_id": step.step_id, "error": error}, task_id=task_id
             )
-            failed = {"step_id": step.step_id, "error": str(exc)}
+            failed = {"step_id": step.step_id, "error": error}
             break
         finished = time.time()
         _record_step_result(

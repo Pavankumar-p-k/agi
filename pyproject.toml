@@ -8,8 +8,16 @@ version = "0.1.0"
 description = "MJ Core — headless assistant kernel (store, registry, policy gate, audit)"
 requires-python = ">=3.10"
 dependencies = [
-  "psutil>=6.1,<7",  # running-process awareness; stdlib cannot enumerate processes on Windows
+  "psutil>=6.1,<7",   # running-process awareness; stdlib cannot enumerate processes on Windows
+  "cryptography>=42",  # AES-256-GCM for the credential broker
 ]
+
+[project.optional-dependencies]
+# Master key in the OS credential store (Windows Credential Manager, macOS
+# Keychain, Secret Service). Optional because the lockfile is single-platform:
+# `pip install mjcore[keyring]`. Without it the broker uses its 0600 key-file
+# fallback, so headless installs keep working.
+keyring = ["keyring>=25"]
 
 [project.scripts]
 mj = "mj.gateway.cli:main"

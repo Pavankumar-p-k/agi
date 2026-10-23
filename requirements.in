@@ -3,4 +3,11 @@
 #   python -m venv /tmp/lockenv && /tmp/lockenv/Scripts/python -m pip install pip-tools
 #   /tmp/lockenv/Scripts/python -m pip compile --generate-hashes -o requirements.lock requirements.in
 psutil>=6.1,<7          # running-process awareness; stdlib cannot enumerate processes on Windows
+cryptography>=42        # AES-256-GCM for the credential broker (vetted AEAD, no hand-rolled cipher)
+# `keyring` (master key in the OS credential store) is deliberately NOT here:
+# pip-compile resolves for one platform, and keyring's Linux backend
+# (SecretStorage/jeepney) would be missing from a Windows-generated lockfile,
+# breaking `--require-hashes` on ubuntu. It ships as the optional extra
+# `mjcore[keyring]`; without it the broker uses the 0600 key-file fallback,
+# which is the path this hash-locked CI environment exercises.
 pytest>=8.0             # test runner

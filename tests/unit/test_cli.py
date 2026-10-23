@@ -108,6 +108,8 @@ def test_organize_commit_requires_approval_then_executes_interactively(mj_home, 
     assert proc.returncode == 0, proc.stdout + proc.stderr
     assert '"action_required": "approval"' in proc.stdout
     # the approval payload names the exact capability and risk class
+    # (files.organize is R2 by its declared filesystem effects; it declares
+    # no `secrets` effect, so the broker can never inject a credential into it)
     assert "files.organize" in proc.stdout and '"risk_class": "R2"' in proc.stdout
     moved = sorted(p.name for p in sandbox.iterdir())
     assert "documents" in moved and "images" in moved
@@ -210,6 +212,72 @@ def test_run_commit_denied_interactively_leaves_files(mj_home, tmp_path):
     )
     assert proc.returncode == 4
     assert sorted(p.name for p in sandbox.iterdir()) == ["a.txt"]
+
+
+CANARY = "CANARY-7f3a9"
+
+
+def _subprocess_mj_stdin(mj_home, *argv, stdin_text=None):
+    env = dict(os.environ)
+    env["MJ_HOME"] = str(mj_home)
+    env["PYTHONPATH"] = SRC + os.pathsep + env.get("PYTHONPATH", "")
+    return subprocess.run(
+        [sys.executable, "-m", "mj", *argv],
+        capture_output=True,
+        text=True,
+        env=env,
+        input=stdin_text,
+        timeout=120,
+    )
+
+
+def test_secrets_get_shows_metadata_only(mj_home):
+    set_run = _subprocess_mj_stdin(mj_home, "secrets", "set", "spreadsheet_column", stdin_text=CANARY + "\n")
+    assert set_run.returncode == 0, set_run.stderr
+    assert CANARY not in set_run.stdout + set_run.stderr
+
+    listed = _subprocess_mj(mj_home, "secrets", "list")
+    assert listed.returncode == 0
+    assert json.loads(listed.stdout)["secrets"] == ["spreadsheet_column"]
+    assert CANARY not in listed.stdout
+
+    got = _subprocess_mj(mj_home, "secrets", "get", "spreadsheet_column")
+    assert got.returncode == 0
+    meta = json.loads(got.stdout)
+    assert meta["key"] == "spreadsheet_column"
+    assert meta["created"] is not None
+    assert "hidden" in meta["value"]
+    assert CANARY not in got.stdout + got.stderr
+
+    # a piped CLI (an agent capturing output) is not the local terminal
+    reveal = _subprocess_mj(mj_home, "secrets", "get", "spreadsheet_column", "--reveal")
+    assert reveal.returncode == 4
+    assert "refused" in reveal.stdout
+    assert CANARY not in reveal.stdout + reveal.stderr
+
+    missing = _subprocess_mj(mj_home, "secrets", "get", "nope")
+    assert missing.returncode == 2
+    assert "not found" in missing.stdout
+
+    deleted = _subprocess_mj(mj_home, "secrets", "delete", "spreadsheet_column")
+    assert deleted.returncode == 0
+    assert json.loads(_subprocess_mj(mj_home, "secrets", "list").stdout)["secrets"] == []
+
+
+def test_secrets_reveal_allowed_only_at_a_local_terminal(mj_home, monkeypatch, capsys):
+    from mj.executor import broker
+    from mj.gateway import cli as cli_mod
+
+    store = Store.open()
+    try:
+        broker.set_secret(store, "spreadsheet_column", CANARY)
+    finally:
+        store.close()
+
+    monkeypatch.setattr(cli_mod, "_local_terminal", lambda: True)
+    assert cli_mod.main(["secrets", "get", "spreadsheet_column", "--reveal"]) == 0
+    out = capsys.readouterr().out
+    assert out.strip() == CANARY
 
 
 def test_undo_after_commit(mj_home, tmp_path, capsys):

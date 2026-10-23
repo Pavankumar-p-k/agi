@@ -258,6 +258,60 @@ def undo_organize(store: Store, inputs: dict[str, Any], output: dict[str, Any]) 
     return {"undone": undone, "refused": refused}
 
 
+def run_spreadsheet_summary(store: Store, inputs: dict[str, Any]) -> dict[str, Any]:
+    """Summarize a CSV using a credential from the broker.
+
+    This is the first `secrets`-effect capability: it declares the effect so
+    registration enforces the R3 floor (docs/09 §3), and the runner injects
+    the decrypted value only at execution time. The plan payload and audit
+    trail carry only the secret *name*.
+    """
+    import csv
+
+    path = Path(inputs["path"])
+    if not path.is_file():
+        raise OSError(f"no such file: {path}")
+
+    # `secrets` was injected as {name: value} by the broker at run time.
+    secrets = inputs.get("secrets") or {}
+    if not secrets:
+        return {"error": "no credential injected; run via the runner"}
+
+    # We use the credential as a column *name* to localize rows, demonstrating
+    # the broker without ever sending it over a network.
+    col = next(iter(secrets.values()))
+
+    with path.open(newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        rows = [r for r in reader]
+
+    matched = [r for r in rows if col in r]
+    return {
+        "path": str(path),
+        "matching_rows": len(matched),
+        "total_rows": len(rows),
+        # the credential (a column name in this demo) never leaves the worker;
+        # only counts are reported.
+        "summary": f"{len(matched)}/{len(rows)} rows contain the credential-anchored column",
+    }
+
+
+def verify_spreadsheet_summary(
+    store: Store, inputs: dict[str, Any], output: dict[str, Any]
+) -> dict[str, Any]:
+    """Re-count rows independently of the worker's claim."""
+    path = Path(inputs["path"])
+    if not path.is_file():
+        return {"verified": False, "detail": {"reason": "file missing at verify time"}}
+    with path.open(newline="", encoding="utf-8") as f:
+        total = sum(1 for _ in f) - 1  # minus header
+    verified = total == output["total_rows"]
+    return {
+        "verified": verified,
+        "detail": {"total_now": total, "total_claimed": output["total_rows"]},
+    }
+
+
 @dataclass
 class Impl:
     manifest: Manifest
@@ -346,4 +400,26 @@ _builtin(
     ),
     run_organize,
     verify_organize,
+)
+_builtin(
+    Manifest(
+        id="data.spreadsheet.summary",
+        type="os",
+        version="1.0.0",
+        source="builtin",
+        # A manifest that declares `secrets` is a credential-aware capability:
+        # it can receive the broker's decrypted values, so it is R3 by floor
+        # (always asks, payload-hash-bound) and local-terminal only at runtime —
+        # the credential broker's gating policy (docs/09 §3).
+        risk_class="R3",
+        description="Summarize a CSV using a credential provided via the broker; reports only counts, never the credential.",
+        has_verifier=True,
+        provenance={"implementations": ["mj.executor.capabilities:run_spreadsheet_summary"]},
+        effects=["filesystem.read", "secrets"],
+        # The credential the step may draw from, by *name*; values never
+        # appear here.
+        requires_scopes=["spreadsheet_column"],
+    ),
+    run_spreadsheet_summary,
+    verify_spreadsheet_summary,
 )

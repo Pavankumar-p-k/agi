@@ -49,16 +49,47 @@ MUTATIONS: list[Mutation] = [
     Mutation(
         name="verifier independence (trust worker output)",
         file="src/mj/executor/runner.py",
-        old='            output = _run_step(store, step.capability_id, step.inputs, timeout_s)\n'
+        old='            output = _run_step(store, step.capability_id, exec_inputs, timeout_s)\n'
+            '            output = broker.redact(output, known)\n'
             '            evidence = impl.verify(store, dict(step.inputs), output)\n'
             '            verified = bool(evidence.get("verified"))',
-        new='            output = _run_with_timeout(store, impl.run, step.inputs, timeout_s)\n'
+        new='            output = _run_step(store, step.capability_id, exec_inputs, timeout_s)\n'
+            '            output = broker.redact(output, known)\n'
             f'            evidence = {{"verified": True, "detail": "{MUTATION_MARKER}"}}\n'
             '            verified = True',
         tests=[
             "tests/adversarial/test_adversarial.py::test_worker_claims_success_verifier_refutes",
             "tests/adversarial/test_adversarial.py::test_organize_reports_moves_that_never_happened",
         ],
+    ),
+    Mutation(
+        name="secret redaction (worker output and errors)",
+        file="src/mj/executor/broker.py",
+        old='    if not secrets:\n'
+            '        return value\n'
+            '    return _redact_walk(value, secrets)',
+        new='    if not secrets:\n'
+            '        return value\n'
+            f'    return value  # {MUTATION_MARKER}',
+        tests=[
+            "tests/adversarial/test_canary_leaks.py::test_canary_in_worker_output_is_redacted",
+            "tests/adversarial/test_canary_leaks.py::test_canary_in_worker_exception_is_redacted",
+            "tests/adversarial/test_canary_leaks.py::"
+            "test_canary_printed_or_left_in_stderr_survives_nowhere",
+        ],
+    ),
+    Mutation(
+        name="credential scope enforcement (requires_scopes)",
+        file="src/mj/executor/broker.py",
+        old='        if n not in allowed_set:\n'
+            '            raise BrokerError(\n'
+            '                f"secret {n!r} is not in this capability\'s requires_scopes"\n'
+            '            )',
+        new=f'        if False:  # {MUTATION_MARKER}\n'
+            '            raise BrokerError(\n'
+            '                f"secret {n!r} is not in this capability\'s requires_scopes"\n'
+            '            )',
+        tests=["tests/adversarial/test_canary_leaks.py::test_out_of_scope_secret_is_refused"],
     ),
     Mutation(
         name="escape check (path traversal)",
