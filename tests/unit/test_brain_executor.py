@@ -120,11 +120,17 @@ def test_organize_requires_dir(store):
 
 def test_builtins_registered_healthy(store):
     ids = {row["id"] for row in registry.list_all(store)}
-    assert {"os.facts", "files.list", "files.organize", "files.organize.plan"} <= ids
+    assert {
+        "os.facts",
+        "files.list",
+        "files.organize",
+        "files.organize.plan",
+        "data.spreadsheet.summary",
+    } <= ids
     assert all(row["status"] == "healthy" for row in registry.list_all(store))
     # idempotent re-registration
     caps.ensure_registered(store)
-    assert len(registry.list_all(store)) == 4
+    assert len(registry.list_all(store)) == 5
 
 
 def test_organize_has_undo_recorded(store):

@@ -13,6 +13,15 @@ import json
 
 import pytest
 
+# Fixed 32-byte master key for every test: deterministic across processes, and
+# no test can ever reach (or write to) the developer's real OS keyring.
+_BROKER_TEST_KEY = "a5" * 32
+
+
+@pytest.fixture(autouse=True)
+def _test_broker_key(monkeypatch):
+    monkeypatch.setenv("MJ_BROKER_KEY", _BROKER_TEST_KEY)
+
 
 @pytest.fixture()
 def override_run(tmp_path, monkeypatch):
