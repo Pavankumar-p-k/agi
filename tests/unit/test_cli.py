@@ -61,6 +61,28 @@ def test_status_subprocess(mj_home):
     assert all(c["status"] == "healthy" for c in status["capabilities"])
 
 
+def test_status_reports_model_readiness_without_contacting_one(mj_home):
+    """`status` must work offline and never expose a key value."""
+    r = _subprocess_mj(mj_home, "status")
+    assert r.returncode == 0, r.stderr
+    status = json.loads(r.stdout)
+    assert status["model"]["configured"] is False
+    assert "MJ_MODEL_PROVIDER" in status["model"]["hint"]
+
+
+def test_plan_unknown_goal_with_a_broken_model_config_explains_itself(mj_home, monkeypatch):
+    """A misconfigured model is visible, and the exit-code contract is unchanged."""
+    monkeypatch.setenv("MJ_MODEL_PROVIDER", "ollama")
+    monkeypatch.delenv("MJ_MODEL_BASE_URL", raising=False)
+    monkeypatch.delenv("MJ_MODEL_NAME", raising=False)
+    r = _subprocess_mj(mj_home, "plan", "file my taxes")
+    assert r.returncode == 3, r.stderr
+    out = json.loads(r.stdout)
+    assert out["error"] == "unknown goal" and out["question"]
+    assert "MJ_MODEL_BASE_URL" in out["reasoner"]
+    assert "'ollama'" in out["reasoner"], "the configured provider is named in the reason"
+
+
 def test_ask_subprocess_reports_disk_with_labels(mj_home):
     r = _subprocess_mj(mj_home, "ask", "how much disk space do I have?")
     assert r.returncode == 0, r.stderr
@@ -178,6 +200,19 @@ def _run_capture(mj_home, *argv):
     with redirect_stdout(buf):
         cli.main(list(argv))
     return json.loads(buf.getvalue())
+
+
+def test_audit_entries_explain_a_declined_reasoned_plan(mj_home, monkeypatch):
+    """A model refusal is not only recorded; the user can read the reason."""
+    monkeypatch.setenv("MJ_MODEL_PROVIDER", "ollama")
+    monkeypatch.delenv("MJ_MODEL_BASE_URL", raising=False)
+    monkeypatch.delenv("MJ_MODEL_NAME", raising=False)
+    assert _cli(mj_home, "plan", "file my taxes") == 3
+    out = _run_capture(mj_home, "audit", "--entries", "10")
+    assert out["ok"] is True
+    declined = [e for e in out["recent"] if e["action"] == "plan.reasoner.declined"]
+    assert declined, "the refusal must be in the audit log"
+    assert "MJ_MODEL_BASE_URL" in declined[0]["payload"]["reason"]
 
 
 def test_facts_and_audit_commands(mj_home, capsys):

@@ -23,6 +23,26 @@ def _test_broker_key(monkeypatch):
     monkeypatch.setenv("MJ_BROKER_KEY", _BROKER_TEST_KEY)
 
 
+#: Every model env var the adapter reads. Cleared for every test: the suite
+#: must be offline and deterministic, even on a developer machine that has a
+#: local model configured. Tests that need a model point these at a fake local
+#: server themselves (tests/unit/test_reasoner.py).
+_MODEL_ENV = (
+    "MJ_MODEL_PROVIDER",
+    "MJ_MODEL_BASE_URL",
+    "MJ_MODEL_NAME",
+    "MJ_MODEL_API_KEY",
+    "MJ_MODEL_TIMEOUT_S",
+    "MJ_MODEL_RESPONSE_FORMAT",
+)
+
+
+@pytest.fixture(autouse=True)
+def _no_real_model(monkeypatch):
+    for name in _MODEL_ENV:
+        monkeypatch.delenv(name, raising=False)
+
+
 @pytest.fixture()
 def override_run(tmp_path, monkeypatch):
     """Inject worker code for one capability via MJ_WORKER_OVERRIDE_DEV.

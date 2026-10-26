@@ -1,11 +1,13 @@
 """Planner: goals in, typed plan DAGs out — never free-text commands.
 
-The v0 planner is deterministic and registry-bound: a goal normalizes to one
-of a fixed set of intents, and every step must reference a registered,
-healthy capability, validated against the registry before execution
-(plan failure mode 4: hallucinated capability). No LLM is involved yet; the
-planner explicitly refuses unknown goals instead of guessing (failure 16).
-The planner never edits policy and never holds credentials (invariants 1–2).
+The planner is registry-bound: every step must reference a registered, healthy
+capability, validated against the registry before execution (plan failure mode
+4: hallucinated capability). Known goals normalize to one of a fixed set of
+deterministic intents. A goal the intent table does not match may be handed to
+the reasoner (`mj.brain.reasoner`) — only when MJ_MODEL_PROVIDER is set, and
+only through the same validation, so a model can add plans but cannot lower the
+bar. Unknown goals still end in one targeted question, never a guess (failure
+16). The planner never edits policy and never holds credentials (invariants 1–2).
 
 Determinism (failure 18): identical goals and parameters produce identical
 plan ids, so a resumed run generates the same idempotency keys and cannot
@@ -19,15 +21,18 @@ import time
 from dataclasses import dataclass, field
 from typing import Any, Callable
 
-from mj.core import registry, settings
+from mj.core import audit, registry, settings
 from mj.core.store import Store, canonical_json
 
 
 class UnknownGoalError(ValueError):
-    def __init__(self, goal: str, question: str):
+    def __init__(self, goal: str, question: str, reasoner_note: str | None = None):
         super().__init__(f"no plan known for goal {goal!r}")
         self.goal = goal
         self.question = question  # one targeted question, plan section 7.2
+        # Why a configured model could not help, if it was asked. Surfaced by
+        # the CLI so a model failure is never mistaken for an unsupported goal.
+        self.reasoner_note = reasoner_note
 
 
 class PlanValidationError(ValueError):
@@ -64,6 +69,11 @@ class Plan:
     steps: list[Step]
     created_at: float = field(default_factory=time.time)
     plan_id: str = ""  # derived; set in __post_init__ below
+    # Where the plan came from. "deterministic" (the intent table) by default;
+    # "reasoner:<provider>:<model>" when a configured model proposed it. It is
+    # deliberately *not* part of plan_id: the same goal and steps stay
+    # idempotent regardless of which planner produced them.
+    source: str = "deterministic"
 
     def __post_init__(self) -> None:
         if not self.plan_id:
@@ -75,6 +85,7 @@ class Plan:
             "goal": self.goal,
             "trust_level": self.trust_level,
             "created_at": self.created_at,
+            "source": self.source,
             "steps": [s.to_dict() for s in self.steps],
         }
 
@@ -202,8 +213,52 @@ INTENTS: list[tuple[str, Callable[[str, dict[str, Any]], Plan]]] = [
 ]
 
 
+def _reasoned_plan(
+    store: Store, goal: str, params: dict[str, Any]
+) -> tuple[Plan | None, str | None]:
+    """Ask the configured model for a plan; None when it cannot be used.
+
+    Only reached for goals the intent table does not know. The reasoner's own
+    validator is the boundary: anything it rejects is audited with the reason
+    and the caller falls back to asking the user, never to executing a guess.
+    """
+    # Imported here, not at module scope: reasoner imports planner for Plan/
+    # Step/validate_plan, and the offline path must not pay for the import.
+    from mj.brain import reasoner
+
+    if not reasoner.is_configured():
+        return None, None
+    try:
+        plan = reasoner.propose_plan(
+            store, goal, trust_level=params["_trust_level"], params=params
+        )
+    except reasoner.ReasonerError as exc:
+        reason = str(exc)[:1000]
+        audit.append(
+            store,
+            "planner",
+            "plan.reasoner.declined",
+            {"goal": goal, "error_type": type(exc).__name__, "reason": reason},
+        )
+        return None, f"{type(exc).__name__}: {reason}"
+    # propose_plan returns an already-validated plan (registry, DAG, caps); the
+    # runner validates again before executing, so nothing is trusted here either.
+    audit.append(
+        store,
+        "planner",
+        "plan.reasoned",
+        {"goal": goal, "plan_id": plan.plan_id, "steps": len(plan.steps), "source": plan.source},
+    )
+    return plan, None
+
+
 def build_plan(store: Store, goal: str, params: dict[str, Any] | None = None) -> Plan:
-    """Normalize the goal and emit a typed plan. Refuses to guess."""
+    """Normalize the goal and emit a typed plan. Refuses to guess.
+
+    Deterministic first: a known goal never depends on a model being up, and
+    its plan id stays stable. Only a goal the intent table does not match may
+    be handed to the reasoner, and only when a model is configured.
+    """
     params = dict(params or {})
     params.setdefault("_trust_level", "local-terminal")
     lowered = goal.lower().strip()
@@ -213,11 +268,15 @@ def build_plan(store: Store, goal: str, params: dict[str, Any] | None = None) ->
         plan = builder(goal, params)
         validate_plan(plan, store)
         return plan
+    reasoned, note = _reasoned_plan(store, goal, params)
+    if reasoned is not None:
+        return reasoned
     raise UnknownGoalError(
         goal,
         "I can answer questions about disk space, running processes, installed "
         "apps and tool versions, or organize a directory (need --dir PATH). "
         "What exactly do you want?",
+        reasoner_note=note,
     )
 
 

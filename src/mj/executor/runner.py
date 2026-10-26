@@ -137,8 +137,11 @@ def _run_step(
     )
     env = dict(os.environ)
     # The master key unlocks every stored credential; a worker never needs it
-    # (values arrive in its stdin payload), so it must not be inherited.
+    # (values arrive in its stdin payload), so it must not be inherited. The
+    # model API key is the reasoner's alone (docs/11): a capability worker has
+    # no reason to hold it, so it does not see it either.
     env.pop("MJ_BROKER_KEY", None)
+    env.pop("MJ_MODEL_API_KEY", None)
     src_root = str(Path(__file__).resolve().parents[2])  # .../src
     env["PYTHONPATH"] = src_root + os.pathsep + env.get("PYTHONPATH", "")
     stdout_path = store.path.parent / f"worker-{token}.stdout"
