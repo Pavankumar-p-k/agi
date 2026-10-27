@@ -132,6 +132,46 @@ MUTATIONS: list[Mutation] = [
             "tests/unit/test_kernel.py::test_powers_and_effects_must_agree"
         ],
     ),
+    # -- the reasoner (docs/11): the model proposes, the boundary disposes -----
+    Mutation(
+        name="reasoner input-key contract",
+        file="src/mj/brain/reasoner.py",
+        old='    unknown = sorted(set(inputs) - set(contract))\n'
+            '    if unknown:',
+        new=f'    unknown = []  # {MUTATION_MARKER}\n'
+            '    if unknown:',
+        tests=["tests/unit/test_reasoner.py::test_unexpected_input_key_is_rejected"],
+    ),
+    Mutation(
+        name="reasoner credential scope (requires_scopes)",
+        file="src/mj/brain/reasoner.py",
+        old='            clean[name] = _check_string_list(capability_id, name, value, names)',
+        new='            clean[name] = _check_string_list('
+            f'capability_id, name, value, tuple(value))  # {MUTATION_MARKER}',
+        tests=[
+            "tests/unit/test_reasoner.py::"
+            "test_secret_name_outside_the_capability_scope_is_rejected"
+        ],
+    ),
+    Mutation(
+        name="reasoner operator-directory binding",
+        file="src/mj/brain/reasoner.py",
+        old='        operator_dir = params.get("dir")\n'
+            '        if operator_dir and "path" in inputs and not _same_path(inputs["path"], str(operator_dir)):',
+        new=f'        operator_dir = params.get("dir")\n'
+            f'        if False:  # {MUTATION_MARKER}',
+        tests=["tests/unit/test_reasoner.py::test_operator_directory_cannot_be_replaced"],
+    ),
+    Mutation(
+        name="worker does not inherit the model key",
+        file="src/mj/executor/runner.py",
+        old='    env.pop("MJ_MODEL_API_KEY", None)',
+        new=f'    pass  # {MUTATION_MARKER}',
+        tests=[
+            "tests/unit/test_reasoner.py::"
+            "test_worker_subprocess_never_inherits_the_model_key"
+        ],
+    ),
     Mutation(
         name="registry sensitive-power rule",
         file="src/mj/core/registry.py",
@@ -148,13 +188,22 @@ MUTATIONS: list[Mutation] = [
 ]
 
 
-def run_pytest(tests: list[str]) -> int:
+def run_pytest(tests: list[str], *, tail_on_error: int = 0) -> int:
+    """Run pytest; when `tail_on_error` > 0, print the failing output's tail —
+    an unexpected baseline/restore failure must be *readable*, not just a
+    returncode (the stdout/stderr of a captured run otherwise evaporates)."""
     proc = subprocess.run(
         [sys.executable, "-m", "pytest", "-q", *tests],
         cwd=ROOT,
         capture_output=True,
         text=True,
     )
+    if tail_on_error > 0 and proc.returncode != 0:
+        out = (proc.stdout or "") + (proc.stderr or "")
+        print("    --- pytest output (tail) ---")
+        for line in out.splitlines()[-tail_on_error:]:
+            print(f"    {line}")
+        print("    ---")
     return proc.returncode
 
 
@@ -188,7 +237,7 @@ def main() -> int:
     survivors: list[str] = []
     for m in MUTATIONS:
         print(f"[mutation] {m.name} ({m.file})")
-        baseline = run_pytest(m.tests)
+        baseline = run_pytest(m.tests, tail_on_error=40)
         if baseline != 0:
             print(f"  ERROR: baseline tests FAILED before mutating ({baseline}); fix the suite first")
             return 2
@@ -202,7 +251,7 @@ def main() -> int:
                 print(f"  killed: tests went red with the defense disabled (exit {mutated})")
         finally:
             restore(m, backup)
-        restored = run_pytest(m.tests)
+        restored = run_pytest(m.tests, tail_on_error=40)
         if restored != 0:
             print(f"  ERROR: tests failed after restore (exit {restored}); check restore integrity")
             return 2

@@ -96,23 +96,29 @@ being down can never look like an unsupported request.
 |---|---|
 | Host suite, all tests | **147 passed, exit 0** (`PYTHONPATH=src python -m pytest tests/ -q`) |
 | New reasoner tests | 23; 16 of them drive a real local fake OpenAI-compatible server (not a mocked `urlopen`) |
-| Mutation harness | **8/8 defenses killed, exit 0** (run on a frozen tree, §6) |
+| Mutation harness | **12/12 defenses killed, exit 0** (run on a frozen tree, §6) |
 | Live CLI against a fake local endpoint | `mj status` → `model.configured: true`; `mj plan` → `source: reasoner:ollama:llama3.1:8b`; `mj run --yes` → `done`, 2/2 steps verified, dry run moved nothing |
+| Live CLI against OpenRouter (hosted, operator's key) | `plan` accepted a one-step `os.facts` plan → `source: reasoner:openrouter:google/gemini-2.5-pro`; `run --yes` → `done`, 1/1 verified; an impossible goal ("email … from my phone") declined with the reasoner's reason, `PlanRejected: the model declined: the catalogue cannot achieve this goal` |
+| Key hygiene on the live run | the key was never in `mj status`, the plan JSON or the audit chain (checked against the process env value, not a sample) |
 | No-model path | no HTTP request is attempted (test asserts the client is never called) |
 | Wire contract | one `POST /v1/chat/completions`, bearer header when a key is set, `response_format.json_schema.name == "mj_plan"`, `strict: true` |
 
 The fake server returns what a model returns — untrusted JSON — so these tests
-prove the *boundary*, not model quality.
+prove the *boundary*, not model quality. The OpenRouter run is the first time
+schema-strict reasoning was exercised against a real vendor; one goal, two
+directions (a feasible and an infeasible one). It proves the adapter and the
+plumbing, not general plan quality across models and tasks.
 
 ## 5. What is deliberately not claimed
 
-- **No live model was used.** Every test and the CLI demo point at a local fake
-  server. Ollama and LM Studio are named as the intended local-first targets;
-  neither was installed or measured here, and plan quality of any model is
-  unproven.
-- **No hosted provider was tested.** The adapter is OpenAI-compatible by
-  shape, not certified against any vendor's structured-output quirks; that is
-  why `MJ_MODEL_RESPONSE_FORMAT` exists.
+- **No local model (Ollama, LM Studio) was tried.** They stay the intended
+  local-first targets; this update was authored before any was available on
+  the test machine. Plan quality of any model is **unproven**: one hosted
+  provider and one model answered correctly once (below), which is a plumbing
+  demonstration, not evidence of reliable planning.
+- **Structured outputs were not probed against adversarial prompts.** No
+  prompt-injection or jailbreak campaigns were run against the live model; the
+  boundary (not the model) is what the threat model trusts.
 - **Schema enforcement is ours.** Provider-side strict mode is requested but
   never trusted: the plan is re-validated locally.
 - **One shot, no repair loop.** A rejected plan is not re-prompted with the
@@ -129,14 +135,26 @@ prove the *boundary*, not model quality.
 Run after all source edits were frozen, because the harness mutates files in
 place: `PYTHONPATH=src python tools/mutation_check.py`.
 
-Result on this update's tree: **all 8 defenses are load-bearing; every mutation
+Result on this update's tree: **all 12 defenses are load-bearing; every mutation
 was killed; exit 0** (approval-payload binding, verifier independence, secret
 redaction, credential scope, step-result write-once, path-traversal escape,
-power → effect cross-check, registry sensitive-power rule).
+power → effect cross-check, reasoner input-key contract, reasoner credential
+scope, reasoner operator-directory binding, worker-inherits-model-key, registry
+sensitive-power rule).
 
-A caution learned here: the harness restores each file from a byte-exact backup,
-so **never edit source while it runs**. An earlier run overlapped with an edit
-to `runner.py`, the harness restored the pre-edit copy, and both results became
-meaningless (it reported a false "restore integrity" error). The numbers above
-come from a run with no concurrent edits, and the tree was checked for leftover
-`MUTATION-CHECK-DISABLED` markers afterwards (none).
+Two harness failures that were *not* statements about the code, found the hard
+way:
+
+1. **Never edit source while it runs.** An earlier run overlapped with an edit
+   to `runner.py`, the harness restored the pre-edit copy, and both results
+   became meaningless (it reported a false "restore integrity" error).
+2. **An unexpected after-restore failure once had nowhere to show why.** One
+   run failed the credential-scope restore check while `git status` confirmed
+   the file was byte-identical to HEAD and reruns of that exact test passed
+   three times in a row. The harness had captured pytest's output and thrown
+   it away, so the incident was undiagnosable — its `run_pytest` now records a
+   tail of the failing invocation. On its immediate rerun the same mutation
+   passed, twice, whole harness green; treat the cause as an environment
+   transient (Windows subprocess spawn contention under repeated pytest
+   startups is the theory, not a proven one) that a green count can never
+   paper over again, because the real output is now printed on any failure.
