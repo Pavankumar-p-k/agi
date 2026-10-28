@@ -15,6 +15,7 @@ import sys
 from typing import Any
 
 from mj import AUTONOMY_LEVEL, __version__
+from mj.brain import model as model_adapter
 from mj.brain import planner
 from mj.core import audit, events, registry, settings, tasks
 from mj.core.store import Store
@@ -51,6 +52,9 @@ def cmd_status(store: Store, args: argparse.Namespace) -> int:
         "capabilities": registry.list_all(store),
         "audit_chain": {"ok": ok, "entries": count, "problem": problem or None},
         "limits": settings.snapshot(),
+        # Readiness only: the env contract is reported, never a key (and no
+        # request is made by `status` — it must work offline).
+        "model": model_adapter.status(),
         "note": "L0: observe only. No autonomy above L0 until awareness acceptance tests pass.",
     }
     _print(status)
@@ -95,6 +99,19 @@ def cmd_ask(store: Store, args: argparse.Namespace) -> int:
     return 0
 
 
+def _print_unknown_goal(exc: "planner.UnknownGoalError") -> None:
+    """One targeted question, plus why a configured model could not help.
+
+    A model failure must never look like an unsupported goal: the reason is
+    shown here (and already audited by the planner), so "unknown goal" is only
+    printed when the goal really is unknown.
+    """
+    out: dict[str, Any] = {"error": "unknown goal", "goal": exc.goal, "question": exc.question}
+    if exc.reasoner_note:
+        out["reasoner"] = exc.reasoner_note
+    _print(out)
+
+
 def cmd_plan(store: Store, args: argparse.Namespace) -> int:
     _bootstrap(store)
     params: dict[str, Any] = {}
@@ -105,7 +122,7 @@ def cmd_plan(store: Store, args: argparse.Namespace) -> int:
     try:
         plan = planner.build_plan(store, args.goal, params)
     except planner.UnknownGoalError as exc:
-        print(json.dumps({"error": "unknown goal", "goal": args.goal, "question": exc.question}, indent=2))
+        _print_unknown_goal(exc)
         return 3
     _print(plan.to_dict())
     return 0
@@ -121,7 +138,7 @@ def cmd_run(store: Store, args: argparse.Namespace) -> int:
     try:
         plan = planner.build_plan(store, args.goal, params)
     except planner.UnknownGoalError as exc:
-        print(json.dumps({"error": "unknown goal", "goal": args.goal, "question": exc.question}, indent=2))
+        _print_unknown_goal(exc)
         return 3
 
     resume = None
@@ -223,8 +240,25 @@ def cmd_undo(store: Store, args: argparse.Namespace) -> int:
 
 
 def cmd_audit(store: Store, args: argparse.Namespace) -> int:
+    """Verify the chain, and optionally show why recent decisions were made.
+
+    The `--entries` view exists so a refusal (for example a reasoner declined
+    plan, docs/11) is auditable by the person, not only recorded.
+    """
     ok, count, problem = audit.verify(store)
-    _print({"ok": ok, "entries": count, "problem": problem or None})
+    out: dict[str, Any] = {"ok": ok, "entries": count, "problem": problem or None}
+    if args.entries:
+        out["recent"] = [
+            {
+                "seq": row["seq"],
+                "ts": _utc(row["ts"]),
+                "actor": row["actor"],
+                "action": row["action"],
+                "payload": json.loads(row["payload_json"]),
+            }
+            for row in audit.entries(store, limit=args.entries)
+        ]
+    _print(out)
     return 0 if ok else 6
 
 
@@ -358,6 +392,12 @@ def build_parser() -> argparse.ArgumentParser:
     sp.set_defaults(func=cmd_undo)
 
     sp = sub.add_parser("audit", help="verify the hash-chained audit log")
+    sp.add_argument(
+        "--entries",
+        type=int,
+        default=0,
+        help="also print the N most recent audit entries (why decisions were made)",
+    )
     sp.set_defaults(func=cmd_audit)
 
     sp = sub.add_parser("secrets", help="manage encrypted secrets (set/list/get/delete)")
