@@ -16,7 +16,7 @@ from typing import Any
 
 from mj import AUTONOMY_LEVEL, __version__
 from mj.brain import model as model_adapter
-from mj.brain import planner
+from mj.brain import planner, reasoner
 from mj.core import audit, events, registry, settings, tasks
 from mj.core.store import Store
 from mj.executor import broker
@@ -38,6 +38,19 @@ def _bootstrap(store: Store) -> None:
     caps.ensure_registered(store)
 
 
+def _model_status_for_display(store: Store) -> dict[str, Any]:
+    """Model readiness with one addition over the adapter's own report: a
+    key held in the encrypted broker (``model_api_key``) counts as present.
+    Only *presence* is reported — the token itself is never read to display,
+    never printed, and never logged here."""
+    info = dict(model_adapter.status())
+    _token, origin = reasoner.resolve_api_key(store)
+    if origin == "broker":
+        info["api_key_set"] = True
+        info.setdefault("key_origin", "broker")
+    return info
+
+
 # -- commands ----------------------------------------------------------------
 
 
@@ -53,8 +66,10 @@ def cmd_status(store: Store, args: argparse.Namespace) -> int:
         "audit_chain": {"ok": ok, "entries": count, "problem": problem or None},
         "limits": settings.snapshot(),
         # Readiness only: the env contract is reported, never a key (and no
-        # request is made by `status` — it must work offline).
-        "model": model_adapter.status(),
+        # request is made by `status` — it must work offline). A key stored
+        # in the broker (model_api_key) counts as set; its value is not read
+        # here for display, only its *presence*.
+        "model": _model_status_for_display(store),
         "note": "L0: observe only. No autonomy above L0 until awareness acceptance tests pass.",
     }
     _print(status)
@@ -119,6 +134,12 @@ def cmd_plan(store: Store, args: argparse.Namespace) -> int:
         params["dir"] = args.dir
     if args.commit:
         params["commit"] = True
+    if getattr(args, "show_prompt", False):
+        # Diagnostic decided 2026-10-28: print exactly what the model would
+        # see for this goal — no contact with any endpoint, no audit entry,
+        # no plan. Disclosure review happens *before* a key is configured.
+        _print(reasoner.show_prompt(store, args.goal, params))
+        return 0
     try:
         plan = planner.build_plan(store, args.goal, params)
     except planner.UnknownGoalError as exc:
@@ -361,10 +382,17 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("question", nargs="+")
     sp.set_defaults(func=cmd_ask)
 
-    sp = sub.add_parser("plan", help="show the typed plan for a goal without running it")
+    sp = sub.add_parser(
+        "plan", help="show the typed plan for a goal without running it"
+    )
     sp.add_argument("goal")
     sp.add_argument("--dir", default=None)
     sp.add_argument("--commit", action="store_true", help="plan real moves instead of a dry run")
+    sp.add_argument(
+        "--show-prompt",
+        action="store_true",
+        help="print the exact model prompt (redacted) this goal would produce, and send nothing",
+    )
     sp.set_defaults(func=cmd_plan)
 
     sp = sub.add_parser("run", help="build, policy-gate, execute and verify the plan for a goal")

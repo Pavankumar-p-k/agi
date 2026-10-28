@@ -28,7 +28,7 @@ from pathlib import Path
 from typing import Any
 
 from mj.brain import planner
-from mj.core import audit, events, registry, settings, tasks
+from mj.core import audit, events, paths, registry, settings, tasks
 from mj.core.effects import SENSITIVE_EFFECTS
 from mj.core.policy import ASK, DENY, Decision, PolicyGate
 from mj.core.store import Store, canonical_json
@@ -348,6 +348,14 @@ def run_plan(
                 f"effect(s) {', '.join(sorted(sensitive))} are local-terminal only; "
                 f"trust {trust_level!r} cannot run them",
             )
+        # Credential-path floor (decided 2026-10-28), runtime half: whichever
+        # planner produced this plan, a worker that asks for a credential
+        # file outside MJ's own store — or at MJ's own store file — is
+        # refused before it is spawned.
+        forbidden = (str(store.path),) if getattr(store, "path", None) else ()
+        violations = paths.credential_path_violations(step.inputs, forbidden_roots=forbidden)
+        if violations:
+            d = Decision(DENY, d.rule, paths.REFUSAL_PREFIX + " " + "; ".join(violations))
         decisions[step.step_id] = d.to_dict()
         p_hash = _payload_hash(step)
         if d.action == DENY:
