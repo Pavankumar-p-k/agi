@@ -1,0 +1,65 @@
+# Flake hunt for the mutation harness — manual dispatch only.
+#
+# Why this exists: one mutation once failed its post-restore check even
+# though the file was byte-identical to HEAD, then passed on rerun. A
+# harness that sometimes fails for unknown reasons gets ignored when it
+# matters, so this repeats it N times on both OSs and records which
+# iteration failed. Suspects: file locking (Windows handle teardown),
+# pytest caching, timing.
+#
+# Not part of PR CI on purpose: 20 repeats is far too slow for every run.
+# Dispatch:  gh workflow run mutation-flake.yml -f repeats=20
+#
+# The harness restores each mutated file itself; a killed job can leave a
+# mutated tree behind, which is why the job prints the tail and the run
+# is manual (a human reads the failure).
+
+name: Mutation flake hunt
+
+on:
+  workflow_dispatch:
+    inputs:
+      repeats:
+        description: Full mutation-harness runs per OS
+        required: true
+        default: "20"
+
+permissions:
+  contents: read
+
+jobs:
+  repeat:
+    name: ${{ matrix.os }} x${{ inputs.repeats }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Fresh venv + hash-locked dependency install
+        shell: bash
+        run: |
+          python -m venv .venv-ci
+          PY=".venv-ci/bin/python"; [ -x "$PY" ] || PY=".venv-ci/Scripts/python.exe"
+          echo "PY=$PY" >> "$GITHUB_ENV"
+          "$PY" -m pip install --quiet --require-hashes -r requirements.lock
+          "$PY" -m pip install --quiet --no-deps .
+
+      - name: Repeat the mutation harness
+        shell: bash
+        run: |
+          for i in $(seq 1 "${{ inputs.repeats }}"); do
+            echo "::group::iteration $i on ${{ matrix.os }}"
+            if ! "$PY" tools/mutation_check.py; then
+              echo "::error::mutation harness failed on iteration $i on ${{ matrix.os }}"
+              exit 1
+            fi
+            echo "::endgroup::"
+          done
