@@ -219,12 +219,19 @@ def chat_json(
     schema: dict[str, Any],
     max_tokens: int = 900,
     temperature: float = 0.0,
+    api_key: str | None = None,
 ) -> dict[str, Any]:
-    """Send one chat completion and return its content as a JSON object."""
+    """Send one chat completion and return its content as a JSON object.
+
+    ``api_key`` overrides the configuration's key when given — that is how a
+    broker-stored key (``mj secrets set model_api_key``) reaches the bearer
+    header. The header is the only place the token ever appears.
+    """
     body = _request_body(cfg, system, user, schema, max_tokens, temperature)
     headers = {"Content-Type": "application/json", "Accept": "application/json"}
-    if cfg.api_key:
-        headers["Authorization"] = f"Bearer {cfg.api_key}"
+    token = cfg.api_key if api_key is None else api_key
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
     request = urllib.request.Request(
         cfg.endpoint,
         data=json.dumps(body).encode("utf-8"),

@@ -20,15 +20,50 @@ configured this module is never called and nothing is contacted.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
+import re
+import socket
 from dataclasses import dataclass
 from typing import Any
 
-from mj.brain import model, planner
-from mj.core import registry, settings
+from mj.brain import model, planner, prompts
+from mj.brain.prompts import (
+    HOST_PLACEHOLDER,
+    HOME_PLACEHOLDER,
+    USER_PLACEHOLDER,
+)
+from mj.core import audit, registry, settings
+from mj.core.paths import credential_path_violations
 from mj.core.registry import Manifest
-from mj.core.store import Store
+from mj.core.store import Store, canonical_json
+from mj.executor import broker
+
+#: Stored-credential name holding the model's API key. Set it with
+#: ``mj secrets set model_api_key`` through the local terminal; the adapter
+#: sends it as a bearer token and nothing ever prints it back.
+MODEL_KEY_SECRET_NAME = "model_api_key"
+
+
+def resolve_api_key(store: Store) -> tuple[str | None, str]:
+    """Where the model's bearer token comes from; ``(token, origin)``.
+
+    Order: the explicit environment variable wins (operators may still run
+    the key purely in-process), otherwise the encrypted broker is opened for
+    the ``model_api_key`` stored credential — the credential path an operator
+    fund chose over pasting keys into shell export lines. The token value is
+    for the bearer header only; callers must not record it.
+    """
+    token = (os.environ.get("MJ_MODEL_API_KEY") or "").strip()
+    if token:
+        return token, "environment"
+    try:
+        secret = broker.get_secret(store, MODEL_KEY_SECRET_NAME)
+    except broker.BrokerError:
+        return None, ""
+    return (secret, "broker") if secret else (None, "")
+
 
 #: Probe scope names, mirrored from mj.world.probes.PROBES; a test asserts they
 #: stay in step so the catalogue can never offer a scope the probes reject.
@@ -194,6 +229,12 @@ def _system_prompt(offered: list[dict[str, Any]], max_steps: int) -> str:
         "- depends_on may only name step_ids that appear earlier in the list.\n"
         "- never write a credential value anywhere; only stored credential *names*\n"
         "  are allowed, and only where the schema says so.\n"
+        f"- the prompt may contain the placeholders {HOME_PLACEHOLDER}, "
+        f"{USER_PLACEHOLDER}, {HOST_PLACEHOLDER} standing for paths and identity "
+        "that must not leave this machine; when a path input must use them, echo "
+        "that exact placeholder spelling back — the executor re-binds it locally.\n"
+        "- never guess, reconstruct or output a real home directory, username or "
+        "hostname; never name credential files (.env, .ssh, secrets directories).\n"
         '- if the catalogue cannot achieve the goal, output {"steps":[]}.\n'
         "Catalogue (JSON):\n"
         + json.dumps(offered, indent=1, sort_keys=True)
@@ -201,9 +242,12 @@ def _system_prompt(offered: list[dict[str, Any]], max_steps: int) -> str:
 
 
 def _user_prompt(goal: str, params: dict[str, Any]) -> str:
-    lines = [f"Goal: {goal}"]
+    lines = [f"Goal: {prompts.redact(goal)}"]
     if params.get("dir"):
-        lines.append(f"Operator-supplied directory (every path input must use it): {params['dir']}")
+        lines.append(
+            "Operator-supplied directory (a path input must use it, or one of the "
+            f"placeholders with it spliced on): {prompts.redact(str(params['dir']))}"
+        )
     if params.get("commit"):
         lines.append("The operator asked for real changes (not a dry run) where the goal needs them.")
     return "\n".join(lines)
@@ -341,12 +385,29 @@ def _to_steps(
                 )
 
         inputs = validate_inputs(capability_id, raw.get("inputs", {}), manifest)
+        # Credential-path floor (decided 2026-10-28): a plan may not point a
+        # path input at credential material — secrets files, key material,
+        # .env, .ssh, MJ's own store. A model that tries gets a rejection,
+        # never a step.
+        for violation in credential_path_violations(inputs):
+            raise _reject(f"step {step_id!r}: {violation}")
         operator_dir = params.get("dir")
-        if operator_dir and "path" in inputs and not _same_path(inputs["path"], str(operator_dir)):
-            raise _reject(
-                f"step {step_id!r} uses path {inputs['path']!r} but the operator supplied "
-                f"{operator_dir!r}; a reasoned plan may not replace an explicit directory"
+        if operator_dir and "path" in inputs:
+            # The model saw placeholder-redacted paths and must either echo
+            # them (re-bound locally) or use a path equal to the operator's
+            # directory. A path that matches neither is a rejection, so the
+            # model can never substitute its own directory (and a placeholder
+            # the executor re-binds cannot smuggle a different real one).
+            rebound = prompts.bind_home(
+                prompts.canonicalize_placeholders(inputs["path"])
             )
+            if not _same_path(rebound, str(operator_dir)):
+                raise _reject(
+                    f"step {step_id!r} uses path {inputs['path']!r} but the operator supplied "
+                    f"{prompts.redact(str(operator_dir))!r}; a reasoned plan may not replace "
+                    "an explicit directory"
+                )
+            inputs["path"] = rebound
 
         name = raw.get("name")
         label = name.strip() if isinstance(name, str) and name.strip() else manifest.description
@@ -367,6 +428,39 @@ def _valid_step_id(step_id: str) -> bool:
     import re
 
     return bool(re.fullmatch(STEP_ID_PATTERN, step_id))
+
+
+def _build_prompt_parts(
+    store: Store,
+    params: dict[str, Any],
+    goal: str,
+) -> tuple[list[dict[str, Any]], str, str, int]:
+    """The four raw ingredients of every model prompt: (offered catalogue,
+    system prompt, redacted user prompt, step cap). ``propose_plan`` sends
+    this; ``show_prompt`` and the CLI's ``--show-prompt`` print it instead,
+    so what is reviewed is byte-for-byte what leaves the machine."""
+    offered = catalogue(store)
+    if not offered:
+        raise ReasonerUnavailable(
+            "no healthy capability has a declared input contract, so there is "
+            "nothing a plan could reference"
+        )
+    cap = settings.max_steps()
+    max_steps = cap if cap > 0 else SCHEMA_MAX_STEPS
+    return offered, _system_prompt(offered, max_steps), _user_prompt(goal, params), max_steps
+
+
+def show_prompt(store: Store, goal: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
+    """The exact prompt that *would* be sent for this goal — no contact, no
+    audit entry, no plan. Decided 2026-10-28: an operator can read what a
+    model call would disclose before ever configuring a key."""
+    _offered, system, user, max_steps = _build_prompt_parts(store, dict(params or {}), goal)
+    return {
+        "system": system,
+        "user": user,
+        "prompt_hash": prompts.hash_prompt(system, user),
+        "schema": plan_schema(max_steps),
+    }
 
 
 def propose_plan(
@@ -392,21 +486,30 @@ def propose_plan(
             "no model configured (MJ_MODEL_PROVIDER unset); reasoning is off"
         )
 
-    offered = catalogue(store)
-    if not offered:
-        raise ReasonerUnavailable(
-            "no healthy capability has a declared input contract, so there is "
-            "nothing a plan could reference"
-        )
+    offered, system, user, max_steps = _build_prompt_parts(store, params, goal)
 
-    cap = settings.max_steps()
-    max_steps = cap if cap > 0 else SCHEMA_MAX_STEPS
+    # Every prompt that leaves the process is first hashed into the audit
+    # log — the send is reconstructable, its content is not stored. Hashing
+    # happens on the *sent* strings, after redaction.
+    audit.append(
+        store,
+        "reasoner",
+        "prompt.sent",
+        {
+            "model": cfg.model,
+            "provider": cfg.provider,
+            "prompt_hash": prompts.hash_prompt(system, user),
+        },
+    )
+
+    api_token, _origin = resolve_api_key(store)
     try:
         data = model.chat_json(
             cfg,
-            system=_system_prompt(offered, max_steps),
-            user=_user_prompt(goal, params),
+            system=system,
+            user=user,
             schema=plan_schema(max_steps),
+            api_key=api_token,
         )
     except model.ModelError as exc:
         raise ReasonerUnavailable(str(exc)) from None

@@ -33,14 +33,21 @@ class Mutation:
     tests: list[str] = field(default_factory=list)
 
 
+# Anchors are real-string literals (triple-quote or single-line); a backslash
+# escape chain here once escaped a fix the review caught, so no `\\n`
+# trickery anymore.
 MUTATIONS: list[Mutation] = [
     Mutation(
         name="approval-payload binding (hash)",
         file="src/mj/executor/runner.py",
-        old='def _payload_hash(step: planner.Step) -> str:\n'
-            '    return hashlib.sha256(canonical_json(step.to_dict()).encode("utf-8")).hexdigest()',
-        new='def _payload_hash(step: planner.Step) -> str:\n'
-            f'    return "0" * 64  # {MUTATION_MARKER}',
+        old=(
+            "def _payload_hash(step: planner.Step) -> str:\n"
+            '    return hashlib.sha256(canonical_json(step.to_dict()).encode("utf-8")).hexdigest()'
+        ),
+        new=(
+            "def _payload_hash(step: planner.Step) -> str:\n"
+            f'    return "0" * 64  # {MUTATION_MARKER}'
+        ),
         tests=[
             "tests/adversarial/test_adversarial.py::"
             "test_granted_approval_does_not_authorize_a_changed_payload"
@@ -49,14 +56,18 @@ MUTATIONS: list[Mutation] = [
     Mutation(
         name="verifier independence (trust worker output)",
         file="src/mj/executor/runner.py",
-        old='            output = _run_step(store, step.capability_id, exec_inputs, timeout_s)\n'
-            '            output = broker.redact(output, known)\n'
+        old=(
+            "            output = _run_step(store, step.capability_id, exec_inputs, timeout_s)\n"
+            "            output = broker.redact(output, known)\n"
             '            evidence = impl.verify(store, dict(step.inputs), output)\n'
-            '            verified = bool(evidence.get("verified"))',
-        new='            output = _run_step(store, step.capability_id, exec_inputs, timeout_s)\n'
-            '            output = broker.redact(output, known)\n'
+            '            verified = bool(evidence.get("verified"))'
+        ),
+        new=(
+            "            output = _run_step(store, step.capability_id, exec_inputs, timeout_s)\n"
+            "            output = broker.redact(output, known)\n"
             f'            evidence = {{"verified": True, "detail": "{MUTATION_MARKER}"}}\n'
-            '            verified = True',
+            "            verified = True"
+        ),
         tests=[
             "tests/adversarial/test_adversarial.py::test_worker_claims_success_verifier_refutes",
             "tests/adversarial/test_adversarial.py::test_organize_reports_moves_that_never_happened",
@@ -65,12 +76,16 @@ MUTATIONS: list[Mutation] = [
     Mutation(
         name="secret redaction (worker output and errors)",
         file="src/mj/executor/broker.py",
-        old='    if not secrets:\n'
-            '        return value\n'
-            '    return _redact_walk(value, secrets)',
-        new='    if not secrets:\n'
-            '        return value\n'
-            f'    return value  # {MUTATION_MARKER}',
+        old=(
+            "    if not secrets:\n"
+            "        return value\n"
+            "    return _redact_walk(value, secrets)"
+        ),
+        new=(
+            "    if not secrets:\n"
+            "        return value\n"
+            f"    return value  # {MUTATION_MARKER}"
+        ),
         tests=[
             "tests/adversarial/test_canary_leaks.py::test_canary_in_worker_output_is_redacted",
             "tests/adversarial/test_canary_leaks.py::test_canary_in_worker_exception_is_redacted",
@@ -81,26 +96,32 @@ MUTATIONS: list[Mutation] = [
     Mutation(
         name="credential scope enforcement (requires_scopes)",
         file="src/mj/executor/broker.py",
-        old='        if n not in allowed_set:\n'
-            '            raise BrokerError(\n'
+        old=(
+            "        if n not in allowed_set:\n"
+            "            raise BrokerError(\n"
             '                f"secret {n!r} is not in this capability\'s requires_scopes"\n'
-            '            )',
-        new=f'        if False:  # {MUTATION_MARKER}\n'
-            '            raise BrokerError(\n'
+            "            )"
+        ),
+        new=(
+            f"        if False:  # {MUTATION_MARKER}\n"
+            "            raise BrokerError(\n"
             '                f"secret {n!r} is not in this capability\'s requires_scopes"\n'
-            '            )',
+            "            )"
+        ),
         tests=["tests/adversarial/test_canary_leaks.py::test_out_of_scope_secret_is_refused"],
     ),
     Mutation(
         name="escape check (path traversal)",
         file="src/mj/executor/capabilities.py",
-        old='    resolved = (base / relative).resolve()\n'
-            '    try:\n'
-            '        resolved.relative_to(base.resolve())\n'
-            '    except ValueError:\n'
-            '        return True\n'
-            '    return False',
-        new=f'    return False  # {MUTATION_MARKER}',
+        old=(
+            "    resolved = (base / relative).resolve()\n"
+            "    try:\n"
+            "        resolved.relative_to(base.resolve())\n"
+            "    except ValueError:\n"
+            "        return True\n"
+            "    return False"
+        ),
+        new=f"    return False  # {MUTATION_MARKER}",
         tests=[
             "tests/adversarial/test_adversarial.py::"
             "test_lying_worker_cannot_move_files_out_of_the_sandbox",
@@ -112,9 +133,11 @@ MUTATIONS: list[Mutation] = [
         name="step-result write-once (late write loses)",
         file="src/mj/executor/runner.py",
         old='        "VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(idempotency_key) DO NOTHING",',
-        new='        "VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(idempotency_key) DO UPDATE SET "'
+        new=(
+            '        "VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(idempotency_key) DO UPDATE SET "'
             '        "output_json=excluded.output_json, verified=excluded.verified, "'
-            '        "evidence_json=excluded.evidence_json /* MUTATION-CHECK-DISABLED */",',
+            '        "evidence_json=excluded.evidence_json /* MUTATION-CHECK-DISABLED */",'
+        ),
         tests=[
             "tests/unit/test_limits.py::test_late_or_duplicate_result_write_is_discarded_not_overwritten"
         ],
@@ -122,12 +145,16 @@ MUTATIONS: list[Mutation] = [
     Mutation(
         name="power -> effect cross-check",
         file="src/mj/core/registry.py",
-        old='        for power in sorted(powers):\n'
-            '            needed = POWER_EFFECTS.get(power)\n'
-            '            if needed and needed not in m.effects:',
-        new='        for power in sorted(powers):\n'
+        old=(
+            "        for power in sorted(powers):\n"
+            "            needed = POWER_EFFECTS.get(power)\n"
+            "            if needed and needed not in m.effects:"
+        ),
+        new=(
+            "        for power in sorted(powers):\n"
             f'            needed = POWER_EFFECTS.get(power) if not "{MUTATION_MARKER}" else None\n'
-            '            if needed and needed not in m.effects:',
+            "            if needed and needed not in m.effects:"
+        ),
         tests=[
             "tests/unit/test_kernel.py::test_powers_and_effects_must_agree"
         ],
@@ -136,37 +163,115 @@ MUTATIONS: list[Mutation] = [
     Mutation(
         name="reasoner input-key contract",
         file="src/mj/brain/reasoner.py",
-        old='    unknown = sorted(set(inputs) - set(contract))\n'
-            '    if unknown:',
-        new=f'    unknown = []  # {MUTATION_MARKER}\n'
-            '    if unknown:',
+        old=(
+            "    unknown = sorted(set(inputs) - set(contract))\n"
+            "    if unknown:"
+        ),
+        new=(
+            f"    unknown = []  # {MUTATION_MARKER}\n"
+            "    if unknown:"
+        ),
         tests=["tests/unit/test_reasoner.py::test_unexpected_input_key_is_rejected"],
     ),
     Mutation(
         name="reasoner credential scope (requires_scopes)",
         file="src/mj/brain/reasoner.py",
-        old='            clean[name] = _check_string_list(capability_id, name, value, names)',
-        new='            clean[name] = _check_string_list('
-            f'capability_id, name, value, tuple(value))  # {MUTATION_MARKER}',
+        old="            clean[name] = _check_string_list(capability_id, name, value, names)",
+        new=(
+            "            clean[name] = _check_string_list("
+            f"capability_id, name, value, tuple(value))  # {MUTATION_MARKER}"
+        ),
         tests=[
             "tests/unit/test_reasoner.py::"
             "test_secret_name_outside_the_capability_scope_is_rejected"
         ],
     ),
     Mutation(
+        name="reasoner credential-path floor",
+        file="src/mj/brain/reasoner.py",
+        old=(
+            "        for violation in credential_path_violations(inputs):\n"
+            '            raise _reject(f"step {step_id!r}: {violation}")'
+        ),
+        new=(
+            "        for violation in credential_path_violations(inputs):  # MUTATION-CHECK-DISABLED\n"
+            "            break"
+        ),
+        tests=[
+            "tests/unit/test_reasoner.py::"
+            "test_model_proposing_a_credential_path_is_rejected_and_audited"
+        ],
+    ),
+    Mutation(
         name="reasoner operator-directory binding",
         file="src/mj/brain/reasoner.py",
-        old='        operator_dir = params.get("dir")\n'
-            '        if operator_dir and "path" in inputs and not _same_path(inputs["path"], str(operator_dir)):',
-        new=f'        operator_dir = params.get("dir")\n'
-            f'        if False:  # {MUTATION_MARKER}',
+        old=(
+            "            if not _same_path(rebound, str(operator_dir)):\n"
+            "                raise _reject("
+        ),
+        new=(
+            f"            if False:  # {MUTATION_MARKER}\n"
+            "                raise _reject("
+        ),
         tests=["tests/unit/test_reasoner.py::test_operator_directory_cannot_be_replaced"],
+    ),
+    Mutation(
+        name="runner credential-path floor",
+        file="src/mj/executor/runner.py",
+        old=(
+            "        violations = paths.credential_path_violations(step.inputs, forbidden_roots=forbidden)\n"
+            "        if violations:"
+        ),
+        new=(
+            f"        violations: list[str] = []  # {MUTATION_MARKER}\n"
+            "        if violations:"
+        ),
+        tests=[
+            "tests/unit/test_reasoner.py::"
+            "test_runner_floor_refuses_credential_paths_whichever_planner_wrote_them"
+        ],
+    ),
+    Mutation(
+        name="prompt redaction cannot leak identity strings",
+        file="src/mj/brain/prompts.py",
+        old=(
+            "    for placeholder, identity in _identities():\n"
+            "        out = re.sub(re.escape(identity), placeholder, out, flags=re.IGNORECASE)"
+        ),
+        new=(
+            f"    for _placeholder, _identity in _identities():  # {MUTATION_MARKER}\n"
+            "        pass"
+        ),
+        tests=[
+            "tests/unit/test_reasoner.py::"
+            "test_prompt_never_carries_identity_only_placeholders"
+        ],
+    ),
+    Mutation(
+        name="every sent prompt is hashed into the audit log",
+        file="src/mj/brain/reasoner.py",
+        old='            "prompt_hash": prompts.hash_prompt(system, user),',
+        new=f'            "prompt_hash": "0000",  # {MUTATION_MARKER}',
+        tests=[
+            "tests/unit/test_reasoner.py::"
+            "test_every_sent_prompt_is_hashed_into_the_audit_log"
+        ],
+    ),
+    Mutation(
+        name="broker-held model key reaches the bearer header",
+        file="src/mj/brain/reasoner.py",
+        old="    api_token, _origin = resolve_api_key(store)",
+        new=f"    api_token = None  # {MUTATION_MARKER}",
+        tests=[
+            "tests/unit/test_reasoner.py::"
+            "test_model_key_can_live_in_the_broker_instead_of_the_environment"
+        ],
     ),
     Mutation(
         name="worker does not inherit the model key",
         file="src/mj/executor/runner.py",
         old='    env.pop("MJ_MODEL_API_KEY", None)',
-        new=f'    pass  # {MUTATION_MARKER}',
+        new=f"    pass  # {MUTATION_MARKER}",
         tests=[
             "tests/unit/test_reasoner.py::"
             "test_worker_subprocess_never_inherits_the_model_key"
@@ -175,10 +280,14 @@ MUTATIONS: list[Mutation] = [
     Mutation(
         name="registry sensitive-power rule",
         file="src/mj/core/registry.py",
-        old='    powers = declared_powers(m)\n'
-            '    if powers:',
-        new=f'    powers = declared_powers(m) if not "{MUTATION_MARKER}" else set()\n'
-            '    if powers:',
+        old=(
+            "    powers = declared_powers(m)\n"
+            "    if powers:"
+        ),
+        new=(
+            f'    powers = declared_powers(m) if not "{MUTATION_MARKER}" else set()\n'
+            "    if powers:"
+        ),
         tests=[
             "tests/unit/test_kernel.py::test_sensitive_powers_require_risk_class_and_verifier",
             "tests/adversarial/test_adversarial.py::"
@@ -239,7 +348,9 @@ def main() -> int:
         print(f"[mutation] {m.name} ({m.file})")
         baseline = run_pytest(m.tests, tail_on_error=40)
         if baseline != 0:
-            print(f"  ERROR: baseline tests FAILED before mutating ({baseline}); fix the suite first")
+            print(
+                f"  ERROR: baseline tests FAILED before mutating ({baseline}); fix the suite first"
+            )
             return 2
         backup = apply_mutation(m)
         try:
