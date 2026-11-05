@@ -166,7 +166,7 @@ def plan_schema(max_steps: int) -> dict[str, Any]:
                         "step_id": {"type": "string", "pattern": STEP_ID_PATTERN},
                         "name": {"type": "string", "maxLength": 120},
                         "capability_id": {"type": "string"},
-                        "inputs": {"type": "object"},
+                        "inputs": {"type": "object", "additionalProperties": False},
                         "depends_on": {
                             "type": "array",
                             "items": {"type": "string", "pattern": STEP_ID_PATTERN},

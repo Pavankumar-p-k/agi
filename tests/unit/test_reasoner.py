@@ -661,3 +661,21 @@ def test_plan_schema_is_bounded() -> None:
     schema = reasoner.plan_schema(10_000)
     assert schema["properties"]["steps"]["maxItems"] == reasoner.SCHEMA_MAX_STEPS
     assert reasoner.plan_schema(0)["properties"]["steps"]["maxItems"] == 1
+
+
+def test_plan_schema_is_strict_mode_clean(store: Store) -> None:
+    """OpenAI strict structured outputs require *every* object in the schema
+    to declare additionalProperties: false; a hosted model's provider (Azure,
+    2026-11-05 live run) hard-rejects the whole request otherwise with a
+    HTTP 400 that has nothing to do with the plan being tested."""
+    def walk(node: object) -> None:
+        if isinstance(node, dict):
+            if node.get("type") == "object":
+                assert node.get("additionalProperties") is False, f"object without additionalProperties: {node}"
+            for value in node.values():
+                walk(value)
+        elif isinstance(node, list):
+            for item in node:
+                walk(item)
+
+    walk(reasoner.plan_schema(8))
