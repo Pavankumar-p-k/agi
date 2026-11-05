@@ -9,3 +9,5 @@ venv/
 .env
 .coverage
 htmlcov/
+mj.sqlite3
+live_adversarial_records/
