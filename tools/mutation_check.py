@@ -268,6 +268,23 @@ MUTATIONS: list[Mutation] = [
         ],
     ),
     Mutation(
+        name="kill_tree reaches grandchildren (no worker left running)",
+        file="src/mj/executor/killtree.py",
+        old=(
+            '    if os.name == "nt":\n'
+            '        job = getattr(proc, "_mj_job", None)'
+        ),
+        new=(
+            f"    return  # {MUTATION_MARKER}\n"
+            '    if os.name == "nt":\n'
+            '        job = getattr(proc, "_mj_job", None)'
+        ),
+        tests=[
+            "tests/unit/test_killtree.py::test_killing_a_worker_stops_its_grandchild_writing",
+            "tests/unit/test_killtree.py::test_killing_the_worker_actually_ends_the_worker",
+        ],
+    ),
+    Mutation(
         name="worker does not inherit the model key",
         file="src/mj/executor/runner.py",
         old='    env.pop("MJ_MODEL_API_KEY", None)',
